@@ -1,0 +1,566 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% historian.cbx, v0.3a, 2010/05/20
+% A citation style for use with biblatex v 0.9a
+% Developed and maintained by Sander Gliboff, 
+% based on guidelines from the Turabian Manual for Writers, 7th ed.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ProvidesFile{historian.cbx}[2010/05/20 v0.3a historian citation style]
+
+   \@ifpackagelater{biblatex}{2010/03/19}
+     {}
+     {\PackageError{biblatex}
+	{Outdated 'biblatex' package
+	The 'historian' style requires biblatex v0.9 or later.\MessageBreak
+	 You are using: '\csuse{ver@biblatex.sty}'.\MessageBreak
+	 This is a fatal error.}%
+      \endinput}
+
+\ExecuteBibliographyOptions{citetracker=context,ibidtracker=constrict, singletitle,pagetracker,autocite=footnote}
+\ExecuteBibliographyOptions{abbreviate=true}
+
+
+%Redefine \blockcquote command of the csquotes package to generate a footnote
+\SetCiteCommand{\footcite}
+
+%Option to suppress the crossreferences to first citation of a source (new in v. 0.2)
+\newtoggle{noterefsflag}
+\toggletrue{noterefsflag}
+\DeclareBibliographyOption{printnoterefs}[true]
+	{\ifstrequal{#1}{true}
+		{\toggletrue{noterefsflag}}%
+		{\togglefalse{noterefsflag}}}%
+\DeclareEntryOption{printnoterefs}[true]
+	{\ifstrequal{#1}{true}
+		{\toggletrue{noterefsflag}}%
+		{\togglefalse{noterefsflag}}}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%This style builds on Lehman's original verbose-inote style,
+%from which the following macros are copied:
+
+\providecommand*{\mkibid}[1]{#1}
+\newbool{cbx:loccit}
+\newbool{cbx:pageref}
+
+\DeclareBibliographyOption{ibidpage}[true]{%
+  \ifstrequal{#1}{true}
+    {\ExecuteBibliographyOptions{loccittracker=constrict}}
+    {\ExecuteBibliographyOptions{loccittracker=false}}}
+\DeclareBibliographyOption{pageref}[true]{%
+  \setbool{cbx:pageref}{#1}}
+
+
+\newbibmacro*{cite}{%
+  \global\boolfalse{cbx:loccit}%
+  \ifciteseen
+    {\iffieldundef{shorthand}
+       {\ifthenelse{\ifciteibid\AND\NOT\iffirstonpage}
+          {\usebibmacro{cite:ibid}}
+          {\usebibmacro{cite:short}}}
+       {\usebibmacro{cite:shorthand}}}
+    {\usebibmacro{cite:full}}}
+
+\newbibmacro*{cite:full}{%
+  \printtext[bibhypertarget]{%
+    \usedriver
+      {\DeclareNameAlias{sortname}{default}}
+      {\thefield{entrytype}}}%
+  \usebibmacro{shorthandintro}}
+
+\newbibmacro*{cite:short}{%
+  \printnames{labelname}%
+  \setunit*{\addcomma\space}%
+  \printtext[bibhyperlink]{%
+    \printfield[citetitle]{labeltitle}}}
+
+\newbibmacro*{cite:shorthand}{%
+  \printtext[bibhyperlink]{%
+    \printfield{shorthand}}}
+
+\newbibmacro*{cite:ibid}{%
+  \printtext[bibhyperref]{\bibstring[\mkibid]{ibidem}}%
+  \ifloccit
+    {\global\booltrue{cbx:loccit}}
+    {}}
+
+\newbibmacro*{footcite:save}{%
+  \csxdef{cbx@first@\thefield{entrykey}}{\the\value{instcount}}%
+  \label{cbx@\the\value{instcount}}}
+
+
+\newbibmacro*{cite:postnote}{%
+  \ifbool{cbx:loccit}
+    {}
+    {\usebibmacro{postnote}}}
+
+\newbibmacro*{footcite:shorthand}{%
+  \printtext{%
+    \bibhyperlink{\thefield{entrykey}:%
+                  \csuse{cbx@first@\thefield{entrykey}}}{%
+      \printfield{shorthand}}}}
+
+\newbibmacro*{footcite:ibid}{%
+  \printtext{%
+    \bibhyperlink{\thefield{entrykey}:%
+                  \csuse{cbx@first@\thefield{entrykey}}}{%
+      \bibstring[\mkibid]{ibidem}}}%
+  \ifloccit
+    {\global\booltrue{cbx:loccit}}
+    {}}
+
+\DeclareCiteCommand{\cite}
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \iffootnote
+     {\usebibmacro{footcite}}
+     {\usebibmacro{cite}}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+
+\DeclareCiteCommand{\footcite}[\mkbibfootnote]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{footcite}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+%End of inherited routines from verbose-inote 
+
+%%%%%%%%%%		MODIFIED FOOTCITE COMMAND		%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%Loopcode of footcite command modified from verbose-inote to include special short forms
+\newbibmacro*{footcite}{%
+\global\boolfalse{cbx:loccit}%
+\ifciteseen
+	{%then1 repeated citation
+		\iffieldundef{shorthand}%
+       		{%Then2 no shorthand
+				\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeclassic}%
+       			\OR\equal{\thefield{entrysubtype}}{\subtypebiblical}}%
+       				{%Then3 use special short form for classics, instead of ibid. or note
+						\usebibmacro{footcite:shortclassic}}%
+					{%Else3
+						\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypepublicdocument}%
+						\OR\equal{\thefield{entrytype}}{legal}%
+						\OR\equal{\thefield{entrytype}}{legislation}%
+						\OR\equal{\thefield{entrytype}}{jurisdiction}}%
+							{%Then4 different short form for government documents
+								\usebibmacro{footcite:shortgov}}%
+							{%Else4 default routines
+								\ifthenelse{\ifciteibid\AND\NOT\iffirstonpage}
+									{\usebibmacro{footcite:ibid}}%
+          							{\usebibmacro{footcite:note}}%
+							}%Endif, end else4
+					}%Endif, end else3
+			}%End then2
+			{%Else2 use shorthand
+				\usebibmacro{footcite:shorthand}%
+			}%Endif, end else2
+	}%End then1
+    {%Else1 not a repeated citation: cite in full
+    		\usebibmacro{footcite:full}%
+     	\usebibmacro{footcite:save}%
+	}%Endif, end else1
+}%End macro
+     
+     
+% Like the Verbose styles, historian.cbx uses the drivers from the bbx file
+\newbibmacro*{footcite:full}{%
+% Switch to commas as unit punctuation
+\renewcommand\newunitpunct{\addcomma\addspace}%
+\printtext{%
+	\bibhypertarget{\thefield{entrykey}:\the\value{instcount}}{%
+		\usedriver{\DeclareNameAlias{sortname}{default}}{\thefield{entrytype}}}}%
+\usebibmacro{shorthandintro}%
+}%
+
+%Modified from verbose-inote.cbx to include special short forms for letters, archives, documents, and some non-print sources
+
+\newbibmacro*{footcite:note}{%
+\ifnameundef{labelname}
+    {\printfield{label}}%
+    {\ifthenelse{\equal{\thefield{entrytype}}{performance}}%
+		{%Titles only
+			\printfield[title]{labeltitle}}%
+		{\printnames{labelname}%
+    		\ifthenelse{\equal{\thefield{entrytype}}{letter}}%
+    			{\setunit*{\addspace\bibstring{letterto}\addspace}%
+			\printnames[labelname]{namec}%
+			\setunit{\addcomma\addspace}%
+			\usebibmacro{date}}%
+			{\ifthenelse{\equal{\thefield{entrytype}}{customa}}
+				{\setunit*{\addspace}%
+				\printfield[noformat]{nameaddon}}%
+				{\relax}}}%
+    }%
+\ifsingletitle
+    {\relax}%
+    {\ifthenelse{\equal{\thefield{entrytype}}{performance}}
+    		{%Title label already printed
+			\relax}%
+		{\setunit*{\addcomma\space}%
+		\printfield[title]{labeltitle}%
+		\ifthenelse{\equal{\thefield{entrytype}}{customd}}%
+			{\setunit*{\addcomma\addspace}%
+			\printfield[noformat]{titleaddon}%
+			\setunit*{\addspace}%
+			\printnames[labelname]{namec}}%
+		{\relax}%
+     	}%
+	}%
+\iftoggle{noterefsflag}%New option and test in v. 0.2a
+	{%Then option set for note references
+		\iftoggle{xrefflag}
+  			{%Then suppress note function in crossreferences in any case
+				\relax}%
+			{%Else print note number
+				\setunit{\addcomma\space}%
+				\printtext
+					{\bibstring{seenote}\addnbspace
+					\ref{cbx@\csuse{cbx@first@\thefield{entrykey}}}%
+					\ifbool{cbx:pageref}
+						{\ifsamepage{\the\value{instcount}}
+							{\csuse{cbx@first@\thefield{entrykey}}}%
+	         				{}%
+						{\addcomma\space\bibstring{page}\addnbspace
+						\pageref{cbx@\csuse{cbx@first@\thefield{entrykey}}}}}%
+						{}%
+					}%end printtext
+			}%endelse, endiftoggle
+		}%Endthen
+    {%Else option set to suppress note references
+    		\relax}%Endiftoggle
+}%end macro
+
+
+     
+\newbibmacro{footcite:shortclassic}{%
+\iffieldundef{label}%
+	{\ifnameundef{shortauthor}
+		{\printnames{author}}%
+		{\printnames{shortauthor}}%
+	\unspace
+	\setunit{\addspace}%
+	\iffieldundef{shorttitle}
+		{\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebiblical}}
+			{\printfield[noformat]{title}}%
+			{\printfield{title}}}%
+		{\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebiblical}}
+			{\printfield[noformat]{shorttitle}\isdot}%
+			{\printfield[title]{shorttitle}\isdot}}}%
+	{\printfield{label}}%
+}%
+
+     
+\newbibmacro{footcite:shortgov}{%
+\iffieldundef{label}%
+	{\ifnameundef{shortauthor}%
+		{\ifthenelse{\equal{\thefield{authortype}}{\authortyperedundant}}%
+			{\relax}%
+			{\printnames{author}\setunit*{\addcomma\addspace}}}%
+		{\printnames{shortauthor}\setunit*{\addcomma\addspace}}%
+	\iffieldundef{shorttitle}%
+		{\iffieldundef{title}%
+			{\iffieldundef{shortjournal}%
+				{\printfield[title]{journaltitle}}%
+				{\printfield[title]{shortjournal}\isdot}%
+			\setunit{\addcomma\addspace}%
+			\printfield{note}\isdot\setunit{\addcomma\addspace}%
+			\printfield[noformat]{volume}%
+			\printfield{part}%
+			}%
+			{\printfield{title}}%
+			}%
+		{\printfield[title]{shorttitle}\isdot}}%
+	{\printfield{label}}%
+}%
+
+
+%%%%%%%%%%	CITE-COMMAND VARIATIONS WITH DIFFERENT PUNCTUATION		%%%%%%%%
+
+%Special foocite command with a period before the postnote
+\DeclareCiteCommand{\footcitedot}[\mkbibfootnote]
+  {\bibsentence
+   \usebibmacro{prenote}}%
+  {\usebibmacro{citeindex}%
+   \usebibmacro{footcite}}%
+  {\multicitedelim}%
+  {\ifbool{cbx:loccit}
+    {}
+    {\iffieldundef{postnote}
+    		{}
+    		{\addperiod\addspace
+     	\printfield{postnote}}}}%
+ 
+%Special footcite command without punctuation before the postnote    
+\DeclareCiteCommand{\footcitenodot}[\mkbibfootnote]
+  {\bibsentence
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{footcite}}%
+  {\multicitedelim}%
+  {\ifbool{cbx:loccit}%
+    {}%
+    {\iffieldundef{postnote}%
+    		{}%
+    		{%\addspace
+		\printfield{postnote}}}}%
+		
+ 
+%Special footcite command with a colon before the postnote    
+\DeclareCiteCommand{\footcitecolon}[\mkbibfootnote]
+{\bibsentence
+\usebibmacro{prenote}}
+{\usebibmacro{citeindex}%   		
+%Set flag for article routine to print pages only when there's no postnote
+\iffieldundef{postnote}
+	{\toggletrue{printpagerange}}%
+	{\togglefalse{printpagerange}}%
+\usebibmacro{footcite}}%
+{\multicitedelim}%
+{\ifbool{cbx:loccit}%
+	{}
+    {\iffieldundef{postnote}%
+    		{\relax}%
+    		{\bibpagespunct
+		\printfield{postnote}}}}%
+		
+
+%Special cite command with a period before the postnote (new in v. 0.2)
+\DeclareCiteCommand{\citedot}[]
+  {\bibsentence
+   \usebibmacro{prenote}}%
+  {\usebibmacro{citeindex}%
+   \usebibmacro{footcite}}% [Sic. The \cite macro doesn't have all the short forms]
+  {\multicitedelim}%
+  {\ifbool{cbx:loccit}
+    {}
+    {\iffieldundef{postnote}
+    		{}
+    		{\addperiod\addspace
+     	\printfield{postnote}}}}%
+ 
+%Special cite command without punctuation before the postnote (new in v. 0.2)
+\DeclareCiteCommand{\citenodot}[]
+  {\bibsentence
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{footcite}}% [Sic. The \cite macro doesn't have all the short forms]
+  {\multicitedelim}%
+  {\ifbool{cbx:loccit}%
+    {}%
+    {\iffieldundef{postnote}%
+    		{}%
+    		{%\addspace
+		\printfield{postnote}}}}%
+		
+%Special cite command with a colon before the postnote (new in v. 0.2)
+\DeclareCiteCommand{\citecolon}[]%
+{\bibsentence
+\usebibmacro{prenote}}
+{\usebibmacro{citeindex}%   		
+%Set flag for article routine to print pages only when there's no postnote
+\iffieldundef{postnote}
+	{\toggletrue{printpagerange}}%
+	{\togglefalse{printpagerange}}%
+\usebibmacro{footcite}}% [Sic. The \cite macro doesn't have all the short forms]
+{\multicitedelim}%
+{\ifbool{cbx:loccit}%
+	{}
+    {\iffieldundef{postnote}%
+    		{\relax}%
+    		{\bibpagespunct
+		\printfield{postnote}}}}%
+		
+%Multicite versions with modified punctuation between citations
+
+\DeclareMultiCiteCommand{\footcitedots}[\mkbibfootnote]{\footcite}{\addperiod\addspace}%
+\DeclareMultiCiteCommand{\footcitenodots}[\mkbibfootnote]{\footcite}{\unspace}
+
+%%%%%%%%%		MODIFIED PARENCITE	%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Special author-title form for parenthetical notes
+\DeclareCiteCommand{\parencite}[\mkbibparens]
+  {\usebibmacro{prenote}}%
+  {\usebibmacro{citeindex}%
+    \iffieldundef{shorthand}%
+    {\usebibmacro{parenauthor}%
+    \setunit*{\addcomma\addspace}%
+    \iffieldundef{shorttitle}%
+    {\printfield[citetitle]{title}}%
+    {\printfield[citetitle]{shorttitle}}}%
+    {\printfield{shorthand}}}%
+  {\multicitedelim}%
+  {\usebibmacro{cite:postnote}}%
+  
+\newbibmacro{parenauthor}{%
+\ifnameundef{author}
+    {%Then Author not in use; try editor, translator
+    		\ifnameundef{editor}%
+       		{\ifnameundef{translator}%
+					{}
+    				{\printnames[lastname]{translator}%
+    				 \addcomma\space
+    				 \usebibmacro{translatorstrg}}%
+				}%
+       		{\printnames[lastname]{editor}%
+    			 \addcomma\space
+				\iffieldundef{editortype}
+				    {\ifthenelse{\value{editor}>1\OR\ifandothers{editor}}
+				       {eds.\isdot}%
+				       {ed.\isdot}%
+				       }%
+				    {\ifthenelse{\value{editor}>1\OR\ifandothers{editor}}
+				       {\bibstring{type\thefield{editortype}s}}%
+				       {\bibstring{type\thefield{editortype}}}%
+				       }%
+				}%
+	}%
+	{%Else check for anonymous, but known, authorship
+		\ifthenelse{\equal{\thefield{authortype}}{\authortypeanon}}%
+			{%then anonymous author goes in brackets; usual punctuation outside brackets
+					\mkbibbrackets{\printnames[lastname]{author}}%
+			}%
+			{%else check for uncertain authorship
+				\ifthenelse{\equal{\thefield{authortype}}{\authortypeunsure}}%
+					{%then question mark in brackets; usual punctuation outside brackets
+						\mkbibbrackets{\printnames[lastname]{author}\addquestion}%
+					}%
+					{%else no brackets; check for redundant author
+						\ifthenelse {\equal{\thefield{authortype}}{\authortyperedundant}}%
+							{\relax}%
+							{%else authortype not redundant, just print as usual
+								\printnames[lastname]{author}}%
+					}%
+			}%endif
+	\iffieldundef{nameaddon}%
+		{\relax}%
+		{\setunit*{\addspace}%
+		\printfield{nameaddon}\ifpunctmark{.}{\isdot}{\relax}}%
+		\setunit*{\labelnamepunct\addspace}%
+	}%
+}%end of macro
+
+%%%%%%%%%	CITE COMMAND FOR ANNOTATIONS---new in v. 0.2  %%%%%%%%%%%%%
+
+%For printing both abstract and annotation after main citation (new in v. 0.2)
+
+\DeclareCiteCommand{\citeannote}[]
+{%
+\bibsentence%
+\usebibmacro{prenote}%
+}%
+{\usebibmacro{citeindex}%
+\usebibmacro{footcite}%
+\setunit{\addperiod}%
+\printtext{\unspace}%Just to force unit punctuation before indentannote environment
+    \begin{indentannote}
+    		\usebibmacro{annotation}%
+		\finentry
+	\end{indentannote}
+}%
+{}%
+{\ifbool{cbx:loccit}
+	{}
+	{\iffieldundef{postnote}
+		{}%
+		{\addcomma\addspace
+     	\printfield{postnote}}%
+	}%
+}%
+
+%%%%%%%%%	CITE COMMANDS FOR CROSSREFERENCING  %%%%%%%%%%%%%%%%%%%%%%
+  
+% Cross-referencing to collection in footnotes
+%(The corresponding routine for bibliography cross-referencing is in the bbx file)
+\DeclareCiteCommand{\cbx@crosstocoll}[]{}{%
+\toggletrue{xrefflag}%
+\global\boolfalse{cbx:loccit}%
+\ifciteseen
+	{\iffieldundef{shorthand}%
+		{\ifthenelse{\ifciteibid\AND\NOT\iffirstonpage}%
+			{\usebibmacro{footcite:ibid}}%
+			{\usebibmacro{footcite:note}}%
+		}%
+		{\usebibmacro{footcite:shorthand}%
+		}%
+	}%
+	{\printtext{\bibhypertarget{\thefield{entrykey}:\the\value{instcount}}{%
+			\usebibmacro{getbookinfo}}%
+			\usebibmacro{shorthandintro}}%	
+			\usebibmacro{footcite:save}%
+	}%
+}{}{}%
+
+  
+% Cross-referencing to periodical in footnotes
+%(The corresponding routine for bibliography cross-referencing is in the bbx file)
+\DeclareCiteCommand{\cbx@crosstoper}[]{}{%
+\toggletrue{xrefflag}%
+\global\boolfalse{cbx:loccit}%
+\ifciteseen
+	{\iffieldundef{shorthand}%
+		{\ifthenelse{\ifciteibid\AND\NOT\iffirstonpage}%
+			{\usebibmacro{footcite:ibid}}%
+			{\usebibmacro{footcite:note}}%
+		}%
+		{\usebibmacro{footcite:shorthand}%
+		}%
+	}%
+	{\printtext{\bibhypertarget{\thefield{entrykey}:\the\value{instcount}}{%
+			\usebibmacro{journal+issuetitle}}%
+			\usebibmacro{shorthandintro}}%	
+			\usebibmacro{footcite:save}%
+	}%
+}{}{}%
+  
+% Cross-referencing to customa in footnotes
+%(The corresponding routine for bibliography cross-referencing is in the bbx file)
+\DeclareCiteCommand{\cbx@crosstoarch}[]{}{%
+\toggletrue{xrefflag}%
+\global\boolfalse{cbx:loccit}%
+\usebibmacro{in:}%
+\ifciteseen%
+	{\iffieldundef{shorthand}%
+		{\ifthenelse{\ifciteibid\AND\NOT\iffirstonpage}%
+			{\usebibmacro{footcite:ibid}}%
+			{\usebibmacro{footcite:note}}%
+		}%
+		{\usebibmacro{footcite:shorthand}%
+		}%
+	}%
+	{\printtext{\bibhypertarget{\thefield{entrykey}:\the\value{instcount}}{%
+			\usebibmacro{getarchiveinfo}}%
+			\usebibmacro{shorthandintro}}%	
+			\usebibmacro{footcite:save}%
+	}%
+}{}{}%
+
+  
+% Cross-referencing to reference in footnotes
+%(The corresponding routine for bibliography cross-referencing is in the bbx file)
+\DeclareCiteCommand{\cbx@crosstoref}[]{}{%
+\toggletrue{xrefflag}%
+\global\boolfalse{cbx:loccit}%
+\ifciteseen
+	{\iffieldundef{shorthand}%
+		{\ifthenelse{\ifciteibid\AND\NOT\iffirstonpage}%
+			{\usebibmacro{footcite:ibid}}%
+			{\usebibmacro{footcite:note}}%
+		}%
+		{\usebibmacro{footcite:shorthand}%
+		}%
+	}%
+	{\printtext{\bibhypertarget{\thefield{entrykey}:\the\value{instcount}}{%
+			\usebibmacro{getreferenceinfo}}%
+			\usebibmacro{shorthandintro}}%	
+			\usebibmacro{footcite:save}%
+	}%
+}{}{}%
+
+    
+\endinput
+

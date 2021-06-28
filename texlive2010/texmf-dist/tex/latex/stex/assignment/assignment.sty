@@ -1,0 +1,111 @@
+%%
+%% This is file `assignment.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% assignment.dtx  (with options: `package')
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{assignment}[2010/06/25 v0.9a assignment documents]
+\newif\iftest\testfalse
+\newif\ifsolutions\solutionsfalse
+\DeclareOption{test}{\testtrue\solutionsfalse}
+\newif\ifmultiple\multiplefalse
+\DeclareOption{multiple}{\multipletrue}
+\DeclareOption*{\PassOptionsToPackage{\CurrentOption}{problem}}
+\ProcessOptions
+\RequirePackage{keyval}[1997/11/10]
+\RequirePackage{problem}
+\omdaddkey{assig}{number}
+\omdaddkey{assig}{title}
+\omdaddkey{assig}{type}
+\omdaddkey{assig}{given}
+\omdaddkey{assig}{due}
+\def\AssignmentType#1{\gdef\assig@default@type{#1}}
+\def\assig@default@type{Assignment}
+\def\Assig@Type{\ifx\assig@type\@empty\assig@default@type\else\assig@type\fi}
+\def\Assig@Title{\ifx\assig@title\@empty\else\assig@title~\fi}
+\def\given@due#1#2{%
+\ifx\assig@given\@empty\else\ifx\assig@due\@empty\else{#1}\fi\fi%
+\ifx\assig@given\@empty\else{Given {\assig@given}}\fi%
+\ifx\assig@given\@empty\else\ifx\assig@due\@empty\else{, }\fi\fi%
+\ifx\assig@due\@empty\else{Due {\assig@due}}\fi%
+\ifx\assig@given\@empty\else{\ifx\assig@due\@empty\else{#2}\fi}\fi}
+\newenvironment{assignment}[1][]% keyval args
+{\omdsetkeys{assig}{#1}% collect the keys and correct them from the outside
+\@ifundefined{incl@assig@title}{}{\def\assig@title{\incl@assig@title}}
+\@ifundefined{incl@assig@type}{}{\def\assig@type{\incl@assig@type}}
+\@ifundefined{incl@assig@num}{}{\def\assig@num{\incl@assig@num}}
+\@ifundefined{incl@assig@due}{}{\def\assig@due{\incl@assig@due}}
+\@ifundefined{incl@assig@given}{}{\def\assig@given{\incl@assig@given}}
+\@ifundefined{assig@num}{\stepcounter{section}}%
+{\setcounter{section}{\assig@num}\setcounter{problem}{0}}
+\ifmultiple%
+\section*{\Assig@Type~\arabic{section}:~\Assig@Title\given@due{\\(})}
+  \addcontentsline{toc}{section}{\Assig@Type~{\arabic{section}}:~\Assig@Title}
+\else
+\begin{center}
+\Large\Course@Title\\
+{\bf{\Assig@Type}~{\arabic{section}}:~\Assig@Title\strut\\\large{\given@due()}}
+\end{center}
+\fi%ifmultiple
+}{}
+\define@key{incl@assig}{number}{\def\incl@assig@num{#1}}
+\define@key{incl@assig}{title}{\def\incl@assig@title{#1}}
+\define@key{incl@assig}{type}{\def\incl@assig@type{#1}}
+\define@key{incl@assig}{given}{\def\incl@assig@given{#1}}
+\define@key{incl@assig}{due}{\def\incl@assig@due{#1}}
+\newcommand{\includeassignment}[2][]{\bgroup\setkeys{incl@assig}{#1}\include{#2}\egroup}
+\def\CourseTitle#1{\gdef\Course@Title{#1}}
+\omdaddkey{testheading}{min}
+\omdaddkey{testheading}{duration}
+\omdaddkey{testheading}{reqpts}
+\def\testheading#1{\omdsetkeys{testheading}{#1}
+{\noindent\large NAME: \\[1ex] MATRICULATION NUMBER:\\[2ex]
+ {\textbf{You have
+\ifx\test@heading@duration\@empty\testheading@min minutes\else\testheading@duration\fi
+(sharp) for the test}};\\ Write the solutions to the sheet.}\par\noindent
+
+\newcount\check@time\check@time=\testheading@min
+\advance\check@time by -\theassignment@totalmin
+The scheduled time for solving this exam is {\theassignment@totalmin} minutes,
+leaving you {\the\check@time} minutes for revising your exam.
+
+\newcount\bonus@pts\bonus@pts=\theassignment@totalpts
+\advance\bonus@pts by -\testheading@reqpts
+You can reach {\theassignment@totalpts} points if you solve all problems. You will only need
+{\testheading@reqpts} points for a perfect score, i.e.\ {\the\bonus@pts} points are
+bonus points. \vfill
+\begin{center}
+  {\Large\em
+  Different problems test different skills and knowledge, so do not get stuck on
+  one problem.}\vfill\par\correction@table
+\end{center}\newpage}
+\def\testspace#1{\iftest\vspace*{#1}\fi}
+\def\testnewpage{\iftest\newpage\fi}
+\def\testemptypage{\iftest\begin{center}This page was intentionally left
+    blank for extra space\end{center}\vfill\eject\else\fi}
+\def\@problem#1#2#3{\stepcounter{assignment@probs}
+\def\@test{#2}\ifx\@test\@empty\else\addtocounter{assignment@totalpts}{#2}\fi
+\def\@test{#3}\ifx\@test\@empty\else\addtocounter{assignment@totalmin}{#3}\fi
+\xdef\correction@probs{\correction@probs & #1}%
+\xdef\correction@pts{\correction@pts & #2}
+\xdef\correction@reached{\correction@reached &}}
+\newcounter{assignment@probs}
+\newcounter{assignment@totalpts}
+\newcounter{assignment@totalmin}
+\def\correction@probs{prob.}%
+\def\correction@pts{total}%
+\def\correction@reached{reached}%
+\stepcounter{assignment@probs}
+\def\correction@table{\begin{tabular}{|l|*{\theassignment@probs}{c|}|p{3cm}|}\hline%
+&\multicolumn{\theassignment@probs}{c||}%
+{\footnotesize To be used for grading, do not write here} &\\\hline
+\correction@probs & Sum & grade\\\hline
+\correction@pts &\theassignment@totalpts & \strut\hspace{3cm}\strut\\\hline
+\correction@reached & & \\[.7cm]\hline
+\end{tabular}}
+\endinput
+%%
+%% End of file `assignment.sty'.

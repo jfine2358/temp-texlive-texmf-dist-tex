@@ -1,0 +1,223 @@
+% !TeX root = ./examples/marmot.tex
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% The tikzlings-marmots package (part of the tikzlings collection)
+% A package to bring little marmots into tikz
+% Maintained by samcarter
+%
+% Project repository and bug tracker:
+% https://github.com/samcarter/tikzlings
+%
+% Released under the LaTeX Project Public License v1.3c or later
+% See http://www.latex-project.org/lppl.txt
+%
+% Version 0.2
+% April 7, 2019    
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ProvidesPackage{tikzlings-marmots}
+ [2019/04/07 v0.2 Drawing marmots in TikZ]
+
+\RequirePackage{tikz}
+\RequirePackage{tikzlings-addons}
+\usetikzlibrary{shadows.blur}
+\usetikzlibrary{fadings} 
+
+\tikzfading[name=marmot@blush,inner color=transparent!50,outer color=transparent!100]
+
+\RequirePackage{ifluatex}
+\RequirePackage{ifxetex}
+
+\ifluatex
+  \let\pdfrandomseed\randomseed
+\fi
+
+\ifxetex
+  \pgfmathsetseed{\time}
+\else
+  \pgfmathsetseed{\number\pdfrandomseed}
+\fi
+
+\newcommand*{\marmot}[1][]{%
+  \begin{scope}%
+    \tikzset{/marmot/.cd,#1}%
+    \marmot@draw%
+  \end{scope}%
+  \thing[#1]%
+}
+
+\newif\ifmarmot@blush
+\newif\ifmarmot@whiskers
+\newif\ifmarmot@teeth
+\newif\ifmarmot@threeD
+\newif\ifmarmot@shadow
+\newif\ifmarmot@askphil
+\newif\ifmarmot@leftstep
+\newif\ifmarmot@rightstep
+
+\tikzset{
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %
+  % Pass unknown keys on to tikz
+  %
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  /marmot/.search also={/tikz,/pgf,/thing},
+  /marmot/.cd,
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %
+  % body
+  %
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  body/.code         = \def\marmot@body{#1},
+  body               = brown,
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %
+  % options
+  %
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  blush/.code        = \marmot@blushtrue,
+  whiskers/.code     = \marmot@whiskerstrue 
+                       \def\marmot@whiskers{#1},
+  whiskers/.default  = gray,
+  teeth/.code        = \marmot@teethtrue    
+                       \def\marmot@teeth{#1}, 
+  teeth/.default     = white,
+  3D/.code           = \marmot@threeDtrue,
+  shadow/.code       = \marmot@shadowtrue,
+  askphil/.code      = \marmot@askphiltrue,
+  ask phil/.forward to = /marmot/askphil,
+  leftstep/.code     = \marmot@leftsteptrue,
+  left step/.forward to = /marmot/leftstep,
+  rightstep/.code    = \marmot@rightsteptrue,
+  right step/.forward to = /marmot/rightstep,  
+}
+
+\def\marmot@draw{%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% minimal bounding box size 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\path (-0.625,0.1) rectangle (0.905, 2.17);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% store the current scale factor
+% from https://github.com/samcarter/tikzlings/issues/3#issuecomment-461373494
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pgfgettransformentries{\tmpscaleA}{\tmpscaleB}{\tmpscaleC}{\tmpscaleD}{\tmp}{\tmp}%
+\pgfmathsetmacro{\scalingfactor}{sqrt(abs(\tmpscaleA*\tmpscaleD-\tmpscaleB*\tmpscaleC))}%
+\pgfmathsetmacro{\xscalefactor}{\tmpscaleA}
+\pgfmathsetmacro{\yscalefactor}{\tmpscaleD}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% switch between 2D and 3D, from
+% https://chat.stackexchange.com/transcript/message/45991801#45991801
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ifmarmot@threeD
+  \def\marmot@part@draw[##1]{\shade[ball color=##1]}
+\else
+  \def\marmot@part@draw[##1]{\fill[##1]}
+\fi
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% shadow
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\ifmarmot@askphil
+  \pgfmathparse{int(random(1,120))}
+  \let\marmot@random=\pgfmathresult
+  \ifnum\marmot@random>17
+    \marmot@shadowtrue
+  \fi
+\fi
+%
+\ifmarmot@shadow
+  \fill[opacity=0,blur shadow,rotate around={-80:(0.3,0.5)}] (0.3,0.5) ellipse (0.28 and 0.8);
+\fi
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Body parts (center: x=0)
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Feet %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ifmarmot@leftstep
+  \marmot@part@draw[\marmot@body!50!black] (-0.255,0.25) ellipse (0.23 and 0.09);  
+\else
+  \marmot@part@draw[\marmot@body!50!black] (-0.255,0.2) ellipse (0.23 and 0.09);  
+\fi
+
+\ifmarmot@rightstep
+  \marmot@part@draw[\marmot@body!50!black] (0.255,0.25) ellipse (0.23 and 0.09); 
+\else
+  \marmot@part@draw[\marmot@body!50!black] (0.255,0.2) ellipse (0.23 and 0.09); 
+\fi
+%
+% Ears %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\marmot@part@draw[\marmot@body!50!black] (0.255,2.03) ellipse (0.09 and 0.13);
+\marmot@part@draw[\marmot@body!50!black] (-0.255,2.03) ellipse (0.09 and 0.13);
+%
+% Tail %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\marmot@part@draw[\marmot@body!50!black] (0.885, 0.67) .. controls (0.865, 0.4) and (0.345, 0.24) .. (0.335, 0.44) .. controls (0.315, 0.56) and (0.445, 0.51) .. (0.575, 0.53) .. controls (0.695, 0.54) and (0.885, 0.72) .. (0.885, 0.67) -- cycle;
+%
+% Body %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\marmot@part@draw[\marmot@body] (0.595, 0.92) .. controls (0.595, 0.26) and (0.355, 0.18) .. (0, 0.18) .. controls (-0.355, 0.18) and (-0.595, 0.26) .. (-0.595, 0.92) .. controls (-0.605, 1.58) and (-0.335, 2.11) .. (0, 2.11) .. controls (0.335, 2.11) and (0.605, 1.58) .. (0.595, 0.92) -- cycle;
+%
+% Belly %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\marmot@part@draw[\marmot@body!50!white] (0.425, 0.71) .. controls (0.425, 0.41) and (0.245, 0.37) .. (0, 0.37) .. controls (-0.245, 0.37) and (-0.425, 0.41) .. (-0.425, 0.71) .. controls (-0.425, 1.01) and (-0.225, 1.26) .. (0, 1.26) .. controls (0.225, 1.26) and (0.425, 1.01) .. (0.425, 0.71) -- cycle;
+%
+% Arms %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\marmot@part@draw[\marmot@body!50!black,rotate around={70:(0.385,0.93)}] (0.385,0.93) ellipse (0.24 and 0.13);
+\marmot@part@draw[\marmot@body!50!black,rotate around={-70:(-0.385,0.93)}] (-0.385,0.93) ellipse (0.24 and 0.13);
+%
+% Muzzle %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\marmot@part@draw[\marmot@body!50!white] (0,1.47) ellipse (0.23 and 0.13); 
+%
+% Nose %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\marmot@part@draw[\marmot@body!50!black] (0,1.6) circle (0.08);
+%
+% Eyes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\marmot@part@draw[\marmot@body!50!black] (-0.155,1.77) circle (0.05); 
+\marmot@part@draw[\marmot@body!50!black] (0.155,1.77) circle (0.05); 
+%
+% Mouth %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\fill[\marmot@body!50!black] (0.145,1.51) arc [start angle=-20, end angle=-160, radius=0.16] -- (-0.14,1.51) -- (-0.14,1.51) arc [start angle=-160, end angle=-20, radius=0.144] -- cycle ;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% optional
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Blushed %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ifmarmot@blush
+  \fill[red,path fading=marmot@blush] (-0.295,1.6) circle (0.1); 
+  \fill[red,path fading=marmot@blush] (0.295,1.6) circle (0.1); 
+\fi
+%
+% Wiskers %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ifmarmot@whiskers
+  \fill[\marmot@whiskers] (0.0788, 1.6146) .. controls (0.1658, 1.6299) and (0.2086, 1.5639) .. (0.2956, 1.5486) -- (0.2956, 1.5586) .. controls (0.2097, 1.5737) and (0.1648, 1.6297) .. (0.0788, 1.6146) -- cycle;
+  \fill[\marmot@whiskers] (-0.0788, 1.6146) .. controls (-0.1658, 1.6299) and (-0.2087, 1.5639) .. (-0.2956, 1.5486) -- (-0.2956, 1.5586) .. controls (-0.2097, 1.5737) and (-0.1648, 1.6297) .. (-0.0788, 1.6146) -- cycle;
+  \fill[\marmot@whiskers] (0.0752, 1.6281) .. controls (0.1583, 1.6583) and (0.2171, 1.6309) .. (0.3002, 1.6007) -- (0.3002, 1.6107) .. controls (0.2174, 1.6408) and (0.158, 1.6582) .. (0.0752, 1.6281) -- cycle;
+  \fill[\marmot@whiskers] (-0.0752, 1.6281) .. controls (-0.1583, 1.6583) and (-0.2171, 1.6309) .. (-0.3002, 1.6007) -- (-0.3002, 1.6107) .. controls (-0.2174, 1.6408) and (-0.158, 1.6582) .. (-0.0752, 1.6281) -- cycle;
+  \fill[\marmot@whiskers] (0.0671, 1.6443) .. controls (0.1414, 1.6925) and (0.2182, 1.7164) .. (0.2925, 1.6682) -- (0.2925, 1.6782) .. controls (0.2179, 1.7266) and (0.1417, 1.6927) .. (0.0671, 1.6443) -- cycle;
+  \fill[\marmot@whiskers] (-0.0671, 1.6443) .. controls (-0.1414, 1.6925) and (-0.2182, 1.7164) .. (-0.2925, 1.6682) -- (-0.2925, 1.6782) .. controls (-0.2179, 1.7266) and (-0.1417, 1.6927) .. (-0.0671, 1.6443) -- cycle;
+\fi
+%
+% Teeth %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ifmarmot@teeth
+  \fill[\marmot@body!50!black] (0.048,1.413) rectangle (-0.048,1.373);
+  \fill[\marmot@teeth] (-0.045,1.407) rectangle (-0.004,1.376);
+  \fill[\marmot@teeth] (0.045,1.407) rectangle (0.004,1.376);  
+\fi
+%
+}
+

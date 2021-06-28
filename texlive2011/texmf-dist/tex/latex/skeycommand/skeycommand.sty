@@ -1,0 +1,494 @@
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
+%                                                                          %
+% This is file 'skeycommand.sty', version 0.3.                             %
+%                                                                          %
+% This package and accompanying files may be distributed and/or            %
+% modified under the conditions of the LaTeX Project Public License,       %
+% either version 1.3 of this license or any later version. The latest      %
+% version of this license is in http://www.latex-project.org/lppl.txt      %
+% and version 1.3 or later is part of all distributions of LaTeX           %
+% version 2005/12/01 or later.                                             %
+%                                                                          %
+% The LPPL maintenance status of this software is 'author-maintained'.     %
+%                                                                          %
+% This software is provided 'as it is', without warranty of any kind,      %
+% either expressed or implied, including, but not limited to, the          %
+% implied warranties of merchantability and fitness for a particular       %
+% purpose.                                                                 %
+%                                                                          %
+% Copyright (c) 2010 Ahmed Musa (a.musa@rocketmail.com).                   %
+%                                                                          %
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
+
+\begingroup
+\catcode064 11% @
+\catcode123 01% {
+\catcode125 02% }
+\def\SKC@tempa{\endgroup
+  \edef\SKC@restorecodes{%
+    \catcode035 \the\catcode035% #
+    \catcode064 \the\catcode064% @
+    \catcode123 \the\catcode123% {
+    \catcode125 \the\catcode125% }
+    \catcode061 \the\catcode061% =
+  }%
+}
+\SKC@tempa
+\catcode035 06% #
+\catcode061 12% =
+\catcode064 11% @
+\catcode123 01% {
+\catcode125 02% }
+\def\SKC@catcode#1#2{%
+  \edef\SKC@restorecodes{%
+    \SKC@restorecodes
+    \catcode#1 \the\catcode#1\relax
+  }%
+  \catcode#1 #2\relax
+}
+\AtEndOfPackage{%
+  \SKV@AfterPackageEnd{%
+    \SKC@restorecodes
+    \SKV@Undef!{\SKC@catcode\SKC@restorecodes}%
+  }%
+}
+\SKC@catcode{032}{10}% SP
+\SKC@catcode{033}{12}% !
+\SKC@catcode{036}{03}% $
+\SKC@catcode{038}{03}% &
+\SKC@catcode{040}{12}% (
+\SKC@catcode{041}{12}% )
+\SKC@catcode{042}{12}% *
+\SKC@catcode{043}{12}% +
+\SKC@catcode{044}{12}% ,
+\SKC@catcode{045}{12}% -
+\SKC@catcode{047}{12}% /
+\SKC@catcode{058}{12}% :
+\SKC@catcode{059}{12}% ;
+\SKC@catcode{063}{12}% ?
+\SKC@catcode{091}{12}% [
+\SKC@catcode{093}{12}% ]
+\SKC@catcode{126}{13}% ~
+\def\SKC@rcsid$#1: #2 #3 #4 #5${#4 v#3}
+\ProvidesPackage{skeycommand}[%
+  \SKC@rcsid
+  $Id: skeycommand.sty,v 0.3 2010/05/21 09:00:00 Ahmed Musa $
+  Defining new commands and environments using keys (AM)
+]
+\NeedsTeXFormat{LaTeX2e}[1996/12/01]
+\ifcase0%
+  \ifx\eTeXversion\SKC@undefined1\else\ifnum\eTeXversion<\tw@1\fi\fi
+\else
+  \PackageError{skeycommand}%
+    {eTeX not loaded or old version}%
+    {This package requires eTeX version 2 or later.}%
+  \endinput
+\fi
+\@ifpackageloaded{skeyval}{%
+  \@ifpackagecurrent{skeyval}{2010/05/01}{}{%
+    \PackageError{skeycommand}%
+      {Your loaded version of skeyval package is not current}%
+      {You need version 0.7 (or higher) of skeyval package.}%
+    \endinput
+  }%
+}{%
+  \RequirePackage[keyparser=;,keyprefix=KV,keyfamily=skeycommand,
+    macroprefix=skc@]{skeyval}[2010/05/01]
+}
+\TestProvidedCommand\newdef{}{\let\newdef\SKV@newdef}
+\TestProvidedCommand\robustdef{}{\let\robustdef\SKV@pdef}
+\TestProvidedCommand\redef{}{\let\redef\SKV@redef}
+\UseSkeyvalSetkeys
+\ReserveMacroPrefixNames*{SKC@}
+\ReserveFamilyNames*{skeycommand}
+\robustdef*\SKC@info#1{\PackageInfo{skeycommand}{#1\@gobble}}
+\robustdef*\SKC@warn#1{\PackageWarningNoLine{skeycommand}{#1}}
+\robustdef*\SKC@err#1#2{\PackageError{skeycommand}{#1}{#2}}
+\NewBooleans[SKC@sw]{a}[false]
+\newbiboolkeys[KV]{skeycommand}[SKC@]{verbose}[true]{silent}{%
+  \setkeys[KV]{skeyval}{verbose=true}}%
+    {\setkeys[KV]{skeyval}{verbose=false}}
+\DeclareOptionX*{\SKC@warn{Unknown option '\CurrentOption' ignored}}
+\ExecuteOptionsX[KV]<skeycommand>{verbose=false}
+\ProcessOptionsX*[KV]<skeycommand>\relax
+\robustdef*\skeycommand#1{\setkeys[KV]{skeycommand}{#1}}
+\newdef*\SKC@fdigit#1{%
+  \let\SKC@resvda\@empty
+  \SKV@tfor{#1}\SKC@resvdb{%
+    \SKV@addtolist[,]\SKC@resvda\SKC@resvdb
+  }%
+  \SKC@swatrue
+  \XKV@whilist\SKC@resvda\SKC@resvdb\ifSKC@swa\fi{%
+    \SKV@in@o\SKC@resvdb{0123456789}\SKC@swafalse\SKC@swatrue
+  }%
+}
+\let\SKC@rskey\SKV@resolvekey
+\newdef*\SKV@everyeoehook{}
+\robustdef*\everyeoe#1{%
+  \SKV@ifempty{#1}%
+    {\let\SKV@everyeoehook\@empty}%
+    {\SKV@prepto!\SKV@everyeoehook{#1}}%
+}
+\everyeoe{\@ignoretrue}
+\robustdef*\newkeycmd{\@star@or@long\SKC@keycmd@i}
+\robustdef*\csnewkeycmd{\SKV@aftercs\newkeycmd}
+\SKV@emptycmds{\SKC@keycmdlist,\SKC@k@ycmdlist}
+\newdef*\SKC@keycmd@i#1{%
+  \SKV@ensurescape{#1}%
+  \def\SKC@keycmdname{#1}%
+  \edef\SKC@tfam{\expandafter\@gobble\string#1}%
+  \edef\SKC@pref{\SKV@threexp\SKV@carcube
+    \expandafter\@gobble\string#1xxx\@nil}%
+  \edef\SKC@pref{\SKC@pref @}%
+  \SKV@scantoksa{\SKC@tfam,\SKC@pref}%
+  \SKV@testopth\SKC@keycmd@ii\SKC@pref
+}
+\newdef\SKC@keycmd@ii<#1>{%
+  \SKV@ifnotblank{#1}\relax\SKC@nilprefix
+  \SKC@badprefix{#1}%
+  \edef\SKC@pref{#1}%
+  \edef\SKC@tempa##1{\skvoptions{##1,keyfamily=\SKC@tfam,
+    macroprefix=\SKC@pref}}%
+  \SKC@tempa{keyparser=;,keyprefix=KV}%
+  \SKV@testoptp\SKC@keycmd@iii{}%
+}
+\newdef\SKC@keycmd@iii(#1){%
+  \SKV@ifnotempty{#1}\relax\SKC@nilkeylist
+  \SKC@keycmd@iv{#1}%
+  \SKV@despacelist*\SKC@keycmdlist
+  \SKV@despacelist*\SKC@k@ycmdlist
+  \define@keylist*\SKC@keycmdlist
+  \edef\SKC@tempa{\setkeys[KV]{\SKC@tfam}{\SKC@k@ycmdlist}}%
+  \SKC@tempa
+  \SKV@testopt\SKC@keycmd@v{0}%
+}
+\newdef\SKC@keycmd@iv#1{%
+  \SKV@emptycmds!{\SKC@keycmdlist,\SKC@k@ycmdlist}%
+  \XKV@checksanitizea{#1}\SKC@tempa
+  \SKV@normalizea\SKC@tempa
+  \SKV@for*[,]\SKC@tempa\SKC@tempa{%
+    \expandafter\SKC@getkeyname\SKC@tempa==\@nil
+    \SKC@addtokeylist\SKC@tkey\SKC@tval
+  }%
+}
+\newdef\SKC@keycmd@v[#1]{%
+  \SKC@paramerr{#1}%
+  \SKV@testopt{\SKC@keycmd@vi[#1]}{}%
+}
+\let\SKC@tag\z@
+\newdef\SKC@keycmd@vi[#1][#2]#3{%
+  \let\SKC@tag\@ne
+  \edef\SKC@resvda##1##2{%
+    ##1[\the\numexpr#1+1]\SKV@ifblank{#2}{}{[\unexpanded{#2}]}%
+    {\setkeys[KV]{\SKC@tfam}{####\the\numexpr#1+1}##2}%
+  }%
+  \SKV@ifx\l@ngrel@x\relax
+    {\def\SKC@resvdb{\newtwooptcmd*}}%
+    {\let\SKC@resvdb\newtwooptcmd}%
+  \SKC@resvda{\expandafter\SKC@resvdb\SKC@keycmdname}{#3}%
+  \let\SKC@tag\z@
+}
+\robustdef*\renewkeycmd{\@star@or@long\SKC@renewkeycmd@i}
+\robustdef*\csrenewkeycmd{\SKV@aftercs\renewkeycmd}
+\newdef*\SKC@renewkeycmd@i#1{%
+  \SKV@ifdef#1{}%
+    {\SKC@err{Command '\string#1' undefined}%
+      {Undefined command '\string#1' can't be redefined.\SKV@MB
+        Use '\string\newkeycmd' instead.}%
+    }%
+  \let\SKV@ifdefinable\SKC@rc@ifdefinable
+  \SKC@keycmd@i#1%
+}
+\robustdef*\newkeyenviron{\@star@or@long\SKC@keyenviron@i}
+\robustdef*\csnewkeyenviron{\SKV@aftercs\newkeyenviron}
+\newdef\SKC@keyenviron@i#1{%
+  \SKV@ensurenoscape{#1}%
+  \SKV@ifcsdef{#1}{%
+    \SKC@err{You have submitted an existing macro '\string#1' as an\SKV@MB
+      environment name}{'\string#1' not allowed as environment name.}%
+  }{}%
+  \edef\SKC@tfam{#1}%
+  \edef\SKC@pref{\SKV@carcube#1xxx\@nil @}%
+  \edef\SKC@keycmdname{\SKV@noexpcs{#1}}%
+  \SKV@testopth\SKC@keyenviron@ii\SKC@pref
+}
+\newdef\SKC@keyenviron@ii<#1>{%
+  \SKV@ifnotblank{#1}\relax\SKC@nilprefix
+  \SKC@badprefix{#1}%
+  \edef\SKC@pref{#1}%
+  \edef\SKC@tempa##1{%
+    \skvoptions{##1,keyfamily=\SKC@tfam,macroprefix=\SKC@pref}}%
+  \SKC@tempa{keyparser=;,keyprefix=KV}%
+  \SKV@testoptp\SKC@keyenviron@iii{}%
+}
+\newdef\SKC@keyenviron@iii(#1){%
+  \SKV@ifnotempty{#1}\relax\SKC@nilkeylist
+  \SKC@keycmd@iv{#1}%
+  \define@keylist*\SKC@keycmdlist
+  \edef\SKC@tempa{\setkeys[KV]{\SKC@tfam}{\SKC@k@ycmdlist}}%
+  \SKC@tempa
+  \SKV@testopt\SKC@keyenviron@v{0}%
+}
+\newdef\SKC@keyenviron@v[#1]{%
+  \SKC@paramerr{#1}%
+  \SKV@testopt{\SKC@keyenviron@vi[#1]}{}%
+}
+\newdef\SKC@keyenviron@vi[#1][#2]#3#4{%
+  \let\SKC@tag\@ne
+  \edef\SKC@resvda##1##2{%
+    ##1[\the\numexpr#1+1]\SKV@ifblank{#2}{}{[\unexpanded{#2}]}%
+    {\setkeys[KV]{\SKC@tfam}{####\the\numexpr#1+1}##2}%
+  }%
+  \SKV@ifx\l@ngrel@x\relax{%
+    \def\SKC@resvdb{\SKV@csdef*}%
+    \def\SKC@resvdc{\newtwooptcmd*}%
+  }{%
+    \let\SKC@resvdb\SKV@csdef
+    \let\SKC@resvdc\newtwooptcmd
+  }%
+  \SKC@resvdb{end\SKC@tfam}{#4\SKV@everyeoehook}%
+  \SKC@resvda{\expandafter\SKC@resvdc\SKC@keycmdname}{#3}%
+  \let\SKC@tag\z@
+}
+\robustdef*\renewkeyenviron{\@star@or@long\SKC@renewkeyenviron@i}
+\robustdef*\csrenewkeyenviron{\SKV@aftercs\renewkeyenviron}
+\newdef*\SKC@renewkeyenviron@i#1{%
+  \SKV@ifcsdef{#1}{}{%
+    \SKC@err{Environment '#1' undefined}%
+      {Undefined environment '#1' can't be redefined.}%
+  }%
+  \SKV@Undef+!{#1,end#1}%
+  \SKC@keyenviron@i{#1}%
+}
+\newdef\SKC@getkeyname#1=#2=#3\@nil{%
+  \XKV@g@tkeyname#1=\@nil\SKC@tkey
+  \SKV@expnext\SKV@sp@def\SKC@tkey\SKC@tkey
+  \def\SKC@tval{#2}%
+  \SKV@oifempty{\SKC@tkey}{%
+    \SKV@ifempty{#2}{}%
+      {\SKC@err{No key specified for value '#2'}%
+        {Key required for value '#2'.}%
+      }%
+  }{}%
+  \SKV@ifnotempty{#3}{}%
+    {\SKC@err{No value specified for key '#1'}%
+      {Value required for key '#1'.}}%
+}
+\newdef\SKC@addtokeylist#1#2{%
+  \SKV@checkchoice{#2}{true,on,false,off}{%
+    \def\SKC@tempa{bool}}{\def\SKC@tempa{cmd}}%
+  \SKV@oifblank{#1}{}{%
+    \edef\SKC@resvd##1{\SKV@addtolist![;]##1{\SKC@tempa,%
+      \SKV@expox{#1},\SKV@expox{#2},}}%
+    \SKC@resvd\SKC@keycmdlist
+    \SKV@expnext\SKC@fpointers#1%
+    \edef\SKC@resvd##1{\SKV@addtolist![,]##1{\SKV@expox\SKC@resa
+      =\SKV@expox{#2}}}%
+    \SKC@resvd\SKC@k@ycmdlist
+  }%
+}
+\SKV@def*\SKC@fpointers#1{%
+  \SKC@rskey{#1}\uservalue\savevalue\@nil\SKC@resa{}%
+  {\SKC@rskey{#1}\guservalue\savevalue\@nil\SKC@resa{}%
+  {\SKC@rskey{#1}\savevalue\uservalue\@nil\SKC@resa{}%
+  {\SKC@rskey{#1}\gsavevalue\uservalue\@nil\SKC@resa{}%
+  {\SKC@rskey{#1}\guservalue\gsavevalue\@nil\SKC@resa{}%
+  {\SKC@rskey{#1}\gsavevalue\guservalue\@nil\SKC@resa{}%
+  {\SKC@rskey{#1}\uservalue\@nil\SKC@resa{}%
+  {\SKC@rskey{#1}\guservalue\@nil\SKC@resa{}%
+  {\SKC@rskey{#1}\savevalue\@nil\SKC@resa{}%
+  {\SKC@rskey{#1}\gsavevalue\@nil\SKC@resa{}{}}}}}}}}}}%
+}
+\robustdef*\newtwooptcmd{\@star@or@long\SKC@newcommand@i}
+\newdef*\SKC@newcommand@i#1{\SKV@testopt{\SKC@newcommand@ii#1}0}
+\newdef*\SKC@newcommand@ii#1[#2]{%
+  \SKV@if@brack{\SKC@xargdef#1[#2]}{\SKC@argdef#1[#2]}}
+\newdef\SKC@argdef#1[#2]#3{\SKV@ifdefinable#1{\SKC@yargdef#1\@ne{#2}{#3}}}
+\newdef\SKC@xargdef#1[#2][#3]#4{%
+  \SKV@ifdefinable#1{%
+    \edef\SKC@resvda##1##2##3{%
+      \def##1{##2\SKV@noexpcs{\string#1}{##3}}}%
+    \SKC@resvda#1{\SKC@protected@testopt#1}{#3}%
+    \SKV@aftercs\SKC@yargdef{\string#1}\tw@{#2}{#4}%
+  }%
+}
+\newdef\SKC@protected@testopt#1{%
+  \SKV@ifx\protect\@typeset@protect\SKV@testopt{\protect#1}%
+}
+\newdef\SKC@yargdef#1#2#3{%
+  \SKV@ifx{#2}\tw@
+    {\edef\SKC@shear##11{[\detokenize{####1}]}}%
+    {\let\SKC@shear\@gobble}%
+  \SKV@expnext\SKC@yargd@f{\the\numexpr#3}#1%
+}
+\newdef*\SKC@dotparse@a#1{%
+  \SKV@toks{}%
+  \edef\SKC@resa{\unexpanded{#1}.}%
+  \def\SKC@resb##1.##2\@nil{%
+    \SKV@in@o{[}{##1}%
+      {\SKV@toks\expandafter{\the\SKV@toks##1}}%
+      {\SKV@toks\expandafter{\the\SKV@toks{##1}}}%
+    \SKV@ifempty{##2}{}{\SKC@resb##2\@nil}%
+  }%
+  \expandafter\SKC@resb\SKC@resa\@nil
+  \edef\SKC@resa{\the\SKV@toks}%
+}
+\newdef*\SKC@dotparse@b#1{%
+  \SKV@toks{}%
+  \edef\SKC@resa{\unexpanded{#1}.}%
+  \def\SKC@resb##1.##2\@nil{%
+    \SKV@toks\expandafter{\the\SKV@toks##1}%
+    \SKV@ifempty{##2}{}{\SKC@resb##2\@nil}%
+  }%
+  \expandafter\SKC@resb\SKC@resa\@nil
+  \edef\SKC@resa{\the\SKV@toks}%
+}
+\newdef\SKC@yargd@f#1#2{%
+  \edef\SKC@resvdb{\detokenize{0####1.####2.####3.####4.####5.%
+    ####6.####7.####8.####9.#####1}}%
+  \def\SKC@resvda##1#1##2\@nil{%
+    \def\SKC@resvdb{##1}%
+    \def\SKC@resvda####1{%
+      \def\SKC@resvda########1####1########2\@nil{%
+        \SKV@ifempty{########1}{%
+          \edef\SKC@tempa{\SKC@shear####1########2#1}%
+          \let\SKC@tempb\SKC@tempa
+          \let\SKC@tempc\SKC@tempa
+        }{%
+          \edef\SKC@resvda{\SKC@shear########1####1}%
+          \SKV@expnext\SKC@dotparse@a\SKC@resvda
+          \let\SKC@tempa\SKC@resa
+          \SKV@expnext\SKC@dotparse@b\SKC@resvda
+          \let\SKC@tempb\SKC@resa
+          \edef\SKC@resvda{########2#1}%
+          \SKV@expnext\SKC@dotparse@b\SKC@resvda
+          \edef\SKC@tempc{\SKC@tempb(\SKC@resa)}%
+        }%
+      }%
+      \expandafter\SKC@resvda\SKC@resvdb\@nil
+    }%
+    \SKV@ifnum{#1}=\z@{%
+      \SKV@emptycmds{\SKC@tempa,\SKC@tempb,\SKC@tempc}%
+    }{%
+      \SKV@expnext\SKC@resvda{\the\numexpr#1-1}%
+    }%
+  }%
+  \expandafter\SKC@resvda\SKC@resvdb\@nil
+  \SKV@scantoksa{\SKC@tempa,\SKC@tempb,\SKC@tempc}%
+  \edef\SKC@resvda{\expandafter\@gobble\string#2@SKC}%
+  \def\SKC@resvdc{%
+    \edef\SKC@resvdb{\l@ngrel@x\def\SKV@noexpcs\SKC@resvda\SKC@tempc}%
+    \SKC@resvdb
+  }%
+  \edef\SKC@resvdb{%
+    \ifnum#1<\tw@
+      \ifx\SKC@shear\@gobble
+        \ifx\SKC@tag\@ne
+          \l@ngrel@x\def\noexpand#2%
+            {\noexpand\SKV@testoptp\SKV@noexpcs\SKC@resvda{}}%
+          \unexpanded{\edef\SKC@resvdb{\l@ngrel@x\def\SKV@noexpcs
+            \SKC@resvda(\SKC@tempc)}\SKC@resvdb}%
+        \else
+          \l@ngrel@x\def\noexpand#2\SKC@tempb
+            {\SKV@noexpcs\SKC@resvda{\SKC@tempa}}%
+          \noexpand\SKC@resvdc
+        \fi
+      \else
+        \l@ngrel@x\def\noexpand#2\SKC@tempb
+          {\SKV@noexpcs\SKC@resvda\SKC@tempa}%
+        \noexpand\SKC@resvdc
+      \fi
+    \else
+      \l@ngrel@x\def\noexpand#2\SKC@tempb
+        {\noexpand\SKV@testoptp{\SKV@noexpcs\SKC@resvda\SKC@tempa}{}}%
+      \noexpand\SKC@resvdc
+    \fi
+  }%
+  \SKC@resvdb
+}
+\newdef\SKC@reargdef#1[#2]{\SKC@yargdef#1\@ne{#2}}
+\robustdef*\renewtwooptcmd{\@star@or@long\SKC@renewcommand@i}
+\newdef*\SKC@renewcommand@i#1{%
+  \SKV@ifdef#1{}%
+    {\SKC@err{Command '\string#1' undefined}%
+      {Command '\string#1' can't be redefined.}%
+    }%
+  \let\SKV@ifdefinable\SKC@rc@ifdefinable
+  \SKC@newcommand@i#1%
+}
+\let\SKC@ifd@finable\SKV@ifdefinable
+\newdef\SKC@rc@ifdefinable#1#2{\let\SKV@ifdefinable\SKC@ifd@finable#2}
+\newdef*\newtwooptenviron{\@star@or@long\SKC@newenvironment@i}
+\newdef*\SKC@newenvironment@i#1{\SKV@testopt{\SKC@newenv@a#1}0}
+\newdef*\SKC@newenv@a#1[#2]{%
+  \SKV@if@brack{\SKC@newenv@b#1[#2]}{\SKC@newenv{#1}{[#2]}}}
+\newdef*\SKC@newenv@b#1[#2][#3]{\SKC@newenv{#1}{[#2][{#3}]}}
+\newdef*\renewtwooptenviron{\@star@or@long\SKC@renewenvironment@i}
+\newdef*\SKC@renewenvironment@i#1{%
+  \SKV@ifcsdef{#1}{}{%
+    \SKC@err{Environment '#1' undefined}%
+      {Undefined environment '#1' can't be redefined.}%
+  }%
+  \SKV@Undef+!{#1,end#1}%
+  \SKC@newenvironment@i{#1}%
+}
+\newdef\SKC@newenv#1#2#3#4{%
+  \SKV@ifcsdef{#1}{}{\SKV@csletcs*{#1}{end#1}}%
+  \SKV@aftercs\SKC@newcommand@i{#1}#2{#3}%
+  \l@ngrel@x\@namedef{end#1}{#4}%
+}
+\robustdef*\SKC@nilprefix{%
+  \SKC@err{%
+    No macro prefix submitted. The prefix will\SKV@MB
+    be used to hold your values for the declared keys\SKV@MB
+  }{%
+    Keycommand requires macro prefix. I guess you\SKV@MB
+    submitted an empty prefix using '<>'. I can use\SKV@MB
+    the default macro prefix (the first three\SKV@MB
+    letters of your key command) if you don't submit\SKV@MB
+    any prefix. In that case leave out '<>' from your\SKV@MB
+    command.
+  }%
+}
+\robustdef*\SKC@badprefix#1{%
+  \SKC@fdigit{#1}%
+  \unless\ifSKC@swa\SKV@afterfi
+    \SKC@err{%
+      '\string#1' is likely a wrong macro prefix
+    }{%
+      I expected letters here, not digits.\SKV@MB
+      OK, digits are actually acceptable as macro\SKV@MB
+      prefix but you need to be wary of them if they\SKV@MB
+      appear in your control sequences. Also, I fear\SKV@MB
+      you may have wrongly entered the number of\SKV@MB
+      arguments of your key command here, instead\SKV@MB
+      of putting it in the right place (in square brackets).
+    }%
+  \fi
+}
+\robustdef*\SKC@nilkeylist{%
+  \SKC@err{%
+    No key list submitted or wrong command syntax.\SKV@MB
+    Please see the user guide.
+  }{%
+    Keycommand requires keys. Perhaps you submitted\SKV@MB
+    an empty key list, or your arguments to command\SKV@MB
+    are inconsistent. Please see the user guide.\SKV@MB
+  }%
+}
+\newdef*\SKC@paramerr#1{%
+  \SKV@ifnum{#1}<9{}{%
+    \SKC@err{%
+      Number '\string#1' of parameters too large
+    }{%
+      You're limited to 8 parameters here.\SKV@MB
+      If necessary, you can use keys to submit\SKV@MB
+      more variables. In fact, you can use keys to\SKV@MB
+      submit all your variables.
+    }%
+  }%
+}
+
+\endinput
+
+%%% End of file skeycommand.sty %%%

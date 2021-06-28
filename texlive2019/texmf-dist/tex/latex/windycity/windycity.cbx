@@ -1,0 +1,509 @@
+% Last modified: Tue 02 Apr 2019 11:43:21 AM CDT
+
+% Copyright (c) 2019 Brian Michael Chase.
+%
+% Permission is granted to copy, distribute and/or modify this
+% software under the terms of the LaTeX Project Public License (LPPL),
+% version 1.3.
+%
+% The LPPL maintenance status of this software is 'author-maintained'.
+%
+% This software is provided 'as is', without warranty of any kind,
+% either expressed or implied, including, but not limited to, the
+% implied warranties of merchantability and fitness for a particular
+% purpose.
+
+\ProvidesFile{windycity.cbx}[2019/04/02 Windy City citation style for
+  biblatex]
+\@ifpackagelater{biblatex}{2017/11/04}
+  {}
+  {\PackageError{biblatex}
+     {Outdated 'biblatex' package}
+     {Windy City is for biblatex v3.8 and above.\MessageBreak
+      You are using: '\csuse{ver@biblatex.sty}'.\MessageBreak
+      This is a fatal error. I'm aborting now.}%
+   \endinput}%
+
+% This file contains material only for formatting notes and
+% parenthetical citations. For content that is also used for
+% bibliographies and reference lists, see windycity.bbx.
+
+%%%%%%%%%%%%%%%%%%%
+%%  Preliminary  %%
+%%%%%%%%%%%%%%%%%%%
+
+\InitializeCitationStyle{\let\crossreflist\empty}%
+\DeclareAutoPunctuation{.,;:!?}
+\DeclareCitePunctuationPosition{cite}{r}
+\AtEveryCite{%
+  \global\togglefalse{bibliography}%
+  \global\togglefalse{multicite}%
+  \global\togglefalse{cbx@first}%
+  \global\togglefalse{cbx@loccit}%
+  \AtEveryItem}%
+\AtEveryMultiCite{\toggletrue{multicite}}%
+
+% To facilitate uniform output, citations in notes always end with
+% '\addperiod' (see cite:postnote). This makes '\footcite{something}'
+% and '\footnote{\cite{something}}' functionally equivalent. To
+% prevent an extra period from printing in very rare cases, as when
+% '\footcite{something}' ends with a capital letter, remove
+% '\addperiod' from the commands below:
+
+\renewcommand{\bibfootnotewrapper}[1]{%
+  \bibsentence#1}%
+\renewcommand{\bibendnotewrapper}[1]{%
+  \bibsentence#1}%
+
+% Protect commas against abbreviation dots and terminal punctuation
+% marks. Note '\addspace'. Using '\space' there causes problems.
+
+\renewcommand*{\newunitpunct}{\ifterm{,\addspace}{\addcomma\space}}%
+
+% Prevents errant space after a colon.
+
+\renewcommand*{\multicitedelim}{\setunit{\addsemicolon\space}}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Citation Commands  %%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\DeclareCiteCommand{\cite}
+  {\usebibmacro{prenote}}%
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}%
+  {\multicitedelim}%
+  {\usebibmacro{cite:postnote}}%
+
+\DeclareCiteCommand*{\cite}
+  {\usebibmacro{prenote}}%
+  {\usebibmacro{citeindex}%
+   \toggletrue{noauth}%
+   \usebibmacro{cite}}%
+  {\multicitedelim}%
+  {\usebibmacro{cite:postnote}}%
+
+\DeclareCiteCommand{\footcite}[\mkbibfootnote]
+  {\usebibmacro{prenote}}%
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}%
+  {\multicitedelim}%
+  {\usebibmacro{cite:postnote}}%
+
+\DeclareCiteCommand*{\footcite}[\mkbibfootnote]
+  {\usebibmacro{prenote}}%
+  {\usebibmacro{citeindex}%
+   \toggletrue{noauth}%
+   \usebibmacro{cite}}%
+  {\multicitedelim}%
+  {\usebibmacro{cite:postnote}}%
+
+\DeclareCiteCommand{\parencite}[\mkbibparens]
+  {\usebibmacro{prenote}}%
+  {\usebibmacro{citeindex}%
+   \usebibmacro{parencite}}%
+  {\multicitedelim}%
+  {\usebibmacro{postnote}}%
+
+\DeclareCiteCommand*{\parencite}[\mkbibparens]
+  {\usebibmacro{prenote}}%
+  {\usebibmacro{citeindex}%
+   \toggletrue{noauth}%
+   \usebibmacro{parencite}}%
+  {\multicitedelim}%
+  {\usebibmacro{postnote}}%
+
+\DeclareCiteCommand{\smartcite}[\iffootnote{}{\mkbibfootnote}]
+  {\usebibmacro{prenote}}%
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}%
+  {\multicitedelim}%
+  {\usebibmacro{cite:postnote}}%
+
+\DeclareCiteCommand*{\smartcite}[\iffootnote{}{\mkbibfootnote}]
+  {\usebibmacro{prenote}}%
+  {\usebibmacro{citeindex}%
+   \toggletrue{noauth}%
+   \usebibmacro{cite}}%
+  {\multicitedelim}%
+  {\usebibmacro{cite:postnote}}%
+
+\DeclareMultiCiteCommand{\smartcites}[\iffootnote{}\mkbibfootnote]
+  {\smartcite}{\multicitedelim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Parenthetical Citations  %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newbibmacro*{parencite}{%
+  \usebibmacro{test:collection}%
+  \usebibmacro{test:crossref}%
+  \ifboolexpr{ test \ifciteibid
+               and not test \iffirstonpage}
+    {\iffieldundef{postnote}
+       {\printtext[bibhyperref]{%
+          \usebibmacro{parencite:date}%
+          \usebibmacro{cite:volume}}}
+       {}}
+    {\printtext[bibhyperref]{%
+       \usebibmacro{parencite:long}%
+       \usebibmacro{cite:volume}}}}
+
+% See note for 'crossref+long'.
+
+\newbibmacro*{test:crossref}{%
+  \ifboolexpr{ test {\iffieldundef{crossref}}
+               or test {\iffieldundef{title}}}
+    {}
+    {\xifinlist{\thefield{crossref}}{\crossreflist}
+       {\stepcounter{\thefield{crossref}}}
+       {\listxadd{\crossreflist}{\thefield{crossref}}%
+        \ifcsdef{c@\thefield{crossref}}
+          {\setcounter{\thefield{crossref}}{0}}%
+          {\newcounter{\thefield{crossref}}}}}}
+
+\newbibmacro*{parencite:date}{%
+  \iffieldundef{labelyear}
+    {}
+    {\usebibmacro{parencite:origyear}%
+     \ifboolexpr{ test {\iffieldundef{year}}
+                  or test {\iffieldequalstr{year}{forthcoming}}}
+       {\addcomma}%
+       {}% needs '%'
+     \usebibmacro{labeldate+endyear}%
+     \printfield{extradate}}}
+
+\newbibmacro*{parencite:origyear}{%
+  \iffieldundef{origyear}
+    {}
+    {\printfield[brackets]{origyear}%
+     \space}}%
+
+\newbibmacro*{parencite:long}{%
+  \iffieldundef{shorthand}
+    {\usebibmacro{parencite:auth+title}}%
+    {\printfield{shorthand}}%
+  \setunit{\addspace}% not '\setunit{\space}'
+  \usebibmacro{parencite:date}}%
+
+\newbibmacro*{parencite:auth+title}{%
+  \iftoggle{noauth}
+    {}
+    {\ifboolexpr{ test {\ifnameundef{labelname}}
+                  or test {\iffieldundef{labelyear}}}
+       {\iffieldundef{label}
+          {\usebibmacro{parencite:journal}}%
+          {\printfield{label}}}
+       {\global\toggletrue{cbx@short}%
+        \renewcommand*{\cbx@deflabel}{labelname}%
+        \clearfield{handle}%
+        \clearfield{nameaddon}%
+        \usebibmacro{author+bookauthor+etc}}}}
+
+\newbibmacro*{parencite:journal}{%
+  {\ifentrytype{article}
+    {\iffieldundef{shortjournal}
+       {\renewcommand*{\xtitle}{journal}%
+        \usebibmacro{longtitle}}%
+       {\printfield[journal]{shortjournal}}}
+    {\printfield[citetitle]{labeltitle}}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Citations in Notes  %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newbibmacro*{cite}{%
+  \usebibmacro{test:multicite}%
+  \ifciteseen
+    {\usebibmacro{test:collection}%
+     \renewcommand*{\cbx@deflabel}{labelname}%
+     \printtext[bibhyperref]{\usebibmacro{cite:seen}}}
+    {\printtext[bibhyperref]{\usebibmacro{cite:new}}}% needs '%'
+  \usebibmacro{savefields}}%
+
+\newbibmacro*{test:multicite}{%
+  \ifboolexpr{ test {\iffieldequals{namehash}{\bbx@lasthash}}
+               and togl {multicite}
+               and togl {short}}
+   {\toggletrue{noauth}}%
+   {}}
+
+\newbibmacro*{cite:seen}{%
+  \iffieldundef{shorthand}
+    {\ifboolexpr{ test \ifciteibid
+                  and togl {short}
+                  and not test \iffirstonpage}
+       {\usebibmacro{cite:ibid}}%
+       {\usebibmacro{cite:short}}}
+    {\printfield{shorthand}%
+     \usebibmacro{cite:volume}}}
+
+\newbibmacro*{cite:ibid}{%
+  \iftoggle{ibid}
+    {\bibcpstring{ibidem}%
+     \ifloccit
+       {\global\toggletrue{cbx@loccit}}%
+       {\usebibmacro{cite:volume}}}
+    {\global\toggletrue{cbx@short}%
+     \ifentrytype{review}
+       {\usebibmacro{ibid:review}}%
+       {\usebibmacro{author+bookauthor+etc}%
+        \iftoggle{noauth}
+          {\usebibmacro{title+labelyear}}%
+          {}% needs '%'
+        \usebibmacro{cite:volume}}}}
+
+\newbibmacro*{ibid:review}{%
+  \ifnameundef{author}
+    {\bibcpstring{reviewnoauth}%
+     \space
+     \usebibmacro{title+labelyear}}%
+    {\usebibmacro{author+bookauthor+etc}}%
+  \usebibmacro{cite:volume}}%
+
+\newbibmacro*{cite:short}{%
+  \global\toggletrue{cbx@short}%
+  \ifentrytype{review}
+    {\usebibmacro{short:review}}%
+    {\usebibmacro{author+bookauthor+etc}%
+     \usebibmacro{title+labelyear}%
+     \usebibmacro{cite:volume}}}
+
+\newbibmacro*{short:review}{%
+  \ifnameundef{author}
+    {\bibcpstring{reviewnoauth}}%
+    {\usebibmacro{author+bookauthor+etc}%
+     \bibstring{review}}%
+  \space
+  \renewcommand*{\xtitle}{book}%
+  \usebibmacro{title+labelyear}%
+  \usebibmacro{cite:volume}}%
+
+\newbibmacro*{cite:volume}{%
+  \newunit
+  \iftoggle{swapvol}
+    {\ifboolexpr{ togl {collection:bk}
+                  or togl {collection:ib}}
+       {\usebibmacro{volume+page}}%
+       {}}
+    {}}
+
+\newbibmacro*{volume+page}{%
+  \iffieldundef{volume}
+    {}
+    {\iffieldpages{postnote}
+       {\printfield[noformat]{volume}%
+        \addcolon}%
+       {\printfield{volume}}}}
+
+\newbibmacro*{cite:new}{%
+  \global\toggletrue{cbx@first}%
+  \usebibmacro{deflabel}%
+  \iftoggle{firstshort}
+    {\usebibmacro{cite:short}}%
+    {\usebibmacro{crossref+long}}}
+
+% By default, idemtracker is 'false'. As such, '\ifciteidem' returns
+% false. With idemtracker set to 'true' (or to some value that implies
+% 'true') the test below will print 'labelname' if it matches that of
+% the previous citation.
+
+\newbibmacro*{deflabel}{%
+  \ifboolexpr{ test {\ifciteidem}
+               or togl {firstshort}}
+    {\renewcommand*{\cbx@deflabel}{labelname}}%
+    {\renewcommand*{\cbx@deflabel}{default}}}
+
+% Checking for 'title' below helps if you cross-reference volumes to a
+% collection with entries containing just 'volume' and 'crossref'
+% fields. Perhaps justifiable in very rare cases.
+
+\newbibmacro*{crossref+long}{%
+  \ifboolexpr{ test {\iffieldundef{crossref}}
+               or test {\iffieldundef{title}}}
+    {\usebibmacro{cite:long}}%
+    {\xifinlist{\thefield{crossref}}{\crossreflist}
+       {\stepcounter{\thefield{crossref}}%
+        \usebibmacro{author+title+etc}%
+        \usebibmacro{crossref}}%
+       {\listxadd{\crossreflist}{\thefield{crossref}}%
+        \ifcsdef{c@\thefield{crossref}}
+          {\setcounter{\thefield{crossref}}{0}}%
+          {\newcounter{\thefield{crossref}}}
+        \usebibmacro{cite:long}}}}
+
+\newbibmacro*{cite:long}{%
+  \printtext{%
+    \usedriver
+      {\DeclareNameAlias{sortname}{default}}%
+      {cite:\thefield{entrytype}}}}
+
+\newbibmacro*{savefields}{%
+  \iffieldundef{crossref}
+    {\let\cbx@keyhash\empty}%
+    {\savefield{crossref}{\cbx@keyhash}}}
+
+% See CMOS, 17th ed., 14.174, 14.177, 14.185, and 14.188.
+
+\newbibmacro*{colon+comma+etc}{%
+  \ifboolexpr{ test {\iffieldundef{pages}}
+               and test {\iffieldundef{postnote}}}
+    {}
+    {\ifboolexpr{ test {\iffieldundef{year}}
+                  and test {\iffieldundef{month}}
+                  and test {\iffieldundef{issue}}}
+       {\setunit{\addcolon}}%
+       {\ifboolexpr{ test {\iffieldundef{number}}
+                     and test {\iffieldundef{volume}}}
+          {\newunit}%
+          {\setunit{\addcolon\space}}}}}
+
+%%%%%%%%%%%%%%%%
+%%  Postnote  %%
+%%%%%%%%%%%%%%%%
+
+\newbibmacro*{cite:postnote}{%
+  \usebibmacro{postnote+etc}%
+  \usebibmacro{postpunct+etc}}%
+
+\newbibmacro*{postnote+etc}{%
+  \ifboolexpr{ togl {cbx@loccit}
+               and togl {ibid}}
+    {}
+    {\iftoggle{cbx@first}
+       {\usebibmacro{postnote:first}%
+        \usebibmacro{shorthand+intro}}%
+       {\usebibmacro{postnote}}}}
+
+\newbibmacro*{postnote:first}{%
+  \ifboolexpr{ test {\iffieldundef{postnote}}
+               and test {\iffieldundef{pages}}
+               and test {\iffieldundef{url}}}
+    {\usebibmacro{doi+url+etc}}%
+    {\usebibmacro{cite:pages}%
+     \usebibmacro{postnote}%
+     \usebibmacro{doi+url+etc}}}
+
+% If the postnote is empty, print the page ranges of journal articles.
+% See CMOS, 17th ed., 14.153, 14.167, and 14.174. As for incollection
+% and inbook entries, 14.106 seems to suggest the same, but the
+% example in 14.30 suggests otherwise. The examples in 14.108 only
+% muddy the waters further. For magazines, CMOS is clear that the
+% range can be left out. To do so, simply omit it from your
+% bibliography database.
+
+\newbibmacro*{cite:pages}{%
+  \iffieldundef{pages}
+    {}
+    {\ifboolexpr{ test {\ifentrytype{article}}
+                  or test {\ifentrytype{review}}}
+       {\iffieldundef{postnote}
+          {\printtext[bibhyperref]{\printfield{pages}}}
+          {}}
+       {}}}
+
+\renewbibmacro*{postnote}{%
+  \iffieldundef{postnote}
+    {}
+    {\printtext[bibhyperref]{\printfield{postnote}}}}
+
+\newbibmacro*{shorthand+intro}{%
+  \iffieldundef{shorthand}
+    {}
+    {\iffieldundef{shorthandintro}
+       {\setunit{\addspace}%
+        \printtext[parens]{%
+          \bibstring{citedas}\space
+          \printfield{shorthand}}}
+       {\setunit{\addspace}%
+        \printfield{shorthandintro}}}}
+
+\newbibmacro*{postpunct+etc}{%
+  \iflastcitekey
+    {\iffieldundef{postpunct}
+       {\addperiod}%
+       {}}
+    {}}
+
+\newbibmacro*{refworks}{%
+  \ifboolexpr{ test {\iffieldundef{howpublished}}
+               and test {\iffieldundef{year}}}
+    {}
+    {\setunit{\addspace}%
+     \iffieldundef{howpublished}
+       {\printtext[parens]{\printfield{year}}}
+       {\global\togglefalse{cbx@first}%
+        \printtext[parens]{%
+          \printfield{howpublished}%
+          \newunit
+          \printfield{version}%
+          \newunit
+          \printfield{year}}}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Bibliography Drivers for Notes  %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\DeclareBibliographyDriver{cite:article}{%
+  \usebibmacro{author+title+ed+note}%
+  \usebibmacro{articles}%
+  \usebibmacro{colon+comma+etc}}%
+
+\DeclareBibliographyDriver{cite:book}{%
+  \usebibmacro{author+collection+etc}%
+  \newunit
+  \usebibmacro{volume+page}}%
+
+\DeclareBibliographyDriver{cite:incollection}{%
+  \ifentrytype{letter}
+    {\toggletrue{noauth}}%
+    {}% needs '%'
+  \usebibmacro{author+title+etc}%
+  \usebibmacro{incollections}%
+  \newunit
+  \usebibmacro{volume+page}}%
+
+\DeclareBibliographyDriver{cite:misc}{%
+  \usebibmacro{author+bookauthor+etc}%
+  \usebibmacro{title+labelyear}%
+  \newunit
+  \printfield{usera}%
+  \newunit}%
+
+\DeclareBibliographyDriver{cite:online}{%
+  \usebibmacro{author+title+ed+note}%
+  \setunit*{\newunitpunct}% needs '*'
+  \usebibmacro{websites}%
+  \usebibmacro{issue+month+etc}{}%
+  \newunit}%
+
+\DeclareBibliographyDriver{cite:patent}{%
+  \usebibmacro{author+title+ed+note}%
+  \newunit
+  \printfield{number}%
+  \newunit}%
+
+\DeclareBibliographyDriver{cite:reference}{%
+  \printlist{organization}%
+  \usebibmacro{edition}{}%
+  \usebibmacro{refworks}%
+  \newunit
+  \bibstring{subverbo}\space
+  \usebibmacro{longtitle+titleaddon}%
+  \newunit
+  \renewcommand*{\pluga}{\bibstring{by}\space}%
+  \renewcommand*{\cbx@namelist}{author}%
+  \usebibmacro{printnames+etc}}%
+
+\DeclareBibliographyDriver{cite:review}{%
+  \usebibmacro{reviews}%
+  \usebibmacro{articles}%
+  \usebibmacro{colon+comma+etc}}%
+
+\DeclareBibliographyDriver{cite:thesis}{%
+  \usebibmacro{author+title+ed+note}%
+  \setunit{\addspace}% not '\setunit{\space}'
+  \printtext[parens]{\usebibmacro{inst+loc+date}}%
+  \newunit}%
+
+\endinput

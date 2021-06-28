@@ -1,0 +1,931 @@
+%%
+%% This is file `keyvaltable.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% keyvaltable.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2016-2020 by Richard Grewe <r-g+tex@posteo.net>
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.2 of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.2 or later is part of all distributions of LaTeX version
+%% 1999/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{keyvaltable}
+    [2020/04/05 v2.2 Package for filling tables using key-value lists]
+
+\RequirePackage{etoolbox}
+\RequirePackage{xkeyval}
+\RequirePackage{trimspaces}
+\PassOptionsToPackage{table}{xcolor}
+\RequirePackage{xcolor}
+\RequirePackage{booktabs}
+\newcommand\kvt@DeclareTrimListParser{%
+  \@ifstar{\kvt@DeclareTrimListParser@i{*}}
+          {\kvt@DeclareTrimListParser@i{}}}
+\newcommand\kvt@DeclareTrimListParser@i[3]{%
+  \DeclareListParser#1{#2}{#3}\expandafter
+  \patchcmd\csname etb@lst@\expandafter\@gobble\string#2\endcsname
+    {\etb@listitem}{\kvt@etb@listitem}{}
+    {\kvt@warn{Failed to patch a command defined by the etoolbox
+      package, possibly because etoolbox internals have changed.
+      You might encounter superfluous spaces.}}}
+\newcommand\kvt@etb@listitem[2]{%
+  \expandafter\expandafter\expandafter\kvt@etb@listitem@i
+  \expandafter\expandafter\expandafter{\trim@post@space@noexp{#2}}{#1}}
+\newcommand\kvt@etb@listitem@i[2]{\etb@listitem{#2}{#1}}
+\DeclareListParser{\kvt@dossvlist}{;}
+\kvt@DeclareTrimListParser*{\kvt@forpsvlist}{+}
+\kvt@DeclareTrimListParser{\kvt@dobrklist}{\\}
+\newcommand\kvt@error[2]{\PackageError{keyvaltable}{#1}{#2}}
+\newcommand\kvt@warn[1]{\PackageWarning{keyvaltable}{#1}}
+\newcommand\kvt@setkeys[2]{\setkeys[kvt]{#2}{#1}}
+\newcommand\kvt@setcmdkeys[2]{%
+  \expandafter\kvt@setkeys\expandafter{#1}{#2}}
+\newcommand\kvt@setcskeys[2]{%
+  \expandafter\kvt@setcmdkeys\expandafter{\csname #1\endcsname}{#2}}
+\newcommand\kvt@setkeys@nopresets[2]{%
+  \kvt@xkv@disablepreset[kvt]{#2}{\kvt@setkeys{#1}{#2}}}
+\newcommand\kvt@colsetkeys[2]{\setkeys[KeyValTable]{#1}{#2}}
+\newcommand\kvt@colsetcmdkeys[2]{%
+  \expandafter\kvt@colsetkeys\expandafter{#1}{#2}}
+\newcommand\kvt@colsetcskeys[2]{%
+  \expandafter\kvt@colsetcmdkeys\expandafter{\csname #1\endcsname}{#2}}
+\newcommand\kvtStrutted[2][\@firstofone]{%
+  \strut#1{#2}\ifhmode\expandafter\strut\fi}
+\newcommand\kvtSet[1]{%
+  \kvt@setkeys{#1}{global,Table,Column}%
+  \ifdefvoid\kvt@@presetqueue{}
+    {\kvt@@presetqueue\undef\kvt@@presetqueue}}
+\newcommand\kvt@lazypreset[2]{%
+  \appto\kvt@@presetqueue{\presetkeys[kvt]{#1}{#2}{}}}
+\newcommand\kvt@keysetter[5]{%
+  \ifdefvoid{#1}
+    {\kvt@lazypreset{#2}{#3=#4}}
+    {#5}}
+\newcommand\kvtTableOpt[1]{\csname cmdkvt@Table@#1\endcsname}
+\define@cmdkey[kvt]{Table}{rowbg}{}
+\define@cmdkey[kvt]{Table}{headbg}{}
+\define@cmdkey[kvt]{Table}{headalign}{}
+\define@cmdkey[kvt]{Table}{headformat}{}
+\define@cmdkey[kvt]{Table}{width}{}
+\define@boolkey[kvt]{Table}{showhead}{}
+\define@boolkey[kvt]{Table}{showrules}{}
+\define@choicekey[kvt]{Table}{captionpos}{t,b}
+  {\csdef{cmdkvt@Table@captionpos}{#1}}
+\define@choicekey[kvt]{Table}{valign}{t,c,b}
+  {\csdef{cmdkvt@Table@valign}{#1}}
+\define@choicekey[kvt]{Table}{halign}{l,c,r}
+  {\csdef{cmdkvt@Table@halign}{#1}}
+\define@key[kvt]{Table}{style}{\kvt@UseTableStyles{#1}}
+\define@boolkey[kvt]{Table}{norowbg}[true]{%
+  \kvt@setkeys{rowbg={}}{Table}}
+\define@boolkey[kvt]{Table}{nobg}[true]{%
+  \kvt@setkeys{rowbg={},headbg={}}{Table}}
+\define@boolkey[kvt]{Table}{norules}[true]{%
+  \ifbool{#1}
+    {\kvt@setkeys{showrules=false}{Table}}
+    {\kvt@setkeys{showrules=true}{Table}}}
+\define@key[kvt]{Table}{backend}{\ifinlist{#1}{\kvt@@tablebackends}
+  {\csdef{cmdkvt@Table@shape}{#1}}
+  {\kvt@error{Table backend '#1' not known}
+     {Check for misspellings in '#1'}}}
+\define@key[kvt]{Table}{shape}{\ifinlist{#1}{\kvt@@tableshapes}
+  {\csdef{cmdkvt@Table@shape}{#1}}
+  {\ifinlist{#1}{\kvt@@tablebackends}
+    {\kvt@warn{Using a backend ('#1') as shape is deprecated.
+      Use the 'backend' option instead.}%
+     \csdef{cmdkvt@Table@shape}{#1}}
+    {\kvt@error{Table shape '#1' not known}
+       {Check for misspellings in '#1'}}}}
+\define@cmdkey[kvt]{TableEnv}{caption}{}
+\define@cmdkey[kvt]{TableEnv}{caption/lot}{}
+\define@cmdkey[kvt]{TableEnv}{caption/alt}{}
+\define@cmdkey[kvt]{TableEnv}{label}{}
+\define@boolkey[kvt]{TableEnv}{resume}[true]{%
+  \ifbool{#1}{\ifundef\kvt@@rowcountlast
+    {\kvt@error{No previous table whose counter could be resumed.}
+      {Check whether the "resume" is intentional and whether a
+       previously existing predecessor table has disappeared.}}{}}{}}
+\define@boolkey[kvt]{TableEnv}{resume*}[true]{%
+  \ifbool{#1}
+    {\ifundef\kvt@@lastenvopt
+       {\kvt@error{No previous table whose options could be resume*'d.}
+         {Check whether the "resume*" is intentional and whether a
+          previously existing predecessor table has disappeared.}}{}%
+     \kvt@setcmdkeys\kvt@@lastenvopt{Table}%
+     \kvt@setkeys{resume}{TableEnv}}
+    {}}
+\define@key[kvt]{Column}{default}{\kvt@colkeysetter{default}{#1}}
+\define@key[kvt]{Column}{format}{\kvt@colkeysetter{format}{#1}}
+\define@key[kvt]{Column}{align}{\kvt@colkeysetter{align}{#1}}
+\define@key[kvt]{Column}{head}{\kvt@colkeysetter{head}{#1}}
+\define@boolkey[kvt]{Column}{hidden}[true]{%
+  \kvt@colkeysetter{hidden}{#1}}
+\newcommand\kvt@colkeysetter[2]{%
+  \kvt@keysetter{\kvt@@column}{Column}{#1}{#2}{%
+    \csdef{kvt@col@#1@\kvt@@column}{#2}}}
+\newcommand\kvt@def@globalopt[2]{%
+  \define@key[kvt]{global}{#1/#2}{\kvt@lazypreset{#1}{#2={##1}}}}
+\newcommand\kvt@def@globalopts[2]{%
+  \forcsvlist{\kvt@def@globalopt{#1}}{#2}}
+\define@cmdkey[kvt]{ColGroup}{span}{%
+  \csgdef{kvt@colgrp@span@\kvt@@tname @\kvt@@colgrp}{#1}}
+\define@cmdkey[kvt]{ColGroup}{align}{%
+  \csgdef{kvt@colgrp@align@\kvt@@tname @\kvt@@colgrp}{#1}}
+\define@cmdkey[kvt]{ColGroup}{format}{%
+  \csgdef{kvt@colgrp@format@\kvt@@tname @\kvt@@colgrp}{#1}}
+\kvt@def@globalopts{ColGroup}{align, format}
+\define@cmdkey[kvt]{Layout}{headers}{%
+  \expandafter\kvt@parseheadrows\expandafter{\kvt@@tname}{#1}}
+\define@cmdkey[kvt]{Layout}{colgroups}{%
+  \expandafter\kvt@parsecolgroups\expandafter{\kvt@@tname}{#1}}
+\define@key[kvt]{HeadCell}{head}{%
+  \csdef{kvt@@hdcell@head@\kvt@@hdcell}{#1}}
+\define@key[kvt]{HeadCell}{align}{%
+  \csdef{kvt@@hdcell@align@\kvt@@hdcell}{#1}}
+\kvt@def@globalopts{HeadCell}{align}
+\define@cmdkey[kvt]{Row}{bg}{}
+\define@cmdkey[kvt]{Row}{format}{}
+\define@cmdkey[kvt]{Row}{format*}{}
+\define@cmdkey[kvt]{Row}{format!}{}
+\define@cmdkey[kvt]{Row}{align}{}
+\define@boolkey[kvt]{Row}{headlike}[true]{%
+  \ifbool{#1}{%
+    \edef\kvt@@opts{%
+      bg={\expandonce\cmdkvt@Table@headbg},%
+      format!={\expandonce\cmdkvt@Table@headformat},%
+      align={\expandonce\cmdkvt@Table@headalign}}%
+    \expandafter\kvt@setkeys@nopresets\expandafter{\kvt@@opts}{Row}%
+  }{}}
+\define@boolkey[kvt]{Row}{hidden}[true]{}
+\define@cmdkey[kvt]{Row}{below}{}
+\define@cmdkey[kvt]{Row}{above}{}
+\define@key[kvt]{Row}{around}{%
+  \kvt@setkeys@nopresets{below={#1},above={#1}}{Row}}
+\define@key[kvt]{Row}{style}{\kvt@UseRowStyles{#1}}
+\define@boolkey[kvt]{Row}{uncounted}[true]{}
+\define@boolkey[kvt]{Row}{expand}[true]{}
+\define@boolkey[kvt]{Row}{expandonce}[true]{}
+\kvt@def@globalopts{Row}{
+  bg,hidden,below,above,around,style,uncounted,
+  expand,expandonce}
+\AtEndOfPackage{\kvtSet{%
+  rowbg=white..black!10,
+  headbg=black!14,
+  showhead=true,
+  showrules=true,
+  headformat=\@firstofone,
+  headalign=,
+  shape=multipage,
+  width=\linewidth,
+  captionpos=b,
+  default=,
+  format=\kvtStrutted,
+  align=l,
+  head=,
+  hidden=false,
+  Row/bg={},
+  Row/hidden=false,
+  Row/above={},
+  Row/below={},
+  Row/uncounted=false,
+  Row/expand=false,
+  Row/expandonce=false,
+  ColGroup/align=c,
+  ColGroup/format=\kvtStrutted,
+  HeadCell/align=c,
+}}
+\newcommand\NewKeyValTable[3][]{%
+  \@ifnextchar[%]
+    {\kvt@NewKeyValTable{#1}{#2}{#3}}%
+    {\kvt@NewKeyValTable{#1}{#2}{#3}[]}}
+\def\kvt@NewKeyValTable#1#2#3[#4]{%
+  \ifinlist{#2}{\kvt@alltables}
+    {\kvt@error{Table type with name '#2' already defined}
+      {Check '#2' for typos and check other uses of
+      \string\NewKeyValTable}}{}%
+  \csdef{kvt@options@#2}{#1}%
+  \csdef{kvt@headings@#2}{}%
+  \csdef{kvt@alignments@#2}{}%
+  \csdef{kvt@allcolumns@#2}{}%
+  \csdef{kvt@displaycols@#2}{}%
+  \csdef{kvt@rowcount@#2}{0}%
+  \csdef{kvt@rows@#2}{}%
+  \csdef{kvt@headings@#2}{\kvt@defaultheader}%
+  \listadd\kvt@alltables{#2}%
+  \def\do##1{%
+    \kvt@parsecolspec{#2}##1::\@undefined}%
+  \kvt@dossvlist{#3}%
+  \csdef{kvt@headrowcount@#2}{1}%
+  \csappto{kvt@headings@#2}{{\@nil}}%
+  \kvt@parselayout{#4}{#2}%
+}
+\def\kvt@parsecolspec#1#2:#3:#4\@undefined{%
+  \kvt@checkcolspecempty{#4}{column}{#2}%
+  \def\kvt@@column{#2}%
+  \trim@spaces@in\kvt@@column
+  \expandafter\kvt@parsecolspec@i\expandafter{\kvt@@column}{#1}{#3}}
+\newcommand\kvt@parsecolspec@i[3]{\kvt@parsecolspec@ii{#2}{#1}{#3}}
+\newcommand\kvt@parsecolspec@ii[3]{%
+  \def\kvt@@column{#1@#2}%
+  \ifinlistcs{#2}{kvt@allcolumns@#1}
+    {\kvt@error{Column name '#2' declared more than once in table type
+      '#1'}{Check '#2' for typos; column names declared so far:%
+      \forlistcsloop{ }{kvt@allcolumns@#1}}}{}%
+  \listcsadd{kvt@allcolumns@#1}{#2}%
+  \kvt@setkeys{#3}{Column}%
+  \ifcsstring{kvt@col@hidden@#1@#2}{true}{}{%
+    \cseappto{kvt@alignments@#1}{\csexpandonce{kvt@col@align@#1@#2}}%
+    \ifcsvoid{kvt@col@head@#1@#2}%
+      {\csappto{kvt@headings@#1}{{#2}}}%
+      {\cseappto{kvt@headings@#1}{{\csexpandonce{kvt@col@head@#1@#2}}}}%
+    \listcsadd{kvt@displaycols@#1}{#2}%
+  }%
+  \define@cmdkey[KeyValTable]{#1}{#2}[]{}%
+  \define@key[KeyValTable]{#1}{#2*}{%
+    \csdef{cmdKeyValTable@#1@#2}{##1}%
+    \csdef{kvt@@noformat@#1@#2}{1}}%
+  \presetkeys[KeyValTable]{#1}{#2}{}%
+  \undef\kvt@@column}
+\newcommand\kvt@defaultheader{%
+  \noexpand\kvt@rowcolorornot{\cmdkvt@Table@headbg}%
+  \kvt@defaultheader@i{}}
+\newcommand\kvt@defaultheader@i[2]{%
+  \kvt@ifnil{#2}{\noexpand\tabularnewline}{%
+    \unexpanded{#1}%
+    \ifdefvoid\cmdkvt@Table@headalign
+      {\expandonce\cmdkvt@Table@headformat{\unexpanded{#2}}}
+      {\noexpand\multicolumn{1}{\expandonce\cmdkvt@Table@headalign}
+        {\expandonce\cmdkvt@Table@headformat{\unexpanded{#2}}}}%
+    \kvt@defaultheader@i{&}}}
+\newcommand\kvt@ifnil[1]{%
+  \ifx\@nil#1\relax
+    \expandafter\@firstoftwo\else
+    \expandafter\@secondoftwo\fi}
+\newcommand\kvt@alltables{}
+\newcommand\kvt@parselayout[2]{%
+  \def\kvt@@tname{#2}%
+  \kvt@setkeys{#1}{Layout}%
+  \undef\kvt@@tname}
+\newcommand\kvt@parsecolgroups[2]{%
+  \begingroup
+  \def\kvt@@result{}%
+  \def\do##1{\kvt@parsecolgroup{#1}##1::\@undefined}%
+  \kvt@dossvlist{#2}%
+  \expandafter\endgroup\kvt@@result}
+\def\kvt@parsecolgroup#1#2:#3:#4\@undefined{%
+  \kvt@checkcolspecempty{#4}{column group}{#2}%
+  \ifinlistcs{#2}{kvt@allcolumns@#1}{\kvt@error
+    {Name `#2' cannot be used for a column group in table type `#1',
+     as it is already used for a column}
+    {Check the \string\NewKeyValTable{#1} for
+     the names of known columns and check `#2' for a typo.}}{}%
+  \ifinlistcs{#2}{kvt@grpcolkeys@#1}{\kvt@error
+    {Name `#2' is used twice in table type `#1'}
+    {Check the \string\NewKeyValTable{#1} for typos in the names of
+     columns groups.}}{}%
+  \def\kvt@@colgrp{#2}%
+  \kvt@setkeys{#3}{ColGroup}%
+  \kvt@checkcolgroupcs{kvt@colgrp@span@#1@#2}{#1}{#2}%
+  \eappto\kvt@@result{%
+    \noexpand\define@cmdkey[KeyValTable]{#1}{#2}{%
+      \ifdefvoid\kvt@@colgrp@first{}{%
+        \noexpand\kvt@xkv@disablepreset[KeyValTable]{#1}{%
+          \noexpand\setkeys[KeyValTable]{#1}{%
+            \expandonce\kvt@@colgrp@first=\noexpand\kvt@@@colgroup
+              {\unexpanded{#2}}%
+              {\expandonce\kvt@@colgrp@n}%
+              {\csexpandonce{kvt@colgrp@align@#1@#2}}%
+              {\unexpanded{##1}}}}%
+      }%
+    }}%
+    \listcsadd{kvt@grpcolkeys@#1}{#2}}
+\newcommand\kvt@checkcolspecempty[3]{%
+  \ifstrempty{#1}{}{\ifstrequal{#1}{:}{}{\kvt@error
+    {Too many ':' in definition of #2 '#3'}
+    {Check whether there is an accidental ':' that should actually be
+     a ',' or ';'.}}}}
+\newcommand\kvt@checkcolgroup[3]{%
+  \def\kvt@@psvdo##1{%
+    \ifinlistcs{##1}{kvt@allcolumns@#2}{}{\kvt@error
+      {Column `##1' referenced in column group `#3' not known
+       in table type `#2'}
+      {Check the \string\NewKeyValTable{#2} for
+       the names of known columns and check `##1' for a typo.}}%
+    \ifcsvoid{kvt@@incolgrp@##1}{}{\kvt@error
+      {Column `##1' used more than once in column group `#3' of table
+       type `#2'}
+      {Check `##1' for a typo.}}%
+    \csdef{kvt@@incolgrp@##1}{#2}%
+  }\kvt@forpsvlist{\kvt@@psvdo}{#1}%
+  \def\kvt@@colgrp@n{0}%
+  \let\kvt@@colgrp@first\relax
+  \def\kvt@@status{0}%
+  \def\kvt@@coldo##1{%
+    \ifcsvoid{kvt@@incolgrp@##1}
+      {\expandafter\ifcase\kvt@@status \or
+        \def\kvt@@status{2}\fi}%
+      {\expandafter\ifcase\kvt@@status
+        \def\kvt@@status{1}\def\kvt@@colgrp@first{##1}%
+        \or\or
+        \kvt@error{Column group `\kvt@@colgrp' must consist of only
+           consecutive columns, but it is not}%
+          {Compare `\string\kvt@@curgrp' to the column ordering as
+           specified in `\string\NewKeyValTable{#1}'}%
+        \fi
+        \edef\kvt@@colgrp@n{\the\numexpr\kvt@@colgrp@n+1\relax}%
+        \csundef{kvt@@incolgrp@##1}}%
+  }\forlistcsloop{\kvt@@coldo}{kvt@displaycols@#2}}
+\newcommand\kvt@checkcolgroupcs[3]{%
+  \expandafter\expandafter\expandafter
+  \kvt@checkcolgroup
+  \expandafter\expandafter\expandafter{\csname #1\endcsname}{#2}{#3}}
+\newcommand\kvt@parseheadrows[2]{%
+  \ifstrempty{#2}{}{\kvt@parseheadrows@i{#2}{#1}}}
+\newcommand\kvt@parseheadrows@i[2]{%
+  \csdef{kvt@@custheadrows@#2}{}%
+  \csdef{kvt@headrowcount@#2}{0}%
+  \begingroup
+  \def\kvt@@parseheadrows{}%
+  \def\do##1{%
+    \ifstrequal{##1}{::}
+      {\appto\kvt@@parseheadrows{%
+         \cseappto{kvt@@custheadrows@#2}{%
+           \csexpandonce{kvt@headings@#2}}}}
+      {\appto\kvt@@parseheadrows{\kvt@parseheadrow{#2}{##1}}}%
+    \appto\kvt@@parseheadrows{\csedef{kvt@headrowcount@#2}{%
+      \the\numexpr\csuse{kvt@headrowcount@#2}+1\relax}}%
+  }\kvt@dobrklist{#1}%
+  \expandafter\endgroup\kvt@@parseheadrows
+  \csletcs{kvt@headings@#2}{kvt@@custheadrows@#2}}
+\newcommand\kvt@parseheadrow[2]{%
+  \begingroup
+  \def\do##1{\kvt@parsehdcolspec{#1}##1::\@undefined}%
+  \kvt@dossvlist{#2}%
+  \let\kvt@@tmpgrphd\@empty
+  \kvt@@span\z@
+  \undef\kvt@@curhd \undef\kvt@@lasthd
+  \kvt@def@atseconduse\kvt@@switchcol{\appto\kvt@@tmpgrphd{&}}%
+  \def\do##1{\letcs\kvt@@curhd{kvt@@hdcellof@##1}%
+    \ifdefequal\kvt@@curhd\kvt@@lasthd
+      {\advance\kvt@@span\@ne}%
+      {\ifnum\kvt@@span>\z@ \expandafter\kvt@concludehdcolumn\fi
+       \ifdefvoid\kvt@@curhd{}{\ifcsdef{kvt@@hdcelldone@\kvt@@curhd}{%
+         \kvt@error{Header cell `\kvt@@curhd' must consist of only
+            consecutive columns, but it is not}%
+           {Compare `\string\kvt@@curhd' to the column ordering as
+           specified in `\string\NewKeyValTable{#1}'}}{}}%
+       \kvt@@span\@ne \let\kvt@@lasthd\kvt@@curhd}%
+  }\dolistcsloop{kvt@displaycols@#1}%
+  \kvt@concludehdcolumn
+  \appto\kvt@@tmpgrphd{\tabularnewline}%
+  \edef\do{\noexpand\csappto{kvt@@custheadrows@#1}{%
+    \unexpanded{\noexpand\kvt@rowcolorornot{\cmdkvt@Table@headbg}}%
+    \noexpand\unexpanded{\expandonce{\kvt@@tmpgrphd}}}}%
+  \expandafter\endgroup\do}
+\newcommand\kvt@rowcolorornot[1]{\ifstrempty{#1}{}{\rowcolor{#1}}}
+\newcommand\kvt@rowcolorcmdornot[1]{\ifdefvoid{#1}{}{%
+  \expandafter\rowcolor\expandafter{#1}}}
+\newcount\kvt@@bodyrow
+\newcount\kvt@@span
+\newcommand\kvt@concludehdcolumn{%
+  \kvt@@switchcol
+  \ifdefvoid\kvt@@lasthd{}{%
+    \eappto\kvt@@tmpgrphd{\noexpand\multicolumn
+      {\the\kvt@@span}
+      {\csexpandonce{kvt@@hdcell@align@\kvt@@lasthd}}
+      {\noexpand\cmdkvt@Table@headformat
+        {\csexpandonce{kvt@@hdcell@head@\kvt@@lasthd}}}}%
+    \cslet{kvt@@hdcelldone@\kvt@@lasthd}{\@ne}}}
+\def\kvt@parsehdcolspec#1#2:#3:#4\@undefined{%
+  \kvt@checkcolspecempty{#4}{header cell}{#2}%
+  \def\kvt@@colreg##1{%
+    \ifinlistcs{##1}{kvt@allcolumns@#1}{}
+      {\kvt@error{Column `##1', referenced in header cell `#2', not
+        known in table type `#1'}{Check the \string\NewKeyValTable{#1}
+        for the names of known columns and check `##1' for a typo.}}%
+    \ifcsmacro{kvt@@hdcellof@##1}
+      {\kvt@error{Column `##1' used in more than one header cell}
+         {Check the fourth, optional argument of \string\NewKeyValTable
+         and eliminate multiple occurrences of column `##1'.}}
+      {\csdef{kvt@@hdcellof@##1}{#2}}%
+  }\kvt@forpsvlist{\kvt@@colreg}{#2}%
+  \def\kvt@@hdcell{#2}%
+  \kvt@setkeys{#3}{HeadCell}}
+\newcounter{kvtRow}
+\newcounter{kvtTypeRow}
+\newcounter{kvtTotalRow}
+\setcounter{kvtTotalRow}{0}
+\newcommand\kvtLabel[3][]{%
+  \setcounter{kvt@LabelCtr}{\value{#2}}%
+  \addtocounter{kvt@LabelCtr}{-1}%
+  \refstepcounter{kvt@LabelCtr}%
+  \ifstrempty{#3}{}{%
+    \ifstrempty{#1}{\label{#3}}{\label[#1]{#3}}}%
+  \csuse{the#2}}
+\newcounter{kvt@LabelCtr}
+\newenvironment{KeyValTable}[2][]{%
+  \def\Row{\kvt@AddKeyValRow
+    {\noalign\bgroup}{\expandafter\egroup\kvt@@row}{#2}}%
+  \kvt@SetOptions{#2}{#1}%
+  \ifbool{kvt@TableEnv@resume*}{}
+    {\gdef\kvt@@lastenvopt{#1}}%
+  \csuse{kvt@StartTable@\cmdkvt@Table@shape}{#2}%
+}{%
+  \csuse{kvt@EndTable@\cmdkvt@Table@shape}}
+\newcommand\kvt@SetOptions[2]{\expandafter
+  \kvt@SetOptions@i\expandafter{\csname kvt@options@#1\endcsname}{#2}}
+\newcommand\kvt@SetOptions@i[2]{\expandafter
+  \kvt@setkeys\expandafter{#1,#2}{Table,TableEnv}}
+\define@boolkey[metatbl]{EnvProp}{isLong}{\metatbl@boolprop{isLong}{#1}}
+\define@boolkey[metatbl]{EnvProp}{isTabu}{\metatbl@boolprop{isTabu}{#1}}
+\define@boolkey[metatbl]{EnvProp}{hasWidth}{%
+  \metatbl@boolprop{hasWidth}{#1}}
+\define@boolkey[metatbl]{EnvProp}{hasCaption}{%
+  \metatbl@boolprop{hasCaption}{#1}}
+\define@boolkey[metatbl]{EnvProp}{canVAlign}{%
+  \metatbl@boolprop{canVAlign}{#1}}
+\define@boolkey[metatbl]{EnvProp}{canHAlign}{%
+  \metatbl@boolprop{canHAlign}{#1}}
+\define@cmdkey[metatbl]{EnvProp}{packages}{\metatbl@setprop{pkg}{#1}}
+\define@key[metatbl]{EnvProp}{atEnd}{\metatbl@setprop[1]{atEnd}{#1}}
+\newrobustcmd\metatblRegisterEnv[2]{%
+  \edef\metatbl@@envname{#1}%
+  \csdef{metatbl@@registered@#1}{true}%
+  \setkeys[metatbl]{EnvProp}{#2}}
+\newcommand\metatbl@setprop[3][0]{%
+  \expandafter\newcommand
+    \csname metatbl@EnvProp@#2@\metatbl@@envname\endcsname[#1]{#3}}
+\newcommand\metatbl@boolprop[2]{%
+  \providebool{metatbl@EnvProp@#1@\metatbl@@envname}%
+  \setbool{metatbl@EnvProp@#1@\metatbl@@envname}{#2}}
+\newcommand\metatblRegistered[1]{\ifcsdef{metatbl@@registered@#1}}
+\newcommand\metatblIsLong[1]{\ifbool{metatbl@EnvProp@isLong@#1}}
+\newcommand\metatblIsTabu[1]{\ifbool{metatbl@EnvProp@isTabu@#1}}
+\newcommand\metatblHasWidth[1]{\ifbool{metatbl@EnvProp@hasWidth@#1}}
+\newcommand\metatblHasCaption[1]{\ifbool{metatbl@EnvProp@hasCaption@#1}}
+\newcommand\metatblCanVAlign[1]{\ifbool{metatbl@EnvProp@canVAlign@#1}}
+\newcommand\metatblCanHAlign[1]{\ifbool{metatbl@EnvProp@canHAlign@#1}}
+\newcommand\metatblUsePackage[1]{%
+  \def\do##1{%
+    \metatbl@csnamearg\usepackage{metatbl@EnvProp@pkg@##1}}%
+  \docsvlist{#1}}
+\newcommand\metatblRequire[1]{%
+  \def\do##1{%
+    \metatbl@csnamearg\RequirePackage{metatbl@EnvProp@pkg@##1}}%
+  \docsvlist{#1}}
+\newcommand\metatblAtEnd[2]{%
+  \csname metatbl@EnvProp@atEnd@#1\endcsname{#2}}
+\newcommand\metatbl@csnamearg[2]{%
+  \expandafter\expandafter\expandafter#1%
+  \expandafter\expandafter\expandafter{\csname#2\endcsname}}
+\metatblRegisterEnv{tabular}{%
+  isLong=false, hasWidth=false, isTabu=false, hasCaption=false,
+  canVAlign=true, canHAlign=false,
+  packages={},
+  atEnd={\preto\endtabular{#1}},
+}
+\metatblRegisterEnv{tabularx}{%
+  isLong=false, hasWidth=true, isTabu=false, hasCaption=false,
+  canVAlign=true, canHAlign=false,
+  packages=tabularx,
+  atEnd={%
+    \preto\TX@endtabularx{\toks@\expandafter{\the\toks@#1}}%
+    \preto\XLT@i@TX@endtabularx{\toks@\expandafter{\the\toks@#1}}},
+}
+\metatblRegisterEnv{longtable}{%
+  isLong=true, hasWidth=false, isTabu=false, hasCaption=true,
+  canVAlign=false, canHAlign=true,
+  packages={longtable},
+  atEnd={\preto\endlongtable{#1}},
+}
+\metatblRegisterEnv{xltabular}{%
+  isLong=true, hasWidth=true, isTabu=false, hasCaption=true,
+  canVAlign=false, canHAlign=true,
+  packages=xltabular,
+  atEnd={\preto\XLT@ii@TX@endtabularx{\toks@\expandafter{\the\toks@#1}}},
+}
+\metatblRegisterEnv{tabu}{%
+  isLong=false, hasWidth=true, isTabu=true, hasCaption=false,
+  canVAlign=true, canHAlign=false,
+  packages={tabu},
+  atEnd={\preto\endtabular{#1}},
+}
+\metatblRegisterEnv{longtabu}{%
+  isLong=true, hasWidth=true, isTabu=true, hasCaption=true,
+  canVAlign=false, canHAlign=true,
+  packages={tabu,longtable},
+  atEnd={\preto\endlongtable{#1}},
+}
+\newrobustcmd\metatbl@ifhasXcolumns[1]{%
+  \begingroup
+  \def\metatbl@@branch{\@secondoftwo}%
+  \def\NC@rewrite@X{\def\metatbl@@branch{\@firstoftwo}\NC@find l}%
+  \@mkpream{#1}%
+  \expandafter\endgroup\metatbl@@branch}
+\newcommand\kvt@StartTabularlike[2]{%
+  \metatblAtEnd{#1}{\kvt@@endhook}%
+  \let\kvt@@endhook\@empty
+  \let\kvt@@prehook\@empty
+  \ifbool{kvt@Table@showrules}
+    {\def\kvt@@rule##1{\csuse{##1rule}}}
+    {\def\kvt@@rule##1{}}%
+  \appto\kvt@@prehook{\kvt@@rule{top}}%
+  \appto\kvt@@endhook{\kvt@@rule{bottom}}%
+  \appto\kvt@@endhook{\noalign{%
+    \csxdef{kvt@rowcount@#2}{\thekvtTypeRow}%
+    \csxdef{kvt@@rowcountlast}{\thekvtRow}}}%
+  \ifdefvoid\cmdkvt@TableEnv@caption
+    {\let\kvt@@caption@main\@empty
+     \let\kvt@@caption@alt\@empty}
+    {\metatblHasCaption{#1}
+       {\edef\kvt@@caption@main{%
+         \csexpandonce{kvt@caption@\cmdkvt@Table@captionpos}%
+           \ifcsvoid{cmdkvt@TableEnv@caption/lot}{}
+             {[{\csexpandonce{cmdkvt@TableEnv@caption/lot}}]}%
+           {\expandonce\cmdkvt@TableEnv@caption
+              \ifdefvoid\cmdkvt@TableEnv@label{}{%
+                \noexpand\label{\expandonce\cmdkvt@TableEnv@label}}}%
+         \noexpand\\}%
+        \ifcsvoid{cmdkvt@TableEnv@caption/alt}
+          {\def\kvt@@caption@alt{}}
+          {\edef\kvt@@caption@alt{%
+            \csexpandonce{kvt@caption@\cmdkvt@Table@captionpos}[]%
+              {\csexpandonce{cmdkvt@TableEnv@caption/alt}}%
+            \noexpand\\}}%
+       }{\kvt@error
+         {Caption lost, table backend '#1' does not support captions}
+         {Consider placing the KeyValTable environment inside a 'table'
+          environment and use the \string\caption\space macro inside.}}}%
+  \ifdefstring{\cmdkvt@Table@captionpos}{t}
+    {\let\kvt@@caption@headmain\kvt@@caption@main\let\kvt@@caption@footmain\@empty
+     \let\kvt@@caption@headalt\kvt@@caption@alt  \let\kvt@@caption@footalt\@empty}
+    {\let\kvt@@caption@footmain\kvt@@caption@main\let\kvt@@caption@headmain\@empty
+     \let\kvt@@caption@footalt\kvt@@caption@alt  \let\kvt@@caption@headalt\@empty}%
+  \ifbool{kvt@Table@showhead}
+    {\eappto\kvt@@prehook{\csuse{kvt@headings@#2}\noexpand\kvt@@rule{mid}}}
+    {}%
+  \ifdefvoid{\cmdkvt@Table@valign}{}{\metatblCanVAlign{#1}{}
+    {\undef{\cmdkvt@Table@valign}%
+      \kvt@warn{Table environment '#1' of table '#2'
+        does not support the vertical alignment option (valign).
+        Ignoring the option}}}%
+  \ifdefvoid{\cmdkvt@Table@halign}{}{\metatblCanHAlign{#1}{}
+    {\undef{\cmdkvt@Table@halign}%
+      \kvt@warn{Table environment '#1' of table '#2'
+        does not support the horizontal alignment option (halign).
+        Ignoring the option}}}%
+  \global\kvt@@bodyrow=0\relax
+  \ifbool{kvt@TableEnv@resume}
+    {\setcounter{kvtRow}{\csuse{kvt@@rowcountlast}}}
+    {\setcounter{kvtRow}{0}}%
+  \setcounter{kvtTypeRow}{\csuse{kvt@rowcount@#2}}%
+  \expandafter\kvt@setrowcolors\expandafter{\cmdkvt@Table@rowbg}%
+  \begingroup\edef\kvt@@do{\endgroup
+    \expandafter\noexpand\csname #1\endcsname
+      \ifdefvoid{\cmdkvt@Table@halign}{}
+        {\metatblIsTabu{#1}{}{[\cmdkvt@Table@halign]}}%
+      \metatblHasWidth{#1}
+        {\metatblIsTabu{#1}
+          {to \expandonce\cmdkvt@Table@width}
+          {{\expandonce\cmdkvt@Table@width}}}
+        {}%
+      \ifdefvoid{\cmdkvt@Table@valign}{}{[\cmdkvt@Table@valign]}%
+      \ifdefvoid{\cmdkvt@Table@halign}{}
+        {\metatblIsTabu{#1}{[\cmdkvt@Table@halign]}{}}%
+      {\csexpandonce{kvt@alignments@#2}}%
+    \expandonce\kvt@@caption@headmain
+    \expandonce\kvt@@prehook
+    \metatblIsLong{#1}{%
+      \noexpand\endfirsthead
+      \expandonce\kvt@@caption@headalt
+      \expandonce\kvt@@prehook
+      \noexpand\endhead}{}%
+    \expandonce\kvt@@caption@footmain
+    \metatblIsLong{#1}{%
+      \noexpand\endlastfoot
+      \expandonce\kvt@@caption@footalt
+      \noexpand\endfoot}{}%
+  }\kvt@@do}
+\newcommand\kvt@caption@t{\caption}
+\newcommand\kvt@caption@b{%
+  \noalign{\parbox{0pt}{\vskip\baselineskip}}%
+  \caption}
+\newcommand\kvt@setrowcolors[1]{%
+  \ifstrempty{#1}{}{\kvt@setrowcolors@i#1\@nil}}
+\def\kvt@setrowcolors@i#1..#2\@nil{%
+  \def\kvt@@bgcolor@odd{#1}%
+  \def\kvt@@bgcolor@even{#2}}
+\newcommand\kvt@userowcolors{\ifnumodd{\the\kvt@@bodyrow}
+  {\kvt@rowcolorcmdornot{\kvt@@bgcolor@odd}}
+  {\kvt@rowcolorcmdornot{\kvt@@bgcolor@even}}}
+\newcommand\kvt@RegisterBackend[1]{%
+  \ifinlist{#1}{\kvt@@tablebackends}
+    {\kvt@error{Backend '#1' already registered}
+       {Internal error. Check use of \string\kvt@RegisterBackend.}}
+    {\kvt@CheckMetatblEnv{#1}%
+     \listadd{\kvt@@tablebackends}{#1}%
+     \kvt@DefineStdTabEnv{#1}{#1}}}
+\newcommand\kvt@RegisterShape[3]{%
+  \ifinlist{#1}{\kvt@@tableshapes}
+    {\kvt@error{Shape '#1' already registered}
+       {Internal error. Check use of \string\kvt@RegisterShape.}}
+    {\kvt@CheckMetatblEnv{#2}\kvt@CheckMetatblEnv{#3}%
+    \listadd{\kvt@@tableshapes}{#1}%
+     \ifstrequal{#2}{#3}
+       {\kvt@DefineStdTabEnv{#1}{#2}}
+       {\kvt@DefineDualTabEnv{#1}{#2}{#3}}}}
+\newcommand\kvt@CheckMetatblEnv[1]{\metatblRegistered{#1}{}
+   {\kvt@error{Environment '#1' not supported by keyvaltable}
+      {Check \string\metatblRegisterEnv\space for how to make it
+       supported.}}}
+\newcommand\kvt@@tablebackends{}
+\newcommand\kvt@@tableshapes{}
+\newcommand\kvt@DefineStdTabEnv[2]{%
+  \csdef{kvt@StartTable@#1}##1{%
+    \kvt@StartTabularlike{#2}{##1}}%
+  \csedef{kvt@EndTable@#1}{%
+    \expandafter\noexpand\csname end#2\endcsname}}
+\newcommand\kvt@DefineDualTabEnv[3]{%
+  \expandafter\newcommand\csname kvt@StartTable@#1\endcsname[1]{%
+    \kvt@ifhasXcolumns{##1}
+      {\csedef{kvt@EndTable@#1}{%
+         \expandafter\noexpand\csname end#3\endcsname}%
+       \kvt@StartTabularlike{#3}{##1}%
+      }{\csedef{kvt@EndTable@#1}{%
+         \expandafter\noexpand\csname end#2\endcsname}%
+       \kvt@StartTabularlike{#2}{##1}}}}
+\newcommand\kvt@ifhasXcolumns[1]{%
+  \expandafter\expandafter\expandafter\metatbl@ifhasXcolumns
+  \expandafter\expandafter\expandafter{%
+    \csname kvt@alignments@#1\endcsname}}
+\kvt@RegisterBackend{tabular}
+\kvt@RegisterBackend{longtable}
+\kvt@RegisterBackend{tabularx}
+\kvt@RegisterBackend{xltabular}
+\kvt@RegisterBackend{tabu}
+\kvt@RegisterBackend{longtabu}
+\newcommand\kvt@AddKeyValRow[3]{%
+  #1%
+  \@ifnextchar[%]
+    {\kvt@AddKeyValRow@i{#2}{#3}}
+    {\kvt@AddKeyValRow@i{#2}{#3}[]}}
+\def\kvt@AddKeyValRow@i#1#2[#3]#4{%
+  \kvt@setkeys{#3}{Row}%
+  \ifbool{kvt@Row@hidden}
+    {\let\kvt@@row\@empty #1}
+    {\kvt@AddKeyValRow@ii{#1}{#2}{#4}}}
+\def\kvt@AddKeyValRow@ii#1#2#3{%
+  \setkeys[KeyValTable]{#2}{#3}%
+  \def\kvt@@row{}%
+  \ifdefvoid\cmdkvt@Row@above{}{%
+    \eappto\kvt@@row{\noexpand\noalign{\noexpand\vspace{%
+      \expandonce\cmdkvt@Row@above}}}}%
+  \appto\kvt@@row{\noalign{\global\advance\kvt@@bodyrow\@ne}}%
+  \ifbool{kvt@Row@uncounted}{}{%
+    \appto\kvt@@row{\noalign{\kvt@stepcounters}}}%
+  \ifdefvoid\cmdkvt@Row@bg
+    {\appto\kvt@@row{\kvt@userowcolors}}
+    {\eappto\kvt@@row{\noexpand\rowcolor{\expandonce\cmdkvt@Row@bg}}}%
+  \ifdefvoid\cmdkvt@Row@align
+    {\let\kvt@@rowmkmulticolumn\@empty}
+    {\edef\kvt@@rowmkmulticolumn{%
+       \noexpand\multicolumn{1}{\expandonce\cmdkvt@Row@align}}}%
+  \ifcsvoid{cmdkvt@Row@format!}
+    {\edef\kvt@@cellfmtbuilder##1##2{%
+       \noexpand\edef##1####1{%
+         \noexpand\kvt@expandonce@onearg\noexpand\kvt@@mkmulticolumn
+         {\ifcsvoid{cmdkvt@Row@format*}{\@firstofone}
+           {\noexpand\unexpanded{\csexpandonce{cmdkvt@Row@format*}}}%
+         {\noexpand\csexpandonce{##2}{%
+             \ifdefvoid\cmdkvt@Row@format{\@firstofone}
+               {\noexpand\unexpanded{\expandonce\cmdkvt@Row@format}}%
+              {####1}}}}}}}%
+    {\edef\kvt@@cellfmtbuilder##1##2{%
+      \noexpand\edef##1####1{%
+        \noexpand\kvt@expandonce@onearg\noexpand\kvt@@mkmulticolumn{%
+          \noexpand\unexpanded{\csexpandonce{cmdkvt@Row@format!}}%
+            {####1}}}}}%
+  \kvt@@span=0\relax
+  \kvt@def@atseconduse\kvt@@switchcol{\appto\kvt@@row{&}}%
+  \def\do##1{%
+    \ifnumgreater\kvt@@span{0}
+      {\advance\kvt@@span\m@ne
+       \ifcsvoid{cmdKeyValTable@#2@##1}{}
+         {\ifdefvoid\kvt@@curcgname
+           {\kvt@error{Column '##1' nonempty inside a
+                       \string\multicolumn}{}}
+           {\kvt@error{Column '##1' nonempty inside column group
+                       '\kvt@@curcgname'}{}}}}
+      {\kvt@@switchcol
+       \let\kvt@@mkmulticolumn\kvt@@rowmkmulticolumn
+       \letcs\kvt@@curcolformat{kvt@col@format@#2@##1}%
+       \ifcsvoid{cmdKeyValTable@#2@##1}
+         {\letcs\kvt@@cell{kvt@col@default@#2@##1}}
+         {\letcs\kvt@@cell{cmdKeyValTable@#2@##1}%
+          \expandafter\kvt@CheckMulticolumn\expandafter{\kvt@@cell}{#2}%
+          \ifbool{kvt@Row@expandonce}
+            {\expandafter\let\expandafter\kvt@@cell\kvt@@cell}{}%
+          \ifbool{kvt@Row@expand}
+            {\protected@edef\kvt@@cell{\kvt@@cell}}{}}%
+       \ifcsvoid{kvt@@noformat@#2@##1}
+         {\kvt@@cellfmtbuilder\kvt@@formatter{kvt@@curcolformat}}%
+         {\let\kvt@@formatter\@firstofone}%
+       \csundef{kvt@@noformat@#2@##1}%
+       \edef\kvt@@fmtcell{\expandafter\expandonce\expandafter{%
+         \expandafter\kvt@@formatter\expandafter{%
+           \kvt@@cell}}}%
+       \expandafter\appto\expandafter\kvt@@row\expandafter{%
+         \kvt@@fmtcell}}%
+  }\dolistcsloop{kvt@displaycols@#2}%
+  \undef\kvt@@cellfmtbuilder
+  \appto\kvt@@row{\tabularnewline}%
+  \ifdefvoid\cmdkvt@Row@below{}{%
+    \eappto\kvt@@row{\noexpand\noalign{\noexpand\vspace{%
+      \expandonce\cmdkvt@Row@below}}}}%
+  #1}
+\newcommand\kvt@def@atseconduse[2]{\def#1{\def#1{#2}}}
+\newcommand\kvt@expandonce@onearg[2]{%
+  \ifdefequal{#1}{\@empty}{#2}{\expandonce{#1}{#2}}}
+\newcommand\kvt@stepcounters[1][1]{%
+  \addtocounter{kvtRow}{#1}%
+  \addtocounter{kvtTypeRow}{#1}%
+  \addtocounter{kvtTotalRow}{#1}}
+\newcommand\kvt@CheckMulticolumn[2]{%
+  \kvt@CheckMulticolumn@i{#2}#1%
+    \relax\relax\relax\relax\relax\kvt@@undefined}
+\def\kvt@CheckMulticolumn@i#1#2#3#4#5#6#7\kvt@@undefined{%
+  \ifdefmacro{#2}{%
+    \ifx#2\multicolumn
+      \kvt@SetMulticolumn{#4}{#3}{#5}%
+      \let\kvt@@curcgname\@empty
+    \else\ifx#2\kvt@@@colgroup
+      \letcs\kvt@@curcolformat{kvt@colgrp@format@#1@#3}%
+      \def\kvt@@curcgname{#3}%
+      \ifdefvoid\cmdkvt@Row@align
+        {\kvt@SetMulticolumn{#5}{#4}{#6}}
+        {\expandafter
+         \kvt@SetMulticolumn\expandafter{\cmdkvt@Row@align}{#4}{#6}}%
+    \fi\fi}{}}
+\newcommand\kvt@@@colgroup{kvt@@@colgroup}
+\newcommand\kvt@SetMulticolumn[3]{%
+  \kvt@@span=#2\relax \advance\kvt@@span\m@ne
+  \def\kvt@@cell{#3}%
+  \def\kvt@@mkmulticolumn{\multicolumn{#2}{#1}}}
+\newcommand\kvtNewRowStyle{\kvt@NewStyle{row}{\kvtRenewRowStyle}}
+\newcommand\kvtRenewRowStyle{\kvt@RenewStyle{row}{\kvtNewRowStyle}}
+\newcommand\kvtNewTableStyle{\kvt@NewStyle{table}{\kvtRenewTableStyle}}
+\newcommand\kvtRenewTableStyle{\kvt@RenewStyle{table}{\kvtNewTableStyle}}
+\newcommand\kvt@NewStyle[4]{%
+  \ifcsundef{kvt@@#1style@#3}
+    {\csdef{kvt@@#1style@#3}{#4}}
+    {\kvt@error{The #1 style '#3' is already defined}{Use
+      \string#2\space to change an existing style.}}}
+\newcommand\kvt@RenewStyle[4]{%
+  \ifcsundef{kvt@@#1style@#3}
+    {\kvt@error{A #1 style '#3' is not defined}
+      {Use \string#2\space to define a new #1 style.}}
+    {\csdef{kvt@@#1style@#3}{#4}}}
+\newcommand\kvt@UseRowStyles[1]{%
+  \kvt@UseStyles{row}{Row}{\kvt@NewRowStyle}{#1}}
+\newcommand\kvt@UseTableStyles[1]{%
+  \kvt@UseStyles{table}{Table}{\kvt@NewTableStyle}{#1}}
+\newcommand\kvt@UseStyle[4]{%
+  \ifcsundef{kvt@@#1style@#4}
+    {\kvt@error{A #1 style '#4' is not defined}
+      {Use \string#3\space to define a new #1 style.}}
+    {\kvt@setcskeys{kvt@@#1style@#4}{#2}}}
+\newcommand\kvt@UseStyles[4]{%
+  \kvt@xkv@disablepreset[kvt]{#2}{%
+    \forcsvlist{\kvt@UseStyle{#1}{#2}{#3}}{#4}}}
+\newcommand\kvt@xkv@disablepreset[3][KV]{%
+  \ifnumgreater{\XKV@depth}{1}
+    {#3}
+    {\kvt@xkv@savepreset{#1}{#2}{h}%
+     \kvt@xkv@savepreset{#1}{#2}{t}%
+     #3%
+     \kvt@xkv@restorepreset{#1}{#2}{h}%
+     \kvt@xkv@restorepreset{#1}{#2}{t}}}
+\newcommand\kvt@xkv@savepreset[3]{%
+  \csletcs{kvt@@saved@preset#3}{XKV@#1@#2@preset#3}%
+  \csundef{XKV@#1@#2@preset#3}}
+\newcommand\kvt@xkv@restorepreset[3]{%
+  \csletcs{XKV@#1@#2@preset#3}{kvt@@saved@preset#3}}
+\newcommand\NewCollectedTable[2]{%
+  \ifcsvoid{kvt@@tnameof@#1}
+    {\csgdef{kvt@@tnameof@#1}{#2}}
+    {\kvt@error{Name '#1' for a row collection is already defined}
+      {Check for other \string\NewCollectedTable{#1}.}}}
+\newcommand\CollectRow[3][]{%
+  \ifcsvoid{kvt@@tnameof@#2}
+    {\kvt@error{No row collection with name '#2' defined}
+      {Use \string\NewCollectedTable in the preamble to define it.}}
+    {%
+     \begingroup
+     \kvt@setkeys{#1}{Row}%
+     \kvt@colsetcskeys{kvt@@tnameof@#2}{#3}%
+     \endgroup
+     \kvt@protected@write\@auxout{\string\kvt@RecordedRow{#1}{#2}{%
+        \kvt@coldefaults{#2}%
+        #3}}%
+    }}
+\newcommand\kvt@protected@write[2]{\protected@write{#1}
+    {\def\do##1{\def##1{\string##1}}%
+     \dolistloop{\kvt@@writeprotected@cmds}%
+     \forlistloop{\kvt@writeprotect@fmt}{\kvt@@numberformatters}}
+    {#2}}
+\newcommand\kvt@writeprotect@fmt[1]{%
+  \csletcs{kvt@@fmt@#1}{#1}%
+  \csdef{#1}##1{%
+    \ifcsdef{kvt@@c@##1}
+      {\expandafter\string\csname#1\endcsname{##1}}
+      {\csname kvt@@fmt@#1\endcsname{##1}}}}
+\newcommand\kvtDeclareTableMacros[1]{%
+  \forcsvlist{\listadd\kvt@@writeprotected@cmds}{#1}}
+\newcommand\kvt@@writeprotected@cmds{}
+\newcommand\kvtDeclareTableCounters[1]{%
+  \def\do##1{\cslet{kvt@@c@##1}\@ne}%
+  \docsvlist{#1}}
+\newcommand\kvtDeclareCtrFormatters[1]{%
+  \def\do##1{\listeadd\kvt@@numberformatters{%
+    \expandafter\@gobble\string##1}}%
+  \docsvlist{#1}}
+\newcommand\kvt@@numberformatters{}
+\kvtDeclareTableMacros{\thekvtRow,\thekvtTypeRow,\thekvtTotalRow}
+\kvtDeclareTableCounters{kvtRow,kvtTypeRow,kvtTotalRow}
+\kvtDeclareCtrFormatters{\arabic,\alph,\Alph,\roman,\Roman,\fnsymbol}
+\newcommand\kvt@coldefaults[1]{%
+  \kvt@coldefaults@i{\csuse{kvt@@tnameof@#1}}}
+\newcommand\kvt@coldefaults@i[1]{%
+  \forlistcsloop{\kvt@coldefault{#1}}{kvt@displaycols@#1}}
+\newcommand\kvt@coldefault[2]{\ifcsvoid{kvt@col@default@#1@#2}{}{%
+  #2={\csuse{kvt@col@default@#1@#2}},}}
+\newcommand\kvt@RecordedRow[3]{%
+  \csgappto{kvt@@rowsof@#2}{\Row[{#1}]{#3}}}
+\newcommand\ShowCollectedTable[2][]{%
+  \ifcsvoid{kvt@@tnameof@#2}
+    {\kvt@error{No row collection with name '#2' defined}
+      {Use \string\NewCollectedTable in the preamble to define it.}}
+    {\ifcsvoid{kvt@@rowsof@#2}
+      {\kvt@warn{No row data available for name '#2'.
+        A LaTeX rerun might be needed^^M
+        for the row data to be available}%
+       \kvt@tableofcname{#2}{#1}{???\tabularnewline}}%
+      {\kvt@tableofcname{#2}{#1}{\csuse{kvt@@rowsof@#2}}}}}
+\newcommand\kvt@tableof[3]{%
+  \begin{KeyValTable}[{#2}]{#1}%
+    #3%
+  \end{KeyValTable}}
+\newcommand\kvt@tableofcname[1]{\expandafter
+  \kvt@tableofcname@i\expandafter{\csname kvt@@tnameof@#1\endcsname}}
+\newcommand\kvt@tableofcname@i[1]{\expandafter
+  \kvt@tableof\expandafter{#1}}
+\newcommand\ShowKeyValTableFile[3][]{%
+  \IfFileExists{#3}
+    {\begin{KeyValTable}[{#1}]{#2}\@@input#3 \end{KeyValTable}}%
+    {\kvt@error{No KeyValTable file '#3'}
+      {Check whether the file really exists or whether there is a
+       typo in the argument '#3'}}}
+\newcommand\ShowKeyValTable[2][]{%
+  \begin{KeyValTable}[#1]{#2}%
+    \csuse{kvt@rows@#2}%
+  \end{KeyValTable}%
+  \csdef{kvt@rows@#2}{}}
+\newcommand\AddKeyValRow[1]{%
+  \kvt@AddKeyValRow
+    {\begingroup}
+    {\csxappto{kvt@rows@#1}{\expandonce{\kvt@@row}}\endgroup}
+    {#1}}
+\newenvironment{KeyValTableContent}[1]{%
+  \def\Row{\AddKeyValRow{#1}}}{}%
+\define@cmdkey[kvt]{PackageOptions}[kvt@@pkg@]{compat}{}
+\ExecuteOptionsX[kvt]<PackageOptions>{%
+  compat=2.0,
+}
+\ProcessOptionsX[kvt]<PackageOptions>\relax
+\newcommand\kvt@IfVersion[2]{%
+  \ifdimcomp{\kvt@@pkg@compat pt}{#1}{#2pt}}
+\kvt@IfVersion{<}{2.0}{%
+  \metatblRequire{tabu,longtabu}
+  \kvt@RegisterShape{onepage}{tabu}{tabu}
+  \kvt@RegisterShape{multipage}{longtabu}{longtabu}
+}{%
+  \metatblRequire{tabularx,longtable,xltabular}
+  \kvt@RegisterShape{onepage}{tabular}{tabularx}
+  \kvt@RegisterShape{multipage}{longtable}{xltabular}
+}
+\kvt@IfVersion{<}{2.0}{%
+  \renewcommand\kvt@parselayout[2]{\kvt@parseheadrows{#2}{#1}}%
+}{}
+\endinput
+%%
+%% End of file `keyvaltable.sty'.

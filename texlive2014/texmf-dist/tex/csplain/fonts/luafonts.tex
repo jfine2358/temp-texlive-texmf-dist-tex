@@ -1,0 +1,42 @@
+% I don't understand this. This is a result of my reverse engeneering of the
+% luaotfload.sty package.
+% LuaTeX needs these \directlua in order to \font primitive works like in XeTeX.
+% Petr Olsak     Nov. 2012,  Nov. 2013
+
+\ifnum\luatexversion<76 %%%
+
+\message{processing luaotfload.lua (1)}
+\directlua{luatexbase = luatexbase or {} 
+              luatexbase.luatexversion = \the\luatexversion\space
+              luatexbase.luatexrevision = \luatexrevision\space
+           require('luatexbase.attr')
+           require('luatexbase.cctb')
+           require('luatexbase.modutils')
+	   oriwrite = texio.write_nl % I don't need to see unusual info
+	   function texio.write_nl(...) end
+           require('luatexbase.mcb')
+           luatexbase.require_module('lualibs')
+           luatexbase.require_module('luaotfload')
+	   texio.write_nl = oriwrite % return to original meaning
+}
+\else %%% \luatexversion>=76
+
+\message{processing luaotfload.lua (2)}
+\expandafter\ifx\csname LuT@AllocAttribute\endcsname \relax
+   \csname newcount\expandafter \endcsname \csname LuT@AllocAttribute\endcsname \fi
+\csname LuT@AllocAttribute\endcsname=-1
+\directlua{luatexbase = luatexbase or {}
+              luatexbase.luatexversion = \the\luatexversion\space
+              luatexbase.luatexrevision = \luatexrevision\space
+           require('luatexbase.modutils')
+           require('luatexbase.attr')
+           oriwrite = texio.write_nl % I don't need to see unusual info
+           function texio.write_nl(...) end
+           require('luatexbase.mcb')
+           luatexbase.require_module('luaotfload')
+           texio.write_nl = oriwrite % return to original meaning
+}
+\fi
+\global\let\luafonts=\relax
+
+\endinput

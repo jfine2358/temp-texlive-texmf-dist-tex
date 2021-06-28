@@ -1,0 +1,412 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ------------------------------------------------------------------------------------- %
+% - chemmacros - chemmacros.sty ------------------------------------------------------- %
+% - a collection of macros to make typesetting chemistry documents more convenient ---- %
+% ------------------------------------------------------------------------------------- %
+% - Clemens Niederberger -------------------------------------------------------------- %
+% - 2011/05/15 ------------------------------------------------------------------------ %
+% ------------------------------------------------------------------------------------- %
+% - http://www.mychemistry.eu/ -------------------------------------------------------- %
+% - contact@mychemistry.eu ------------------------------------------------------------ %
+% ------------------------------------------------------------------------------------- %
+% - If you have any ideas, questions, suggestions or bugs to report, please feel free - %
+% - to contact me. -------------------------------------------------------------------- %
+% ------------------------------------------------------------------------------------- %
+% - Copyright 2011 Clemens Niederberger                                               - %
+% -                                                                                   - %
+% - This work may be distributed and/or modified under the                            - %
+% - conditions of the LaTeX Project Public License, either version 1.3                - %
+% - of this license or (at your option) any later version.                            - %
+% - The latest version of this license is in                                          - %
+% -   http://www.latex-project.org/lppl.txt                                           - %
+% - and version 1.3 or later is part of all distributions of LaTeX                    - %
+% - version 2005/12/01 or later.                                                      - %
+% -                                                                                   - %
+% - This work has the LPPL maintenance status `maintained'.                           - %
+% -                                                                                   - %
+% - The Current Maintainer of this work is Clemens Niederberger.                      - %
+% -                                                                                   - %
+% - This work consists of the files chemmacros.sty, chemmacros_doc_de.tex,            - %
+% - chemmacros_doc_de.tex, README                                                     - %
+% ------------------------------------------------------------------------------------- %
+% - Version history: ------------------------------------------------------------------ %
+% 2011/05/15 version 1.0 CTAN release                                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\CM@version{1.0}
+\def\CM@date{2011/05/15}
+\def\CM@name{chemmacros}
+\ProvidesPackage{chemmacros}[\CM@date]
+\typeout{\CM@name\space v\CM@version, \CM@date\space Clemens Niederberger}
+\RequirePackage{xkeyval,amsmath,tikz}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - package options ------------------------------------------------------------------- %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newif\if@circled\@circledtrue
+\newif\if@mhchemloaded\@mhchemloadedfalse
+\newif\if@xspaceloaded\@xspaceloadedfalse
+\newif\if@siunitxloaded\@siunitxloadedfalse
+\newif\if@chemstyleloaded\@chemstyleloadedfalse
+
+\define@boolkey+[CM]{chemmacros.sty}[CM@]{circled}{
+  \ifCM@circled
+    \@circledtrue
+  \else
+    \@circledfalse
+  \fi
+}{
+   \PackageWarning{chemmacros}{option `circled' is not boolean}
+}
+
+\define@key[CM]{chemmacros.sty}{xspace}{
+  \def\CM@xspace@value{#1}%
+}
+
+\ProcessOptionsX[CM]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - tools ----------------------------------------------------------------------------- %
+\def\CM@false{false}%
+\def\CM@true{true}%
+\def\CM@off{off}%
+\def\CM@on{on}%
+\def\CM@right{right}%
+% Optional Argument Analysis ---------------------------------------------------------- %
+% Prüfen ob #2 in #1 enthalten ist
+% (das Makro ist eine Kopie von \CF@if@instr in chemfig.tex von Christian Tellechea)
+\def\CM@if@instr#1#2{%
+  \def\CM@if@instr@i##1#2##2\@nil{\ifx\@empty##2\@empty\expandafter\@secondoftwo\else\expandafter\@firstoftwo\fi}%
+  \CM@if@instr@i#1\@@nil#2\@nil%
+}
+% Am ersten , splitten, #1 in #3 speichern, #2 in \CM@remainargs
+% (das Makro ist eine Kopie von \CF@analyze@movearg in chemfig.tex von Christian Tellechea)
+\def\CM@splitfirst#1,#2\@nil#3{%
+  \def#3{#1}\def\CM@remainargs{#2}%
+}
+% ein durch , in 3 Teile getrenntes Argument splitten
+% (das Makro ist eine Abwandlung von \CF@analyze@movearg in chemfig.tex von Christian Tellechea)
+\def\CM@splitarg#1{%
+  \CM@if@instr{#1}{,}{\expandafter\CM@splitfirst#1\@nil\CM@firstarg}{\def\CM@firstarg{#1}}%
+  \expandafter\CM@if@instr\expandafter{\CM@remainargs}{,}{\expandafter\CM@splitfirst\CM@remainargs\@nil\CM@secondarg}{\expandafter\def\expandafter\CM@secondarg\expandafter{\CM@remainargs}}%
+  \ifx\CM@remainargs\CM@secondarg\let\CM@thirdarg\@empty\else\expandafter\def\expandafter\CM@thirdarg\expandafter{\CM@remainargs}\fi%
+}
+
+\let\CM@xspace\empty%
+\ifx\CM@xspace@value\CM@false\def\CM@xspace{}\fi%
+\ifx\CM@xspace@value\CM@true%
+  \@ifpackageloaded{xspace}{}{\RequirePackage{xspace}}
+  \def\CM@xspace{\xspace}%
+\fi
+\ifx\CM@xspace@value\CM@off\def\CM@xspace{}\fi%
+\ifx\CM@xspace@value\CM@on%
+  \@ifpackageloaded{xspace}{}{\RequirePackage{xspace}}%
+  \def\CM@xspace{\xspace}%
+\fi
+
+\@ifpackageloaded{mhchem}{\@mhchemloadedtrue}{\@mhchemloadedfalse}
+\@ifpackageloaded{siunitx}{\@siunitxloadedtrue}{\@siunitxloadedfalse}
+\@ifpackageloaded{chemstyle}{\@chemstyleloadedtrue}{\@chemstyleloadedfalse}
+
+\if@mhchemloaded%
+  \def\CM@atom#1{\cf{#1}}%
+\else%
+  \def\CM@atom#1{\ensuremath{\text{#1}}}%
+\fi
+
+\if@circled%
+  \def\CM@plus{\oplus}%
+  \def\CM@minus{\ominus}%
+\else%
+  \def\CM@plus{+}%
+  \def\CM@minus{-}%
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - particles, charges, other helpers ------------------------------------------------- %
+% electron
+\def\el{\ensuremath{e^\CM@minus}\CM@xspace}%
+% proton
+\def\prt{\ensuremath{p^\CM@plus}\CM@xspace}%
+% charges
+\def\mch{\@ifnextchar[{\mch@ii}{\mch@i}}%
+  \def\mch@i{\ensuremath{{}^{\CM@minus}}}%
+  \def\mch@ii[#1]{\ensuremath{{}^{#1\CM@minus}}}%
+\def\pch{\@ifnextchar[{\pch@ii}{\pch@i}}%
+  \def\pch@i{\ensuremath{{}^{\CM@plus}}}%
+  \def\pch@ii[#1]{\ensuremath{{}^{#1\CM@plus}}}%
+\def\delm{\ensuremath{\text{\tiny$\delta\CM@minus$}}\CM@xspace}%
+\def\delp{\ensuremath{\text{\tiny$\delta\CM@plus$}}\CM@xspace}%
+\def\scrm{\ensuremath{\scriptstyle\CM@minus}}%
+\def\scrp{\ensuremath{\scriptstyle\CM@plus}}%
+% neutron
+\def\ntr{\ensuremath{n^0}\CM@xspace}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - stereo descriptors ---------------------------------------------------------------- %
+% Cahn-Ingold-Prelog
+\def\Rcip{\textit{(R)}}%
+\def\Scip{\textit{(S)}}%
+\def\cip#1{\textit{(#1)}}%
+\def\Sconf{\@ifnextchar[{\sconf@ii}{\sconf@i}}% S-Konfiguration
+  \def\sconf@ii[#1]{\tikz[baseline=(a.base),text height=1.5ex,text depth=.25ex]{\draw  node(a) at (0,0) {#1};\draw[->,thick,rotate=90] (20:.3cm) arc (20:340:.3cm);}}%
+  \def\sconf@i{\tikz[baseline=(a.base),text height=1.5ex,text depth=.25ex]{\draw  node(a) at (0,0) {S};\draw[->,thick,rotate=90] (20:.3cm) arc (20:340:.3cm);}}%
+\def\Rconf{\@ifnextchar[{\rconf@ii}{\rconf@i}}% R-Konfiguration
+  \def\rconf@ii[#1]{\tikz[baseline=(a.base),text height=1.5ex,text depth=.25ex]{\draw  node(a) at (0,0) {#1};\draw[<-,thick,rotate=90] (20:.3cm) arc (20:340:.3cm);}}%
+  \def\rconf@i{\tikz[baseline=(a.base),text height=1.5ex,text depth=.25ex]{\draw  node(a) at (0,0) {R};\draw[<-,thick,rotate=90] (20:.3cm) arc (20:340:.3cm);}}%
+% E/Z
+\def\E{\textit{(E)}}%
+\def\Z{\textit{(Z)}}%
+\def\cis{\textit{cis}}%
+\def\trans{\textit{trans}}%
+% Fischer
+\def\Dfi{\textsc{d}}%
+\def\Lfi{\textsc{l}}%
+% ortho/meta/para
+\def\ortho{\textsl{o}}%
+\def\meta{\textsl{m}}%
+\def\para{\textsl{p}}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - ions ------------------------------------------------------------------------------ %
+% Proton, Hydroxid, Hydronium
+\def\Hpl{\CM@atom{H$^\CM@plus$}\CM@xspace}%
+\def\Hyd{\CM@atom{OH$^\CM@minus$}\CM@xspace}%
+\def\HtO{\CM@atom{H$_3$O$^\CM@plus$}\CM@xspace}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - oxidation numbers ----------------------------------------------------------------- %
+% \ox{<number>,<atom>}
+\def\CM@ox@sign#1{%
+ \ifx -#1{$-$}%
+ \else \ifx +#1{$+$}%
+ \else #1%
+ \fi\fi%
+}
+\def\ox#1{%
+  \let\CM@remainargs\@empty\CM@splitarg{#1}%
+  \ifx\CM@firstarg\@empty\PackageError{chemmacros}{\string\ox: oxidation number missing}\fi%
+  \ifx\CM@secondarg\@empty\PackageError{chemmacros}{\string\ox: atom missing}\fi%
+  \let\CM@thirdarg\@empty%
+  \ensuremath{\overset{\text{\tiny\expandafter\CM@ox@sign\CM@firstarg}}{\expandafter\CM@atom\expandafter{\CM@secondarg}}}%
+}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - oxidation arrows ------------------------------------------------------------------ %
+% \OX{<name>,<atom>}
+% \redox(<name1>,<name2>)[<tikz>][<dim>]{<text>}
+% node setzen und benennen:
+\def\OX#1{%
+  \let\CM@remainargs\@empty\CM@splitarg{#1}%
+  \ifx\CM@firstarg\@empty\PackageError{chemmacros}{\string\OX: node name missing}\fi%
+  \ifx\CM@secondarg\@empty\PackageError{chemmacros}{\string\OX: atom missing}\fi%
+  \let\CM@thirdarg\@empty%
+  \tikz[baseline=(\CM@firstarg.base),remember picture]{\node[inner sep=0](\CM@firstarg){\expandafter\CM@atom\expandafter{\CM@secondarg}};}%
+}
+
+% nodes mit Linie verbinden:
+\def\redox(#1){%
+  \let\CM@redox@tikz\@empty%
+  \let\CM@remainargs\@empty\CM@splitarg{#1}%
+  \ifx\CM@firstarg\@empty\PackageError{chemmacros}{\string\redox: you must specify coordinates}\fi%
+  \ifx\CM@secondarg\@empty\PackageError{chemmacros}{\string\redox: you must specify coordinates}\fi%
+  \let\CM@thirdarg\@empty%
+  \let\CM@redox@begin\CM@firstarg%
+  \let\CM@redox@end\CM@secondarg%
+  \redox@i%
+}
+\def\redox@i{\@ifnextchar[{\redox@ii}{\def\CM@redox@shift{.6em}\def\CM@redox@anchor{above}\def\CM@redox@side{north}\def\CM@redox@dist{.2em}\redox@v}}
+\def\redox@ii[#1]{%
+  \ifx\@empty#1\@empty
+    \let\CM@redox@tikz\@empty%
+  \else%
+    \def\CM@redox@tikz{#1}%
+  \fi
+  \redox@iii%
+}
+\def\redox@iii{\@ifnextchar[{\redox@iv}{\def\CM@redox@shift{.6em}\def\CM@redox@anchor{above}\def\CM@redox@side{north}\def\CM@redox@dist{.2em}\redox@v}}
+\def\redox@iv[#1]{%
+  \ifx\@empty#1\@empty%
+    \let\CM@redox@shift\@empty%
+  \else%
+    \pgfmathparse{#1<0}
+    \ifnum\pgfmathresult=1%
+      \def\CM@redox@anchor{below}\def\CM@redox@side{south}\def\CM@redox@dist{-.2em}%
+    \else%
+      \def\CM@redox@anchor{above}\def\CM@redox@side{north}\def\CM@redox@dist{.2em}%
+    \fi%
+    \def\CM@redox@shift{#1}%
+  \fi%
+  \redox@v%
+}
+\def\redox@v#1{%
+  \ifx\CM@redox@tikz\@empty\def\CM@redox@tikz{}\fi%
+  \ifx\CM@redox@shift\@empty\def\CM@redox@shift{.6em}\def\CM@redox@anchor{above}\fi%
+  \tikz[remember picture,overlay]{\expandafter\draw\expandafter[\CM@redox@tikz] ($(\CM@redox@begin.\CM@redox@side)+(0,\CM@redox@dist)$) -- ++(0,\CM@redox@shift) -| node[pos=.25,\CM@redox@anchor]{#1} ($(\CM@redox@end.\CM@redox@side)+(0,\CM@redox@dist)$);}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - reaction environments for mhchem -------------------------------------------------- %
+\if@mhchemloaded
+ \RequirePackage{mathtools,environ}
+ \newtagform{CMreaction}{\{}{\}}
+ \newcounter{save@reaction}%
+ \newcounter{reaction}%
+ \def\CM@AtBeginReaction{\setcounter{save@reaction}{\value{equation}}\setcounter{equation}{\value{reaction}}\usetagform{CMreaction}}%
+ \def\CM@AtEndReaction{\setcounter{reaction}{\value{equation}}\setcounter{equation}{\value{save@reaction}}\usetagform{default}}%
+ %
+ \NewEnviron{reaction}{\CM@AtBeginReaction\begin{equation}\expandafter\ce\expandafter{\BODY}\end{equation}\CM@AtEndReaction}
+ \NewEnviron{reaction*}{\begin{equation*}\expandafter\ce\expandafter{\BODY}\end{equation*}}
+ %
+ \NewEnviron{reactions}{\CM@AtBeginReaction\begin{align}\expandafter\cee\expandafter{\BODY}\end{align}\CM@AtEndReaction}
+ \NewEnviron{reactions*}{\begin{align*}\expandafter\cee\expandafter{\BODY}\end{align*}}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - transition state symbol ----------------------------------------------------------- %
+\def\transitionstatesymbol{\tikz[inner sep=0,outer sep=0,minimum size=0]{%
+  \coordinate (@TSa) at (0,0);%
+  \coordinate (@TSb) at (0,.6em);%
+  \draw(@TSa)--node[pos=.3333](@TSx){}node[pos=.6667](@TSy){}(@TSb);%
+  \draw(@TSx)++(-.3em,0)--++(.6em,0);%
+  \draw(@TSy)++(-.3em,0)--++(.6em,0);}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - enthalpy, entropy ----------------------------------------------------------------- %
+% \State[<exp>,<Delta>,right]{<Symbol>}{<Index>}
+\def\State{\@ifnextchar[{\CM@state@ii}{\CM@state@i}}%
+  \def\CM@state@i#1#2{\ensuremath{\Delta_\mathrm{#2}#1\if@chemstyleloaded^\standardstate\fi}}%
+  \def\CM@state@ii[#1]#2#3{%
+    \let\CM@remainargs\@empty\CM@splitarg{#1}%
+    \ensuremath{\ifx\CM@secondarg\@empty\Delta\else\CM@secondarg\fi\ifx\CM@thirdarg\CM@right\else_\mathrm{#3}\fi#2\ifx\CM@thirdarg\CM@right_\mathrm{#3}\fi\ifx\CM@firstarg\@empty\if@chemstyleloaded^{\standardstate}\fi\else^{\CM@firstarg}\fi}%
+  }%
+
+\if@siunitxloaded
+  \if@chemstyleloaded\else\def\standardstate{}\fi
+  \let\CM@standard@state@symbol\standardstate%
+  \def\setnewstate{\@ifnextchar[{\CM@setnewstate@ii}{\let\CM@current@standard@state@symbol\@empty\def\CM@state@delta{\Delta}\def\CM@state@kind@right{}\CM@setnewstate@i}}%
+  \def\CM@setnewstate@ii[#1]{%
+    \let\CM@remainargs\@empty\CM@splitarg{#1}% exp,Delta,right
+    \ifx\CM@firstarg\@empty\let\CM@current@standard@state@symbol\@empty\else\let\CM@current@standard@state@symbol\CM@firstarg\fi%
+    \ifx\CM@secondarg\@empty\def\CM@state@delta{\Delta}\else\let\CM@state@delta\CM@secondarg\fi%
+    \ifx\CM@thirdarg\CM@right\let\CM@state@kind@right\CM@right\else\def\CM@state@kind@right{}\fi%
+    \CM@setnewstate@i%
+  }
+  \def\CM@setnewstate@i#1#2#3{%
+    \ifx\CM@current@standard@state@symbol\@empty\let\CM@current@standard@state@symbol\standardstate\fi%
+    \expandafter\let\csname CM@#1@symbol\endcsname\CM@current@standard@state@symbol%
+    \expandafter\let\csname CM@#1@delta\endcsname\CM@state@delta%
+    \expandafter\def\csname#1\endcsname{\@ifnextchar[{\csname CM@#1@ii\endcsname}{\csname CM@#1@i\endcsname}}%
+      \expandafter\def\csname CM@#1@i\endcsname##1{\ensuremath{\State[\csname CM@#1@symbol\endcsname,\csname CM@#1@delta\endcsname]{#2}{}=\SI{##1}{#3}}}%
+      \expandafter\def\csname CM@#1@ii\endcsname[##1]##2{%
+        \let\CM@remainargs\@empty\CM@splitarg{##1}% index,exp,einheit
+        \let\CM@state@index\CM@firstarg%
+        \let\CM@state@symbol\CM@secondarg%
+        \let\CM@state@unit\CM@thirdarg%
+        \ensuremath{\State[\CM@state@symbol,\csname CM@#1@delta\endcsname]{#2}{\CM@state@index} = \SI{##2}{\ifx\CM@state@unit\@empty#3\else\CM@state@unit\fi}}%
+      }%
+  }%
+  \setnewstate{Enthalpy}{H}{\kilo\joule\per\mole}%
+  \setnewstate[, ]{Entropy}{S}{\joule\per\kelvin\per\mole}%
+  \setnewstate{Gibbs}{G}{\kilo\joule\per\mole}%
+\fi%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - p-orbitals ------------------------------------------------------------------------ %
+% \phorb[<size factor>,<color>,<angle>]
+\def\CM@phorb{\@ifnextchar[{\CM@phorb@ii}{\let\CM@firstarg\@empty\let\CM@secondarg\@empty\let\CM@thirdarg\@empty\CM@phorb@i}}
+\def\CM@phorb@ii[#1]{\let\CM@remainargs\@empty\CM@splitarg{#1}\CM@phorb@i}
+\def\CM@phorb@i{
+  \ifx\CM@firstarg\@empty\def\CM@orb@flip{1.5*\CM@orb@height}\else\def\CM@orb@flip{\CM@firstarg*1.5*\CM@orb@height}\fi
+  \ifx\CM@secondarg\@empty\def\CM@orb@color{black}\else\def\CM@orb@color{\CM@secondarg}\fi
+  \ifx\CM@thirdarg\@empty\def\CM@orb@ang{0}\else\def\CM@orb@ang{\CM@thirdarg}\fi
+  \tikzpicture[overlay,rotate={\CM@orb@ang-90},opacity=.5,inner sep=0pt,outer sep=0pt,text height=0pt,text depth=0pt]
+   \pgfsetfillopacity{.5}
+   \node(\CM@orb@node){};
+   \draw[draw=\CM@orb@color,fill=\CM@orb@color] (\CM@orb@node) .. controls ++(-.9*\CM@orb@height,\CM@orb@flip) and ++(.9*\CM@orb@height,\CM@orb@flip) .. (\CM@orb@node);
+  \endtikzpicture
+}
+\def\phorb{\CM@phorb}
+
+% \porb[<size factor>,<color>,<angle>]
+\def\CM@porb{\@ifnextchar[{\CM@porb@ii}{\let\CM@firstarg\@empty\let\CM@secondarg\@empty\let\CM@thirdarg\@empty\CM@porb@i}}
+\def\CM@porb@ii[#1]{\let\CM@remainargs\@empty\CM@splitarg{#1}\CM@porb@i}
+\def\CM@porb@i{
+  \ifx\CM@firstarg\@empty\def\CM@orb@flip{1.5*\CM@orb@height}\else\def\CM@orb@flip{\CM@firstarg*1.5*\CM@orb@height}\fi
+  \ifx\CM@secondarg\@empty\def\CM@orb@color{black}\else\def\CM@orb@color{\CM@secondarg}\fi
+  \ifx\CM@thirdarg\@empty\def\CM@orb@ang{0}\else\def\CM@orb@ang{\CM@thirdarg}\fi
+  \tikzpicture[overlay,rotate={\CM@orb@ang-90},opacity=.5,inner sep=0pt,outer sep=0pt,text height=0pt,text depth=0pt]
+   \pgfsetfillopacity{.5}
+   \node(\CM@orb@node){};
+   \draw[draw=black] (\CM@orb@node) .. controls ++(-.9*\CM@orb@height,\CM@orb@flip) and ++(.9*\CM@orb@height,\CM@orb@flip) .. (\CM@orb@node);
+   \draw[draw=\CM@orb@color,fill=\CM@orb@color] (\CM@orb@node) .. controls ++(-.9*\CM@orb@height,-\CM@orb@flip) and ++(.9*\CM@orb@height,-\CM@orb@flip) .. (\CM@orb@node);
+  \endtikzpicture
+}
+\def\porb{\CM@porb}
+
+\def\CM@orb@node{x}
+\def\CM@orb@height{1em}
+\def\setorbheight#1{
+  \ifx\@empty#1\@empty
+  \def\CM@orb@height{1em}
+  \else
+  \def\CM@orb@height{#1}
+  \fi
+}
+
+\def\pzorb{\porb[,,90]}
+\def\pyorb{\porb[,,0]}
+\def\pxorb{\porb[,,-135]}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% - Newman projections ---------------------------------------------------------------- %
+\let\CM@newman@tikz@ring\@empty%
+\let\CM@newman@tikz@one\@empty%
+\let\CM@newman@tikz@two\@empty%
+\def\newman{\@ifnextchar[{\CM@newman@ii}{\def\CM@newman@angle{0}\def\CM@newman@scale{1}\let\CM@newman@tikz@ring\@empty\let\CM@newman@tikz@one\@empty\let\CM@newman@tikz@two\@empty\CM@newman@i}}%
+\def\CM@newman@ii[#1]{%
+  \let\CM@remainargs\@empty\CM@splitarg{#1}%
+  \ifx\CM@firstarg\@empty\def\CM@newman@angle{0}\else\let\CM@newman@angle\CM@firstarg\fi%
+  \ifx\CM@secondarg\@empty\def\CM@newman@scale{1}\else\let\CM@newman@scale\CM@secondarg\fi%
+  \ifx\CM@thirdarg\@empty\let\CM@newman@tikz@ring\else\let\CM@newman@tikz@ring\CM@thirdarg\fi%
+  \CM@newman@iii%
+}
+\def\CM@newman@iii{\@ifnextchar[{\CM@newman@iv}{\CM@newman@i}}
+\def\CM@newman@iv[#1]{%
+  \ifx\@empty#1\@empty\let\CM@newman@tikz@one\@empty\else\edef\CM@newman@tikz@one{#1}\fi%
+  \let\CM@newman@tikz@two\CM@newman@tikz@one%
+  \CM@newman@v%
+}
+\def\CM@newman@v{\@ifnextchar[{\CM@newman@vi}{\CM@newman@i}}
+\def\CM@newman@vi[#1]{%
+  \ifx\@empty#1\@empty\else\edef\CM@newman@tikz@two{#1}\fi%
+  \CM@newman@i%
+}
+\def\CM@newman@i#1{%
+  \let\CM@remainargs\@empty\CM@splitarg{#1}%
+  \ifx\CM@firstarg\@empty\let\CM@newman@node@one\@empty\else\let\CM@newman@node@one\CM@firstarg\fi%
+  \ifx\CM@secondarg\@empty\let\CM@newman@node@two\CM@newman@tikz@one\else\let\CM@newman@node@two\CM@secondarg\fi%
+  \let\CM@remainargs\@empty%
+  \expandafter\CM@splitarg\expandafter{\CM@thirdarg}%
+  \ifx\CM@firstarg\@empty\let\CM@newman@node@three\@empty\else\let\CM@newman@node@three\CM@firstarg\fi%
+  \ifx\CM@secondarg\@empty\let\CM@newman@node@four\@empty\else\let\CM@newman@node@four\CM@secondarg\fi%
+  \let\CM@remainargs\@empty%
+  \expandafter\CM@splitarg\expandafter{\CM@thirdarg}%
+  \ifx\CM@firstarg\@empty\let\CM@newman@node@five\@empty\else\let\CM@newman@node@five\CM@firstarg\fi%
+  \ifx\CM@secondarg\@empty\let\CM@newman@node@six\@empty\else\let\CM@newman@node@six\CM@secondarg\fi%
+  \let\CM@thirdarg\@empty%
+  \edef\CM@newman@tikz{scale=\CM@newman@scale,atomF/.style={inner sep=0,outer sep=0,\CM@newman@tikz@one},atomB/.style={inner sep=0,outer sep=0,\CM@newman@tikz@two}}
+  \expandafter\tikz\expandafter[\CM@newman@tikz]{%
+  \coordinate (a) at (0,0);
+  \expandafter\draw\expandafter[\CM@newman@tikz@ring] (a) circle (.5);
+  \foreach\i in{30+\CM@newman@angle,150+\CM@newman@angle,270+\CM@newman@angle}
+   {\expandafter\draw\expandafter[\CM@newman@tikz@ring] ($(a)+(\i:0.5)$) --++(\i:.5);}
+  \node[atomB,anchor=-150+\CM@newman@angle] at ($(a)+(30+\CM@newman@angle:1.05)$) {\CM@newman@node@five};
+  \node[atomB,anchor=-30+\CM@newman@angle] at ($(a)+(150+\CM@newman@angle:1.05)$){\CM@newman@node@six};
+  \node[atomB,anchor=90+\CM@newman@angle] at ($(a)+(270+\CM@newman@angle:1.05)$){\CM@newman@node@four};
+  \foreach\i in{90,210,330}
+   {\expandafter\draw\expandafter[\CM@newman@tikz@ring] (a) --++(\i:1);}
+  \node[atomF,anchor=-90] at ($(a)+(90:1.05)$) {\CM@newman@node@one};
+  \node[atomF,anchor=30] at ($(a)+(210:1.05)$){\CM@newman@node@two};
+  \node[atomF,anchor=150] at ($(a)+(330:1.05)$){\CM@newman@node@three};
+  }
+}
+
+\endinput

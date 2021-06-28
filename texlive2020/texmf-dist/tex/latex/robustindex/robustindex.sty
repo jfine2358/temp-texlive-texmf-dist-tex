@@ -1,0 +1,419 @@
+% Package robustindex.sty, Wilberd van der Kallen 2005, 2017, 2018, 2019.
+%
+% Third parties often change the page numbers without rerunning makeindex.
+% One would like to make the page numbers in the index entries more robust.
+% We use the \pageref mechanism for that. Only after adding, deleting or
+% otherwise modifying an \index{entry}, or after changing the order of the
+% index entries, does one have to rerun makeindex.
+% Other changes do not matter, as long as one runs LaTeX or pdflatex until 
+% labels are stable.
+% As usual a makeindex run has to be preceded and also followed by its
+% LaTeX or pdflatex run.
+%
+%
+% If you use hyperref, you must choose the option hyperindex=false.  
+% Our package already gives hyperlinks in the index.
+% Alternatively, you may go against the advice of hyperref and put our
+% package later.
+%
+% We tested with
+%
+% \usepackage[plainpages=false,hyperindex=false]{hyperref}
+%
+% Automatic page ranges are not supported.
+% Commands of the type \index{entry|editing command} are supported,
+% but much more naively than in the encapsulating mechanism of makeindex.
+% For instance, \index{term|(textbf} may be followed by \index{term|)textit}.
+%
+%
+% Our package performs no miracles. But in simple situations all you need is
+% adding the \usepackage{robustindex} to the preamble. Do not exclude any
+% relevant files, as in \includeonly.
+%
+% The option multind provides support for several indexes with pagerefs.
+% There is just one index file, and the usual compilation cycle 
+% (latex, makeindex, latex) suffices.
+% With the command \setindex in the LaTeX file one arranges which index is
+% the active one at any given moment. 
+% This steers the behaviour of \index and \printindex.
+%
+% We introduce tools to embellish an index with letter headings.
+%
+% That is the positive part.
+% 
+% While robustindex.sty broke the automatic page range feature of 
+% makeindex, the multind option also broke the insertions 
+% of \indexspace in the index file. And it messed up the sorting.
+% We use various hacks to restore reasonable behaviour. This makes the index file
+% pretty unreadable and style files of makeindex will probably fail.
+%
+% 
+% Remark.
+% The package imakeidx also synchronises the index with the manuscript,
+% but it has a different method and different requirements.
+%
+% https://www.staff.science.uu.nl/~kalle101/stind
+%
+% Copyright 2019 Wilberd van der Kallen
+%
+% This file may be distributed under the conditions of the LaTeX Project Public
+% License, either version 1.2 of this license or (at your option) any
+% later version.  The latest version of this license is in
+%    http://www.latex-project.org/lppl.txt
+% and version 1.2 or later is part of all distributions of LaTeX
+% version 1999/12/01 or later.
+
+\ProvidesPackage{robustindex}
+  [2019/01/25
+  index entries with pagerefs]
+
+\RequirePackage{makeidx}
+
+\DeclareOption{multind}{
+  \AtBeginDocument{\setindex{main}}%
+  \def\robust@mult{\relax}
+}%
+
+\ProcessOptions\relax
+
+\newcounter{indexctr}%
+
+\newcounter{maxindctr}% Used to check if number of \index commands has changed.
+
+\newcommand{\indstring}{ind.}%
+
+
+\def\@wrindex#1{%
+\@bsphack
+  \stepcounter{indexctr}%
+  \stepcounter{indexctr}% second time, to emulate makeindex -r.
+  \protected@write \@auxout {}{%
+     \string \newlabel {\indstring\theindexctr}{{\relax }{\thepage }%
+     \ifx\ifHy@bookmarks\undefined\else{\relax }{page.\thepage }{}\fi%
+     }%
+  }%
+  \@esphack
+  \protected@write
+    \@indexfile {}{\string \indexentry
+    {\findencap#1|\relax }{\theindexctr}}% \findencap will check for the
+  \endgroup                              % encap symbol | in the argument.
+\@esphack
+}%
+
+\def\@multwrindex#1{%
+\@bsphack 
+\stepcounter{indexctr}%
+\stepcounter{indexctr}% second time, to emulate makeindex -r.
+\protected@write \@auxout {}{%
+     \string \newlabel {\indstring\theindexctr}{{\relax }{\thepage }%
+     \ifx\ifHy@bookmarks\undefined\else{\relax }{page.\thepage }{}\fi%
+     }%
+  }%
+  \@esphack
+  \protected@write
+   \@indexfile {}{\string \indexentry
+   {\string\indnr\robustchoice d\gr@bltr#1-\relax b{} \findencap#1|\relax}{\theindexctr}}%
+  \endgroup
+\@esphack
+}
+
+
+\ifx\robust@mult\undefined\else\let\@wrindex\@multwrindex\fi
+
+\newcommand\sindex{\@ifnextchar[{\@sindex}{\@@sindex}}%
+
+\def\@sindex[#1]{\setindex{#1}\index}
+
+\def\@@sindex{\setindex{main}\index}
+
+\newif\ifinside@range% output must be supressed inside page range.
+\inside@rangefalse
+
+\newcommand{\indpageref}[1]{%
+\ifinside@range \findEndPageRange\else
+   \ifnum\c@maxindctr<#1\relax\setcounter{maxindctr}{#1}\fi
+   \pageref{\indstring#1}%
+   \fi
+}%
+
+\newcommand{\indexpreamble}{\relax}% compare the preamble of makeindex
+
+\newcommand{\mult@err}{\PackageWarning{robustindex}{%
+ Index file is obsolete. Run makeindex. Detected}Index file is obsolete. Run makeindex. 
+ \end{theindex}\endinput}%
+
+\newcommand{\gobbletillnine}{\mult@err}
+ 
+\newcommand{\indexincontents}{%
+  \def\indexpreamble{%
+     \refstepcounter{subsection}%
+   % This creates a hyperlink destination.
+   % Compare phantomsection in hyperref.
+   % An index is not to be followed immediately by a subsection.
+     \addcontentsline{toc}%
+        {\ifx\c@chapter\undefined section\else chapter\fi}{\indexname}%
+  }%
+}%
+
+\newcommand{\old@theindex}{}%
+
+\let\old@theindex\theindex
+
+\newcommand{\cndhyprndxwrng}{%
+    \ifHy@hyperindex
+       \PackageWarning{robustindex}{%
+          Use option hyperindex=false in hyperref. Hyperlinks in the index
+	  will be made through \string\pageref. Detected%
+       }%
+    \fi
+}%
+
+\def\theindex{%
+   \old@theindex
+   \indexpreamble
+   \ifx\ifHy@hyperindex\undefined\else\cndhyprndxwrng\fi
+}%
+
+\ifx\ifHy@hyperindex\undefined\else\Hy@hyperindexfalse\fi
+% If you put our package after the hyperref package,
+% then you probably do not mind our disabling its hyperindex mechanism.
+
+\AtEndDocument{%
+   \ifnum\c@indexctr=\c@maxindctr
+   \else
+      \ifnum\c@indexctr=0%
+         \PackageWarning{robustindex}{%
+	    Package needs \string\make index in preamble,
+	    and if you use hyperref, you must
+	    use option hyperindex=false. Detected%
+	 }%
+      \else
+        \ifx\robust@mult\undefined
+           \PackageWarning{robustindex}{%
+            Index not up to date, run makeindex. Detected%
+           }\else
+           \PackageWarning{robustindex}{Print each index or run makeindex. Detected}%
+        \fi
+      \fi
+   \fi
+}%
+
+\newcommand{\wrappageref}{\protect\wrapindpageref}%
+
+\newcommand{\wrapindpageref}{}%
+
+\def\wrapindpageref#1, \indpageref#2{%
+   \ifnum\c@maxindctr<#2\relax
+      \setcounter{maxindctr}{#2}%
+   \fi
+   #1{\pageref{\indstring#2}}%
+}%
+
+\newcommand{\gobbleindpageref}{\wrappageref\@gobble}%
+
+\newcommand{\gobblepageref}{% to suppress one page number.
+      \protect\gobbleindpageref
+}%
+
+
+
+% Now it gets ugly, because we wish to implement a poor man's encap
+% mechanism, distinguishing \index{entry}, \index{entry|(}, \index{entry|)},
+% \index{entry|towrap}, \index{entry|(towrap}, \index{entry|)towrap}, where
+% towrap is a sequence of letters and \towrap is to be wrapped around 
+% \indpageref{countervalue}.
+
+
+\newcommand{\findencap}{}%
+
+\def\findencap#1|#2\relax{%
+   \ifx\relax#2\relax
+      #1|indpageref% The easy case
+   \else
+      #1|\wr@pencap#2% There is a | in the argument.
+   \fi
+}%
+
+
+\newcommand{\wr@pencap}{}%
+
+\def\wr@pencap#1|{encpageref{#1}}%
+
+\newcommand{\encpageref}[2]{%
+     \findleft@brack#1(\relax{#2}%
+}%
+
+\newcommand{\findleft@brack}{}%
+
+\def\findleft@brack#1(#2\relax#3{%
+   \ifx|#1| \dropleft@brack#2{#3}% bracket ( found.
+   \else \findright@brack#1)\relax{#3}%
+   \fi
+}%
+
+\newcommand{\dropleft@brack}{}%
+
+\def\dropleft@brack#1(#2{%
+   \ifx|#1|\indpageref{#2}\inside@rangetrue%
+   \else
+      \csname #1\endcsname{\indpageref{#2}}\inside@rangetrue%
+   \fi
+   % output for this key must be suppressed until end of range.
+   \findEndPageRange%
+}%
+
+
+\newcommand{\findEndPageRange}{}% Name is helpful in error message if end not found.
+
+\def\findEndPageRange#1,{% It actually removes a comma.
+   \ignorespaces #1%
+}%
+
+\newcommand{\findright@brack}{}%
+
+\def\findright@brack#1)#2\relax#3{%
+   \ifx|#1|\unskip \dropright@brack#2{#3}% bracket ) found.
+   \else
+      \ifinside@range
+        \findEndPageRange
+      \else
+        \csname#1\endcsname{\indpageref{#3}}%
+      \fi
+   \fi
+}%
+
+\newcommand{\dropright@brack}{}%
+
+\def\dropright@brack#1)#2{%
+   \inside@rangefalse% output no longer suppressed.
+   \ifx|#1|\unskip \mbox{--}\nobreak\indpageref{#2}%
+   \else
+      \unskip \mbox{--}\nobreak\csname #1\endcsname{\indpageref{#2}}%
+   \fi
+   \ignorespaces
+}%
+
+
+
+% Now the part that supports multiple indices. We hack the sorting mechanism of
+% Makeindex and put instructions for the mouth of TeX in the index file.
+
+\newcommand{\gr@bltr}{\relax}%
+
+\def\gr@bltr#1#2\relax{\ifcat A#10\the\uccode`#1\else 060\fi}%
+% to keep "a" and "A" together.
+
+\newcommand{\altsort}% to place some entries after the alphabet
+{\def\gr@bltr##1##2\relax{\ifcat A##10\the\uccode`##1\else##1\fi}}
+
+% But first some code for embellishing an index. Our hacking brakes the insertion of 
+% \indexspace at appropriate places. We have to work hard to restore that. While we
+% are at it, we may as well add the possibility to insert a letter T after the
+% \indexspace that precedes the entries that start with t or T.
+% First we describe the default style, that does not insert the T.
+\newcommand{\indexcapstyle}[1]{\indexspace}
+% To get the T one changes the style like this
+% \renewcommand{\indexcapstyle}[1]{\indexspace\textbf{#1}\par}%
+
+\newcommand{\nxtletre}{\def\item{\letr@test}}% about next letter in alphabet
+
+\newcommand{\indexcapitalhead}[1]{% Preparing for a heading; not printed.
+  \protected@write
+    \@indexfile {}{\string \indexentry
+    {\string\indnr \robustchoice d\gr@bltr#1\relax a #1@\protect\nxtletre
+    \protect\def\protect\nwletre{#1}\string\jmptonine}{9}}%          
+}%
+
+\newcommand{\extraheaders}{\relax}
+
+\newcommand{\capitalsinindex}[1]{% Will be called by \newindex with full alphabet.
+\extraheaders\find@capitals#1\relax}%
+
+\newcommand{\find@capitals}{\relax}%
+
+\def\find@capitals#1#2\relax{% To deal with 26 letters.
+\indexcapitalhead #1%
+\ifx\relax#2\relax
+\else\find@capitals#2\relax
+\fi}%
+
+\newcommand{\letr@test}{\relax}% To test if entry starts with new letter.
+
+\long\def\letr@test#1{\ifx#1\nxtletre\else\proc@letter{\relax#1}\fi}%
+
+\newcommand{\proc@letter}{\relax}% 
+
+\def\proc@letter#1#2{\long\def\item{\olditem}%
+\ifx#1\relax\else\indexcapstyle{\nwletre}\fi\fi#1}%
+
+\newcommand{\olditem}{\relax}%
+
+% All this just to embellish an index. Now the support for multiple indexes.
+
+\newcommand{\setindex}[1]{%
+\@bsphack
+\expandafter\ifx\csname#1@rbstind\endcsname\relax 
+  \newindex{#1}%
+\else
+  \edef\robustchoice{\csname#1@rbstind\endcsname}%
+\fi
+\@esphack}%
+
+\ifx\robust@mult\undefined\def\setindex{\PackageWarning{robustindex}{%
+ \string\setindex{}  requires option multind. Detected}}\fi
+
+\newcounter{multindctr}%
+\newcommand{\robustcutpoint}{\relax}%
+\newcommand{\untilrobustcutpoint}{\relax}%
+\newcommand{\newindex}{\relax}%
+\newcommand{\robustchoice}{\relax}%
+\newcommand{\indnr}{\relax}%
+
+\setcounter{multindctr}{999}% Fewer than 899 indexes expected.
+
+\long\def\untilrobustcutpoint#1\robustcutpoint{\fi}% 
+% This tels the mouth of TeX not to send too much to the stomach.
+% It should only forward the part that belongs to the active index.
+
+\def\indnr#1 {}% The \indnr part is used for sorting by makeindex and needs to be ignored
+               % by TeX thereafter.  
+
+\newcommand\multindpreamble{\let\olditem\item\let\jmptonine\jmp@tnine}% 
+% \multindpreamble may serve as hook for further code.
+
+\newcommand{\jmptonine}{\mult@err}%
+
+\newcommand{\jmp@tnine}{\relax}%
+
+\def\jmp@tnine#1 9{\relax}
+
+\def\newindex#1{\@bsphack
+\ifx\@indexfile\undefined\PackageWarning{robustindex}{%
+Package needs \string\make index in preamble. Detected}\fi
+\ifnum\c@multindctr=999%
+  \protected@write
+    \@indexfile {}{\string \indexentry
+    {\string\indnr 999b @\string\nxtletre
+    \string\robustcutpoint\string\jmptonine}{9}}%                              
+  \@esphack
+\fi
+\addtocounter{multindctr}{-1}%
+\expandafter\edef\csname#1@rbstind\endcsname{\the\c@multindctr}%
+\edef\robustchoice{\csname#1@rbstind\endcsname}%
+\@esphack 
+\protected@write
+    \@indexfile {}{\string \indexentry
+    {\string\indnr\the\c@multindctr d091 @\protect\relax\string\jmptonine
+}{9}}% 
+\protected@write
+    \@indexfile {}{\string \indexentry
+    {\string\indnr\the\c@multindctr a @\string\robustcutpoint 
+\string\ifnum\string\robustchoice=\the\c@multindctr\string\multindpreamble
+\string\else\string\untilrobustcutpoint
+\string\fi\string\jmptonine
+}{9}}% 
+\capitalsinindex{ABCDEFGHIJKLMNOPQRSTUVWXYZ}%  
+\@esphack
+}%
+
+\endinput

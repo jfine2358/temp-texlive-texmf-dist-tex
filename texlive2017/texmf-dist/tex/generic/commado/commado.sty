@@ -1,0 +1,90 @@
+                                                      \input plainpkg
+% \NeedsTeXFormat{LaTeX2e}[1994/12/01]
+\ProvidesPackage{commado}[2012/11/30 v0.11 iterate on CSL (UL)]
+%%
+%% Copyright (C) 2012 Uwe Lueck,
+%% http://www.contact-ednotes.sty.de.vu
+%% -- author-maintained in the sense of LPPL below --
+%%
+%% This file can be redistributed and/or modified under
+%% the terms of the LaTeX Project Public License; either
+%% version 1.3c of the License, or any later version.
+%% The latest version of this license is in
+%%     http://www.latex-project.org/lppl.txt
+%% We did our best to help you, but there is NO WARRANTY.
+%%
+%% Please report bugs, problems, and suggestions via
+%%
+%%   http://www.contact-ednotes.sty.de.vu
+%%
+\PushCatMakeLetterAt
+%% == Auxiliaries                       ==
+\ifltx \else    %% unless provided by LaTeX already
+    \long\def\@firstoftwo#1#2{#1}
+    \long\def\@secondoftwo#1#2{#1}
+\fi
+%% ... 4 less than
+% \long\def\@firstsecondofthree#1#2#3{#1#2}
+% \long\def\@firstthirdofthree#1#2#3{#1#3}
+%%
+%% == Processing a Comma-Separated List ==
+%% Most of the following code aims at removing the final 
+%% space in the comma-separated list.
+%% % `\<cmd>' usually may either refer to a string starting 
+%% % with a backslash or to the \emph{token} with the name 
+%% % \qtdcode{<cmd>} 
+%% % (cf. "\TeX's Tokens" in the \ctanpkgref{dowith} documentation).
+%% A variant of parsing as in 'fifinddo.sty' 
+%% (\ctanpkgdref{nicetext} bundle) and 
+%% \ctanpkgstyref{bitelist}\urlfoot{CtanPkgRef}{bitelist} 
+%% package is employed  %% ^ 2012/11/30
+%% (while I am about to use different approaches there, 
+%%  one may see here how, inspired by `\@ifblank' in 
+%%  \ctanpkgstyref{url}).\urlfoot{CtanPkgRef}{url}
+%% The purpose of the following `\edef' of 
+%% |\DoWithCSL{<cmd>}{<list>}|
+%% is to get a space token after `\@firstoftwo' in the parameter text.
+%% \pagebreak[3]
+\let\CD@final@comma\relax
+\edef\DoWithCSL#1#2{%
+    \CD@final@comma#2\CD@final@comma    %% 2nd \ 2012/11/30
+    \noexpand\@firstoftwo
+%     \noexpand\@firstsecondofthree
+    \space\CD@final@comma
+    \noexpand\@secondoftwo
+%     \noexpand\@firstthirdofthree
+    \noexpand\end{#1}{#2}}
+\def\CD@final@comma#1 \CD@final@comma#2#3\end#4#5{%
+%     \expandafter\@secondfirstoftwo\expandafter{%
+%         #2{#1}#5}{\do@with@csl#4}%
+    #2{\do@with@csl{#4}#1}{\do@with@csl{#4}#5}%
+%% ... 15 vs.\ 13:
+%       #2{\do@with@csl{#4}}{#1}{#5}%
+            ,\StopDoing,}
+\catcode`\Q=3               %% not in #1
+\def\do@with@csl#1#2#3,{%
+%% #1 is <cmd>. #2 takes the first token from (remaining) <list>
+%% that is not a space token. Trying to enter a blank 
+%% list item would result in using the 
+%% \emph{next comma as a list item!}---The following 
+%% is an alternative to the analogue in 'domore.sty':
+    \unless@stop@doing#2#3\StopDoing
+        #1{#2#3}\do@with@csl{#1}\StopDoing Q}
+\def\unless@stop@doing#1\StopDoing#2\StopDoing#3Q{#2}
+%% ... somewhat replaces `\@secondfirstoftwo'---but will the 
+%% latter be dropped? `\unless@stop@doing' is specific 
+%% for `\StopDoing'---but can be used with `\DoWith' too. 
+%% TODO %% 2012/11/24
+\catcode`\Q=11
+%%
+%% == Leaving the Package File ==
+\PopLetterCatAt
+\endinput
+%%
+%% == \acro{VERSION HISTORY} ==
+
+v0.1   2012/11/24f.  started 
+       2012/11/26    code ready
+       2012/11/27    documented
+v0.11  2012/11/30    code typo corrected, removing final space, 
+                     doc. \urlfoot's

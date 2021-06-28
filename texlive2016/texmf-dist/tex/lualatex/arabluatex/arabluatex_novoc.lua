@@ -1,0 +1,136 @@
+--[[
+This file is part of the `arabluatex' package
+
+ArabLuaTeX -- Processing ArabTeX notation under LuaLaTeX
+Copyright (C) 2016  Robert Alessi
+
+Please send error reports and suggestions for improvements to Robert
+Alessi <alessi@robertalessi.net>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see
+<http://www.gnu.org/licenses/>.
+--]]
+
+tanwinnv = {
+   {a="uNU", b="و"},
+   {a="aNU", b="وا"},
+   {a="iNU", b="و"},
+   -- assimilations (begin). These are good but may not apply here.
+--   {a="(uN)(%s)([rlmnwy])", b="|%2%3%3"},
+--   {a="(aN)(_A)(%s)([rlmnwy])", b="ى%3%4%4"},
+--   {a="(aN)(Y)(%s)([rlmnwy])", b="ى%3%4%4"},
+--   {a="(T)(aN)(%s)([rlmnwy])", b="%1%3%4%4"},
+--   {a="(ء)(aN)(%s)([rlmnwy])", b="%1%3%4%4"},
+--   {a="([^TA])(aN)(%s)([rlmnwy])", b="%1ا%3%4%4"},
+--   {a="(iN)(%s)([rlmnwy])", b="|%2%3%3"},
+   -- assimilations (end)
+   -- "quoted" tanwīn (begin)
+   {a="(\"uN)", b="ٌ"},
+   {a="(B)(\"aN)", b="%1ً"},
+   {a="(\"aN)(_A)", b="ًى"},
+   {a="(\"aN)(Y)", b="ًى"},
+   {a="(T)(\"aN)", b="%1ً"},
+   {a="(ء)(\"aN)", b="%1ً"},
+   {a="([^TA])(\"aN)", b="%1ًا"},
+   {a="(\"iN)", b="ٍ"},
+   -- "quoted" tanwīn (end)
+   {a="(uN)", b=""},
+   {a="(B)(aN)", b="%1"},
+   {a="(aN)(_A)", b="ى"},
+   {a="(aN)(Y)", b="ى"},
+   {a="(T)(aN)", b="%1"},
+   {a="(ء)(aN)", b="%1"},
+   {a="([^TA])(aN)", b="%1ا"},
+   {a="(iN)", b=""},
+   -- initial straight double quote gives a connective ʾalif. This has
+   -- nothing to do with the tanwīn, but I put it here for time being.
+   {a="^\"", b="ٱ"},
+   {a="([%s%-])\"", b="%1ٱ"}
+}
+
+trigraphsnv = { -- trigraphs or more
+   -- Allah
+   {a="l%-l_ah", b="l-ll_ah"},
+   -- 'llatI / 'llad_I
+   {a="^'ll(a)([%_]?[dt])", b="ال%1%2"},
+   {a="([%s%-])'ll(a)([%_]?[dt])", b="%1ال%2%3"},
+   -- al- + lām
+   {a="^(a)l%-(l)", b="ا%1ل%2"},
+   {a="([%s%-])(a)l%-(l)", b="%1ا%2ل%3"},
+   -- al- + solar consonant
+   {a="^(a)l%-([%_%^%.]?[tdrzsn])", b="ا%1ل%2"},
+   {a="([%s%-])(a)l%-([%_%^%.]?[tdrzsn])", b="%1ا%2ل%3"},
+   -- assim. art. + solar consonant
+   {a="^(a)([%_%^%.]?[tdrzsn])%-", b="ا%1ل"},
+   {a="([%s%-])(a)([%_%^%.]?[tdrzsn])%-", b="%1ا%2ل"},
+   -- al- + initial unstable hamza
+   {a="^(a)l%-(\")([uai])", b="ا%1لٱ%3"},
+   {a="([%s%-])(a)l%-(\")([uai])", b="%1ا%2لٱ%4"},
+   {a="^(a)l%-([uai])", b="ا%1لا%2"},
+   {a="([%s%-])(a)l%-([uai])", b="%1ا%2لا%3"},
+   -- li-/la- + art. + initial unstable hamza is a special orthography
+   {a="l([ai])%-l%-(\")([uai])", b="ل%1لٱ%3"},
+   {a="l([ai])%-l%-([uai])", b="ل%1لا%2"},
+   -- al- + lunar consonant (i.e. what remains)
+   {a="^(a)l%-", b="ا%1ل"},
+   {a="([%s%-])(a)l%-", b="%1ا%2ل"},
+   -- art. with waṣla + lām
+   {a="'l%-(l)", b="ال%1"},
+   -- art. with waṣla + solar consonant
+   {a="'l%-([%_%^%.]?[tdrzsn])", b="ال%1"},
+   -- li-/la- + art. + lām
+   {a="l([ai])%-l%-(l)", b="ل%1%2"},
+   -- assim. art. with waṣla + solar consonant
+   {a="'([%_%^%.]?[tdrzsn])%-", b="ال"},
+   -- li-/la- + art. + solar consonant is a special orthography
+   {a="l([ai])%-l%-([%_%^%.]?[tdrzsn])", b="ل%1ل%2"},
+   -- li-/la + assim. art. + solar consonant is a special orthography
+   {a="l([ai])%-([%_%^%.]?[tdrzsn])%-([%_%^%.]?[tdrzsn])", b="ل%1ل%3"},
+   -- art. with waṣla + initial unstable hamza
+   {a="'l%-(\")([uai])", b="الٱ%2"},
+   {a="'l%-([uai])", b="الا%1"},   
+   -- art. with waṣla + lunar consonant (i.e. what remains)
+   {a="'l%-", b="ال"},
+   -- the silent wāw
+   {a="uU$", b="uو"},
+   {a="uU(%W)", b="uو%1"},
+   {a="aU$", b="aو"},
+   {a="aU(%W)", b="aو%1"},
+   {a="iU$", b="iو"},
+   {a="iU(%W)", b="iو%1"},
+   -- words ending in -āT with silent wāw/yāʾ
+   {a="(_a)UA", b="%1وا"},
+   {a="(_a)U", b="%1و"},
+   {a="(_a)I", b="%1ي"}
+}
+
+longvnv = {
+   {a="\"A", b="َا"},
+   {a="\"U", b="ُو"},
+   {a="\"I", b="ِي"},
+   {a="\"Y", b="aى"},
+   {a="A", b="ا"},
+   {a="U", b="و"},
+   {a="I", b="ي"},
+   {a="Y", b="ى"},
+}
+
+shortvnv = {
+   {a="\"u", b="ُ"},
+   {a="\"a", b="َ"},
+   {a="\"i", b="ِ"},
+   {a="u", b=""},
+   {a="a", b=""},
+   {a="i", b=""}
+}

@@ -1,0 +1,98 @@
+%%
+%% This is file `clojure-pamphlet.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% clojure-pamphlet.dtx  (with options: `package')
+%% This is a generated file.
+%% 
+%% Copyright (C) 2019 by Lanchares Sanchez, Ernesto
+%% 
+%% This file may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either
+%% version 1.3 of this license or (at your option) any later
+%% version.  The latest version of this license is in:
+%% 
+%%     http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3 or later is part of all distributions of
+%% LaTeX version 2005/12/01 or later.
+\NeedsTeXFormat{LaTeX2e}[2005/12/01]
+\ProvidesPackage{clojure-pamphlet}[2019/07/08 v1.o .dtx clojure pamphlet file]
+\RequirePackage{listings}
+\RequirePackage{hyperref}
+\@input{\jobname.pam}
+\newcount\pam@references
+\edef\wbgroup{\iftrue\string{\else}\fi}
+\edef\wegroup{\iffalse{\else\string}\fi}
+\def\pam@storetext#1{%
+    \expandafter\if\string#1\wegroup%
+        \getchunk{\pam@text}%
+        #1%
+    \else%
+        \edef\pam@text{\pam@text#1}%
+        \expandafter\pam@storetext% This expandafter is so the input of
+                                  % \pam@storetext is not \fi
+    \fi%
+}
+\newenvironment{pam@getchunkenv}{\def\pam@text{}%
+\expandafter\pam@storetext}{}
+\lstnewenvironment{chunk}[1]{%
+    \hypertarget{#1}%
+    {\ }\newline\noindent%
+    \hbox{\hskip 2.0cm}{\bf --- #1 ---}%
+    \edef\@currentlabelname{#1}%
+    \lstset{alsodigit={.-},alsoletter={\\}}%
+    \lstset{escapebegin=\begin{pam@getchunkenv}}%
+    \lstset{escapeend=\end{pam@getchunkenv}}%
+    \lstset{escapeinside={\\getchunk\{}{\}}}%
+}{
+    {\ }\newline\noindent%
+    \hbox{\hskip 2.0cm}%
+    {\it ---\csname referenced#1\endcsname---}%
+}
+\newcommand{\getchunk}[1]{%
+    {\big<}\hyperlink{#1}{#1}{\big>}%
+    \edef\pam@label{reference-\the\pam@references}%
+    \label{\pam@label}%
+    \ifcsname used#1\endcsname\else%
+        \expandafter\def\csname used#1\endcsname{Used by}%
+    \fi%
+    \edef\pam@tmp{\unexpanded\expandafter\expandafter%
+    \expandafter{\csname used#1\endcsname}}%
+\expandafter\xdef\csname used#1\expandafter\endcsname\expandafter{%
+    \expandafter\unexpanded\expandafter{\pam@tmp},%
+    \ \unexpanded\expandafter{\expandafter\nameref\expandafter{\pam@label}}%
+}%
+\global\advance\pam@references 1\relax%
+\ifdefined\pam@chunks%
+    \xdef\pam@chunks{\pam@chunks,#1}%
+\else%
+    \xdef\pam@chunks{#1}%
+\fi%
+}
+\AtEndDocument{%
+    \ifdefined\pam@chunks%
+       \newwrite\@pamfile%
+       \immediate\openout\@pamfile=\jobname.pam%
+\@for\next:=\pam@chunks\do{%
+    \ifcsname lstel@\next\endcsname%
+    \else%
+        \expandafter\let\csname lstel@\next\endcsname\@empty%
+        \immediate\write\@pamfile{%
+            \unexpanded{\expandafter\def\csname }%
+            referenced\next\unexpanded{\endcsname}%
+            \wbgroup%
+            \unexpanded\expandafter\expandafter\expandafter%
+            {\csname used\next\endcsname}%
+            \wegroup%
+        }%
+    \fi%
+}%
+       \immediate\closeout\@pamfile%
+   \fi%
+}
+\endinput
+%%
+%% End of file `clojure-pamphlet.sty'.

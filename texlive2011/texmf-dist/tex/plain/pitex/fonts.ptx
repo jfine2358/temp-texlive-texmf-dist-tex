@@ -1,0 +1,127 @@
+% I think my version of the following package might be modified.
+% So no way to be sure it'll work but on my computer
+% (anyway I use non-free fonts, so). 
+%
+\input luaotfload.sty
+\pdfadjustspacing=2
+\directlua{%
+% From otfl-font-dum.lua
+  local byte = string.byte
+  fonts.expansions.setups['threepercent'] = {
+
+    stretch = 3, shrink = 3, step = .5, factor = 1,
+
+    [byte('A')] = 0.5, [byte('B')] = 0.7, [byte('C')] = 0.7, [byte('D')] = 0.5, [byte('E')] = 0.7,
+    [byte('F')] = 0.7, [byte('G')] = 0.5, [byte('H')] = 0.7, [byte('K')] = 0.7, [byte('M')] = 0.7,
+    [byte('N')] = 0.7, [byte('O')] = 0.5, [byte('P')] = 0.7, [byte('Q')] = 0.5, [byte('R')] = 0.7,
+    [byte('S')] = 0.7, [byte('U')] = 0.7, [byte('W')] = 0.7, [byte('Z')] = 0.7,
+    [byte('a')] = 0.7, [byte('b')] = 0.7, [byte('c')] = 0.7, [byte('d')] = 0.7, [byte('e')] = 0.7,
+    [byte('g')] = 0.7, [byte('h')] = 0.7, [byte('k')] = 0.7, [byte('m')] = 0.7, [byte('n')] = 0.7,
+    [byte('o')] = 0.7, [byte('p')] = 0.7, [byte('q')] = 0.7, [byte('s')] = 0.7, [byte('u')] = 0.7,
+    [byte('w')] = 0.7, [byte('z')] = 0.7, [byte('2')] = 0.7, [byte('3')] = 0.7, [byte('6')] = 0.7,
+    [byte('8')] = 0.7, [byte('9')] = 0.7,
+    }
+  	}
+\def\currentfont{}
+\def\currentstyle{rm}
+\def\currentweight{rg}
+\def\currentcase{lc}
+\def\makecurrentfont{%
+  \csname\currentfont @\currentstyle @\currentweight @\currentcase\endcsname
+  }
+\def\it{%
+  \def\currentstyle{it}%
+  \makecurrentfont
+  }
+\def\bf{%
+  \def\currentweight{bf}%
+  \makecurrentfont
+  }  
+\def\sc{%
+  \def\currentcase{sc}%
+  \makecurrentfont
+  }
+\def\rm{%
+  \def\currentstyle{rm}%
+  \makecurrentfont
+  }
+\def\rmstring{rm}
+\def\ital#1{{\it#1}}
+\def\bold#1{{\bf#1}}
+\def\scap#1{{\sc#1}}
+\def\rom#1{{\rm#1}}
+\def\emph{%
+  \ifx\currentstyle\rmstring
+    \expandafter\ital
+  \else
+    \expandafter\rom
+  \fi
+  }
+
+
+\restrictparameter font :
+  command    % The command to be used to switch to that font.
+  name       % Actually the part common to all files' names for that font.
+  type       % otf, etc. The font parameter can't even load tfm's...
+  size       % Well, the size.
+  features   % Font features (e.g. +onum, etc.).
+  roman      % The part of the file's name for the roman.
+  bold       % The part of the file's name for the bold roman.
+  italic     % The part of the file's name for the italic.
+  bolditalic % The part of the file's name for the bold italic.
+             % What happens is: it loads <name><roman>.<type> at <size>
+             % then the same with <bold>, etc.
+
+\setparameter metafont :  % No relation :)
+  size     = 10pt
+  features = +onum;+liga;+trep;expansion=threepercent;
+  type     = otf % Oh yes, this is default!
+  
+\setparameter font: meta = metafont\par
+
+\newdimen\ptx@fontsize
+\def\dofont#1#2#3{%
+  \passcs\font{\passvalue\commandtoname font : command @#1@#2@lc} =
+    "\usevalue font : name \usevalue font : #3 .\usevalue font : type :\usevalue font : features " at \usevalue font : size \relax
+  \passcs\font{\passvalue\commandtoname font : command @#1@#2@sc} =
+    "\usevalue font : name \usevalue font : #3 .\usevalue font : type :+smcp;\usevalue font : features " at \usevalue font : size \relax
+  }
+\defactiveparameter font {%
+  \ifattribute #1 : command
+               {%
+                \passvaluenobraces\edef #1 : command {%
+                    \def\noexpand\currentfont{\passvalue\commandtoname #1 : command }%
+                    \noexpand\makecurrentfont
+                    }%
+                % If #1 = name isn't defined, roman, bold, etc. are supposed to hold the
+                % font's full (file) name.
+                \ifattribute #1 : roman
+                             {\dofont{rm}{rg}{roman}%
+                              \ifattribute #1 : bold
+                                           {\dofont{rm}{bf}{bold}}%
+                                           {}}%
+                             {}%
+                \ifattribute #1 : italic
+                             {\dofont{it}{rg}{italic}%
+                              \ifattribute #1 : bolditalic
+                                           {\dofont{it}{bf}{bolditalic}}%
+                                           {}}%
+                             {}}%
+               {}%
+  \ifvalue #1 : command = {\mainfont} \mainfont{}% Calls font if it is \mainfont.
+  \deleteattribute #1 : command
+  \deleteattribute #1 : name
+  \deleteattribute #1 : type
+  \deleteattribute #1 : size
+  \deleteattribute #1 : features
+  \deleteattribute #1 : roman
+  \deleteattribute #1 : bold
+  \deleteattribute #1 : italic
+  \deleteattribute #1 : bolditalic
+  }
+%
+\long\def\color#1#2{%
+  \pdfcolorstack0 push {#1 rg #1 RG}%
+  #2%
+  \pdfcolorstack0 pop%
+  }

@@ -1,0 +1,135 @@
+% censor.sty
+\ProvidesPackage{censor}
+[2013/05/02 v3.10
+ Provides capability for redaction of sensitive information]
+
+%% Copyright 2009, 2012, 2013 Steven B. Segletes
+%
+% This work may be distributed and/or modified under the 
+% conditions of the LaTeX Project Public License, either version 1.3 
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+%
+% The Current Maintainer of this work is Steven B. Segletes.
+
+% VERSION:
+% 1.00 - Initial release
+% 2.00 - Added \blackout
+% 2.10 - Allowed \blackout to cross paragraph boundaries with use of
+%        \bpar. Stopped censoring periods, in order to preserve
+%        end-of-sentence spacing, which differs from inter-word spacing.
+% 3.00 - \censorbox introduced to handle figures, tables, etc.
+% 3.10 - Made \blackout work with \par in argument.  Introduced 
+%        \xblackout
+\usepackage{pbox}
+\usepackage{ifnextok}
+
+\newcommand\censor{\@ifstar{\@cenlen}{\@cenword}}
+  \newcommand\@cenlen[1]{\protect\rule[-.3ex]{#1 ex}{2.1ex}}
+  \newcommand\@cenword[1]{%
+              \protect\rule[-.3ex]{\widthofpbox{#1}}{2.1ex}}
+
+\newcommand\un@censor{\@ifstar{\un@cenlen}{\un@cenword}}
+  \newcommand\un@cenlen[1]{\protect\underline{\hspace{#1 ex}}}
+  \newcommand\un@cenword[1]{#1}
+
+\newcommand\StopCensoring{%
+           \let\censor\un@censor%
+           \let\censorbox\un@censorbox%
+}
+\newcommand\RestartCensoring{%
+           \renewcommand\censor{\@ifstar{\@cenlen}{\@cenword}}%
+           \renewcommand\censorbox{\@ifstar{\censor@dim}{\censor@box}}%
+}
+
+\let\sv@tilde~
+
+\def\stringend{$}
+
+\long\def\blackout#1{\def~{-}\censor@Block#1\stringend\let~\sv@tilde}
+\long\def\censor@Block{\IfNextToken\stringend{\@gobble}%
+  {\IfNextToken\@sptoken{ \bl@t{\censor@Block}}%
+  {\bl@t{\censor@Block}}}}
+
+% V2.00 DEFINITION:
+% \def\bl@t#1#2{\censor{#2}#1}
+
+% V2.10 DEFINITION (MADE \long IN V3.1):
+\long\def\bl@t#1#2{\if\bpar#2\par\else\if.#2#2\else\censor{#2}\fi\fi#1}
+
+%\def\bpar{_} %V3.00 DEFINITION
+\let\bpar\par %AS OF V3.1, CAN HANDLE \par
+
+\long\def\xblackout#1{\rule{0ex}{0ex}%
+  \def~{-}%
+  \def\@justpar{F}%
+  \def\@justperiod{F}%
+  \def\@justspace{F}%
+  \xcensor@Block#1\stringend%
+  \let~\sv@tilde%
+ }
+
+\long\def\xcensor@Block{\IfNextToken\stringend{\@gobble}%
+  {\IfNextToken\@sptoken{ \def\@justspace{T}\xbl@t{\xcensor@Block}}%
+  {\xbl@t{\xcensor@Block}}}}
+
+\newlength\periodrlap\setlength\periodrlap{1.6ex}
+\newlength\afterperiodlap\setlength\afterperiodlap{1.2ex}
+\newlength\lletterlap\setlength\lletterlap{0.55ex}
+\newlength\rletterlap\setlength\rletterlap{0.55ex}
+\newlength\afterspacelap\setlength\afterspacelap{0.0ex}
+
+\def\@periodrlap{\rlap{\rule[-.3ex]{\periodrlap}{2.1ex}}}
+\def\@afterperiodlap{\llap{\rule[-.3ex]{\afterperiodlap}{2.1ex}}}
+\def\@lletterlap{\llap{\rule[-.3ex]{\lletterlap}{2.1ex}}}
+\def\@rletterlap{\rlap{\rule[-.3ex]{\rletterlap}{2.1ex}}}
+\def\@afterspacelap{\llap{\rule[-.3ex]{\afterspacelap}{2.1ex}}}
+
+\long\def\xbl@t#1#2{%
+  \if\par#2%
+    \par\def\@justpar{T}%
+  \else%
+    \if T\@justspace%
+      \rule{0ex}{1ex}\@afterspacelap%
+    \fi%
+    \if.#2%
+      \def\@justperiod{T}%
+      \@periodrlap%
+      #2%
+    \else%
+      \if F\@justpar%
+        \if T\@justperiod%
+          \@afterperiodlap%
+        \else%
+          \@lletterlap%
+        \fi%
+      \fi%
+      \censor{#2}%
+      \@rletterlap%
+      \def\@justpar{F}%
+      \def\@justperiod{F}%
+      \def\@justspace{F}%
+    \fi%
+  \fi%
+  #1%
+}
+
+\newcommand\censorbox{\@ifstar{\censor@dim}{\censor@box}}
+  \newcommand\censor@dim[4][]{{#1%
+                      \rule[-#4\baselineskip]{#2ex}{#3\baselineskip}}}
+  \newcommand\censor@box[2][]{#1\setbox0\hbox{#2}%
+                      \rule[-\the\dp0]{\the\wd0}{\the\ht0+\the\dp0}}
+
+\newcommand\un@censorbox{\@ifstar{\un@censor@dim}{\un@censor@box}}
+  \newcommand\un@censor@dim[4][]{{#1%
+                      \fbox{\rule[-#4\baselineskip]{0ex}{#3\baselineskip}
+                      \rule{#2ex}{0ex}}}}
+  \newcommand\un@censor@box[2][]{#1#2}
+
+% NOTE: A \protect\censorbox{} MAY BE REQUIRED INSIDE SOME ENVIRONMENTS
+\endinput

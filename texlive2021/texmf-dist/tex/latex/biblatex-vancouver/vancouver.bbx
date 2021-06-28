@@ -1,0 +1,125 @@
+% Copyright (c) 2020 Agnibho Mondal
+% All rights reserved
+%
+% This file is part of BibLaTex Vancouver.
+%
+% BibLaTex Vancouver is free software: you can redistribute it and/or modify it
+% under the terms of the GNU General Public License as published by the Free
+% Software Foundation, either version 3 of the License, or (at your option) any
+% later version.
+%
+% BibLaTex Vancouver is distributed in the hope that it will be useful, but
+% WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+% details.
+%
+% You should have received a copy of the GNU General Public License along with
+% BibLaTex Vancouver.  If not, see <http://www.gnu.org/licenses/>.
+%
+% Agnibho Mondal
+% contact@agnibho.com
+% www.agnibho.com
+
+\ProvidesFile{vancouver.bbx}[2020/05/20 v0.1 biblatex vancouver]
+
+\RequireBiber[2]
+\RequireBibliographyStyle{numeric}
+
+\RequirePackage{ifthen}
+
+% Set default bibliography options
+\ExecuteBibliographyOptions{
+	sorting=none,
+	giveninits=true,
+	terseinits=true,
+	isbn=false,
+	maxbibnames=99
+}
+
+% Remove unwanted punctuations
+\renewcommand*{\revsdnamepunct}{}
+\renewcommand*{\finentrypunct}{}
+\renewcommand*{\bibpagespunct}{}
+
+% Remove 'in:' string
+\renewbibmacro{in:}{}
+
+% Provide three letter month names
+\newcommand*{\shortmonth}[1]{
+	\ifthenelse{\NOT\equal{#1}{}}{
+		\ifcase#1\relax
+		\or Jan
+		\or Feb
+		\or Mar
+		\or Apr
+		\or May
+		\or Jun
+		\or Jul
+		\or Aug
+		\or Sep
+		\or Oct
+		\or Nov
+		\or Dec
+		\fi
+	}
+}
+
+% Family name first
+\DeclareNameAlias{default}{family-given}
+
+% Remove unwanted formatting
+\DeclareFieldFormat*{title}{#1}
+\DeclareFieldFormat*{journaltitle}{#1}
+\DeclareFieldFormat*{labelnumberwidth}{#1\adddot}
+\DeclareFieldFormat*{pages}{:\mkcomprange{#1}}
+\DeclareFieldFormat*{url}{Available from: \url{#1}}
+\DeclareFieldFormat*[article]{issue}{(#1)}
+\DeclareFieldFormat*{date}{
+	\thefield{year}%
+	\shortmonth{\thefield{month}}\addspace
+	\thefield{day}\isdot
+}
+\DeclareFieldFormat*{urldate}{
+	{[}Accessed on:
+		\thefield{urlyear}%
+		\shortmonth{\thefield{urlmonth}}\addspace
+	\thefield{urlday}{]}
+}
+
+% Some string replacements
+\DeclareSourcemap{
+	\maps[datatype=bibtex]{
+		\map[overwrite=true]{
+			\step[fieldsource=journaltitle, match=\regexp{(\.)}, replace={}]
+			\step[fieldsource=journaltitle, match=\regexp{($)}, replace={.}]
+		}
+	}
+}
+
+% Code adapted from biblatex-nejm package
+
+\renewbibmacro*{volume+number+eid}{
+	\printfield{volume}%
+	\printfield{issue}%
+	\printfield{eid}%
+}
+
+%Order year;volume:page
+\renewbibmacro*{issue+date}{
+	\setunit*{\addspace}%
+	\usebibmacro{date}%
+	\newunit%
+}
+
+\renewbibmacro*{journal+issuetitle}{
+	\usebibmacro{journal}%
+	\iffieldundef{series}
+	{}
+	{\newunit
+	\printfield{series}}%
+	\setunit*{\addspace}%
+	\usebibmacro{issue+date}%
+	\setunit*{\addsemicolon\addspace}%
+	\usebibmacro{volume+number+eid}%
+	\usebibmacro{issue}%
+\newunit}

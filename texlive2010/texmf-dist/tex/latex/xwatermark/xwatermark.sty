@@ -1,0 +1,443 @@
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
+% This is file 'xwatermark.sty', version 1.4.                                %
+%                                                                            %
+% This package puts user-specified watermarks (graphics and arbitrary        %
+% texts) on select pages of documents. See package documentation             %
+% for further details.                                                       %
+%                                                                            %
+% This work (ie, all the files in the xwatermark manifest) may be            %
+% distributed and/or modified under the conditions of the LaTeX              %
+% Project Public License, either version 1.3 of this license or any          %
+% later version. The latest version of this license is in                    %
+% http://www.latex-project.org/lppl.txt and version 1.3 or later             %
+% is part of all distributions of LaTeX version 2005/12/01 or later.         %
+%                                                                            %
+% The LPPL maintenance status of this software is 'author-maintained'.       %
+%                                                                            %
+% This software is provided 'as it is', without warranty of any kind,        %
+% either expressed or implied, including, but not limited to, the            %
+% implied warranties of merchantability and fitness for a particular         %
+% purpose.                                                                   %
+%                                                                            %
+% Copyright (c) 2010 Ahmed Musa (a.musa@rocketmail.com).                     %
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
+\begingroup
+\catcode064 11% @
+\catcode123 01% {
+\catcode125 02% }
+\def\x{\endgroup
+  \edef\xwm@RestoreCodeAtEnd{%
+    \catcode035 \the\catcode035% #
+    \catcode064 \the\catcode064% @
+    \catcode123 \the\catcode123% {
+    \catcode125 \the\catcode125% }
+    \catcode061 \the\catcode061% =
+  }%
+}
+\x
+\@makeother{\=}%
+\catcode035=06% #
+\catcode064=11% @
+\catcode123=01% {
+\catcode125=02% }
+\def\xwm@EnsureCode#1#2{%
+  \edef\xwm@RestoreCodeAtEnd{%
+    \xwm@RestoreCodeAtEnd
+    \catcode#1=\the\catcode#1\relax
+  }%
+  \catcode#1=#2\relax
+}
+\AtEndOfPackage{\xwm@RestoreCodeAtEnd}
+\xwm@EnsureCode{010}{12}% ^^J
+\xwm@EnsureCode{033}{12}% !
+\xwm@EnsureCode{039}{12}% '
+\xwm@EnsureCode{040}{12}% (
+\xwm@EnsureCode{041}{12}% )
+\xwm@EnsureCode{042}{12}% *
+\xwm@EnsureCode{044}{12}% ,
+\xwm@EnsureCode{045}{12}% -
+\xwm@EnsureCode{046}{12}% .
+\xwm@EnsureCode{047}{12}% /
+\xwm@EnsureCode{058}{12}% :
+\xwm@EnsureCode{060}{12}% <
+\xwm@EnsureCode{062}{12}% >
+\xwm@EnsureCode{094}{07}% ^ (superscript)
+\xwm@EnsureCode{096}{12}% `
+\xwm@EnsureCode{254}{12}% ^^fe
+\xwm@EnsureCode{255}{12}% ^^ff
+\xwm@EnsureCode{126}{13}% ~ (active)
+\def\readRCS$#1 #2 #3 #4 #5 #6 #7 #8 ${%
+  \def\filedate{#4}%
+  \def\fileversion{v#3}%
+  \def\filetime{#5}%
+  \def\fileauthor{#6\space#7}%
+}
+\def\filedesc{%
+  Puts user-specified watermarks on select document pages (\fileauthor)}
+\readRCS
+$Id: xwatermark.sty,v 1.4 2010/01/10 09:00:00 Ahmed Musa Exp $
+\ProvidesPackage{xwatermark}[\filedate\space\fileversion\space\filedesc]
+\NeedsTeXFormat{LaTeX2e}[1996/12/01]
+\@ifpackageloaded{etoolbox}{}{\RequirePackage{etoolbox}[2009/08/06]}
+\@ifpackageloaded{ltxnew}{}{\RequirePackage{ltxnew}[2009/07/22]}
+\newrobustcmd\xwm@info[1]{\PackageInfo{xwatermark}{#1\@gobble}}
+\newrobustcmd\xwm@warn[1]{\PackageWarningNoLine{xwatermark}{#1}}
+\newrobustcmd\xwm@err[1]{\PackageError{xwatermark}{#1}{\@ehc}}
+\new\def\xwm@car#1#2\@nil{#1}
+\new\def\xwm@testarg#1{%
+  \begingroup
+  \escapechar=92\relax
+  \edef\tmp@a{\expandafter\xwm@car\string#1\@nil}%
+  \if\tmp@a\@backslashchar
+    \aftergroup\@firstoftwo
+  \else
+    \aftergroup\@secondoftwo
+  \fi
+  \endgroup
+}
+\newrobustcmd*\xwm@numdef[2]{%
+  \xwm@testarg{#1}{}{\xwm@err{Unacceptable argument '#1' for number}}
+  \ifstrempty{#2}{\xwm@err{Empty argument for counter}}{}
+  \ifundef{#1}{\new\count#1\relax #1=\numexpr#2\relax}{#1=\numexpr#2\relax}
+}
+\newrobustcmd*\xwm@dimdef[2]{%
+  \xwm@testarg{#1}{}{\xwm@err{Unacceptable argument '#1' for dimension}}
+  \ifstrempty{#2}{\xwm@err{Empty argument for dimension}}{}
+  \ifundef{#1}{\new\dimen#1\relax #1=\dimexpr#2\relax}{#1=\dimexpr#2\relax}
+}
+\new\long\def\xwm@afterfi#1\fi{\fi#1}
+\new\long\def\xwm@afterelsefi#1\else#2\fi{\fi#1}
+\new\let\xwm@pagestart\@empty
+\new\let\xwm@pageend\@empty
+\new\def\xwm@pagerange#1{%
+  \renew\def\xwm@pagestart{#1}%
+  \renew\def\xwm@pageend{}%
+  \xwm@pagerange@ifhyphen#1-\@nil{%
+    \ifx\xwm@pagestart\@empty
+      \xwm@afterelsefi\xwm@err{Empty page range passed to package}%
+    \else
+      \xwm@afterfi
+      \xwm@err{Only page \xwm@pagestart\space was passed as page range}%
+    \fi
+  }{%
+    \xwm@pagerange@split#1\@nil
+  }%
+}
+\new\def\xwm@pagerange@split#1-#2\@nil{%
+  \renew\def\xwm@pagestart{#1}%
+  \renew\def\xwm@pageend{#2}%
+  \xwm@pagerange@ifhyphen#2-\@nil{%
+    \ifx\xwm@pagestart\@empty
+      \expandafter\xwm@err{No starting page for page range}%
+    \else
+      \ifx\xwm@pageend\@empty
+        \xwm@afterelsefi
+        \xwm@err{No ending page for page range}%
+      \else
+        \xwm@afterfi
+        \xwm@info{Page range:\space\xwm@pagestart\space to \xwm@pageend}%
+      \fi
+    \fi
+  }{%
+    \xwm@err{Too many hyphens in page range}%
+  }%
+}
+\new\def\xwm@pagerange@ifhyphen#1-#2\@nil{%
+  \ifstrempty{#2}{\@firstoftwo}{\@secondoftwo}%
+}
+\@ifpackageloaded{fix-cm}{}{\RequirePackage{fix-cm}[2006/03/24]}
+\@ifpackageloaded{graphicx}{}{\RequirePackage{graphicx}[1999/02/16]}
+\@ifpackageloaded{xkeyval}{}{\RequirePackage{xkeyval}[2008/08/13]}
+\@ifpackageloaded{atbegshi}{}{\RequirePackage{atbegshi}[2008/07/31]}
+\@ifpackageloaded{picture}{}{\RequirePackage{picture}[2008/11/26]}
+\@ifpackageloaded{xcolor}{%
+  \xwm@info{You have loaded 'xcolor' package\MessageBreak
+    with options that possibly differ\MessageBreak
+    from those used in 'xwatermark' package}
+}{%
+  \RequirePackage[table,hyperref]{xcolor}[2007/01/21]
+  \xwm@info{'xcolor' package loaded with\MessageBreak
+    options 'table', 'hyperref'}
+}
+\@ifpackageloaded{xifthen}{}{\RequirePackage{xifthen}[2009/04/17]}
+\@ifpackageloaded{boxedminipage}{}{\RequirePackage{boxedminipage}}
+\@ifpackageloaded{keyreader}{}{\RequirePackage{keyreader}[2010/01/01]}
+\krsetup{parser=;,macroprefix=xwm@,keyprefix=XWM,keyfamily=xwatermark}
+\xwm@dimdef{\xwm@xcoord@a}{\z@}
+\xwm@dimdef{\xwm@ycoord@a}{\z@}
+\xwm@numdef{\xwm@minmark}{\z@}
+\xwm@numdef{\xwm@c@printmark}{\z@}
+\new\let\xwm@papercenter\relax
+\providetoggle{pdf}
+\ifundef\pdfoutput{}{\unless\ifnum\pdfoutput<1\toggletrue{pdf}\fi}
+\define@boolkey[XWM]{xwatermark}[xwm@]{printwatermark}[true]{%
+  \ifxwm@printwatermark\xwm@minmark=\@ne\fi}
+\define@boolkeys[XWM]{xwatermark}[xwm@bool@]{onepageonly,%
+  prange,tmark,pmark,showcenter}[true]
+\define@boolkey[XWM]{xwatermark}[xwm@]{firstpage}[true]{%
+  \ifxwm@firstpage\xwm@minmark=1\fi}
+\define@boolkey[XWM]{xwatermark}[xwm@]{allpages}[true]{%
+  \ifxwm@allpages\xwm@minmark=1\fi}
+\define@boolkey[XWM]{xwatermark}[xwm@]{oddpages}[true]{%
+  \ifxwm@oddpages\xwm@minmark=1\fi}
+\define@boolkey[XWM]{xwatermark}[xwm@]{evenpages}[true]{%
+  \ifxwm@evenpages\xwm@minmark=1\fi}
+\define@boolkey[XWM]{xwatermark}[xwm@]{dgeometry}[true]{%
+  \AtEndPreamble{%
+    \ifxwm@dgeometry
+      \ifcsdef{geometry}{%
+      \geometry{pass}%
+      \xwm@info{I've detected that you've loaded the\MessageBreak
+        'geometry' package. To avoid scale changes by\MessageBreak
+        'geometry', I have disabled its features.\MessageBreak
+        You should set your watermarks before using\MessageBreak
+        'geometry'}}{}%
+    \fi
+  }%
+}
+\define@choicekey*+[XWM]{xwatermark}{align}[\val\nr]%
+{center,right,left,justified}[center]{%
+  \ifcase\nr\relax
+    \def\xwm@align{\centering}%
+  \or
+    \def\xwm@align{\flushright}%
+  \or
+    \def\xwm@align{\flushleft}%
+  \or
+    \let\xwm@align\relax
+  \fi
+}{%
+  \xwm@err{Inadmissible value '\string#1' for align}%
+}
+\define@cmdkey[XWM]{xwatermark}[xwm@]{page}[1]{%
+  \xwm@bool@onepageonlytrue\xwm@minmark=\@ne
+}
+\define@key[XWM]{xwatermark}{pages}[1-1]{%
+  \xwm@bool@prangetrue
+  \xwm@pagerange{#1}\xwm@minmark=\@ne
+}
+\iftoggle{pdf}{\new\def\xwm@picfilex{pdf}}{\new\def\xwm@picfilex{eps}}
+\define@cmdkey[XWM]{xwatermark}[xwm@]{picfile}[]{%
+  \ifstrempty{#1}{\xwm@bool@pmarkfalse}{%
+    \xwm@bool@pmarktrue\xwm@minmark=\@ne
+  }%
+}
+\define@cmdkey[XWM]{xwatermark}[xwm@]{textmark}[DRAFT]{%
+  \ifstrempty{#1}{\xwm@bool@tmarkfalse}{\xwm@bool@tmarktrue}%
+}
+\define@cmdkey[XWM]{xwatermark}[xwm@]{picfilex}[eps]{%
+  \ifthenelse{\equal{\xwm@picfilex}{pdf}\OR\equal{\xwm@picfilex}{png}
+    \OR\equal{\xwm@picfilex}{jpeg}\OR\equal{\xwm@picfilex}{eps}}{}{%
+    \xwm@err{File extension \xwm@picfilex\space inadmissible}}
+  \iftoggle{pdf}{%
+    \ifthenelse{\isempty{\xwm@picfilex}\OR\equal{\xwm@picfilex}{eps}}%
+      {\def\xwm@picfilex{pdf}}{}%
+  }{%
+    \ifthenelse{\isempty{\xwm@picfilex}\OR\equal{\xwm@picfilex}{pdf}%
+      \OR\equal{\xwm@picfilex}{png}\OR\equal{\xwm@picfilex}{jpeg}}%
+      {\def\xwm@picfilex{eps}}{}%
+  }%
+}
+\define@keylist{2,color,gray!25,;2,fontfamily,bch,;2,angle,45,;
+  2,scale,1,;2,coordunit,mm,;2,fontsize,5cm,;2,fontseries,b,;
+  2,height,\paperwidth,;2,width,\paperheight,;2,xcoord,\z@,;
+  2,ycoord,\z@,;2,picscale,1,;2,picbb,0 0 100 100,}
+\presetkeys[XWM]{xwatermark}{tmark,angle,scale,color,
+  textmark,fontfamily,fontsize,fontseries,coordunit,
+  align,height,width,xcoord,ycoord,picscale,picbb}{}
+\DeclareOptionX*{\xwm@warn{Unknown option '\CurrentOption' ignored}}
+\ExecuteOptionsX[XWM]<xwatermark>{printwatermark}
+\ProcessOptionsX*[XWM]<xwatermark>\relax
+\newrobustcmd\watermarksetup[1]{\setkeys[XWM]{xwatermark}{#1}}
+\AtBeginDocument{%
+  \xwm@disable@keys[XWM]{xwatermark}{printwatermark,dgeometry}%
+}
+\new\def\xwm@coords{\begingroup%
+  \protected@edef\@tempa{\endgroup%
+    \xwm@dimdef{\xwm@xcoord@a}{0.5\paperwidth+
+      \number\xwm@xcoord\xwm@coordunit}%
+    \xwm@dimdef{\xwm@ycoord@a}{-0.5\paperheight+
+      \number\xwm@ycoord\xwm@coordunit}%
+  }\@tempa
+}
+\unless\ifxwm@printwatermark
+  \xwm@info{printwatermark=false: no watermark printed}
+\fi
+\newcommand\xwm@papercenter{%
+  \color{red}%
+  \put(0,-0.5\paperheight){\line(1,0){\paperwidth}}%
+  \put(0.5\paperwidth,0){\line(0,-1){\paperheight}}%
+  \put(0.5\paperwidth,-0.5\paperheight){\circle{10}}%
+  \normalcolor
+}
+\newcommand\xwm@insert@textmark@a{%
+  \leavevmode\removelastskip\noindent%
+  \makebox(0,0){\rotatebox[origin=c]{\xwm@angle}{\scalebox{\xwm@scale}{%
+    \parbox[c][\xwm@height][c]{\xwm@width}{%
+      \color{\xwm@color}%
+      \fontfamily{\xwm@fontfamily}\fontseries{\xwm@fontseries}%
+      \fontsize{\xwm@fontsize}{1.2\xwm@fontsize}\selectfont
+      \xwm@align\xwm@textmark
+  }}}}%
+  \removelastskip\normalcolor
+}
+\newcommand\xwm@insert@picmark@a{%
+  \xwm@align
+  \makebox(0,0){\rotatebox{\xwm@angle}{\xwm@insertpic}}%
+}
+\newcommand\xwm@insert@textmark@b{%
+  \put(\xwm@xcoord@a,\xwm@ycoord@a){\xwm@insert@textmark@a}%
+}
+\newcommand\xwm@insert@picmark@b{%
+  \put(\xwm@xcoord@a,\xwm@ycoord@a){\xwm@insert@picmark@a}%
+}
+\newcommand\xwm@insert@mark@a{%
+  \xwm@coords
+  \ifxwm@bool@tmark\xwm@insert@textmark@b\fi
+  \ifxwm@bool@pmark\xwm@insert@picmark@b\fi
+  \ifxwm@bool@showcenter\xwm@papercenter\fi
+}%
+\newcommand\xwm@insertmark{%
+  \ifnum\xwm@minmark=\@ne
+    \ifxwm@allpages
+      \xwm@insert@mark@a
+    \else\ifxwm@firstpage
+      \ifnum\c@page=\@ne\xwm@insert@mark@a\fi
+    \else\ifxwm@oddpages
+      \ifodd\c@page\xwm@insert@mark@a\fi
+    \else\ifxwm@evenpages
+      \unless\ifodd\c@page\xwm@insert@mark@a\fi
+    \else\ifxwm@bool@onepageonly
+      \ifnum\c@page=\number\xwm@page\xwm@insert@mark@a\fi
+    \else\ifxwm@bool@prange
+      \ifthenelse{\(\c@page=\xwm@pagestart\OR\c@page=\xwm@pageend\)
+        \OR\(\c@page>\xwm@pagestart\AND\c@page<\xwm@pageend\)}{%
+        \xwm@insert@mark@a}{}%
+    \else\ifxwm@printwatermark
+      \ifnum\c@page=\@ne
+        \xwm@bool@tmarktrue\xwm@bool@pmarkfalse
+        \xwm@dimdef{\xwm@xcoord@a}{0.5\paperwidth}%
+        \xwm@dimdef{\xwm@ycoord@a}{-0.5\paperheight}%
+        \xwm@insert@mark@a
+        \xwm@info{Draftmark printed on page 1 only:\MessageBreak
+          You've specified no pages for watermark}%
+      \fi
+    \fi\fi\fi\fi\fi\fi\fi
+  \fi
+}
+\ifxwm@printwatermark
+  \AtBeginShipout{\AtBeginShipoutUpperLeft{\xwm@insertmark}}%
+  \xwm@info{Option 'printwatermark=true': watermark printed}%
+\fi
+\krsetup{keyfamily=minipage,macroprefix=mp@}%
+\define@keylist{2,width,\paperwidth,;2,textcolor,black,;
+  2,framecolor,white,;2,framesep,3pt,;2,framerule,0.4pt,;
+  2,text,No text passed.,}%
+\define@key[XWM]{minipage}{align}[center]{%
+  \begingroup
+  \edef\x{\endgroup\noexpand\XKV@cc*+[\noexpand\val\noexpand\nr]{#1}%
+    {center,right,left,justified}{}{}}%
+  \x
+  \ifcase\nr\relax
+    \def\mp@align{\centering}%
+  \or
+    \def\mp@align{\flushright}%
+  \or
+    \def\mp@align{\flushleft}%
+  \or
+    \let\mp@align\relax
+  \else
+    \xwm@err{Inadmissible value '\string#1' for minipage's align}%
+  \fi
+}%
+\presetkeys[XWM]{minipage}{align,width,textcolor,text,framesep,
+  framerule,framecolor}{}%
+\long\def\xwminipage#1{%
+  \setkeys[XWM]{minipage}{#1}%
+  \begingroup%
+  \fboxsep=\mp@framesep\fboxrule=\mp@framerule%
+  \removelastskip
+  \color{\mp@framecolor}%
+  \noindent
+  \begin{boxedminipage}{\mp@width}%
+    \mp@align\textcolor{\mp@textcolor}{\mp@text}%
+  \end{boxedminipage}%
+  \removelastskip
+  \endgroup
+}%
+\krsetup{keyfamily=colorbox,macroprefix=cb@}
+\CKVS{align}{center,right,left,justified}
+\define@keylist{2,width,\textwidth,;2,textcolor,black,;
+  2,fillcolor,yellow!55,;2,framecolor,white,;
+  2,text,No text passed.,;2,framesep,3\p@,;2,framerule,0.4\p@,;
+  4,align,center,\protected@edef\cb@align{\val}}
+\presetkeys[XWM]{colorbox}{align=center,width,fillcolor,textcolor,text,
+  framesep,framerule,framecolor}{}
+\newcommand\xwcolorbox[1]{%
+  \setkeys[XWM]{colorbox}{#1}%
+  \color{\cb@framecolor}%
+  \removelastskip\noindent%
+  \colorbox{\cb@fillcolor}{%
+    \xwminipage{framesep=\cb@framesep,framerule=\cb@framerule,
+      framecolor=\cb@framecolor,align=\cb@align,width=\cb@width,
+      text=\cb@text,textcolor=\cb@textcolor
+    }%
+  }%
+  \removelastskip\normalcolor%
+}%
+\newcommand\ywcolorbox[1]{%
+  \setkeys[XWM]{colorbox}{#1}%
+  \color{\cb@framecolor}%
+  \begin{center}%
+  \makebox[\z@][c]{%
+    \colorbox{\cb@fillcolor}{%
+      \xwminipage{framesep=\cb@framesep,framerule=\cb@framerule,
+        framecolor=\cb@framecolor,align=\cb@align,width=\cb@width,
+        text=\cb@text,textcolor=\cb@textcolor
+      }%
+    }%
+  }%
+  \end{center}%
+  \removelastskip\normalcolor
+}%
+\new\def\xwm@insertpic{\begingroup
+  \protected@edef\@tempa{\endgroup%
+    \iftoggle{pdf}{%
+      \noexpand\IfFileExists{\xwm@picfile.\xwm@picfilex}{%
+        \noexpand\includegraphics[viewport=\xwm@picbb,scale=\xwm@picscale]%
+          {\xwm@picfile.\xwm@picfilex}%
+      }{\xwm@err{No file \xwm@picfile.\xwm@picfilex\space or wrong path}}%
+    }{%
+      \noexpand\IfFileExists{\xwm@picfile.\xwm@picfilex}{%
+        \noexpand\includegraphics[bb=\xwm@picbb,scale=\xwm@picscale]%
+          {\xwm@picfile.\xwm@picfilex}%
+      }{\xwm@err{No file \xwm@picfile.\xwm@picfilex\space or wrong path}}%
+    }%
+  }\@tempa%
+}%
+\newrobustcmd\xwm@dis@ble@keys[1]{%
+  \XKV@checksanitizeb{#1}\xwm@tempa
+  \XKV@for@o\xwm@tempa\xwm@tempa{%
+    \XKV@ifundefined{\XKV@header\xwm@tempa}{%
+      \xwm@warn{Key '\xwm@tempa' undefined: can't be disabled}%
+    }{%
+      \edef\xwm@tempb{%
+        \noexpand\xwm@err{Key '\xwm@tempa' has been disabled.\MessageBreak
+         You can't set or reset it at this late stage.\MessageBreak
+         You should have set it earlier in the\MessageBreak
+         \string\documentclass\space or \string\usepackage}%
+      }%
+      \XKV@ifundefined{\XKV@header\xwm@tempa @default}{%
+        \edef\xwm@tempc{\noexpand\XKV@define@key{\xwm@tempa}}%
+      }{%
+        \edef\xwm@tempc{\noexpand\XKV@define@key{\xwm@tempa}[]}%
+      }%
+      \expandafter\xwm@tempc\expandafter{\xwm@tempb}%
+    }%
+  }%
+}%
+\newrobustcmd\xwm@disable@keys{\XKV@testoptb\xwm@dis@ble@keys}%
+
+\endinput
+
+%%% End of file xwatermark.sty %%%

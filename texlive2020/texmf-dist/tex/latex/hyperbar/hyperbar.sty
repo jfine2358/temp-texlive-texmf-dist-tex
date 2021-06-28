@@ -1,0 +1,181 @@
+%%
+%% This is file `hyperbar.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% hyperbar.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2018 by Marcel Kr^^c3^^bcger
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The Current Maintainer of this work is Marcel Kr^^c3^^bcger
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{hyperbar}
+  [2018/07/04 v0.1
+  Add barcode form fields to hyperref for pdfTeX]
+\RequirePackage{hyperref}
+
+\def\BarField@SetKeys{\kvsetkeys{BarField}}
+\kv@set@family@handler{BarField}{\kv@processor@default{Field}{#1}{#2}}
+\newcount\BarFld@barcodetype
+\newcount\BarFld@symwidth
+\newcount\BarFld@symfactor
+\newcount\BarFld@ecc
+\BarFld@barcodetype=0
+\BarFld@symwidth=6
+\BarFld@symfactor=2
+\BarFld@ecc=2
+\define@key{BarField}{pdf417}[]{%
+  \BarFld@barcodetype=0
+}
+\define@key{BarField}{qr}[]{%
+  \BarFld@barcodetype=1
+}
+\define@key{BarField}{datamatrix}[]{%
+  \BarFld@barcodetype=2
+}
+\define@key{BarField}{symwidth}{%
+  \BarFld@symwidth=#1\relax
+}
+\define@key{BarField}{symfactor}{%
+  \BarFld@symfactor=#1\relax
+}
+\define@key{BarField}{ecc}{%
+  \BarFld@ecc=#1\relax
+}
+\def\qBarcodeFld{\qBarcodeFld}
+\def\BarFld@barcode@set@calculate@names#1#2#3,#4{%
+  \ifx\qBarcodeFld#4%
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi
+  {\def\Fld@calculate@code{event.value = event.value + " "}%
+   \def\Fld@format@code{event.value="#1#3\string\\n#2"+getField("#3").valueAsString;}}%
+  {\BarFld@barcode@set@calculate@names
+      {#1#3\string\\t}
+      {#2"+getField("#3").valueAsString+"\string\\t}%
+      #4%
+  }%
+}
+\define@key{Field}{tsv}{%
+  \BarFld@barcode@set@calculate@names{}{}#1,\qBarcodeFld
+}
+\DeclareRobustCommand\BarcodeField{%
+  \@ifnextchar[{\@BarcodeField}{\@BarcodeField[]}%
+}
+%% The following is based on the TextField implementation
+%% from the hyperref bundle, file hpdftex.def, with only the
+%% barcode specific fields added.
+\def\BarField@FlagsBarcode{%
+  \HyField@FlagsAnnot{barcode field}%
+  \bitsetReset{HyField@Ff}%
+  \HyField@UseFlag{Ff}{ReadOnly}%
+  \HyField@UseFlag{Ff}{Required}%
+  \HyField@UseFlag{Ff}{NoExport}%
+  \HyField@UseFlag{Ff}{Multiline}%
+  \HyField@UseFlag{Ff}{DoNotSpellCheck}%
+  \HyField@UseFlag{Ff}{DoNotScroll}%
+  \HyField@PrintFlags{Ff}{text field}%
+  \bitsetIsEmpty{HyField@Ff}{%
+    \let\Fld@flags\ltx@empty
+  }{%
+    \edef\Fld@flags{/Ff \bitsetGetDec{HyField@Ff}}%
+  }%
+}
+\def\LayoutBarcodeField#1#2{#2}
+\def\MakeBarcodeField#1#2{\vbox to #2{\hbox to #1{\hfill}\vfill}}
+\def\DefaultOptionsofBarcode{readonly,noexport,multiline,donotspellcheck}
+\def\BarPDF@BarcodeDict{%
+  /Subtype/Widget%
+  \Fld@annotflags
+  \Fld@pageobjref
+  \Fld@annotnames
+  /FT/Tx%
+  \Fld@flags
+  /PMD \the\pdflastobj\space0 R%
+  /Q \Fld@align
+  /BS<</W \Fld@borderwidth\space /S /\Fld@borderstyle>>%
+  /DataPrep 0%
+  \ifcase0\ifnum\Fld@rotation=\z@   \else 1\fi
+          \ifx\Fld@bordercolor\relax\else 1\fi
+          \ifx\Fld@bcolor\relax     \else 1\fi
+          \space
+  \else
+    /MK<<%
+      \ifnum\Fld@rotation=\z@
+      \else
+        /R \Fld@rotation
+      \fi
+      \ifx\Fld@bordercolor\relax
+      \else
+        /BC[\Fld@bordercolor]%
+      \fi
+      \ifx\Fld@bcolor\relax
+      \else
+        /BG[\Fld@bcolor]%
+      \fi
+    >>%
+  \fi
+  /DA(/Helv \strip@pt\Fld@charsize\space Tf%
+      \ifx\Fld@color\@empty\else\space\Fld@color\fi)%
+  /DV(\Hy@escapestring{\Fld@default})%
+  /V(\Hy@escapestring{\Fld@value})%
+  \Fld@additionalactions
+}
+\def\@BarcodeField[#1]#2{%
+  \def\Fld@name{#2}%
+  \let\Fld@default\ltx@empty
+  \let\Fld@value\@empty
+  \def\Fld@width{\DefaultWidthofText}%
+  \def\Fld@height{\DefaultHeightofTextMultiline}%
+  \begingroup
+    \expandafter\BarField@SetKeys\expandafter{%
+      \DefaultOptionsofBarcode,#1%
+    }%
+    \PDFForm@Name
+    \BarField@FlagsBarcode
+    \ifFld@hidden\def\Fld@width{1sp}\fi
+    \ifx\Fld@value\@empty\def\Fld@value{\Fld@default}\fi
+    \LayoutBarcodeField{#2}{%
+      \leavevmode
+      \HyAnn@AbsPageLabel
+      \immediate\pdfobj{<<%
+        /Type/PaperMetaData%
+        /Version 1%
+        /Width \strip@pt\dimexpr\Fld@width*65536/\number\dimexpr1in\relax\relax
+        /Height \strip@pt\dimexpr\Fld@height*65536/\number\dimexpr1in\relax\relax
+        /XSymWidth \the\BarFld@symwidth
+        \ifcase\BarFld@barcodetype
+          /Symbology/PDF417%
+          /XSymHeight \the\numexpr\BarFld@symwidth*\BarFld@symfactor\relax
+          /ECC \the\BarFld@ecc
+        \or
+          /Symbology/QRCode%
+          /ECC \the\BarFld@ecc
+        \or
+          /Symbology/DataMatrix%
+        \fi
+        /Resolution 300.0%
+      >>}%
+    \Hy@escapeform\BarPDF@BarcodeDict
+      \pdfstartlink user {\BarPDF@BarcodeDict}\relax
+      \MakeBarcodeField{\Fld@width}{\Fld@height}\pdfendlink
+      \HyField@AddToFields
+    }%
+  \endgroup
+}
+\endinput
+%%
+%% End of file `hyperbar.sty'.

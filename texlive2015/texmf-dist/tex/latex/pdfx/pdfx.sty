@@ -1,0 +1,783 @@
+%%
+%% This is file `pdfx.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% pdfx.dtx  (with options: `package')
+%% 
+%%  Copyright (c) 2015, CV Radhakrishnan <cvr@river-valley.org>,
+%%    Han The Thanh <thanh@river-valley.org>,
+%%    Ross Moore <ross.moore@mq.edu.au>,
+%%    Peter Selinger <selinger@mathstat.dal.ca>
+%% 
+%%  This file may be distributed and/or modified under the conditions
+%%  of the LaTeX Project Public License, either version 1.2 of this
+%%  license or (at your option) any later version.  The latest version
+%%  of this license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%%  and version 1.2 or later is part of all distributions of LaTeX
+%%  version 1999/12/01 or later.
+%% 
+ \@ifpackageloaded{pdfxmult}{%
+  \PackageError{pdfx}%
+  {^^JThis package may not be used in conjunction with the \space pdfxmult \space package}%
+  {Type \space x <return> \space to exit; or just \space <return> \space to continue without this package.}%
+  \expandafter\let\csname opt@pdfx.sty\endcsname\@empty\endinput
+  }{}%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{pdfx}
+  [2015/02/17 v1.5.3 PDF/X and PDF/A support (CVR/HTH/RRM/PS)]
+
+\newif\ifpdfx@noBOM \pdfx@noBOMfalse   % use a BOM in the XMP packet
+\newif\ifpdfx@x \pdfx@xfalse   % PDF/X mode
+\newif\ifpdfx@e \pdfx@efalse   % PDF/E mode; not implemented yet
+\newif\ifpdfx@vt \pdfx@vtfalse   % PDF/VT mode, extension of  PDF/X
+\newif\ifno@iccprofile   % used with PDF/X-4p and PDF/X-5pg
+
+%% Not all combinations of the following parameters are meaningful.
+\def\xmp@Part{1}               % PDF/A part: 1, 2, or 3
+\def\xmp@Conformance{B}        % Conformance level: A, B, or U
+\def\xmp@ReleaseDate{2005}     % 2001 for PDF/X-1, 2005 for PDF/A-1,
+                               % 2010 for PDF/A-2, 2012 for PDF/A-3.
+
+%%  default is to create  PDF/A-1b
+%%  options can change this for PDF/X or higher levels of PDF/A
+\DeclareOption{a-1a}{\global\pdfx@xfalse\def\xmp@Part{1}\def\xmp@Conformance{A}\def\xmp@ReleaseDate{2005}}
+\DeclareOption{a-1b}{\global\pdfx@xfalse\def\xmp@Part{1}\def\xmp@Conformance{B}\def\xmp@ReleaseDate{2005}}
+\DeclareOption{a-2a}{\global\pdfx@xfalse\def\xmp@Part{2}\def\xmp@Conformance{A}\def\xmp@ReleaseDate{2010}}
+\DeclareOption{a-2b}{\global\pdfx@xfalse\def\xmp@Part{2}\def\xmp@Conformance{B}\def\xmp@ReleaseDate{2010}}
+\DeclareOption{a-2u}{\global\pdfx@xfalse\def\xmp@Part{2}\def\xmp@Conformance{U}\def\xmp@ReleaseDate{2010}}
+\DeclareOption{a-3a}{\global\pdfx@xfalse\def\xmp@Part{3}\def\xmp@Conformance{A}\def\xmp@ReleaseDate{2012}}
+\DeclareOption{a-3b}{\global\pdfx@xfalse\def\xmp@Part{3}\def\xmp@Conformance{B}\def\xmp@ReleaseDate{2012}}
+\DeclareOption{a-3u}{\global\pdfx@xfalse\def\xmp@Part{3}\def\xmp@Conformance{U}\def\xmp@ReleaseDate{2012}}
+\DeclareOption{x-1}{\global\pdfx@xtrue\def\xmp@Part{1}\def\xmp@Conformance{a}\def\xmp@ReleaseDate{2001}\global\pdfminorversion=3 }
+\DeclareOption{x-1a}{\global\pdfx@xtrue\def\xmp@Part{1}\def\xmp@Conformance{a}\def\xmp@ReleaseDate{2003}\global\pdfminorversion=3 }
+\DeclareOption{x-1a1}{\global\pdfx@xtrue\def\xmp@Part{1}\def\xmp@Conformance{a}\def\xmp@ReleaseDate{2001}\global\pdfminorversion=3 }
+\DeclareOption{x-1a3}{\global\pdfx@xtrue\def\xmp@Part{1}\def\xmp@Conformance{a}\def\xmp@ReleaseDate{2003}\global\pdfminorversion=3 }
+\DeclareOption{x-2}{\global\pdfx@xtrue\def\xmp@Part{2}\def\xmp@Conformance{}\def\xmp@ReleaseDate{2002}\global\pdfminorversion=4 }
+\DeclareOption{x-3}{\global\pdfx@xtrue\def\xmp@Part{3}\def\xmp@Conformance{}\def\xmp@ReleaseDate{2002}\global\pdfminorversion=3 }
+\DeclareOption{x-302}{\global\pdfx@xtrue\def\xmp@Part{3}\def\xmp@Conformance{}\def\xmp@ReleaseDate{2002}\global\pdfminorversion=3 }
+\DeclareOption{x-303}{\global\pdfx@xtrue\def\xmp@Part{3}\def\xmp@Conformance{}\def\xmp@ReleaseDate{2003}\global\pdfminorversion=4 }
+%%%  Later versions, yet to be fully implemented
+\DeclareOption{x-4}{\global\pdfx@xtrue\def\xmp@Part{4}\def\xmp@Conformance{}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-4p}{\global\pdfx@xtrue\global\no@iccprofiletrue
+  \def\xmp@Part{4}\def\xmp@Conformance{p}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-408}{\global\pdfx@xtrue\def\xmp@Part{4}\def\xmp@Conformance{}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-410}{\global\pdfx@xtrue\def\xmp@Part{4}\def\xmp@Conformance{}\def\xmp@ReleaseDate{2010}\global\pdfminorversion=6 }
+\DeclareOption{x-4p08}{\global\pdfx@xtrue\global\no@iccprofiletrue
+  \def\xmp@Part{4}\def\xmp@Conformance{p}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-4p10}{\global\pdfx@xtrue\global\no@iccprofiletrue
+  \def\xmp@Part{4}\def\xmp@Conformance{p}\def\xmp@ReleaseDate{2010}\global\pdfminorversion=6 }
+\DeclareOption{x-5}{\global\pdfx@xtrue\def\xmp@Part{5}\def\xmp@Conformance{}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-5g}{\global\pdfx@xtrue\def\xmp@Part{5}\def\xmp@Conformance{g}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-5n}{\global\pdfx@xtrue\def\xmp@Part{5}\def\xmp@Conformance{n}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-5pg}{\global\pdfx@xtrue\global\no@iccprofiletrue
+  \def\xmp@Part{5}\def\xmp@Conformance{pg}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-508}{\global\pdfx@xtrue\def\xmp@Part{5}\def\xmp@Conformance{}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-5g08}{\global\pdfx@xtrue\def\xmp@Part{5}\def\xmp@Conformance{g}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-5n08}{\global\pdfx@xtrue\def\xmp@Part{5}\def\xmp@Conformance{n}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-5pg08}{\global\pdfx@xtrue\global\no@iccprofiletrue
+  \def\xmp@Part{5}\def\xmp@Conformance{pg}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{x-510}{\global\pdfx@xtrue\def\xmp@Part{5}\def\xmp@Conformance{}\def\xmp@ReleaseDate{2010}\global\pdfminorversion=6 }
+\DeclareOption{x-5g10}{\global\pdfx@xtrue\def\xmp@Part{5}\def\xmp@Conformance{g}\def\xmp@ReleaseDate{2010}\global\pdfminorversion=6 }
+\DeclareOption{x-5n10}{\global\pdfx@xtrue\def\xmp@Part{5}\def\xmp@Conformance{n}\def\xmp@ReleaseDate{2010}\global\pdfminorversion=6 }
+\DeclareOption{x-5pg10}{\global\pdfx@xtrue\global\no@iccprofiletrue
+  \def\xmp@Part{5}\def\xmp@Conformance{pg}\def\xmp@ReleaseDate{2010}\global\pdfminorversion=6 }
+\DeclareOption{e-1}{\global\pdfx@xfalse\global\pdfx@etrue
+  \def\xmp@Part{1}\def\xmp@Conformance{}\def\xmp@ReleaseDate{2008}\global\pdfminorversion=6 }
+\DeclareOption{vt-1}{\global\pdfx@xtrue\global\pdfx@vttrue
+  \def\xmp@Part{4}\def\xmp@vtPart{1}\def\xmp@Conformance{}\def\xmp@vtConformance{}%
+  \def\xmp@ReleaseDate{2010}\global\pdfminorversion=6 }
+\DeclareOption{vt-2}{\global\pdfx@xtrue\global\pdfx@vttrue
+  \def\xmp@Part{4}\def\xmp@vtPart{2}\def\xmp@Conformance{}\def\xmp@vtConformance{}%
+  \def\xmp@ReleaseDate{2010}\global\pdfminorversion=6 }
+\DeclareOption{vt-2s}{\global\pdfx@xtrue\global\pdfx@vttrue
+  \def\xmp@Part{5}\def\xmp@vtPart{2}\def\xmp@Conformance{pg}\def\xmp@vtConformance{s}%
+  \def\xmp@ReleaseDate{2010}\global\pdfminorversion=6 }
+
+%% extra options to alter the PDF minor version, in case needed in special circumstances
+\DeclareOption{pdf13}{\global\pdfminorversion=3 }
+\DeclareOption{pdf14}{\global\pdfminorversion=4 }
+\DeclareOption{pdf15}{\global\pdfminorversion=5 }
+\DeclareOption{pdf16}{\global\pdfminorversion=6 }
+\DeclareOption{pdf17}{\global\pdfminorversion=7 }
+
+%% inhibits writing the XMP byte-order marker
+\DeclareOption{noBOM}{\pdfx@noBOMtrue}
+
+\pdfminorversion=4 %  assumed for PDF/A ;  options may change this for  PDF/X
+\expandafter\ifx\csname pdfresetpageorigin\endcsname\relax\else
+ \pdfresetpageorigin=0
+\fi
+\ProcessOptions
+
+{\endlinechar=-1
+ \everyeof{\noexpand}%
+ \xdef\pdfx@bannerstring{\expandafter\scantokens\expandafter{\pdftexbanner}}
+}%
+\def\pdfx@testbannerstr{This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014/dev) kpathsea version 6.2.0dev}%
+\ifx\pdfx@bannerstring\pdfx@testbannerstr
+ \typeout{This version of pdfTeX cannot write out upper-range character bytes, 128-255.}%
+ \typeout{Any UTF-8 Unicode characters in the Metadata will not be written correctly.}%
+ \typeout{Please update to a more stable version of pdfTeX.^^J}%
+ \pdfx@noBOMtrue
+\fi
+
+\ifpdfx@x
+ \pdfobjcompresslevel=0 \relax
+ \expandafter\ifx\csname pdfinterwordspaceoff\endcsname\relax\else
+  \pdfinterwordspaceoff
+  \let\pdfinterwordspaceon\pdfinterwordspaceoff
+  \let\pdfinterwordspace\relax
+ \fi
+ \expandafter\ifx\csname pdfgeninterwordspace\endcsname\relax\else
+  \pdfgeninterwordspace=0 \relax
+ \fi
+ \pdfpageattr{/MediaBox[0 0 595 793]
+              /BleedBox[0 0 595 793]
+              /TrimBox[25 20 570 773]}
+\fi
+\ifnum\pdfminorversion >3 \relax
+ \pdfmapline{+dummy-space <dummy-space.pfb}
+ \expandafter\ifx\csname pdfgeninterwordspace\endcsname\relax\else
+  \pdfgeninterwordspace=1 \relax
+ \fi
+\fi
+\ifpdfx@x
+ \@ifpackageloaded{hyperref}{%
+  \hypersetup{draft,pdftex,pdfpagemode=UseNone,bookmarks=false,pdfversion=1.\the\pdfminorversion]}
+ }{%
+  \RequirePackage[draft,pdftex,pdfpagemode=UseNone,bookmarks=false,pdfversion=1.\the\pdfminorversion]{hyperref}
+ }%
+\else
+ \ifpdfx@e
+  \@ifpackageloaded{hyperref}{%
+   \hypersetup{draft,pdftex,pdfpagemode=UseNone,bookmarks=false,pdfversion=1.\the\pdfminorversion]}
+  }{%
+   \RequirePackage[draft,pdftex,pdfpagemode=UseNone,bookmarks=false,pdfversion=1.\the\pdfminorversion]{hyperref}
+  }%
+ \else
+ \@ifpackageloaded{hyperref}{%
+  \hypersetup{pdftex,pdfa}%
+ }{%
+  \RequirePackage[pdftex,pdfa]{hyperref}
+ }%
+\fi\fi
+\hypersetup{pdfencoding=unicode}
+
+\RequirePackage{inputenc}
+
+%%----------------------------------------------------------------------
+%% Macros for reading XMP data with special catcodes. Usage:
+%%
+%% \xmp@parse{continuation}{data}
+%%
+%% The effect is to read the data with special catcodes: '<', '>', and
+%% '&' are "active", and '^', '_', '#', '$', '~' are "other". The data
+%% is then bound to the locally scoped name \@this, and the
+%% continuation is called.
+\def\xmp@parse#1{%
+ \begingroup
+ \catcode`\<=13\catcode`\>=13\catcode`\&=13\catcode`\^=12
+ \catcode`\_=12\catcode`\#=12\catcode`\$=12\catcode`\~=12
+ \xmp@doparse{#1}%
+}
+\def\xmp@doparse#1#2{%
+ \def\@this{#2}#1%
+ \endgroup%
+}
+
+%%----------------------------------------------------------------------
+%% Local commands. They are only brought into scope during the reading
+%% of xmpdata.
+\def\pdfx@localcommands{%
+ \def\Title{\xmp@parse{\global\let\xmp@Title\@this}}%
+ \def\Author{\xmp@parse{\global\let\xmp@Author\@this}}%
+ \def\Keywords{\xmp@parse{\global\let\xmp@Keywords\@this}}%
+ \def\Subject{\xmp@parse{\global\let\xmp@Subject\@this}}%
+ \def\CreatorTool{\xmp@parse{\global\let\xmp@CreatorTool\@this}}%
+ \def\Producer{\xmp@parse{\global\let\xmp@Producer\@this}}%
+ \def\Volume{\xmp@parse{\global\let\xmp@Volume\@this}}%
+ \def\Issue{\xmp@parse{\global\let\xmp@Issue\@this}}%
+ \def\CoverDisplayDate{\xmp@parse{\global\let\xmp@CoverDisplayDate\@this}}%
+ \def\CoverDate{\xmp@parse{\global\let\xmp@CoverDate\@this}}%
+ \def\Copyright{\xmp@parse{\global\let\xmp@Copyright\@this%
+  \ifx\xmp@Copyrighted\@empty\gdef\xmp@Copyrighted{True}\fi}}%
+ \def\CopyrightURL{\xmp@parse{\global\let\xmp@CopyrightURL\@this%
+  \ifx\xmp@Copyrighted\@empty\gdef\xmp@Copyrighted{True}\fi}}%
+ \def\Copyrighted{\xmp@parse{\global\let\xmp@Copyrighted\@this}}%
+ \def\Doi{\xmp@parse{\global\let\xmp@Doi\@this}}%
+ \def\Lastpage{\xmp@parse{\global\let\xmp@Lastpage\@this}}%
+ \def\Firstpage{\xmp@parse{\global\let\xmp@Firstpage\@this}}%
+ \def\PublicationType{\xmp@parse{\global\let\xmp@PublicationType\@this}}%
+ \def\Journaltitle{\xmp@parse{\global\let\xmp@Journaltitle\@this%
+  \ifx\xmp@PublicationType\@empty\gdef\xmp@PublicationType{journal}\fi}}%
+ \def\Journalnumber{\xmp@parse{\global\let\xmp@Journalnumber\@this}}%
+ \def\Publisher{\xmp@parse{\global\let\xmp@Publisher\@this}}%
+ \def\AuthoritativeDomain{\xmp@parse{\global\let\xmp@AuthoritativeDomain\@this}}%
+ % some aliases for backward compatibility:
+ \let\Creator\CreatorTool%
+ \let\Org\Publisher%
+ \let\WebStatement\CopyrightURL%
+ % user-level commands for color profiles:
+ \let\setRGBcolorprofile\pdfx@setRGBcolorprofile%
+ \let\setCMYKcolorprofile\pdfx@setCMYKcolorprofile%
+ \let\setGRAYcolorprofile\pdfx@setGRAYcolorprofile%
+}
+
+%%----------------------------------------------------------------------
+%% Defaults
+
+\def\xmp@Producer{pdfTeX}
+\edef\xmp@CreatorTool{\@pdfcreator}
+
+\global\let\xmp@Title\@empty
+\global\let\xmp@Author\@empty
+\global\let\xmp@Keywords\@empty
+\global\let\xmp@Subject\@empty
+\global\let\xmp@Volume\@empty
+\global\let\xmp@Issue\@empty
+\global\let\xmp@CoverDisplayDate\@empty
+\global\let\xmp@CoverDate\@empty
+\global\let\xmp@Copyright\@empty
+\global\let\xmp@CopyrightURL\@empty
+\global\let\xmp@Copyrighted\@empty
+\global\let\xmp@Doi\@empty
+\global\let\xmp@Lastpage\@empty
+\global\let\xmp@Firstpage\@empty
+\global\let\xmp@PublicationType\@empty
+\global\let\xmp@Journaltitle\@empty
+\global\let\xmp@Journalnumber\@empty
+\global\let\xmp@Publisher\@empty
+\global\let\xmp@AuthoritativeDomain\@empty
+
+%%----------------------------------------------------------------------
+%% The following characters and markup can be used within the XMP data
+%% defined by \Author, \Title, and so on.
+%%
+%% * All printable non-whitespace ASCII characters except
+%%   '%', '{', '}', '\' can be used as themselves.
+%%
+%% * All printable non-whitespace UTF-8 encoded Unicode characters
+%%   from the basic multilingual plane can be used as themselves.
+%%
+%% * As usual, consecutive whitespace characters are contracted to a
+%%   single space. Whitespace after a macro such as \copyright is
+%%   ignored. Blank lines are not permitted.
+%%
+%% * The following markup can be used:
+%%   '\ '        - a literal space  (for example after a macro)
+%%   \%          - a literal '%'
+%%   \{          - a literal '{'
+%%   \}          - a literal '}'
+%%   \backslash  - a literal '\'
+%%   \copyright  - the (c) copyright symbol
+%%
+%%   \sep        - only permitted within \Author, \Keywords, \Publisher.
+%%
+%% * For backward compatibility, \& and \TextCopyright are also
+%%   provided. Their use is deprecated.
+
+%%----------------------------------------------------------------------
+%% The macro \pdfx@actives binds the active characters
+%% '&', '<', and '>' to \pdfx@amp, \pdfx@lt, and \pdfx@gt,
+%% respectively, without actually making them active.
+\begingroup
+ \catcode`\<=13
+ \catcode`\>=13
+ \catcode`\&=13
+ \gdef\pdfx@actives{
+  \def&{\pdfx@amp}
+  \def<{\pdfx@lt}
+  \def>{\pdfx@gt}
+ }
+\endgroup
+
+%%----------------------------------------------------------------------
+%% Markup bindings to be used during XMP generation.
+
+{\obeyspaces\gdef\pdfx@sep{</rdf:li>^^J     <rdf:li>}}
+
+\def\pdfx@xmpmarkup{%
+ \pdfx@actives%
+ \edef\@amp{\expandafter\@gobble\string\&}%
+ \edef\@hash{\expandafter\@gobble\string\#}%
+ \edef\ {\expandafter\@gobble\string\ }%
+ \edef\%{\expandafter\@gobble\string\%}%
+ \edef\{{\expandafter\@gobble\string\{}%
+ \edef\}{\expandafter\@gobble\string\}}%
+ \edef\backslash{\expandafter\@gobble\string\\}%
+ \def\@unicode##1{\@amp\@hash x##1;}%
+ \def\pdfx@amp{\@unicode{0026}}%
+ \def\pdfx@lt{\@unicode{003c}}%
+ \def\pdfx@gt{\@unicode{003e}}%
+ \def\copyright{\@unicode{00A9}}%
+ \let\&\pdfx@amp               % for backward compatibility
+ \let\TextCopyright\copyright  % for backward compatibility
+ \let\sep\pdfx@sep%
+}
+
+%%----------------------------------------------------------------------
+%% Markup bindings to be used during PDF string generation.
+
+\def\pdfx@pdfmarkup{%
+ \pdfx@actives%
+ \edef\%{\expandafter\@gobble\string\%}%
+ \edef\{{\expandafter\@gobble\string\{}%
+ \edef\}{\expandafter\@gobble\string\}}%
+ \edef\pdfx@backslash{\expandafter\@gobble\string\\}%
+ \def\backslash{\pdfx@backslash000\pdfx@backslash134}%
+ \edef\pdfx@amp{\expandafter\@gobble\string\&}%
+ \edef\pdfx@lt{\expandafter\@gobble\string\<}%
+ \edef\pdfx@gt{\expandafter\@gobble\string\>}%
+ \let\TextCopyright\copyright  % for backward compatibility
+ \def\sep{, }%
+ % Note: '\ ', \&, \copyright are already predefined by hyperref.
+}
+
+%%----------------------------------------------------------------------
+\def\pdfx@findUUID#1{\edef\pdfx@tmpstring{\pdfmdfivesum{#1}}
+     \expandafter\pdfx@eightofnine\pdfx@tmpstring\end}
+\def\pdfx@eightofnine#1#2#3#4#5#6#7#8#9\end{%
+     \xdef\pdfx@eightchars{#1#2#3#4#5#6#7#8}
+     \pdfx@fouroffive#9\end}
+\def\pdfx@fouroffive#1#2#3#4#5\end{\xdef\pdfx@ffourchars{#1#2#3#4}
+     \pdfx@sfouroffive#5\end}
+\def\pdfx@sfouroffive#1#2#3#4#5\end{\xdef\pdfx@sfourchars{#1#2#3#4}
+     \pdfx@tfouroffive#5\end}
+\def\pdfx@tfouroffive#1#2#3#4#5\end{\xdef\pdfx@tfourchars{#1#2#3#4}
+     \xdef\pdfx@laststring{#5}}
+
+\def\pdfx@uuid{\pdfx@eightchars-%
+          \pdfx@ffourchars-%
+          \pdfx@sfourchars-%
+          \pdfx@tfourchars-%
+          \pdfx@laststring}
+
+\pdfx@findUUID{\jobname.pdf}
+\edef\xmp@docid{\pdfx@uuid}
+\pdfx@findUUID{\pdfcreationdate}
+\edef\xmp@instid{\pdfx@uuid}
+
+%%----------------------------------------------------------------------
+%% -----   Color Profiles  -------
+%% Define how to specify the profile, so the default
+%% can be over-ridden in the  .xmpdata  file.
+
+%% The user-level macros are only brought into scope during the reading
+%% of xmpdata.
+%%
+%% Usage:
+%% \setRGBcolorprofile{<filename>}{<identifier>}{<info string>}{<registry URL>}
+%% \setCMYKcolorprofile{<filename>}{<output intent>}{<identifier>}{<registry URL>}
+%% \setGRAYcolorprofile{<filename>}{<output intent>}{<identifier>}{<registry URL>}
+%%
+%% Within the arguments of each macro, the characters '<', '>', '&',
+%% '^', '_', '#', '$', and '~' can be used as themselves, but
+%% '%' must be escaped as '\%'.
+%%
+%% Note:
+%% * RGB profile is used with PDF/A and PDF/E files.
+%% * CMYK profile is used with PDF/X and PDF/VT files.
+%% * GRAY profile is currently unused.
+\def\pdfx@profilecatcodes{%
+  \catcode`\<=12\catcode`\>=12\catcode`\&=12\catcode`\^=12
+  \catcode`\_=12\catcode`\#=12\catcode`\$=12\catcode`\~=12
+  \edef\%{\expandafter\@gobble\string\%}%
+}
+\def\pdfx@setRGBcolorprofile{%
+  \begingroup
+  \pdfx@profilecatcodes
+  \pdfx@dosetRGBcolorprofile}
+\def\pdfx@dosetRGBcolorprofile#1#2#3#4{%
+  \xdef\pdfx@rgb@profile{#1}%  valid file name
+  \xdef\pdfx@rgb@identifier{#2}%
+  \xdef\pdfx@rgb@info{#3}%
+  \pdfstringdef\pdfx@rgb@registry{#4}%  valid URL
+  \endgroup}%  closes-off  \pdfx@setRGBcolorprofile
+%%
+\def\pdfx@setCMYKcolorprofile{%
+  \begingroup
+  \pdfx@profilecatcodes
+  \pdfx@dosetCMYKcolorprofile}
+\def\pdfx@dosetCMYKcolorprofile#1#2#3#4{%
+ \xdef\pdfx@cmyk@profile{#1}%  valid file name
+ \pdfstringdef\pdfx@cmyk@intent{#2}%  color intent
+ \pdfstringdef\pdfx@cmyk@identifier{#3}%  text string identifier
+ \pdfstringdef\pdfx@cmyk@registry{#4}%  valid URL
+ \endgroup}%  closes-off  \pdfx@setCMYKcolorprofile
+%%
+\def\pdfx@setGRAYcolorprofile{%
+  \begingroup
+  \pdfx@profilecatcodes
+  \pdfx@dosetGRAYcolorprofile}
+\def\pdfx@dosetGRAYcolorprofile#1#2#3#4{%
+ \xdef\pdfx@gray@profile{#1}%  valid file name
+ \xdef\pdfx@gray@intent{#2}%
+ \xdef\pdfx@gray@identifier{#3}%
+ \pdfstringdef\pdfx@gray@registry{#4}%  valid URL
+ \endgroup}%  closes-off  \pdfx@setGRAYcolorprofile
+%%----------------------------------------------------------------------
+%% default color profiles
+\pdfx@setRGBcolorprofile{sRGB_IEC61966-2-1_black_scaled.icc}
+  {sRGB_IEC61966-2-1_black_scaled}
+  {sRGB IEC61966 v2.1 with black scaling}
+  {http://www.color.org}
+\pdfx@setCMYKcolorprofile{coated_FOGRA39L_argl.icc}
+  {Coated FOGRA39}
+  {FOGRA39 (ISO Coated v2 300\% (ECI))}
+  {http://www.argyllcms.com/}
+\pdfx@setGRAYcolorprofile{Gray_linear.icc}
+ {}
+ {Custom}
+ {http://www.freedesktop.org/wiki/OpenIcc}
+%%----------------------------------------------------------------------
+%% License for the file  sRGB_IEC61966-2-1_black_scaled.icc :
+%%
+%% Copyright International Color Consortium, 2009  -- http://www.color.org/
+%%
+%% It is hereby acknowledged that the file "sRGB_IEC61966-2-1_black_scaled.icc"
+%% is provided "AS IS" WITH NO EXPRESS OR IMPLIED WARRANTY.
+%%
+%% Licensing
+%%
+%% This profile is made available by the International Color Consortium,
+%% and may be copied, distributed, embedded, made, used, and sold without
+%% restriction. Altered versions of this profile shall have the original
+%% identification and copyright information removed and shall not be
+%% misrepresented as the original profile.
+%%
+%% Terms of use
+%%
+%% To anyone who acknowledges that the file "sRGB_IEC61966-2-1_black_scaled.icc"
+%% is provided "AS IS" WITH NO EXPRESS OR IMPLIED WARRANTY, permission
+%% to use, copy and distribute these file for any purpose is hereby
+%% granted without fee, provided that the file is not changed including
+%% the ICC copyright notice tag, and that the name of ICC shall not be
+%% used in advertising or publicity pertaining to distribution of the
+%% software without specific, written prior permission.  ICC makes no
+%% representations about the suitability of this software for any
+%% purpose.
+%%
+%%----------------------------------------------------------------------
+%% License for the file  coated_FOGRA39L_argl.icc :
+%%
+%% The zlib/libpng License
+%%
+%% Copyright (c) 2008 Kai-Uwe Behrmann
+%%
+%% This software is provided 'as-is', without any express or implied
+%% warranty. In no event will the authors be held liable for any damages
+%% arising from the use of this software.
+%%
+%% Permission is granted to anyone to use this software for any purpose,
+%% including commercial applications, and to alter it and redistribute
+%% it freely, subject to the following restrictions:
+%%
+%%    1. The origin of this software must not be misrepresented; you
+%%    must not claim that you wrote the original software. If you use
+%%    this software in a product, an acknowledgment in the product
+%%    documentation would be appreciated but is not required.
+%%
+%%    2. Altered source versions must be plainly marked as such, and
+%%    must not be misrepresented as being the original software.
+%%
+%%    3. This notice may not be removed or altered from any source
+%%    distribution.
+%%----------------------------------------------------------------------
+
+\begingroup
+ \inputencoding{8bit}%
+ \makeatletter
+ \pdfx@localcommands
+ \InputIfFileExists{\jobname.xmpdata}%
+  {\typeout{**pdfx: Metadata file  \jobname.xmpdata  read successfully.}}%
+  {\typeout{**pdfx: No file  \jobname.xmpdata . Metadata will be incomplete!}}
+\endgroup
+%% ----------------------------------------------------------------------
+\begingroup
+\ifpdfx@x   %  PDF/X  needs a CMYK color profile for printing
+ \def\0{\string\0}
+ \catcode`\_ 12
+ \ifno@iccprofile %  PDF/X-4p  and  PDF/X-5pg
+   \immediate\pdfobj {<</FS /URL /F (http://www.color.org/registry/profiles/Coated_Fogra39L_VIGC_300.icc)>>}
+   \edef\OBJ@URLs{\the\pdflastobj}%
+   \xdef\pdfx@cmyk@intent{Coated_Fogra39L_VIGC_300}%
+   \xdef\pdfx@cmyk@identifier{Coated_Fogra39L_VIGC_300.icc}%
+   \immediate\pdfobj {<<%
+     /CheckSum <5449c505618a9b6c38634b4708ae9e37>^^J% d5f0714cd9d6092b6ac93b625f5d8a0c>%
+     /ICCVersion (\004\002\000\000)%  4.2.0.0
+     /ProfileCS (CMYK)^^J%
+     /ProfileName (\pdfx@cmyk@identifier)^^J%
+     /URLs [\OBJ@URLs\space 0 R ]
+    >>} %
+  \edef\OBJ@ICC{\the\pdflastobj}%
+  \pdfcatalog{%
+   /OutputIntents [ <<
+   /Type/OutputIntent
+   /S/GTS_PDFX
+   /OutputCondition (\pdfx@cmyk@intent)%
+   /OutputConditionIdentifier (\pdfx@cmyk@identifier)%
+   /RegistryName(\pdfx@cmyk@registry)
+   % extra dictionary required for PDF/X-4p and  PDF/X-5pg
+   /DestOutputProfileRef \OBJ@ICC\space 0 R
+  >> ]}%
+ \else  %  PDF/X-1 , PDF/X-1a , PDF/X-3 , PDF/X-4 , PDF/X-5g
+  \IfFileExists{\pdfx@cmyk@profile}{%
+  %  embedded CMYK color profile
+  \immediate\pdfobj stream attr{/N 4} file{\pdfx@cmyk@profile}%
+  \edef\OBJ@CMYK{\the\pdflastobj}%
+  \pdfcatalog{%
+   /OutputIntents [ <<
+   /Type/OutputIntent
+   /S/GTS_PDFX
+   /OutputCondition (\pdfx@cmyk@intent)%
+   /OutputConditionIdentifier (\pdfx@cmyk@identifier)%
+   /RegistryName(\pdfx@cmyk@registry)
+   /DestOutputProfile \OBJ@CMYK\space 0 R
+  >> ]}%
+ }{%
+  \errmessage{No color profile found to use for CMYK printing colors.}%
+ }%
+ \fi % end of  \ifno@iccprofile
+\else
+%%  PDF/A  needs an RGB color profile for on-screen rendering
+ \IfFileExists{\pdfx@rgb@profile}{%
+  \immediate\pdfobj stream attr{/N 3^^J/Alternate/DeviceRGB} file{\pdfx@rgb@profile}%
+  \edef\OBJ@RGB{\the\pdflastobj}%
+ }{%
+  \errmessage{No color profile found to use for RGB screen colors.}%
+ }%
+ \pdfcatalog{%
+   /ViewerPreferences <</DisplayDocTitle true >>
+   /OutputIntents [ <<
+   /Type /OutputIntent
+   \ifpdfx@e
+    /S/ISO_PDFE1
+   \else
+    /S/GTS_PDFA1
+   \fi
+    /OutputConditionIdentifier (\pdfx@rgb@identifier)%
+   /DestOutputProfile \OBJ@RGB\space 0 R
+   /Info(\pdfx@rgb@info)
+   /RegistryName(\pdfx@rgb@registry)
+  >>
+ ]}%
+\fi % end of  \ifpdfx@x
+\endgroup
+
+%% ----------------------------------------------------------------------
+%% Make a version of \xmp@Keywords and \xmp@Author where \sep has been
+%% replaced by a comma. The first is for the pdf:Keywords property,
+%% which accepts a comma-separated string of keywords, and seems to be
+%% mandatory for PDF/A-1 compliance. The second is for the dc:creator
+%% property. Although it is defined to be a sequence of authors, Adobe
+%% Acrobat will in fact ignore and delete all except the first author.
+%% Therefore, it's safer to always separate authors by commas.
+
+\begingroup
+ \pdfx@xmpmarkup
+ \def\sep{, }%
+ \inputencoding{8bit}\makeatletter
+ \xdef\xmp@@Keywords{\xmp@Keywords}
+ \xdef\xmp@@Author{\xmp@Author}
+\endgroup
+
+%% ----------------------------------------------------------------------
+\def\xmp@convertDate{\pdfx@getYear}
+{\catcode`\D=12 \catcode`\:=12
+ \gdef\pdfx@getYear D:#1#2#3#4{\edef\pdfx@xYear{#1#2#3#4}\pdfx@getMonth}
+}
+\def\pdfx@getMonth#1#2{\edef\pdfx@xMonth{#1#2}\pdfx@getDay}
+\def\pdfx@getDay#1#2{\edef\pdfx@xDay{#1#2}\pdfx@getHour}
+\def\pdfx@getHour#1#2{\edef\pdfx@xHour{#1#2}\pdfx@getMin}
+\def\pdfx@getMin#1#2{\edef\pdfx@xMin{#1#2}\pdfx@getSec}
+\def\pdfx@getSec#1#2{\edef\pdfx@xSec{#1#2}\pdfx@getTZh}
+\def\pdfx@getTZh{\futurelet\pdfx@next\pdfx@getTzh@branches}
+
+{\catcode`\@=11 \catcode`\Z=12 \catcode`\+=12 \catcode`\-=12
+\gdef\pdfx@getTzh@branches{%
+ \ifx\pdfx@next Z\let\pdfx@getTzbranch\pdfx@getTznozone
+ \else\ifx\pdfx@next +\let\pdfx@getTzbranch\pdfx@getTzplus
+ \else\ifx\pdfx@next -\let\pdfx@getTzbranch\pdfx@getTzminus
+ \else\let\pdfx@getTzbranch\pdfx@getTzerror
+ \fi\fi\fi \pdfx@getTzbranch }
+
+\catcode`\0=12
+\gdef\pdfx@getTznozone Z#1\pdfx@getTzend{%
+ \edef\pdfx@xTzh{+00}\edef\pdfx@xTzm{00}}
+\gdef\pdfx@getTzplus +#1'#2'#3\pdfx@getTzend{%
+ \edef\pdfx@xTzh{+#1}\edef\pdfx@xTzm{#2}%
+ \ifx\relax#2\relax\def\pdfx@xTzm{00}\fi}
+\gdef\pdfx@getTzminus -#1'#2'#3\pdfx@getTzend{%
+ \edef\pdfx@xTzh{-#1}\edef\pdfx@xTzm{#2}%
+ \ifx\relax#2\relax\def\pdfx@xTzm{00}\fi}
+\expandafter\xmp@convertDate\pdfcreationdate''\pdfx@getTzend
+\xdef\pdfx@convDate{\pdfx@xYear\pdfx@xMonth\pdfx@xDay\pdfx@xHour\pdfx@xMin\pdfx@xSec\pdfx@xTzh'\pdfx@xTzm'}%
+\xdef\xmp@convDate{\pdfx@xYear-\pdfx@xMonth-\pdfx@xDay T\pdfx@xHour:\pdfx@xMin:\pdfx@xSec\pdfx@xTzh:\pdfx@xTzm}%
+}% end of \catcode
+
+%% ----------------------------------------------------------------------
+%% \pdfx@topdfstring\toka\tokb: Convert the string in \tokb to a format
+%% appropriate for PDF /Info strings, i.e., PDFDoc encoding or UTF-16
+%% encoding, and store the result in \toka. As a special case, if \tokb
+%% is \@empty, set \toka to \@empty.
+
+\def\pdfx@topdfstring#1#2{%
+ \ifx#2\@empty
+  \global\let#1\@empty
+ \else
+  \begingroup
+   \inputencoding{utf8}%
+   \hypersetup{pdfencoding=unicode}%
+   \pdfstringdef#1{#2}%
+  \endgroup
+ \fi
+}
+
+%% Convert the relevant XMP properties to PDF strings, expanding markup
+%% (such as \sep, \&, \copyright, etc) in an appropriate way.
+\begingroup
+ \pdfx@pdfmarkup
+ \pdfx@topdfstring\pdfx@Title\xmp@Title
+ \pdfx@topdfstring\pdfx@Author\xmp@Author
+ \pdfx@topdfstring\pdfx@Subject\xmp@Subject
+ \pdfx@topdfstring\pdfx@Keywords\xmp@Keywords
+ \pdfx@topdfstring\pdfx@CreatorTool\xmp@CreatorTool
+ \pdfx@topdfstring\pdfx@Producer\xmp@Producer
+\endgroup
+
+\input glyphtounicode.tex
+\input glyphtounicode-cmr.tex
+\pdfgentounicode=1
+
+\ifpdfx@x
+ {\pdfinfo{%   order of these dictionary keys should not matter
+   \ifx\pdfx@Author\@empty\else /Author(\pdfx@Author)\fi
+   /CreationDate(D:\pdfx@convDate)%
+   /Creator(\pdfx@CreatorTool)%
+   \ifnum\xmp@Part=1
+     /GTS_PDFXVersion(PDF/X-1\ifnum\xmp@ReleaseDate>2001\xmp@Conformance\fi:\xmp@ReleaseDate)%
+   \else
+    /GTS_PDFXVersion(PDF/X-\xmp@Part\xmp@Conformance\ifnum\xmp@Part< 4 :\xmp@ReleaseDate\fi)%
+   \fi
+   \ifnum\xmp@Part < 3
+      /GTS_PDFXConformance(PDF/X-\xmp@Part\xmp@Conformance:\xmp@ReleaseDate)%
+   \fi
+   \ifpdfx@vt %  support for PDF/VT extensions of  PDF/X-4  and PDF/X-5
+%%     /GTS_PDFVTVersion(PDF/VT-\xmp@vtPart\xmp@vtConformance)%
+   \fi
+   \ifx\pdfx@Keywords\@empty\else /Keywords(\pdfx@Keywords)\fi
+   /ModDate(D:\pdfx@convDate)%
+   /Producer(\pdfx@Producer)%
+   \ifx\pdfx@Subject\@empty\else /Subject(\pdfx@Subject)\fi
+   \ifx\pdfx@Title\@empty\else /Title(\pdfx@Title)\fi
+   /Trapped/False%
+  }%  end of  PDF/X  info
+ }%
+\else
+ \ifpdfx@e
+ {\pdfinfo{%   order of these dictionary keys should not matter
+   \ifx\pdfx@Author\@empty\else /Author(\pdfx@Author)\fi
+   /CreationDate(D:\pdfx@convDate)%
+   /Creator(\pdfx@CreatorTool)%
+   /GTS_PDFEVersion(PDF/E-1\xmp@Conformance:\xmp@ReleaseDate)%
+   \ifx\pdfx@Keywords\@empty\else /Keywords(\pdfx@Keywords)\fi
+   /ModDate(D:\pdfx@convDate)%
+   /Producer(\pdfx@Producer)%
+   \ifx\pdfx@Subject\@empty\else /Subject(\pdfx@Subject)\fi
+   \ifx\pdfx@Title\@empty\else /Title(\pdfx@Title)\fi
+   /Trapped/False%
+  }%  end of  PDF/E  info
+ }%
+ \else
+ \def\pdfx@confA{a}%
+ \def\pdfx@confB{b}%
+ \def\pdfx@confU{u}%
+ \edef\xmp@conformance{\csname pdfx@conf\xmp@Conformance\endcsname}%
+ \AtBeginDocument{%
+  \def\PDF@FinishDoc{%
+   \Hy@UseMaketitleInfos
+   \pdfinfo{%
+     \ifx\pdfx@Title\@empty\else /Title(\pdfx@Title)\fi
+     \ifx\pdfx@Author\@empty\else /Author(\pdfx@Author)\fi
+     \ifx\pdfx@Subject\@empty\else /Subject(\pdfx@Subject)\fi
+     \ifx\pdfx@Keywords\@empty\else /Keywords(\pdfx@Keywords)\fi
+      /Creator(\pdfx@CreatorTool)%
+     \ifx\@pdfcreationdate\@empty
+      /CreationDate(D:\pdfx@convDate)%
+     \else
+      /CreationDate(\@pdfcreationdate)%
+     \fi
+     \ifx\@pdfmoddate\@empty
+      /ModDate(D:\pdfx@convDate)%
+     \else
+      /ModDate(\@pdfmoddate)%
+     \fi
+     /Producer(\pdfx@Producer)%
+     /Trapped/False
+     /GTS_PDFA1Version (PDF/A-\xmp@Part\xmp@conformance:\xmp@ReleaseDate)%
+    }%  end of  PDF/A  info
+  }% end of  \PDF@FinishDoc
+ }% end of  \AtBeginDocument
+\fi\fi
+
+%%----------------------------------------------------------------------
+\RequirePackage{xmpincl}
+\begingroup
+ \ifpdfx@x
+  \ifpdfx@vt
+   \def\xmp@template{pdfvt}%
+  \else
+   \def\xmp@template{pdfx}%    formerly  pdfx-1a
+  \fi
+ \else
+  \ifpdfx@e
+   \def\xmp@template{pdfe}%
+  \else
+   \def\xmp@template{pdfa}%
+ \fi\fi
+ % patch commands from  xmpincl.sty  ...
+ \def\pdfx@xmpinclStart{% supply byte-order marker
+  <?xpacket begin='^^ef^^bb^^bf'? id='W5M0MpCehiHzreSzNTczkc9d' ?> %
+ }%
+ \def\pdfx@xmpinclStartAlt{% no byte-order marker
+  <?xpacket begin=''? id='W5M0MpCehiHzreSzNTczkc9d' ?> %
+ }%
+ \def\pdfx@xmpinclEnd{%  allow XMP packet to be writable
+  <?xpacket end='w'?> %
+ }%
+ \let\mcs@xmpinclStart\pdfx@xmpinclStart
+ \let\mcs@xmpinclStartAlt\pdfx@xmpinclStartAlt
+ \ifpdfx@noBOM  % don't use the byte-order marker
+  \let\mcs@xmpinclStart\pdfx@xmpinclStartAlt
+ \fi
+ \let\mcs@xmpinclEnd\pdfx@xmpinclEnd
+%% ... preventing their redefinition
+ \def\newcommand#1#2{}%
+ %
+ \pdfx@xmpmarkup
+ \catcode `\_ 12
+ \obeyspaces%  beware of 128 space characters in the next line -- for padding end of XMP packet
+ \def\padding@line{                                                                                                                                }%
+ \def\ifnot@empty#1#2{\ifx#1\@empty\else#2\fi}
+ \inputencoding{8bit}\makeatletter
+ \typeout{Using XMP template file: \xmp@template.xmp}%
+ \includexmp{\xmp@template}
+\endgroup
+
+%% disable hyperref options, to prevent changes that will cause an incompatibility
+ \Hy@DisableOption{pdfauthor}%
+ \Hy@DisableOption{pdftitle}%
+ \Hy@DisableOption{pdfsubject}%
+ \Hy@DisableOption{pdfcreator}%
+ \Hy@DisableOption{pdfcreationdate}%
+ \Hy@DisableOption{pdfmoddate}%
+ \Hy@DisableOption{pdfproducer}%
+ \Hy@DisableOption{pdfkeywords}%
+\endinput
+%%
+%% End of file `pdfx.sty'.

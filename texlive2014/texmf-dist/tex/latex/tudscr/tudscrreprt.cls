@@ -1,0 +1,3050 @@
+%%
+%% This is file `tudscrreprt.cls',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% tudscr-version.dtx  (with options: `class,report')
+%% tudscr-base.dtx  (with options: `class,report')
+%% tudscr-fonts.dtx  (with options: `class,option')
+%% tudscr-pagestyle.dtx  (with options: `class,report,option')
+%% tudscr-layout.dtx  (with options: `class,report,option')
+%% tudscr-frontmatter.dtx  (with options: `class,report,option')
+%% tudscr-title.dtx  (with options: `class,report,option')
+%% tudscr-misc.dtx  (with options: `class,report,option')
+%% tudscr-fonts.dtx  (with options: `class')
+%% tudscr-pagestyle.dtx  (with options: `class,report')
+%% tudscr-layout.dtx  (with options: `class,report')
+%% tudscr-frontmatter.dtx  (with options: `class,report')
+%% tudscr-title.dtx  (with options: `class,report')
+%% tudscr-fields.dtx  (with options: `class')
+%% tudscr-locale.dtx  (with options: `class,report')
+%% tudscr-color.dtx  (with options: `class')
+%% tudscr-misc.dtx  (with options: `class,report')
+%% 
+%% ======================================================================
+%% 
+%% Das Corporate Design der TU Dresden auf Basis der KOMA-Script-Klassen
+%% 
+%% ======================================================================
+%% This work may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, version 1.3c of the license.
+%% The latest version of this license is in
+%%     http://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later and of this work.
+%% This work has the LPPL maintenance status "author-maintained".
+%% The current maintainer and author of this work is Falk Hanisch.
+%% ----------------------------------------------------------------------
+%% Dieses Werk darf nach den Bedingungen der LaTeX Project Public Lizenz,
+%% Version 1.3c, verteilt und/oder veraendert werden.
+%% Die neuste Version dieser Lizenz ist
+%%     http://www.latex-project.org/lppl.txt
+%% und Version 1.3c ist Teil aller Verteilungen von LaTeX
+%% Version 2005/12/01 oder spaeter und dieses Werks.
+%% Dieses Werk hat den LPPL-Verwaltungs-Status "author-maintained"
+%% (allein durch den Autor verwaltet).
+%% Der aktuelle Verwalter und Autor dieses Werkes ist Falk Hanisch.
+%% ======================================================================
+%% 
+%%% From File: tudscr-version.dtx
+\begingroup%
+  \makeatletter%
+  \ifx\TUDVersion\undefined%
+    \newcommand*\@TUDVersion[1]{\gdef\TUDVersion{#1}}%
+  \else%
+    \newcommand*\@TUDVersion[1]{%
+      \def\@tempa{#1}%
+      \ifx\TUDVersion\@tempa\else%
+        \@latex@warning@no@line{%
+          \noexpand\TUDVersion\space is `\TUDVersion',\MessageBreak%
+          but `#1' was expected!\MessageBreak%
+          You should not use classes, packages or files from\MessageBreak%
+          different TUD-KOMA-Script-Bundle versions%
+        }%
+      \fi%
+    }%
+  \fi%
+  \@TUDVersion{2014/04/24 v2.01 TUD-KOMA-Script}%
+\endgroup%
+\newcommand*\cls@name{report}
+\newcommand*\scrcls@name{scrreprt}
+\newcommand*\tudcls@name{tudscrreprt}
+\newcommand*\filemail{tudscr@gmail.com}
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesClass{\tudcls@name}%
+  [\TUDVersion\space document class (\cls@name)]%
+\typeout{The Corporate Design of Technische Universitaet Dresden}
+\typeout{Class: \tudcls@name}
+\typeout{Version: \TUDVersion}
+\typeout{Author: Falk Hanisch (\filemail)}
+\typeout{http://latex.wcms-file3.tu-dresden.de/phpBB3/index.php}
+%%% From File: tudscr-base.dtx
+\RequirePackage{tudscrbase}[\TUDVersion]
+%%% From File: tudscr-fonts.dtx
+\newcommand*\tud@cdfont{0}
+\TUD@key{cdfont}[true]{%
+  \TUD@set@numkey{cdfont}{tud@cdfont}{%
+    {false}{0},{off}{0},{no}{0},%
+    {true}{1},{on}{1},{yes}{1},%
+    {light}{1},{lightfont}{1},{noheavyfont}{1},%
+    {heavy}{2},{heavyfont}{2},%
+    {nodin}{3},%
+    {din}{4},%
+    {serifmath}{5},{serif}{5},{nosansmath}{5},{nosans}{5},%
+    {sansmath}{6},{sans}{6},%
+    {upgreek}{7},{uprightgreek}{7},{uprightGreek}{7},%
+    {slgreek}{8},{slantedgreek}{8},{slantedGreek}{8},%
+  }{#1}%
+  \ifcase \tud@cdfont\relax%
+    \TUDoptions{cdfonts=false}%
+  \or%
+    \TUDoptions{cdfonts}%
+    \TUDoptions{heavyfont=false}%
+  \or%
+    \TUDoptions{cdfonts}%
+    \TUDoptions{heavyfont}%
+  \or
+    \TUDoptions{din=false}%
+  \or
+    \TUDoptions{din}%
+  \or%
+    \TUDoptions{sansmath=false}%
+  \or%
+    \TUDoptions{sansmath}%
+  \or%
+    \TUDoptions{slantedgreek=false}%
+  \or%
+    \TUDoptions{slantedgreek}%
+  \fi%
+}
+\newif\if@tud@cdfonts
+\TUD@key{cdfonts}[true]{%
+  \TUD@set@ifkey{cdfonts}{@tud@cdfonts}{#1}%
+  \if@atdocument%
+    \if@tud@cdfonts%
+      \tud@font@cdfonts%
+    \else%
+      \tud@cmd@restore{rmdefault}%
+      \tud@cmd@restore{sfdefault}%
+      \tud@cmd@restore{ttdefault}%
+      \tud@cmd@restore{bfdefault}%
+      \tud@cmd@restore{mddefault}%
+      \tud@cmd@restore{itdefault}%
+      \tud@cmd@restore{familydefault}%
+      \tud@cmd@restore{seriesdefault}%
+      \tud@cmd@restore{shapedefault}%
+      \tud@cmd@restore{mdseries@rm}%
+      \tud@cmd@restore{bfseries@rm}%
+      \tud@cmd@restore{mdseries@sf}%
+      \tud@cmd@restore{bfseries@sf}%
+      \tud@cmd@restore{mdseries@tt}%
+      \tud@cmd@restore{bfseries@tt}%
+      \edef\rmdef@ult{\rmdefault}
+      \edef\sfdef@ult{\sfdefault}
+      \edef\ttdef@ult{\ttdefault}
+      \edef\bfdef@ult{\bfdefault}
+      \edef\mddef@ult{\mddefault}
+      \normalfont\selectfont%
+    \fi%
+    \tud@layout@process%
+  \else%
+    \if@tud@cdfonts%
+      \TUD@std@ifkey@lock{sansmath}{true}%
+      \TUD@std@ifkey@lock{slantedgreek}{true}%
+    \else%
+      \TUD@std@ifkey@lock{sansmath}{false}%
+      \TUD@std@ifkey@lock{slantedgreek}{false}%
+    \fi%
+  \fi%
+}
+\TUD@key{tudfonts}[true]{%
+  \TUD@set@ifkey{tudfonts}{@tempswa}{#1}%
+  \if@tempswa%
+    \TUDoptions{cdfonts=true}%
+  \else%
+    \TUDoptions{cdfonts=false}%
+  \fi%
+}
+\newif\if@tud@heavyfont
+\TUD@key{heavyfont}[true]{%
+  \if@tud@cdfonts%
+    \TUD@set@ifkey{heavyfont}{@tud@heavyfont}{#1}%
+    \if@atdocument\tud@font@cdfonts\fi%
+  \fi%
+}
+\newif\if@tud@din\@tud@dintrue
+\TUD@ifkey{din}{@tud@din}
+\newif\if@tud@sansmath
+\TUD@key@lock{sansmath}[true]{%
+  \TUD@set@ifkey@lock{sansmath}{@tud@sansmath}{#1}%
+  \if@atdocument\tud@font@mathfonts\fi%
+}
+\newif\if@tud@slantedgreek
+\TUD@key@lock{slantedgreek}[true]{%
+  \TUD@set@ifkey@lock{slantedgreek}{@tud@slantedgreek}{#1}%
+  \if@atdocument\tud@font@mathfonts\fi%
+}
+%%% From File: tudscr-pagestyle.dtx
+\newcommand*\tud@ddc@head{0}
+\TUD@numkey{ddc}[true]{tud@ddc@head}{%
+  {false}{0},{off}{0},{no}{0},%
+  {true}{1},{on}{1},{yes}{1},%
+  {color}{2},{colour}{2},%
+}
+\TUD@key{ddchead}[true]{\TUDoptions{ddc=#1}}
+\newcommand*\tud@ddc@foot{0}
+\TUD@numkey{ddcfoot}[true]{tud@ddc@foot}{%
+  {false}{0},{off}{0},{no}{0},%
+  {true}{1},{on}{1},{yes}{1},%
+  {color}{2},{colour}{2},%
+}
+\newif\if@tud@widehead
+\TUD@key@lock{widehead}[true]{%
+  \TUD@set@ifkey@lock{widehead}{@tud@widehead}{#1}%
+}
+\newif\if@tud@cdfoot
+\TUD@key{cdfoot}[true]{%
+  \TUD@set@ifkey{cdfoot}{@tud@cdfoot}{#1}%
+  \if@atdocument%
+    \if@tud@cdfoot%
+      \tud@cmd@store{ps@headings}%
+      \tud@cmd@store{ps@myheadings}%
+      \tud@cmd@store{ps@plain}%
+      \let\ps@headings\tud@ps@headings%
+      \let\ps@myheadings\tud@ps@myheadings%
+      \let\ps@plain\tud@ps@plain%
+    \else%
+      \tud@cmd@restore{ps@headings}%
+      \tud@cmd@restore{ps@myheadings}%
+      \tud@cmd@restore{ps@plain}%
+    \fi%
+    \clearpage%
+    \expandafter\pagestyle\expandafter{\tud@currentpagestyle}%
+  \fi%
+}
+\TUD@key{tudfoot}[true]{%
+  \TUD@set@ifkey{tudfoot}{@tempswa}{#1}%
+  \if@tempswa%
+    \TUDoptions{cdfoot}%
+  \else%
+    \TUDoptions{cdfoot=false}%
+  \fi%
+}
+\AtBeginDocument{\if@tud@cdfoot\TUDoptions{cdfoot}\pagestyle{headings}\fi}
+\newcommand*\tud@currentpagestyle{plain}
+\apptocmd{\pagestyle}{%
+  \def\tud@currentpagestyle{#1}}{}{\tud@patch@wrn{pagestyle}%
+}
+\newcommand*\tud@geometry{0}
+\TUD@key@lock{geometry}[true]{%
+  \TUD@set@numkey@lock{geometry}{tud@geometry}{%
+    {false}{0},{off}{0},{no}{0},{typearea}{0},%
+    {true}{1},{on}{1},{yes}{1},{tud}{1},{asymmetric}{1},{cd}{1},%
+    {symmetric}{2},{normal}{2},{standard}{2},{std}{2},%
+    {twoside}{3},{balanced}{3}%
+  }{#1}%
+  \if@atdocument\recalctypearea\fi%
+}
+%%% From File: tudscr-layout.dtx
+\newcommand*\tud@head@color{black}
+\newcommand*\tud@cd{0}
+\csdef@lock{tud@layout@title}{0}
+\csdef@lock{tud@layout@part}{0}
+\csdef@lock{tud@layout@chapter}{0}
+\TUD@key{cd}[true]{%
+  \TUD@set@numkey{cd}{tud@cd}{\tud@layout@switch}{#1}%
+  \def\tud@head@color{black}%
+  \ifcase \tud@cd\relax%
+    \csstd@lock{tud@layout@title}{0}%
+    \csstd@lock{tud@layout@part}{0}%
+    \csstd@lock{tud@layout@chapter}{0}%
+  \or%
+    \csstd@lock{tud@layout@title}{1}%
+    \csstd@lock{tud@layout@part}{1}%
+    \csstd@lock{tud@layout@chapter}{1}%
+  \or%
+    \def\tud@head@color{HKS41}%
+    \csstd@lock{tud@layout@title}{2}%
+    \csstd@lock{tud@layout@part}{2}%
+    \csstd@lock{tud@layout@chapter}{2}%
+  \or%
+    \def\tud@head@color{HKS41}%
+    \csstd@lock{tud@layout@title}{3}%
+    \csstd@lock{tud@layout@part}{3}%
+    \csstd@lock{tud@layout@chapter}{3}%
+    \TUD@std@ifkey@lock{chapterpage}{true}%
+    \TUD@std@ifkey@lock{widehead}{true}%
+  \fi%
+  \if@atdocument%
+    \tud@layout@process%
+  \else%
+    \ifcase \tud@cd\relax%
+      \TUD@std@numkey@lock{geometry}{false}%
+    \else%
+      \TUD@std@numkey@lock{geometry}{true}%
+    \fi%
+  \fi%
+}
+\TUD@key{cdtitle}[true]{%
+  \TUD@set@numkey{cdtitle}{@tempa}{\tud@layout@switch}{#1}%
+  \ifcase \@tempa\relax%
+    \csset@lock{tud@layout@title}{0}%
+  \or%
+    \csset@lock{tud@layout@title}{1}%
+  \or%
+    \csset@lock{tud@layout@title}{2}%
+  \or%
+    \csset@lock{tud@layout@title}{3}%
+  \fi%
+  \if@atdocument\tud@layout@process\fi%
+}
+\TUD@key{cdpart}[true]{%
+  \TUD@set@numkey{cdpart}{@tempa}{\tud@layout@switch}{#1}%
+  \ifcase \@tempa\relax%
+    \csset@lock{tud@layout@part}{0}%
+  \or%
+    \csset@lock{tud@layout@part}{1}%
+  \or%
+    \csset@lock{tud@layout@part}{2}%
+  \or%
+    \csset@lock{tud@layout@part}{3}%
+  \fi%
+  \if@atdocument\tud@layout@process\fi%
+}
+\TUD@key{cdchapter}[true]{%
+  \TUD@std@ifkey@lock{chapterpage}{false}%
+  \TUD@set@numkey{cdchapter}{@tempa}{\tud@layout@switch}{#1}%
+  \ifcase \@tempa\relax%
+    \csset@lock{tud@layout@chapter}{0}%
+  \or%
+    \csset@lock{tud@layout@chapter}{1}%
+  \or%
+    \csset@lock{tud@layout@chapter}{2}%
+  \or%
+    \csset@lock{tud@layout@chapter}{3}%
+    \TUD@std@ifkey@lock{chapterpage}{true}%
+  \fi%
+  \if@atdocument\tud@layout@process\fi%
+}
+\newcommand*\tud@layout@switch{%
+  {false}{0},{off}{0},{no}{0},%
+  {true}{1},{on}{1},{yes}{1},%
+  {simple}{1},{std}{1},{standard}{1},{mono}{1},{monochrom}{1},%
+  {lite}{2},{colorlite}{2},{litecolor}{2},{colourlite}{2},{litecolour}{2},%
+  {light}{2},{colorlight}{2},{lightcolor}{2},{colourlight}{2},{lightcolour}{2},%
+  {pale}{2},{colorpale}{2},{palecolor}{2},{colourpale}{2},{palecolour}{2},%
+  {full}{3},{colorfull}{3},{fullcolor}{3},{colourfull}{3},{fullcolour}{3},%
+  {color}{3},{colour}{3}%
+}
+\TUD@key{color}[true]{%
+  \TUD@set@ifkey{color}{@tempswa}{#1}%
+  \TUD@set@numkey{color}{@tempa}{%
+    {false}{0},{off}{0},{no}{0},%
+    {simple}{0},{std}{0},{standard}{0},{mono}{0},{monochrom}{0},%
+    {true}{1},{on}{1},{yes}{1},{color}{1},{colour}{1},%
+    {full}{1},{colorfull}{1},{fullcolor}{1},{colourfull}{1},{fullcolour}{1},%
+    {lite}{2},{colorlite}{2},{litecolor}{2},{colourlite}{2},{litecolour}{2},%
+    {light}{2},{colorlight}{2},{lightcolor}{2},{colorpale}{2},{palecolor}{2},%
+    {pale}{2},{colourlight}{2},{lightcolour}{2},{colourpale}{2},{palecolour}{2}%
+  }{#1}%
+  \ifcase \@tempa\relax%
+    \TUDoptions{cd}%
+  \or%
+    \TUDoptions{cd=color}%
+  \else%
+    \TUDoptions{cd=lite}%
+  \fi%
+}
+\TUD@key{colour}[true]{\TUDoptions{color=#1}}
+\newif\if@tud@parttitle
+\TUD@key@lock{parttitle}[true]{%
+  \TUD@set@ifkey@lock{parttitle}{@tud@parttitle}{#1}%
+  \if@atdocument\tud@layout@process\fi%
+}
+\newif\if@tud@chapterpage
+\TUD@key@lock{chapterpage}[true]{%
+  \TUD@set@ifkey@lock{chapterpage}{@tud@chapterpage}{#1}%
+}
+\newcommand*\tud@cleardoublepage{\cleardoubleoddpage}
+\TUD@key{cleardoublespecialpage}[true]{%
+  \tud@lowerstring{\@tempa}{#1}%
+  \ifstr{\@tempa}{color}{\TUDoptions{clearcolor}}{%
+  \ifstr{\@tempa}{colour}{\TUDoptions{clearcolor}}{%
+  \ifstr{\@tempa}{current}{%
+    \def\tud@cleardoublepage{\cleardoubleoddstandardpage}%
+  }{%
+    \ifcsdef{ps@#1}{%
+      \def\tud@cleardoublepage{\cleardoubleoddpageusingstyle{#1}}%
+    }{%
+      \def\FamilyElseValue{%
+        , 'color', 'current' or any defined pagestyle e.g. 'empty','plain'%
+      }%
+      \TUD@set@ifkey{cleardoublespecialpage}{@tempswa}{#1}%
+      \if@tempswa%
+        \def\tud@cleardoublepage{\cleardoubleoddpage}%
+      \else%
+        \def\tud@cleardoublepage{\null\thispagestyle{empty}\newpage}%
+      \fi%
+    }%
+  }}}%
+}
+\newcommand*\tud@cleardoublespecialpage[2][]{%
+  \begingroup%
+    #2
+    \ifboolexpr{bool {@twoside} and bool {@openright}}{%
+      \if@tud@clearcolor%
+        \def\@tempa{%
+          #1%
+          \tud@cleardoublepage%
+          \tud@restorepagecolor%
+          \endgroup%
+        }%
+      \else%
+        \def\@tempa{%
+          \endgroup%
+          \tud@restorepagecolor%
+          #1%
+          \tud@cleardoublepage%
+        }%
+      \fi%
+    }{%
+      \if@tud@clearcolor\tud@clearcolor@wrn\fi%
+      \def\@tempa{%
+        \tud@restorepagecolor%
+        \endgroup%
+        #1%
+      }%
+    }%
+  \@tempa%
+  \@afterindentfalse\@afterheading%
+}
+\newif\if@tud@clearcolor
+\TUD@ifkey{clearcolor}{@tud@clearcolor}
+\TUD@ifkey{clearcolour}{@tud@clearcolor}
+%%% From File: tudscr-frontmatter.dtx
+\newcommand*\tud@abstract@level{0}
+\newbool@lock{@tud@abstract@toc}
+\newif\if@tud@abstract@double
+\newif\if@tud@abstract@fil
+\@tud@abstract@filtrue
+\newif\if@tud@abstract@first
+\@tud@abstract@firsttrue
+\newlength{\tud@dim@double}
+\TUD@key{abstract}[true]{%
+  \TUD@set@numkey{abstract}{@tempa}{%
+    {false}{0},{off}{0},{no}{0},%
+    {true}{1},{on}{1},{yes}{1},%
+    {section}{2},{sect}{2},{sec}{2},%
+    {chapter}{3},{chap}{3},%
+    {new}{3},{std}{3},{heading}{3},%
+    {totoc}{4},{toc}{4},%
+    {nottotoc}{5},{notoc}{5},%
+    {one}{6},{simple}{6},{single}{6},%
+    {two}{7},{both}{7},{double}{7},%
+    {nofil}{8},{nofill}{8},{novfil}{8},{novfill}{8},%
+    {fil}{9},{fill}{9},{vfil}{9},{vfill}{9},%
+  }{#1}%
+  \ifcase \@tempa\relax%
+    \def\tud@abstract@level{0}%
+    \stdbool@lock{@tud@abstract@toc}{false}%
+  \or%
+    \def\tud@abstract@level{1}%
+    \stdbool@lock{@tud@abstract@toc}{false}%
+  \or%
+    \def\tud@abstract@level{2}%
+    \stdbool@lock{@tud@abstract@toc}{true}%
+  \or%
+    \def\tud@abstract@level{3}%
+    \stdbool@lock{@tud@abstract@toc}{true}%
+  \or%
+    \setbool@lock{@tud@abstract@toc}{true}%
+  \or%
+    \setbool@lock{@tud@abstract@toc}{false}%
+  \or%
+    \@tud@abstract@doublefalse%
+  \or%
+    \@tud@abstract@doubletrue%
+  \or%
+    \@tud@abstract@filfalse%
+  \or%
+    \@tud@abstract@filtrue%
+  \fi%
+}
+\newcommand*\tud@declaration@level{1}
+\newbool@lock{@tud@declaration@toc}
+\newif\if@tud@declaration@double
+\@tud@declaration@doubletrue
+\newif\if@tud@declaration@fil
+\@tud@declaration@filtrue
+\newif\if@tud@declaration@first
+\@tud@declaration@firsttrue
+\TUD@key{declaration}[true]{%
+  \TUD@set@numkey{declaration}{@tempa}{%
+    {false}{0},{off}{0},{no}{0},%
+    {true}{1},{on}{1},{yes}{1},%
+    {section}{2},{sect}{2},{sec}{2},%
+    {chapter}{3},{chap}{3},%
+    {new}{3},{std}{3},{heading}{3},%
+    {totoc}{4},{toc}{4},%
+    {nottotoc}{5},{notoc}{5},%
+    {one}{6},{simple}{6},{single}{6},%
+    {two}{7},{both}{7},{double}{7},%
+    {nofil}{8},{nofill}{8},{novfil}{8},{novfill}{8},%
+    {fil}{9},{fill}{9},{vfil}{9},{vfill}{9},%
+  }{#1}%
+  \ifcase \@tempa\relax%
+    \def\tud@declaration@level{0}%
+    \stdbool@lock{@tud@declaration@toc}{false}%
+  \or%
+    \def\tud@declaration@level{1}%
+    \stdbool@lock{@tud@declaration@toc}{false}%
+  \or%
+    \def\tud@declaration@level{2}%
+    \stdbool@lock{@tud@declaration@toc}{true}%
+  \or%
+    \def\tud@declaration@level{3}%
+    \stdbool@lock{@tud@declaration@toc}{true}%
+  \or%
+    \stdbool@lock{@tud@declaration@toc}{false}%
+  \or%
+    \stdbool@lock{@tud@declaration@toc}{false}%
+  \or%
+    \@tud@declaration@doublefalse%
+  \or%
+    \@tud@declaration@doubletrue%
+  \or%
+    \@tud@declaration@filfalse%
+  \or%
+    \@tud@declaration@filtrue%
+  \fi%
+}
+%%% From File: tudscr-title.dtx
+\newif\if@tud@subjectthesis
+\TUD@key@lock{subjectthesis}[true]{%
+  \TUD@set@ifkey@lock{subjectthesis}{@tud@subjectthesis}{#1}%
+}
+%%% From File: tudscr-misc.dtx
+\newif\if@tud@bookmarks
+\TUD@ifkey{tudbookmarks}{@tud@bookmarks}
+\newcommand*\tud@lowerstring[2]{%
+  \protected@edef#1{#2}%
+  \lowercase\expandafter{%
+    \expandafter\gdef\expandafter #1\expandafter{#1}%
+  }%
+}
+\DeclareOption*{\PassOptionsToClass{\CurrentOption}{\scrcls@name}}
+\TUDExecuteOptions{\TUDDefaultOptions}
+\TUDProcessOptions
+\LoadClass{\scrcls@name}[2012/07/29]
+\AtEndPreamble{%
+  \tud@layout@process%
+  \recalctypearea%
+}
+\RequirePackage{textcase}[2004/10/07]
+\RequirePackage{trimspaces}[2009/09/17]
+\RequirePackage{geometry}[2010/09/12]
+\RequirePackage{mweights}[2013/07/21]
+\RequirePackage{environ}[2013/04/01]
+\AtEndPreamble{%
+  \@ifpackageloaded{graphicx}{}{\RequirePackage{graphicx}[1999/02/16]}%
+  \@ifpackageloaded{tudscrcolor}{}{\RequirePackage{tudscrcolor}[\TUDVersion]}%
+}
+%%% From File: tudscr-fonts.dtx
+\newif\if@tud@univers
+\newcommand*\tud@univers{lun}
+\newcommand*\tud@dinbold{0m6}
+\def\@tempb#1{%
+  \ClassWarningNoLine{\tudcls@name}{%
+    #1 fonts not found. Please use on of the\MessageBreak%
+    installation scripts out of the tudscr-bundle,\MessageBreak%
+    which suits to your OS. A fallback layout is used%
+  }%
+}
+\edef\@tempa{%
+  \lowercase{\noexpand\InputIfFileExists{\encodingdefault\tud@univers.fd}}%
+}
+\@tempa{\@tud@universtrue}{\@tempb{Univers}}
+\if@tud@univers%
+  \newcommand*\univln{\usefont{\encodingdefault}{\tud@univers}{l}{n}}%
+  \newcommand*\univrn{\usefont{\encodingdefault}{\tud@univers}{m}{n}}%
+  \newcommand*\univbn{\usefont{\encodingdefault}{\tud@univers}{b}{n}}%
+  \newcommand*\univxn{\usefont{\encodingdefault}{\tud@univers}{eb}{n}}%
+  \newcommand*\univls{\usefont{\encodingdefault}{\tud@univers}{l}{sl}}%
+  \newcommand*\univrs{\usefont{\encodingdefault}{\tud@univers}{m}{sl}}%
+  \newcommand*\univbs{\usefont{\encodingdefault}{\tud@univers}{b}{sl}}%
+  \newcommand*\univxs{\usefont{\encodingdefault}{\tud@univers}{eb}{sl}}%
+\else
+  \newcommand*\univln{}%
+  \newcommand*\univrn{}%
+  \newcommand*\univbn{}%
+  \newcommand*\univxn{}%
+  \newcommand*\univls{}%
+  \newcommand*\univrs{}%
+  \newcommand*\univbs{}%
+  \newcommand*\univxs{}%
+\fi
+\DeclareTextFontCommand{\textuln}{\univln}%
+\DeclareTextFontCommand{\texturn}{\univrn}%
+\DeclareTextFontCommand{\textubn}{\univbn}%
+\DeclareTextFontCommand{\textuxn}{\univxn}%
+\DeclareTextFontCommand{\textuls}{\univls}%
+\DeclareTextFontCommand{\texturs}{\univrs}%
+\DeclareTextFontCommand{\textubs}{\univbs}%
+\DeclareTextFontCommand{\textuxs}{\univxs}%
+\edef\@tempa{%
+  \lowercase{\noexpand\InputIfFileExists{\encodingdefault\tud@dinbold.fd}}%
+}
+\@tempa{%
+  \newcommand*\dinbn{%
+    \usefont{\encodingdefault}{\tud@dinbold}{b}{n}%
+    \mathversion{dinbold}%
+  }%
+}{%
+  \@tempb{DIN-Bold}%
+  \let\dinbn\sectfont%
+}
+\DeclareTextFontCommand{\textdbn}{\dinbn}
+\edef\@tempa{\encodingdefault}\def\@tempb{T1}
+\ifx\@tempa\@tempb
+  \def\tud@mathenc{T1}
+\else
+  \def\tud@mathenc{OT1}
+\fi
+\DeclareMathVersion{univers}
+\DeclareMathVersion{universbold}
+\SetSymbolFont{operators}{univers}{\tud@mathenc}{\tud@univers}{l}{n}
+\SetSymbolFont{letters}{univers}{OML}{\tud@univers}{l}{sl}
+\SetSymbolFont{symbols}{univers}{OMS}{\tud@univers}{l}{n}
+\SetSymbolFont{largesymbols}{univers}{U}{zeuex}{m}{n}
+\SetSymbolFont{operators}{universbold}{\tud@mathenc}{\tud@univers}{b}{n}
+\SetSymbolFont{letters}{universbold}{OML}{\tud@univers}{b}{sl}
+\SetSymbolFont{symbols}{universbold}{OMS}{\tud@univers}{b}{n}
+\SetMathAlphabet{\mathbf}{univers}{\tud@mathenc}{\tud@univers}{b}{n}
+\SetMathAlphabet{\mathsf}{univers}{\tud@mathenc}{\tud@univers}{l}{n}
+\SetMathAlphabet{\mathit}{univers}{\tud@mathenc}{\tud@univers}{l}{sl}
+\SetMathAlphabet{\mathtt}{univers}{\tud@mathenc}{cmtl}{m}{n}
+\SetMathAlphabet{\mathbf}{universbold}{\tud@mathenc}{\tud@univers}{eb}{n}
+\SetMathAlphabet{\mathsf}{universbold}{\tud@mathenc}{\tud@univers}{b}{n}
+\SetMathAlphabet{\mathit}{universbold}{\tud@mathenc}{\tud@univers}{b}{sl}
+\DeclareMathVersion{dinbold}
+\SetSymbolFont{operators}{dinbold}{\tud@mathenc}{\tud@dinbold}{b}{n}
+\SetSymbolFont{letters}{dinbold}{OML}{\tud@dinbold}{b}{sl}
+\SetSymbolFont{symbols}{dinbold}{OMS}{iwona}{ebc}{n}
+\SetSymbolFont{largesymbols}{dinbold}{OMX}{iwona}{ebc}{n}
+\SetMathAlphabet{\mathbf}{dinbold}{\tud@mathenc}{\tud@dinbold}{b}{n}
+\SetMathAlphabet{\mathsf}{dinbold}{\tud@mathenc}{\tud@dinbold}{b}{n}
+\SetMathAlphabet{\mathit}{dinbold}{\tud@mathenc}{\tud@dinbold}{b}{sl}
+\newcount\tud@greek@upGamma
+\tud@greek@upGamma\Gamma
+\newcount\tud@greek@offset
+\let\@tempa\relax
+\DeclareMathSymbol{\@tempa}{\mathalpha}{letters}{0}
+\tud@greek@offset\@tempa
+\advance\tud@greek@offset-\Gamma
+\newcommand*\tud@greek@def[2]{%
+  \expandafter\@tempcnta\csname #1\endcsname%
+  \advance\@tempcnta#2%
+  \expandafter\mathchardef\csname #1\endcsname\@tempcnta%
+}
+\newcommand*\tud@greek@uc{%
+  Gamma,Delta,Theta,Lambda,Xi,Pi,Sigma,Upsilon,Phi,Psi,Omega%
+}
+\newcommand*\tud@greek@changeshape{%
+  \@for\@tempa:=\tud@greek@uc\do{%
+    \@expandtwoargs\tud@greek@def{\@tempa}{\tud@greek@offset}%
+  }%
+}
+\newcommand*\tud@greek@slanted{%
+  \ifnum\Gamma=\tud@greek@upGamma\relax\tud@greek@changeshape\fi%
+}
+\newcommand*\tud@greek@upright{%
+  \ifnum\Gamma>\tud@greek@upGamma%
+    \tud@greek@offset=-\tud@greek@offset%
+    \tud@greek@changeshape%
+    \tud@greek@offset=-\tud@greek@offset%
+  \fi%
+}
+\DeclareMathSymbol{\upDelta}{\mathalpha}{operators}{1}
+\DeclareMathSymbol{\upOmega}{\mathalpha}{operators}{10}
+\DeclareMathSymbol{\upGamma}{\mathalpha}{operators}{0}
+\DeclareMathSymbol{\upDelta}{\mathalpha}{operators}{1}
+\DeclareMathSymbol{\upTheta}{\mathalpha}{operators}{2}
+\DeclareMathSymbol{\upLambda}{\mathalpha}{operators}{3}
+\DeclareMathSymbol{\upXi}{\mathalpha}{operators}{4}
+\DeclareMathSymbol{\upPi}{\mathalpha}{operators}{5}
+\DeclareMathSymbol{\upSigma}{\mathalpha}{operators}{6}
+\DeclareMathSymbol{\upUpsilon}{\mathalpha}{operators}{7}
+\DeclareMathSymbol{\upPhi}{\mathalpha}{operators}{8}
+\DeclareMathSymbol{\upPsi}{\mathalpha}{operators}{9}
+\DeclareMathSymbol{\upOmega}{\mathalpha}{operators}{10}
+\DeclareMathSymbol{\varGamma}{\mathalpha}{letters}{0}
+\DeclareMathSymbol{\varDelta}{\mathalpha}{letters}{1}
+\DeclareMathSymbol{\varTheta}{\mathalpha}{letters}{2}
+\DeclareMathSymbol{\varLambda}{\mathalpha}{letters}{3}
+\DeclareMathSymbol{\varXi}{\mathalpha}{letters}{4}
+\DeclareMathSymbol{\varPi}{\mathalpha}{letters}{5}
+\DeclareMathSymbol{\varSigma}{\mathalpha}{letters}{6}
+\DeclareMathSymbol{\varUpsilon}{\mathalpha}{letters}{7}
+\DeclareMathSymbol{\varPhi}{\mathalpha}{letters}{8}
+\DeclareMathSymbol{\varPsi}{\mathalpha}{letters}{9}
+\DeclareMathSymbol{\varOmega}{\mathalpha}{letters}{10}
+\newcommand*\tud@sansmath{%
+  \if@tud@univers%
+    \tud@cmd@store{mv@normal}%
+    \tud@cmd@store{mv@bold}%
+    \let\mv@normal\mv@univers%
+    \let\mv@bold\mv@universbold%
+    \mathversion{normal}%
+  \fi%
+}
+\newcommand*\tud@serifmath{%
+  \if@tud@univers%
+    \tud@cmd@restore{mv@normal}%
+    \tud@cmd@restore{mv@bold}%
+    \mathversion{normal}%
+  \fi%
+}
+\newcommand*\tud@font@cdfonts{%
+  \tud@cmd@store{rmdefault}%
+  \tud@cmd@store{sfdefault}%
+  \tud@cmd@store{ttdefault}%
+  \tud@cmd@store{bfdefault}%
+  \tud@cmd@store{mddefault}%
+  \tud@cmd@store{itdefault}%
+  \tud@cmd@store{familydefault}%
+  \tud@cmd@store{seriesdefault}%
+  \tud@cmd@store{shapedefault}%
+  \tud@cmd@store{mdseries@rm}%
+  \tud@cmd@store{bfseries@rm}%
+  \tud@cmd@store{mdseries@sf}%
+  \tud@cmd@store{bfseries@sf}%
+  \tud@cmd@store{mdseries@tt}%
+  \tud@cmd@store{bfseries@tt}%
+  \if@tud@univers%
+    \if@tud@heavyfont%
+      \def\bfseries@rm{b}%
+      \def\bfseries@sf{b}%
+      \def\mdseries@rm{m}%
+      \def\mdseries@sf{m}%
+      \renewcommand*\bfdefault{b}%
+      \renewcommand*\mddefault{m}%
+    \else%
+      \def\bfseries@rm{m}%
+      \def\bfseries@sf{m}%
+      \def\mdseries@rm{l}%
+      \def\mdseries@sf{l}%
+      \renewcommand*\bfdefault{m}%
+      \renewcommand*\mddefault{l}%
+    \fi%
+    \renewcommand*\sfdefault{\tud@univers}%
+  \else%
+    \def\bfseries@rm{bx}%
+    \def\bfseries@sf{bx}%
+    \def\mdseries@rm{m}%
+    \def\mdseries@sf{m}%
+    \renewcommand*\bfdefault{bx}%
+    \renewcommand*\mddefault{m}%
+  \fi%
+  \renewcommand*\rmdefault{\sfdefault}%
+  \renewcommand*\familydefault{\sfdefault}%
+  \renewcommand*\seriesdefault{\mddefault}%
+  \renewcommand*\shapedefault{\updefault}%
+  \renewcommand{\ttdefault}{cmtl}%
+  \def\bfseries@tt{m}%
+  \def\mdseries@tt{m}%
+  \edef\rmdef@ult{\rmdefault}%
+  \edef\sfdef@ult{\sfdefault}%
+  \edef\ttdef@ult{\ttdefault}%
+  \edef\bfdef@ult{\bfdefault}%
+  \edef\mddef@ult{\mddefault}%
+  \normalfont\selectfont%
+}
+\newcommand*\tud@font@mathfonts{%
+  \if@tud@sansmath\tud@sansmath\else\tud@serifmath\fi%
+  \if@tud@slantedgreek\tud@greek@slanted\else\tud@greek@upright\fi%
+  \mathversion{normal}%
+}
+\newcommand*\tud@head@font@set{%
+  \DeclareFixedFont{\tud@head@font@bold}%
+    {\encodingdefault}{\sfdefault}{bx}{n}{\tud@head@font@size}%
+  \DeclareFixedFont{\tud@head@font@light}%
+    {\encodingdefault}{\sfdefault}{\mdseries@sf}{n}{\tud@head@font@size}%
+  \if@tud@cdfonts\if@tud@univers%
+    \DeclareFixedFont{\tud@head@font@bold}%
+      {\encodingdefault}{\tud@univers}{b}{n}{\tud@head@font@size}%
+    \DeclareFixedFont{\tud@head@font@light}%
+      {\encodingdefault}{\tud@univers}{\mdseries@sf}{n}{\tud@head@font@size}%
+  \fi\fi%
+}
+\AtBeginDocument{\if@tud@cdfonts\tud@font@cdfonts\fi\tud@font@mathfonts}
+\AfterPackage{amsfonts}{%
+  \DeclareFontFamily{U}{msa}{}%
+  \DeclareFontShape{U}{msa}{m}{n}{%
+    <-9>cmbras8%
+    <9-10>cmbras9%
+    <10->cmbras10%
+  }{}%
+  \DeclareFontFamily{U}{msb}{}%
+  \DeclareFontShape{U}{msb}{m}{n}{%
+    <-9>cmbrbs8%
+    <9-10>cmbrbs9%
+    <10->cmbrbs10%
+  }{}%
+}
+\newcommand*\tud@raggedright{\raggedright}
+\newcommand*\tud@RaggedRight{\raggedright}
+\AfterPackage{ragged2e}{%
+  \ifdef{\LaTeXraggedright}%
+    {\renewcommand*\tud@raggedright{\LaTeXraggedright}}{}%
+  \renewcommand*\tud@RaggedRight{\RaggedRight}
+}
+%%% From File: tudscr-pagestyle.dtx
+\newlength{\tud@dim@left}
+\newlength{\tud@dim@right}
+\newlength{\tud@dim@both}
+\newlength{\tud@dim@top}
+\newlength{\tud@dim@bottom}
+\newlength{\tud@dim@footskip}
+\newlength{\tud@dim@headheight}
+\newlength{\tud@dim@barheight}
+\newlength{\tud@dim@headsep}
+\newlength{\tud@dim@logox}
+\newlength{\tud@dim@logoy}
+\newlength{\tud@dim@logowidth}
+\newlength{\tud@dim@logoheight}
+\newlength{\tud@dim@thinline}
+\newlength{\tud@dim@heavyline}
+\newlength{\tud@dim@headingsvskip}
+\newlength{\tud@dim@ddcheight}
+\newcommand*\tud@head@font@size{}
+\newcommand*\tud@geometry@set{%
+  \ifdim\paperheight<148.1mm\relax%
+    \setlength{\tud@dim@headheight}{17.5mm}%
+    \setlength{\tud@dim@barheight}{2.5mm}%
+    \setlength{\tud@dim@headsep}{6mm}%
+    \setlength{\tud@dim@logox}{5.5mm}%
+    \setlength{\tud@dim@logoy}{6.5mm}%
+    \setlength{\tud@dim@logowidth}{28.5mm}%
+    \setlength{\tud@dim@left}{15mm}%
+    \setlength{\tud@dim@right}{10mm}%
+    \setlength{\tud@dim@top}{12.5mm}%
+    \setlength{\tud@dim@bottom}{12.5mm}%
+    \setlength{\tud@dim@footskip}{6mm}%
+    \setlength{\tud@dim@heavyline}{0.75pt}%
+    \setlength{\tud@dim@thinline}{0.5pt}%
+    \def\tud@head@font@size{4.5}%
+  \else\ifdim\paperheight<297.1mm\relax%
+    \setlength{\tud@dim@headheight}{35mm}%
+    \setlength{\tud@dim@barheight}{5mm}%
+    \setlength{\tud@dim@headsep}{12mm}%
+    \setlength{\tud@dim@logox}{11mm}%
+    \setlength{\tud@dim@logoy}{13.5mm}%
+    \setlength{\tud@dim@logowidth}{57mm}%
+    \setlength{\tud@dim@left}{30mm}%
+    \setlength{\tud@dim@right}{20mm}%
+    \setlength{\tud@dim@top}{25mm}%
+    \setlength{\tud@dim@bottom}{25mm}%
+    \setlength{\tud@dim@footskip}{12mm}%
+    \setlength{\tud@dim@heavyline}{1pt}%
+    \setlength{\tud@dim@thinline}{0.5pt}%
+    \def\tud@head@font@size{9}%
+  \else\ifdim\paperheight<420.1mm\relax%
+    \setlength{\tud@dim@headheight}{50mm}%
+    \setlength{\tud@dim@barheight}{7mm}%
+    \setlength{\tud@dim@headsep}{17mm}%
+    \setlength{\tud@dim@logox}{15.5mm}%
+    \setlength{\tud@dim@logoy}{19mm}%
+    \setlength{\tud@dim@logowidth}{80mm}%
+    \setlength{\tud@dim@left}{42mm}%
+    \setlength{\tud@dim@right}{28mm}%
+    \setlength{\tud@dim@top}{35mm}%
+    \setlength{\tud@dim@bottom}{35mm}%
+    \setlength{\tud@dim@footskip}{17mm}%
+    \setlength{\tud@dim@heavyline}{1.4pt}%
+    \setlength{\tud@dim@thinline}{0.7pt}%
+    \def\tud@head@font@size{13}%
+  \else\ifdim\paperheight<594.1mm\relax%
+    \setlength{\tud@dim@headheight}{70mm}%
+    \setlength{\tud@dim@barheight}{10mm}%
+    \setlength{\tud@dim@headsep}{24mm}%
+    \setlength{\tud@dim@logox}{22mm}%
+    \setlength{\tud@dim@logoy}{27mm}%
+    \setlength{\tud@dim@logowidth}{114mm}%
+    \setlength{\tud@dim@left}{60mm}%
+    \setlength{\tud@dim@right}{40mm}%
+    \setlength{\tud@dim@top}{50mm}%
+    \setlength{\tud@dim@bottom}{50mm}%
+    \setlength{\tud@dim@footskip}{24mm}%
+    \setlength{\tud@dim@heavyline}{1.7pt}%
+    \setlength{\tud@dim@thinline}{1pt}%
+    \def\tud@head@font@size{13.5}%
+  \else\ifdim\paperheight<841.1mm\relax%
+    \setlength{\tud@dim@headheight}{100mm}%
+    \setlength{\tud@dim@barheight}{14mm}%
+    \setlength{\tud@dim@headsep}{34mm}%
+    \setlength{\tud@dim@logox}{31mm}%
+    \setlength{\tud@dim@logoy}{38mm}%
+    \setlength{\tud@dim@logowidth}{161.5mm}%
+    \setlength{\tud@dim@left}{85mm}%
+    \setlength{\tud@dim@right}{56.5mm}%
+    \setlength{\tud@dim@top}{71mm}%
+    \setlength{\tud@dim@bottom}{71mm}%
+    \setlength{\tud@dim@footskip}{34mm}%
+    \setlength{\tud@dim@heavyline}{1.9pt}%
+    \setlength{\tud@dim@thinline}{1.5pt}%
+    \def\tud@head@font@size{14}%
+  \else%
+    \setlength{\tud@dim@headheight}{140mm}%
+    \setlength{\tud@dim@barheight}{20mm}%
+    \setlength{\tud@dim@headsep}{48mm}%
+    \setlength{\tud@dim@logox}{44mm}%
+    \setlength{\tud@dim@logoy}{54mm}%
+    \setlength{\tud@dim@logowidth}{228mm}%
+    \setlength{\tud@dim@left}{120mm}%
+    \setlength{\tud@dim@right}{80mm}%
+    \setlength{\tud@dim@top}{100mm}%
+    \setlength{\tud@dim@bottom}{100mm}%
+    \setlength{\tud@dim@footskip}{48mm}%
+    \setlength{\tud@dim@heavyline}{2.1pt}%
+    \setlength{\tud@dim@thinline}{2pt}%
+    \def\tud@head@font@size{20}%
+  \fi\fi\fi\fi\fi%
+  \setlength{\tud@dim@both}%
+    {\dimexpr\tud@dim@left+\tud@dim@right}%
+  \setlength{\tud@dim@ddcheight}{.6\tud@dim@headheight}%
+  \setlength{\tud@ta@footdiff}%
+    {\dimexpr\tud@dim@ddcheight-\tud@ta@footskip+\baselineskip}%
+  \ifdim\tud@ta@footdiff<\z@\relax%
+    \setlength{\tud@ta@footdiff}{\z@}%
+  \fi%
+}
+\newcommand*\tud@head@text{}
+\newcommand*\tud@head@text@first{}
+\newcommand*\tud@head@text@second{}
+\newcommand*\tud@head@text@delimiter{}
+\newcommand*\tud@head@text@buffer{}
+\newcommand*\tud@head@font{}
+\newcommand*\tud@head@rule{}
+\newcommand*\ps@tudpage@plain{%
+  \renewcommand*\@oddhead{%
+    \setlength{\@tempdima}%
+      {\dimexpr\oddsidemargin+1in+\tud@dim@logox-\tud@dim@left}%
+    \ifdim\@tempdima<\ta@bcor\relax%
+      \tud@head@logo@wrn{\the\@tempdima}%
+    \fi%
+    \ifx\@faculty\@empty%
+      \ClassWarningNoLine{\tudcls@name}{No faculty given}%
+      \faculty{\null}%
+    \fi%
+    \tud@head@font@set%
+    \@tempswafalse%
+    \def\tud@head@text@first{}%
+    \def\tud@head@text@second{}%
+    \def\tud@head@text@buffer{}%
+    \tud@head@text@add[\enskip]{\tud@head@font@bold}{\@faculty}%
+    \tud@head@text@add{\tud@head@font@light}{\@department}%
+    \tud@head@text@add{\tud@head@font@light}{\@institute}%
+    \tud@head@text@add{\tud@head@font@light}{\@chair}%
+    \settowidth{\@tempdima}{\tud@head@text@second}%
+    \ifdim\@tempdima>\textwidth\relax%
+      \tud@head@text@wrn{\the\dimexpr\@tempdima-\textwidth}%
+    \fi%
+    \color{\tud@head@color}%
+    \vbox to \dimexpr\tud@dim@barheight+\tud@dim@headheight{%
+      \vfill\linespread{0}\selectfont%
+      \setlength{\@tempdima}{\tud@dim@logox}%
+      \addtolength{\@tempdima}{-\tud@dim@left}%
+      \hspace*{\@tempdima}%
+      \tud@mainlogo\hfill\tud@head@logo%
+      \setlength{\@tempdima}{\tud@dim@headheight}%
+      \addtolength{\@tempdima}{-\tud@dim@logoy}%
+      \addtolength{\@tempdima}{-\tud@dim@logoheight}%
+      \ifstr{\tud@head@color}{white}%
+        {\setlength{\@tempdimc}{\tud@dim@heavyline}}%
+        {\setlength{\@tempdimc}{\tud@dim@thinline}}%
+      \vspace*{\dimexpr\@tempdima-.5\@tempdimc}%
+      \def\tud@head@rule{%
+        \if@tud@widehead%
+          \setlength{\@tempdima}{\oddsidemargin}%
+          \if@twoside\ifodd\c@page\else%
+            \setlength{\@tempdima}{\evensidemargin}%
+          \fi\fi%
+          \addtolength{\@tempdima}{1in}%
+          \setlength{\@tempdimb}{\paperwidth}%
+        \else%
+          \setlength{\@tempdima}{\z@}%
+          \setlength{\@tempdimb}{\textwidth}%
+        \fi%
+        \hfuzz=2\@tempdima%
+        \hspace*{-\@tempdima}%
+        \rule[-.5\@tempdimc]{\@tempdimb}{\@tempdimc}%
+        \newline%
+      }%
+      \newline%
+      \tud@head@rule%
+      \tud@head@text@write{\tud@head@text@first}%
+      \newline%
+      \tud@head@rule%
+      \tud@head@text@write{\tud@head@text@second}%
+      \ifx\@extraheadline\@empty\else%
+        \newline\tud@head@font@light\@extraheadline%
+        \vspace*{-\tud@dim@barheight}%
+      \fi%
+      \vspace*{\dimexpr\@tempdimc-\tud@dim@barheight}%
+    }%
+  }%
+  \let\@evenhead\@oddhead%
+}
+\newcommand*\ps@tudpage@empty{%
+  \ps@tudpage@plain%
+  \let\@mkboth\@gobbletwo%
+  \let\@oddfoot\@empty%
+  \let\@evenfoot\@empty%
+}
+\newcommand*\tud@head@text@add[3][, ]{%
+  \def\tud@head@font{#2}%
+  \edef\tud@head@text{#3}%
+  \ifx\tud@head@text\@empty%
+    \def\tud@head@text@delimiter{}%
+  \else%
+    \edef\tud@head@text@delimiter{\tud@head@text@buffer}%
+    \def\tud@head@text@buffer{#1}%
+  \fi%
+  \if@tempswa\else%
+    \def\@tempa{%
+      \tud@head@text@first%
+      \tud@head@text@delimiter%
+      \tud@head@font%
+      \tud@head@text%
+    }%
+    \settowidth{\@tempdima}{\@tempa}%
+    \ifdim\@tempdima>\textwidth\relax%
+      \@tempswatrue%
+      \def\tud@head@text@delimiter{}%
+    \else%
+      \edef\tud@head@text@first{\@tempa}%
+    \fi%
+  \fi%
+  \if@tempswa%
+    \edef\tud@head@text@second{%
+      \tud@head@text@second%
+      \tud@head@text@delimiter%
+      \tud@head@font%
+      \tud@head@text%
+    }%
+  \fi%
+}
+\newcommand*\tud@head@text@write[1]{%
+  \raisebox{\dimexpr(\tud@dim@barheight-\@tempdimc-\totalheight)/2}%
+    [\dimexpr\tud@dim@barheight-\@tempdimc-\depth\relax][\depth]{#1}%
+}
+\newcommand\tud@head@text@wrn[1]{%
+  \ClassWarning{\tudcls@name}{%
+    The given entries for the headline\MessageBreak%
+    (faculty, institute etc.) are #1\MessageBreak%
+    too wide for the textwidth%
+  }%
+  \global\let\tud@head@text@wrn\@gobble%
+}
+\newcommand\tud@head@logo@wrn[1]{%
+  \ClassWarning{\tudcls@name}{%
+    The selected page layout means that the\MessageBreak%
+    logo of TUD extends beyond the printing area.\MessageBreak%
+    The inner margin is smaller than BCOR\MessageBreak%
+    (BCOR=\the\ta@bcor,\space inner margin=#1)\MessageBreak%
+    Maybe you should decrease the current value\MessageBreak%
+    of DIV (DIV=\the\ta@div)%
+  }%
+  \global\let\tud@head@logo@wrn\@gobble%
+}
+\newcommand*\tud@@mainlogo{}
+\newcommand*\tud@mainlogo{%
+  \def\tud@@mainlogo{TU_Logo_SW}%
+  \ifpdfoutput{}{%
+    \ifstr{\tud@head@color}{HKS41}%
+      {\def\tud@@mainlogo{TU_Logo_HKS41}}{}%
+    \ifstr{\tud@head@color}{cddarkblue}%
+      {\def\tud@@mainlogo{TU_Logo_HKS41}}{}%
+    \ifstr{\tud@head@color}{white}%
+      {\def\tud@@mainlogo{TU_Logo_WS}}{}%
+  }%
+  \def\@tempa{%
+    \includegraphics[width=\tud@dim@logowidth]{%
+      \tud@@mainlogo%
+    }%
+  }%
+  \settoheight{\tud@dim@logoheight}{\@tempa}\@tempa%
+}
+\newcommand*\headlogo[2][]{%
+  \ifnum\tud@ddc@head>0\relax%
+    \def\tud@ddc@head{0}%
+    \ClassWarning{\tudcls@name}%
+      {DDC logo is overwritten with \string#2}%
+  \fi%
+  \def\tud@head@@logo{#2}%
+  \def\tud@head@@@logo{#1}%
+}
+\newcommand*\logofile{}
+\newcommand*\logofilename{}
+\let\logofile\headlogo
+\let\logofilename\headlogo
+\newcommand*\tud@head@@logo{}
+\newcommand*\tud@head@@@logo{}
+\newcommand*\tud@head@logo{%
+  \ifx\tud@head@@logo\@empty\else%
+    \let\@tempa\tud@head@@@logo%
+    \pretocmd{\@tempa}{height=\tud@dim@logoheight,}{}{}%
+    \expandafter\includegraphics%
+      \expandafter[\@tempa]{\tud@head@@logo}%
+  \fi%
+}
+\newcommand*\tud@ps@headings{\tud@cmd@use{ps@headings}\tud@ps}
+\newcommand*\tud@ps@myheadings{\tud@cmd@use{ps@myheadings}\tud@ps}
+\newcommand*\tud@ps{%
+  \renewcommand*\@evenhead{}%
+  \renewcommand*\@oddhead{}%
+  \renewcommand*\@evenfoot{%
+    \set@tempdima@hw\hss\hb@xt@ \@tempdima{\vbox{%
+      \hb@xt@ \@tempdima{{%
+        \normalsize\pagemark\quad\footnotesize\leftmark\hfil%
+      }}%
+    }}%
+  }%
+  \renewcommand*\@oddfoot{%
+    \set@tempdima@hw\hb@xt@ \@tempdima{\vbox{%
+      \hb@xt@ \@tempdima{{%
+        \hfil\footnotesize\rightmark\quad\normalsize\pagemark%
+      }}%
+    }}%
+    \hss%
+  }%
+}%
+\newcommand*\tud@ps@plain{%
+  \renewcommand*\@evenhead{}%
+  \renewcommand*\@oddhead{}%
+  \renewcommand*\@evenfoot{%
+    \set@tempdima@hw\hss\hb@xt@ \@tempdima{\vbox{%
+      \hb@xt@ \@tempdima{{%
+        \normalsize\pagemark\hfil%
+      }}%
+    }}%
+  }%
+  \renewcommand*\@oddfoot{%
+    \set@tempdima@hw\hb@xt@ \@tempdima{\vbox{%
+      \hb@xt@ \@tempdima{{%
+        \hfil\normalsize\pagemark%
+      }}%
+    }}%
+    \hss%
+  }%
+}
+\newlength{\tud@ta@textheight}
+\newlength{\tud@ta@topmargin}
+\newlength{\tud@ta@headheight}
+\newlength{\tud@ta@headsep}
+\newlength{\tud@ta@footskip}
+\newlength{\tud@ta@headdiff}
+\newlength{\tud@ta@footdiff}
+\AfterCalculatingTypearea{%
+  \setlength{\tud@ta@textheight}{\textheight}%
+  \setlength{\tud@ta@topmargin}{\topmargin}%
+  \setlength{\tud@ta@headheight}{\headheight}%
+  \setlength{\tud@ta@headsep}{\headsep}%
+  \setlength{\tud@ta@footskip}{\footskip}%
+  \setlength{\tud@dim@headingsvskip}{.1\textheight}%
+  \let\@tempa\Gm@restore@org%
+  \if@atdocument\let\Gm@restore@org\relax\fi%
+  \tud@geometry@process%
+  \let\Gm@restore@org\@tempa%
+}
+\newcommand*\tud@geometry@hmargin{}
+\newcommand*\tud@geometry@vmargin{}
+\newcommand*\tud@geometry@pmargin{}
+\newcommand*\tud@geometry@dmargin{}
+\newcommand*\tud@geometry@process{%
+  \tud@geometry@set%
+  \ifcase \tud@geometry\relax%
+    \def\tud@geometry@hmargin{%
+      left=\dimexpr\oddsidemargin+1in,%
+      width=\textwidth,%
+    }%
+    \def\tud@geometry@vmargin{%
+      top=\dimexpr\tud@ta@topmargin+\tud@ta@headheight+\tud@ta@headsep+1in,%
+      headheight=\tud@ta@headheight,%
+      headsep=\tud@ta@headsep,%
+      textheight=\tud@ta@textheight,%
+      footskip=\dimexpr\tud@ta@footskip,%
+    }%
+    \def\tud@geometry@pmargin{%
+      top=\dimexpr\tud@dim@headheight+\tud@dim@barheight+\tud@dim@headsep,%
+      headheight=\dimexpr\tud@dim@headheight+\tud@dim@barheight,%
+      headsep=\tud@dim@headsep,%
+      textheight=\dimexpr\tud@ta@textheight-\tud@ta@headdiff,%
+      footskip=\dimexpr\tud@ta@footskip,%
+    }%
+    \def\tud@geometry@dmargin{%
+      textheight=\dimexpr\tud@ta@textheight-\tud@ta@headdiff-\tud@ta@footdiff,%
+      footskip=\dimexpr\tud@ta@footskip+\tud@ta@footdiff,%
+    }%
+    \global\setlength{\tud@ta@headdiff}{\dimexpr%
+      \tud@dim@headheight+\tud@dim@barheight+\tud@dim@headsep%
+      -\tud@ta@topmargin-\tud@ta@headheight-\tud@ta@headsep-1in%
+    }%
+  \else%
+    \ifcase \tud@geometry\or%
+      \def\tud@geometry@hmargin{%
+        left=\tud@dim@left,%
+        textwidth=\dimexpr\paperwidth-\tud@dim@both-\ta@bcor,%
+        bindingoffset=\ta@bcor,%
+        \if@twoside asymmetric,\fi%
+      }%
+    \or%
+      \def\tud@geometry@hmargin{%
+        left=.5\tud@dim@both,%
+        textwidth=\dimexpr\paperwidth-\tud@dim@both-\ta@bcor,%
+        bindingoffset=\ta@bcor,%
+      }%
+    \or%
+      \def\tud@geometry@hmargin{%
+        \if@twoside%
+          left=.4\tud@dim@both,%
+          twoside,%
+        \else%
+          left=.5\tud@dim@both,%
+        \fi%
+        textwidth=\dimexpr\paperwidth-\tud@dim@both-\ta@bcor,%
+        bindingoffset=\ta@bcor,%
+      }%
+    \fi%
+    \def\tud@geometry@vmargin{%
+      top=\tud@dim@top,%
+      headsep=\tud@dim@headsep,%
+      bottom=\tud@dim@bottom,%
+      footskip=\tud@dim@footskip,%
+    }%
+    \def\tud@geometry@pmargin{%
+      top=\dimexpr\tud@dim@headheight+\tud@dim@barheight+\tud@dim@headsep,%
+      headheight=\dimexpr\tud@dim@headheight+\tud@dim@barheight,%
+      headsep=\tud@dim@headsep,%
+      bottom=\tud@dim@bottom,%
+      footskip=\tud@dim@footskip,%
+    }%
+    \def\tud@geometry@dmargin{%
+      bottom=\dimexpr\tud@dim@bottom+\tud@ta@footdiff,%
+      footskip=\dimexpr\tud@dim@footskip+\tud@ta@footdiff+\baselineskip,%
+    }%
+    \global\setlength{\tud@ta@headdiff}{\dimexpr%
+      \tud@dim@headheight+\tud@dim@barheight+\tud@dim@headsep-\tud@dim@top%
+    }%
+  \fi%
+  \tud@geometry@@process%
+}
+\newcommand*\tud@geometry@@process{%
+  \edef\@tempa{%
+    \tud@geometry@hmargin,%
+    \tud@geometry@pmargin,%
+    \tud@geometry@dmargin,%
+    \tud@geometry@@@process%
+  }%
+  \expandafter\newgeometry\expandafter{\@tempa}%
+  \savegeometry{tudddc}%
+  \edef\@tempa{%
+    \tud@geometry@hmargin,%
+    \tud@geometry@pmargin,%
+    \tud@geometry@@@process%
+  }%
+  \expandafter\newgeometry\expandafter{\@tempa}%
+  \savegeometry{tudpage}%
+  \edef\@tempa{%
+    \tud@geometry@hmargin,%
+    \tud@geometry@vmargin,%
+    \tud@geometry@@@process%
+  }%
+  \expandafter\newgeometry\expandafter{\@tempa}%
+  \savegeometry{tudarea}%
+}
+\newcommand*\tud@geometry@@@process{%
+  \if@hincl%
+    \if@fincl%
+      includeheadfoot,%
+    \else%
+      includehead,ignorefoot,%
+    \fi%
+  \else%
+    \if@fincl%
+      ignorehead,includefoot,%
+    \else%
+      ignoreheadfoot,%
+    \fi%
+  \fi%
+}
+\NewEnviron{tudpage}[1][]{%
+  \clearpage%
+  \setlength{\tud@ta@headdiff}{\z@}%
+  \TUD@parameter@set[tudpage]{#1}%
+  \tud@multicols@check%
+  \ifnum\tud@ddc@foot=\z@\relax%
+    \loadgeometry{tudpage}%
+  \else%
+    \loadgeometry{tudddc}%
+  \fi%
+%%  \ifstr{\abstractpagestyle}{empty}%
+%%    {\renewcommand*\abstractpagestyle{tudpage@empty}}%
+%%    {\renewcommand*\abstractpagestyle{tudpage@plain}}%
+  \pagestyle{tudpage@plain}%
+  \ifnum\tud@multicols>1\relax%
+    \begin{multicols}{\tud@multicols}%
+  \fi%
+  \BODY%
+  \ifnum\tud@multicols>1\relax%
+    \end{multicols}%
+  \fi%
+}[%
+  \gdef\@tempa{\loadgeometry{tudarea}}%
+  \aftergroup\@tempa%
+  \clearpage%
+]
+\TUD@parameter{tudpage}{%
+  \TUD@parameter@define{language}{\selectlanguage{#1}}%
+  \TUD@parameter@define{columns}{\def\tud@multicols{#1}}%
+  \TUD@parameter@define{color}[HKS41]{%
+    \def\tud@head@color{#1}%
+    \tud@ddc@sethead%
+    \tud@ddc@setfoot%
+  }%
+  \TUD@parameter@let{colour}{color}
+  \TUD@parameter@define{widehead}[true]{\TUDoption{widehead}{#1}}%
+  \TUD@parameter@define{head}{%
+    \tud@lowerstring{\@tempa}{#1}%
+    \ifstr{\@tempa}{false}{\def\tud@ddc@head{0}\headlogo{}}{%
+    \ifstr{\@tempa}{off}{\def\tud@ddc@head{0}\headlogo{}}{%
+    \ifstr{\@tempa}{no}{\def\tud@ddc@head{0}\headlogo{}}{%
+    \ifstr{\@tempa}{ddc}{\def\tud@ddc@head{1}\tud@ddc@sethead}{%
+    \ifstr{\@tempa}{ddccolor}{\def\tud@ddc@head{2}\tud@ddc@sethead}{%
+    \ifstr{\@tempa}{ddccolour}{\def\tud@ddc@head{2}\tud@ddc@sethead}{%
+    \ifstr{\@tempa}{logo}{\def\tud@ddc@head{0}}{%
+    \ifstr{\@tempa}{cdfont}{\@tud@cdfontstrue}{%
+    \ifstr{\@tempa}{cdfonts}{\@tud@cdfontstrue}{%
+      \TUD@parameter@wrn{head}{false,ddc,ddccolor,logo,cdfont,cdfonts}%
+    }}}}}}}}}%
+  }%
+  \TUD@parameter@define{foot}{%
+    \tud@lowerstring{\@tempa}{#1}%
+    \ifstr{\@tempa}{empty}{%
+      \def\tud@ddc@foot{0}%
+      \renewcommand*\@oddfoot{}%
+      \let\@evenfoot\@oddfoot%
+    }{%
+      \ifstr{\@tempa}{plain}{\def\tud@ddc@foot{0}}{%
+      \ifstr{\@tempa}{ddc}{\def\tud@ddc@foot{1}\tud@ddc@setfoot}{%
+      \ifstr{\@tempa}{ddccolor}{\def\tud@ddc@foot{2}\tud@ddc@setfoot}{%
+      \ifstr{\@tempa}{ddccolour}{\def\tud@ddc@foot{2}\tud@ddc@setfoot}{%
+        \TUD@parameter@wrn{foot}{plain,empty,ddc,ddccolor}%
+      }}}}%
+    }%
+  }%
+  \TUD@parameter@define{cdfont}[true]{\TUDoption{cdfont}{#1}}%
+  \TUD@parameter@define{cdfonts}[true]{\TUDoption{cdfonts}{#1}}%
+  \TUD@parameter@define{tudfonts}[true]{\TUDoption{cdfonts}{#1}}%
+  \TUD@parameter@define{logo}[true]{\headlogo{#1}}%
+  \TUD@parameter@let{headlogo}{logo}%
+  \TUD@parameter@sethandler{\tud@environmenthandler{#1}}
+}
+\newcommand*\tud@ddc@sethead{%
+  \ifcase \tud@ddc@head\relax\or%
+    \def\tud@head@@logo{DDC-24}%
+    \ifstr{\tud@head@color}{HKS41}%
+      {\def\tud@head@@logo{DDC-27}}{}%
+    \ifstr{\tud@head@color}{cddarkblue}%
+      {\def\tud@head@@logo{DDC-27}}{}%
+    \ifstr{\tud@head@color}{white}%
+      {\def\tud@head@@logo{DDC-30}}{}%
+  \or%
+    \def\tud@head@@logo{DDC-09}%
+  \fi%
+}
+\newcommand*\tud@foot@logo{}
+\newcommand*\tud@ddc@setfoot{%
+  \ifcase \tud@ddc@foot\relax\or%
+    \def\tud@foot@logo{DDC-22}%
+    \ifstr{\tud@head@color}{HKS41}%
+      {\def\tud@foot@logo{DDC-25}}{}%
+    \ifstr{\tud@head@color}{cddarkblue}%
+      {\def\tud@foot@logo{DDC-25}}{}%
+    \ifstr{\tud@head@color}{white}%
+      {\def\tud@foot@logo{DDC-28}}{}%
+  \or%
+    \def\tud@foot@logo{DDC-07}%
+  \fi%
+  \ifcase \tud@ddc@foot\relax\else%
+    \renewcommand*\@oddfoot{%
+      \parbox[b]{\textwidth}{%
+        \hfill\includegraphics[height=\tud@dim@ddcheight]{\tud@foot@logo}%
+      }%
+    }%
+    \let\@evenfoot\@oddfoot%
+  \fi%
+}
+%%% From File: tudscr-layout.dtx
+\newcommand*\tud@color@partfont{black}
+\newcommand*\tud@color@partpage{white}
+\newcommand*\tud@color@parthead{black}
+\newcommand*\tud@color@chapterfont{black}
+\newcommand*\tud@color@chapterpage{white}
+\newcommand*\tud@font@heading{\if@tud@din\dinbn\fi\tud@raggedright}
+\newcommand*\tud@font@heading@size{}
+\newcommand*\tud@font@heading@numsize{}
+\let\tud@font@heading@size\size@part%
+\let\tud@font@heading@numsize\size@partnumber%
+\newkomafont{tud@heading}{\tud@font@heading\tud@font@heading@size}%
+\newcommand*\tud@font@part{\usekomafont{tud@heading}\color{\tud@color@partfont}}
+\newcommand*\tud@font@part@number{\tud@font@part\tud@font@heading@numsize}
+\newcommand*\tud@font@part@title{\tud@font@part\usesizeofkomafont{section}}
+\newcommand*\tud@font@chapter{%
+  \usekomafont{tud@heading}%
+  \color{\tud@color@chapterfont}%
+}
+\newlength{\chapterheadingvskip}
+\newlength{\headingsvskip}
+\let\headingsvskip\chapterheadingvskip
+\newcommand*\tud@layout@process{%
+  \ifcase \tud@layout@title\relax%
+    \tud@cmd@restore{maketitle}%
+    \tud@cmd@restore{@maketitle}%
+    \tud@font@koma@reset{title}%
+    \tud@font@koma@reset{subtitle}%
+    \tud@font@koma@reset{subject}%
+  \else%
+    \tud@cmd@store{maketitle}%
+    \tud@cmd@store{@maketitle}%
+    \tud@font@koma@set{title}{%
+      \usekomafont{tud@heading}%
+      \color{\tud@color@titlefont}%
+    }%
+    \tud@font@koma@set{subtitle}{%
+      \tud@font@heading%
+      \usesizeofkomafont{section}%
+      \color{\tud@color@titlefont}%
+    }%
+    \tud@font@koma@set{subject}{\color{\tud@color@titlefont}\sffamily}%
+    \let\maketitle\tud@maketitle%
+  \fi%
+  \ifcase \tud@layout@part\relax%
+    \tud@cmd@restore{partheadstartvskip}%
+    \tud@cmd@restore{partheadmidvskip}%
+    \tud@cmd@restore{partheadendvskip}%
+    \tud@cmd@restore{partheademptypage}%
+    \tud@cmd@restore{partpagestyle}%
+    \tud@cmd@restore{@part}%
+    \tud@cmd@restore{@spart}%
+    \tud@sectioning@reset[addpart]{part}%
+    \tud@font@koma@reset{partnumber}%
+  \else%
+    \tud@cmd@store{partheadstartvskip}%
+    \tud@cmd@store{partheadmidvskip}%
+    \tud@cmd@store{partheadendvskip}%
+    \tud@cmd@store{partheademptypage}%
+    \tud@cmd@store{partpagestyle}%
+    \tud@cmd@store{@part}%
+    \tud@cmd@store{@spart}%
+    \if@tud@parttitle%
+      \tud@sectioning@set[addpart]{part}{\tud@font@part@title}%
+      \tud@font@koma@set{partnumber}{\tud@font@part@title}%
+      \renewcommand*\partheadmidvskip{\enskip}%
+    \else%
+      \tud@sectioning@set[addpart]{part}{\tud@font@part}%
+      \tud@font@koma@set{partnumber}{\tud@font@part@number}%
+      \renewcommand*\partheadmidvskip{%
+        \par\nobreak\vspace{.5\baselineskip}%
+      }%
+    \fi%
+    \let\partheadstartvskip\tud@partheadstartvskip%
+    \let\@part\tud@@part%
+    \let\@spart\tud@@spart%
+    \renewcommand*\partheadendvskip{%
+      \tud@cleardoublespecialpage{%
+        \tud@pagecolor{\tud@color@partpage}%
+        \def\tud@head@color{\tud@color@parthead}%
+        \addtokomafont{pagenumber}{\sffamily\color{\tud@color@partfont}}%
+        \begingroup%
+          \let\ps@empty\ps@tudpage@empty%
+          \let\ps@plain\ps@tudpage@plain%
+          \clearpage%
+        \endgroup%
+      }
+      \loadgeometry{tudarea}%
+    }%
+    \renewcommand*\partheademptypage{}%
+  \fi%
+  \ifcase \tud@layout@chapter\relax%
+    \tud@cmd@restore{chapterheadstartvskip}%
+    \tud@cmd@restore{chapterformat}%
+    \tud@cmd@restore{@chapter}%
+    \tud@cmd@restore{@schapter}%
+    \tud@cmd@restore{@@makechapterhead}%
+    \tud@cmd@restore{set@@@@preamble}%
+    \tud@sectioning@reset[addchap]{chapter}%
+    \tud@font@koma@reset{chapterprefix}%
+    \tud@sectioning@reset[addsec]{section}%
+    \tud@sectioning@reset{subsection}%
+    \tud@sectioning@reset{subsubsection}%
+    \tud@sectioning@reset{minisec}%
+  \else%
+    \tud@cmd@store{chapterheadstartvskip}%
+    \tud@cmd@store{chapterformat}%
+    \tud@cmd@store{@chapter}%
+    \tud@cmd@store{@schapter}%
+    \tud@cmd@store{@@makechapterhead}%
+    \tud@cmd@store{set@@@@preamble}%
+    \tud@sectioning@set[addchap]{chapter}{\tud@font@chapter}%
+    \tud@font@koma@set{chapterprefix}{\usesizeofkomafont{partnumber}}%
+    \tud@sectioning@set[addsec]{section}{\tud@font@heading}%
+    \tud@sectioning@set{subsection}{\tud@font@heading}%
+    \tud@sectioning@set{subsubsection}{\tud@font@heading}%
+    \tud@sectioning@set{minisec}{\tud@font@heading}%
+    \renewcommand*\chapterheadstartvskip{%
+      \def\tud@color@chapterpage{white}%
+      \def\tud@color@chapterfont{black}%
+      \ifcase \tud@layout@chapter\relax\or\or%
+        \def\tud@color@chapterpage{white}%
+        \def\tud@color@chapterfont{HKS41}%
+      \or%
+        \def\tud@color@chapterpage{HKS41!10}%
+        \def\tud@color@chapterfont{HKS41}%
+      \fi%
+      \vspace*{\dimexpr\tud@ta@headdiff+\tud@dim@headingsvskip}%
+      \if@tud@chapterpage\else\vspace*{\chapterheadingvskip}\fi%
+    }%
+    \let\@@makechapterhead\tud@@@makechapterhead%
+    \let\set@@@@preamble\tud@set@@@@preamble%
+  \fi%
+}
+\newcommand*\tud@partheadstartvskip{%
+  \def\tud@color@partfont{black}%
+  \def\tud@color@partpage{white}%
+  \def\tud@color@parthead{black}%
+  \ifcase \tud@layout@part\relax\or\or%
+    \def\tud@color@partfont{HKS41}%
+    \def\tud@color@partpage{white}%
+    \def\tud@color@parthead{HKS41}%
+  \or%
+    \def\tud@color@partpage{HKS41}%
+    \def\tud@color@partfont{HKS41!30}%
+    \def\tud@color@parthead{white}%
+  \fi%
+  \loadgeometry{tudpage}%
+  \begingroup%
+    \vspace*{\dimexpr\tud@dim@headingsvskip+\parskip}%
+    \setparsizes{\z@}{\z@}{\z@\@plus1fil}\par@updaterelative%
+    \if@tud@parttitle%
+      \tud@parttitle%
+    \else%
+      \usesizeofkomafont{partnumber}%
+      \vspace*{\dimexpr-\dp\strutbox-\ht\strutbox-.5\baselineskip}%
+    \fi%
+  \endgroup%
+}
+\newcommand*\tud@parttitle{%
+  \begingroup%
+    \usekomafont{tud@heading}%
+    \color{\tud@color@partfont}%
+    \tud@makeuppercase{\expandonce{\@@title}}%
+    \par\nobreak\vskip .5\baselineskip%
+  \endgroup%
+}
+\let\tud@@part\@part
+\ifnum\scr@compatibility>\@nameuse{scr@v@3.11b}\relax
+  \patchcmd{\tud@@part}{%
+    \ifnumbered{part}{%
+      \size@partnumber{\partformat}%
+      \partheadmidvskip
+    }{}%
+  }{%
+    \ifnumbered{part}{%
+      \size@partnumber{\tud@makeuppercase\partformat}%
+    }{%
+      \size@partnumber{\strut}%
+    }%
+    \unskip\partheadmidvskip%
+  }{}{\tud@patch@wrn{@part}}%
+\else
+  \patchcmd{\tud@@part}{%
+    \ifnum \c@secnumdepth >-2\relax
+      \size@partnumber{\partformat}%
+      \partheadmidvskip
+    \fi
+  }{%
+    \ifnum \c@secnumdepth >-2\relax%
+      \size@partnumber{\tud@makeuppercase\partformat}%
+    \else%
+      \size@partnumber{\strut}%
+    \fi%
+    \unskip\partheadmidvskip%
+  }{}{\tud@patch@wrn{@part}}%
+\fi
+\let\tud@@spart\@spart
+\patchcmd{\tud@@spart}{%
+  \normalfont
+  \sectfont\nobreak\size@part
+}{%
+  \normalfont\sectfont\nobreak%
+  \size@partnumber{\strut}%
+  \partheadmidvskip\unskip%
+  \size@part%
+}{}{\tud@patch@wrn{@spart}}
+\newcommand*\tud@partpreamble{%
+  \ifnum\tud@abstract@level>1\relax\def\tud@abstract@level{1}\fi%
+  \KOMAoptions{titlepage=false}%
+  \addtokomafont{disposition}{\color{\tud@color@partfont}}%
+  \addtokomafont{dictumtext}{\color{\tud@color@partfont}}%
+  \color{\tud@color@partfont}%
+  \vskip\dimexpr\topskip+.9\baselineskip%
+  \@afterindentfalse\@afterheading%
+}
+\newcommand*\tud@@@makechapterhead{}
+\let\tud@@@makechapterhead\@@makechapterhead
+\patchcmd{\tud@@@makechapterhead}{\chapterformat}{%
+  \if@chapterprefix%
+    \usesizeofkomafont{chapterprefix}%
+    \vspace*{\dimexpr-\dp\strutbox-\ht\strutbox-.5\baselineskip}%
+  \fi%
+  \tud@makeuppercase{\chapterformat}%
+}{}{\tud@patch@wrn{@@makechapterhead}}
+\patchcmd{\tud@@@makechapterhead}{\size@chapter{#1}}{%
+  \setlength{\parskip}{\z@}%
+  \size@chapter{#1}%
+}{}{\tud@patch@wrn{@@makechapterhead}}
+\newcommand*\tud@chapterpreamble{%
+  \ifnum\tud@abstract@level>1\relax\def\tud@abstract@level{1}\fi%
+  \KOMAoptions{titlepage=false}%
+  \if@tud@chapterpage%
+    \if@tud@cdfonts%
+      \if@tud@heavyfont%
+        \TUDoptions{cdfont=heavy}%
+      \else%
+        \TUDoptions{cdfont}%
+      \fi%
+    \fi%
+    \addtokomafont{disposition}{\color{\tud@color@chapterfont}}%
+    \addtokomafont{dictumtext}{\color{\tud@color@chapterfont}}%
+    \color{\tud@color@chapterfont}%
+  \fi%
+  \@afterindentfalse\@afterheading%
+}
+\newcommand*\tud@chapter@pre{%
+  \if@tud@chapterpage%
+    \tud@cmd@store{chapterpagestyle}%
+    \renewcommand*\chapterpagestyle{\partpagestyle}%
+    \@restonecolfalse%
+    \if@twocolumn\@restonecoltrue\onecolumn\fi%
+  \fi%
+}
+\newcommand*\tud@chapter@app{%
+  \if@tud@chapterpage%
+    \tud@cleardoublespecialpage{%
+      \tud@pagecolor{\tud@color@chapterpage}%
+      \def\tud@head@color{\tud@color@chapterfont}%
+      \addtokomafont{pagenumber}{\sffamily\color{\tud@color@chapterfont}}%
+      \clearpage%
+    }%
+    \tud@cmd@restore{chapterpagestyle}%
+    \if@restonecol\twocolumn\fi%
+  \fi%
+  \if@twocolumn%
+    \@afterindentfalse\@afterheading%
+  \fi%
+}
+\AtEndPreamble{%
+  \pretocmd{\tud@nchapter}{\tud@chapter@pre}{}{}
+  \apptocmd{\tud@nchapter}{\tud@chapter@app}{}{}
+  \pretocmd{\tud@schapter}{\tud@chapter@pre}{}{}
+  \apptocmd{\tud@schapter}{\tud@chapter@app}{}{}
+  \pretocmd{\tud@ochapter}{\tud@chapter@pre}{}{}
+  \apptocmd{\tud@ochapter}{\tud@chapter@app}{}{}
+  \pretocmd{\tud@naddchap}{\tud@chapter@pre}{}{}
+  \apptocmd{\tud@naddchap}{\tud@chapter@app}{}{}
+  \pretocmd{\tud@saddchap}{\tud@chapter@pre}{}{}
+  \apptocmd{\tud@saddchap}{\tud@chapter@app}{}{}
+  \pretocmd{\tud@oaddchap}{\tud@chapter@pre}{}{}
+  \apptocmd{\tud@oaddchap}{\tud@chapter@app}{}{}
+}
+\newcommand*\tud@clearcolor@wrn{%
+  \ClassWarning{\tudcls@name}{%
+    Option 'clearcolor' is only available together with\MessageBreak%
+    options 'twoside' and 'open=right'%
+  }%
+  \global\let\tud@clearcolor@wrn\relax%
+}
+\newcommand*\tud@set@@@@preamble{}
+\let\tud@set@@@@preamble\set@@@@preamble
+\patchcmd{\tud@set@@@@preamble}{%
+  \hbox to\hsize{#4\parbox[{#2}]{#3}{#6\par}#5\par}%
+}{%
+  \def\@tempa####1@####2{\@nameuse{tud@####1preamble}}%
+  \hbox to\hsize{%
+    \let\@parboxrestore\relax%
+    #4\parbox[{#2}]{#3}{\@tempa#1#6\par}#5\par%
+  }%
+}{}{\tud@patch@wrn{set@@@@preamble}}
+\newcommand*\tud@part{}
+\newcommand*\tud@spart{}
+\newcommand*\tud@addpart{}
+\newcommand*\tud@saddpart{}
+\newcommand*\tud@chapter{}
+\newcommand*\tud@schapter{}
+\newcommand*\tud@addchap{}
+\newcommand*\tud@saddchap{}
+\newcommand*\tud@section{}
+\newcommand*\tud@ssection{}
+\newcommand*\tud@subsection{}
+\newcommand*\tud@ssubsection{}
+\newcommand*\tud@subsubsection{}
+\newcommand*\tud@ssubsubsection{}
+\newcommand*\tud@npart{}
+\newcommand*\tud@opart{}
+\newcommand*\tud@naddpart{}
+\newcommand*\tud@oaddpart{}
+\newcommand*\tud@nchapter{}
+\newcommand*\tud@ochapter{}
+\newcommand*\tud@naddchap{}
+\newcommand*\tud@oaddchap{}
+\newcommand*\tud@nsection{}
+\newcommand*\tud@osection{}
+\newcommand*\tud@nsubsection{}
+\newcommand*\tud@osubsection{}
+\newcommand*\tud@nsubsubsection{}
+\newcommand*\tud@osubsubsection{}
+\newcommand*\tud@sectioning@set[3][]{%
+  \tud@cmd@store{#2}%
+  \ifstr{#2}{minisec}{%
+    \renewcommand\minisec[1]{%
+      \tud@cmd@use{minisec}{\tud@makeuppercase{##1}}%
+    }%
+  }{%
+    \tud@sectioning@case{#2}%
+    \ifstrempty{#1}{}{%
+      \tud@cmd@store{#1}%
+      \tud@sectioning@case{#1}%
+    }%
+  }%
+  \tud@font@koma@set{#2}{#3}%
+}
+\newcommand*\tud@sectioning@case[1]{%
+  \@namedef{#1}{\@ifstar{\@nameuse{tud@s#1}}{\@nameuse{tud@#1}}}%
+  \@namedef{tud@#1}{\@ifnextchar[%]
+    {\@nameuse{tud@o#1}}{\@nameuse{tud@n#1}}%
+  }%
+  \@namedef{tud@n#1}##1{\@nameuse{@@tud@#1}[##1]{\tud@makeuppercase{##1}}}%
+  \@namedef{tud@o#1}[##1]##2{\@nameuse{@@tud@#1}[##1]{\tud@makeuppercase{##2}}}%
+  \@namedef{tud@s#1}##1{\@nameuse{@@tud@#1}*{\tud@makeuppercase{##1}}}%
+}
+\newcommand*\tud@sectioning@reset[2][]{%
+  \tud@cmd@restore{#2}%
+  \ifstrempty{#1}{}{\tud@cmd@restore{#1}}%
+  \tud@font@koma@reset{#2}%
+}
+\newcommand*\tud@font@koma@set[2]{%
+  \ifcsdef{tud@font@koma@#1}{}{\addtokomafont{#1}{\@nameuse{tud@font@koma@#1}}}%
+  \@namedef{tud@font@koma@#1}{#2}%
+}
+\newcommand*\tud@font@koma@reset[1]{%
+  \ifcsdef{tud@font@koma@#1}{\@namedef{tud@font@koma@#1}{\relax}}{}%
+}
+\providecommand*\usesizeofkomafont[1]{%
+  \begingroup%
+    \usekomafont{#1}%
+    \edef\reserved@a{\noexpand\endgroup%
+      \noexpand\fontsize{\f@size}{\f@baselineskip}}%
+  \reserved@a\selectfont%
+}
+%%% From File: tudscr-frontmatter.dtx
+\newcommand*\tud@fm@set[3]{%
+  \ifnumless{\@nameuse{tud@#1@level}}{3}{%
+    \if@titlepage%
+      \if@twocolumn%
+        \tud@fm@body{#1}{#2}{#3}%
+        \ifbool{@tud@#1@double}{}{\newpage}%
+      \else%
+        \ifbool{@tud@#1@double}{%
+          \par%
+          \ifdim\pagetotal=\z@\relax%
+            \booltrue{@tud@#1@first}%
+          \fi%
+          \ifbool{@tud@#1@first}{%
+            \global\setlength{\tud@dim@double}{\textheight}%
+            \clearpage%
+          }{}%
+          \setbox0\vtop{\strut\tud@fm@body{#1}{#2}{#3}}%
+          \global\setlength{\tud@dim@double}%
+            {\dimexpr\tud@dim@double-\ht0-\dp0}\relax%
+          \ifdim\tud@dim@double>\z@\relax%
+            \tud@fm@vcenter{#1}{#2}{#3}%
+            \global\boolfalse{@tud@#1@first}%
+          \else%
+            \tud@fm@double@wrn{#1}%
+            \clearpage%
+            \global\booltrue{@tud@#1@first}%
+            \tud@fm@vcenter{#1}{#2}{#3}%
+          \fi%
+        }{%
+          \clearpage%
+          \tud@fm@vcenter{#1}{#2}{#3}%
+          \clearpage%
+        }%
+      \fi%
+    \else%
+      \ifbool{@tud@#1@double}{\tud@fm@option@wrn{#1}}{}%
+      \if@twocolumn%
+        \tud@fm@body{#1}{#2}{#3}%
+      \else%
+        \ifnum\@nameuse{tud@#1@level}<2\tud@quoting\fi%
+        \tud@fm@body{#1}{#2}{#3}%
+        \ifnum\@nameuse{tud@#1@level}<2\tud@endquoting\fi%
+      \fi%
+    \fi%
+  }{%
+    \if@titlepage\else\tud@fm@level@wrn{#1}\fi%
+    \ifbool{@tud@#1@double}{\tud@fm@option@wrn{#1}}{}%
+    \clearpage%
+    \tud@fm@body{#1}{#2}{#3}%
+    \clearpage%
+  }%
+}
+\newcommand*\tud@fm@head[2]{%
+  \ifcase\@nameuse{tud@#1@level}\relax%
+    \def\@tempa{\phantomsection}%
+  \or%
+    \def\@tempa{%
+      \phantomsection%
+      \@afterindentfalse%
+      \begin{center}%
+        \normalfont\sectfont\nobreak#2%
+        \@endparpenalty\@M%
+      \end{center}%
+      \nopagebreak%
+      \vskip\dimexpr\bigskipamount-\parskip%
+      \@afterheading%
+    }%
+  \or%
+    \def\@tempa{\addsec*{#2}}%
+  \or%
+    \def\@tempa{\addchap*{#2}}%
+  \fi%
+  \ifbool{@tud@#1@toc}{%
+    \apptocmd{\@tempa}{\addchaptertocentry{}{#2}}{}{}%
+  }{}%
+  \@tempa%
+}
+\newcommand*\tud@fm@vcenter[3]{%
+  \ifdim\@tempdima>\dimexpr\textheight\relax%
+    \tud@fm@body{#1}{#2}{#3}%
+  \else%
+    \ifbool{@tud@#1@fil}{%
+      \ifcase\@nameuse{tud@#1@level}\relax\or\or%
+        \vspace*{-\parskip}%
+        {\usekomafont{section}\vspace*{-2\baselineskip}}%
+      \fi%
+      \ifbool{@tud@#1@first}{\vspace*{\z@ \@plus 2fil}}{}%
+    }{}%
+    \tud@fm@body{#1}{#2}{#3}%
+    \ifbool{@tud@#1@fil}{\vspace*{\z@ \@plus 3fil}}{}%
+  \fi%
+}
+\newcommand*\tud@fm@body[3]{%
+  \if@titlepage\@mkboth{}{}\fi%
+  \if@twocolumn%
+    \ifcase\@nameuse{tud@#1@level}\relax\or%
+      \ifbool{@tud@#1@first}{%
+        \global\boolfalse{@tud@#1@first}%
+        \vspace{\dimexpr\bigskipamount-\parskip}%
+      }{}%
+    \fi%
+    \tud@fm@head{#1}{#2}%
+    #3\par%
+    \ifcase\@nameuse{tud@#1@level}\relax\or%
+      \vspace{\dimexpr\bigskipamount-\parskip}%
+    \fi%
+  \else%
+    \ifnum\tud@multicols>1\relax%
+      \begin{multicols}{\tud@multicols}[{\tud@fm@head{#1}{#2}}]%
+    \else%
+      \tud@fm@head{#1}{#2}%
+    \fi%
+    #3\par%
+    \ifnum\tud@multicols>1\relax%
+      \end{multicols}\leavevmode%
+    \else%
+      \ifcase\@nameuse{tud@#1@level}\relax\or%
+        \bigskip\vskip-\parskip\null%
+      \fi%
+    \fi%
+  \fi%
+}
+\let\tud@quoting\quotation
+\let\tud@endquoting\endquotation
+\AfterPackage{quoting}{%
+  \let\tud@quoting\quoting%
+  \let\tud@endquoting\endquoting%
+}
+\csundef{abstract}
+\csundef{endabstract}
+\NewEnviron{abstract}[1][]{%
+  \TUD@parameter@set[abstract]{#1}%
+  \tud@multicols@check%
+  \tud@fm@set{abstract}{\abstractname}{\BODY}%
+}
+\TUD@parameter{abstract}{%
+  \TUD@parameter@define{language}{\selectlanguage{#1}}%
+  \TUD@parameter@define{columns}{\def\tud@multicols{#1}}%
+  \TUD@parameter@define{abstract}{\TUDoption{abstract}{#1}}%
+  \TUD@parameter@define{option}{\TUDoption{abstract}{#1}}%
+  \TUD@parameter@sethandler{\tud@environmenthandler{#1}}
+}
+\newcommand*\confirmation{%
+  \def\@tempa[##1]{%
+    \begingroup%
+      \ifblank{##1}{\supporter{}}{}%
+      \TUD@parameter{declaration}{%
+        \TUD@parameter@sethandler{\supporter{##1}}
+        \TUD@parameter@set{##1}
+      }%
+      \@tempb%
+    \endgroup%
+  }%
+  \def\@tempb{%
+    \tud@fm@set{declaration}{\confirmationname}%
+      {\confirmationtext\endgraf\@confirmationclosing}%
+  }%
+  \@ifnextchar[%]
+  {\@tempa}{\begingroup\@tempb\endgroup}%
+}
+\newcommand*\restriction{%
+  \def\@tempa[##1]{%
+    \begingroup%
+      \ifblank{##1}{\company{}}{}%
+      \TUD@parameter{declaration}{%
+        \TUD@parameter@sethandler{\company{##1}}
+        \TUD@parameter@set{##1}
+      }%
+      \@tempb%
+    \endgroup%
+  }%
+  \def\@tempb{%
+    \tud@fm@set{declaration}{\restrictionname}{\restrictiontext}%
+  }%
+  \@ifnextchar[%]
+  {\@tempa}{\begingroup\@tempb\endgroup}%
+}
+\newcommand*\declaration[1][]{%
+  \clearpage%
+  \begingroup%
+    \TUD@parameter{declaration}{%
+      \TUD@parameter@sethandler{\selectlanguage{#1}}
+      \TUD@parameter@set{#1}
+    }%
+    \@tud@declaration@firsttrue%
+    \confirmation\restriction%
+  \endgroup%
+  \clearpage%
+}
+\TUD@parameter{declaration}{%
+  \TUD@parameter@define{language}{\selectlanguage{#1}}%
+  \TUD@parameter@define{company}{\company{#1}}%
+  \TUD@parameter@define{supporter}{\supporter{#1}}%
+  \TUD@parameter@define{place}{\place{#1}}%
+  \TUD@parameter@define{closing}{\confirmationclosing{#1}}%
+  \TUD@parameter@define{declaration}{\TUDoption{declaration}{#1}}%
+  \TUD@parameter@define{option}{\TUDoption{declaration}{#1}}%
+}
+\newcommand*\tud@fm@level@wrn[1]{%
+  \ClassWarning{\tudcls@name}{%
+    Headings in chapter style '#1=chapter'\MessageBreak%
+    are not recommended without the titlepage\MessageBreak%
+    option%
+  }%
+}
+\newcommand*\tud@fm@option@wrn[1]{%
+  \ClassWarning{\tudcls@name}{%
+    The option '#1=double' is not supported\MessageBreak%
+    neither with chapter headings nor without an\MessageBreak%
+    activated titlepage%
+  }%
+}
+\newcommand*\tud@fm@double@wrn[1]{%
+  \ClassWarning{\tudcls@name}{%
+    It wasn't possible to use '#1=double'\MessageBreak%
+    because of too much content within #1%
+  }%
+}
+%%% From File: tudscr-title.dtx
+\newkomafont{thesis}{\usekomafont{title}\LARGE}
+\newkomafont{tudscrtitle}{%
+  \usekomafont{subject}%
+  \if@tud@univers\fontfamily{\tud@univers}\fi%
+  \fontseries{\mdseries@sf}\large%
+}
+\newcommand*\tud@color@titlefont{black}
+\newcommand*\tud@color@titlepage{white}
+\newcommand*\tud@color@titlehead{black}
+\newcommand*\tud@titleback{}%
+\newcommand*\tud@maketitle[1][1]{%
+  \if@titlepage%
+    \ifcase \tud@layout@title\relax\or\or%
+      \def\tud@color@titlefont{HKS41}%
+      \def\tud@color@titlehead{HKS41}%
+    \or%
+      \def\tud@color@titlepage{HKS41}%
+      \def\tud@color@titlefont{HKS41!30}%
+      \def\tud@color@titlehead{white}%
+    \fi%
+  \else%
+    \ifcase \tud@layout@title\relax\or\else%
+      \def\tud@color@titlefont{HKS41}%
+      \def\tud@color@titlehead{HKS41}%
+    \fi%
+  \fi%
+  \if@titlepage%
+    \begin{titlepage}%
+      \if@tud@cover\else%
+        \setcounter{page}{#1}%
+        \let\footnotesize\small%
+        \let\footnoterule\relax%
+        \let\footnote\thanks%
+        \renewcommand*\thefootnote{\@fnsymbol\c@footnote}%
+        \let\@oldmakefnmark\@makefnmark%
+        \renewcommand*\@makefnmark{\rlap\@oldmakefnmark}%
+        \tud@footnote@unhyper%
+        \ifx\@extratitle\@empty\else%
+          \noindent\@extratitle\next@tdpage%
+        \fi%
+        \ifnum\tud@ddc@foot=\z@\relax%
+          \loadgeometry{tudpage}%
+        \else%
+          \loadgeometry{tudddc}%
+        \fi%
+      \fi%
+      \vspace*{\dimexpr\tud@dim@headingsvskip+\parskip}%
+      \setparsizes{\z@}{\z@}{\z@\@plus1fil}\par@updaterelative%
+      \linespread{1}\selectfont%
+      \begingroup%
+        \usekomafont{tudscrtitle}%
+        \setlength{\@tempdima}{\z@}%
+        \ifx\@titlehead\@empty\else%
+          \setbox0\vbox{%
+            \begin{minipage}[t]{\textwidth}%
+              \usekomafont{tudscrtitle}\@titlehead\par\null%
+            \end{minipage}\newline\null%
+          }%
+          \addtolength{\@tempdima}{\dimexpr\ht0+\dp0}%
+        \fi%
+        \tud@letsubjectthesis%
+        \ifx\@subject\@empty\else%
+          \setbox1\vbox{{\usekomafont{subject}\@subject\par\null}}%
+          \addtolength{\@tempdima}{\dimexpr\ht1+\dp1+1pt}%
+        \fi%
+        \vspace*{-\@tempdima}%
+        \ifx\@titlehead\@empty\else\usebox0\par\fi%
+        \ifx\@subject\@empty\else\usebox1\par\fi%
+        \begingroup%
+          \usekomafont{title}%
+          \tud@title@uppercase{\@title}%
+          \vskip 1ex%
+        \endgroup%
+        \ifx\@subtitle\@empty\else%
+          \usekomafont{subtitle}%
+          \tud@title@uppercase{\@subtitle}%
+          \vskip 1ex%
+        \fi%
+        \vskip 1ex%
+        \tud@multiple@split{@@author}%
+        \vskip 2ex%
+        \ifx\@thesis\@empty%
+          \if@tud@cover\else%
+            \vskip\z@\@plus0.5fill%
+            {\usekomafont{subject}\@date\space\ignorespaces\@datemore}%
+            \vskip\z@\@plus2fill%
+          \fi%
+        \else%
+          \vskip\z@\@plus2fill%
+          \begingroup%
+            \usekomafont{thesis}%
+            \if@tud@subjectthesis\else%
+              \tud@title@uppercase{\@thesis}%
+            \fi%
+            \if@tud@cover\else%
+              \ifx\@degree\@empty\else%
+                \def\@tempc{%
+                  \@degree%
+                  \ifx\@degreeabbr\@empty\else\space\@degreeabbr\fi%
+                }%
+                \usekomafont{tudscrtitle}%
+                \if@tud@subjectthesis%
+                  \degreetext%
+                  \vskip 2ex%
+                  \usekomafont{subject}%
+                  \@tempc%
+                \else%
+                  \vskip 2ex%
+                  \degreetext%
+                  \vskip 2ex%
+                  \usekomafont{thesis}%
+                  \tud@title@uppercase{\@tempc}%
+                \fi%
+                \vskip 3ex%
+              \fi%
+            \fi%
+          \endgroup%
+          \vskip\z@\@plus3fill%
+        \fi%
+        \if@tud@cover\else%
+          \tud@title@names{supervisor}
+          \tud@title@names{referee}
+          \tud@title@names{advisor}
+          \ifx\@professor\@empty\else%
+            \vskip 2ex%
+            \professorname%
+            \vskip .5ex%
+            {\usekomafont{subject}\@professor}%
+          \fi%
+          \ifx\@thesis\@empty\else%
+            \ifdefstring{\@date}{\today}{%
+              \ifdefvoid{\@duedate}{%
+                \ClassWarning{\tudcls@name}{%
+                  \string\submissiondate\space or
+                  \string\date\space was not given.\MessageBreak%
+                  Since a thesis is a self-contained work, an end\MessageBreak%
+                  date should be specified by the author.\MessageBreak%
+                  Nevertheless, today's date is used%
+                }%
+              }{%
+                \ClassWarning{\tudcls@name}{%
+                  \string\submissiondate\space or \string\date\space
+                  was not given. It's\MessageBreak%
+                  substituted by the given due date%
+                }%
+                \let\@date\@duedate%
+              }%
+            }{}%
+            \ifx\@date\@empty\else%
+              \vskip 2ex%
+              \ifstr{\datetext}{}{}{\datetext\@titledelim}\@date%
+              \space\ignorespaces\@datemore%
+              \ifx\@defensedate\@empty\else\newline%
+                \ifstr{\defensedatetext}{}{}{\defensedatetext\@titledelim}%
+                \@defensedate%
+              \fi%
+            \fi%
+          \fi%
+        \fi%
+        \if@tud@cover\vskip\z@\@plus2fill\fi%
+        \ifx\@publisher\@empty\else%
+          \vskip\z@\@plus0.5fill%
+          {\usekomafont{subject}\@publisher}%
+        \fi%
+      \endgroup%
+      \let\tud@titleback\relax%
+      \if@twoside%
+        \@tempswatrue%
+        \ifx\@uppertitleback\@empty\ifx\@lowertitleback\@empty%
+          \@tempswafalse%
+        \fi\fi%
+        \if@tempswa%
+          \gdef\tud@titleback{%
+            \next@tpage%
+            \loadgeometry{tudarea}%
+            \begin{minipage}[t]{\textwidth}%
+              \@uppertitleback%
+            \end{minipage}\par%
+            \vfill%
+            \begin{minipage}[b]{\textwidth}%
+              \@lowertitleback%
+            \end{minipage}\par%
+            \@thanks\let\@thanks\@empty%
+          }%
+        \fi%
+      \fi%
+      \def\@tempa{%
+        \tud@pagecolor{\tud@color@titlepage}%
+        \def\tud@head@color{\tud@color@titlehead}%
+        \color{\tud@color@titlefont}%
+        \addtokomafont{pagenumber}{\sffamily\color{\tud@color@titlefont}}%
+        \addtokomafont{footnote}{\sffamily\color{\tud@color@titlefont}}%
+        \ifnum\tud@ddc@head>0\tud@ddc@sethead\fi%
+        \ifnum\tud@ddc@foot>0\tud@ddc@setfoot\fi%
+        \ifnum\tud@ddc@foot=\z@\relax%
+          \thispagestyle{tudpage@empty}%
+        \else%
+          \thispagestyle{tudpage@plain}%
+        \fi%
+      }%
+      \if@tud@cover%
+        \begingroup%
+          \@tempa%
+          \cleardoubleemptypage%
+          \tud@restorepagecolor%
+        \endgroup%
+      \else%
+        \tud@cleardoublespecialpage[\tud@titleback]{%
+          \@tempa%
+          \@thanks\global\let\@thanks\@empty%
+          \clearpage%
+          \ifx\@dedication\@empty\else\thispagestyle{empty}\fi%
+          \loadgeometry{tudarea}%
+        }%
+        \loadgeometry{tudarea}%
+        \ifx\@dedication\@empty\else%
+          \next@tdpage\null\vfill%
+          {\centering\Large\@dedication\par}%
+          \vskip\z@\@plus3fill%
+          \@thanks\let\@thanks\@empty%
+          \cleardoubleemptypage%
+        \fi%
+      \fi%
+    \end{titlepage}%
+    \loadgeometry{tudarea}%
+    \if@tud@cover\else%
+      \setcounter{footnote}{0}%
+      \global\let\and\relax%
+      \tud@footnote@rehyper%
+    \fi%
+  \else%
+    \let\@maketitle\tud@@maketitle%
+    \tud@cmd@use{maketitle}[#1]%
+  \fi%
+}
+\robustify{\thanks}%
+\newcommand*\tud@title@uppercase[1]{%
+  \let\@tempa\relax%
+  \begingroup%
+    \def\thanks##1{\gdef\@tempa{##1}}%
+    \let\footnote\thanks%
+    \setbox0\vbox{#1}%
+    \let\thanks\@gobble%
+    \let\footnote\@gobble%
+    \tud@makeuppercase{#1}%
+  \endgroup%
+  \ifx\@tempa\relax\else\thanks\@tempa\fi%
+}
+\newcommand*\tud@title@names[1]{%
+  \letcs\@tempa{@#1}
+  \ifx\@tempa\@empty\else%
+    \begingroup%
+      \def\and{%
+        \letcs\@tempa{#1othername}
+        \ifx\@tempa\@empty%
+          \newline%
+        \else%
+          \begingroup%
+            \usekomafont{tudscrtitle}%
+            \vskip 1ex%
+            \@nameuse{#1othername}%
+            \vskip .5ex%
+          \endgroup%
+        \fi%
+        \def\and{\newline}%
+      }%
+      \vskip 2ex%
+      \@nameuse{#1name}%
+      \vskip .5ex%
+      \usekomafont{subject}%
+      \@nameuse{@#1}%
+    \endgroup%
+  \fi%
+}
+\newcommand*\@titledelim{:\nobreakspace}
+\newcommand*\titledelimiter[1]{\gdef\@titledelim{#1}}
+\newcommand*\tud@@maketitle{%
+  \next@tdpage%
+  \vspace*{\tud@dim@headingsvskip}%
+  \tud@extratitle%
+  \setparsizes{\z@}{\z@}{\z@\@plus 1fil}\par@updaterelative%
+  \linespread{1}\selectfont%
+  \begingroup%
+    \usekomafont{tudscrtitle}%
+    \ifx\@titlehead\@empty\else%
+      \begin{minipage}[t]{\textwidth}%
+        \usekomafont{tudscrtitle}\@titlehead%
+      \end{minipage}\newline\null\par%
+    \fi%
+    \TUDoptions{subjectthesis}%
+    \tud@letsubjectthesis%
+    \ifx\@subject\@empty\else%
+      {\usekomafont{subject}\@subject\par\null}%
+    \fi%
+    \begingroup%
+      \usekomafont{title}%
+      \tud@title@uppercase{\@title}%
+      \vskip 1ex%
+    \endgroup%
+    \ifx\@subtitle\@empty\else%
+      \usekomafont{subtitle}%
+      \tud@title@uppercase{\@subtitle}%
+    \fi%
+    \vskip 1ex%
+    \tud@multiple@split{@@author}%
+    \vskip 1ex%
+    \@date%
+    \ifx\@publisher\@empty\else%
+      \vskip 1ex%
+      \@publisher%
+    \fi%
+    \ifx\@dedication\@empty\else%
+      \vskip 2ex%
+      \begin{center}%
+        \@dedication\par%
+      \end{center}%
+    \fi%
+    \vskip 2ex%
+    \ifx\@degree\@empty\else\tud@title@wrn{degree}\fi%
+    \ifx\@supervisor\@empty\else\tud@title@wrn{supervisor}\fi%
+    \ifx\@referee\@empty\else\tud@title@wrn{referee}\fi%
+    \ifx\@professor\@empty\else\tud@title@wrn{professor}\fi%
+  \endgroup%
+}
+\newcommand*\tud@multiple@field{}
+\newcommand*\tud@multiple@split[1]{%
+  \gdef\tud@multiple@field{#1}%
+  \begingroup%
+    \let\and\relax%
+    \edef\@tempa{\csname#1\endcsname\and}%
+  \expandafter\endgroup%
+  \expandafter\tud@multiple@@split\@tempa\relax%
+}
+\newcommand*\tud@multiple@@split{}%
+\def\tud@multiple@@split#1\and#2\relax{%
+  \expandafter\csname tud@split\tud@multiple@field\endcsname{#1}{#2}%
+}
+\newcommand*\tud@multiple@@@split[2]{%
+  \ifx\relax#1\relax%
+    \def\@tempb{}%
+  \else%
+    \def\@tempb{#2\tud@multiple@@split#1\relax}%
+  \fi%
+  \@tempb%
+}
+\newcommand*\tud@multiple@setfields[2]{%
+  \letcs\@tempa{tud@split\tud@multiple@field @list}%
+  \let\and\relax%
+  \@for\@tempb:=\@tempa\do{%
+    \ifx\@tempb\@empty\else%
+      \begingroup%
+        \@expandtwoargs\in@{\@tempb}{\csname\tud@multiple@field\endcsname}%
+        \ifin@ \@tempb{#1}\fi%
+      \endgroup%
+    \fi%
+  }%
+  \begingroup%
+    \let\thanks\@gobble%
+    \let\footnote\@gobble%
+    \setbox0\vtop{#2}%
+  \endgroup%
+}
+\newcommand*\tud@newline{}
+\newcommand*\tud@split@@author[2]{%
+  \tud@multiple@setfields{}{#1}%
+  \def\tud@newline{\vskip .5ex\let\tud@newline\newline}%
+  \begingroup%
+    \usekomafont{subject}%
+    \ignorespaces#1%
+  \endgroup%
+  \ifx\@authormore\@empty\else%
+    \tud@newline%
+    \@authormore%
+  \fi%
+  \ifx\@dateofbirth\@empty\else%
+    \if@titlepage%
+      \tud@newline%
+      \ifstr{\dateofbirthtext}{}%
+        {}{\dateofbirthtext\@titledelim}\@dateofbirth%
+      \ifx\@placeofbirth\@empty\else%
+        \space\placeofbirthtext\unskip\space\@placeofbirth%
+      \fi%
+    \else%
+      \tud@title@wrn{dateofbirth}%
+    \fi%
+  \fi%
+  \ifx\@matriculationnumber\@empty\else%
+    \if@titlepage%
+      \tud@newline%
+      \ifstr{\matriculationnumbername}{}%
+        {}{\matriculationnumbername\@titledelim}%
+      \@matriculationnumber%
+    \else%
+      \tud@title@wrn{matriculationnumber}%
+    \fi%
+  \fi%
+  \ifx\@matriculationyear\@empty\else%
+    \if@titlepage%
+      \tud@newline%
+      \ifstr{\matriculationyearname}{}%
+        {}{\matriculationyearname\@titledelim}%
+      \@matriculationyear%
+    \else%
+      \tud@title@wrn{matriculationyear}%
+    \fi%
+  \fi%
+  \tud@multiple@@@split{#2}{\vskip 2ex}%
+}
+\newcommand*\tud@split@@author@list{%
+  \authormore,\matriculationyear,\enrolmentyear,%
+  \matriculationnumber,\studentid,\matriculationid,%
+  \placeofbirth,\birthplace,\dateofbirth,\birthday,%
+}
+\newcommand\maketitleonecolumn[1][1]{%
+  \ifxnumber{#1}{%
+    \@ifnextchar[%]
+      {\@maketitleonecolumn{#1}}{\@maketitleonecolumn{#1}[]}%
+  }{\@maketitleonecolumn{1}[#1]}%
+}
+\newcommand\@maketitleonecolumn{}
+\long\def\@maketitleonecolumn#1[#2]{%
+  \if@twocolumn%
+    \if@titlepage%
+      \maketitle[#1]%
+      \onecolumn\noindent#2\twocolumn%
+    \else%
+      \@longtwocolumn[{\maketitle[#1]{#2}}]%
+    \fi%
+  \else%
+    \ClassError{\tudcls@name}{%
+      \string\maketitleonecolumn\space can only be used in twocolumn mode%
+    }{}%
+  \fi%
+}
+\newsavebox\@longtwocolumnbox
+\newcommand\@longtwocolumn[1][]{%
+  \onecolumn%
+  \begingroup%
+    \let\clearpage\relax%
+    \let\newpage\relax%
+    \global\setbox\@longtwocolumnbox\vbox{#1\bigskip}%
+  \endgroup%
+  \@whiledim\textheight<\ht\@longtwocolumnbox\do{%
+    \splittopskip\topskip%
+    \splitmaxdepth\maxdepth%
+    \vsplit\@longtwocolumnbox to \textheight\clearpage%
+  }%
+  \twocolumn[\unvbox\@longtwocolumnbox]%
+}
+\newcommand*\tud@letsubjectthesis{%
+  \if@tud@subjectthesis\ifx\@thesis\@empty\else%
+    \ifx\@subject\@empty\else%
+      \ClassWarning{\tudcls@name}{%
+        The option 'subjectthesis' was activated.\MessageBreak%
+        The field 'subject' will be overwritten with the\MessageBreak%
+        given thesis%
+      }%
+    \fi%
+    \let\@subject\@thesis%
+  \fi\fi%
+}
+\newcommand*\tud@title@wrn[1]{%
+  \ClassWarning{\tudcls@name}{%
+    \@backslashchar#1\space has to be used with\MessageBreak%
+    activated titlepage option%
+  }%
+}
+\ifdef{\@makeextratitle}{%
+  \let\tud@extratitle\relax%
+}{%
+  \newcommand*\tud@extratitle{%
+    \let\footnote\thanks%
+    \ifx\@extratitle\@empty\else%
+      \noindent\@extratitle\next@tdpage%
+    \fi%
+  }%
+}
+\providecommand*\next@tdpage{%
+  \next@tpage%
+  \if@twoside\ifodd\value{page}\else%
+    \null\next@tpage%
+  \fi\fi%
+}%
+\newif\if@tud@cover
+\newcommand*\makecover[1][]{%
+  \begingroup%
+    \let\thanks\@gobble%
+    \let\footnote\@gobble%
+    \let\tud@multiple@setfields\@gobbletwo%
+    \pretocmd{\tud@multiple@split}{\vskip\z@\@plus0.5fill}{}{}%
+    \let\@authormore\@empty%
+    \let\@dateofbirth\@empty%
+    \let\@matriculationnumber\@empty%
+    \let\@matriculationyear\@empty%
+    \TUD@parameter@set[cover]{cd,cdfonts,cdlayout=true,#1}%
+    \if@tud@cover@cdlayout%
+      \newgeometry{%
+        left=\tud@dim@left,%
+        textwidth=\dimexpr\paperwidth-\tud@dim@both,%
+        top=\dimexpr\tud@dim@headheight+\tud@dim@barheight+\tud@dim@headsep,%
+        headheight=\dimexpr\tud@dim@headheight+\tud@dim@barheight,%
+        headsep=\tud@dim@headsep,%
+        bottom=\dimexpr\tud@dim@bottom+\tud@ta@footdiff,%
+        footskip=\dimexpr\tud@dim@footskip+\tud@ta@footdiff+\baselineskip,%
+      }%
+    \else%
+      \ifnum\tud@ddc@foot=\z@\relax%
+        \loadgeometry{tudpage}%
+      \else%
+        \loadgeometry{tudddc}%
+      \fi%
+    \fi%
+    \ifdef{\hypersetup}{\hypersetup{pageanchor=false}}{}%
+    \@tud@covertrue
+    \@titlepagetrue%
+    \tud@maketitle%
+  \endgroup%
+  \loadgeometry{tudarea}%
+}
+\newif\if@tud@cover@cdlayout
+\TUD@parameter{cover}{%
+  \TUD@parameter@define{cd}[true]{\TUDoption{cd}{#1}}%
+  \TUD@parameter@define{widehead}[true]{\TUDoption{widehead}{#1}}%
+  \TUD@parameter@define{cdfont}[true]{\TUDoption{cdfont}{#1}}%
+  \TUD@parameter@define{cdfonts}[true]{\TUDoption{cdfonts}{#1}}%
+  \TUD@parameter@define{tudfonts}[true]{\TUDoption{cdfonts}{#1}}%
+  \TUD@parameter@define{cdlayout}[true]{%
+    \ifstr{#1}{true}{\@tud@cover@cdlayouttrue}{%
+    \ifstr{#1}{on}{\@tud@cover@cdlayouttrue}{%
+    \ifstr{#1}{yes}{\@tud@cover@cdlayouttrue}{%
+    \ifstr{#1}{false}{\@tud@cover@cdlayoutfalse}{%
+    \ifstr{#1}{no}{\@tud@cover@cdlayoutfalse}{%
+    \ifstr{#1}{off}{\@tud@cover@cdlayoutfalse}{%
+      \TUD@parameter@wrn{cdlayout}{true,false}%
+    }}}}}}%
+  }%
+  \TUD@parameter@sethandler{\TUD@parameter@set[cover]{cdlayout=#1}}%
+}%
+%%% From File: tudscr-fields.dtx
+\newcommand*\@faculty{}
+\newcommand*\faculty[1]{\gdef\@faculty{\trim@spaces{#1}}}
+\newcommand*\@department{}
+\newcommand*\department[1]{\gdef\@department{\trim@spaces{#1}}}
+\newcommand*\@institute{}
+\newcommand*\institute[1]{\gdef\@institute{\trim@spaces{#1}}}
+\newcommand*\@chair{}
+\newcommand*\chair[1]{\gdef\@chair{\trim@spaces{#1}}}
+\newcommand*\professorship{}
+\let\professorship\chair
+\newcommand*\@extraheadline{}
+\newcommand*\extraheadline[1]{\gdef\@extraheadline{\trim@spaces{#1}}}
+\newcommand*\@@title{}
+\renewcommand*\title[1]{%
+  \gdef\@title{#1}%
+  \gdef\@@title{%
+    \begingroup%
+      \let\thanks\@gobble%
+      \let\footnote\@gobble%
+      #1%
+    \endgroup%
+  }%
+}
+\newcommand*\@@author{}
+\renewcommand*\author[1]{%
+  \gdef\@author{#1}%
+  \let\@@author\@author%
+}
+\newcommand*\student{}
+\let\student\author
+\newcommand*\@authormore{}
+\newrobustcmd*\authormore[1]{\gdef\@authormore{#1}}
+\newcommand*\@thesis{}
+\newcommand*\@@thesis{}
+\newcommand*\thesis[1]{\tud@thesis{thesis}{#1}}
+\newcommand*\tud@thanks{}
+\newcommand*\tud@thesis[2]{%
+  \AfterPreamble{%
+    \begingroup%
+      \global\let\tud@thanks\relax%
+      \def\thanks##1{\gdef\tud@thanks{##1}}%
+      \let\footnote\thanks%
+      \setbox0\vbox{#2}%
+      \let\thanks\@gobble%
+      \let\footnote\@gobble%
+      \ifstr{#1}{thesis}{\xdef\@@thesis{#2}}{}%
+    \endgroup%
+    \tud@lowerstring{\@tempa}{#2}%
+    \ifstr{\@tempa}{diss}{\tud@@thesis{#1}{\dissertationname}}{%
+    \ifstr{\@tempa}{doctoral}{\tud@@thesis{#1}{\dissertationname}}{%
+    \ifstr{\@tempa}{phd}{\tud@@thesis{#1}{\dissertationname}}{%
+    \ifstr{\@tempa}{diploma}{\tud@@thesis{#1}{\diplomathesisname}}{%
+    \ifstr{\@tempa}{master}{\tud@@thesis{#1}{\masterthesisname}}{%
+    \ifstr{\@tempa}{bachelor}{\tud@@thesis{#1}{\bachelorthesisname}}{%
+    \ifstr{\@tempa}{student}{\tud@@thesis{#1}{\studentresearchname}}{%
+    \ifstr{\@tempa}{project}{\tud@@thesis{#1}{\projectpapername}}{%
+    \ifstr{\@tempa}{seminar}{\tud@@thesis{#1}{\seminarpapername}}{%
+    \ifstr{\@tempa}{research}{\tud@@thesis{#1}{\researchname}}{%
+    \ifstr{\@tempa}{log}{\tud@@thesis{#1}{\logname}}{%
+    \ifstr{\@tempa}{report}{\tud@@thesis{#1}{\reportname}}{%
+    \ifstr{\@tempa}{internship}{\tud@@thesis{#1}{\internshipname}}{%
+      \@namedef{@#1}{#2}%
+    }}}}}}}}}}}}}%
+  }%
+}
+\newcommand*\tud@@thesis[2]{%
+  \ifx\tud@thanks\relax%
+    \gdef\@thesis{#2}%
+  \else%
+    \xdef\@thesis{\noexpand#2\noexpand\thanks{\tud@thanks}}%
+  \fi%
+  \gdef\@@thesis{#2}%
+  \ifstr{#1}{subject}{%
+    \ifx\@thesis\empty\else%
+      \ClassWarning{\tudcls@name}{Field 'thesis' is overwritten by 'subject'}%
+    \fi%
+    \TUD@std@ifkey@lock{subjectthesis}{true}%
+  }{%
+    \TUD@std@ifkey@lock{subjectthesis}{false}%
+  }%
+}
+\renewcommand*\subject[1]{\tud@thesis{subject}{#1}}
+\newcommand*\@degree{}
+\newcommand*\@degreeabbr{}
+\newcommand*\degree[2][]{%
+  \ifxblank{#1}{\gdef\@degreeabbr{}}{\gdef\@degreeabbr{(#1)}}%
+  \gdef\@degree{#2}%
+}
+\newcommand*\@professor{}
+\newcommand*\professor[1]{\gdef\@professor{#1}}
+\newcommand*\@supervisor{}
+\newcommand*\supervisor[1]{%
+  \gdef\@supervisor{#1}%
+  \ifx\@supporter\empty\gdef\@supporter{#1}\fi%
+}
+\newcommand*\@supporter{}
+\newcommand*\supporter[1]{%
+  \gdef\@supporter{#1}%
+  \renewcommand*\supervisor[1]{\gdef\@supervisor{##1}}%
+}
+\newcommand*\@company{}
+\newcommand*\company[1]{\gdef\@company{#1}}
+\newcommand*\@referee{}
+\newcommand*\referee[1]{\gdef\@referee{#1}}
+\newcommand*\@advisor{}
+\newcommand*\advisor[1]{\gdef\@advisor{#1}}
+\newcommand*\@matriculationnumber{}
+\newrobustcmd*\matriculationnumber[1]{%
+  \gdef\@matriculationnumber{#1}%
+}
+\newrobustcmd*\studentid{}
+\newrobustcmd*\matriculationid{}
+\let\studentid\matriculationnumber
+\let\matriculationid\matriculationnumber
+\newcommand*\@matriculationyear{}
+\newrobustcmd*\matriculationyear[1]{\gdef\@matriculationyear{#1}}
+\newrobustcmd*\enrolmentyear{}
+\let\enrolmentyear\matriculationyear
+\newcommand*\@placeofbirth{}
+\newrobustcmd*\placeofbirth[1]{\gdef\@placeofbirth{#1}}
+\newrobustcmd*\birthplace{}
+\let\birthplace\placeofbirth
+\providecommand*\@publisher{}
+\providecommand*\publisher[1]{\gdef\@publisher{#1}}
+\let\publishers\publisher
+\newcommand*\@confirmationclosing{%
+  \medskip%
+  \noindent\@place, \@@date%
+  \\[15mm plus 10mm minus 10mm]%
+  \begingroup%
+  \let\and\hfil%
+  \let\thanks\@gobble%
+  \let\footnote\@gobble%
+  \@@author%
+  \hfil%
+  \endgroup%
+}
+\newcommand*\confirmationclosing[1]{\gdef\@confirmationclosing{#1}}
+\newcommand*\@place{Dresden}
+\newcommand*\place[1]{\gdef\@place{#1}}
+\newcommand*\location{}
+\let\location\place
+\newcommand*\printdate[1]{#1}
+\BeforePackage{isodate}{\let\printdate\undefined}
+\newcommand*\tud@printdate[2]{%
+  \ifx\today#2%
+    \gdef#1{#2}%
+  \else%
+    \ifxblank{#2}%
+      {\gdef#1{}}%
+      {\gdef#1{\printdate{#2}}}%
+  \fi%
+}
+\newcommand*\@datemore{}
+\newcommand*\@@date{}
+\let\@@date\@date
+\renewcommand*\date[2][]{%
+  \gdef\@datemore{#1}%
+  \tud@printdate{\@date}{#2}%
+  \tud@printdate{\@@date}{#2}%
+}
+\newcommand*\submissiondate{}
+\let\submissiondate\date
+\newcommand*\@defensedate{}
+\newcommand*\defensedate[1]{\tud@printdate{\@defensedate}{#1}}
+\newcommand*\oralexaminationdate{}
+\let\oralexaminationdate\defensedate
+\newcommand*\@dateofbirth{}
+\newrobustcmd*\dateofbirth[1]{\tud@printdate{\@dateofbirth}{#1}}
+\newrobustcmd*\birthday{}
+\let\birthday\dateofbirth
+%%% From File: tudscr-locale.dtx
+\newcommand*\tud@locale@define[1]{%
+  \providecommand*#1{%
+    \ClassError{\tudcls@name}{%
+      \string#1 not defined for language \languagename%
+    }{%
+      Currently the class \tudcls@name\space only supports the\MessageBreak%
+      languages german and english. You must define single\MessageBreak%
+      patterns by yourself, e.g.:\MessageBreak%
+      \string\providecaptionname\languagename{\string#1}{<text>}\MessageBreak%
+      To implement new languages, it would be nice if you could\MessageBreak%
+      contact the author of this class and send your definitions\MessageBreak%
+      to \filemail%
+    }%
+  }%
+}
+\tud@locale@define{\degreetext}
+\tud@locale@define{\supervisorname}
+\tud@locale@define{\supervisorothername}
+\tud@locale@define{\refereename}
+\tud@locale@define{\refereeothername}
+\tud@locale@define{\advisorname}
+\tud@locale@define{\advisorothername}
+\tud@locale@define{\professorname}
+\tud@locale@define{\datetext}
+\tud@locale@define{\dateofbirthtext}
+\tud@locale@define{\placeofbirthtext}
+\tud@locale@define{\defensedatetext}
+\tud@locale@define{\matriculationyearname}
+\tud@locale@define{\matriculationnumbername}
+\tud@locale@define{\coverpagename}
+\tud@locale@define{\titlepagename}
+\tud@locale@define{\confirmationname}
+\tud@locale@define{\confirmationtext}
+\tud@locale@define{\restrictionname}
+\tud@locale@define{\restrictiontext}
+\tud@locale@define{\listingname}
+\tud@locale@define{\listlistingname}
+\tud@locale@define{\dissertationname}
+\tud@locale@define{\diplomathesisname}
+\tud@locale@define{\masterthesisname}
+\tud@locale@define{\bachelorthesisname}
+\tud@locale@define{\studentresearchname}
+\tud@locale@define{\projectpapername}
+\tud@locale@define{\seminarpapername}
+\tud@locale@define{\researchname}
+\tud@locale@define{\logname}
+\tud@locale@define{\internshipname}
+\tud@locale@define{\reportname}
+\newcommand*\tud@locale@german[1]{%
+  \providecaptionname{#1}{\degreetext}%
+    {zur Erlangung des akademischen Grades}%
+  \providecaptionname{#1}{\supervisorname}%
+    {Betreuer}%
+  \providecaptionname{#1}{\supervisorothername}%
+    {}%
+  \providecaptionname{#1}{\refereename}%
+    {Erstgutachter}%
+  \providecaptionname{#1}{\refereeothername}%
+    {Zweitgutachter}%
+  \providecaptionname{#1}{\advisorname}%
+    {Fachreferent}%
+  \providecaptionname{#1}{\advisorothername}%
+    {}%
+  \providecaptionname{#1}{\professorname}%
+    {Betreuender Hochschullehrer}%
+  \providecaptionname{#1}{\datetext}%
+    {Eingereicht am}%
+  \providecaptionname{#1}{\dateofbirthtext}%
+    {Geboren am}%
+  \providecaptionname{#1}{\placeofbirthtext}%
+    {in}%
+  \providecaptionname{#1}{\defensedatetext}%
+    {Verteidigt am}%
+  \providecaptionname{#1}{\matriculationyearname}%
+    {Immatrikulationsjahr}%
+  \providecaptionname{#1}{\matriculationnumbername}%
+    {Matrikelnummer}%
+  \providecaptionname{#1}{\coverpagename}%
+    {Umschlagseite}%
+  \providecaptionname{#1}{\titlepagename}%
+    {Titelblatt}%
+  \providecaptionname{#1}{\confirmationname}%
+    {Selbstst\"andigkeitserkl\"arung}%
+  \providecaptionname{#1}{\confirmationtext}{%
+    Hiermit versichere ich, dass ich die vorliegende
+    \ifx\@@thesis\empty Arbeit \else\@@thesis{} \fi
+    \ifx\@@title\empty\else mit dem Titel \emph{\@@title} \fi
+    selbstst\"andig und ohne unzul\"assige Hilfe Dritter verfasst habe. Es
+    wurden keine anderen als die in der Arbeit angegebenen Hilfsmittel
+    und Quellen benutzt. Die w\"ortlichen und sinngem\"a\ss{}
+    \"ubernommenen Zitate habe ich als solche kenntlich gemacht.
+    \ifx\@supporter\empty%
+      Es waren keine weiteren Personen an der geistigen Herstellung der
+      vorliegenden Arbeit beteiligt.
+    \else%
+      W\"ahrend der Anfertigung dieser Arbeit wurde ich nur von folgenden
+      Personen unterst\"utzt:%
+      \begin{quote}\def\and{\newline}\@supporter\end{quote}%
+      \noindent Weitere Personen waren an der geistigen Herstellung der
+      vorliegenden Arbeit nicht beteiligt.
+    \fi%
+    Mir ist bekannt, dass die Nichteinhaltung dieser Erkl\"arung zum
+    nachtr\"aglichen Entzug des Hochschulabschlusses f\"uhren kann.%
+  }%
+  \providecaptionname{#1}{\restrictionname}%
+    {Sperrvermerk}%
+  \providecaptionname{#1}{\restrictiontext}{%
+    Diese \ifx\@@thesis\empty Arbeit \else\@@thesis{} \fi
+    \ifx\@@title\empty\else mit dem Titel \emph{\@@title} \fi
+    enth\"alt vertrauliche Informationen\ifx\@company\empty\else
+    , offengelegt durch \@company{}\fi. Ver\"offentlichungen,
+    Vervielf\"altigungen und Einsichtnahme~-- auch nur auszugsweise~--
+    sind ohne ausdr\"uckliche Genehmigung \ifx\@company\empty\else
+    durch \@company{} \fi nicht gestattet, ebenso wie
+    Ver\"offentlichungen \"uber den Inhalt dieser Arbeit. Die
+    vorliegende Arbeit ist nur dem Betreuer an der Hochschule,
+    den Gutachtern sowie den Mitgliedern des Pr\"ufungsausschusses
+    zug\"anglich zu machen.%
+  }%
+  \providecaptionname{#1}{\listingname}%
+    {Quelltext}%
+  \providecaptionname{#1}{\listlistingname}%
+    {Quelltextverzeichnis}%
+  \providecaptionname{#1}{\dissertationname}%
+    {Dissertation}%
+  \providecaptionname{#1}{\diplomathesisname}%
+    {Diplomarbeit}%
+  \providecaptionname{#1}{\masterthesisname}%
+    {Master-Arbeit}%
+  \providecaptionname{#1}{\bachelorthesisname}%
+    {Bachelor-Arbeit}%
+  \providecaptionname{#1}{\studentresearchname}%
+    {Studienarbeit}%
+  \providecaptionname{#1}{\projectpapername}%
+    {Projektarbeit}%
+  \providecaptionname{#1}{\seminarpapername}%
+    {Seminararbeit}%
+  \providecaptionname{#1}{\researchname}%
+    {Forschungsbericht}%
+  \providecaptionname{#1}{\logname}%
+    {Protokoll}%
+  \providecaptionname{#1}{\internshipname}%
+    {Praktikumsbericht}%
+  \providecaptionname{#1}{\reportname}%
+    {Bericht}%
+}
+\newcommand*\tud@locale@english[1]{%
+  \providecaptionname{#1}{\degreetext}%
+    {to achieve the academic degree}%
+  \providecaptionname{#1}{\supervisorname}%
+    {Supervisor}%
+  \providecaptionname{#1}{\supervisorothername}%
+    {}%
+  \providecaptionname{#1}{\refereename}%
+    {First referee}%
+  \providecaptionname{#1}{\refereeothername}%
+    {Second referee}%
+  \providecaptionname{#1}{\advisorname}%
+    {Advisor}%
+  \providecaptionname{#1}{\advisorothername}%
+    {}%
+  \providecaptionname{#1}{\professorname}%
+    {Supervising professor}%
+  \providecaptionname{#1}{\datetext}%
+    {Submitted on}%
+  \providecaptionname{#1}{\dateofbirthtext}%
+    {Born on}%
+  \providecaptionname{#1}{\placeofbirthtext}%
+    {in}%
+  \providecaptionname{#1}{\defensedatetext}%
+    {Defended on}%
+  \providecaptionname{#1}{\matriculationyearname}%
+    {Matriculation year}%
+  \providecaptionname{#1}{\matriculationnumbername}%
+    {Matriculation number}%
+  \providecaptionname{#1}{\coverpagename}%
+    {Cover page}%
+  \providecaptionname{#1}{\titlepagename}%
+    {Title page}%
+  \providecaptionname{#1}{\confirmationname}%
+    {Statement of authorship}%
+  \providecaptionname{#1}{\confirmationtext}{%
+    I hereby certify that I have authored this
+    \ifx\@@thesis\empty thesis\else\@@thesis{} \fi
+    \ifx\@@title\empty{} \else entitled \emph{\@@title} \fi
+    independently and without undue assistance from third
+    parties. No other than the resources and references
+    indicated in this thesis have been used. I have marked
+    both literal and accordingly adopted quotations as such.
+    \ifx\@supporter\empty%
+      They were no additional persons involved in the spiritual
+      preparation of the present thesis.
+    \else%
+      During the preparation of this thesis I was only supported
+      by the following persons:%
+      \begin{quote}\def\and{\newline}\@supporter\end{quote}%
+      \noindent Additional persons were not involved in the spiritual
+      preparation of the present thesis.
+    \fi%
+    I am aware that violations of this declaration may lead to
+    subsequent withdrawal of the degree.%
+  }%
+  \providecaptionname{#1}{\restrictionname}%
+    {Restriction note}%
+  \providecaptionname{#1}{\restrictiontext}{%
+    This \ifx\@@thesis\empty thesis \else\@@thesis{} \fi
+    \ifx\@@title\empty{} \else entitled \emph{\@@title} \fi
+    contains confidential data\ifx\@company\empty\else
+    , disclosed by \@company{}\fi. Publications, duplications and
+    inspections---even in part---are prohibited without explicit
+    permission\ifx\@company\empty\else\space by \@company{}\fi,
+    as well as publications about the content of this thesis.
+    This thesis may only be made accessible to the supervisor at
+    the university, the reviewers and also the members of the
+    examination board.%
+  }%
+  \providecaptionname{#1}{\listingname}%
+    {Listing}%
+  \providecaptionname{#1}{\listlistingname}%
+    {List of Listings}%
+  \providecaptionname{#1}{\dissertationname}%
+    {Dissertation}%
+  \providecaptionname{#1}{\diplomathesisname}%
+    {Diploma Thesis}%
+  \providecaptionname{#1}{\masterthesisname}%
+    {Master Thesis}%
+  \providecaptionname{#1}{\bachelorthesisname}%
+    {Bachelor Thesis}%
+  \providecaptionname{#1}{\studentresearchname}%
+    {Student Research Project}%
+  \providecaptionname{#1}{\projectpapername}%
+    {Project Paper}%
+  \providecaptionname{#1}{\seminarpapername}%
+    {Seminar Paper}%
+  \providecaptionname{#1}{\researchname}%
+    {Research Report}%
+  \providecaptionname{#1}{\logname}%
+    {Log}%
+  \providecaptionname{#1}{\internshipname}%
+    {Internship Report}%
+  \providecaptionname{#1}{\reportname}%
+    {Report}%
+}
+\AtBeginDocument{%
+  \ifdef{\captionsenglish}{}{\let\captionsenglish\@empty}%
+  \tud@locale@german{ngerman}%
+  \tud@locale@german{german}%
+  \tud@locale@english{english}%
+  \tud@locale@english{USenglish}%
+  \tud@locale@english{american}%
+  \tud@locale@english{UKenglish}%
+  \tud@locale@english{british}%
+}
+\AfterPackage{listings}{%
+  \renewcommand*\lstlistingname{\listingname}%
+  \renewcommand*\lstlistlistingname{\listlistingname}%
+}
+%%% From File: tudscr-color.dtx
+\newcommand*\tud@pagecolor[1]{}
+\newcommand*\tud@restorepagecolor{}
+\AfterPackage{tudscrcolor}{%
+  \providecommand*\nopagecolor{\pagecolor{white}}%
+  \@ifpackageloaded{pagecolor}{}{%
+    \let\tud@pagecolor\pagecolor%
+    \let\tud@restorepagecolor\nopagecolor%
+  }%
+}
+\AfterPackage{pagecolor}{%
+  \let\tud@pagecolor\newpagecolor%
+  \let\tud@restorepagecolor\restorepagecolor%
+}
+\AfterPackage{pdfpages}{\AtEndPreamble{\nopagecolor}}
+%%% From File: tudscr-misc.dtx
+\newcommand*\tudbookmark[1][]{\@gobbletwo}
+\newcommand*\phantomsection{}
+\let\phantomsection\relax
+\newcommand*\tud@footnote@unhyper{}
+\newcommand*\tud@footnote@rehyper{}
+\AfterPackage{hyperref}{%
+  \renewcommand*\tudbookmark[3][]{%
+    \relax%
+    \if@tud@bookmarks%
+      \phantomsection%
+      \ifblank{#1}{\pdfbookmark{#2}{#3}}{\pdfbookmark[#1]{#2}{#3}}%
+    \fi%
+  }%
+  \renewcommand*\tud@footnote@unhyper{%
+    \let\Hy@saved@footnotemark\@footnotemark%
+    \let\Hy@saved@footnotetext\@footnotetext%
+    \let\@footnotemark\H@@footnotemark%
+    \let\@footnotetext\H@@footnotetext%
+  }%
+  \renewcommand*\tud@footnote@rehyper{%
+    \ifx\@footnotemark\H@@footnotemark%
+      \let\@footnotemark\Hy@saved@footnotemark%
+    \fi%
+    \ifx\@footnotetext\H@@footnotetext%
+      \let\@footnotetext\Hy@saved@footnotetext%
+    \fi%
+  }%
+}
+\AtBeginDocument{%
+  \pretocmd{\makecover}{%
+    \tudbookmark[0]{\coverpagename}{cover}
+    \ifdef{\bookmarksetup}{\bookmarksetup{startatroot}}{}%
+  }{}{\tud@patch@wrn{makecover}}%
+  \pretocmd{\maketitle}{%
+    \tudbookmark[0]{\titlepagename}{title}
+    \ifdef{\bookmarksetup}{\bookmarksetup{startatroot}}{}%
+  }{}{\tud@patch@wrn{maketitle}}%
+  \pretocmd{\tableofcontents}{%
+    \if@openright\cleardoublepage\else\clearpage\fi%
+    \tudbookmark[0]{\contentsname}{toc}%
+    \ifdef{\bookmarksetup}{\bookmarksetup{startatroot}}{}%
+  }{}{\tud@patch@wrn{tableofcontents}}%
+}
+\newcommand*\tud@environmenthandler[1]{%
+  \def\@tempa{#1}%
+  \@for\@tempb:=\@tempa\do{%
+    \ifx\@tempb\@empty\else%
+      \ifxnumber{\@tempb}{\let\tud@multicols\@tempb}{%
+      \ifstr{\@tempb}{twocolumn}{\def\tud@multicols{2}}{%
+        \expandafter\selectlanguage\expandafter{\@tempb}%
+      }}%
+    \fi%
+  }%
+}
+\newcommand*\tud@multicols{1}
+\newcommand*\tud@multicols@check{%
+  \ifdef{\multicols}{}{%
+    \ifnum\tud@multicols>1\relax%
+      \ClassWarning{\tudcls@name}{%
+        The option 'columns=\tud@multicols' is only supported,\MessageBreak%
+        when package 'multicol' is loaded%
+      }%
+      \def\tud@multicols{1}%
+    \fi%
+  }%
+}
+\newcommand*\tud@makeuppercase[1]{%
+  \ifx\f@family\tud@dinbold%
+    \begingroup%
+    \MakeTextUppercase{#1}%
+    \endgroup%
+  \else%
+    #1%
+  \fi%
+%%  \vphantom{\"A\"O\"U}%
+}
+\newcommand*\ifdin{%
+  \ifx\f@family\tud@dinbold\relax%
+   \expandafter\@firstoftwo%
+ \else%
+   \expandafter\@secondoftwo%
+ \fi%
+}
+\endinput
+%%
+%% End of file `tudscrreprt.cls'.

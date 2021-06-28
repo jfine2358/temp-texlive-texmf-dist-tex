@@ -1,0 +1,66 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{arimo}
+    [2017/01/05 (Bob Tennent)  Supports Arimo fonts for all LaTeX engines.]
+
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+
+\newif\ifarimo@ttf 
+\ifxetex
+  \arimo@ttftrue
+\else\ifluatex
+  \arimo@ttftrue
+\else  % [pdf]LaTeX
+  \arimo@ttffalse
+\fi\fi
+
+\newif\ifarimo@default \arimo@defaultfalse
+
+\newcommand*{\Arimo@scale}{1}
+\DeclareOptionX{scaled}{\renewcommand*{\Arimo@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\Arimo@scale}{#1}}
+
+\DeclareOptionX{sfdefault}{\arimo@defaulttrue}
+\DeclareOptionX{type1}{\arimo@ttffalse}
+
+\ProcessOptionsX\relax
+
+\ifarimo@ttf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes}
+\fi
+
+\ifarimo@ttf
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+        Ligatures = TeX ,
+        Scale     = \Arimo@scale ,
+        Extension = .ttf }
+  \setsansfont
+      [ UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-Bold , 
+        BoldItalicFont = *-BoldItalic ]
+      {Arimo}
+  % grab current family in case of subsequent change:
+  \let\arimofamily\sfdefault  
+  \ifarimo@default\renewcommand*\familydefault{\arimofamily}\fi
+  \newfontfamily\arimo
+      [ UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-Bold , 
+        BoldItalicFont = *-BoldItalic ]
+      {Arimo}
+\else % type1
+  \def\arimofamily{Arimo-TLF}
+  \newcommand*\arimo{\fontfamily{\arimofamily}\selectfont}
+  \def\sfdefault{\arimofamily}
+  \ifarimo@default\edef\familydefault{\sfdefault}\fi
+\fi
+
+\ifarimo@ttf
+% turn off defaults in case other fonts are selected:
+  \defaultfontfeatures{}
+\fi
+
+\endinput

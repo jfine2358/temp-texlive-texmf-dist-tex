@@ -1,0 +1,44 @@
+% This is file `numerica-lyx.def',
+% part of the `numerica' package
+%
+% This work may be distributed and/or modified under the conditions
+% of the LaTeX Project Public License, either version 1.3c of this 
+% license or any later version; see
+% http://www.latex-project.org/lppl.txt
+%
+% Andrew Parsloe (ajparsloe@gmail.com)
+%
+\ProvidesExplFile
+  {numerica-lyx.def}
+  {2021/02/15}
+  {1.0.0}
+  { Enable reuse command to preview in LyX }
+%----------------------------------------------------------
+% copy (only once) .nmc file from doc to temp 
+% directory; use nmcDummy.txt to mark success
+\tl_set:NV \l_tmpb_tl \jobname
+\tl_put_right:Nn \l_tmpb_tl {.nmc}
+\file_if_exist:nTF { nmcDummy.txt }
+  { \tl_gset_eq:NN \g__nmc_reuse_filename_tl \l_tmpb_tl }
+  {
+    \iow_open:Nn \g__nmc_iow { nmcDummy.txt }
+    \iow_close:N \g__nmc_iow
+    \makeatletter
+      \tl_set:Nx \l_tmpa_tl \input@path
+    \makeatother
+    \exp_last_unbraced:NNV
+        \tl_gset:Nn \g__nmc_reuse_filename_tl \l_tmpa_tl
+    \tl_gput_right:NV  \g__nmc_reuse_filename_tl \l_tmpb_tl
+    \file_get:VnNTF \g__nmc_reuse_filename_tl {} \l__nmc_reuse_retrieved_tl
+      { 
+        \tl_gset_eq:NN \g__nmc_reuse_filename_tl \l_tmpb_tl
+        \iow_open:NV \g__nmc_iow \g__nmc_reuse_filename_tl
+        \bool_lazy_or:nnF 
+            { \tl_if_blank_p:V \l__nmc_reuse_retrieved_tl }
+            { \tl_if_head_eq_meaning_p:VN \l__nmc_reuse_retrieved_tl \par }
+          { \iow_now:NV \g__nmc_iow \l__nmc_reuse_retrieved_tl }
+        \iow_close:N \g__nmc_iow
+      }
+      { \tl_gset_eq:NN \g__nmc_reuse_filename_tl \l_tmpb_tl }
+  }
+% end of `numerica-lyx.def'

@@ -1,0 +1,296 @@
+%%
+%% This is file `DPcircling.sty'
+%% (Last Update: 2020/04/15)
+%% Maintained on GitHub:
+%% https://github.com/domperor/DPcircling
+%%
+%% Copyright (c) 2020 Oura M. (domperor)
+%% Released under the MIT license
+%% https://opensource.org/licenses/mit-license.php
+%% 
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{DPcircling}[2020/04/15 v1.0 circling letters with circ/rect/jag/fan using TikZ]
+
+\RequirePackage{tikz}
+\RequirePackage{keyval}
+
+%%Setting up dimensions and boxes
+\newbox\DPcircling@box
+\newdimen\DPcircling@content@wd
+\newdimen\DPcircling@content@ht
+\newdimen\DPcircling@content@dp
+\newdimen\DPcircling@outline@wd@user
+\newdimen\DPcircling@outline@ht@user
+\newdimen\DPcircling@outline@wd@user@temporal
+\newdimen\DPcircling@outline@ht@user@temporal
+\newdimen\DPcircling@outline@halfwd
+\newdimen\DPcircling@outline@halfht
+\newdimen\DPcircling@depressingheight
+\newdimen\DPcircling@linewidth
+\newdimen\DPcircling@linewidth@default
+\newdimen\DPcircling@linewidth@temporal
+
+%%Linecolor
+%%default=black
+\def\DPcircling@linecolor@default{black}
+\def\DPcirclingLinecolor#1{\def\DPcircling@linecolor@default{#1}}
+
+\newif\ifDPcircling@LinecolorTemporalSet
+\DPcircling@LinecolorTemporalSetfalse
+\def\DPcirclingTemporalLinecolor#1{\DPcircling@LinecolorTemporalSettrue
+\def\DPcircling@linecolor@temporal{#1}}
+
+%%Linewidth
+%%default=1pt
+\DPcircling@linewidth@default=1pt
+\def\DPcirclingLinewidth#1{\DPcircling@linewidth@default=#1}
+
+\newif\ifDPcircling@LinewidthTemporalSet
+\DPcircling@LinewidthTemporalSetfalse
+\def\DPcirclingTemporalLinewidth#1{\DPcircling@LinewidthTemporalSettrue
+\DPcircling@linewidth@temporal=#1}
+
+%%Outline Width
+\newif\ifDPcircling@OutlineWidthSet
+\DPcircling@OutlineWidthSetfalse
+\def\DPcirclingOutlineWidth#1{\DPcircling@OutlineWidthSettrue
+\DPcircling@outline@wd@user=#1}
+
+\newif\ifDPcircling@OutlineWidthTemporalSet
+\DPcircling@OutlineWidthTemporalSetfalse
+\def\DPcirclingTemporalOutlineWidth#1{\DPcircling@OutlineWidthTemporalSettrue
+\DPcircling@outline@wd@user@temporal=#1}
+
+%%Outline Height
+\newif\ifDPcircling@OutlineHeightSet
+\DPcircling@OutlineHeightSetfalse
+\def\DPcirclingOutlineHeight#1{\DPcircling@OutlineHeightSettrue
+\DPcircling@outline@ht@user=#1}
+
+\newif\ifDPcircling@OutlineHeightTemporalSet
+\DPcircling@OutlineHeightTemporalSetfalse
+\def\DPcirclingTemporalOutlineHeight#1{\DPcircling@OutlineHeightTemporalSettrue
+\DPcircling@outline@ht@user@temporal=#1}
+
+%%Baseline Adjustment and else
+\def\DPcircling@common#1{%
+%%setting up content box
+\ifmmode
+\def\DPcircling@content{$#1$}%
+\else
+\def\DPcircling@content{#1}%
+\fi
+%
+\setbox\DPcircling@box\hbox{\DPcircling@content}%
+\DPcircling@content@wd=\wd\DPcircling@box
+\DPcircling@content@ht=\ht\DPcircling@box
+\DPcircling@content@dp=\dp\DPcircling@box
+%%outline width
+\DPcircling@outline@halfwd=\DPcircling@content@wd
+\ifDPcircling@OutlineWidthSet%
+\DPcircling@outline@halfwd=0.5\DPcircling@outline@wd@user
+\fi
+\ifDPcircling@OutlineWidthTemporalSet
+\DPcircling@outline@halfwd=0.5\DPcircling@outline@wd@user@temporal
+\fi
+%%outline height
+\DPcircling@outline@halfht=\DPcircling@content@ht
+\ifDPcircling@OutlineHeightSet
+\DPcircling@outline@halfht=0.5\DPcircling@outline@ht@user
+\fi
+\ifDPcircling@OutlineHeightTemporalSet
+\DPcircling@outline@halfht=0.5\DPcircling@outline@ht@user@temporal
+\fi
+%%line width
+\DPcircling@linewidth=\DPcircling@linewidth@default
+\ifDPcircling@LinewidthTemporalSet
+\DPcircling@linewidth=\DPcircling@linewidth@temporal
+\fi
+%%line color
+\let\DPcircling@linecolor\DPcircling@linecolor@default
+\ifDPcircling@LinecolorTemporalSet
+\let\DPcircling@linecolor\DPcircling@linecolor@temporal
+\fi
+%%baseline adjustment
+\DPcircling@depressingheight=\DPcircling@outline@halfht
+\advance\DPcircling@depressingheight-0.5\DPcircling@content@ht
+\advance\DPcircling@depressingheight0.5\DPcircling@content@dp
+\advance\DPcircling@depressingheight0.5\DPcircling@linewidth
+}
+
+%%Option Keys[line color=...,line width=...,width=...,height=...]
+\define@key{DPcirclingkey}{line color}{\DPcirclingTemporalLinecolor{#1}}
+\define@key{DPcirclingkey}{line width}{\DPcirclingTemporalLinewidth{#1}}
+\define@key{DPcirclingkey}{width}{\DPcirclingTemporalOutlineWidth{#1}}
+\define@key{DPcirclingkey}{height}{\DPcirclingTemporalOutlineHeight{#1}}
+
+%%DefaultChanger \DPcirclingDefault{line color=...,line width=...,width=...,height=...}
+\define@key{DPcirclingDefaultkey}{line color}{\DPcirclingLinecolor{#1}}
+\define@key{DPcirclingDefaultkey}{line width}{\DPcirclingLinewidth{#1}}
+\define@key{DPcirclingDefaultkey}{width}{\DPcirclingOutlineWidth{#1}}
+\define@key{DPcirclingDefaultkey}{height}{\DPcirclingOutlineHeight{#1}}
+
+\def\DPcirclingDefault#1{%
+\setkeys{DPcirclingDefaultkey}{#1}%
+}
+
+%%Circle \DPcircling (=\DPcirc/\DPcircle)
+%%Default width=max{2*(content width), 2em}
+%%Default height=2*(content height)
+\def\DPcircling{\@ifnextchar[\@DPcircling{\@DPcircling[]}}
+\let\DPcirc\DPcircling
+\let\DPcircle\DPcircling
+\def\@DPcircling[#1]#2{%
+\setkeys{DPcirclingkey}{#1}%
+\@@DPcircling{#2}%
+\DPcircling@LinecolorTemporalSetfalse%
+\DPcircling@LinewidthTemporalSetfalse%
+\DPcircling@OutlineWidthTemporalSetfalse%
+\DPcircling@OutlineHeightTemporalSetfalse%
+}
+
+\def\@@DPcircling#1{\thinspace\DPcircling@common{#1}%
+\ifDPcircling@OutlineWidthSet\relax\else
+\ifDPcircling@OutlineWidthTemporalSet\relax\else
+\ifdim\DPcircling@content@wd<1em%
+\DPcircling@outline@halfwd=1em%
+\fi\fi\fi
+\raisebox{-\DPcircling@depressingheight}{%
+\begin{tikzpicture}%
+\draw[line width=\DPcircling@linewidth,color=\DPcircling@linecolor](0,0) ellipse [x radius=\DPcircling@outline@halfwd,y radius=\DPcircling@outline@halfht];
+\draw[anchor=center,inner sep=0pt,outer sep=0pt] (0,0) node {\DPcircling@content};
+\end{tikzpicture}%
+}\thinspace
+}
+
+%%Rectangle \DPrectangle (=\DPrect)
+%%Default width=(content width)+2em
+%%Default height=2*(content height)
+\def\DPrectangle{\@ifnextchar[\@DPrectangle{\@DPrectangle[]}}
+\let\DPrect\DPrectangle
+\def\@DPrectangle[#1]#2{%
+\setkeys{DPcirclingkey}{#1}%
+\@@DPrectangle{#2}%
+\DPcircling@LinecolorTemporalSetfalse%
+\DPcircling@LinewidthTemporalSetfalse%
+\DPcircling@OutlineWidthTemporalSetfalse%
+\DPcircling@OutlineHeightTemporalSetfalse%
+}
+
+\def\@@DPrectangle#1{\thinspace\DPcircling@common{#1}%
+\ifDPcircling@OutlineWidthSet\relax\else
+\ifDPcircling@OutlineWidthTemporalSet\relax\else
+\divide\DPcircling@outline@halfwd by 2%
+\advance\DPcircling@outline@halfwd1em%
+\fi\fi
+\raisebox{-\DPcircling@depressingheight}{%
+\begin{tikzpicture}%
+\draw[line width=\DPcircling@linewidth,color=\DPcircling@linecolor](-\DPcircling@outline@halfwd,-\DPcircling@outline@halfht) rectangle (\DPcircling@outline@halfwd,\DPcircling@outline@halfht);
+\draw[anchor=center,inner sep=0pt,outer sep=0pt] (0,0) node {\DPcircling@content};
+\end{tikzpicture}%
+}\thinspace
+}
+
+%%Jagged Rectangle \DPjagged
+%%Default width=(content width)+2em
+%%Default height=2*(content height)
+\def\DPjagged{\@ifnextchar[\@DPjagged{\@DPjagged[]}}
+\def\@DPjagged[#1]#2{%
+\setkeys{DPcirclingkey}{#1}%
+\@@DPjagged{#2}%
+\DPcircling@LinecolorTemporalSetfalse%
+\DPcircling@LinewidthTemporalSetfalse%
+\DPcircling@OutlineWidthTemporalSetfalse%
+\DPcircling@OutlineHeightTemporalSetfalse%
+}
+
+\def\@@DPjagged#1{\thinspace\DPcircling@common{#1}%
+\ifDPcircling@OutlineWidthSet\relax\else
+\ifDPcircling@OutlineWidthTemporalSet\relax\else
+\divide\DPcircling@outline@halfwd by 2%
+\advance\DPcircling@outline@halfwd1em%
+\fi\fi
+\raisebox{-\DPcircling@depressingheight}{%
+\begin{tikzpicture}[x=0.048786\DPcircling@outline@halfwd,y=0.08952\DPcircling@outline@halfht]%
+\draw[line width=\DPcircling@linewidth,color=\DPcircling@linecolor]%
+(19.4975,10.9931)--
+(14.8938,8.5269)--
+(10.405,10.1944)--
+(6.245,7.6269)--
+(2.21,10.2181)--
+(-2.195,8.5781)--
+(-6.235,11.1706)--
+(-10.1737,8.6031)--
+(-14.4662,10.2694)--
+(-17.9112,7.8244)--
+(-19.7962,7.0806)--
+(-18.0462,4.8219)--
+(-20.4975,3.1006)--
+(-17.925,1.2831)--
+(-19.5262,-1.2756)--
+(-16.955,-3.1006)--
+(-19.41,-5.2731)--
+(-17.65,-7.8869)--
+(-19.4987,-10.9931)--
+(-14.8937,-8.5281)--
+(-10.4037,-10.1956)--
+(-6.245,-7.6269)--
+(-2.21,-10.2194)--
+(2.195,-8.5794)--
+(6.2363,-11.1706)--
+(10.175,-8.6044)--
+(14.4663,-10.2706)--
+(17.9113,-7.8256)--
+(19.7963,-7.0819)--
+(18.0463,-4.8231)--
+(20.4975,-3.1019)--
+(17.9263,-1.2769)--
+(19.5263,1.2856)--
+(16.955,3.1169)--
+(19.4113,5.2831)--
+(17.66,7.9494)--
+(19.4975,10.9931)--
+cycle;
+\draw[anchor=center,inner sep=0pt,outer sep=0pt] (0,0) node {\DPcircling@content};
+\end{tikzpicture}%
+}\thinspace
+}
+
+\def\DPfanshape{\@ifnextchar[\@DPfanshape{\@DPfanshape[]}}
+\def\@DPfanshape[#1]#2{%
+\setkeys{DPcirclingkey}{#1}%
+\@@DPfanshape{#2}%
+\DPcircling@LinecolorTemporalSetfalse%
+\DPcircling@LinewidthTemporalSetfalse%
+\DPcircling@OutlineWidthTemporalSetfalse%
+\DPcircling@OutlineHeightTemporalSetfalse%
+}
+
+%%Fan-shape \DPfanshape
+%%Default width=(content width)+2em
+%%Default height=2*(content height)
+\def\@@DPfanshape#1{\thinspace\DPcircling@common{#1}%
+\ifDPcircling@OutlineWidthSet\relax\else
+\ifDPcircling@OutlineWidthTemporalSet\relax\else
+\divide\DPcircling@outline@halfwd by 2%
+\advance\DPcircling@outline@halfwd1em%
+\fi\fi
+\raisebox{-\DPcircling@depressingheight}{%
+\begin{tikzpicture}[x=0.0467650318\DPcircling@outline@halfwd,y=0.114731528\DPcircling@outline@halfht]%
+\draw[line width=\DPcircling@linewidth,color=\DPcircling@linecolor]%
+(14.9805,-8.716) ..
+controls (5.4925,-4.252) and (-5.4925,-4.252) ..
+(-14.9805,-8.716) --
+(-21.3835,4.891) ..
+controls (-7.8405,11.264) and (7.8395,11.264) ..
+(21.3835,4.891) --
+(14.9805,-8.716) --
+cycle;
+\draw[anchor=center,inner sep=0pt,outer sep=0pt] (0,0) node {\DPcircling@content};
+\end{tikzpicture}%
+}\thinspace
+}
+\endinput
+%%
+%% End of file `DPcircling.sty'.

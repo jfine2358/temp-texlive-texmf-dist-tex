@@ -1,0 +1,82 @@
+%% This is file `fbox.sty',
+%%
+%% Copyright (C) 2019
+%% Herbert Voss  <hvoss@tug.org>
+%%
+%% It may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%
+% $Id: fbox.sty 946 2019-03-08 12:08:22Z herbert $
+%
+% -------------------------------------
+\ProvidesPackage{fbox}[2019/03/00 v. 0.01 allow parts of the frame (hv)]
+%
+\let\orig@fbox\fbox
+\def\fb@lowerc@se#1{\lowercase{\edef\@tempa{#1}}}
+%
+\long\def\fbox{\@ifnextchar[\FBox@i\orig@fbox}
+%
+\def\FBox@i[#1]{%
+  \ifx\relax#1\relax
+    \@tempcntb=15
+  \else
+    \@tempcntb=\z@
+    \fb@lowerc@se{#1}%
+    \expandafter\FBox@ii\@tempa\@nil\relax
+  \fi
+  \FBox@iii
+}
+\def\FBox@ii#1#2\@nil{%
+  \ifx#1t\advance\@tempcntb by 8%  top
+  \else
+    \ifx#1l\advance\@tempcntb by 4% left
+    \else
+      \ifx#1r\advance\@tempcntb by 2% right
+      \else
+         \ifx#1b\advance\@tempcntb by 1% bottom
+  \fi\fi\fi\fi
+  \if\relax#2\relax\def\next{}\else\def\next{\FBox@ii#2\@nil}\fi
+  \next
+}
+\def\FBox@iii#1{%
+  \leavevmode
+  \setbox\@tempboxa\hbox{%
+    \color@begingroup
+      \kern\fboxsep{#1}\kern\fboxsep
+    \color@endgroup}%
+  \@FrameB@x\relax}
+%
+\def\@FrameB@x#1{%
+  \@tempdima\fboxrule
+  \advance\@tempdima\fboxsep
+  \advance\@tempdima\dp\@tempboxa
+  \hbox{%
+    \lower\@tempdima\hbox{%
+      \vbox{%
+        \ifnum\the\@tempcntb>8\relax
+          \advance\@tempcntb by -8 
+            \hrule\@height\fboxrule                       % top
+        \fi
+        \hbox{%
+          \ifnum\@tempcntb>3
+            \advance\@tempcntb by -4 
+            \vrule\@width\fboxrule
+          \fi                                             % left
+          #1%
+          \vbox{%
+            \vskip\fboxsep
+            \box\@tempboxa
+            \vskip\fboxsep}%
+          #1%
+          \ifnum\@tempcntb>1\vrule\@width\fboxrule\fi}% right
+          \ifodd\@tempcntb\hrule\@height\fboxrule\fi}%     bottom
+    }%
+  }%
+}
+
+\endinput

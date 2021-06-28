@@ -1,0 +1,89 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{gillius2}
+    [2013/11/03 (Bob Tennent)  Supports Gillius No.2 fonts for all LaTeX engines.]
+
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+
+\newif\ifgillius@otf 
+\ifxetex
+  \gillius@otftrue
+\else\ifluatex
+  \gillius@otftrue
+\else  % [pdf]LaTeX
+  \gillius@otffalse
+\fi\fi
+
+\newif\ifgillius@default \gillius@defaultfalse
+\newif\ifgillius@condensed \gillius@condensedfalse
+
+\newcommand*{\GilliusADFNoTwo@scale}{1}
+\DeclareOptionX{scaled}{\renewcommand*{\GilliusADFNoTwo@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\GilliusADFNoTwo@scale}{#1}}
+
+\DeclareOptionX{default}{\gillius@defaulttrue}
+\DeclareOptionX{sfdefault}{\gillius@defaulttrue}
+\DeclareOptionX{type1}{\gillius@otffalse}
+\DeclareOptionX{condensed}{\gillius@condensedtrue}
+
+\ProcessOptionsX\relax
+
+\ifgillius@otf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes}
+\fi
+
+\ifgillius@otf
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+        Ligatures = TeX ,
+        Scale     = \GilliusADFNoTwo@scale ,
+        Extension = .otf }
+  \ifgillius@condensed
+    \setsansfont
+        [ UprightFont    = *-Regular ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-Bold , 
+          BoldItalicFont = *-BoldItalic ]
+        {GilliusADFNo2Cond}
+  \else
+    \setsansfont
+        [ UprightFont    = *-Regular ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-Bold , 
+          BoldItalicFont = *-BoldItalic ]
+        {GilliusADFNo2}
+  \fi
+  % grab current family in case of subsequent change:
+  \let\gilliusfamily\sfdefault  
+  \ifgillius@default\renewcommand*\familydefault{\gilliusfamily}\fi
+  \newfontfamily\gilliustwo
+        [ UprightFont    = *-Regular ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-Bold , 
+          BoldItalicFont = *-BoldItalic ]
+        {GilliusADFNo2}
+  \newfontfamily\gilliustwocondensed
+        [ UprightFont    = *-Regular ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-Bold , 
+          BoldItalicFont = *-BoldItalic ]
+        {GilliusADFNo2Cond}
+
+\else % type1
+
+  \def\gilliusfamily{GilliusADFNoTwo-LF}
+  \def\gilliuscondensedfamily{GilliusADFNoTwoCond-LF}
+  \newcommand*\gilliustwo{\fontfamily{\gilliusfamily}\selectfont}
+  \newcommand*\gilliustwocondensed{\fontfamily{\gilliuscondensedfamily}\selectfont}
+  \def\sfdefault{\gilliusfamily}
+  \ifgillius@condensed\def\sfdefault{\gilliuscondensedfamily}\fi  
+  \ifgillius@default\edef\familydefault{\sfdefault}\fi
+\fi
+
+\ifgillius@otf
+% turn off defaults in case other fonts are selected:
+  \defaultfontfeatures{}
+\fi
+
+\endinput

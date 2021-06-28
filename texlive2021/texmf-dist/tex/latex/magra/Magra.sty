@@ -1,0 +1,50 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{Magra}
+    [2021/01/09 (Carl-Clemens Ebinger & autoinst)  Style file for Magra fonts.]
+
+\RequirePackage{xkeyval}
+\newcommand*{\Magra@scale}{1}
+\DeclareOptionX{scale}{\renewcommand*{\Magra@scale}{#1}}
+\DeclareOptionX{scaled}{\renewcommand*{\Magra@scale}{#1}}
+
+\DeclareOptionX{lining}{\edef\Magra@figurestyle{LF}}
+\DeclareOptionX{tabular}{\edef\Magra@figurealign{T}}
+\DeclareOptionX{mainfont}{
+    \renewcommand{\familydefault}{\rmdefault}
+}
+\DeclareOptionX{bold}{\edef\bfseries@rm{bold}}
+\DeclareOptionX{regular}{\edef\mdseries@rm{regular}}
+\ExecuteOptionsX{lining,tabular}
+\ProcessOptionsX\relax
+
+\RequirePackage{fontenc,textcomp}
+\RequirePackage{ifthen}
+\RequirePackage{mweights}
+
+\IfFileExists{fontaxes.sty}{
+    \RequirePackage{fontaxes}
+}{}
+
+%   Here we implement the scale=MatchLowercase option.
+%   If this is given, we must compute the correct value of
+%   the "\Magra@scale" parameter before loading the .fd files;
+%   but to determine that value we of course need the font's x-height.
+%   To avoid triggering the loading of .fd files,
+%   we use plain TeX's \font primitive to load the testfont.
+%   We then compute the ratio of the current x-height to our font's x-height;
+%   this is the "\Magra@scale" we will pass to the .fd files.
+\ifthenelse{\equal{\Magra@scale}{MatchLowercase}}
+    {   \newlength{\Magra@currentx}
+        \settoheight{\Magra@currentx}{x}
+        \newlength{\Magra@xheight}
+        \settoheight{\Magra@xheight}
+            {{\font\testfont=Magra-tlf-ot1 at \f@size pt\testfont x}}
+        \renewcommand*{\Magra@scale}
+            {\strip@pt\dimexpr\number\numexpr\number\dimexpr\Magra@currentx\relax*65536/\number\dimexpr\Magra@xheight\relax\relax sp\relax}}
+    {}
+
+\renewcommand*
+    {\rmdefault}
+    {Magra-\Magra@figurealign\Magra@figurestyle}
+
+\endinput

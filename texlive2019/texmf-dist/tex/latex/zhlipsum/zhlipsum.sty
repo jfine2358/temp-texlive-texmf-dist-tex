@@ -1,0 +1,414 @@
+%%
+%% This is file `zhlipsum.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% zhlipsum.dtx  (with options: `package')
+%% 
+%%     Copyright (C) 2017, 2018 by Xiangdong Zeng <xdzeng96@gmail.com>
+%% 
+%%     This work may be distributed and/or modified under the
+%%     conditions of the LaTeX Project Public License, either
+%%     version 1.3c of this license or (at your option) any later
+%%     version. The latest version of this license is in:
+%% 
+%%       http://www.latex-project.org/lppl.txt
+%% 
+%%     and version 1.3 or later is part of all distributions of
+%%     LaTeX version 2005/12/01 or later.
+%% 
+%%     This work has the LPPL maintenance status `maintained'.
+%% 
+%%     The Current Maintainer of this work is Xiangdong Zeng.
+%% 
+%%     This work consists of the files zhlipsum.dtx,
+%%                                     zhlipsum-text.dtx,
+%%               and the derived files zhlipsum.ins,
+%%                                     zhlipsum.sty,
+%%                                     zhlipsum-utf8.def,
+%%                                     zhlipsum-gbk.def,
+%%                                     zhlipsum-big5.def,
+%%                                     zhlipsum-en.tex,
+%%                                     zhlipsum.pdf,
+%%                                     zhlipsum-en.pdf,
+%%                                 and README.md.
+%% 
+\NeedsTeXFormat{LaTeX2e}
+\RequirePackage{expl3}
+\GetIdInfo $Id: zhlipsum.dtx 1.1.1 2018-09-08 12:00:00Z Xiangdong Zeng <xdzeng96@gmail.com> $
+  {Chinese dummy text}
+\ProvidesExplPackage{\ExplFileName}
+  {\ExplFileDate}{\ExplFileVersion}{\ExplFileDescription}
+\RequirePackage { xparse, l3keys2e }
+\msg_new:nnn { zhlipsum } { l3-too-old }
+  {
+    Package~ "#1"~ is~ too~ old. \\\\
+    Please~ update~ an~ up-to-date~ version~ of~ the~ bundles \\
+    "l3kernel"~ and~ "l3packages"~ using~ your~ TeX~ package \\
+    manager~ or~ from~ CTAN.
+  }
+\clist_map_inline:nn { expl3, xparse, l3keys2e }
+  {
+    \@ifpackagelater {#1} { 2018/05/12 }
+      { } { \msg_error:nnn { zhlipsum } { l3-too-old } {#1} }
+  }
+\tl_new:N  \l__zhlipsum_tmpa_tl
+\seq_new:N \l__zhlipsum_tmpa_seq
+\seq_new:N \l__zhlipsum_tmpb_seq
+\tl_new:N \g__zhlipsum_encoding_tl
+\seq_new:N \g_zhlipsum_seq
+\seq_new:N \c_zhlipsum_simp_seq
+\seq_new:N \c_zhlipsum_trad_seq
+\seq_set_from_clist:Nn \c_zhlipsum_simp_seq { simp, zhufu, aspirin }
+\seq_set_from_clist:Nn \c_zhlipsum_trad_seq { trad, xiangyu, nanshanjing }
+\cs_generate_variant:Nn \file_input:n { x }
+\prg_generate_conditional_variant:Nnn \tl_if_eq:nn { Vn } { T, TF }
+\prg_new_protected_conditional:Npnn \__zhlipsum_if_unicode_engine: { T, F, TF }
+  {
+    \bool_lazy_any:nTF
+      {
+        { \sys_if_engine_xetex_p:  }
+        { \sys_if_engine_luatex_p: }
+        { \sys_if_engine_uptex_p:  }
+      }
+      { \prg_return_true:  }
+      { \prg_return_false: }
+  }
+\prg_new_protected_conditional:Npnn \__zhlipsum_if_encoding:n #1 { T, F, TF }
+  {
+    \tl_if_eq:VnTF \g__zhlipsum_encoding_tl {#1}
+      { \prg_return_true: } { \prg_return_false: }
+  }
+\cs_new:Npn \__zhlipsum_msg_new:nn   { \msg_new:nnn       { zhlipsum } }
+\cs_new:Npn \__zhlipsum_error:n      { \msg_error:nn      { zhlipsum } }
+\cs_new:Npn \__zhlipsum_error:nn     { \msg_error:nnn     { zhlipsum } }
+\cs_new:Npn \__zhlipsum_warning:nn   { \msg_warning:nnn   { zhlipsum } }
+\cs_new:Npn \__zhlipsum_warning:nnn  { \msg_warning:nnnn  { zhlipsum } }
+\cs_new:Npn \__zhlipsum_warning:nxxx { \msg_warning:nnxxx { zhlipsum } }
+\cs_new:Npn \__zhlipsum_info:nn      { \msg_info:nnn      { zhlipsum } }
+\cs_new_eq:NN \__zhlipsum_par: \tex_par:D
+\keys_define:nn { zhlipsum / option }
+  {
+    encoding .choices:nn =
+      { utf8, gbk, big5 }
+      {
+        \tl_gset_eq:NN \g__zhlipsum_encoding_tl \l_keys_choice_tl
+        \__zhlipsum_if_unicode_engine:T
+          {
+            \__zhlipsum_if_encoding:nF { utf8 }
+              {
+                \tl_gset:Nn \g__zhlipsum_encoding_tl { utf8 }
+                \__zhlipsum_warning:nn { unicode-engine } {#1}
+              }
+          }
+        \__zhlipsum_if_ctex_valid_encoding:F
+          { \__zhlipsum_error:nn { ctex-invalid-encoding } {#1} }
+      },
+    encoding / unknown .code:n =
+      { \__zhlipsum_error:nn { invalid-encoding } {#1} },
+    encoding .value_required:n = true,
+    unknown .code:n = { \__zhlipsum_error:n { unknown-option } }
+  }
+\__zhlipsum_msg_new:nn { unicode-engine }
+  {
+    You~ are~ now~ using~ Unicode~ engine~ \c_sys_engine_str. \\
+    Encoding~ "#1"~ is~ invalid.~ Changed~ into~ "utf8".
+  }
+\__zhlipsum_msg_new:nn { ctex-invalid-encoding }
+  {
+    Package~ option~ "encoding=#1"~ is~ in~ conflict~ with~ ctex's~
+    option~ "\tl_use:N \l__ctex_encoding_tl".\\\\
+    Please~ check~ the~ package~ options.
+  }
+\__zhlipsum_msg_new:nn { invalid-encoding }
+  {
+    Encoding~ "#1"~ is~ invalid. \\
+    Available~ encodings~ are~ "utf8",~ "gbk"~ and~ "big5".
+  }
+\__zhlipsum_msg_new:nn { unknown-option }
+  { Package~ option~ "\l_keys_key_tl"~ is~ unknown. }
+\prg_new_protected_conditional:Npnn \__zhlipsum_if_ctex_valid_encoding: { F }
+  {
+    \tl_if_exist:NTF \l__ctex_encoding_tl
+      {
+        \tl_set:Nx \l__zhlipsum_tmpa_tl
+          { \str_lower_case:f { \l__ctex_encoding_tl } }
+        \str_if_eq:NNTF \g__zhlipsum_encoding_tl \l__zhlipsum_tmpa_tl
+          { \prg_return_true: } { \prg_return_false: }
+      }
+      { \prg_return_true: }
+  }
+\tl_if_exist:NTF \l__ctex_encoding_tl
+  {
+    \tl_if_eq:VnTF \l__ctex_encoding_tl { UTF8 }
+      { \tl_gset:Nn \g__zhlipsum_encoding_tl { utf8 } }
+      {
+        \tl_if_eq:VnT \l__ctex_encoding_tl { GBK }
+          { \tl_gset:Nn \g__zhlipsum_encoding_tl { gbk } }
+      }
+  }
+  { \tl_gset:Nn \g__zhlipsum_encoding_tl { utf8 } }
+\ProcessKeysOptions { zhlipsum / option }
+\tl_new:N \l__zhlipsum_name_tl
+\tl_new:N \l__zhlipsum_before_tl
+\tl_new:N \l__zhlipsum_after_tl
+\tl_new:N \l__zhlipsum_inter_tl
+\keys_define:nn { zhlipsum }
+  {
+    name .code:n =
+      {
+        \tl_set:Nn \l__zhlipsum_name_tl {#1}
+        \__zhlipsum_if_encoding:nT { big5 }
+          {
+            \seq_if_in:NVT \c_zhlipsum_simp_seq \l__zhlipsum_name_tl
+              {
+                \__zhlipsum_warning:nn { big5-require-trad } {#1}
+                \tl_set:Nn \l__zhlipsum_name_tl { trad }
+              }
+          }
+      },
+    script .code:n =
+      {
+        \__zhlipsum_warning:nn { deprecated-option }
+          { Option~ "name=#1"~ will~ be~ set. }
+        \keys_set:nn { zhlipsum } { name = #1 }
+      },
+    before .tl_set:N = \l__zhlipsum_before_tl,
+    after  .tl_set:N = \l__zhlipsum_after_tl,
+    inter  .tl_set:N = \l__zhlipsum_inter_tl
+  }
+\__zhlipsum_msg_new:nn { big5-require-trad }
+  {
+    Name~ "#1"~ is~ not~ available~ in~ "Big5"~ encoding. \\
+    Changed~ into~ "trad".
+  }
+\__zhlipsum_msg_new:nn { deprecated-option }
+  { Option~ "\l_keys_key_tl"~ is~ deprecated. \\ #1 }
+\__zhlipsum_if_encoding:nTF { big5 }
+  { \keys_set:nn { zhlipsum } { name = trad } }
+  { \keys_set:nn { zhlipsum } { name = simp } }
+\NewDocumentCommand \zhlipsum { s o +o }
+  {
+    \group_begin:
+      \IfBooleanF {#1}
+        {
+          \tl_set:Nn \l__zhlipsum_before_tl { \__zhlipsum_par: }
+          \tl_set:Nn \l__zhlipsum_after_tl  { \__zhlipsum_par: }
+          \tl_set:Nn \l__zhlipsum_inter_tl  { \__zhlipsum_par: }
+        }
+      \IfValueTF {#3}
+        {
+          \keys_set:nn { zhlipsum } {#3}
+          \zhlipsum_use:Vn \l__zhlipsum_name_tl {#2}
+        }
+        {
+          \IfValueTF {#2}
+            {
+              \__zhlipsum_if_key_value_list:nTF {#2}
+                {
+                  \keys_set:nn { zhlipsum } {#2}
+                  \zhlipsum_use:Vn \l__zhlipsum_name_tl { 1 - 3 }
+                }
+                { \zhlipsum_use:Vn \l__zhlipsum_name_tl {#2} }
+            }
+            { \zhlipsum_use:Vn \l__zhlipsum_name_tl { 1 - 3 } }
+        }
+    \group_end:
+  }
+\prg_new_protected_conditional:Npnn \__zhlipsum_if_key_value_list:n #1 { TF }
+  {
+    \tl_if_in:nnTF {#1} { = }
+      { \prg_return_true: } { \prg_return_false: }
+  }
+\seq_new:N \l__zhlipsum_par_num_seq
+\cs_new_protected:Npn \zhlipsum_use:nn #1#2
+  {
+    \__zhlipsum_if_cjk_valid_encoding:TF
+      {
+        \zhlipsum_if_exist:nTF {#1}
+          {
+            \__zhlipsum_parse_par:nn {#1} {#2}
+            \seq_pop_right:NN  \l__zhlipsum_par_num_seq \l__zhlipsum_tmpa_tl
+            \tl_use:N \l__zhlipsum_before_tl
+            \seq_map_inline:Nn \l__zhlipsum_par_num_seq
+              {
+                \__zhlipsum_use:nn {#1} {##1}
+                \tl_use:N \l__zhlipsum_inter_tl
+              }
+            \__zhlipsum_use:nn {#1} { \tl_use:N \l__zhlipsum_tmpa_tl }
+            \tl_use:N \l__zhlipsum_after_tl
+          }
+          { \__zhlipsum_error:nn { invalid-name } {#1} }
+      }
+      { \__zhlipsum_error:n { CJK-invalid-encoding } }
+  }
+\cs_generate_variant:Nn \zhlipsum_use:nn { Vn }
+\__zhlipsum_msg_new:nn { invalid-name }
+  {
+    Name~ "#1"~ is~ unknown. \\\\
+    Please~ use~ the~ pre-defined~ Chinese~ dummy~ texts~ or~
+    declare~ new~ one.
+  }
+\__zhlipsum_msg_new:nn { CJK-invalid-encoding }
+  {
+    The~ current~ CJK~ environment~ uses~ "\tl_use:N \CJK@@@enc"~
+    encoding,\\
+    but~ zhlipsum~ package~ has~ been~ loaded~ with~ the~ option~
+    "encoding=\tl_use:N \g__zhlipsum_encoding_tl".\\\\
+    Please~ check~ the~ package~ options.
+  }
+\prg_new_protected_conditional:Npnn \__zhlipsum_if_cjk_valid_encoding: { TF }
+  {
+    \tl_if_exist:NTF \CJK@@@enc
+      {
+        \tl_set:Nx \l__zhlipsum_tmpa_tl { \str_lower_case:f { \CJK@@@enc } }
+        \str_if_eq:NNTF \g__zhlipsum_encoding_tl \l__zhlipsum_tmpa_tl
+          { \prg_return_true: }
+          {
+            \__zhlipsum_if_encoding:nTF { gbk }
+              {
+                \str_if_eq:VnTF \l__zhlipsum_tmpa_tl { gb }
+                  { \prg_return_true: } { \prg_return_false: }
+              }
+              {
+                \__zhlipsum_if_encoding:nTF { big5 }
+                  {
+                    \str_if_eq:VnTF \l__zhlipsum_tmpa_tl { bg5 }
+                      { \prg_return_true: } { \prg_return_false: }
+                  }
+                  { \prg_return_false: }
+              }
+          }
+      }
+      { \prg_return_true: }
+  }
+\prg_new_protected_conditional:Npnn \zhlipsum_if_exist:n #1 { T, F, TF }
+  {
+    \seq_if_in:NnTF \g_zhlipsum_seq {#1}
+      { \prg_return_true: } { \prg_return_false: }
+  }
+\int_new:N \l__zhlipsum_begin_int
+\int_new:N \l__zhlipsum_end_int
+\int_new:N \l__zhlipsum_max_int
+\bool_new:N \l__zhlipsum_modified_range_bool
+\bool_new:N \l__zhlipsum_invalid_range_bool
+\cs_new_protected:Npn \__zhlipsum_parse_par:nn #1#2
+  {
+    \seq_clear:N \l__zhlipsum_par_num_seq
+    \int_set_eq:Nc \l__zhlipsum_max_int { g__zhlipsum_ #1 _int }
+    \clist_map_inline:nn {#2}
+      {
+        \__zhlipsum_parse_par_aux:n {##1}
+        \bool_if:NTF \l__zhlipsum_invalid_range_bool
+          { \__zhlipsum_warning:nnn { invalid-range } {##1} {#2} }
+          {
+            \bool_if:NT \l__zhlipsum_modified_range_bool
+              {
+                \__zhlipsum_warning:nxxx { modified-range }
+                  {##1} {#2} { \__zhlipsum_par_range: }
+              }
+            \seq_concat:NNN \l__zhlipsum_par_num_seq
+              \l__zhlipsum_par_num_seq \l__zhlipsum_tmpa_seq
+          }
+      }
+  }
+\cs_new_protected:Npn \__zhlipsum_parse_par_aux:n #1
+  {
+    \bool_set_false:N \l__zhlipsum_modified_range_bool
+    \bool_set_false:N \l__zhlipsum_invalid_range_bool
+    \seq_clear:N \l__zhlipsum_tmpa_seq
+    \tl_if_in:nnTF {#1} { - }
+      {
+        \seq_set_split:Nnn \l__zhlipsum_tmpb_seq { - } {#1}
+        \seq_pop_left:NN \l__zhlipsum_tmpb_seq \l__zhlipsum_tmpa_tl
+        \tl_if_empty:NTF \l__zhlipsum_tmpa_tl
+          { \int_set_eq:NN \l__zhlipsum_begin_int \c_one_int }
+          {
+            \int_set:Nn \l__zhlipsum_begin_int { \l__zhlipsum_tmpa_tl }
+            \int_compare:nNnT \l__zhlipsum_begin_int < \c_one_int
+              {
+                \int_set_eq:NN \l__zhlipsum_begin_int \c_one_int
+                \bool_set_true:N \l__zhlipsum_modified_range_bool
+              }
+          }
+        \seq_pop_left:NN \l__zhlipsum_tmpb_seq \l__zhlipsum_tmpa_tl
+        \tl_if_empty:NTF \l__zhlipsum_tmpa_tl
+          { \int_set_eq:NN \l__zhlipsum_end_int \l__zhlipsum_max_int }
+          {
+            \int_set:Nn \l__zhlipsum_end_int { \l__zhlipsum_tmpa_tl }
+            \int_compare:nNnT \l__zhlipsum_end_int > \l__zhlipsum_max_int
+              {
+                \int_set_eq:NN \l__zhlipsum_end_int \l__zhlipsum_max_int
+                \bool_set_true:N \l__zhlipsum_modified_range_bool
+              }
+          }
+        \bool_lazy_or:nnTF
+          { \int_compare_p:nNn \l__zhlipsum_begin_int > \l__zhlipsum_max_int }
+          { \int_compare_p:nNn \l__zhlipsum_begin_int > \l__zhlipsum_end_int }
+          { \bool_set_true:N \l__zhlipsum_invalid_range_bool }
+          {
+            \int_step_inline:nnn
+              { \l__zhlipsum_begin_int } { \l__zhlipsum_end_int }
+              { \seq_put_right:Nn \l__zhlipsum_tmpa_seq {##1} }
+          }
+      }
+      {
+        \bool_lazy_or:nnTF
+          { \int_compare_p:nNn {#1} > \l__zhlipsum_max_int }
+          { \int_compare_p:nNn {#1} < \c_one_int }
+          { \bool_set_true:N \l__zhlipsum_invalid_range_bool }
+          { \seq_put_right:Nn \l__zhlipsum_tmpa_seq {#1} }
+      }
+  }
+\cs_new:Npn \__zhlipsum_par_range:
+  {
+    \int_compare:nNnTF \l__zhlipsum_begin_int = \l__zhlipsum_end_int
+      { \int_use:N \l__zhlipsum_begin_int }
+      { \int_use:N \l__zhlipsum_begin_int - \int_use:N \l__zhlipsum_end_int }
+  }
+\__zhlipsum_msg_new:nn { modified-range }
+  {
+    Your~ required~ range~ "#1"~ in~ "#2"~ will~ be~ modified. \\
+    Changed~ into~ "#3".
+  }
+\__zhlipsum_msg_new:nn { invalid-range }
+  {
+    Your~ required~ range~ "#1"~ in~ "#2"~ is~ invalid. \\
+    Nothing~ will~ be~ output.
+  }
+\cs_new_protected:Npn \__zhlipsum_use:nn #1#2
+  { \tl_use:c { c__zhlipsum_ #1 @ #2 _tl } }
+\NewDocumentCommand \newzhlipsum { m m }
+  { \zhlipsum_new:nn {#1} {#2} }
+\cs_new_protected:Npn \zhlipsum_new:nn #1#2
+  {
+    \zhlipsum_if_exist:nTF {#1}
+      { \__zhlipsum_error:nn { already-defined } {#1} }
+      {
+        \seq_gput_left:Nn \g_zhlipsum_seq {#1}
+        \int_new:c { g__zhlipsum_ #1 _int }
+        \clist_map_inline:nn {#2} { \__zhlipsum_new:nn {#1} {##1} }
+        \__zhlipsum_info:nn { defining-text } {#1}
+      }
+  }
+\__zhlipsum_msg_new:nn { already-defined }
+  {
+    Chinese~ dummy~ text~ "#1"~ has~ been~ used.~
+    Please~ use~ another~ name.
+  }
+\__zhlipsum_msg_new:nn { defining-text }
+  {
+    Chinese~ dummy~ text~ "#1"~ is~ created.~
+    It~ has~ \int_use:c { g__zhlipsum_ #1 _int }~ paragraphs.
+  }
+\cs_new_protected:Npn \__zhlipsum_new:nn #1#2
+  {
+    \int_gincr:c { g__zhlipsum_ #1 _int }
+    \tl_const:cn
+      { c__zhlipsum_ #1 @ \int_use:c { g__zhlipsum_ #1 _int } _tl } {#2}
+  }
+\file_input:x { zhlipsum- \g__zhlipsum_encoding_tl .def }
+\endinput
+%%
+%% End of file `zhlipsum.sty'.

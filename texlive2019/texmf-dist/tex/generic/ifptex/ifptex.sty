@@ -1,0 +1,322 @@
+%%
+%% This is file 'ifptex.sty'.
+%%
+%% Copyright (c) 2017 Takayuki YATO (aka. "ZR")
+%%   GitHub:   https://github.com/zr-tex8r
+%%   Twitter:  @zr_tex8r
+%%
+%% This package is distributed under the MIT License.
+%%
+%
+%% avoid multiple loading
+\csname\if11bxipIfptexLoaded\fi\endcsname
+%% code guards
+\edef\x{%
+\catcode32=\the\catcode32%
+\catcode33=\the\catcode33%
+\catcode35=\the\catcode35%
+\catcode42=\the\catcode42%
+\catcode60=\the\catcode60%
+\catcode62=\the\catcode62%
+\catcode64=\the\catcode64%
+\catcode91=\the\catcode91%
+\catcode93=\the\catcode93%
+\relax}
+\catcode32=10\relax
+\catcode33=11 %<">
+\catcode35=6  %<#>
+\catcode42=12 %<*>
+\catcode60=12 %<<>
+\catcode62=12 %<>>
+\catcode64=11 %<@>
+\catcode91=12 %<[>
+\catcode93=12 %<]>
+\edef\bxip@restore@codes{\x
+  \noexpand\let\noexpand\bxip@restore@codes\relax}
+\def\bxipIfptexLoaded{\endinput}
+
+%% check for LaTeX
+\ifx\RequirePackage\@undefined %<*!LaTeX>
+  \let\bxip@latex=f
+  \long\def\x#1\ProvidesPackage#2[#3]{%
+    \immediate\write-1{Package: #2 #3}}
+  \expandafter\x
+\else                          %<*LaTeX>
+  \let\bxip@latex=t \let\x\relax
+\fi                            %</LaTeX>
+
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ifptex}[2017/10/04 v1.2c pTeX checker]
+\def\bxip@pkgname{ifptex}
+
+%% enter the big group
+\begingroup
+
+%--------------------------------------- helpers
+
+%% \bxip@csletcs{<csnameA>}{<csnameB>}
+\def\bxip@csletcs#1#2{%
+  \expandafter\let\csname#1\expandafter\endcsname\csname#2\endcsname}
+%% \bxip@true{<csname>}
+\def\bxip@true#1{%
+  \expandafter\let\csname#1\endcsname\iftrue}
+%% \bxip@false{<csname>}
+\def\bxip@false#1{%
+  \expandafter\let\csname#1\endcsname\iffalse}
+
+%% switches
+\bxip@false{ifbxip@ok}
+
+%% \bxip@test@primitive\CS
+\def\bxip@test@primitive#1{%
+  \edef\bxip@tmpa{\string#1}\edef\bxip@tmpb{\meaning#1}%
+  \ifx\bxip@tmpa\bxip@tmpb \bxip@true{ifbxip@ok}%
+  \else \bxip@false{ifbxip@ok}%
+  \fi}
+
+%% \bxip@with@default{<arg>}\CS
+\gdef\bxip@with@default#1#2{%
+  \def\bxip@tmpa{#2}\def\bxip@tmpb{#2[#1]}%
+  \futurelet\bxip@tok\bxip@with@default@a}
+\gdef\bxip@with@default@a{%
+  \ifx[\bxip@tok\expandafter\bxip@tmpa%]
+  \else \expandafter\bxip@tmpb
+  \fi}
+
+%% \bxip@check@version{<current>}{<required>}{<label>}
+\global\countdef\bxip@cnta=255
+\gdef\bxip@check@version#1#2#3{%
+  \ifnum#1<#2\relax
+    \begingroup
+      \bxip@cnta=#2\relax \advance\bxip@cnta100000\relax
+      \expandafter\bxip@check@version@a\the\bxip@cnta\relax{#3}%
+    \endgroup
+  \fi}
+\gdef\bxip@check@version@a#1#2#3#4#5#6\relax#7{%
+  \bxip@err@required{#7 v.>=\number#2#3#4.#5#6}}
+
+%% \bxip@err@required{<string>}
+% NB: Now the same style as in ifxetex is used.
+\gdef\bxip@err@required#1{%
+  \begingroup
+    \errorcontextlines=-1\relax
+    \newlinechar=10\relax
+    \errmessage{^^J
+    ********************************************^^J
+    * #1 is required to compile this document.^^J
+    * Sorry!^^J
+    ********************************************}%
+  \endgroup}
+
+%--------------------------------------- guess version
+
+%% \bxip@uptex@new@version
+\global\mathchardef\bxip@uptex@new@version=19
+
+%%<+> \upTeXguessedversion
+\global\mathchardef\upTeXguessedversion=0
+% if \ucs exists, then gv >= 1
+\bxip@test@primitive\ucs\ifbxip@ok
+  \global\mathchardef\upTeXguessedversion=1
+  % if \enablecjktoken exists, then gv >= 6
+  \bxip@test@primitive\enablecjktoken\ifbxip@ok
+    \global\mathchardef\upTeXguessedversion=6
+    % if \kchar exists, then gv >= 10
+    \bxip@test@primitive\kchar\ifbxip@ok
+      \global\mathchardef\upTeXguessedversion=10
+      % if \forcecjktoken exists, then gv >= 19
+      \bxip@test@primitive\forcecjktoken\ifbxip@ok
+        \global\mathchardef\upTeXguessedversion=19
+      \fi
+    \fi
+  \fi
+\fi
+
+%--------------------------------------- public stuffs
+% Note:
+% 1) Names '\ifFooTeX' are used in iftex.
+% 2) Names '\iffootex' are used in ifxetex/ifluatex/....
+% My preferences are:
+% - '\ifwhateverFooTeX' and '\RequireWhateverFooTeX'.
+% But I also provide aliases '\iffootex' and '\ifstrictfootex' for
+% compatibility with 1) and the old ifuptex.
+
+%%<+> \ifpTeX
+\global\bxip@false{ifpTeX}
+\bxip@test@primitive\kanjiskip\ifbxip@ok
+  \global\bxip@true{ifpTeX}
+\fi
+%%<+> \ifptex == \ifpTeX
+\global\bxip@csletcs{ifptex}{ifpTeX}
+
+%%<+> \ifupTeX
+\global\bxip@false{ifupTeX}
+%%<+> \ifnativeupTeX
+\global\bxip@false{ifnativeupTeX}
+\ifnum\upTeXguessedversion>0
+  \global\bxip@true{ifupTeX}
+  % native-ness check
+  \ifnum\ucs"3000="3000 \global\bxip@true{ifnativeupTeX}\fi
+\fi
+%%<+> \ifuptex == \ifupTeX
+\global\bxip@csletcs{ifuptex}{ifupTeX}
+
+%%<+> \ifpTeXng
+\global\bxip@false{ifpTeXng}
+\bxip@test@primitive\ngbanner\ifbxip@ok
+  \global\bxip@true{ifpTeXng}
+\fi
+%%<+> \ifptexng == \ifpTeXng
+\global\bxip@csletcs{ifptexng}{ifpTeXng}
+
+%%<+> \ifstrictpTeX
+\global\bxip@false{ifstrictpTeX}
+\ifpTeX \ifupTeX\else
+  \global\bxip@true{ifstrictpTeX}
+\fi\fi
+%%<+> \ifstrictptex == \ifstrictpTeX
+\global\bxip@csletcs{ifstrictptex}{ifstrictpTeX}
+
+%%<+> \ifstrictupTeX
+\global\bxip@false{ifstrictupTeX}
+\ifupTeX \ifpTeXng\else
+  \global\bxip@true{ifstrictupTeX}
+\fi\fi
+%%<+> \ifstrictuptex == \ifstrictupTeX
+\global\bxip@csletcs{ifstrictuptex}{ifstrictupTeX}
+
+%%<+> \ifstrictpTeXng (== \ifpTeXng, for now)
+\global\bxip@csletcs{ifstrictpTeXng}{ifpTeXng}
+%%<+> \ifstrictptexng == \ifstrictpTeXng
+\global\bxip@csletcs{ifstrictptexng}{ifstrictpTeXng}
+
+%%<+> \RequirepTeX
+\gdef\RequirepTeX{%
+  \ifpTeX\else \bxip@err@required{(u)pTeX}\fi}
+%%<+> \RequireStrictpTeX
+\gdef\RequireStrictpTeX{%
+  \ifstrictpTeX\else \bxip@err@required{pTeX (not upTeX)}\fi}
+%%<+> \RequireupTeX
+\gdef\RequireupTeX{%
+  \ifupTeX\else \bxip@err@required{upTeX}\fi}
+%%<+> \RequireStrictupTeX
+\gdef\RequireStrictupTeX{%
+  \ifstrictupTeX\else \bxip@err@required{upTeX (not pTeX-ng)}\fi}
+%%<+> \RequireNativeupTeX
+\gdef\RequireNativeupTeX{%
+  \ifnativeupTeX\else \bxip@err@required{upTeX in Unicode}\fi}
+%%<+> \RequirepTeXng
+\gdef\RequirepTeXng{%
+  \ifpTeXng\else \bxip@err@required{pTeX-ng}\fi}
+%%<+> \RequireStrictpTeXng
+\gdef\RequireStrictpTeXng{%
+  \ifstrictpTeXng\else \bxip@err@required{pTeX-ng}\fi}
+
+%--------------------------------------- KanjiKoodo declaration
+\ifpTeX
+
+%% \bxip@def@str\CS{<strcode>}
+\def\bxip@def@str#1#2{%
+  \let\bxip@str\@empty#2\let#1\bxip@str}
+\def\bxip@def@str@j#1{%
+  \kansujichar1=#1\relax\edef\bxip@str{\bxip@str\kansuji1}}
+\def\bxip@def@str@a#1{%
+  \uccode`\?=#1\relax\uppercase{\edef\bxip@str{\bxip@str?}}}
+\def\U/#1#2#3#4{\bxip@def@str@j{\ucs"#1#2#3#4}}
+\ifx\ucs\@undefined \def\U/#1#2#3#4{}\fi
+\def\J/#1#2#3#4{\bxip@def@str@j{\jis"#1#2#3#4}}
+\def\X/#1#2{\bxip@def@str@a{"#1#2}}
+
+%% KanjiKoodo strings
+% This is the correct "KanjiKoodo=".
+\bxip@def@str\bxip@@knjcde@u@u
+{\J/3441\J/3B7A\J/2533\J/213C\J/2549\X/3D}
+% This is the token list that results when upTeX with settings
+% "kanji=sjis, kanji-internal=uptex" reads the string "KanjiKoodo="
+% written in UTF-8. Note that mojibake will ocuur unless "kanji=utf8".
+\bxip@def@str\bxip@@knjcde@s@u
+{\U/8C8D\X/A2\U/87C4\U/52B1\U/3055\U/7E5D\X/BC\U/7E5D\X/89\X/3D}
+% Ditto, with settings "kanji=sjis, kanji-internal=sjis", and so on....
+\bxip@def@str\bxip@@knjcde@s@s
+{\J/6C3E\X/A2\J/6A2F\J/4E65\J/2435\J/6563\X/BC\J/6563\X/89\X/3D}
+\bxip@def@str\bxip@@knjcde@s@e
+{\J/6C3E\J/226A\J/2F4E\J/6524\J/3565\J/633C\J/6563\X/89\X/3D}
+\bxip@def@str\bxip@@knjcde@e@u
+{\U/7FB2\U/221A\X/AD\X/97\X/E3\X/82\U/6F5F\X/83\U/82E5\X/83\X/89\X/3D}
+\bxip@def@str\bxip@@knjcde@e@s
+{\J/663C\J/2265\X/AD\J/4E65\J/236A\J/2563\J/3C63\J/2569\X/3D}
+\bxip@def@str\bxip@@knjcde@e@e
+{\J/663C\J/2265\X/AD\X/97\X/E3\X/82\J/3363\X/83\J/3C63\X/83\X/89\X/3D}
+
+%% KanjiKoodo control sequences
+% The correct \[KanjiKoodo=UTF-8], meaning input kanji code is right.
+\global\@namedef{\bxip@@knjcde@u@u UTF-8}{\bxip@ensure@utf{}}
+% The mojibake \[XXXXX=UTf-8], meaning input kanji code is wrong.
+\global\@namedef{\bxip@@knjcde@s@u UTF-8}{\bxip@ensure@utf{sjis}}
+\global\@namedef{\bxip@@knjcde@s@s UTF-8}{\bxip@ensure@utf{sjis}}
+\global\@namedef{\bxip@@knjcde@s@e UTF-8}{\bxip@ensure@utf{sjis}}
+\global\@namedef{\bxip@@knjcde@e@u UTF-8}{\bxip@ensure@utf{euc}}
+\global\@namedef{\bxip@@knjcde@e@s UTF-8}{\bxip@ensure@utf{euc}}
+\global\@namedef{\bxip@@knjcde@e@e UTF-8}{\bxip@ensure@utf{euc}}
+
+%% \bxip@ensure@utf{<enc>}
+\gdef\bxip@ensure@utf#1{%
+  \ifx @#1@\expandafter\@gobble
+  \else \expandafter\@firstofone
+  \fi{\bxip@ensure@utf@a{#1}}}
+\ifx\epTeXinputencoding\@undefined
+  \gdef\bxip@ensure@utf@a#1{%
+    \PackageWarning\bxip@pkgname
+     {The input kanji code for file '\@currname.\@currext'\MessageBreak
+      is set to #1, but should be utf8\@gobble}}%
+\else
+  \gdef\bxip@ensure@utf@a#1{%
+    \PackageInfo\bxip@pkgname
+     {The input kanji code for file '\@currname.\@currext'\MessageBreak
+      was changed from #1 to utf8\@gobble}%
+    \ifnum\currentgrouplevel>\z@
+      \aftergroup\bxip@ensure@utf@b
+    \else \expandafter\bxip@ensure@utf@b
+    \fi}
+  \gdef\bxip@ensure@utf@b{%
+    \epTeXinputencoding utf8}% unterminated
+\fi
+
+\fi
+%--------------------------------------- deprecated stuffs
+
+%%<+>D \ifNativeupTeX == \ifnativeupTeX
+\global\bxip@csletcs{ifNativeupTeX}{ifnativeupTeX}
+%%<+>D \RequirenativeupTeX == \RequireNativeupTeX
+\gdef\RequirenativeupTeX{\RequireNativeupTeX}
+
+%%<+>D \ifnewupTeX
+\global\bxip@false{ifnewupTeX}
+\ifnum\upTeXguessedversion<\bxip@uptex@new@version\else
+  \global\bxip@true{ifnewupTeX}
+\fi
+
+%%<+>D \RequireNewupTeX
+\gdef\RequireNewupTeX{%
+  \bxip@with@default\bxip@uptex@new@version\bxip@require@new@uptex@a}
+\gdef\bxip@require@new@uptex@a[#1]{%
+  \ifupTeX
+    \bxip@check@version\upTeXguessedversion{#1}{upTeX}%
+  \else \bxip@err@required{upTeX}%
+  \fi}
+
+%%<+>D \RequireNativeNewupTeX
+\gdef\RequireNativeNewupTeX{%
+  \bxip@with@default\bxip@uptex@new@version\bxip@require@new@uptex@b}
+\gdef\bxip@require@new@uptex@b[#1]{%
+  \ifnativeupTeX
+    \bxip@check@version\upTeXguessedversion{#1}{upTeX in Unicode}%
+  \else \bxip@err@required{upTeX in Unicode}%
+  \fi}
+
+%--------------------------------------- all done
+\endgroup
+\bxip@restore@codes
+\endinput
+%% EOF

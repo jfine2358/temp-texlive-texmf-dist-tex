@@ -1,0 +1,434 @@
+%%
+%% This is file 'pxbabel.sty'.
+%% 
+%% Copyright (c) 2017 Takayuki YATO (aka. "ZR")
+%%   GitHub:   https://github.com/zr-tex8r
+%%   Twitter:  @zr_tex8r
+%%
+%% This package is distributed under the MIT License.
+%%
+
+%% package declaration
+\NeedsTeXFormat{pLaTeX2e}
+\ProvidesPackage{pxbabel}[2017/07/03 v1.1b PX Babel interface for CJK]
+\def\pxbb@pkgname{pxbabel}
+
+%--------------------------------------- general
+
+%% packages
+\RequirePackage{pxbase}
+\RequirePackage{ifptex}
+\safecaret
+\bxPrepareSetKeysSafe
+
+%% error messages
+\bxSetModuleName\pxbb@pkgname
+\bxPreamble\def\pxbb@warn@nocjk{%
+  \PackageWarningNoLine\pxbb@pkgname
+   {No multi-CJK support found, font switch disabled\MessageBreak
+    (I need upTeX-extension or otf package with `multi')}}
+\bxPreamble\def\pxbb@err@noldf#1{%
+  \PackageError\pxbb@pkgname
+   {Language definition file #1.ldf not found}%
+   {Maybe you misspelled the language option?\MessageBreak\@ehc}}
+\bxPreamble\def\pxbb@err@nomnl{%
+  \PackageError\pxbb@pkgname
+   {Main language is not specified}%
+   {Here 'japanese' is assumed.\MessageBreak\@ehc}}
+\bxPreamble\def\pxbb@warn@jafam#1{%
+  \PackageWarningNoLine\pxbb@pkgname
+   {!!!!!!!!!!!!!!! IMPORTANT NOTICE !!!!!!!!!!!!!!!\MessageBreak
+    Default Japanese family names have been changed\MessageBreak
+    after this package was loaded. The functionality\MessageBreak
+    of the package may be corrupted!\MessageBreak
+    \if t#1%
+      (You must load 'otf' package before this package.)\MessageBreak
+    \fi
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!}}
+
+%--------------------------------------- Processing package options
+
+%% \pxbb@cjk@langid@list
+% The list of all CJK language ids.
+\bxPreamble\def\pxbb@cjk@langid@list{%
+  japanese,korean,schinese,tchinese%
+}
+
+%% \pxbb@lang@load@list
+% The list of language options to be loaded.
+\bxPreamble\let\pxbb@lang@load@list\@empty
+
+%% \pxbb@set@lang@spec{<lang_id>}{[+]<lang_name>}
+\bxPreamble\def\pxbb@set@lang@spec#1#2{%
+  \edef\pxbb@args{#2}%
+  \expandafter\pxbb@set@lang@spec@a\pxbb@args\@nil{#1}}
+\bxPreamble\def\pxbb@set@lang@spec@a#1#2\@nil#3{%
+  \bxIf{+#1}%
+   {\csdef{pxbb@langname/#3}{#2}%
+    \appto\pxbb@lang@load@list{,#2}}%
+   {\csdef{pxbb@langname/#3}{#1#2}}}
+
+%% keyval settings
+% (<lang_id>=[+]<lang_name>)
+\bxForEachIn\pxbb@cjk@langid@list\do{%
+  \define@key{pxbabel}{#1}{\pxbb@set@lang@spec{#1}{##1}}%
+  \pxbb@set@lang@spec{#1}{#1}}
+% (main=<lang_name>)
+\bxPreamble\let\pxbb@main@lang\relax
+\define@key{pxbabel}{main}{\def\pxbb@main@lang{#1}}
+% (caption=<lang_name>)
+\bxPreamble\def\pxbb@caption@lang{default}
+\define@key{pxbabel}{caption}{\def\pxbb@caption@lang{#1}}
+
+%% option handling
+\DeclareOption{switchcaption}{%
+  \def\pxbb@caption@lang{switch}}
+\DeclareOption{noswitchcaption}{%
+  \def\pxbb@caption@lang{default}}
+\newbool{pxbb@switchfont}\pxbb@switchfonttrue
+\DeclareOption{switchfont}{\pxbb@switchfonttrue}
+\DeclareOption{noswitchfont}{\pxbb@switchfontfalse}
+\newbool{pxbb@prefermmivjis}
+\DeclareOption{prefer2004jis}{\pxbb@prefermmivjistrue}
+\DeclareOption{noprefer2004jis}{\pxbb@prefermmivjisfalse}
+\DeclareOption{jis2004}{\pxbb@prefermmivjistrue}
+\DeclareOption{nojis2004}{\pxbb@prefermmivjisfalse}
+\newbool{pxbb@stdjaencoding}
+\bxIfExpToEqualX{\mcdefault}{mc}{}{\pxbb@stdjaencodingtrue}% default
+\DeclareOption{stdjaencoding}{\pxbb@stdjaencodingtrue}
+\DeclareOption{nostdjaencoding}{\pxbb@stdjaencodingfalse}
+% (<lang_id>, +<lang_id>)
+\bxPreamble\let\pxbb@last@lang\relax
+\bxForEachIn\pxbb@cjk@langid@list\do{%
+  \DeclareOption{#1}{%
+    \pxbb@set@lang@spec{#1}{#1}%
+    \def\pxbb@last@lang{#1}}%
+  \DeclareOption{+#1}{%
+    \pxbb@set@lang@spec{#1}{+#1}%
+    \def\pxbb@last@lang{#1}}}
+% (options processed by keyval)
+\DeclareOption*{%
+  \bxWithArgExpd{\CurrentOption}\do{%
+    \bxSetKeysSafe{pxbabel}{#1}%
+    \bxIfx{\bxRestKeys\@empty}{}%
+      {\appto\pxbb@lang@load@list{,#1}%
+       \def\pxbb@last@lang{#1}}}}
+\ProcessOptions*
+\bxChompComma\pxbb@lang@load@list
+
+%% 'triv' language check table
+\bxForEachIn\pxbb@cjk@langid@list\do{%
+  \cslet{pxbb@triv/\@nameuse{pxbb@langname/#1}}{t}}
+\bxForEachIn\pxbb@lang@load@list\do{%
+  \csundef{pxbb@triv/#1}}
+
+%--------------------------------------- Resolving settings
+
+%% \ifpxbb@otfmulti
+%% \ifpxbb@pxotf
+\newbool{pxbb@otfmulti}
+\newbool{pxbb@pxotf}
+\@ifpackageloaded{mlutf}{\pxbb@otfmultitrue}{}
+\@ifpackageloaded{pxotf}{\pxbb@otfmultitrue\pxbb@pxotftrue}{}
+
+%% \ifpxbb@babel
+\newbool{pxbb@babel}
+\@ifpackageloaded{babel}{\pxbb@babeltrue}{}
+
+%% environment check
+% The feature 'switchfont' requires multi-CJK support.
+\ifpxbb@switchfont
+  \ifpxbb@otfmulti\else
+    \ifupTeX\else
+      \pxbb@warn@nocjk
+\fi\fi\fi
+
+%% resolve the expected main language
+\ifundef\pxbb@main@lang{%then
+  % if 'main' is not specified
+  \ifbool{pxbb@babel}%
+   % in separate loading, main is unchanged
+   {\let\pxbb@main@lang\bbl@main@language}%
+   % in lumped loading, main is the one specified last
+   {\let\pxbb@main@lang\pxbb@last@lang}%
+}{}
+% if main is unknown, complain
+\ifx\pxbb@main@lang\relax
+  \pxbb@err@nomnl
+  \letcs\pxbb@main@lang{pxbb@langname/japanese}
+\fi
+
+%% resolve the caption language setting
+\bxIfExpToEqual{\pxbb@caption@lang}{auto}{%then
+  % if 'caption=auto' is given
+  \bxIfcsundef{pxbb@triv/\pxbb@main@lang}
+   % if main is not triv then caption=switch
+   {\def\pxbb@caption@lang{switch}}%
+   % if main is triv then caption=default
+   {\def\pxbb@caption@lang{default}}%
+}{}
+
+\ifx t\bxUseDebug
+\def\pxbb@bool#1{\ifbool{#1}{yes}{no}}
+\bxForEachIn\pxbb@cjk@langid@list\do{%
+\bxDebug{#1 = \@nameuse{pxbb@langname/#1}}}
+\bxDebug{main = \pxbb@main@lang}
+\bxDebug{caption = \pxbb@caption@lang}
+\bxDebug{switchfont = \pxbb@bool{pxbb@switchfont}}
+\bxDebug{load-list = \pxbb@lang@load@list}
+\bxDebug{last = \pxbb@last@lang}
+\bxDebug{babel = \pxbb@bool{pxbb@babel}}
+\bxDebug{otfmulti = \pxbb@bool{pxbb@otfmulti}}
+\fi
+
+%--------------------------------------- lumped loading
+\ifpxbb@babel\else
+
+%% load Babel
+\let\pxbb@tmpa\pxbb@lang@load@list
+\ifx\pxbb@tmpa\@empty \def\pxbb@tmpa{english}\fi
+\edef\pxbb@tmpa{%
+  \noexpand\RequirePackage[\pxbb@tmpa]{babel}%
+}\pxbb@tmpa
+
+\fi
+%--------------------------------------- separate loading
+\ifpxbb@babel
+
+%% \pxbb@g@add@lang@proc
+\bxPreamble\let\pxbb@g@add@lang@proc\@empty
+\begingroup
+
+%% remove languages that are already loaded
+\let\pxbb@tmpa\@empty
+\bxForEachIn\pxbb@lang@load@list\do{%
+  \bxIfcsundef{date#1}{\appto\pxbb@tmpa{,#1}}{}}
+\bxChompComma\pxbb@tmpa
+\let\pxbb@lang@load@list\pxbb@tmpa
+\bxDebug{\pxbb@lang@load@list}
+
+%% if some language should be added...
+\ifx\pxbb@lang@load@list\@empty\else
+  \ifdef\bbl@load@language{%
+    \PackageWarning\pxbb@pkgname
+     {Some languages need to be added. Note that the\MessageBreak
+      process of addition is unreliable}%
+  }{%else
+    \PackageError\pxbb@pkgname
+     {Some languages need to be added, but the addition\MessageBreak
+      is not supported because Babel in use is too old}%
+     {The languages to be added will be ignored.\MessageBreak
+      \@ehc}}
+\fi
+
+%% build \pxbb@g@add@lang@proc
+\bxForEachIn\pxbb@lang@load@list\do{%
+  \csdef{pxbb@use/#1}{t}}
+\def\pxbb@babel@alias#1#2{%
+  \bxIfcsundef{pxbb@use/#1}{}{%else
+    % if the real name is available, then ok
+    \IfFileExists{#1.ldf}{}{%else
+      \csdef{pxbb@bbl@opt/#1}{\bbl@load@language{#2}}}}}
+\def\pxbb@babel@load@proc#1{%
+  \bxIfcsundef{pxbb@use/#1}{\@gobble}{%else
+    \csdef{pxbb@bbl@opt/#1}}}
+% the alias list
+\pxbb@babel@alias{acadian}{frenchb}
+\pxbb@babel@alias{afrikaans}{dutch}
+\pxbb@babel@alias{american}{english}
+\pxbb@babel@alias{australian}{english}
+\pxbb@babel@alias{austrian}{germanb}
+\pxbb@babel@alias{bahasa}{bahasai}
+\pxbb@babel@alias{bahasai}{bahasai}
+\pxbb@babel@alias{bahasam}{bahasam}
+\pxbb@babel@alias{brazil}{portuges}
+\pxbb@babel@alias{brazilian}{portuges}
+\pxbb@babel@alias{british}{english}
+\pxbb@babel@alias{canadian}{english}
+\pxbb@babel@alias{canadien}{frenchb}
+\pxbb@babel@alias{francais}{frenchb}
+\pxbb@babel@alias{french}{frenchb}
+\pxbb@babel@alias{german}{germanb}
+\pxbb@babel@alias{hungarian}{magyar}
+\pxbb@babel@alias{indon}{bahasai}
+\pxbb@babel@alias{indonesian}{bahasai}
+\pxbb@babel@alias{lowersorbian}{lsorbian}
+\pxbb@babel@alias{malay}{bahasam}
+\pxbb@babel@alias{melayu}{bahasam}
+\pxbb@babel@alias{meyalu}{bahasam}
+\pxbb@babel@alias{naustrian}{ngermanb}
+\pxbb@babel@alias{newzealand}{english}
+\pxbb@babel@alias{ngerman}{ngermanb}
+\pxbb@babel@alias{nynorsk}{norsk}
+\pxbb@babel@alias{portuguese}{portuges}
+\pxbb@babel@alias{russian}{russianb}
+\pxbb@babel@alias{UKenglish}{english}
+\pxbb@babel@alias{ukrainian}{ukraineb}
+\pxbb@babel@alias{uppersorbian}{usorbian}
+\pxbb@babel@alias{USenglish}{english}
+\pxbb@babel@load@proc{hebrew}{%
+  \input{rlbabel.def}\bbl@load@language{hebrew}}
+\pxbb@babel@load@proc{polutonikogreek}{%
+  \bbl@load@language{greek}\languageattribute{greek}{polutoniko}}
+
+%% load addtional languages
+\bxForEachIn\pxbb@lang@load@list\do{%
+  \gappto\pxbb@g@add@lang@proc{\def\CurrentOption{#1}}%
+  \bxIfcsundef{pxbb@bbl@opt/#1}%
+   {\gappto\pxbb@g@add@lang@proc{\bbl@load@language{#1}}}%
+   {\letcs\pxbb@tmpa{pxbb@bbl@opt/#1}%
+    \xappto\pxbb@g@add@lang@proc{\expandonce{\pxbb@tmpa}}}}
+\gappto\pxbb@g@add@lang@proc{\let\CurrentOption\@empty}
+
+\endgroup
+% dispatch
+\pxbb@g@add@lang@proc
+
+\fi
+%--------------------------------------- post-load process
+
+%% declare 'triv' languages
+\bxForEachIn\pxbb@cjk@langid@list\do{%
+  \bxWithArgFullExpd{\@nameuse{pxbb@langname/#1}}\do{%
+    \bxIfcsundefX{date##1}{\bxTrivLangDef{##1}}{}}}
+\ifundef\datecjkmulti{\bxTrivLangDef{cjkmulti}}{}
+
+%% set main language
+\setmainlanguage{\pxbb@main@lang}
+
+%% set caption language
+\bxIfExpToEqual{\pxbb@caption@lang}{switch}{}%else
+ {\bxProvideCaptionLanguage{\pxbb@caption@lang}}
+
+%--------------------------------------- Adding font switch to 'extra's
+
+\ifpxbb@otfmulti        %----<*otfmulti>
+
+%% add \UTF switch to Babel \extras
+\ifpxbb@switchfont
+\bxPreamble\def\pxbb@addtoextras@otf#1{%
+  \pxbb@addtoextras@otf@a{\bxCsuseX{pxbb@langname/#1}}}
+\bxPreamble\def\pxbb@addtoextras@otf@a#1#2{%
+  \csappto{extras#1}{\babel@save\UTF \let\UTF#2}}
+\pxbb@addtoextras@otf{korean}{\UTFK}
+\pxbb@addtoextras@otf{schinese}{\UTFC}
+\pxbb@addtoextras@otf{tchinese}{\UTFT}
+\pxbb@addtoextras@otf@a{cjkmulti}{\UTFM}
+\fi % pxbb@switchfont
+
+%%<*> \pxUTFJ/\UTFJ
+\let\pxUTFJ\UTF
+\AtBeginDocument{%
+  \providecommand*\UTFJ{\pxUTFJ}}
+
+\fi                     %----</otfmulti>
+
+\ifupTeX                %----<*upTeX>
+
+%% preparations
+\bxRequireDefinition{pxbasenc}
+\pxBDHookEncSwitchOTF
+
+%% declarations for upTeX standatd CJK fonts
+\ifpxbb@pxotf\else
+\pxDeclareBasicCJKEncoding{J20}{J30}% UniJIS
+\pxDeclareBasicCJKFamily{J20}{!upjpnrm-h}{!upjpngt-h}{*gt}{*gt}
+\pxDeclareBasicCJKFamily{J30}{!upjpnrm-v}{!upjpngt-v}{*gt}{*gt}
+\pxDeclareBasicCJKEncoding{J21}{J31}% UniKS
+\pxDeclareBasicCJKFamily{J21}{!upkorrm-h}{!upkorgt-h}{*gt}{*gt}
+\pxDeclareBasicCJKFamily{J31}{!upkorrm-v}{!upkorgt-v}{*gt}{*gt}
+\pxDeclareBasicCJKEncoding{J22}{J32}% UniGB
+\pxDeclareBasicCJKFamily{J22}{!upschrm-h}{!upschgt-h}{*gt}{*gt}
+\pxDeclareBasicCJKFamily{J32}{!upschrm-v}{!upschgt-v}{*gt}{*gt}
+\pxDeclareBasicCJKEncoding{J23}{J33}% UniCNS
+\pxDeclareBasicCJKFamily{J23}{!uptchrm-h}{!uptchgt-h}{*gt}{*gt}
+\pxDeclareBasicCJKFamily{J33}{!uptchrm-v}{!uptchgt-v}{*gt}{*gt}
+\pxDeclareBasicCJKEncoding{J24}{J34}% UniJIS2004
+\pxDeclareBasicCJKFamily{J24}{!upjpnrm-h}{!upjpngt-h}{*gt}{*gt}
+\pxDeclareBasicCJKFamily{J34}{!upjpnrm-v}{!upjpngt-v}{*gt}{*gt}
+\begingroup \let\pxForceFontDeclaration=f
+\bxForEachIn{J20,J30,J21,J31,J22,J32,J23,J33,J24,J34}\do{%
+  \pxDeclareExtraCJKFamily{#1}{\mcdefault}{*mc}{*mc}%
+  \pxDeclareExtraCJKFamily{#1}{\gtdefault}{*gt}{*gt}}
+\endgroup
+\fi
+
+%--------------------------------------- add font switch to Babel \extras
+\ifpxbb@switchfont
+
+%% \pxbb@set@full@ja@enc
+% Sets to \pxbb@ful@ja@enc the destination encoding.
+\bxForEachIn{J20,J24}\do{% all full japanese encodings
+  \csdef{pxbb@is@fje/#1}{t}}
+\edef\pxbb@dflt@ja@enc{% default full japanese encoding
+  \ifbool{pxbb@stdjaencoding}{\cy@encoding}{%else
+    \ifbool{pxbb@prefermmivjis}{J24}{J20}}}
+\def\pxbb@set@full@ja@enc{%
+  \edef\pxbb@full@ja@enc{%
+    \bxIfcsundefX{pxbb@is@fje/\cy@encoding}%
+     {\pxbb@dflt@ja@enc}{\cy@encoding}}}
+
+%% \pxbb@addtoextras
+\bxPreamble\def\pxbb@addtoextras#1#2#3{%
+  \edef\pxbb@arg{{\@nameuse{pxbb@langname/#1}}%
+   \if t#2{\noexpand\pxbb@full@ja@enc}{\noexpand\@undefined}%
+   \else{#3}{t}\fi}%
+  \expandafter\pxbb@addtoextras@a\pxbb@arg}
+\bxPreamble\def\pxbb@addtoextras@a#1#2#3{%
+  \csappto{extras#1}{%
+    \pxbb@set@full@ja@enc
+    \let\pxInNonJaLanguage=#3%
+    \let\pxbb@org@encoding\cy@encoding
+    \long\def\kanjiencodingdefault{#2}%
+    \kanjiencoding{#2}\selectfont}%
+  \csappto{noextras#1}{%
+    \let\pxInNonJaLanguage\@undefined
+    \long\def\kanjiencodingdefault{\pxbb@org@encoding}%
+    \kanjiencoding{\pxbb@org@encoding}\selectfont}}
+\pxbb@addtoextras{japanese}{t}{}
+\pxbb@addtoextras{korean}{f}{J21}
+\pxbb@addtoextras{schinese}{f}{J22}
+\pxbb@addtoextras{tchinese}{f}{J23}
+
+\fi % pxbb@switchfont
+
+\fi                     %----</upTeX>
+
+%--------------------------------------- Other user commands
+
+%%<*> \cjklanguagename{<lang_id>}
+% Expands to the babel language name for <lang_id>.
+\newcommand*\cjklanguagename[1]{%
+  \@nameuse{pxbb@langname/#1}}
+
+%--------------------------------------- integrity check
+
+%% check if \mcdefault is not changed
+\let\pxbb@tunc@mcdefault\mcdefault
+\AtBeginDocument{%
+  \bxIfExpToEqualX\pxbb@tunc@mcdefault\mcdefault{}{%else
+    \bxIfExpToEqualX\mcdefault{hmc}%
+      {\pxbb@warn@jafam{t}}%
+      {\pxbb@warn@jafam{f}}}}
+
+%--------------------------------------- all done
+\endinput
+%
+%   Roman, H      Gothic, H     Roman, V      Gothic, H     : metric encod.
+%   ------------  ------------  ------------  ------------  : ------ --------
+%   umin10        ugoth10       utmin10       utgoth10      : min10  JIS-old 
+%   ujis          ujisg         ujis-v        ujisg-v       : jis    JIS-old 
+%   ujisn         ujisng        ujisn-v       ujisng-v      : jisn   JIS-old 
+% * urml          ugbm          urmlv         ugbmv         : RAW    JIS-old 
+%   upjisr-h      upjisg-h      upjisr-v      upjisg-v      : upjpn  JIS-bmp 
+%   upjisr-hq     upjisg-hq                                 : upjpn  JIS-old 
+%   upjpnrm-h     upjpngt-h     upjpnrm-v     upjpngt-v     : upjpn  JIS-full
+% * uprml         upgbm         uprmlv        upgmbv        : RAW    JIS-bmp 
+% * uprmlq        upgbmq                                    : RAW    JIS-old 
+%   upkorrm-h     upkorgt-h     upkorrm-v     upkorgt-v     : upkor  KS      
+% * uphysmjm-h    uphygt-h      uphysmjm-v    uphygt-v      : RAW    KS      
+%   upschrm-h     upschgt-h     upschrm-v     upschgt-v     : upsch  GB      
+% * upstsl-h      upstht-h      upstsl-v      upstht-v      : RAW    GB      
+%   uptchrm-h     uptchgt-h     uptchrm-v     uptchgt-v     : uptch  CNS     
+% * upmsl-h       upmhm-h       upmsl-v       upmhm-v       : RAW    CNS     
+%% EOF

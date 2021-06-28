@@ -1,0 +1,162 @@
+\ProvidesPackage{PlayfairDisplay}[%
+   2014/05/23 (Bob Tennent)  Supports PlayfairDisplay fonts for all LaTeX engines. ] 
+
+\RequirePackage{ifxetex,ifluatex,textcomp}
+
+\newif\ifplayfair@otf
+\ifxetex
+  \playfair@otftrue
+\else\ifluatex
+  \playfair@otftrue
+\else  % [pdf]LaTeX
+  \playfair@otffalse
+\fi\fi
+
+\newcommand*{\PlayfairDisplay@scale}{1}  
+\RequirePackage{xkeyval}
+\DeclareOptionX{scaled}{\renewcommand*{\PlayfairDisplay@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\PlayfairDisplay@scale}{#1}}
+
+\newif\ifplayfair@black \playfair@blackfalse
+
+\DeclareOptionX{type1}{\playfair@otffalse}
+\DeclareOptionX{black}{\playfair@blacktrue}
+
+\newif\ifplayfair@lining \playfair@liningtrue
+
+\DeclareOptionX{lining}[true]{%
+\@nameuse{if#1}%
+  \playfair@liningtrue
+\else
+  playfair@liningfalse
+\fi
+}
+\DeclareOptionX{lf}[true]{%
+\@nameuse{if#1}%
+  \playfair@liningtrue
+\else
+  playfair@liningfalse
+\fi
+}
+\DeclareOptionX{oldstyle}[true]{%
+\@nameuse{if#1}%
+  \playfair@liningfalse
+\else
+  \playfair@liningtrue
+\fi
+}
+
+\DeclareOptionX{osf}[true]{%
+\@nameuse{if#1}%
+  \playfair@liningfalse
+\else
+  \playfair@liningtrue
+\fi
+}
+
+\ProcessOptionsX\relax
+
+\ifplayfair@otf
+  \ifplayfair@lining
+    \def\playfair@figurestyle{Lining}
+  \else
+    \def\playfair@figurestyle{OldStyle}
+  \fi
+  \ifplayfair@black
+    \def\playfair@boldstyle{Black}
+  \else
+    \def\playfair@boldstyle{Bold}
+  \fi
+
+\else % type1
+
+  \ifplayfair@lining
+    \def\playfair@figurestyle{LF} 
+  \else
+    \def\playfair@figurestyle{OsF} 
+  \fi
+  \ifplayfair@black
+    \def\bfseries@rm{k}
+  \else
+    \def\bfseries@rm{b}
+  \fi
+\fi
+
+
+\ifplayfair@otf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes,mweights}
+\fi
+
+% Set main and/or sans fonts:
+\ifplayfair@otf
+
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+     Ligatures = TeX ,
+     Scale     = \PlayfairDisplay@scale ,
+     Extension = .otf ,
+  }
+  \setmainfont
+      [ Numbers = {\playfair@figurestyle}, 
+        UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-\playfair@boldstyle , 
+        BoldItalicFont = *-\playfair@boldstyle Italic ]
+      {PlayfairDisplay}
+  \newfontfamily\playfairblack
+      [ Numbers = {\playfair@figurestyle}, 
+        UprightFont    = *-Black ,
+        ItalicFont     = *-BlackItalic ,
+        BoldFont       = *-\playfair@boldstyle , 
+        BoldItalicFont = *-\playfair@boldstyle Italic ]
+      {PlayfairDisplay}
+   \providecommand\sufigures{\addfontfeatures{VerticalPosition=Superior}}
+   \newfontfamily\playfairOsF
+      [ Numbers = {OldStyle},
+        UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont    = *-Regular ,
+        BoldItalicFont     = *-Italic ,
+      ]
+      {PlayfairDisplay}
+   \newfontfamily\playfairLF
+      [ Numbers = {Lining},
+        UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont    = *-Regular ,
+        BoldItalicFont     = *-Italic ,
+      ]
+      {PlayfairDisplay}
+
+
+
+\else % type1
+
+  \fa@naming@exception{figures}{{superior}{proportional}}{Sup}
+  \fa@naming@exception{figures}{{superior}{tabular}}{Sup}
+  \def\sufigures{\@nomath\sufigures\fontfigurestyle{superior}\selectfont}
+
+  \def\playfairfamily{PlayfairDisplay-\playfair@figurestyle}
+
+  \renewcommand*\rmdefault{\playfairfamily}
+
+  \newcommand*\playfair{\fontfamily{\playfairfamily}\selectfont}
+  \newcommand*\playfairblack{\fontfamily{\playfairfamily}\fontseries{k}\selectfont}
+  \newcommand*\playfairOsF{\fontfamily{PlayfairDisplay-OsF}\selectfont}
+  \newcommand*\playfairLF{\fontfamily{PlayfairDisplay-LF}\selectfont}
+
+
+\fi
+
+\DeclareTextFontCommand{\textsu}{\sufigures}
+\let\textsuperior\textsu
+
+% turn off defaults in case other fonts are selected:
+\ifplayfair@otf
+  \defaultfontfeatures{}
+\fi
+
+\endinput
+

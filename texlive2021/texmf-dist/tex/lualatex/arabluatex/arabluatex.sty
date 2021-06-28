@@ -1,0 +1,444 @@
+%%
+%% This is file `arabluatex.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% arabluatex.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% This file is part of the `arabluatex' package
+%% 
+%% ArabLuaTeX -- Processing ArabTeX notation under LuaLaTeX
+%% Copyright (C) 2016--2020  Robert Alessi
+%% 
+%% Please send error reports and suggestions for improvements to Robert
+%% Alessi <alessi@robertalessi.net>
+%% 
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful, but
+%% WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%% General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see
+%% <http://www.gnu.org/licenses/>.
+%% 
+%% This release of 'arabluatex' consists of the following source files:
+%% - arabluatex.ins
+%% - arabluatex.dtx
+%% - arabluatex.lua
+%% - arabluatex_voc.lua
+%% - arabluatex_fullvoc.lua
+%% - arabluatex_novoc.lua
+%% - arabluatex_trans.lua
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{arabluatex}
+    [2020/03/23 v1.20 ArabTeX for LuaLaTeX]
+\RequirePackage{iftex}
+\RequireLuaTeX
+\RequirePackage{xkeyval}
+\DeclareOptionX{voc}{\def\al@mode{voc}}
+\DeclareOptionX{fullvoc}{\def\al@mode{fullvoc}}
+\DeclareOptionX{novoc}{\def\al@mode{novoc}}
+\DeclareOptionX{trans}{\def\al@mode{trans}}
+\define@boolkey{arabluatex.sty}[@pkg@]{export}[true]{%
+  \if@pkg@export%
+  \AtBeginDocument{\luadirect{arabluatex.openstream()}%
+    \MkArbBreak{@al@ob,@al@cb,@al@cb@sp}}
+  \AtEndDocument{\luadirect{arabluatex.closestream()}}
+  \else\fi}
+\ExecuteOptionsX{voc}
+\ProcessOptionsX\relax
+\def\al@mode@voc{voc}
+\def\al@mode@fullvoc{fullvoc}
+\def\al@mode@novoc{novoc}
+\def\al@mode@trans{trans}
+\RequirePackage{xcolor}
+\RequirePackage{luacolor}
+\RequirePackage{etoolbox}
+\RequirePackage{arabluatex-patch}
+\RequirePackage{fontspec}
+\RequirePackage{luacode}
+\RequirePackage{xparse}
+\RequirePackage{adjustbox}
+\RequirePackage{xstring}
+\RequirePackage{lua-ul}
+\providebool{al@rlmode}
+\luadirect{dofile(kpse.find_file("arabluatex.lua"))}
+\AtBeginDocument{\ifdefined\arabicfont\relax\else
+  \PackageInfo{arabluatex}{%
+    \string\arabicfont\ is not defined.\MessageBreak
+    arabluatex will try to load Amiri}%
+  \newfontfamily\arabicfont{Amiri}[Script=Arabic]\fi}%
+\AtBeginDocument{\def\setRL{\booltrue{al@rlmode}\pardir TRT%
+    \textdir TRT}}
+\AtBeginDocument{\def\setLR{\boolfalse{al@rlmode}\pardir TLT%
+    \textdir TLT}}
+\AtBeginDocument{\ifdef{\LR}%
+  {\RenewDocumentCommand{\LR}{m}{\bgroup\textdir TLT\rmfamily#1\egroup}}
+  {\NewDocumentCommand{\LR}{m}{\bgroup\textdir TLT\rmfamily#1\egroup}}}
+\AtBeginDocument{\ifdef{\RL}%
+  {\RenewDocumentCommand{\RL}{m}{\bgroup\textdir TRT\rmfamily#1\egroup}}
+  {\NewDocumentCommand{\RL}{m}{\bgroup\textdir TRT#1\rmfamily\egroup}}}
+\NewDocumentCommand{\MkArbBreak}{s m}{%
+  \IfBooleanTF{#1}
+  {\luadirect{arabluatex.mkarbbreak(\luastringN{#2}, "out")}}
+  {\luadirect{arabluatex.mkarbbreak(\luastringN{#2}, "dflt")}}
+}
+\newunderlinetype\@aoverLine{\leaders\vrule height 3ex depth -2.9ex}
+\def\aoline{\@ifstar\@aoline\@@aoline}
+\def\@aoline#1{\ensuremath{\overline{\mbox{#1}}}}
+\def\@@aoline#1{{\@aoverLine#1}}
+\newunderlinetype\@aunderLine{\leaders\vrule height -.65ex depth .75ex}
+\def\auline#1{{\@aunderLine#1}}
+\AtBeginDocument{\ifdef{\aemph}%
+  {\RenewDocumentCommand{\aemph}{s m}{%
+      \IfBooleanTF{#1}{%
+        \luadirect{tex.sprint(arabluatex.aemph(\luastringN{#2},
+          "over"))}}
+      {\luadirect{tex.sprint(arabluatex.aemph(\luastringN{#2},
+          "dflt"))}}}}
+  {\NewDocumentCommand{\aemph}{s m}{%
+      \IfBooleanTF{#1}{%
+        \luadirect{tex.sprint(arabluatex.aemph(\luastringN{#2},
+          "over"))}}
+      {\luadirect{tex.sprint(arabluatex.aemph(\luastringN{#2},
+          "dflt"))}}}}}
+\NewDocumentCommand{\arbcolor}{o m}{%
+  \IfNoValueTF{#1}{#2}{\textcolor{#1}{#2}}}
+\def\al@input@scheme{arabtex}
+\NewDocumentCommand{\SetInputScheme}{m}{\def\al@input@scheme{#1}}
+\def\al@arb@rules{dflt}
+\NewDocumentCommand{\SetArbEasy}{s}{%
+  \IfBooleanTF{#1}
+  {\def\al@arb@rules{easynosukun}}
+  {\def\al@arb@rules{easy}}}
+\NewDocumentCommand{\SetArbDflt}{s}{%
+  \IfBooleanTF{#1}
+  {\def\al@arb@rules{idgham}}
+  {\def\al@arb@rules{dflt}}}
+\def\al@trans@font{\rmfamily}%
+\NewDocumentCommand{\SetTranslitFont}{m}{\def\al@trans@font{#1}}
+\def\al@trans@style{\itshape}%
+\NewDocumentCommand{\SetTranslitStyle}{m}{\def\al@trans@style{#1}}
+\def\al@trans@convention{dmg}
+\NewDocumentCommand{\SetTranslitConvention}{m}{%
+  \def\al@trans@convention{#1}}
+\NewDocumentCommand{\al@arbup@dflt}{m}{\textsuperscript{#1}}%
+\NewDocumentCommand{\al@arbup}{m}{\al@arbup@dflt{#1}}
+\NewDocumentCommand{\arbup}{m}{\al@arbup{#1}}
+\NewDocumentCommand{\ArbUpDflt}{}{\let\al@arbup=\al@arbup@dflt}
+\NewDocumentCommand{\NoArbUp}{}{\RenewDocumentCommand{\al@arbup}{m}{##1}}
+\NewDocumentCommand{\SetArbUp}{m}{%
+  \RenewDocumentCommand{\al@arbup}{m}{#1}}
+\NewDocumentCommand{\uc}{m}%
+  {\luadirect{tex.sprint(arabluatex.uc(\luastringN{#1}))}}
+\let\Uc\uc
+\NewDocumentCommand{\prname}{s m}{%
+  \bgroup\SetTranslitStyle{\relax}%
+  \IfBooleanTF{#1}{\txtrans{#2}}{\arb[trans]{\uc{#2}}}\egroup}
+\NewDocumentCommand{\txarb}{+m}{%
+  \ifvmode\leavevmode\fi%
+  \bgroup\textdir TRT\arabicfont#1\egroup}
+\NewDocumentCommand{\txtrans}{+m}{%
+  \bgroup\textdir TLT\al@trans@font\al@trans@style#1\egroup}
+\NewDocumentEnvironment{txarab}{}{%
+  \par%
+  \booltrue{al@rlmode}%
+  \pardir TRT\textdir TRT\arabicfont}{\par}
+\NewDocumentEnvironment{txarabtr}{}{%
+  \par%
+  \pardir TLT\textdir TLT%
+  \al@trans@font\al@trans@style}{\par}
+\NewDocumentCommand{\arb}{O{\al@mode} +m}%
+{\edef\@tempa{#1}%
+  \ifx\@tempa\al@mode@voc%
+  \ifvmode\leavevmode\fi%
+  \bgroup\booltrue{al@rlmode}\textdir TRT\arabicfont%
+  \luadirect{tex.sprint(arabluatex.processvoc(\luastringN{#2},
+    \luastringO{\al@arb@rules}, \luastringO{\al@input@scheme}))}\egroup%
+  \else%
+  \ifx\@tempa\al@mode@fullvoc%
+  \ifvmode\leavevmode\fi%
+  \bgroup\booltrue{al@rlmode}\textdir TRT\arabicfont%
+  \luadirect{tex.sprint(arabluatex.processfullvoc(\luastringN{#2},
+    \luastringO{\al@arb@rules}, \luastringO{\al@input@scheme}))}\egroup%
+  \else%
+  \ifx\@tempa\al@mode@novoc%
+  \ifvmode\leavevmode\fi%
+  \bgroup\booltrue{al@rlmode}\textdir TRT\arabicfont%
+  \luadirect{tex.sprint(arabluatex.processnovoc(\luastringN{#2},
+    \luastringO{\al@arb@rules}, \luastringO{\al@input@scheme}))}\egroup%
+  \else%
+  \ifx\@tempa\al@mode@trans%
+  \bgroup\textdir TLT\al@trans@font\al@trans@style%
+  \luadirect{tex.sprint(arabluatex.processtrans(\luastringN{#2},
+    \luastringO{\al@trans@convention},
+    \luastringO{\al@arb@rules},
+    \luastringO{\al@input@scheme}))}\egroup%
+  \else%
+  \fi\fi\fi\fi}
+\NewDocumentCommand{\arbmark}{O{} m}{%
+  \bgroup%
+  \SetInputScheme{arabtex}%
+  \luadirect{tex.sprint(arabluatex.processarbmarks(\luastringN{#2},
+    \luastringN{#1}))}%
+  \egroup}
+\NewDocumentCommand{\newarbmark}{m m m}{%
+  \luadirect{arabluatex.newarbmark(\luastringN{#1}, \luastringN{#2},
+    \luastringN{#3})}}
+\NewDocumentEnvironment{arab}{!O{\al@mode} +b}%
+{\par\edef\@tempa{#1}%
+  \ifx\@tempa\al@mode@voc%
+  \booltrue{al@rlmode}%
+  \bgroup\pardir TRT\textdir TRT\arabicfont%
+  \luadirect{tex.sprint(arabluatex.processvoc(\luastringN{#2},
+    \luastringO{\al@arb@rules}, \luastringO{\al@input@scheme}))}\egroup%
+  \else%
+  \ifx\@tempa\al@mode@fullvoc%
+  \booltrue{al@rlmode}%
+  \bgroup\pardir TRT\textdir TRT\arabicfont%
+  \luadirect{tex.sprint(arabluatex.processfullvoc(\luastringN{#2},
+    \luastringO{\al@arb@rules}, \luastringO{\al@input@scheme}))}\egroup%
+  \else%
+  \ifx\@tempa\al@mode@novoc%
+  \booltrue{al@rlmode}%
+  \bgroup\pardir TRT\textdir TRT\arabicfont%
+  \luadirect{tex.sprint(arabluatex.processnovoc(\luastringN{#2},
+    \luastringO{\al@arb@rules}, \luastringO{\al@input@scheme}))}\egroup%
+  \else%
+  \ifx\@tempa\al@mode@trans%
+  \bgroup\pardir TLT\textdir TLT\al@trans@font\al@trans@style%
+  \luadirect{tex.sprint(arabluatex.processtrans(\luastringN{#2},
+    \luastringO{\al@trans@convention},
+    \luastringO{\al@arb@rules},
+    \luastringO{\al@input@scheme}))}\egroup%
+  \else \fi\fi\fi\fi}{\par}
+\newlength{\al@bayt@width}
+\newlength{\al@gutter@width}
+\setlength{\al@bayt@width}{.3\textwidth}
+\setlength{\al@gutter@width}{.15\al@bayt@width}
+\define@key[al]{verse}{width}{\setlength{\al@bayt@width}{#1}}
+\define@key[al]{verse}{gutter}{\setlength{\al@gutter@width}{#1}}
+\define@key[al]{verse}{metre}{\arb{#1}}
+\define@key[al]{verse}{color}[]{\color{#1}}
+\define@boolkey[al]{verse}{utf}[true]{}
+\define@boolkey[al]{verse}{delim}[true]{}
+\define@boolkey[al]{verse}{export}[true]{}
+\define@choicekey[al]{verse}{mode}{fullvoc, voc, novoc,
+  trans}{\def\al@mode{#1}}
+\presetkeys[al]{verse}{metre={}, utf=false,
+  delim=false}{}
+\NewDocumentEnvironment{arabverse}{!O{}}%
+{\bgroup\setkeys[al]{verse}[width, gutter, color, utf, delim,
+  metre]{#1}%
+  \if@pkg@export\ifal@verse@export%
+  \ArbOutFile{\begin{arabverse}}%
+    % \ifx\al@mode\al@mode@trans%
+    %   \luadirect{arabluatex.tooutfile(\luastringN{[#1]})}%
+    % \else%
+      \IfSubStr[1]{#1}{utf}%
+        {\luadirect{arabluatex.tooutfile(\luastringN{[#1]})}}%
+        {\luadirect{arabluatex.tooutfile(\luastringN{[#1, utf]})}}%
+    % \fi
+  \else\fi\else\fi\egroup%
+  \par\centering\noindent\bgroup\setkeys[al]{verse}[metre]{#1}%
+  % \ifx\al@mode\al@mode@trans%
+  %   \ifal@verse@utf\setRL\else\setLR\fi%
+  % \else\setRL\fi%
+  \ifal@verse@utf%
+    \ifx\al@mode\al@mode@trans\setLR\else\setRL\fi%
+    \else%
+    \ifx\al@mode\al@mode@trans\setLR\else\setRL\fi%
+    \fi%
+  \arab@v@export[#1]
+  }%
+  {\endarab@v@export
+    \hfill\setkeys[al]{verse}[width, gutter, color, utf, delim, mode,
+    export]{#1}%
+    \egroup\par%
+    \bgroup\setkeys[al]{verse}[width, gutter, color, utf, delim, mode,
+    metre]{#1}%
+    \if@pkg@export\ifal@verse@export%
+    \ArbOutFile{\end{arabverse}}
+  \else\fi\else\fi\egroup}
+\newif\ifal@warp@bayt
+\al@warp@bayttrue
+\NewDocumentCommand{\StretchBayt}{O{true}}{
+  \edef\oarg@true{true}
+  \edef\oarg@false{false}
+  \edef\@tempa{#1}
+  \ifx\@tempa\oarg@true\al@warp@bayttrue
+  \else
+  \ifx\@tempa\oarg@false\al@warp@baytfalse
+  \else
+  \PackageError{arabluatex}{\string\StretchBayt\space must be
+    either 'true' or 'false'}{}
+  \fi
+  \fi
+}
+\NewDocumentCommand{\arb@utf}{m}{%
+  \ifal@verse@utf\txarb{#1}\else\arb{#1}\fi}
+\def\al@hemistich@delim{*}
+\NewDocumentCommand{\SetHemistichDelim}{m}{\def\al@hemistich@delim{#1}}
+\def\al@verse@stroke{\leavevmode\xleaders\hbox{\arb{--}}\hfill\kern0pt}
+\NewDocumentCommand{\bayt}{s m o m}{%
+  \IfBooleanTF{#1}{\relax}{\relax}%
+  \ifdefined\savenotes\savenotes\else\fi%
+  \edef\al@tatweel{--}%
+  \ifal@warp@bayt%
+    \adjustbox{width=\al@bayt@width, height=\Height}{\arb@utf{#2}}%
+  \else%
+    \makebox[\al@bayt@width][s]{\arb@utf{#2}}%
+  \fi%
+  \IfNoValueTF{#3}{%
+    \ifal@verse@delim\makebox[\al@gutter@width][c]{\al@hemistich@delim}%
+    \else%
+    \hspace{\al@gutter@width}%
+    \fi
+  }{%
+    \edef\@tempa{#3}%
+    \ifx\@tempa\al@tatweel%
+    \ifx\al@mode\al@mode@trans%
+    \hspace{\al@gutter@width}%
+    \else%
+    \makebox[\al@gutter@width][s]{\al@verse@stroke}%
+    \fi%
+    \else%
+    \ifx\al@mode\al@mode@trans%
+    \ifal@warp@bayt%
+      \adjustbox{width=\al@gutter@width, height=\Height}{\arb@utf{#3}}%
+    \else%
+      \makebox[\al@gutter@width][s]{\arb@utf{#3}}%
+    \fi%
+    \else%
+    \makebox[\al@gutter@width][s]{\arb@utf{#3}}%
+    \fi\fi}%
+  \ifal@warp@bayt%
+    \adjustbox{width=\al@bayt@width, height=\Height}{\arb@utf{#4}}%
+  \else%
+    \makebox[\al@bayt@width][s]{\arb@utf{#4}}%
+  \fi%
+  \ifdefined\spewnotes\spewnotes\else\fi%
+}
+\NewDocumentCommand{\SetDefaultIndex}{m}{
+  \edef\@tempa{#1}
+  \ifx\@tempa\empty
+    \def\al@default@index{\jobname}
+  \else
+    \def\al@default@index{#1}
+  \fi
+}
+\def\al@index@mode{\al@mode}
+\NewDocumentCommand{\SetIndexMode}{m}{
+  \def\al@index@mode{#1}
+}
+\define@cmdkeys[al]{index}[alind@]{index,root,form}
+\NewDocumentCommand{\arind}{o m}{%
+  \IfNoValueTF{#1}{%
+    \ifdefined\al@default@index%
+      \csname index\endcsname[\al@default@index]{#2}%
+    \else%
+      \csname index\endcsname{#2}%
+    \fi%
+  }{%
+    \bgroup
+    \setkeys[al]{index}{#1}%
+    \def\al@one{%
+      \ifdefined\alind@root!\LR{\alind@root}\else!\LR{1}\fi}%
+    \def\al@two{%
+      \ifdefined\alind@form @\arb[\al@index@mode]{\alind@form}\else\fi}%
+    \ifdefined\alind@index%
+      \csname index\endcsname[\alind@index]{#2\al@one\al@two}%
+    \else%
+      \ifdefined\al@default@index%
+        \csname index\endcsname[\al@default@index]{#2\al@one\al@two}%
+      \else%
+        \csname index\endcsname{#2\al@one\al@two}%
+      \fi%
+    \fi%
+    \egroup}}
+\AtBeginDocument{%
+  \ifdefined\abjad%
+  \RenewDocumentCommand{\abjad}{m}%
+  {\ifbool{al@rlmode}%
+    {\aoline*{%
+        \luadirect{tex.sprint(arabluatex.abjadify(\luastring{#1}))}}}
+    {\luadirect{tex.sprint(arabluatex.abjadify(\luastring{#1}))}}}
+  \else%
+  \NewDocumentCommand{\abjad}{m}%
+  {\ifbool{al@rlmode}%
+    {\aoline*{%
+        \luadirect{tex.sprint(arabluatex.abjadify(\luastring{#1}))}}}
+    {\luadirect{tex.sprint(arabluatex.abjadify(\luastring{#1}))}}}
+  \fi}
+\NewDocumentCommand{\ayah}{m}{%
+  \luadirect{tex.sprint(arabluatex.ayah(\luastringN{#1}))}}
+\NewDocumentCommand{\arbnull}{m}{\relax}
+\NewDocumentCommand{\abraces}{+m}{%
+  \luadirect{tex.sprint(arabluatex.abraces(\luastringN{#1}))}}
+\DeclareDocumentCommand{\LRmarginpar}{o m}{%
+  \IfNoValueTF{#1}
+  {\marginpar{\textdir TLT #2}}
+  {\marginpar[\textdir TLT #1]{\textdir TLT #2}}}
+\DeclareDocumentCommand{\LRfootnote}{m}{\bgroup\pardir
+  TLT\textdir TLT\footnote{#1}\egroup}
+\DeclareDocumentCommand{\RLfootnote}{m}{\bgroup\pardir
+  TRT\textdir TRT\footnote{#1}\egroup}
+\NewDocumentCommand{\FixArbFtnmk}{}{%
+  \@ifpackageloaded{scrextend}%
+  {\AtBeginDocument{%
+      \deffootnote{2em}{1.6em}{\LR{\thefootnotemark}.\enskip}}}%
+  {\RequirePackage{scrextend}
+    \AtBeginDocument{%
+      \deffootnote{2em}{1.6em}{\LR{\thefootnotemark}.\enskip}}}}
+\NewDocumentCommand{\SetArbOutSuffix}{m}{
+  \luadirect{arabluatex.utffilesuffix(\luastringN{#1})}}
+\NewDocumentCommand{\ArbOutFile}{s O{no} +m}{%
+  \if@pkg@export%
+  \IfBooleanTF{#1}{%
+    #3\luadirect{arabluatex.tooutfile(\luastringN{#3}, "#2")}}{%
+    \luadirect{arabluatex.tooutfile(\luastringN{#3}, "#2")}}%
+  \else\IfBooleanTF{#1}{#3}{}\fi}
+\NewDocumentEnvironment{arabexport}{+b}{%
+  \if@pkg@export%
+  \par
+  #1
+  \luadirect{arabluatex.doexport("yes")}
+  \luadirect{tex.sprint(arabluatex.arbtoutf(\luastringN{#1}))}
+  \luadirect{arabluatex.doexport("no")}
+  \else\par#1\fi
+  }{\par}
+\NewDocumentEnvironment{arab@v@export}{O{} +b}{%
+  \setkeys[al]{verse}[width, gutter, color, utf, delim, mode,
+  metre]{#1}
+  \if@pkg@export\ifal@verse@export%
+  \par
+  #2
+  \luadirect{arabluatex.doexport("arabverse")}
+  \luadirect{tex.sprint(arabluatex.arbtoutf(\luastringN{#2}))}
+  \luadirect{arabluatex.doexport("no")}
+  \else\par#2\fi\else\par#2\fi
+}{\par}
+\NewDocumentCommand{\arbpardir}{}{%
+  \ifx\al@mode\al@mode@trans\setLR\else\setRL\fi}
+\newcommand{\al@warning}[1]{\PackageWarning{arabluatex}{#1}}
+\newcommand{\al@error}[2]{\PackageError{arabluatex}{#1}{#2}}
+\newcommand{\al@wrong@nesting}{\al@error{%
+    (RL/LR)\string\footnote\space is not allowed\MessageBreak inside
+    \string\RL{} and \string\RL{} commands}{%
+    Get rid of the surrounding \string\RL{} or \string\LR{} command.}}
+\newcommand{\al@wrong@mark}{\al@warning{%
+    Unknown Arabic mark in \string\arbmark{}. Replaced
+    with\MessageBreak <??>. Please check your code}}
+\endinput
+%%
+%% End of file `arabluatex.sty'.

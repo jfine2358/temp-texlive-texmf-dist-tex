@@ -1,0 +1,320 @@
+%Lyluatex LaTeX style.
+%
+% Copyright (C) 2015-2019 jperon and others (see CONTRIBUTORS.md)
+% License: MIT
+% This file is part of lyluatex.
+
+\NeedsTeXFormat{LaTeX2e}%
+\ProvidesPackage{lyluatex}[2019/05/27 v1.0f]  %%LYLUATEX_DATE LYLUATEX_VERSION
+
+% Dependencies
+\RequirePackage{luatexbase}
+\RequirePackage{luaotfload}
+\RequirePackage{xkeyval}
+\RequirePackage{graphicx}
+\RequirePackage{minibox}
+\RequirePackage{environ}
+\RequirePackage{currfile}
+\RequirePackage{pdfpages}
+\IfFileExists{varwidth.sty}{\RequirePackage{varwidth}}{}
+
+\RequirePackage{metalogo}
+\newcommand{\lyluatex}{\textit{ly}\LuaTeX}
+
+\edef\ly@false{false}\def\ly@istwosided{\if@twoside\else\ly@false\fi}
+\savecatcodetable 40
+
+% Copied from ifnextok.sty.
+% We use \providecommand instead of \newcommand and \def in order
+% to avoid overriding ifnextok if it is already loaded.
+\providecommand{\IfNextToken}[3]{%
+  \let\nextok@match= #1%
+  \def\nextok@if{#2}\def\nextok@else{#3}%
+  \futurelet\@let@token\nextok@decide%
+}
+\providecommand\nextok@decide{%
+  \ifx\@let@token\nextok@match
+    \expandafter\nextok@if
+  \else
+    \expandafter\nextok@else
+  \fi%
+}
+
+% Options
+\catcode`-=11
+\directlua{
+  local _opt = require(
+    kpse.find_file("lyluatex-options.lua") or "lyluatex-options.lua"
+  )
+  ly_opts = _opt.Opts:new('ly_opts', {
+    ['addversion'] = {'false', 'true', ''},
+    ['autoindent'] = {'true', 'false', ''},
+    ['cleantmp'] = {'false', 'true', ''},
+    ['currfiledir'] = {},
+    ['debug'] = {'false', 'true', ''},
+    ['extra-bottom-margin'] = {'0', _opt.is_dim},
+    ['extra-top-margin'] = {'0', _opt.is_dim},
+    ['fix_badly_cropped_staffgroup_brackets'] = {'false', 'true', ''},
+      ['nofix_badly_cropped_staffgroup_brackets'] = {'default', _opt.is_neg},
+    ['force-compilation'] = {'false', 'true', ''},
+    ['fragment'] = {'', 'false', 'true'},
+        ['nofragment'] = {'default', _opt.is_neg},
+    ['fullpagealign'] = {'crop', 'staffline'},
+    ['fullpagestyle'] = {''},
+    ['gutter'] = {'.4in', _opt.is_dim},
+        ['exampleindent'] = {'gutter', _opt.is_alias},
+        ['leftgutter'] = {'', _opt.is_dim}, ['rightgutter'] = {'', _opt.is_dim},
+    ['hpadding'] = {'0.75ex', _opt.is_dim},
+    ['include_after_body'] = {'false'},
+    ['include_before_body'] = {'false'},
+    ['include_footer'] = {'false'},
+    ['include_header'] = {'false'},
+    ['includepaths'] = {'./'},
+    ['indent'] = {'', _opt.is_dim},
+        ['noindent'] = {'default', _opt.is_neg},
+    ['insert'] = {'', 'systems', 'fullpage', 'inline', 'bare-inline'},
+    ['intertext'] = {''},
+    ['label'] = {'false'}, ['labelprefix'] = {'ly_'},
+    ['line-width'] = {[[\linewidth]], _opt.is_dim},
+    ['ly-version'] = {'2.18.2'},
+    ['max-protrusion'] = {[[\maxdimen]], _opt.is_dim},
+        ['max-left-protrusion'] = {'', _opt.is_dim},
+        ['max-right-protrusion'] = {'', _opt.is_dim},
+    ['noclef'] = {'false', 'true', ''},
+    ['nostaff'] = {'false', 'true', ''},
+    ['nostaffsymbol'] = {'false', 'true', ''},
+    ['notime'] = {'false', 'true', ''},
+    ['notiming'] = {'false', 'true', ''},
+    ['notimesig'] = {'false', 'true', ''},
+    ['optimize-pdf'] = {'false', 'true', ''},
+    ['paperwidth'] = {[[\paperwidth]], _opt.is_dim},
+    ['paperheight'] = {[[\paperheight]], _opt.is_dim},
+    ['papersize'] = {'false'},
+    ['pass-fonts'] = {'false', 'true', ''},
+        ['current-font'] = {}, ['current-font-as-main'] = {'false', 'true', ''},
+        ['rmfamily'] = {}, ['sffamily'] = {}, ['ttfamily'] = {},
+    ['print-page-number'] = {'false', 'true', ''},
+        ['first-page-number'] = {'false', ''},
+        ['print-first-page-number'] = {'true', 'false', ''},
+    ['print-only'] = {''},
+        ['do-not-print'] = {''},
+    ['printfilename'] = {'false', 'true', ''},
+    ['program'] = {'lilypond'},
+    ['protrusion'] = {'', _opt.is_dim},
+        ['noprotrusion'] = {'default', _opt.is_neg},
+    ['raw-pdf'] = {'false', 'true', ''},
+    ['quote'] = {'false', 'true', ''},
+    ['ragged-right'] = {'default', 'true', 'false', ''},
+        ['noragged-right'] = {'default', _opt.is_neg},
+    ['relative'] = {'false', _opt.is_num},
+        ['norelative'] = {'default', _opt.is_neg},
+    ['showfailed'] = {'false', 'true' ,''},
+    ['staffsize'] = {'0', _opt.is_dim},
+        ['inline-staffsize'] = {'0', _opt.is_dim},
+    ['system-count'] = {'0', _opt.is_dim},
+    ['tmpdir'] = {'tmp-ly'},
+    ['twoside'] = {'\ly@istwosided', 'false', 'true', ''},
+    ['verbatim'] = {'false', 'true', ''},
+    ['voffset'] = {'0pt', _opt.is_dim},
+    ['valign'] = {'center', 'top', 'bottom'},
+    ['write-headers'] = {'false'},
+    % MusicXML options
+    ['absolute'] = {'false', 'true', ''},
+    ['language'] = {'false'},
+    ['lxml'] = {'false', 'true'},
+    ['no-articulation-directions'] = {'true', 'false', ''},
+    ['no-beaming'] = {'true', 'false', ''},
+    ['no-page-layout'] = {'true', 'false', ''},
+    ['no-rest-positions'] = {'true', 'false', ''},
+    ['verbose'] = {'false', 'true', ''},
+    ['xml2ly'] = {'musicxml2ly'},
+  })
+}
+\directlua{
+  ly = require(kpse.find_file("lyluatex.lua") or "lyluatex.lua")
+  ly.make_list_file()
+  if ly_opts.cleantmp then
+    luatexbase.add_to_callback('stop_run', ly.clean_tmp_dir, 'lyluatex cleantmp')
+    luatexbase.add_to_callback('stop_run', ly.conclusion_text, 'lyluatex conclusion')
+  end
+}
+\catcode`-=12
+
+%\directlua{ly.TWOSIDE = 'f'}
+
+\newcommand{\ly@setunits}{%
+  \let\ly@old@in\in\protected\def\in{in}%
+  \let\ly@old@pt\pt\protected\def\pt{pt}%
+  \let\ly@old@mm\mm\protected\def\mm{mm}%
+  \let\ly@old@cm\cm\protected\def\cm{cm}%
+  \let\ly@old@hfuzz\hfuzz\setlength{\hfuzz}{\maxdimen}%
+}
+\newcommand{\ly@resetunits}{%
+  \let\in\ly@old@in%
+  \let\pt\ly@old@pt%
+  \let\mm\ly@old@mm%
+  \let\cm\ly@old@cm%
+  \setlength{\hfuzz}{\ly@old@hfuzz}%
+}
+
+% Command to change options during the document
+\newcommand{\lysetoption}[2]{\directlua{ly_opts:set_option([[#1]], [[#2]])}}
+
+% How the filename of a score will look like (if printed)
+\newcommand{\lyFilename}[1]{\noindent #1\par\bigskip}
+
+% Appearance of verbatim 'intertext' (if printed)
+\newcommand{\lyIntertext}[1]{\noindent #1\par\bigskip}
+
+% Appearance of LilyPond version (if printed)
+\newcommand{\lyVersion}[1]{\noindent {\footnotesize\emph{(GNU LilyPond #1)}\par}\bigskip}
+
+% Retrieve the three main font families (rm, sf, tt)
+% and store them as options. Additionally store the
+% *current* font for optional use.
+\newcommand{\ly@currentfonts}{%
+  \begingroup%
+    \directlua{ly_opts:set_option('current-font', ly.get_font_family(font.current()))}%
+    \rmfamily \edef\rmfamilyid{\fontid\font}%
+    \sffamily \edef\sffamilyid{\fontid\font}%
+    \ttfamily \edef\ttfamilyid{\fontid\font}%
+    % Set font families to those of the document
+    % that haven't been set explicitly as options.
+    \directlua{ly.set_fonts(\rmfamilyid, \sffamilyid, \ttfamilyid)}%
+  \endgroup%
+}
+
+% Main commands
+% Score processing
+\newcommand*{\ly@compilescore}[1]{%
+  \ly@setunits%
+  \directlua{
+    ly_opts:set_option('currfiledir', [[\currfiledir]])
+    ly_opts:set_option('twoside', '\ly@istwosided')
+    #1
+    ly.newpage_if_fullpage()
+  }%
+  \ly@resetunits%
+  \ly@currentfonts%
+  \directlua{ly.score:process()}%
+}
+
+% Inclusion of a .ly file
+\newcommand*\includely[2][]{%
+  \directlua{ly.state = 'file'}%
+  \ly@compilescore{ly.file(
+    '\luatexluaescapestring{#2}', [[#1]]
+  )}%
+}
+
+% Inclusion of a musicxml file
+\newcommand*\musicxmlfile[2][]{%
+  \directlua{ly.state = 'file'}%
+  \ly@compilescore{ly.file_musicxml(
+    '\luatexluaescapestring{#2}', [[#1]]
+  )}
+}
+
+% Base environments to include a LilyPond fragment integrated into
+% the document.
+\newcommand\lyscorebegin{\directlua{ly.buffenv_begin()}}
+\newcommand\lyscoreend{\directlua{ly.buffenv_end()}}
+\newenvironment{ly@bufferenv}{%
+  \directlua{
+    ly.insert_inline = string.match([[\options]], 'insert.*inline')
+    if ly.insert_inline then
+      if ly.varwidth_available then
+        tex.print([[
+          \string\begin{varwidth}{\string\linewidth}
+        ]])
+      else
+        ly.insert_inline = false
+        ly.err(
+          [[You have required 'insert=inline' with lilypond environment,
+          but package 'varwidth' wasn't found; either install it, or disable
+          this option.]]
+        )
+      end
+    end
+  }
+  \lyscorebegin%
+}{%
+  \lyscoreend%
+  \ly@compilescore{ly.fragment(ly.score_content, [[\options]])}%
+  \hspace{0pt}\\
+  \directlua{
+    if ly.insert_inline then tex.print([[\string\end{varwidth}]]) end
+  }%
+}
+
+\NewEnviron{ly@compilely}{%
+  \ly@compilescore{ly.fragment(
+    '\luatexluaescapestring{\unexpanded\expandafter{\BODY}}',
+    [[\options]]
+  )}%
+}
+
+% Commands to print verbatim content of the score
+\newcommand\lysetverbenv[2]{%
+  \directlua{ly.verbenv = {
+    '\luatexluaescapestring{\detokenize{#1}}',
+    '\luatexluaescapestring{\detokenize{#2}}'
+  }}%
+}
+
+% Environments to record custom headers and footers to be included in fragments
+\newenvironment{lysavefrag}[1]{%
+  \edef\filename{#1}
+  \lyscorebegin%
+}{%
+  \lyscoreend%
+  \directlua{ly.write_to_file('\filename'..'.ly', table.concat(ly.score_content,'\string\n'))}%
+}
+
+% Commands to transform or define lilypond environments so that it isn't necessary to add empty [].
+\def\lyenv#1{%
+  \expandafter\let\csname ly@env@#1\expandafter\endcsname\csname #1\endcsname%
+  \expandafter\let\csname ly@env@end#1\expandafter\endcsname\csname end#1\endcsname%
+  \expandafter\def\csname #1\endcsname{\IfNextToken[{\csname ly@env@#1\endcsname}{\csname ly@env@#1\endcsname[]}}%
+}
+\long\def\lynewenvironment#1{\@ifnextchar[{\ly@newenv@a{#1}}{\ly@newenv@a{#1}[0]}}
+\long\def\ly@newenv@a#1[#2]{\@ifnextchar[{\ly@newenv@b{#1}{#2}}{\ly@newenv@b{#1}{#2}[]}}
+\long\def\ly@newenv@b#1#2[#3]#4#5{%
+  \newenvironment{#1}[#2][#3]{#4}{#5}
+  \lyenv{#1}
+}
+
+% Parametrized command and environment for included LilyPond fragment
+\lynewenvironment{ly}[1][noarg]{%
+  \edef\options{#1}%
+  \directlua{ly.state = 'env'}%
+  \ly@bufferenv%
+}{%
+  \endly@bufferenv%
+}
+
+
+\newcommand{\lily}[2][]{%
+  \edef\options{#1}%
+  \let\ly@oldrepeat\repeat\def\repeat{}% Fix #51
+  \directlua{ly.state = 'cmd'}%
+  \begin{ly@compilely}%
+    #2
+  \end{ly@compilely}%
+  \let\repeat\ly@oldrepeat%
+}
+
+\newcommand{\lyscore}[1]{\directlua{
+  local i = tonumber('#1') or '#1'
+  if i == '' then i = 1 end
+  tex.sprint(ly.score[i] or '')
+}}
+
+% Commands for compatibility with lilypond-book
+\let\lilypondfile\includely%
+\protected\def\lilypond{%
+  \def\reserved@a{lilypond}%
+  \ifx\reserved@a\@currenvir\expandafter\ly%
+  \else\expandafter\lily\fi%
+}%
+\let\endlilypond\endly

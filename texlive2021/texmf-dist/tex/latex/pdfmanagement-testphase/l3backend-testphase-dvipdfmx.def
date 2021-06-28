@@ -1,0 +1,381 @@
+%%
+%% This is file `l3backend-testphase-dvipdfmx.def',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% l3backend-testphase.dtx  (with options: `drivers,dvipdfmx')
+%% 
+%% Copyright (C) 2019-2021 The LaTeX Project
+%% 
+%% It may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License (LPPL), either version 1.3c of
+%% this license or (at your option) any later version.  The latest
+%% version of this license is in the file:
+%% 
+%%    https://www.latex-project.org/lppl.txt
+%% 
+%% This file is part of the "LaTeX PDF management testphase bundle" (The Work in LPPL)
+%% and all files in that bundle must be distributed together.
+%% 
+%% File: l3backend-testphase.dtx
+\ProvidesExplFile
+  {l3backend-testphase-dvipdfmx.def}{2021-03-17}{}
+  {LaTeX~PDF~management~testphase~bundle~backend~support: dvipdfmx}
+\RequirePackage{l3ref-tmp}
+\cs_generate_variant:Nn \ref_label:nn {en}
+\cs_generate_variant:Nn \ref_value:nn {en}
+\cs_new_protected:Npn \__pdf_backend_ref_label:nn #1 #2
+  {
+     \@bsphack
+     \ref_label:nn{#1}{abspage}
+     \@esphack
+  }
+\cs_new:Npn \__pdf_backend_ref_value:nn #1 #2
+  {
+     \ref_value:nn{#1}{#2}
+  }
+\cs_generate_variant:Nn \__pdf_backend_ref_label:nn {en}
+\cs_generate_variant:Nn \__pdf_backend_ref_value:nn {en}
+    \__kernel_backend_literal:x { dvipdfmx:config~C~ 0x0010 }
+\prop_new:N \g__pdf_tmpa_prop
+\tl_new:N   \l__pdf_tmpa_tl
+\box_new:N  \l__pdf_backend_tmpa_box
+\int_new:N \g__pdf_backend_resourceid_int
+\int_new:N \g__pdf_backend_name_int
+\int_new:N \g__pdf_backend_page_int
+\cs_new:Npn \__kernel_pdf_name_from_unicode_e:n #1
+  {
+    / \str_convert_pdfname:e { \text_expand:n { #1 } }
+  }
+\tl_gput_right:Nn \@kernel@after@shipout@lastpage
+  {
+    \g__kernel_pdfmanagement_end_run_code_tl
+  }
+\tl_if_exist:NTF \@kernel@after@shipout@background
+  {
+    \g@addto@macro \@kernel@before@shipout@background{\relax}
+    \g@addto@macro \@kernel@after@shipout@background
+      {
+        \g__kernel_pdfmanagement_thispage_shipout_code_tl
+      }
+    \tl_gput_left:Nn\@kernel@after@shipout@lastpage
+      {
+        \g__kernel_pdfmanagement_lastpage_shipout_code_tl
+      }
+  }
+  {
+    \hook_gput_code:nnn{shipout/background}{pdf}
+      {
+        \g__kernel_pdfmanagement_thispage_shipout_code_tl
+      }
+    \hook_gput_code:nnn {shipout/lastpage} {pdf}
+      {
+        \g__kernel_pdfmanagement_lastpage_shipout_code_tl
+      }
+  }
+
+\cs_new_protected:Npn \__pdf_backend_Pages_primitive:n #1
+  {
+    \__pdf_backend:n{put~@pages~<<#1>>}
+  }
+  %the primitive
+\cs_new_protected:Npn \__pdf_backend_Page_primitive:n #1
+  {
+    \tex_special:D{pdf:~put~@thispage~<<#1>>}
+  }
+  % the command to store default values.
+  % Uses a prop with pdflatex + dvi,
+  % sets a lua table with lualatex
+\cs_new_protected:Npn \__pdf_backend_Page_gput:nn #1 #2
+  {
+    \pdfdict_gput:nnn {g__pdf_Core/Page}{ #1 }{ #2 }
+  }
+  % the command to remove a default value.
+  % Uses a prop with pdflatex + dvi,
+  % changes a lua table with lualatex
+\cs_new_protected:Npn \__pdf_backend_Page_gremove:n #1
+   {
+     \pdfdict_gremove:nn  {g__pdf_Core/Page}{ #1 }
+   }
+  % the command used in the document.
+  % direct call of the primitive special with dvips/dvipdfmx
+  % \latelua: fill a page related table with lualatex, merge it with the page
+  % table and push it directly
+  % write to aux and store in prop with pdflatex
+\cs_new_protected:Npn \__pdf_backend_ThisPage_gput:nn #1 #2
+  {
+    \__pdf_backend_Page_primitive:n { /#1~#2 }
+  }
+  %the code to push the values, used in shipout
+  %merges the two props and then fills the register in pdflatex
+  %merges the two tables (the one is probably still empty)
+  % and then fills (in lua) in luatex
+  %issues the values stored in the global prop with dvi
+\cs_new_protected:Npn \__pdf_backend_ThisPage_gpush:n #1
+  {
+    \exp_args:Nx \__pdf_backend_Page_primitive:n
+      { \pdfdict_use:n { g__pdf_Core/Page} }
+  }
+\clist_const:Nn \c__pdf_backend_PageResources_clist
+  {
+    ExtGState,
+    ColorSpace,
+    Pattern,
+    Shading,
+  }
+\hook_gset_rule:nnnn{shipout/firstpage}{l3backend-dvipdfmx}{after}{pdf}
+\clist_map_inline:Nn \c__pdf_backend_PageResources_clist
+  {
+    \__pdf_backend_object_new:nn   { Page/Resources/#1 } { dict }
+    \hook_gput_code:nnn{shipout/firstpage}{pdf}{\__pdf_backend_object_write:nn { Page/Resources/#1 } {}}
+  }
+\cs_new_protected:Npn \__pdf_backend_PageResources:n #1
+  {
+    \__pdf_backend:n {put~@resources~<<#1>>}
+  }
+\cs_new_protected:Npn \__pdf_backend_PageResources_gput:nnn #1 #2 #3
+  {
+   % this is not used for output, but there is a test if the resource is empty
+   \exp_args:Nnx
+   \prop_gput:cnn { \__kernel_pdfdict_name:n { g__pdf_Core/Page/Resources/#1} }
+     { \str_convert_pdfname:n {#2} }{ #3 }
+   %objects are not filled with \pdf_object_write as this is not additive!
+    \__pdf_backend:x
+      {
+        put~\__pdf_backend_object_ref:n {Page/Resources/#1}<</#2~#3>>
+      }
+  }
+
+\cs_new_protected:Npn \__pdf_backend_PageResources_obj_gpush: {}
+\bool_new:N \l__pdf_backend_xform_bool
+
+ \cs_set_protected:Npn \__pdf_backend_bdcobject:nn #1 #2 % #1 eg. Span, #2: object name
+   {
+     \int_gincr:N \g__pdf_backend_name_int
+     \__kernel_backend_literal:x
+       {
+         pdf:code~/#1/l3pdf\int_use:N\g__pdf_backend_name_int\c_space_tl BDC
+       }
+     \__kernel_backend_literal:x
+       {
+         pdf:put~@resources~
+           <<
+             /Properties~
+               <<
+                 /l3pdf\int_use:N\g__pdf_backend_name_int\c_space_tl
+                 \__pdf_backend_object_ref:n { #2 }
+               >>
+           >>
+       }
+   }
+ \cs_set_protected:Npn \__pdf_backend_bdcobject:n #1  % #1 eg. Span
+   {
+     \int_gincr:N \g__pdf_backend_name_int
+     \__kernel_backend_literal:x
+       {
+         pdf:code~/#1/l3pdf\int_use:N\g__pdf_backend_name_int\c_space_tl BDC
+       }
+     \__kernel_backend_literal:x
+       {
+         pdf:put~@resources~
+           <<
+             /Properties~
+               <<
+                 /l3pdf\int_use:N\g__pdf_backend_name_int\c_space_tl
+                 \__pdf_backend_object_last:
+               >>
+           >>
+       }
+   }
+\cs_set_protected:Npn \__pdf_backend_bmc:n #1
+   {
+     \__kernel_backend_literal:n {pdf:code~/#1~BMC}  %pdfbase
+   }
+
+\cs_set_protected:Npn \__pdf_backend_bdc_contobj:nn #1 #2
+  {
+    \pdf_object_unnamed_write:nn { dict }{ #2 }
+    \__pdf_backend_bdcobject:n { #1 }
+  }
+
+\cs_set_protected:Npn \__pdf_backend_bdc_contstream:nn #1 #2
+  {
+    \__kernel_backend_literal:n {pdf:code~ /#1~<<#2>>~BDC }
+  }
+
+\cs_set_protected:Npn \__pdf_backend_bdc:nn #1 #2
+  {
+    \bool_if:NTF  \g__pdfmanagement_active_bool
+      {\cs_gset_eq:NN \__pdf_backend_bdc:nn \__pdf_backend_bdc_contobj:nn}
+      {\cs_gset_eq:NN \__pdf_backend_bdc:nn \__pdf_backend_bdc_contstream:nn}
+      \__pdf_backend_bdc:nn {#1}{#2}
+  }
+\cs_set_protected:Npn \__pdf_backend_emc:
+  {
+    \__kernel_backend_literal:n {pdf:code~EMC}  %pdfbase
+  }
+  % properties are handled automatically, but the other resources should be added
+  % at shipout
+\cs_new_protected:Npn \__pdf_backend_PageResources_gpush:n #1
+  {
+    \clist_map_inline:Nn \c__pdf_backend_PageResources_clist
+      {
+        \prop_if_empty:cF { \__kernel_pdfdict_name:n { g__pdf_Core/Page/Resources/##1} }
+          {
+            \__kernel_backend_literal:x
+              {
+                pdf:put~@resources~
+                  <</##1~\__pdf_backend_object_ref:n {Page/Resources/##1}>>
+              }
+          }
+      }
+  }
+\cs_new_protected:Npn \__pdf_backend_NamesEmbeddedFiles_gpush:n #1 %array content
+  {
+    \pdf_object_unnamed_write:nn {dict} { /Names [#1] }
+    %n or x?
+    \__pdf_backend:x {put~@names~<</EmbeddedFiles~\pdf_object_ref_last: >>}
+  }
+
+
+\int_new:N \g__pdf_backend_EmbeddedFiles_int
+\cs_new:Npn \__pdf_backend_EmbeddedFiles_name:
+ {
+   (
+    l3ef
+    \int_compare:nNnT {\g__pdf_backend_EmbeddedFiles_int} < {10}
+     {0}
+    \int_compare:nNnT {\g__pdf_backend_EmbeddedFiles_int} < {100}
+     {0}
+    \int_compare:nNnT {\g__pdf_backend_EmbeddedFiles_int} < {1000}
+     {0}
+    \int_use:N \g__pdf_backend_EmbeddedFiles_int
+   )
+ }
+\seq_new:N \g__pdf_backend_EmbeddedFiles_seq
+\prop_new:N \g__pdf_backend_EmbeddedFiles_named_prop
+\cs_new_protected:Npn  \__pdf_backend_NamesEmbeddedFiles_add:n #1
+    %#1 object ref
+    {
+      \int_gincr:N \g__pdf_backend_EmbeddedFiles_int
+      \prop_gput:Nnx \g__pdf_backend_EmbeddedFiles_named_prop
+        { #1 }
+        { \__pdf_backend_EmbeddedFiles_name: }
+      \seq_gput_right:Nx \g__pdf_backend_EmbeddedFiles_seq
+        { \__pdf_backend_EmbeddedFiles_name: \c_space_tl #1 }
+    }
+
+   % it needs a bit testing if it really works to set the box to 0 before the special ...
+   % does it disturb viewing the xobject?
+   % what happens with the resources (bdc)? (should work as they are specials too)
+   % xetex requires that the special is in horizontal mode. This means it affects
+   % typesetting. But we can no delay the whole form code to shipout
+   % as the object reference and the size is often wanted on the current page.
+   % so we need to allocate a box - but probably they won't be thousands xform
+   % in a document so it shouldn't matter.
+    \cs_new_protected:Npn \__pdf_backend_xform_new:nnnn #1 #2 #3 #4
+    % #1 name
+    % #2 attributes
+    % #3 resources
+    % #4 content, not necessarily a box!
+      {
+         \int_gincr:N \g__pdf_backend_object_int
+         \int_const:cn
+           { c__pdf_backend_xform_ \tl_to_str:n {#1} _int }
+           { \g__pdf_backend_object_int }
+         \box_new:c { g__pdf_backend_xform_#1_box }
+         \hbox_gset:cn { g__pdf_backend_xform_#1_box }
+           {
+             \bool_set_true:N \l__pdf_backend_xform_bool
+             #4
+           }
+         \tl_const:cx
+           { c__pdf_backend_xform_wd_ \tl_to_str:n {#1} _tl }
+           { \tex_the:D \box_wd:c { g__pdf_backend_xform_#1_box } }
+         \tl_const:cx
+           { c__pdf_backend_xform_ht_ \tl_to_str:n {#1} _tl }
+           { \tex_the:D \box_ht:c { g__pdf_backend_xform_#1_box } }
+         \tl_const:cx
+           { c__pdf_backend_xform_dp_ \tl_to_str:n {#1} _tl }
+           { \tex_the:D \box_dp:c { g__pdf_backend_xform_#1_box } }
+         \box_set_dp:cn  { g__pdf_backend_xform_#1_box } { \c_zero_dim }
+         \box_set_ht:cn  { g__pdf_backend_xform_#1_box } { \c_zero_dim }
+         \box_set_wd:cn  { g__pdf_backend_xform_#1_box } { \c_zero_dim }
+         \hook_gput_next_code:nn {shipout/background}
+           {
+             \mode_leave_vertical: %needed, the xform disappears without it.
+             \__pdf_backend:x
+               {
+                 bxobj  ~ \__pdf_backend_xform_ref:n  { #1 }
+                 \c_space_tl width  ~ \pdfxform_wd:n { #1 }
+                 \c_space_tl height ~ \pdfxform_ht:n { #1 }
+                 \c_space_tl depth  ~ \pdfxform_dp:n { #1 }
+               }
+             \box_use_drop:c { g__pdf_backend_xform_#1_box }
+             \__pdf_backend:x {put ~ @resources ~<<#3>> }
+             \__pdf_backend:x
+               {
+                 put~ @resources ~
+                   <<
+                     /ExtGState~ \pdf_object_ref:n { Page/Resources/ExtGState }
+                   >>
+               }
+             \__pdf_backend:x
+               {
+                 put~ @resources ~
+                 <<
+                   /Pattern~ \pdf_object_ref:n { Page/Resources/Pattern }
+                 >>
+               }
+             \__pdf_backend:x
+               {
+                 put~ @resources ~
+                 <<
+                   /Shading~ \pdf_object_ref:n { Page/Resources/Shading }
+                 >>
+               }
+             \__pdf_backend:x
+               {
+                 put~ @resources ~
+                 <<
+                   /ColorSpace~
+                   \pdf_object_ref:n { Page/Resources/ColorSpace }
+                 >>
+               }
+             \exp_args:Nx
+             \__pdf_backend:x {exobj ~<<#2>>}
+           }
+      }
+
+    \cs_new:Npn \__pdf_backend_xform_ref:n #1
+      {
+        @pdf.xform \int_use:c { c__pdf_backend_xform_ \tl_to_str:n {#1} _int }
+      }
+
+    \cs_new_protected:Npn \__pdf_backend_xform_use:n #1
+     {
+       \hbox_set:Nn \l__pdf_backend_tmpa_box
+         {
+           \__pdf_backend:x
+             {
+               uxobj~ \__pdf_backend_xform_ref:n { #1 }
+             }
+         }
+       \box_set_wd:Nn  \l__pdf_backend_tmpa_box { \pdfxform_wd:n { #1 } }
+       \box_set_ht:Nn  \l__pdf_backend_tmpa_box { \pdfxform_ht:n { #1 } }
+       \box_set_dp:Nn  \l__pdf_backend_tmpa_box { \pdfxform_dp:n { #1 } }
+       \box_use_drop:N \l__pdf_backend_tmpa_box
+     }
+%% all
+\prg_new_conditional:Npnn \__pdf_backend_xform_if_exist:n #1 { p , T , F , TF }
+  {
+    \int_if_exist:cTF { c__pdf_backend_xform_ \tl_to_str:n {#1} _int }
+     { \prg_return_true: }
+     { \prg_return_false:}
+  }
+\prg_new_eq_conditional:NNn \pdfxform_if_exist:n\__pdf_backend_xform_if_exist:n
+  { TF , T , F , p }
+%% 
+%%
+%% End of file `l3backend-testphase-dvipdfmx.def'.

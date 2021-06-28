@@ -1,0 +1,159 @@
+%%
+\NeedsTeXFormat{LaTeX2e}
+\def\fileversion{1.02}
+\def\filedate{2018/05/21}
+\ProvidesPackage{stickstootext}
+    [\filedate\space v\fileversion]
+\message{`SticksToo' v\fileversion, \filedate\space Text macros taking advantage of the STIXTwoText fonts (msharpe)}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{textcomp}
+\IfFileExists{mweights.sty}{\RequirePackage{mweights}}{}
+\RequirePackage{etoolbox}
+\IfFileExists{fontaxes.sty}{
+    \RequirePackage{fontaxes}
+    \fa@naming@exception{figures}{{superior}{proportional}}{Sup}
+    \fa@naming@exception{figures}{{superior}{tabular}}{Sup}
+    \def\sufigures{\@nomath\sufigures
+        \fontfigurestyle{superior}\selectfont}
+    \DeclareTextFontCommand{\textsu}{\sufigures}
+    \let\textsuperior\textsu
+
+    \fa@naming@exception{figures}{{inferior}{proportional}}{Inf}
+    \fa@naming@exception{figures}{{inferior}{tabular}}{Inf}
+    \def\infigures{\@nomath\infigures
+        \fontfigurestyle{inferior}\selectfont}
+    \DeclareTextFontCommand{\textin}{\infigures}
+    \let\textinferior\textin
+
+    \fa@naming@exception{figures}{{numerators}{proportional}}{Numr}
+    \fa@naming@exception{figures}{{numerators}{tabular}}{Numr}
+
+    \fa@naming@exception{figures}{{denominators}{proportional}}{Dnom}
+    \fa@naming@exception{figures}{{denominators}{tabular}}{Dnom}
+%
+    \def\defigures{\@nomath\defigures
+        \fontfigurestyle{denominators}\selectfont}
+    \DeclareTextFontCommand{\textde}{\defigures}
+    \let\textdenominators\textde
+    \def\nufigures{\@nomath\nufigures
+        \fontfigurestyle{numerators}\selectfont}
+    \DeclareTextFontCommand{\textnu}{\nufigures}
+    \let\textnumerators\textnu
+	\providecommand*{\textfrac}[2]{%
+    	\textnu{##1}\kern0em\textfractionsolidus\kern0em\textde{##2}}
+}{}
+
+\IfFileExists{xkeyval.sty}{
+    \newcommand*{\SticksToo@scale}{1}
+    \RequirePackage{xkeyval}
+    \DeclareOptionX{scale}{\renewcommand*{\SticksToo@scale}{##1}}
+    \DeclareOptionX{scaled}{\renewcommand*{\SticksToo@scale}{##1}}
+}{
+    \let\DeclareOptionX\DeclareOption
+    \let\ExecuteOptionsX\ExecuteOptions
+    \let\ProcessOptionsX\ProcessOptions
+}
+\let\orig@footnote=\thefootnote
+\let\orig@makefnmark=\@makefnmark
+\def\bfseries@rm{b}
+\def\mdseries@rm{m}
+\newif\ifSticksToo@defaultsups
+\newif\ifSticksToo@KOMA
+\@ifundefined{KOMAClassName}{}{\SticksToo@KOMAtrue}
+\@ifundefined{ver@scrextend.sty}{}{\SticksToo@KOMAtrue}
+
+\newif\if@SticksToo@thrm
+\newif\if@SticksToo@sups
+\newif\if@SticksToo@scosf
+\def\useosf{\edef\SticksToo@figurestyle{OsF}}
+\@onlypreamble\useosf
+\def\useproportional{\edef\SticksToo@figurealign{}}
+\@onlypreamble\useproportional
+
+\DeclareOptionX{lining}{\edef\SticksToo@figurestyle{LF}}
+\DeclareOptionX{lf}{\edef\SticksToo@figurestyle{LF}}
+\DeclareOptionX{oldstyle}{\edef\SticksToo@figurestyle{OsF}}
+\DeclareOptionX{osf}{\edef\SticksToo@figurestyle{OsF}}
+\DeclareOptionX{p}{\useproportional}
+\DeclareOptionX{proportional}{\useproportional}
+\DeclareOptionX{t}{\edef\SticksToo@figurealign{T}}
+\DeclareOptionX{tabular}{\edef\SticksToo@figurealign{T}}
+\DeclareOptionX{theoremfont}{\@SticksToo@thrmtrue}
+\DeclareOptionX{sups}{\@SticksToo@supstrue}
+\DeclareOptionX{scosf}{\@SticksToo@scosftrue}
+\ExecuteOptionsX{lining,tabular}
+\ProcessOptionsX\relax
+
+\if@SticksToo@thrm
+    \patchcmd{\th@plain}{\itshape}{\slshape}{\message{Replaced itshape by slshape in theorem style plain.}}{\message{Unable to replace itshape by slshape in theorem style plain.}}
+\fi
+
+
+\DeclareRobustCommand{\lfstyle}{%
+  \not@math@alphabet\lfstyle\relax
+  \fontfamily{SticksTooText-LF}\selectfont %
+}% to get lf
+\DeclareRobustCommand{\tlfstyle}{%
+  \not@math@alphabet\tlfstyle\relax
+  \fontfamily{SticksTooText-TLF}\selectfont %
+}% to get tlf
+\DeclareRobustCommand{\osfstyle}{%
+  \not@math@alphabet\osfstyle\relax
+  \fontfamily{SticksTooText-OsF}\selectfont %
+}% to get osf
+\DeclareRobustCommand{\tosfstyle}{%
+  \not@math@alphabet\tosfstyle\relax
+  \fontfamily{SticksTooText-TOsF}\selectfont %
+}% to get tosf
+\DeclareRobustCommand{\textlf}[1]{%
+  {\lfstyle #1}%
+}% to get lf
+\DeclareRobustCommand{\texttlf}[1]{%
+  {\tlfstyle #1}%
+}% to get tlf
+\DeclareRobustCommand{\textosf}[1]{%
+  {\osfstyle #1}%
+}% to get osf
+\DeclareRobustCommand{\texttosf}[1]{%
+  {\tosfstyle #1}%
+}% to get tosf
+
+\if@SticksToo@scosf %
+\DeclareRobustCommand{\textsc}[1]{%
+{\fontfamily{SticksTooText-\SticksToo@figurealign%
+OsF}\fontshape{sc}\selectfont #1}%
+}\fi% use OsF in small caps
+
+\renewcommand*{\rmdefault}{SticksTooText-TLF} % always TLF in math
+\renewcommand*{\familydefault}{\rmdefault}
+%\newcommand{\Qswash}{{\fontencoding{TS1}\fontfamily{SticksToo-LF}\selectfont \char59 }}
+%\newcommand{\Qnoswash}{{\fontencoding{TS1}\fontfamily{SticksToo-LF}\selectfont \char58 }}
+
+\if@SticksToo@sups %
+  \ifSticksToo@KOMA %
+  \else % not KOMA
+    \def\f@@tn@te{footnote}
+    \def\@makefnmark{%
+      \ifx\@mpfn\f@@tn@te% footnote not in a minipage
+        \ifx\thefootnote\orig@footnote%
+          \hbox{\sustyle\hspace*{.04em}\@thefnmark\hspace*{.03em}}%
+        \else%
+          \orig@makefnmark%
+        \fi
+      \else% footnote in a minipage
+        \orig@makefnmark%
+      \fi}%
+   \fi
+\fi
+
+\renewcommand*{\sfdefault}{qhv}
+\renewcommand*{\ttdefault}{ntxtt}
+
+\AtEndPreamble{%
+	\renewcommand*{\rmdefault}{SticksTooText-\SticksToo@figurealign%
+	\SticksToo@figurestyle}
+	\normalfont}
+
+\renewcommand*{\familydefault}{\rmdefault}
+
+\endinput

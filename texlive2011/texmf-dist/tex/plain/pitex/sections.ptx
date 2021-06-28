@@ -1,0 +1,217 @@
+\def\ptx@bookmark_list{}
+\def\ptx@bookmark_stack{}
+\def\createbookmark{%
+  \ifnextnospace[{\ptx@createbookmark}{\ptx@createbookmark[]}%
+  }
+\def\ptx@createbookmark[#1]#2#3#4{%
+  \passexpanded{\ptx@bookmark_add{#2}{{#3}{#4}{#1}}}\ptx@bookmark_stack
+  }
+\bgroup
+\setcatcodes{\{\}=12,<=1,>=2}
+\gdef\ptx@leftbrace<{>
+\gdef\ptx@rightbrace<}>
+\egroup
+\newfor\ptx@bookmark_add{2}#3,{%
+  \straightenif{ifdim}{#1pt>#3pt }
+    {\eaddright\ptx@bookmark_list{#2\ptx@leftbrace}
+     \retrieverest{\ptx@bookmark_addtostack{#1,#3,}}}
+    {\eaddright\ptx@bookmark_list{\ptx@rightbrace,}}
+  }[\eaddright\ptx@bookmark_list{#2\ptx@leftbrace}
+    \ptx@bookmark_addtostack{#1,}{}]
+\def\ptx@bookmark_addtostack#1#2{\def\ptx@bookmark_stack{#1#2}}
+\newfor\ptx@bookmark_endlist#1,{%
+  \eaddright\ptx@bookmark_list{\ptx@rightbrace,}%
+  }
+\newfor\ptx@bookmark_process#1#2#3#4,{%
+  \ptx@bookmark_subcount{0}{#1}{#2}{#3}{#4}%
+  \reverse\iffemptystring{#4}{\ptx@bookmark_process{#4}}%
+  }
+\newfor\ptx@bookmark_subcount{4}#5,{%
+  \passarguments{#1+1}{#2}{#3}{#4}
+  }[\def\ptx@bookmark_sign{-}%
+%    \def\ptx@bookmark_options{}%
+%    \ptx@option_launchloop{bookmark}{#4}%
+    \pdfoutline attr {#4} goto name {#3} count \ptx@bookmark_sign\the\numexpr(#1)  {#2}%
+   ]
+\def\processbookmarks{%
+  \reverse\iffemptycommand\ltr@bookmark_list{%
+    \expandafter\ptx@bookmark_endlist\expandafter{\ptx@bookmark_stack}
+    \bgroup
+      \setcatcodes{_@=11}
+      \scantokens\expandafter{\expandafter\gdef\expandafter\ptx@bookmark_list\expandafter{\ptx@bookmark_list}}%
+    \egroup
+    \expandafter\ptx@bookmark_process\expandafter{\ptx@bookmark_list}}
+  }
+%\let\ptx@end\end
+%\def\end{\processbookmarks\ptx@end}
+%
+\newcount\ptx@section_link
+\let\sectionaction\unbrace
+\def\tosection#1#2{%
+  \reverse\iffcs{ptx@section_dest:#1}
+    {\global\advance\ptx@section_link1
+     \xdefcs{ptx@section_dest:#1}{\the\ptx@section_link}}%
+  \sectionaction{\pdfstartlink attr {/Border [0 0 0]} goto name {ptx@section_link:\usecs{ptx@section_dest:#1}}#2\pdfendlink}%
+  }
+  
+\newcount\ptx@section_skip % A count, since vertical skips are expressed in number of lines.
+\def\sectioncommand#1#2#3{%
+  \ifnext[
+    {\ptx@sectioncommand{#1}{#2}{#3}}
+    {\ptx@sectioncommand{#1}{#2}{#3}[ptx@noop]}%
+  }
+
+\def\ptx@sectioncommand#1#2#3[#4]{%
+  \par\removelastskip\penalty0
+  \ifvalue #1 : clear = true 
+           {\vfil\penalty-10000}% Clear the page...
+           {% Or skip some lines. The "beforeskip" attribute is
+            % the number of blank lines one wants before a section
+            % title, afterskip is the same thing after,
+            % and "minimum" is the minimum number of lines
+            % one wants after the section title.
+            \ifdim\dimexpr(\pagegoal-\pagetotal) < \numexpr(\usevalueor #1 : beforeskip 0+\usevalueor #1 : afterskip 0+\usevalueor #1 : minimum 0) \baselineskip
+              \vfil\penalty-10000 % Not enough room.
+            \else
+              \vskip\usevalueor #1 : beforeskip 0 \baselineskip
+            \fi}%
+%
+% Sections have an internal count, incremented here.
+  \storevalueor\ptx@tempsectioncount #1 : internalcount {\def\ptx@tempsectioncount{0}}%
+  \esetattribute #1 : internalcount = {\the\numexpr(\ptx@tempsectioncount+1)}
+  \resetbelow{#1}% Resets all internal counts of sections which depend on the current one (i.e. "section" depends on "chapter", etc.).
+%
+%
+  \ptx@attribute_set{section}%
+  \ifvalue #1 : link = true {%
+    \ifcs{ptx@section_dest:#4}
+      {\edef\ptx@temp{ptx@section_link:\usecs{ptx@section_dest:#4}}}
+      {\global\advance\ptx@section_link1
+       \edef\ptx@temp{ptx@section_link:\the\ptx@section_link}%
+       \reverse\iffstring{#4}{ptx@noop}{\xdefcs{ptx@section_dest:#4}{\the\ptx@section_link}}}%
+    \pdfdest name {\ptx@temp} xyz
+    \passexpanded{\createbookmark[\usevalue #1 : bookmarkstyle ]{\usevalueor #1 : bookmarklevel 0}{\detokenize{#2}}}{\ptx@temp}%
+    }{}%
+  \noindent
+  \hskip\usevalueor #1 : indent {0pt}%
+  \bgroup
+    \ifattribute #1 : color {\pdfcolorstack0 push {\usevalueand #1 : color { rg}{} \usevalueand #1 : color { RG}{}}}{}%
+    \usevalue #1 : font
+    \ifvalue #1 : number = none {}{%
+      \usevalue #1 : beforenumber
+      \ifcasevalue #1 : number
+        \val roman  \makeroman
+        \val arabic \unbrace
+      \endval{\usevalue #1 : internalcount }%
+      \usevalue #1 : afternumber
+      }%
+    #3%
+    \ifattribute #1 : color {\pdfcolorstack0 pop}{}
+  \egroup
+  \ifvalue #1 : inline = true
+           {}
+           {\vskip\usevalueor #1:afterskip 0\baselineskip}%
+  \ptx@attribute_unset{section}%
+  }
+\newwhile\resetbelow1{}{%
+  \ifattribute #1 : below
+               {\storevalue\tempbelow #1 : below
+                \esetattribute\tempbelow : internalcount = 0
+                \passvalue{\changewhile} #1 : below
+                }{\breakwhile{}}%
+  }
+\def\makeroman#1{%
+  \uppercase\expandafter{\romannumeral#1\relax}%
+  }
+
+\setparameter metasection :
+  clear        = false
+  minimum      = 3
+  inline       = false
+  number       = arabic
+  link         = true
+	afternumber  = "\kern.3em"
+
+\setparameter chapter section subsection :
+  meta = metasection
+
+\setparameter chapter :
+  clear         = true
+  number        = arabic
+  below         = section
+  afterskip     = 3
+  indent        = "0pt plus 1fill"
+  beforenumber  = "chapitre "
+  afternumber   = {\par\hfill}
+  bookmarklevel = 1
+  
+\setparameter section :
+  beforeskip    = 2
+  below         = subsection
+  bookmarklevel = 2
+
+\setparameter subsection :
+  font          = \it
+  beforeskip    = 1
+  beforenumber  = "\usevalue section:internalcount ."
+  minimum       = 3
+  bookmarklevel = 3
+
+\def\chaptertitle{}%
+\def\chapter#1{%
+  \def\chaptertitle{#1}%
+  \sectioncommand{chapter}{#1}{#1}%	
+  }
+\def\section#1{\sectioncommand{section}{#1}{#1}}
+\def\subsection#1{\sectioncommand{subsection}{#1}{#1}}
+
+\newattribute{section}
+%
+% Move pending titles if they happen. They shouldn't by themselves,
+% but the next paragraph might want more room than available
+% and clear the page. Hence this.
+% It reads box 255 backwards and move everything with set
+% section attribute to the next page. If the first such material
+% is a line, a (totally arbitrary) one-line skip is added, unless
+% there's already a skip on top of the next page that isn't
+% TeX-inserted (e.g. \baselineskip).
+% This is probably totally insufficient.
+%
+\directlua{%
+  onelineskip = node.new(11)
+  onelineskip.kern = tex.baselineskip.width
+  move_pendingtitles = function (head)
+    local item, first = node.slide(head), true
+    while item do
+      if node.has_attribute(item,\ptx@attribute_number{section}) then
+        local nextitem = item.prev
+        node.remove(head,item)
+        if not ((item.id == 10 or item.id == 11) and first) then
+          node.insert_before(tex.lists.contrib_head, tex.lists.contrib_head, item)
+          tex.lists.contrib_head = item
+        end
+        if item.id == 0 then
+          if first then
+            first = false
+            if not (tex.lists.contrib_head.next.id == 10 and tex.lists.contrib_head.next.subtype == 0) then
+              node.insert_after(tex.lists.contrib_head, item, node.copy(onelineskip))
+              lualog("A title has been moved from page " .. tex.count[0] ..
+                    " to page " .. tex.count[0]+1 .. ".")
+            end
+          end
+        else
+        end
+        item = nextitem
+      else
+        if item.id == 0 or item.id == 1 then
+          item = nil
+        else
+          item = item.prev
+        end
+      end
+    end
+  end
+  }
+\def\removependingtitles{%
+  \directlua{move_pendingtitles(tex.box[255].list)}%
+  }

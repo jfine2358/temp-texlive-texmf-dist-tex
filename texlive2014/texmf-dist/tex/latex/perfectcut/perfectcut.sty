@@ -1,0 +1,404 @@
+%%% perfectcut.sty 
+%%%%%%%%%%%%%%%%%%%
+%%%
+%%% Author: Guillaume Munch-Maccagnoni
+%%% http://www.pps.univ-paris-diderot.fr/~munch/
+%%% 
+%%% This work may be distributed and/or modified under the conditions of
+%%% the LaTeX Project Public License, either version 1.3 of this license
+%%% or (at your option) any later version. Refer to the README file.
+%%% 
+%%%
+\ProvidesPackage{perfectcut}[02/02/2014 Perfect Cut v1.9]
+%%% Option processing
+\newif\ifcut@mathstyle@
+\cut@mathstyle@true
+\newif\ifcut@realVert@
+\cut@realVert@false
+\DeclareOption{nomathstyle}{\cut@mathstyle@false}
+\let\cutstyle\textstyle
+\DeclareOption{realVert}{\cut@realVert@true}
+\ProcessOptions*
+%%% End option processing
+\RequirePackage{amsmath}
+\RequirePackage{graphicx}
+\RequirePackage{calc}
+\newmuskip\cutangleskip
+\newmuskip\cutbarskip
+\newmuskip\cutinterbarskip
+\newmuskip\cutangleouterskip
+\newif\ifcutdebug
+%%%
+\newcommand{\cutprimitive}[2]{\cut@{#1}{#2}}
+\newcommand{\cutbraprimitive}[1]{\cut@bra{#1}}
+\newcommand{\cutketprimitive}[1]{\cut@ket{#1}}
+\let\perfectcut\cutprimitive
+\let\perfectbra\cutbraprimitive
+\let\perfectket\cutketprimitive
+%%% The following variables can be redefined in your preamble
+\cutbarskip=5.0mu plus 8.0mu minus 2.0mu
+\cutangleskip=0.0mu plus 8mu minus 1.0mu
+\cutangleouterskip=0.0mu plus 8mu minus 0.0mu
+\cutinterbarskip=0.8mu plus 0mu minus 0mu
+\cutdebugfalse%print the size after each \rangle?
+%%%
+%%%\nthleft{4}\langle ==> fourth size of \langle; begins at 0
+\newcommand{\nthleft}[2]{\cut@nthldelim{#1}{#2}}
+%%%same for right and middle
+\newcommand{\nthright}[2]{\cut@nthrdelim{#1}{#2}}
+\newcommand{\nthmiddle}[2]{\cut@nthmdelim{#1}{#2}}
+%%%\lenleft{3mm}\langle ===> \langle of size at least 3mm
+%%%in math mode it is preferable to use math units such as 10mu,...
+%%%however only regular units are implemented now.
+\newcommand{\lenleft}[2]{\cut@lengthldelim{#1}#2}
+%%%same for right and middle
+\newcommand{\lenright}[2]{\cut@lengthrdelim{#1}#2}
+\newcommand{\lenmiddle}[2]{\cut@lengthmdelim{#1}#2}
+%%%\reallenleft{3mm}\langle ===> \langle of size 3mm by resizing the
+%%%closest glyph
+\newcommand{\reallenleft}[2]{\cut@reallengthldelim{#1}{#2}}
+%%%same for right and middle
+\newcommand{\reallenright}[2]{\cut@reallengthrdelim{#1}{#2}}
+\newcommand{\reallenmiddle}[2]{\cut@reallengthmdelim{#1}{#2}}
+
+% setting up mathstyle
+\ifcut@mathstyle@
+  \RequirePackage{mathstyle}
+  \def\currentcutstyle{\currentmathstyle}
+\else
+  \def\currentcutstyle{\cutstyle}
+\fi
+
+%setting up realVert
+\ifcut@realVert@
+  \def\cut@bar{\cut@Vert}
+\else
+  \def\cut@bar{\cut@vert}
+\fi
+
+\newcommand{\cut@setshortfall}[1]{%
+  \skip0=\delimitershortfall%
+  \global\delimitershortfall=-0.1pt%that's the trick to get perfect growth
+  \count0=\delimiterfactor%
+  \global\delimiterfactor=901\relax%
+  \hbox{$\m@th\currentcutstyle#1$}%
+  \global\delimitershortfall=\skip0%
+  \global\delimiterfactor=\count0%
+}
+
+\newcommand{\cut@nextrdelim}[2]{%
+  \left.\hspace{-\nulldelimiterspace}\vphantom{#2}\right#1%
+}
+\newcommand{\cut@nextldelim}[2]{%
+  \left#1\vphantom{#2}\hspace{-\nulldelimiterspace}\right.%
+}
+\newcommand{\cut@nextmdelim}[2]{%
+  \left.\hspace{-\nulldelimiterspace}\middle#1\vphantom{#2}\hspace{-\nulldelimiterspace}\right.%
+}
+
+\newcommand{\cut@lengthldelim}[2]{\cut@setshortfall{\cut@nextldelim#2{\rule[-0.101pt]{0pt}{#1}}}}
+\newcommand{\cut@lengthrdelim}[2]{\cut@setshortfall{\cut@nextrdelim#2{\rule[-0.101pt]{0pt}{#1}}}}
+\newcommand{\cut@lengthmdelim}[2]{\cut@setshortfall{\cut@nextmdelim#2{\rule[-0.101pt]{0pt}{#1}}}}
+\newcommand{\cut@reallengthldelim}[2]{\cut@resizetoheight{#1}{\cut@lengthldelim{#1}{#2}}}
+\newcommand{\cut@reallengthrdelim}[2]{\cut@resizetoheight{#1}{\cut@lengthrdelim{#1}{#2}}}
+\newcommand{\cut@reallengthmdelim}[2]{\cut@resizetoheight{#1}{\cut@lengthmdelim{#1}{#2}}}
+
+%\newcommand{\cut@nextrangle}[1]{%
+%  \left.\hspace{-\nulldelimiterspace}\vphantom{#1}\right\rangle%
+%}
+\newcommand{\cut@nextrangle}[1]{\cut@nextrdelim{\rangle}{#1}}
+
+%\newcommand{\cut@nextlangle}[1]{%
+%  \left\langle\vphantom{#1}\hspace{-\nulldelimiterspace}\right.%
+%}
+\newcommand{\cut@nextlangle}[1]{\cut@nextldelim{\langle}{#1}}
+
+\newcommand{\cut@iter}[2]{%
+  \ifcase#1%
+    #2{\cdot}   % 0 = smallest. This dot is here to prevent a
+            % bug regarding vertical positioning.
+  \else%
+    \count0=#1%
+    \advance\count0 -1\relax%
+    \expandafter#2{\expandafter\cut@iter{\the\count0}#2}%
+ \fi%
+}
+
+\newcommand{\cut@primitive}[2]{%
+  %resetting shortfall
+  \cut@setshortfall{\cut@iter#2#1}%
+}
+
+%%%\cut@nthdelim{n}{delim}{f}
+\newcommand{\cut@nthdelim}[3]{
+  \def\cut@tempnextdelim{#3{#2}}%
+  \cut@primitive\cut@tempnextdelim{#1}%
+}
+\newcommand{\cut@nthldelim}[2]{\cut@nthdelim{#1}{#2}{\cut@nextldelim}}
+\newcommand{\cut@nthrdelim}[2]{\cut@nthdelim{#1}{#2}{\cut@nextrdelim}}
+\newcommand{\cut@nthmdelim}[2]{\cut@nthdelim{#1}{#2}{\cut@nextmdelim}}
+
+\newcommand{\cut@langleprimitive}[1]{\cut@primitive\cut@nextlangle{#1}}
+\newcommand{\cut@rangleprimitive}[1]{\cut@primitive\cut@nextrangle{#1}}
+%\newcommand{\cut@langleprimitive}[1]{\cut@nthldelim{#1}{\langle}}
+%\newcommand{\cut@rangleprimitive}[1]{\cut@nthrdelim{#1}{\rangle}}
+
+\newcommand{\cut@vertprimitiveunscaled}[1]{\cut@nthmdelim{#1}\vert}%\hbox{$\m@th\mathord{|}$}
+
+\newcommand{\cut@Vertprimitiveunscaled}[1]{\cut@nthmdelim{#1}\Vert}
+
+\newsavebox\cut@boxi
+\newsavebox\cut@boxj
+
+\newcommand{\cut@resizetoheight}[2]{%
+  \resizebox{!}{#1}{\hbox{$\m@th\currentcutstyle#2$}}%
+}
+
+\newcommand{\cut@resizetoheightof}[2]{%
+  \sbox{\cut@boxi}{$\m@th\currentcutstyle#1$}%
+  \sbox{\cut@boxj}{$\m@th\currentcutstyle#2$}%
+  \raisebox{-\dp\cut@boxi}{%
+    \resizebox{\width}{\ht\cut@boxi+\dp\cut@boxi}{%
+      \raisebox{\dp\cut@boxj}{\usebox{\cut@boxj}}%
+    }%
+  }
+}
+
+\newcommand{\cut@vertprimitive}[1]{%
+\setbox0=\hbox{%
+  $\m@th\currentcutstyle%
+  \cut@resizetoheightof{\cut@langleprimitive{#1}}{\cut@vertprimitiveunscaled{#1}}%
+  $}%
+\dimen0=\wd0
+\def\cut@unspace{%removing the margins around the bar
+  \kern -.5\dimen0%
+  \mkern.75mu%
+}%
+\cut@unspace%
+\copy0%
+\cut@unspace%
+\mspace{\cutinterbarskip}%
+\penalty \the\binoppenalty\relax%
+\cut@unspace%
+\box0%
+\cut@unspace%
+}
+
+\newcommand{\cut@halfvertprimitive}[1]{%
+\cut@resizetoheightof{\cut@langleprimitive{#1}}{\cut@vertprimitiveunscaled{#1}}%
+}
+
+\newcommand{\cut@Vertprimitive}[1]{%
+\mkern-3.26mu%
+\cut@resizetoheightof{\cut@langleprimitive{#1}}{\cut@Vertprimitiveunscaled{#1}}%
+\mkern-3.26mu%
+}
+
+
+\newcommand{\cut@langle}[1]{%
+  \edef\cut@n{\expandafter\the#1}%
+  %yes, i'm turning the integer into tokens to do call-by-value
+  \cut@langleprimitive{\cut@n}%
+}
+
+\newcommand{\cut@rangle}[1]{%
+  \edef\cut@n{\expandafter\the#1}%
+  \cut@rangleprimitive{\cut@n}%
+    \ifcutdebug^\cut@n\else\fi%
+}
+
+\newcommand{\cut@vert}[1]{%
+  \edef\cut@n{\expandafter\the#1}%
+  \cut@vertprimitive{\cut@n}%
+}
+
+\newcommand{\cut@halfvert}[1]{%
+  \edef\cut@n{\expandafter\the#1}%
+  \cut@halfvertprimitive{\cut@n}%
+}
+
+\newcommand{\cut@Vert}[1]{%
+  \edef\cut@n{\expandafter\the#1}%
+  \cut@Vertprimitive{\cut@n}%
+}
+
+\newcommand{\cut@angles}[1]{\cut@langle{#1}\cut@vert{#1}\cut@rangle{#1}}
+
+%%% now the main algorithm
+
+\newcounter{cut@depth}
+
+\newcommand{\cut@testangles}{%
+  \setcounter{cut@depth}{0}%
+  \def\cut@d{%
+    \cut@angles{\value{cut@depth}}%
+    \stepcounter{cut@depth}%
+  }
+  \cut@d\cut@d\cut@d\cut@d\cut@d\cut@d\cut@d
+}
+
+\newcommand{\cut@testssstyle}{\scriptscriptstyle{\cut@testangles}}
+\newcommand{\cut@testsstyle}{\scriptstyle{\cut@testangles}}
+\newcommand{\cut@testnormal}{\textstyle{\cut@testangles}}
+
+\newcommand{\cut@testsize}[1]{
+{#1 \[ \mathrm{\f@size\,pt:} \begin{array}{l}
+  \cut@testnormal{}\\
+  \cut@testsstyle{}\\
+  \cut@testssstyle{}
+  \end{array}\]}
+}
+
+\newcommand{\cut@test}{
+\cut@testsize{\Large}
+\cut@testsize{\large}
+\cut@testsize{}
+\cut@testsize{\small}
+\cut@testsize{\footnotesize}
+\cut@testsize{\scriptsize}
+\cut@testsize{\tiny}
+}
+
+% lengths with names of the form \cut@height{depth}
+\newcommand{\cut@localheight}{cut@height\thecut@depth}
+\newcommand{\cut@newlocalheightcounter}{%
+  \@ifundefined{c@\cut@localheight}{\newcounter{\cut@localheight}}{}
+}
+
+% boxes with names of the form  \cut@savebox{num}@{depth}
+\newcommand{\cut@localsavebox}[1]{cut@savebox#1@\thecut@depth}
+\newcommand{\cut@newlocalsavebox}[1]{%
+  \@ifundefined{\cut@localsavebox{#1}}{%
+    \expandafter\newsavebox\csname\cut@localsavebox{#1}\endcsname%
+  }{}%
+}
+
+\newcounter{cut@finalheight}
+
+\newsavebox\cut@boxleft
+\newsavebox\cut@boxright
+
+\newcommand{\cut@}[2]{%
+  \setcounter{cut@finalheight}{0}%
+  {%
+    \addtocounter{cut@depth}{1}%
+    %defining variables
+    \cut@newlocalheightcounter%
+    \cut@newlocalsavebox{0}%
+    \cut@newlocalsavebox{1}%
+    %computing recursively
+    \setcounter{\cut@localheight}{-1}%
+    \expandafter\sbox\csname\cut@localsavebox{0}\endcsname%
+      {$\m@th\currentcutstyle#1$}%
+    \expandafter\sbox\csname\cut@localsavebox{1}\endcsname%
+      {$\m@th\currentcutstyle#2$}%
+    \addtocounter{\cut@localheight}{1}%
+    %exporting values outside the local scope
+    \setcounter{cut@finalheight}{\value{\cut@localheight}}%
+    \global\sbox\cut@boxleft%
+      {\expandafter\usebox\csname\cut@localsavebox{0}\endcsname}%
+    \global\sbox\cut@boxright%
+      {\expandafter\usebox\csname\cut@localsavebox{1}\endcsname}%
+    \addtocounter{cut@depth}{-1}%
+  }%
+  \@ifundefined{c@\cut@localheight}{}{%
+    \ifnum\value{cut@finalheight}>\value{\cut@localheight}%
+     \setcounter{\cut@localheight}{\value{cut@finalheight}}%
+    \fi%
+    }%end @ifundefined
+  \mspace{\cutangleouterskip}%
+  {\cut@langle{\value{cut@finalheight}}}%
+  \mspace{\cutangleskip}%
+  \usebox{\cut@boxleft}%
+  \mspace{\cutbarskip}%
+  {\cut@bar{\value{cut@finalheight}}}%
+  \mspace{\cutbarskip}%
+  \usebox{\cut@boxright}%
+  \mspace{\cutangleskip}%
+  {\cut@rangle{\value{cut@finalheight}}}%
+  \mspace{\cutangleouterskip}%
+}
+
+\newcommand{\cut@bra}[1]{%
+  \setcounter{cut@finalheight}{0}%
+  {%
+    \addtocounter{cut@depth}{1}%
+    %defining variables
+    \cut@newlocalheightcounter%
+    \cut@newlocalsavebox{0}%
+    %\cut@newlocalsavebox{1}%
+    %computing recursively
+    \setcounter{\cut@localheight}{-1}%
+    \expandafter\sbox\csname\cut@localsavebox{0}\endcsname%
+      {$\m@th\currentcutstyle#1$}%
+    %\expandafter\sbox\csname\cut@localsavebox{1}\endcsname%
+    %  {$\m@th\currentcutstyle#2$}%
+    \addtocounter{\cut@localheight}{1}%
+    %exporting values outside the local scope
+    \setcounter{cut@finalheight}{\value{\cut@localheight}}%
+    \global\sbox\cut@boxleft%
+      {\expandafter\usebox\csname\cut@localsavebox{0}\endcsname}%
+    %\global\sbox\cut@boxright%
+    %  {\expandafter\usebox\csname\cut@localsavebox{1}\endcsname}%
+    \addtocounter{cut@depth}{-1}%
+  }%
+  \@ifundefined{c@\cut@localheight}{}{%
+    \ifnum\value{cut@finalheight}>\value{\cut@localheight}%
+     \setcounter{\cut@localheight}{\value{cut@finalheight}}%
+    \fi%
+    }%end @ifundefined
+  \mspace{\cutangleouterskip}%
+  {\cut@langle{\value{cut@finalheight}}}%
+  \mspace{\cutangleskip}%
+  \usebox{\cut@boxleft}%
+  \mspace{\cutbarskip}%
+  \mkern-3.26mu%
+  {\cut@halfvert{\value{cut@finalheight}}}%
+  \mspace{\cutangleouterskip}%
+  %\mspace{\cutbarskip}%
+  %\usebox{\cut@boxright}%
+  %\mspace{\cutangleskip}%
+  %\cut@rangle{\value{cut@finalheight}}%
+}
+
+\newcommand{\cut@ket}[1]{%
+  \setcounter{cut@finalheight}{0}%
+  {%
+    \addtocounter{cut@depth}{1}%
+    %defining variables
+    \cut@newlocalheightcounter%
+    \cut@newlocalsavebox{0}%
+    %\cut@newlocalsavebox{1}%
+    %computing recursively
+    \setcounter{\cut@localheight}{-1}%
+    \expandafter\sbox\csname\cut@localsavebox{0}\endcsname%
+      {$\m@th\currentcutstyle#1$}%
+    %\expandafter\sbox\csname\cut@localsavebox{1}\endcsname%
+    %  {$\m@th\currentcutstyle#2$}%
+    \addtocounter{\cut@localheight}{1}%
+    %exporting values outside the local scope
+    \setcounter{cut@finalheight}{\value{\cut@localheight}}%
+    \global\sbox\cut@boxleft%
+      {\expandafter\usebox\csname\cut@localsavebox{0}\endcsname}%
+    %\global\sbox\cut@boxright%
+    %  {\expandafter\usebox\csname\cut@localsavebox{1}\endcsname}%
+    \addtocounter{cut@depth}{-1}%
+  }%
+  \@ifundefined{c@\cut@localheight}{}{%
+    \ifnum\value{cut@finalheight}>\value{\cut@localheight}%
+     \setcounter{\cut@localheight}{\value{cut@finalheight}}%
+    \fi%
+    }%end @ifundefined
+  %\cut@langle{\value{cut@finalheight}}%
+  %\mspace{\cutangleskip}%
+  %\usebox{\cut@boxleft}%
+  %\mspace{\cutbarskip}%
+  \mspace{\cutangleouterskip}%
+  {\cut@halfvert{\value{cut@finalheight}}}%
+  \mkern-3.26mu%
+  \mspace{\cutbarskip}%
+  \usebox{\cut@boxleft}%right}%
+  \mspace{\cutangleskip}%
+  {\cut@rangle{\value{cut@finalheight}}}%
+  \mspace{\cutangleouterskip}%
+}

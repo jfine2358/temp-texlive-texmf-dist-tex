@@ -1,0 +1,107 @@
+%% edichokey.sty
+%% Copyright 2017--2020 Yuchang Yang < yang.yc.allium@gmail.com >
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3c
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+% 
+% The Current Maintainer of this work is Yuchang Yang.
+%
+% This work consists of:
+%   - the style file: [edichokey.sty];
+%   - the manual files: [edichokey-doc-en.tex, edichokey-doc-en.pdf, README.md];
+%   - the example files: [edichokey-ex.tex, edichokey-ex.pdf].
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{edichokey}[2020/08/31 v2.01y package edichokey]
+\makeatletter
+\def\edk@get@array#1{\csname edk@array@#1\endcsname}
+\def\edk@set@array#1#2{\expandafter\xdef\csname edk@array@#1\endcsname{#2}}
+\newif\if@edk@named@
+\newif\if@edk@hyperref@\@edk@hyperref@false
+\DeclareOption{hyperref}{\@edk@hyperref@true}
+\ProcessOptions
+\RequirePackage{hyperref}
+\newdimen\alterindent\alterindent1.2em
+\newdimen\taxonrightskip\taxonrightskip2em
+\newdimen\edk@leftskip
+\newbox\edk@header
+\newcount\edk@key
+\newcount\edk@depth
+\newcount\edk@couplet
+\def\edknamestyle{\bfseries\itshape}
+\def\edk@prefix{}
+\def\@take@bracket[#1]{\def\edk@prefix{#1\unskip\space}}
+\def\@take@brace#1{\@take@bracket[#1]}
+\def\@take@arg{%
+  \ifx\@next@token[%]
+    \let\temp@\@take@bracket
+  \else
+    \ifx\@next@token\bgroup%\egroup
+      \let\temp@\@take@brace
+    \else
+      \let\temp@\relax
+    \fi
+  \fi
+  \temp@}
+\def\take@arg{\futurelet\@next@token\@take@arg}
+\def\dot@fill#1{\leavevmode\leaders\hb@xt@.44em{\hss.\hss}\hskip#1\kern\z@}
+\def\dot@line{%
+  \unskip\dot@fill{0pt plus 1fil}\penalty150%
+  \null\nobreak\dot@fill{12pt plus 1fill}}
+\newenvironment{Key}{%
+  \global\advance\edk@key\@ne
+  \if@edk@hyperref@
+	\hypersetup{hidelinks=true}%
+  \fi
+  \edk@depth\z@
+  \edk@couplet\z@
+  \parindent\z@
+  \advance\rightskip\taxonrightskip
+  \edk@leftskip\dimexpr\leftskip-\alterindent\relax
+  \global\@edk@named@false
+  \take@arg
+  }{\par}
+\def\name@#1{%
+  \global\@edk@named@true
+  \dot@line
+  \mbox{\edknamestyle\edk@prefix#1}%
+  \kern-\taxonrightskip\par}
+\def\name@@[#1]#2{%
+  {\@take@bracket[#1]\name@{#2}}}
+\def\name{%
+  \@ifnextchar[%]
+  \name@@\name@}
+\def\alter{%
+  \par
+  \if@edk@named@
+    \@whilenum\edk@get@array{\the\edk@depth}=\z@\do{%
+      \advance\edk@depth-\@ne}%
+    \xdef\edk@number{\edk@get@array{\the\edk@depth}}%
+    \edk@set@array{\the\edk@depth}{0}%
+  \else
+    \advance\edk@couplet\@ne
+    \advance\edk@depth\@ne
+    \xdef\edk@number{\the\edk@couplet}%
+    \edk@set@array{\the\edk@depth}{\the\edk@couplet}%
+  \fi
+  \if@edk@hyperref@
+    \def\edk@hyp@prefix{edichokey:\the\edk@key:\edk@number:}
+    \edef\edk@hyp@this{\edk@hyp@prefix\if@edk@named@ b\else a\fi}%
+    \edef\edk@hyp@that{\edk@hyp@prefix\if@edk@named@ a\else b\fi}%
+	\def\edk@hyp@make##1{%
+      \phantomsection\label{\edk@hyp@this}\hyperref[\edk@hyp@that]{##1}}%
+  \else
+    \def\edk@hyp@make##1{##1}%
+  \fi
+  \@edk@named@false
+  \sbox\edk@header{\edk@number.~}%
+  \leftskip\dimexpr\edk@leftskip+\edk@depth\alterindent+\wd\edk@header\relax
+  \indent\edk@hyp@make{\llap{\box\edk@header}}}
+\makeatother

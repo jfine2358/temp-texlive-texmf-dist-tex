@@ -1,0 +1,1266 @@
+%%
+%% This is file `etoc.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% etoc.dtx  (with options: `package')
+%% 
+%% IMPORTANT NOTICE:
+%% 
+%% For the copyright see the source file.
+%% 
+%% Any modified versions of this file must be renamed
+%% with new filenames distinct from etoc.sty.
+%% 
+%% For distribution of the original source see the terms
+%% for copying and modification in the file etoc.dtx.
+%% 
+%% This generated file may be distributed as long as the
+%% original source files, as listed above, are part of the
+%% same distribution. (The sources need not necessarily be
+%% in the same archive or directory.)
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{etoc}
+ [2014/04/22 v1.07l Completely customisable TOCs (jfB)]
+%%
+%% Package: etoc
+%% Version: 1.07l (2014/04/22)
+%% License: LPPL 1.3c or later (see etoc.dtx for more information)
+%% Copyright (C) 2012-2013-2014 Jean-Francois Burnol <jfbu at free dot fr>
+%% Copyright (C) 2014 Christine Roemer <Christine_Roemer at t-online dot de>
+%%    and collaborators for the translation into German of the documentation
+%%
+\RequirePackage{multicol}
+\DeclareOption*{\PackageWarning{etoc}{Option `\CurrentOption' is unknown.}}
+\ProcessOptions\relax
+\newtoks\Etoc@toctoks
+\def\Etoc@par{\par}
+\def\etocinline{\def\Etoc@par{}}
+\let\etocnopar\etocinline
+\newif\ifEtoc@jj  % book
+\newif\ifEtoc@j   % part
+\newif\ifEtoc@    % chapter
+\newif\ifEtoc@i   % section
+\newif\ifEtoc@ii  % subsection
+\newif\ifEtoc@iii % subsubsection
+\newif\ifEtoc@iv  % paragraph
+\newif\ifEtoc@v   % subparagraph
+\newif\ifEtoc@number
+\newif\ifEtoc@hyperref
+\newif\ifEtoc@parskip   % 1.07d
+\newif\ifEtoc@tocwithid
+\newif\ifEtoc@standard
+\newif\ifEtoc@part
+\newif\ifEtoc@localtoc
+\newif\ifEtoc@skipthisone
+\newif\ifEtoc@stoptoc
+\newif\ifEtoc@notactive
+\newcounter{etoc@tocid}
+\newif\ifEtoc@mustclosegroup
+\def\etoc@{\etoc@}
+\newcounter{etoc@tocdepth}% 1.07g
+\@ifclassloaded{memoir}{\def\Etoc@minf{-\thr@@}}{\def\Etoc@minf{-\tw@}}
+\def\Etoc@@minustwo@@{-\tw@}
+\let\Etoc@@minusone@@\m@ne
+\let\Etoc@@zero@@    \z@
+\let\Etoc@@one@@     \@ne
+\let\Etoc@@two@@     \tw@
+\let\Etoc@@three@@   \thr@@
+\chardef\Etoc@@four@@ 4
+\chardef\Etoc@@five@@ 5
+\chardef\Etoc@@six@@  6
+\let\Etoc@localtop\Etoc@@minustwo@@
+\def\Etoc@@minustwo@{minustwo}
+\def\Etoc@@minusone@{minusone}
+\def\Etoc@@zero@    {zero}
+\def\Etoc@@one@     {one}
+\def\Etoc@@two@     {two}
+\def\Etoc@@three@   {three}
+\def\Etoc@@four@    {four}
+\def\Etoc@@five@    {five}
+\expandafter\def\csname Etoc@-3@@\endcsname {-\thr@@}
+\expandafter\let\csname Etoc@-2@@\endcsname \Etoc@@minustwo@@
+\expandafter\let\csname Etoc@-1@@\endcsname \Etoc@@minusone@@
+\expandafter\let\csname Etoc@0@@\endcsname  \Etoc@@zero@@
+\expandafter\let\csname Etoc@1@@\endcsname  \Etoc@@one@@
+\expandafter\let\csname Etoc@2@@\endcsname  \Etoc@@two@@
+\expandafter\let\csname Etoc@3@@\endcsname  \Etoc@@three@@
+\expandafter\let\csname Etoc@4@@\endcsname  \Etoc@@four@@
+\expandafter\let\csname Etoc@5@@\endcsname  \Etoc@@five@@
+\expandafter\let\csname Etoc@6@@\endcsname  \Etoc@@six@@
+\let\Etoc@all@@   \Etoc@@five@@
+\let\Etoc@none@@  \Etoc@minf
+\let\Etoc@levellist\@empty
+\def\Etoc@newlevel#1{%
+    \def\Etoc@levellist@elt{\noexpand\Etoc@levellist@elt\noexpand}%
+    \edef\Etoc@levellist{\Etoc@levellist\Etoc@levellist@elt#1}}
+\def\etocsetlevel#1#2{%
+ \expandafter\Etoc@newlevel\csname l@#1\endcsname
+ \ifcase#2\relax
+      \expandafter\let \csname Etoc@#1@@\endcsname\Etoc@@zero@@
+      \expandafter\let \csname Etoc@#1@\endcsname\Etoc@@zero@
+   \or
+      \expandafter\let \csname Etoc@#1@@\endcsname\Etoc@@one@@
+      \expandafter\let \csname Etoc@#1@\endcsname\Etoc@@one@
+   \or
+      \expandafter\let \csname Etoc@#1@@\endcsname\Etoc@@two@@
+      \expandafter\let \csname Etoc@#1@\endcsname\Etoc@@two@
+   \or
+      \expandafter\let \csname Etoc@#1@@\endcsname\Etoc@@three@@
+      \expandafter\let \csname Etoc@#1@\endcsname\Etoc@@three@
+   \or
+      \expandafter\let \csname Etoc@#1@@\endcsname\Etoc@@four@@
+      \expandafter\let \csname Etoc@#1@\endcsname\Etoc@@four@
+   \or
+      \expandafter\let \csname Etoc@#1@@\endcsname\Etoc@@five@@
+      \expandafter\let \csname Etoc@#1@\endcsname\Etoc@@five@
+   \or
+      \expandafter\let \csname Etoc@#1@@\endcsname\Etoc@@six@@
+   \else
+   \ifnum#2=\m@ne
+      \expandafter\let \csname Etoc@#1@@\endcsname\Etoc@@minusone@@
+      \expandafter\let \csname Etoc@#1@\endcsname\Etoc@@minusone@
+   \else
+   \ifnum#2=-\tw@
+      \expandafter\let \csname Etoc@#1@@\endcsname\Etoc@@minustwo@@
+      \expandafter\let \csname Etoc@#1@\endcsname\Etoc@@minustwo@
+   \else
+       \PackageWarning{etoc}
+         {unexpected value `#2' in \string\etocsetlevel.^^J%
+          Should be -2,-1, 0, 1, 2, 3, 4, 5, or 6. Set to 6 (=ignored)}%
+       \expandafter\let\csname Etoc@#1@@\endcsname\Etoc@@six@@
+\fi\fi\fi}
+\etocsetlevel{book}{-2}
+\etocsetlevel{part}{-1}
+\etocsetlevel{chapter}{0}
+\etocsetlevel{section}{1}
+\etocsetlevel{subsection}{2}
+\etocsetlevel{subsubsection}{3}
+\etocsetlevel{paragraph}{4}
+\etocsetlevel{subparagraph}{5}
+\def\Etoc@setflags #1{%
+  \ifcase #1\relax
+      \global\Etoc@vfalse
+      \global\Etoc@ivfalse
+      \global\Etoc@iiifalse
+      \global\Etoc@iifalse
+      \global\Etoc@ifalse
+      \global\Etoc@true
+  \or
+      \global\Etoc@vfalse
+      \global\Etoc@ivfalse
+      \global\Etoc@iiifalse
+      \global\Etoc@iifalse
+      \global\Etoc@itrue
+  \or
+      \global\Etoc@vfalse
+      \global\Etoc@ivfalse
+      \global\Etoc@iiifalse
+      \global\Etoc@iitrue
+  \or
+      \global\Etoc@vfalse
+      \global\Etoc@ivfalse
+      \global\Etoc@iiitrue
+  \or
+      \global\Etoc@vfalse
+      \global\Etoc@ivtrue
+  \or
+      \global\Etoc@vtrue
+  \else
+    \ifnum#1=\m@ne
+      \global\Etoc@vfalse
+      \global\Etoc@ivfalse
+      \global\Etoc@iiifalse
+      \global\Etoc@iifalse
+      \global\Etoc@ifalse
+      \global\Etoc@false
+      \global\Etoc@jtrue
+    \else
+      \global\Etoc@vfalse
+      \global\Etoc@ivfalse
+      \global\Etoc@iiifalse
+      \global\Etoc@iifalse
+      \global\Etoc@ifalse
+      \global\Etoc@false
+      \global\Etoc@jfalse
+      \global\Etoc@jjtrue
+    \fi
+  \fi}
+\AtBeginDocument{%
+\@ifpackageloaded{parskip}{\Etoc@parskiptrue}{}%
+\@ifpackageloaded{hyperref}{\Etoc@hyperreftrue
+                            \def\Etoc@et@hop#1#2#3#4#5{#1{#3}{#4}{#5}#2}%
+                            \long\def\Etoc@gobblesixorfive#1#2#3#4#5#6{}}
+                           {\def\Etoc@et@hop#1#2#3#4{#1{#3}{#4}#2}%
+                            \long\def\Etoc@gobblesixorfive#1#2#3#4#5{}}%
+}
+\def\Etoc@swa#1{%
+        \Etoc@et@hop
+          {\Etoc@savedcontentsline{#1}}
+          {\Etoc@prefix\Etoc@contents}}
+\def\Etoc@swb#1{%
+        \Etoc@et@hop
+          {\Etoc@savedcontentsline{#1}}
+          {\Etoc@contents}}
+\let\etocskipfirstprefix\@thirdofthree
+\def\Etoc@etoccontentsline#1{%
+  \global\expandafter\let\expandafter\Etoc@tmp\csname Etoc@#1@@\endcsname
+  \Etoc@skipthisonefalse
+  \let\Etoc@next\Etoc@gobblesixorfive
+  \ifnum\Etoc@tmp=\Etoc@@six@@
+      \Etoc@skipthisonetrue
+  \else
+    \ifEtoc@localtoc
+      \let\Etoc@prenext\relax
+      \ifEtoc@stoptoc
+        \Etoc@skipthisonetrue
+      \fi
+      \ifnum\Etoc@tmp<\Etoc@localtop
+        \def\Etoc@prenext{\global\Etoc@stoptoctrue}%
+        \Etoc@skipthisonetrue
+      \fi
+      \ifEtoc@notactive
+        \def\Etoc@prenext{\Etoc@setflags{\Etoc@tmp}}%
+        \Etoc@skipthisonetrue
+      \fi
+      \Etoc@prenext
+    \fi
+  \fi
+  \ifnum\c@tocdepth<\Etoc@tmp\relax\else
+  \ifEtoc@skipthisone\else
+  \global\let\Etoc@next\relax
+  \ifcase\Etoc@tmp
+      \ifEtoc@v \Etoc@end@five\fi
+      \ifEtoc@iv \Etoc@end@four\fi
+      \ifEtoc@iii \Etoc@end@three\fi
+      \ifEtoc@ii \Etoc@end@two\fi
+      \ifEtoc@i \Etoc@end@one\fi
+      \ifEtoc@ \else \def\Etoc@next{\Etoc@begin@zero}\fi
+      \def\Etoc@contents{\Etoc@contents@zero}%
+      \def\Etoc@prefix{\Etoc@prefix@zero}%
+  \or
+      \ifEtoc@v \Etoc@end@five\fi
+      \ifEtoc@iv \Etoc@end@four\fi
+      \ifEtoc@iii \Etoc@end@three\fi
+      \ifEtoc@ii \Etoc@end@two\fi
+      \ifEtoc@i \else \def\Etoc@next{\Etoc@begin@one}\fi
+      \def\Etoc@contents{\Etoc@contents@one}%
+      \def\Etoc@prefix{\Etoc@prefix@one}%
+  \or
+      \ifEtoc@v \Etoc@end@five\fi
+      \ifEtoc@iv \Etoc@end@four\fi
+      \ifEtoc@iii \Etoc@end@three\fi
+      \ifEtoc@ii \else \def\Etoc@next{\Etoc@begin@two}\fi
+      \def\Etoc@contents{\Etoc@contents@two}%
+      \def\Etoc@prefix{\Etoc@prefix@two}%
+  \or
+      \ifEtoc@v \Etoc@end@five\fi
+      \ifEtoc@iv \Etoc@end@four\fi
+      \ifEtoc@iii \else \def\Etoc@next{\Etoc@begin@three}\fi
+      \def\Etoc@contents{\Etoc@contents@three}%
+      \def\Etoc@prefix{\Etoc@prefix@three}%
+  \or
+      \ifEtoc@v \Etoc@end@five\fi
+      \ifEtoc@iv \else \def\Etoc@next{\Etoc@begin@four}\fi
+      \def\Etoc@contents{\Etoc@contents@four}%
+      \def\Etoc@prefix{\Etoc@prefix@four}%
+  \or
+      \ifEtoc@v \else \def\Etoc@next{\Etoc@begin@five}\fi
+      \def\Etoc@contents{\Etoc@contents@five}%
+      \def\Etoc@prefix{\Etoc@prefix@five}%
+  \else
+    \ifnum\Etoc@tmp=\m@ne
+      \ifEtoc@v \Etoc@end@five\fi
+      \ifEtoc@iv \Etoc@end@four\fi
+      \ifEtoc@iii \Etoc@end@three\fi
+      \ifEtoc@ii \Etoc@end@two\fi
+      \ifEtoc@i \Etoc@end@one\fi
+      \ifEtoc@ \Etoc@end@zero\fi
+      \ifEtoc@j \else \def\Etoc@next{\Etoc@begin@minusone}\fi
+      \def\Etoc@contents{\Etoc@contents@minusone}%
+      \def\Etoc@prefix{\Etoc@prefix@minusone}%
+    \else
+      \ifEtoc@v \Etoc@end@five\fi
+      \ifEtoc@iv \Etoc@end@four\fi
+      \ifEtoc@iii \Etoc@end@three\fi
+      \ifEtoc@ii \Etoc@end@two\fi
+      \ifEtoc@i \Etoc@end@one\fi
+      \ifEtoc@ \Etoc@end@zero\fi
+      \ifEtoc@j \Etoc@end@minusone\fi
+      \ifEtoc@jj \else \def\Etoc@next{\Etoc@begin@minustwo}\fi
+      \def\Etoc@contents{\Etoc@contents@minustwo}%
+      \def\Etoc@prefix{\Etoc@prefix@minustwo}%
+      \fi
+  \fi
+    \ifnum\Etoc@tmp=\m@ne\Etoc@parttrue\else\Etoc@partfalse\fi
+    \Etoc@setflags{\Etoc@tmp}%
+  \fi\fi
+  \Etoc@next
+  \@firstoftwo{\Etoc@swa{#1}}{\Etoc@swb{#1}}}
+\def\Etoc@lxyz #1#2{%
+     \@namedef {etoclink }{\leavevmode}%        fall-back
+     \let\etocthelink         \@empty  %        fall-back
+     \@namedef {etocname }{\leavevmode #1}% fall-back (perhaps linked)
+     \def\etocthename         {#1}%  (if link, will be removed later)
+     \def\etocthelinkedname   {#1}%  will probably get redefined
+     \@namedef {etocpage }{\leavevmode #2}%      (perhaps linked)
+   \Etoc@getthepage #2\etoc@ % defines also \etocthelinkedpage (and \etoclink)
+   \Etoc@getnb #1\relax\relax\etoc@  % gets number *and* name, and \etoclink
+   \ifEtoc@number\else
+      \ifEtoc@part
+        \Etoc@getit #1\hspace\relax\etoc@   % additional job for parts
+      \fi
+   \fi}
+\def\Etoc@getthepage #1{%
+  \let\Etoc@next\Etoc@getthepage@nohyp
+  \ifEtoc@hyperref\ifx #1\hyper@linkstart
+    \let\Etoc@next\Etoc@getthepage@hyp
+  \fi\fi
+  \Etoc@next #1%
+}
+\def\Etoc@getthepage@nohyp #1\etoc@ {%
+    \def\etocthepage       {#1}%
+    \def\etocthelinkedpage {#1}%
+}
+\def\Etoc@getthepage@hyp #1#2#3#4#5\etoc@ {%
+  \@namedef{etoclink }##1{\leavevmode #1{#2}{#3}{##1}#5}%
+  \edef\etocthelink ##1{\noexpand\hyperlink {#3}{##1}}%
+  \def\etocthepage {#4}%
+  \toks@ {#4}%
+  \edef\etocthelinkedpage {\noexpand\hyperlink {#3}{\the\toks@}}%
+}
+\def\Etoc@getnb #1{%
+  \let\Etoc@next\Etoc@getnb@nohyp
+  \ifEtoc@hyperref\ifx #1\hyper@linkstart
+    \let\Etoc@next\Etoc@getnb@hyp
+  \fi\fi
+  \Etoc@next #1%
+}
+\def\Etoc@getit #1{%
+  \let\Etoc@next\Etoc@getit@nohyp
+  \ifEtoc@hyperref\ifx #1\hyper@linkstart
+    \let\Etoc@next\Etoc@getit@hyp
+  \fi\fi
+  \Etoc@next #1%
+}
+\def\Etoc@getnb@nohyp #1#2#3\etoc@ {%
+    \def\Etoc@getname ##1\relax\relax\etoc@ {%
+      \@namedef {etocname }{\leavevmode ##1}%
+      \def\etocthename       {##1}%
+      \def\etocthelinkedname {##1}%
+     }%
+  \ifx #1\numberline
+    \@namedef {etocnumber }{\leavevmode #2}%
+    \def\etocthenumber       {#2}%
+    \def\etocthelinkednumber {#2}%
+    \Etoc@numbertrue
+    \Etoc@getname #3\etoc@
+  \else % then \etocthename and \etocthelinkedname already defined
+    \@namedef {etocnumber }{\leavevmode}%
+    \let\etocthenumber       \@empty
+    \let\etocthelinkednumber \@empty
+    \Etoc@numberfalse
+  \fi
+}
+\def\Etoc@getnb@hyp #1#2#3#4#5#6\etoc@ {%
+         \def\Etoc@getname ##1\relax\relax\etoc@ {%
+          \@namedef {etocname }{\leavevmode #1{#2}{#3}{##1}#5}%
+          \def\etocthename {##1}%
+          \toks@           {##1}%
+          \edef\etocthelinkedname {\noexpand\hyperlink {#3}{\the\toks@}}%
+         }%
+         \def\Etoc@getnbr ##1##2##3\etoc@ {%
+          \ifx ##1\numberline
+            \@namedef {etocnumber }{\leavevmode #1{#2}{#3}{##2}#5}%
+            \def\etocthenumber {##2}%
+            \toks@             {##2}%
+            \edef\etocthelinkednumber {\noexpand\hyperlink {#3}{\the\toks@}}%
+            \Etoc@numbertrue
+            \Etoc@getname ##3\etoc@
+          \else
+            \@namedef {etocnumber }{\leavevmode}%
+            \let\etocthenumber       \@empty
+            \let\etocthelinkednumber \@empty
+            \Etoc@numberfalse
+            \def\etocthename {#4}%
+            \toks@           {#4}%
+            \edef\etocthelinkedname {\noexpand\hyperlink {#3}{\the\toks@}}%
+          \fi
+         }%
+  \@namedef {etoclink }##1{\leavevmode #1{#2}{#3}{##1}#5}%
+  \edef\etocthelink ##1{\noexpand\hyperlink {#3}{##1}}%
+  \Etoc@getnbr #4\relax\relax\etoc@
+}
+\def\Etoc@getit@nohyp #1\hspace#2#3\etoc@ {%
+    \def\Etoc@getname ##1\hspace\relax\etoc@ {%
+       \@namedef {etocname }{\leavevmode ##1}%
+       \def\etocthename       {##1}%
+       \def\etocthelinkedname {##1}%
+    }%
+  \ifx\relax#2\else
+        \@namedef {etocnumber }{\leavevmode #1}%
+        \def\etocthenumber       {#1}%
+        \def\etocthelinkednumber {#1}%
+        \Etoc@numbertrue
+        \Etoc@getname #3\etoc@
+  \fi
+}
+\def\Etoc@getit@hyp #1#2#3#4#5#6\etoc@ {%
+    \def\Etoc@getname ##1\hspace\relax\etoc@ {%
+       \@namedef {etocname }{\leavevmode #1{#2}{#3}{##1}#5}%
+       \def\etocthename {##1}%
+       \toks@           {##1}%
+       \edef\etocthelinkedname {\noexpand\hyperlink {#3}{\the\toks@}}%
+    }%
+    \def\Etoc@getnbr ##1\hspace##2##3\etoc@ {%
+       \ifx\relax##2\else
+         \@namedef {etocnumber }{\leavevmode #1{#2}{#3}{##1}#5}%
+         \def\etocthenumber {##1}%
+         \toks@             {##1}%
+         \edef\etocthelinkednumber {\noexpand\hyperlink {#3}{\the\toks@}}%
+         \Etoc@numbertrue
+         \Etoc@getname ##3\etoc@
+       \fi
+    }%
+  \Etoc@getnbr #4\hspace\relax\etoc@
+}
+\let\etocthename   \@empty
+\let\etocthenumber \@empty
+\let\etocthepage   \@empty
+\let\etocthelinkedname   \@empty
+\let\etocthelinkednumber \@empty
+\let\etocthelinkedpage   \@empty
+\let\etocthelink   \@empty
+\DeclareRobustCommand*{\etocname}  {}
+\DeclareRobustCommand*{\etocnumber}{}
+\DeclareRobustCommand*{\etocpage}  {}
+\DeclareRobustCommand*{\etoclink}  {}
+\DeclareRobustCommand*{\etocifnumbered}
+   {\ifEtoc@number\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
+\def\Etoc@readtoc {%
+  \ifeof \Etoc@tf
+  \else
+     \read \Etoc@tf to \Etoc@buffer
+     \Etoc@toctoks=\expandafter\expandafter\expandafter
+       {\expandafter\the\expandafter\Etoc@toctoks\Etoc@buffer}%
+     \expandafter\Etoc@readtoc
+  \fi
+}
+\Etoc@toctoks {}% (superfluous, but for clarity)
+\IfFileExists{\jobname .toc}
+    {{\endlinechar=-1
+      \makeatletter
+      \newread\Etoc@tf
+      \openin\Etoc@tf\@filef@und
+      \Etoc@readtoc
+      \global\Etoc@toctoks=\expandafter{\the\Etoc@toctoks}%
+      \closein\Etoc@tf}}
+    {\typeout{No file \jobname .toc.}}
+\def\Etoc@openouttoc{%
+  \ifEtoc@hyperref
+    \ifx\hyper@last\@undefined
+    \IfFileExists{\jobname .toc}
+      {\Hy@WarningNoLine
+         {old toc file detected, not used; run LaTeX again (cheers from etoc)}%
+       \global\Etoc@toctoks={}%
+      }
+      {}%
+    \fi
+  \fi
+  \if@filesw
+   \newwrite \tf@toc
+   \immediate \openout \tf@toc \jobname .toc\relax
+  \fi
+  \global\let\Etoc@openouttoc\empty
+}
+\def\Etoc@toctoc{%
+   \global\Etoc@vfalse
+   \global\Etoc@ivfalse
+   \global\Etoc@iiifalse
+   \global\Etoc@iifalse
+   \global\Etoc@ifalse
+   \global\Etoc@false
+   \global\Etoc@jfalse
+   \global\Etoc@jjfalse
+\ifEtoc@standard
+    \etoc@setstyle{@minustwo}{}{}{}{}%
+    \etoc@setstyle{@minusone}{}{}{}{}%
+    \etoc@setstyle{@zero}{}{}{}{}%
+    \etoc@setstyle{@one}{}{}{}{}%
+    \etoc@setstyle{@two}{}{}{}{}%
+    \etoc@setstyle{@three}{}{}{}{}%
+    \etoc@setstyle{@four}{}{}{}{}%
+    \etoc@setstyle{@five}{}{}{}{}%
+\else
+    \def\Etoc@levellist@elt##1{\let##1\Etoc@lxyz}%
+    \Etoc@levellist
+    \let\booknumberline\numberline
+    \let\partnumberline\numberline
+    \let\chapternumberline\numberline
+\fi
+\the\Etoc@toctoks
+\ifEtoc@notactive\else
+  \ifEtoc@v   \Etoc@end@five\fi
+  \ifEtoc@iv  \Etoc@end@four\fi
+  \ifEtoc@iii \Etoc@end@three\fi
+  \ifEtoc@ii  \Etoc@end@two\fi
+  \ifEtoc@i   \Etoc@end@one\fi
+  \ifEtoc@    \Etoc@end@zero\fi
+  \ifEtoc@j   \Etoc@end@minusone\fi
+  \ifEtoc@jj  \Etoc@end@minustwo\fi
+\fi}
+\def\etoc@@startlocaltoc#1#2{%
+\let\Etoc@next\relax
+    \ifEtoc@localtoc
+    \ifEtoc@notactive
+        \ifnum #1=#2\relax
+          \ifEtoc@jj  \let\Etoc@localtop\Etoc@@minusone@@ \fi
+          \ifEtoc@j   \let\Etoc@localtop\Etoc@@zero@@  \fi
+          \ifEtoc@    \let\Etoc@localtop\Etoc@@one@@   \fi
+          \ifEtoc@i   \let\Etoc@localtop\Etoc@@two@@   \fi
+          \ifEtoc@ii  \let\Etoc@localtop\Etoc@@three@@ \fi
+          \ifEtoc@iii \let\Etoc@localtop\Etoc@@four@@  \fi
+          \ifEtoc@iv  \let\Etoc@localtop\Etoc@@five@@  \fi
+          \ifEtoc@v   \let\Etoc@localtop\Etoc@@six@@   \fi
+          \def\Etoc@next{\global\Etoc@notactivefalse
+                      \global\Etoc@vfalse
+                      \global\Etoc@ivfalse
+                      \global\Etoc@iiifalse
+                      \global\Etoc@iifalse
+                      \global\Etoc@ifalse
+                      \global\Etoc@false
+                      \global\Etoc@jfalse
+                      \global\Etoc@jjfalse}%
+        \fi
+    \fi\fi
+\Etoc@next}
+\let\etoc@startlocaltoc\@gobble
+\def\Etoc@localtableofcontents#1{%
+    \edef\Etoc@tmp{#1}%
+    \ifnum\Etoc@tmp<\@ne
+    \PackageWarning{etoc}
+       {Unknown toc id: run LaTeX to get references right}%
+    \let\Etoc@next\@gobble\else\let\Etoc@next\@firstofone\fi
+    \Etoc@next
+    {\edef\etoc@startlocaltoc##1{%
+         \noexpand\etoc@@startlocaltoc{##1}{#1}}
+    \Etoc@localtoctrue
+    \let\Etoc@localtop\Etoc@@minustwo@@
+    \global\Etoc@stoptocfalse
+    \global\Etoc@notactivetrue
+    \Etoc@tableofcontents}%
+    \endgroup\ifEtoc@mustclosegroup\endgroup\fi
+    \Etoc@aftertochook % 1.07h
+    \etocaftertochook % 1.07g
+}
+\def\Etoc@getrefno #1#2\etoc@ {#1}
+\def\Etoc@getref #1{\@ifundefined{r@#1}{0}{\expandafter\expandafter\expandafter
+          \Etoc@getrefno\csname r@#1\endcsname\relax\etoc@}}
+\def\Etoc@ref#1{\Etoc@localtableofcontents{\Etoc@getref{#1}}}
+\def\Etoc@label#1{\label{#1}\futurelet\Etoc@nexttoken\Etoc@t@bleofcontents}
+\@firstofone{\def\Etoc@again} {\futurelet\Etoc@nexttoken\Etoc@t@bleofcontents}
+\def\Etoc@t@bleofcontents{%
+ \ifx\Etoc@nexttoken\label
+    \def\Etoc@next{\expandafter\Etoc@label\@gobble}\else
+ \ifx\Etoc@nexttoken\@sptoken
+    \let\Etoc@next\Etoc@again\else
+ \ifEtoc@tocwithid
+    \def\Etoc@next{\Etoc@localtableofcontents{\c@etoc@tocid}}%
+ \else
+    \ifx\Etoc@nexttoken\ref
+       \def\Etoc@next{\expandafter\Etoc@ref\@gobble}%
+    \else
+       \def\Etoc@next{\Etoc@localtocfalse
+                      \global\Etoc@notactivefalse
+                      \Etoc@tableofcontents
+                      \endgroup
+                      \ifEtoc@mustclosegroup\endgroup\fi
+                      \Etoc@aftertochook % 1.07h
+                      \etocaftertochook % 1.07g
+                      }%
+    \fi
+ \fi\fi\fi\Etoc@next}
+\def\Etoc@table@fcontents{%
+    \refstepcounter{etoc@tocid}%
+    \Etoc@tocwithidfalse
+    \futurelet\Etoc@nexttoken\Etoc@t@bleofcontents}
+\def\Etoc@localtable@fcontents{%
+    \refstepcounter{etoc@tocid}%
+    \addtocontents{toc}
+       {\string\etoc@startlocaltoc{\arabic{etoc@tocid}}}%
+    \Etoc@tocwithidtrue
+    \futurelet\Etoc@nexttoken\Etoc@t@bleofcontents}
+\let\etocaftertitlehook    \@empty
+\let\etocaftercontentshook \@empty
+\def\etoctableofcontents{%
+   \Etoc@openouttoc
+   \Etoc@par
+   \begingroup % closed in \Etoc@t@bleofcontents or \Etoc@localtableofcontents
+     \def\etoc@startlocaltoc##1{\etoc@@startlocaltoc{##1}{\c@etoc@tocid}}%
+     \@ifstar
+     {\def\Etoc@aftertitlehook{}\Etoc@table@fcontents}
+     {\let\Etoc@aftertitlehook\etocaftertitlehook\Etoc@table@fcontents}}
+\let\tableofcontents\etoctableofcontents
+\newcommand*\localtableofcontents{%
+   \Etoc@openouttoc
+   \Etoc@par
+   \begingroup % closed in \Etoc@t@bleofcontents or \Etoc@localtableofcontents
+     \@ifstar
+     {\def\Etoc@aftertitlehook{}\Etoc@localtable@fcontents}
+     {\let\Etoc@aftertitlehook\etocaftertitlehook\Etoc@localtable@fcontents}}
+\newcommand\etocsettocstyle[2]{%
+\def\Etoc@tableofcontents
+{\ifnum\c@tocdepth>\Etoc@minf
+   \let\Etoc@@next\@firstofone\else
+   \let\Etoc@@next\@gobble
+\fi
+\Etoc@@next{\Etoc@storetocdepth % 1.07g
+            #1\ifEtoc@parskip\parskip\z@skip\fi %1.07d
+              \Etoc@aftertitlehook
+              \let\Etoc@savedcontentsline\contentsline
+              \let\contentsline\Etoc@etoccontentsline
+              \Etoc@toctoc
+              \let\Etoc@@next\relax
+              \ifEtoc@tocwithid\else
+                \ifEtoc@localtoc
+                \ifEtoc@notactive
+                  \def\Etoc@@next{\Etoc@localtocfalse
+                           \global\Etoc@notactivefalse
+                           \Etoc@toctoc}%
+                \fi\fi
+              \fi
+            \Etoc@@next
+            \Etoc@resettocdepth  % 1.07g
+            \etocaftercontentshook
+            #2\@nobreakfalse}}}  % 1.07d: \@nobreakfalse moved here
+\def\etocsetstyle{\Etoc@standardfalse\etoc@setstyle}
+\long\def\etoc@setstyle#1#2#3#4#5{%
+\long\expandafter\def
+     \csname Etoc@begin@\csname Etoc@#1@\endcsname\endcsname {#2}%
+\long\expandafter\def
+     \csname Etoc@prefix@\csname Etoc@#1@\endcsname\endcsname {#3}%
+\long\expandafter\def
+     \csname Etoc@contents@\csname Etoc@#1@\endcsname\endcsname {#4}%
+\long\expandafter\def
+     \csname Etoc@end@\csname Etoc@#1@\endcsname\endcsname {#5}}
+\def\etocfontminustwo {\normalfont \LARGE \bfseries}
+\def\etocfontminusone {\normalfont \large \bfseries}
+\def\etocfontzero     {\normalfont \large \bfseries}
+\def\etocfontone      {\normalfont \normalsize \bfseries}
+\def\etocfonttwo      {\normalfont \normalsize}
+\def\etocfontthree    {\normalfont \footnotesize}
+\def\etocsepminustwo  {4ex \@plus .5ex \@minus .5ex}
+\def\etocsepminusone  {4ex \@plus .5ex \@minus .5ex}
+\def\etocsepzero      {2.5ex \@plus .4ex \@minus .4ex}
+\def\etocsepone       {1.5ex \@plus .3ex \@minus .3ex}
+\def\etocseptwo       {.5ex \@plus .1ex \@minus .1ex}
+\def\etocsepthree     {.25ex \@plus .05ex \@minus .05ex}
+\def\etocbaselinespreadminustwo {1}
+\def\etocbaselinespreadminusone {1}
+\def\etocbaselinespreadzero     {1}
+\def\etocbaselinespreadone      {1}
+\def\etocbaselinespreadtwo      {1}
+\def\etocbaselinespreadthree    {.9}
+\def\etocminustwoleftmargin  {1.5em plus 0.5fil}
+\def\etocminustworightmargin {1.5em plus -0.5fil}
+\def\etocminusoneleftmargin  {1em}
+\def\etocminusonerightmargin {1em}
+\def\etoctoclineleaders
+        {\hbox{\normalfont\normalsize\hb@xt@2ex {\hss.\hss}}}
+\def\etocabbrevpagename {p.~}
+\def\etocpartname       {\partname}
+\def\etocbookname       {Book}
+\def\etocdefaultlines{\Etoc@standardfalse %
+%% `book':
+\etoc@setstyle{@minustwo}
+  {\addpenalty\@M\etocskipfirstprefix}
+  {\addpenalty\@secpenalty}
+  {\begingroup
+   \etocfontminustwo
+   \addvspace{\etocsepminustwo}%
+   \parindent \z@
+   \leftskip  \etocminustwoleftmargin
+   \rightskip \etocminustworightmargin
+   \parfillskip \@flushglue
+   \vbox{\etocifnumbered{\etocbookname\enspace\etocnumber:\quad}{}\etocname
+        \baselineskip\etocbaselinespreadminustwo\baselineskip
+        \par}%
+   \addpenalty\@M\addvspace{\etocsepminusone}%
+   \endgroup}
+  {}%
+%% `part':
+\etoc@setstyle{@minusone}
+  {\addpenalty\@M\etocskipfirstprefix}
+  {\addpenalty\@secpenalty}
+  {\begingroup
+   \etocfontminusone
+   \addvspace{\etocsepminusone}%
+   \parindent \z@
+   \leftskip  \etocminusoneleftmargin
+   \rightskip \etocminusonerightmargin
+   \parfillskip \@flushglue
+   \vbox{\etocifnumbered{\etocpartname\enspace\etocnumber.\quad}{}\etocname
+         \baselineskip\etocbaselinespreadminusone\baselineskip
+         \par}%
+   \addpenalty\@M\addvspace{\etocsepzero}%
+   \endgroup}
+  {}%
+%% `chapter':
+\etoc@setstyle{@zero}
+  {\addpenalty\@M\etocskipfirstprefix}
+  {\addpenalty\@itempenalty}
+  {\begingroup
+   \etocfontzero
+   \addvspace{\etocsepzero}%
+   \parindent \z@ \parfillskip \@flushglue
+   \vbox{\etocifnumbered{\etocnumber.\enspace}{}\etocname
+         \baselineskip\etocbaselinespreadzero\baselineskip
+         \par}%
+   \endgroup}
+  {\addpenalty{-\@highpenalty}\addvspace{\etocsepminusone}}%
+%% `section':
+\etoc@setstyle{@one}
+  {\addpenalty\@M\etocskipfirstprefix}
+  {\addpenalty\@itempenalty}
+  {\begingroup
+   \etocfontone
+   \addvspace{\etocsepone}%
+   \parindent \z@ \parfillskip \z@
+   \setbox\z@\vbox{\parfillskip\@flushglue
+                   \etocname\par
+                   \setbox\tw@\lastbox
+                   \global\setbox\@ne\hbox{\unhbox\tw@\ }}%
+   \dimen\z@=\wd\@ne
+   \setbox\z@=\etoctoclineleaders
+   \advance\dimen\z@\wd\z@
+   \etocifnumbered
+     {\setbox\tw@\hbox{\etocnumber, \etocabbrevpagename\etocpage}}
+     {\setbox\tw@\hbox{\etocabbrevpagename\etocpage}}%
+   \advance\dimen\z@\wd\tw@
+   \ifdim\dimen\z@ < \linewidth
+       \vbox{\etocname~%
+             \leaders\box\z@\hfil\box\tw@
+             \baselineskip\etocbaselinespreadone\baselineskip
+             \par}
+   \else
+       \vbox{\etocname~%
+             \leaders\copy\z@\hfil\break
+             \hbox{}\leaders\box\z@\hfil\box\tw@
+             \baselineskip\etocbaselinespreadone\baselineskip
+             \par}
+   \fi
+   \endgroup}
+  {\addpenalty\@secpenalty\addvspace{\etocsepzero}}%
+%% `subsection':
+\etoc@setstyle{@two}
+  {\addpenalty\@medpenalty\etocskipfirstprefix}
+  {\addpenalty\@itempenalty}
+  {\begingroup
+   \etocfonttwo
+   \addvspace{\etocseptwo}%
+   \parindent \z@ \parfillskip \z@
+   \setbox\z@\vbox{\parfillskip\@flushglue
+                   \etocname\par\setbox\tw@\lastbox
+                   \global\setbox\@ne\hbox{\unhbox\tw@}}%
+   \dimen\z@=\wd\@ne
+   \setbox\z@=\etoctoclineleaders
+   \advance\dimen\z@\wd\z@
+   \etocifnumbered
+     {\setbox\tw@\hbox{\etocnumber, \etocabbrevpagename\etocpage}}
+     {\setbox\tw@\hbox{\etocabbrevpagename\etocpage}}%
+   \advance\dimen\z@\wd\tw@
+   \ifdim\dimen\z@ < \linewidth
+       \vbox{\etocname~%
+             \leaders\box\z@\hfil\box\tw@
+             \baselineskip\etocbaselinespreadtwo\baselineskip
+             \par}
+   \else
+       \vbox{\etocname~%
+             \leaders\copy\z@\hfil\break
+             \hbox{}\leaders\box\z@\hfil\box\tw@
+             \baselineskip\etocbaselinespreadtwo\baselineskip
+             \par}
+   \fi
+   \endgroup}
+  {\addpenalty\@secpenalty\addvspace{\etocsepone}}%
+%% `subsubsection':
+\etoc@setstyle{@three}
+  {\addpenalty\@M
+   \etocfontthree
+   \vspace{\etocsepthree}%
+   \noindent
+   \etocskipfirstprefix}
+  {\allowbreak\,--\,}
+  {\etocname}
+  {.\hfil
+    \begingroup
+     \baselineskip\etocbaselinespreadthree\baselineskip
+     \par
+    \endgroup
+   \addpenalty{-\@highpenalty}}%
+\etoc@setstyle{@four}{}{}{}{}%
+\etoc@setstyle{@five}{}{}{}{}%
+} % end of \etocdefaultlines!
+\def\etocabovetocskip{3.5ex \@plus 1ex \@minus .2ex}
+\def\etocbelowtocskip{3.5ex \@plus 1ex \@minus .2ex}
+\def\etoccolumnsep{2em}
+\def\etocmulticolsep{0ex}
+\def\etocmulticolpretolerance{-1}
+\def\etocmulticoltolerance{200}
+\def\etocdefaultnbcol{2}
+\def\etocinnertopsep{2ex}
+\newcommand\etocmulticolstyle[2][\etocdefaultnbcol]{%
+\etocsettocstyle
+   {\let\etocoldpar\par
+    \addvspace{\etocabovetocskip}%
+    \ifnum #1>\@ne\let\Etoc@next\@firstoftwo
+         \else \let\Etoc@next\@secondoftwo\fi
+    \Etoc@next{%
+    \multicolpretolerance\etocmulticolpretolerance
+    \multicoltolerance\etocmulticoltolerance
+    \setlength{\columnsep}{\etoccolumnsep}%
+    \setlength{\multicolsep}{\etocmulticolsep}%
+    \begin{multicols}{#1}[#2\etocoldpar\addvspace{\etocinnertopsep}]}
+    {#2\ifvmode\else\begingroup\interlinepenalty\@M\parskip\z@skip
+                    \@@par\endgroup
+       \fi
+       \nobreak\addvspace{\etocinnertopsep}%
+       \pretolerance\etocmulticolpretolerance
+       \tolerance\etocmulticoltolerance}}
+   {\ifnum #1>\@ne\let\Etoc@next\@firstofone
+         \else \let\Etoc@next\@gobble\fi
+    \Etoc@next{\end{multicols}}%
+    \addvspace{\etocbelowtocskip}}}
+\def\etocinnerbottomsep{3.5ex}
+\def\etocinnerleftsep{2em}
+\def\etocinnerrightsep{2em}
+\def\etoctoprule{\hrule}
+\def\etocleftrule{\vrule}
+\def\etocrightrule{\vrule}
+\def\etocbottomrule{\hrule}
+\def\etoctoprulecolorcmd{\relax}
+\def\etocbottomrulecolorcmd{\relax}
+\def\etocleftrulecolorcmd{\relax}
+\def\etocrightrulecolorcmd{\relax}
+\def\etoc@ruledheading #1{%
+   \hb@xt@\linewidth{\color@begingroup
+          \hss #1\hss\hskip-\linewidth
+          \etoctoprulecolorcmd\leaders\etoctoprule\hss
+          \phantom{#1}%
+          \leaders\etoctoprule\hss\color@endgroup}%
+          \nointerlineskip\nobreak\vskip\etocinnertopsep}
+\newcommand*\etocruledstyle[2][\etocdefaultnbcol]{%
+\etocsettocstyle
+   {\addvspace{\etocabovetocskip}%
+    \ifnum #1>\@ne\let\Etoc@next\@firstoftwo
+         \else \let\Etoc@next\@secondoftwo\fi
+    \Etoc@next
+       {\multicolpretolerance\etocmulticolpretolerance
+        \multicoltolerance\etocmulticoltolerance
+        \setlength{\columnsep}{\etoccolumnsep}%
+        \setlength{\multicolsep}{\etocmulticolsep}%
+        \begin{multicols}{#1}[\etoc@ruledheading{#2}]}
+       {\etoc@ruledheading{#2}%
+         \pretolerance\etocmulticolpretolerance
+         \tolerance\etocmulticoltolerance}}
+   {\ifnum #1>\@ne\let\Etoc@next\@firstofone
+         \else \let\Etoc@next\@gobble\fi
+    \Etoc@next{\end{multicols}}%
+    \addvspace{\etocbelowtocskip}}}
+\def\etocframedmphook{\relax}
+\long\def\etocbkgcolorcmd{\relax}
+\long\def\Etoc@relax{\relax}
+\newbox\etoc@framed@titlebox
+\newbox\etoc@framed@contentsbox
+\newcommand*\etocframedstyle[2][\etocdefaultnbcol]{%
+\etocsettocstyle{%
+    \addvspace{\etocabovetocskip}%
+    \sbox\z@{#2}%
+    \dimen\z@\dp\z@
+        \ifdim\wd\z@<\linewidth \dp\z@\z@ \else \dimen\z@\z@ \fi
+    \setbox\etoc@framed@titlebox=\hb@xt@\linewidth{\color@begingroup
+        \hss
+        \ifx\etocbkgcolorcmd\Etoc@relax\else
+            \sbox\tw@{\color{white}%
+            \vrule\@width\wd\z@\@height\ht\z@\@depth\dimen\z@}%
+            \ifdim\wd\z@<\linewidth \dp\tw@\z@\fi
+            \box\tw@
+            \hskip-\wd\z@
+        \fi
+        \copy\z@
+        \hss
+        \hskip-\linewidth
+        \etoctoprulecolorcmd\leaders\etoctoprule\hss%
+        \hskip\wd\z@
+        \etoctoprulecolorcmd\leaders\etoctoprule\hss\color@endgroup}%
+    \setbox\z@\hbox{\etocleftrule\etocrightrule}%
+    \dimen\tw@\linewidth\advance\dimen\tw@-\wd\z@
+        \advance\dimen\tw@-\etocinnerleftsep
+        \advance\dimen\tw@-\etocinnerrightsep
+    \setbox\etoc@framed@contentsbox=\vbox\bgroup
+        \hsize\dimen\tw@
+        \kern\dimen\z@
+        \vskip\etocinnertopsep
+        \hbox\bgroup
+        \begin{minipage}{\hsize}%
+        \etocframedmphook
+    \ifnum #1>\@ne\let\Etoc@next\@firstoftwo
+    \else \let\Etoc@next\@secondoftwo\fi
+        \Etoc@next
+        {\multicolpretolerance\etocmulticolpretolerance
+        \multicoltolerance\etocmulticoltolerance
+        \setlength{\columnsep}{\etoccolumnsep}%
+        \setlength{\multicolsep}{\etocmulticolsep}%
+        \begin{multicols}{#1}}
+        {\pretolerance\etocmulticolpretolerance
+         \tolerance\etocmulticoltolerance}}
+     {\ifnum #1>\@ne\let\Etoc@next\@firstofone
+         \else \let\Etoc@next\@gobble\fi
+    \Etoc@next{\end{multicols}\unskip}%
+    \end{minipage}%
+    \egroup
+    \vskip\etocinnerbottomsep
+    \egroup
+    \vbox{\hsize\linewidth
+        \ifx\etocbkgcolorcmd\Etoc@relax\else
+            \kern\ht\etoc@framed@titlebox
+            \kern\dp\etoc@framed@titlebox
+            \hb@xt@\linewidth{\color@begingroup
+            \etocleftrulecolorcmd\etocleftrule
+            \etocbkgcolorcmd
+            \leaders\vrule
+                   \@height\ht\etoc@framed@contentsbox
+                   \@depth\dp\etoc@framed@contentsbox
+            \hss
+            \etocrightrulecolorcmd\etocrightrule
+            \color@endgroup}\nointerlineskip
+            \vskip-\dp\etoc@framed@contentsbox
+            \vskip-\ht\etoc@framed@contentsbox
+            \vskip-\dp\etoc@framed@titlebox
+            \vskip-\ht\etoc@framed@titlebox
+        \fi
+    \box\etoc@framed@titlebox\nointerlineskip
+    \hb@xt@\linewidth{\color@begingroup
+    {\etocleftrulecolorcmd\etocleftrule}%
+    \hss\box\etoc@framed@contentsbox\hss
+    \etocrightrulecolorcmd\etocrightrule\color@endgroup}
+    \nointerlineskip
+    \vskip\ht\etoc@framed@contentsbox
+    \vskip\dp\etoc@framed@contentsbox
+    \hb@xt@\linewidth{\color@begingroup\etocbottomrulecolorcmd
+          \leaders\etocbottomrule\hss\color@endgroup}}
+    \addvspace{\etocbelowtocskip}}}
+\newcommand\etoc@multicoltoc[2][\etocdefaultnbcol]{%
+    \etocmulticolstyle[#1]{#2}%
+    \tableofcontents}
+\newcommand\etoc@multicoltoci[2][\etocdefaultnbcol]{%
+    \etocmulticolstyle[#1]{#2}%
+    \tableofcontents*}
+\newcommand\etoc@local@multicoltoc[2][\etocdefaultnbcol]{%
+    \etocmulticolstyle[#1]{#2}%
+    \localtableofcontents}
+\newcommand\etoc@local@multicoltoci[2][\etocdefaultnbcol]{%
+    \etocmulticolstyle[#1]{#2}%
+    \localtableofcontents*}
+\newcommand*\etoc@ruledtoc[2][\etocdefaultnbcol]{%
+    \etocruledstyle[#1]{#2}%
+    \tableofcontents}
+\newcommand*\etoc@ruledtoci[2][\etocdefaultnbcol]{%
+    \etocruledstyle[#1]{#2}%
+    \tableofcontents*}
+\newcommand*\etoc@local@ruledtoc[2][\etocdefaultnbcol]{%
+    \etocruledstyle[#1]{#2}%
+    \localtableofcontents}
+\newcommand*\etoc@local@ruledtoci[2][\etocdefaultnbcol]{%
+    \etocruledstyle[#1]{#2}%
+    \localtableofcontents*}
+\newcommand*\etoc@framedtoc[2][\etocdefaultnbcol]{%
+    \etocframedstyle[#1]{#2}%
+    \tableofcontents}
+\newcommand*\etoc@framedtoci[2][\etocdefaultnbcol]{%
+    \etocframedstyle[#1]{#2}%
+    \tableofcontents*}
+\newcommand*\etoc@local@framedtoc[2][\etocdefaultnbcol]{%
+    \etocframedstyle[#1]{#2}%
+    \localtableofcontents}
+\newcommand*\etoc@local@framedtoci[2][\etocdefaultnbcol]{%
+    \etocframedstyle[#1]{#2}%
+    \localtableofcontents*}
+\def\etocmulticol{\begingroup
+    \Etoc@mustclosegrouptrue
+    \@ifstar
+    {\etoc@multicoltoci}
+    {\etoc@multicoltoc}}
+\def\etocruled{\begingroup
+    \Etoc@mustclosegrouptrue
+    \@ifstar
+    {\etoc@ruledtoci}
+    {\etoc@ruledtoc}}
+\def\etocframed{\begingroup
+    \Etoc@mustclosegrouptrue
+    \@ifstar
+    {\etoc@framedtoci}
+    {\etoc@framedtoc}}
+\def\etoclocalmulticol{\begingroup
+    \Etoc@mustclosegrouptrue
+    \@ifstar
+    {\etoc@local@multicoltoci}
+    {\etoc@local@multicoltoc}}
+\def\etoclocalruled{\begingroup
+    \Etoc@mustclosegrouptrue
+    \@ifstar
+    {\etoc@local@ruledtoci}
+    {\etoc@local@ruledtoc}}
+\def\etoclocalframed{\begingroup
+    \Etoc@mustclosegrouptrue
+    \@ifstar
+    {\etoc@local@framedtoci}
+    {\etoc@local@framedtoc}}
+\def\etocarticlestyle{%
+    \etocsettocstyle
+    {\section *{\contentsname
+                \@mkboth {\MakeUppercase \contentsname}
+                         {\MakeUppercase \contentsname}}}
+    {}}
+\def\etocarticlestylenomarks{%
+    \etocsettocstyle
+    {\section *{\contentsname}}
+    {}}
+\def\etocbookstyle{%
+    \etocsettocstyle
+    {\if@twocolumn \@restonecoltrue \onecolumn \else \@restonecolfalse \fi
+     \chapter *{\contentsname
+                \@mkboth {\MakeUppercase \contentsname}
+                         {\MakeUppercase \contentsname}}}
+    {\if@restonecol \twocolumn \fi}}
+\def\etocbookstylenomarks{%
+    \etocsettocstyle
+    {\if@twocolumn \@restonecoltrue \onecolumn \else \@restonecolfalse \fi
+     \chapter *{\contentsname}}
+    {\if@restonecol \twocolumn \fi}}
+\let\etocreportstyle\etocbookstyle
+\let\etocreportstylenomarks\etocbookstylenomarks
+\def\etocmemoirtoctotocfmt #1#2{%
+    \def\Etoc@addsuitablecontentsline{\addcontentsline {toc}{#1}{#2}}%
+    \renewcommand*\etocaftertitlehook{%
+      \ifmem@em@starred@listof
+      \else\phantomsection\aftergroup\Etoc@addsuitablecontentsline\fi}}
+\def\etocmemoirstyle{%
+    \etocsettocstyle
+        {\ensureonecol \par \begingroup \@nameuse {@tocmaketitle}
+         \Etoc@aftertitlehook\let\Etoc@aftertitlehook\relax
+         \parskip \cftparskip \@nameuse {cfttocbeforelisthook}}
+        {\@nameuse {cfttocafterlisthook}\endgroup\restorefromonecol}}
+\def\etocscrartclstyle{%
+    \etocsettocstyle
+        {\let\if@dynlist\if@tocleft
+         \iftocfeature {toc}{onecolumn}
+             {\iftocfeature {toc}{leveldown}
+              {}
+              {\if@twocolumn \aftergroup \twocolumn \onecolumn \fi }}
+             {}%
+         \iftocfeature {toc}{numberline}{\def \nonumberline {\numberline {}}}{}%
+         \tocbasic@listhead {\listoftocname}%
+         \begingroup \expandafter \expandafter \expandafter
+         \endgroup \expandafter
+         \ifx
+             \csname microtypesetup\endcsname \relax
+         \else
+             \iftocfeature {toc}{noprotrusion}{}
+                 {\microtypesetup {protrusion=false}%
+                  \PackageInfo {tocbasic}%
+                  {character protrusion at toc deactivated}}%
+         \fi
+         \setlength {\parskip }{\z@ }%
+         \setlength {\parindent }{\z@ }%
+         \setlength {\parfillskip }{\z@ \@plus 1fil}%
+         \csname tocbasic@@before@hook\endcsname
+         \csname tb@toc@before@hook\endcsname}
+        {\csname tb@toc@after@hook\endcsname
+         \csname tocbasic@@after@hook\endcsname}}
+\let\etocscrbookstyle\etocscrartclstyle
+\let\etocscrreprtstyle\etocscrartclstyle
+\def\etocstandarddisplaystyle{\etocarticlestyle}
+\newcommand*\etocmarkboth[1]{%
+    \@mkboth{\MakeUppercase{#1}}{\MakeUppercase{#1}}}
+\newcommand*\etocmarkbothnouc[1]{\@mkboth{#1}{#1}}
+\newcommand\etoctocstyle[3][section]{\etocmulticolstyle[#2]%
+    {\csname #1\endcsname *{#3}}}
+\newcommand\etoctocstylewithmarks[4][section]{\etocmulticolstyle[#2]%
+    {\csname #1\endcsname *{#3\etocmarkboth{#4}}}}
+\newcommand\etoctocstylewithmarksnouc[4][section]{\etocmulticolstyle[#2]%
+    {\csname #1\endcsname *{#3\etocmarkbothnouc{#4}}}}
+\def\Etoc@redefetocstyle#1{%
+    \renewcommand\etoctocstylewithmarks[4][#1]
+    {\etocmulticolstyle[##2]%
+          {\csname ##1\endcsname *{##3\etocmarkboth{##4}}}}
+    \renewcommand\etoctocstylewithmarksnouc[4][#1]
+    {\etocmulticolstyle[##2]%
+          {\csname ##1\endcsname *{##3\etocmarkbothnouc{##4}}}}
+    \renewcommand\etoctocstyle[3][#1]{%
+     \etocmulticolstyle[##2]{\csname ##1\endcsname *{##3}}}}
+\@ifclassloaded{scrartcl}
+    {\renewcommand*\etocstandarddisplaystyle{\etocscrartclstyle}}{}
+\@ifclassloaded{book}
+    {\renewcommand*\etocfontone{\normalfont\normalsize}
+     \renewcommand*\etocstandarddisplaystyle{\etocbookstyle}
+     \Etoc@redefetocstyle{chapter}}{}
+\@ifclassloaded{report}
+    {\renewcommand*\etocfontone{\normalfont\normalsize}
+     \renewcommand*\etocstandarddisplaystyle{\etocreportstyle}
+     \Etoc@redefetocstyle{chapter}}{}
+\@ifclassloaded{scrbook}
+    {\renewcommand*\etocfontone{\normalfont\normalsize}
+     \renewcommand*\etocstandarddisplaystyle{\etocscrbookstyle}
+     \Etoc@redefetocstyle{chapter}}{}
+\@ifclassloaded{scrreprt}
+    {\renewcommand*\etocfontone{\normalfont\normalsize}
+     \renewcommand*\etocstandarddisplaystyle{\etocscrreprtstyle}
+     \Etoc@redefetocstyle{chapter}}{}
+\@ifclassloaded{memoir}
+    {\etocsetlevel{appendix}{0}%
+     \renewcommand*\etocfontone{\normalfont\normalsize}
+     \etocmemoirtoctotocfmt{chapter}{\contentsname}%
+     \renewcommand*\etocstandarddisplaystyle{\etocmemoirstyle}
+     \Etoc@redefetocstyle{chapter}}{}
+\def\etoctocloftstyle {%
+    \etocsettocstyle
+    {\@cfttocstart\par\begingroup
+      \parindent\z@ \parskip\cftparskip \@cftmaketoctitle
+      \if@cfttocbibind\@cftdobibtoc\fi }%
+    {\endgroup\@cfttocfinish }%
+}
+\@ifclassloaded{memoir}{}
+{\@ifpackageloaded{tocloft}
+    {\if@cftnctoc\else
+     \renewcommand*\etocstandarddisplaystyle{\etoctocloftstyle}
+     \AtBeginDocument{\let\tableofcontents\etoctableofcontents}
+     \fi }
+    {\AtBeginDocument
+      {\@ifpackageloaded{tocloft}
+       {\if@cftnctoc\else
+         \PackageWarning {etoc}
+         {Package `tocloft' was loaded after `etoc'!^^J%
+**** to prevent it from overwriting \protect\tableofcontents, it will be tricked^^J%
+**** into believing to have been loaded with option `titles'. For better^^J%
+**** compatibility, please load `tocloft' before `etoc'}%
+        \AtEndDocument{\PackageWarning{etoc}
+                       {Please load `tocloft' /before/ `etoc'!}}\fi
+        \@cftnctoctrue }%
+       {}%
+      }%
+     }%
+}
+\def\Etoc@addtocontents #1#2%
+    {\ifEtoc@hyperref
+       \addtocontents {toc}{\protect\contentsline
+                {#1}{#2}%
+                {\thepage }{\@currentHref }}%
+     \else
+       \addtocontents {toc}{\protect\contentsline
+          {#1}{#2}{\thepage }}%
+     \fi}
+\def\Etoc@addcontentsline@ #1#2#3%
+    {\@namedef{toclevel@#1}{#3}%
+     \addcontentsline {toc}{#1}{#2}}
+\DeclareRobustCommand*{\etoctoccontentsline}
+    {\@ifstar{\Etoc@addcontentsline@}{\Etoc@addtocontents}}
+\def\Etoc@storetocdepth {\global\c@etoc@tocdepth\c@tocdepth }
+\def\Etoc@resettocdepth {\global\c@tocdepth\c@etoc@tocdepth }
+\def\etocobeytoctocdepth {\def\etoc@settocdepth
+        {\afterassignment\Etoc@@nottoodeep \global\c@tocdepth}}
+\def\Etoc@@nottoodeep {\ifnum\c@tocdepth>\c@etoc@tocdepth
+                          \global\c@tocdepth\c@etoc@tocdepth\fi }
+\def\etocignoretoctocdepth {\let\etoc@settocdepth\@gobble }
+\def\etocsettocdepth   {\futurelet\Etoc@nexttoken\Etoc@set@tocdepth }
+\def\Etoc@set@tocdepth {\ifx\Etoc@nexttoken\bgroup
+                            \expandafter\Etoc@set@tocdepth@
+                       \else\expandafter\Etoc@set@toctocdepth
+                       \fi }
+\def\Etoc@set@tocdepth@ #1{\@ifundefined {Etoc@#1@@}
+      {\PackageWarning{etoc}
+          {Unknown sectioning unit #1, \protect\etocsettocdepth\space ignored}}
+      {\global\c@tocdepth\csname Etoc@#1@@\endcsname}%
+}
+\def\Etoc@set@toctocdepth  #1#{\Etoc@set@toctocdepth@ }
+\def\Etoc@set@toctocdepth@ #1{%
+  \@ifundefined{Etoc@#1@@}%
+   {\PackageWarning{etoc}
+        {Unknown sectioning depth #1, \protect\etocsettocdepth.toc ignored}}%
+   {\addtocontents {toc}
+   {\protect\etoc@settocdepth\expandafter\protect\csname Etoc@#1@@\endcsname}}%
+}
+\def\etocdepthtag   #1#{\Etoc@depthtag } % \etocdepthtag.toc {name}
+\def\Etoc@depthtag  #1{\addtocontents {toc}{\protect\etoc@depthtag {#1}}}
+\def\etocignoredepthtags {\let\etoc@depthtag \@gobble }
+\def\etocobeydepthtags   {\let\etoc@depthtag \Etoc@depthtag@ }
+\def\Etoc@depthtag@ #1{\@ifundefined{Etoc@depthof@#1}%
+       {}% ignore in silence if tag has no associated depth
+       {\afterassignment\Etoc@@nottoodeep
+                 \global\c@tocdepth\csname Etoc@depthof@#1\endcsname}%
+}
+\def\etocsettagdepth #1#2{\@ifundefined{Etoc@#2@@}%
+       {\PackageWarning{etoc}
+         {Unknown sectioning depth #2, \protect\etocsettagdepth\space ignored}}%
+       {\@namedef{Etoc@depthof@#1}{\@nameuse{Etoc@#2@@}}}%
+}
+\def\Etoc@tocvsec@err #1{\PackageError {etoc}
+        {the command \protect#1\space is incompatible with etoc}
+        {use \protect\etocsettocdepth.toc as replacement (check the manual)}%
+}%
+\AtBeginDocument {%
+   \@ifclassloaded{memoir}
+    {\PackageWarning{etoc}{You may consider using \protect\etocsettocdepth.toc
+      as a drop-in^^J
+      replacement to the memoir own \protect\settocdepth\space
+      if you wish to exploit etoc to its^^J
+      fullest. Similarly consider using
+     \protect\etocsettocdepth\space and
+     \protect\etocsetnexttocdepth^^J rather
+     than memoir's \protect\maxtocdepth.}}
+    {\@ifpackageloaded {tocvsec2}
+     {\def\maxtocdepth  #1{\Etoc@tocvsec@err \maxtocdepth   }%
+      \def\settocdepth  #1{\Etoc@tocvsec@err \settocdepth   }%
+      \def\resettocdepth  {\@ifstar {\Etoc@tocvsec@err \resettocdepth }%
+                                    {\Etoc@tocvsec@err \resettocdepth }%
+                          }%
+      \def\save@tocdepth #1#2#3{}%    % if etoc is added to file previously
+      \let\reset@tocdepth\relax       % using tocvsec2
+      \let\remax@tocdepth\relax
+      \let\tableofcontents\etoctableofcontents
+      \PackageWarning {etoc}
+      {package tocvsec2 detected and its modification of^^J
+       \protect\tableofcontents\space reverted. Use
+       \protect\etocsettocdepth.toc as a replacement^^J
+       for the tocvsec2 toc-related commands}}{}%
+   }%
+}%
+\def\invisibletableofcontents {\etocsetnexttocdepth {-3}\tableofcontents }%
+\def\invisiblelocaltableofcontents
+                         {\etocsetnexttocdepth {-3}\localtableofcontents }%
+\def\etocsetnexttocdepth #1{%
+    \@ifundefined{Etoc@#1@@}
+     {\PackageWarning{etoc}
+       {Unknown sectioning unit #1, \protect\etocsetnextocdepth\space ignored}}
+     {\edef\Etoc@aftertochook {\global\c@tocdepth\the\c@tocdepth\space
+                              \let\noexpand\Etoc@aftertochook\noexpand\@empty }%
+       \global\c@tocdepth\csname Etoc@#1@@\endcsname}%
+}%
+\addtocontents {toc}{\protect\@ifundefined{etoctocstyle}%
+           {\let\protect\etoc@startlocaltoc\protect\@gobble
+            \let\protect\etoc@settocdepth\protect\@gobble
+            \let\protect\etoc@depthtag\protect\@gobble }{}}%
+\def\etocstandardlines {\Etoc@standardtrue}
+\def\etoctoclines      {\Etoc@standardfalse}
+\etocdefaultlines
+\etocstandardlines
+\etocstandarddisplaystyle
+\etocobeytoctocdepth
+\etocobeydepthtags
+\let\Etoc@aftertochook\@empty % private for \etocsetnexttocdepth
+\let\etocaftertochook \@empty % public for end user.
+\endinput
+%%
+%% End of file `etoc.sty'.

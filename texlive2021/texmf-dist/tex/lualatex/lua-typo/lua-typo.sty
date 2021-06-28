@@ -1,0 +1,874 @@
+%%
+%% This is file `lua-typo.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% lua-typo.dtx  (with options: `sty')
+%% 
+\NeedsTeXFormat{LaTeX2e}[2020/01/01]
+\ProvidesPackage{lua-typo}
+                [2021/03/14 v.0.32 Daniel Flipo]
+\ifdefined\directlua
+  \RequirePackage{luatexbase,luacode,luacolor}
+  \RequirePackage{kvoptions,atveryend}
+\else
+  \PackageError{This package is meant for LuaTeX only! Aborting}
+               {No more information available, sorry!}
+\fi
+\newdimen\luatypoLLminWD
+\newdimen\luatypoBackPI
+\newdimen\luatypoBackFuzz
+\newcount\luatypoStretchMax
+\newcount\luatypoHyphMax
+\newcount\luatypoPageMin
+\newcount\luatypoMinFull
+\newcount\luatypoMinPart
+\newcount\luatypo@LANGno
+\newcount\luatypo@options
+\newtoks\luatypo@single
+\newtoks\luatypo@double
+\begin{luacode}
+luatypo = { }
+\end{luacode}
+\SetupKeyvalOptions{
+   family=luatypo,
+   prefix=LT@,
+}
+\DeclareBoolOption[false]{ShowOptions}
+\DeclareBoolOption[false]{None}
+\DeclareBoolOption[false]{All}
+\DeclareBoolOption[false]{BackParindent}
+\DeclareBoolOption[false]{ShortLines}
+\DeclareBoolOption[false]{ShortPages}
+\DeclareBoolOption[false]{OverfullLines}
+\DeclareBoolOption[false]{UnderfullLines}
+\DeclareBoolOption[false]{Widows}
+\DeclareBoolOption[false]{Orphans}
+\DeclareBoolOption[false]{EOPHyphens}
+\DeclareBoolOption[false]{RepeatedHyphens}
+\DeclareBoolOption[false]{ParLastHyphen}
+\DeclareBoolOption[false]{EOLShortWords}
+\DeclareBoolOption[false]{FirstWordMatch}
+\DeclareBoolOption[false]{LastWordMatch}
+\AddToKeyvalOption{luatypo}{All}{%
+  \LT@ShortLinestrue     \LT@ShortPagestrue
+  \LT@OverfullLinestrue  \LT@UnderfullLinestrue
+  \LT@Widowstrue         \LT@Orphanstrue
+  \LT@EOPHyphenstrue     \LT@RepeatedHyphenstrue
+  \LT@ParLastHyphentrue  \LT@EOLShortWordstrue
+  \LT@FirstWordMatchtrue \LT@LastWordMatchtrue
+  \LT@BackParindenttrue
+}
+\ProcessKeyvalOptions{luatypo}
+\AtEndOfPackage{%
+  \ifLT@None
+    \directlua{ luatypo.None = true }%
+  \else
+    \directlua{ luatypo.None = false }%
+  \fi
+  \ifLT@BackParindent
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.BackParindent = true }%
+  \else
+    \directlua{ luatypo.BackParindent = false }%
+  \fi
+  \ifLT@ShortLines
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.ShortLines = true }%
+  \else
+    \directlua{ luatypo.ShortLines = false }%
+  \fi
+  \ifLT@ShortPages
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.ShortPages = true }%
+  \else
+    \directlua{ luatypo.ShortPages = false }%
+  \fi
+  \ifLT@OverfullLines
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.OverfullLines = true }%
+  \else
+    \directlua{ luatypo.OverfullLines = false }%
+  \fi
+  \ifLT@UnderfullLines
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.UnderfullLines = true }%
+  \else
+    \directlua{ luatypo.UnderfullLines = false }%
+  \fi
+  \ifLT@Widows
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.Widows = true }%
+  \else
+    \directlua{ luatypo.Widows = false }%
+  \fi
+  \ifLT@Orphans
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.Orphans = true }%
+  \else
+    \directlua{ luatypo.Orphans = false }%
+  \fi
+  \ifLT@EOPHyphens
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.EOPHyphens = true }%
+  \else
+    \directlua{ luatypo.EOPHyphens = false }%
+  \fi
+  \ifLT@RepeatedHyphens
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.RepeatedHyphens = true }%
+  \else
+    \directlua{ luatypo.RepeatedHyphens = false }%
+  \fi
+  \ifLT@ParLastHyphen
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.ParLastHyphen = true }%
+  \else
+    \directlua{ luatypo.ParLastHyphen = false }%
+  \fi
+  \ifLT@EOLShortWords
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.EOLShortWords = true }%
+  \else
+    \directlua{ luatypo.EOLShortWords = false }%
+  \fi
+  \ifLT@FirstWordMatch
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.FirstWordMatch = true }%
+  \else
+    \directlua{ luatypo.FirstWordMatch = false }%
+  \fi
+  \ifLT@LastWordMatch
+    \advance\luatypo@options by 1
+    \directlua{ luatypo.LastWordMatch = true }%
+  \else
+    \directlua{ luatypo.LastWordMatch = false }%
+  \fi
+}
+\ifLT@ShowOptions
+  \GenericWarning{* }{%
+     *** List of possible options for lua-typo ***\MessageBreak
+     [Default values between brackets]%
+     \MessageBreak
+     ShowOptions     [false]\MessageBreak
+     None            [false]\MessageBreak
+     BackParindent   [false]\MessageBreak
+     ShortLines      [false]\MessageBreak
+     ShortPages      [false]\MessageBreak
+     OverfullLines   [false]\MessageBreak
+     UnderfullLines  [false]\MessageBreak
+     Widows          [false]\MessageBreak
+     Orphans         [false]\MessageBreak
+     EOPHyphens      [false]\MessageBreak
+     RepeatedHyphens [false]\MessageBreak
+     ParLastHyphen   [false]\MessageBreak
+     EOLShortWords   [false]\MessageBreak
+     FirstWordMatch  [false]\MessageBreak
+     LastWordMatch   [false]\MessageBreak
+     \MessageBreak
+     *********************************************%
+     \MessageBreak Lua-typo [ShowOptions]
+   }%
+\fi
+\AtBeginDocument{%
+  \directlua{
+    luatypo.HYPHmax = tex.count.luatypoHyphMax
+    luatypo.PAGEmin = tex.count.luatypoPageMin
+    luatypo.Stretch = tex.count.luatypoStretchMax
+    luatypo.MinFull = tex.count.luatypoMinFull
+    luatypo.MinPart = tex.count.luatypoMinPart
+    luatypo.LLminWD = tex.dimen.luatypoLLminWD
+    luatypo.BackPI  = tex.dimen.luatypoBackPI
+    luatypo.BackFuzz  = tex.dimen.luatypoBackFuzz
+   }%
+}
+\AtVeryEndDocument{%
+\ifnum\luatypo@options = 0 \LT@Nonetrue \fi
+\ifLT@None
+  \directlua{
+    texio.write_nl(' ')
+    texio.write_nl('***********************************')
+    texio.write_nl('*** lua-typo loaded with NO option:')
+    texio.write_nl('*** NO CHECK PERFORMED! ***')
+    texio.write_nl('***********************************')
+    texio.write_nl(' ')
+   }%
+\else
+  \directlua{
+    texio.write_nl(' ')
+    texio.write_nl('*************************************')
+    if luatypo.pagelist == "" then
+       texio.write_nl('*** lua-typo: No Typo Flaws found.')
+    else
+       texio.write_nl('*** lua-typo: WARNING *************')
+       texio.write_nl('The following pages need attention: ')
+       texio.write(luatypo.pagelist)
+    end
+    texio.write_nl('***********************************')
+    texio.write_nl(' ')
+   }%
+\fi}
+\newcommand*{\luatypoOneChar}[2]{%
+  \def\luatypo@LANG{#1}\luatypo@single={#2}%
+  \ifcsname l@\luatypo@LANG\endcsname
+    \luatypo@LANGno=\the\csname l@\luatypo@LANG\endcsname \relax
+    \directlua{
+      local langno = \the\luatypo@LANGno
+      local string = \the\luatypo@single
+      luatypo.single[langno] = " "
+      for p, c in utf8.codes(string) do
+        local s = string.char(c)
+        luatypo.single[langno] = luatypo.single[langno] .. s
+      end
+     }%
+  \else
+    \PackageWarning{luatypo}{Unknown language "\luatypo@LANG",
+       \MessageBreak \protect\luatypoOneChar\space command ignored}%
+  \fi}
+\newcommand*{\luatypoTwoChars}[2]{%
+  \def\luatypo@LANG{#1}\luatypo@double={#2}%
+  \ifcsname l@\luatypo@LANG\endcsname
+    \luatypo@LANGno=\the\csname l@\luatypo@LANG\endcsname \relax
+    \directlua{
+      local langno = \the\luatypo@LANGno
+      local string = \the\luatypo@double
+      luatypo.double[langno] = " "
+      for p, c in utf8.codes(string) do
+        local s = string.char(c)
+        luatypo.double[langno] = luatypo.double[langno] .. s
+      end
+    }%
+  \else
+    \PackageWarning{luatypo}{Unknown language "\luatypo@LANG",
+       \MessageBreak \protect\luatypoTwoChars\space command ignored}%
+  \fi}
+\newcommand*{\luatypoSetColor}[2]{%
+  \begingroup
+    \color{#2}%
+    \directlua{luatypo.colortbl[#1]=\the\LuaCol@Attribute}%
+  \endgroup
+}
+\begin{luacode}
+luatypo.single = { }
+luatypo.double = { }
+luatypo.colortbl  = { }
+luatypo.pagelist  = ""
+
+local hyphcount = 0
+local parlines = 0
+local pagelines = 0
+local pageno = 0
+local prevno = 0
+local pageflag = false
+
+local char_to_discard = { }
+char_to_discard[string.byte(",")] = true
+char_to_discard[string.byte(".")] = true
+char_to_discard[string.byte("!")] = true
+char_to_discard[string.byte("?")] = true
+char_to_discard[string.byte(":")] = true
+char_to_discard[string.byte(";")] = true
+char_to_discard[string.byte("-")] = true
+
+local split_lig = { }
+split_lig[0xFB00] = "ff"
+split_lig[0xFB01] = "fi"
+split_lig[0xFB02] = "fl"
+split_lig[0xFB03] = "ffi"
+split_lig[0xFB04] = "ffl"
+split_lig[0xFB05] = "st"
+split_lig[0xFB06] = "st"
+
+local DISC  = node.id("disc")
+local GLYPH = node.id("glyph")
+local GLUE  = node.id("glue")
+local KERN  = node.id("kern")
+local HLIST = node.id("hlist")
+local LPAR  = node.id("local_par")
+local MKERN = node.id("margin_kern")
+local PENALTY = node.id("penalty")
+local USRSKIP  = 0
+local PARSKIP  = 3
+local LFTSKIP  = 8
+local RGTSKIP  = 9
+local TOPSKIP = 10
+local PARFILL = 15
+local LINE    = 1
+local BOX     = 2
+local USER = 0
+local HYPH = 0x2D
+local LIGA = 0x102
+
+local effective_glue = node.effective_glue
+local set_attribute = node.set_attribute
+local slide = node.slide
+local traverse = node.traverse
+local traverse_id = node.traverse_id
+local has_field = node.has_field
+local uses_font = node.uses_font
+local is_glyph  = node.is_glyph
+
+local color_node = function (node, color)
+  local attr = oberdiek.luacolor.getattribute()
+  if node and node.id == DISC then
+     local pre = node.pre
+     local post = node.post
+     local repl = node.replace
+     if pre then
+        set_attribute(pre,attr,color)
+     end
+     if post then
+        set_attribute(post,attr,color)
+     end
+     if repl then
+        set_attribute(repl,attr,color)
+     end
+  elseif node then
+     set_attribute(node,attr,color)
+  end
+end
+local color_hbox = function (head, color)
+  local first = head.head
+  for n in traverse(first) do
+      color_node(n, color)
+  end
+end
+local color_line = function (head, color)
+  local first = head.head
+  for n in traverse(first) do
+      if n and n.id == HLIST and n.subtype == BOX then
+         color_hbox(n, color)
+      else
+         color_node(n, color)
+      end
+  end
+end
+local signature = function (node, string, swap)
+  local n = node
+  local str = string
+  if n and n.id == GLYPH then
+    local b, id = is_glyph(n)
+    if b and not char_to_discard[b] then
+       if b == 0x2019 then b = 0x27 end
+       if b < 0x100 then
+          str = str .. string.char(b)
+       elseif split_lig[b] then
+          local c = split_lig[b]
+          if swap then
+             c = string.reverse(c)
+          end
+          str = str .. c
+       elseif n.subtype == LIGA and b > 0xE000 then
+          local c = string.sub(b,-2)
+          if swap then
+             c = string.reverse(c)
+          end
+          str = str .. c
+       end
+    end
+  elseif n and n.id == DISC then
+    local pre = n.pre
+    local post = n.post
+    local c1 = ""
+    local c2 = ""
+    if pre and pre.char and pre.char ~= HYPH and pre.char < 0x100 then
+       c1 = string.char(pre.char)
+    end
+    if post and post.char then
+       if post.char < 0x100 then
+          c2 = string.char(post.char)
+       elseif split_lig[post.char] then
+          c2 = split_lig[post.char]
+          if swap then
+             c2 = string.reverse(c2)
+          end
+       end
+    end
+    if swap then
+       str = str .. c2 .. c1
+    else
+       str = str .. c1 .. c2
+    end
+  end
+  local len = string.len(str)
+  if string.find(str, "_") then
+     len = len - 1
+  end
+  return len, str
+end
+local check_last_word = function (old, node, color, flag)
+  local match = false
+  local new = ""
+  local maxlen = 0
+  if flag and node then
+     local swap = true
+     local lastn = node
+     while lastn and lastn.id ~= GLYPH and lastn.id ~= DISC do
+       lastn = lastn.prev
+     end
+     local n = lastn
+     while n and n.id ~= GLUE do
+       maxlen, new = signature (n, new, swap)
+       n = n.prev
+     end
+     if n and n.id == GLUE then
+        new = new .. "_"
+        repeat
+          n = n.prev
+          maxlen, new = signature (n, new, swap)
+        until not n or n.id == GLUE
+     end
+     new = string.reverse(new)
+     local MinFull = luatypo.MinFull
+     local MinPart = luatypo.MinPart
+     MinFull = math.min(MinPart,MinFull)
+     local k = MinPart
+     local oldlast = string.gsub (old, '.*_', '')
+     local newlast = string.gsub (new, '.*_', '')
+     local i = string.find(new, "_")
+     if i and i > maxlen - MinPart + 1 then
+        k = MinPart + 1
+     end
+     local oldsub = string.sub(old,-k)
+     local newsub = string.sub(new,-k)
+     local l = string.len(new)
+     if oldsub == newsub and l >= k then
+        match = true
+     elseif oldlast == newlast and string.len(newlast) >= MinFull then
+        match = true
+        oldsub = oldlast
+        newsub = newlast
+        k = string.len(newlast)
+     end
+     if match then
+        local osub = oldsub
+        local nsub = newsub
+        while osub == nsub and k <= maxlen do
+          k = k +1
+          osub = string.sub(old,-k)
+          nsub = string.sub(new,-k)
+          if osub == nsub then
+             newsub = nsub
+          end
+        end
+        newsub = string.gsub(newsub, '^_', '')
+        oldsub = string.reverse(newsub)
+        local newsub = ""
+        local n = lastn
+        repeat
+          if n and n.id ~= GLUE then
+             color_node(n, color)
+             l, newsub = signature(n, newsub, swap)
+          elseif n then
+             newsub = newsub .. "_"
+          end
+          n = n.prev
+        until not n or newsub == oldsub or l >= k
+     end
+  end
+  return new, match
+end
+local check_first_word = function (old, node, color, flag)
+  local match = false
+  local swap = false
+  local new = ""
+  local maxlen = 0
+  local start = node
+  local n = start
+  while n and n.id ~= GLYPH and n.id ~= DISC do
+     n = n.next
+  end
+  while n and n.id ~= GLUE do
+    maxlen, new = signature (n, new, swap)
+    n = n.next
+  end
+  if n and n.id == GLUE then
+     new = new .. "_"
+     repeat
+       n = n.next
+       maxlen, new = signature (n, new, swap)
+     until not n or n.id == GLUE
+  end
+  if flag then
+     local MinFull = luatypo.MinFull
+     local MinPart = luatypo.MinPart
+     MinFull = math.min(MinPart,MinFull)
+     local k = MinPart
+     local oldsub = ""
+     local newsub = ""
+     local oldfirst = string.gsub (old, '_.*', '')
+     local newfirst = string.gsub (new, '_.*', '')
+     local i = string.find(new, "_")
+     if i and i <= MinPart then
+        k = MinPart + 1
+     end
+     local oldsub = string.sub(old,1,k)
+     local newsub = string.sub(new,1,k)
+     local l = string.len(newsub)
+     if oldsub == newsub and l >= k then
+        match = true
+     elseif oldfirst == newfirst  and string.len(newfirst) >= MinFull then
+        match = true
+        oldsub = oldfirst
+        newsub = newfirst
+        k = string.len(newfirst)
+     end
+     if match then
+        local osub = oldsub
+        local nsub = newsub
+        while osub == nsub and k <= maxlen do
+          k = k + 1
+          osub = string.sub(old,1,k)
+          nsub = string.sub(new,1,k)
+          if osub == nsub then
+             newsub = nsub
+          end
+        end
+        newsub = string.gsub(newsub, '_$', '')   --$
+        oldsub = newsub
+        local newsub = ""
+        local k = string.len(oldsub)
+        local n = start
+        repeat
+          if n and n.id ~= GLUE then
+             color_node(n, color)
+             l, newsub = signature(n, newsub, swap)
+          elseif n then
+             newsub = newsub .. "_"
+          end
+          n = n.next
+        until not n or newsub == oldsub or l >= k
+     end
+  end
+  return new, match
+end
+local check_regexpr = function (glyph)
+  local COLOR = luatypo.colortbl[3]
+  local lang = glyph.lang
+  local match = false
+  local lchar, id = is_glyph(glyph)
+  local previous = glyph.prev
+  if lang and luatypo.single[lang] then
+     if lchar and lchar < 0x100 and previous and previous.id == GLUE then
+        match = string.find(luatypo.single[lang], string.char(lchar))
+        if match then
+           color_node(glyph,COLOR)
+        end
+     end
+  end
+  if lang and luatypo.double[lang] then
+     if lchar and previous and previous.id == GLYPH then
+        local pchar, id = is_glyph(previous)
+        local pprev = previous.prev
+        if pchar and pchar < 0x100 and pprev and pprev.id == GLUE then
+           local pattern = string.char(pchar) .. string.char(lchar)
+           match = string.find(luatypo.double[lang], pattern)
+           if match then
+              color_node(previous,COLOR)
+              color_node(glyph,COLOR)
+           end
+        end
+     elseif lchar and previous and previous.id == KERN then
+        local pprev = previous.prev
+        if pprev and pprev.id == GLYPH then
+           local pchar, id = is_glyph(pprev)
+           local ppprev = pprev.prev
+           if pchar and pchar < 0x100 and ppprev and ppprev.id == GLUE then
+              local pattern = string.char(pchar) .. string.char(lchar)
+              match = string.find(luatypo.double[lang], pattern)
+              if match then
+                 color_node(pprev,COLOR)
+                 color_node(glyph,COLOR)
+              end
+           end
+        end
+     end
+  end
+  return  match
+end
+local show_pre_disc = function (disc, color)
+  local n = disc
+  while n and n.id ~= GLUE do
+    color_node(n, color)
+    n = n.prev
+  end
+  return n
+end
+luatypo.check_page = function (head)
+  local PAGEmin   = luatypo.PAGEmin
+  local HYPHmax   = luatypo.HYPHmax
+  local LLminWD   = luatypo.LLminWD
+  local BackPI    = luatypo.BackPI
+  local BackFuzz  = luatypo.BackFuzz
+  local BackParindent  = luatypo.BackParindent
+  local ShortLines     = luatypo.ShortLines
+  local ShortPages     = luatypo.ShortPages
+  local OverfullLines  = luatypo.OverfullLines
+  local UnderfullLines = luatypo.UnderfullLines
+  local Widows         = luatypo.Widows
+  local Orphans        = luatypo.Orphans
+  local EOPHyphens     = luatypo.EOPHyphens
+  local RepeatedHyphens = luatypo.RepeatedHyphens
+  local FirstWordMatch = luatypo.FirstWordMatch
+  local ParLastHyphen  = luatypo.ParLastHyphen
+  local EOLShortWords  = luatypo.EOLShortWords
+  local LastWordMatch  = luatypo.LastWordMatch
+  local Stretch = math.max(luatypo.Stretch/100,1)
+
+  local orphanflag = false
+  local widowflag  = false
+  local lwhyphflag = false
+  local match1 = false
+  local match2 = false
+  local firstwd = ""
+  local lastwd = ""
+  while head do
+    local nextnode = head.next
+    local prevnode = head.prev
+    local pprevnode = nil
+    if prevnode then
+       pprevnode = prevnode.prev
+    end
+    if head.id == GLUE and head.subtype == TOPSKIP then
+       pageno = tex.getcount("c@page")
+       hyphcount = 0
+       if pageno > prevno then
+          pageflag = false
+          pagelines = 0
+          match1 = false
+          firstwd = ""
+          lastwd = ""
+          prevno = pageno
+       end
+    elseif head.id == HLIST and head.subtype == LINE then
+       local first = head.head
+       if first.id == MKERN or
+         (first.id == GLUE and first.subtype == LFTSKIP) then
+          first = first.next
+       end
+       pagelines = pagelines + 1
+       local ListItem = false
+       local textline = false
+       if first.id == GLYPH then
+          textline = true
+       else
+          local n = first
+          repeat
+            n = n.next
+            if n and n.id == GLYPH then
+               textline = true
+               break
+            end
+          until not n or (n.id == GLUE and n.subtype == RGTSKIP)
+       end
+       if head.glue_set == 1 and head.glue_sign == 2 and
+          head.glue_order == 0 and OverfullLines then
+          pageflag = true
+          local COLOR = luatypo.colortbl[7]
+          color_line (head, COLOR)
+       elseif head.glue_set >= Stretch and head.glue_sign == 1 and
+              head.glue_order == 0  and UnderfullLines then
+          local COLOR = luatypo.colortbl[8]
+          pageflag = true
+          color_line (head, COLOR)
+       end
+       if first.id == LPAR then
+          hyphcount = 0
+          parlines = 1
+          if not nextnode then
+             orphanflag = true
+          end
+          local nn = first.next
+          if  nn and  nn.id == HLIST and nn.subtype == BOX then
+              ListItem = true
+          end
+       else
+          parlines = parlines + 1
+       end
+       if FirstWordMatch then
+          local flag = not ListItem
+          local COLOR = luatypo.colortbl[10]
+          firstwd, match1 = check_first_word(firstwd, first, COLOR, flag)
+          if match1 then
+             pageflag = true
+          end
+       end
+       local ln = slide(first)
+       local pn = ln.prev
+       if pn and pn.id == GLUE and pn.subtype == PARFILL then
+          hyphcount = 0
+          orphanflag = false
+          if pagelines == 1 and parlines > 1 then
+             widowflag = true
+          end
+          local PFskip = effective_glue(pn,head)
+          if ShortLines then
+             local llwd = tex.hsize - PFskip
+             if llwd < LLminWD then
+                pageflag = true
+                local COLOR  = luatypo.colortbl[6]
+                local attr = oberdiek.luacolor.getattribute()
+                color_line (head, COLOR)
+             end
+          end
+          if BackParindent and PFskip < BackPI and PFskip > BackFuzz then
+             pageflag = true
+             local COLOR  = luatypo.colortbl[12]
+             local attr = oberdiek.luacolor.getattribute()
+             color_line (head, COLOR)
+          end
+          if LastWordMatch then
+             local COLOR = luatypo.colortbl[11]
+             local flag = textline
+             if PFskip > BackPI then
+                flag = false
+             end
+             lastwd, match1 = check_last_word(lastwd, pn, COLOR, flag)
+             if match1 then
+                pageflag = true
+             end
+          end
+       elseif pn and pn.id == DISC then
+          hyphcount = hyphcount + 1
+          if LastWordMatch then
+             local COLOR = luatypo.colortbl[11]
+             lastwd, match1 = check_last_word(lastwd, ln, COLOR, true)
+             if match1 then
+                pageflag = true
+             end
+          end
+          if hyphcount > HYPHmax and RepeatedHyphens then
+             local COLOR = luatypo.colortbl[2]
+             local pg = show_pre_disc (pn,COLOR)
+             pageflag = true
+          end
+          if not nextnode and EOPHyphens then
+             lwhyphflag = true
+          end
+          if nextnode and ParLastHyphen then
+             local nnnode = nextnode.next
+             local nnnnode = nil
+             if nnnode and nnnode.next then
+                nnnnode = nnnode.next
+                if nnnnode and nnnnode.id == HLIST and
+                   nnnnode.subtype == 1 and nnnnode.glue_order == 2 then
+                   local COLOR = luatypo.colortbl[0]
+                   local pg = show_pre_disc (pn,COLOR)
+                   pageflag = true
+                end
+             end
+          end
+       elseif pn and pn.id == GLYPH then
+          hyphcount = 0
+          if LastWordMatch then
+             local COLOR = luatypo.colortbl[11]
+             lastwd, match1 = check_last_word(lastwd, pn, COLOR, true)
+          end
+          if EOLShortWords then
+             match2 = check_regexpr(pn)
+          end
+          if match1 or match2 then
+             pageflag = true
+          end
+       elseif pn and pn.id == MKERN then
+          hyphcount = 0
+          local ppn = pn.prev
+          if ppn and ppn.id == GLYPH then
+             if LastWordMatch then
+                local COLOR = luatypo.colortbl[11]
+                lastwd, match1 = check_last_word(lastwd, pn, COLOR, true)
+             end
+             if EOLShortWords then
+                match2 = check_regexpr(ppn)
+             end
+             if match1 or match2 then
+                pageflag = true
+             end
+          end
+       else
+          hyphcount = 0
+       end
+       if widowflag and Widows then
+          pageflag = true
+          widowflag = false
+          local COLOR  = luatypo.colortbl[4]
+          color_line (head, COLOR)
+       end
+       if orphanflag and Orphans then
+          pageflag = true
+          local COLOR = luatypo.colortbl[5]
+          color_line (head, COLOR)
+       end
+       if lwhyphflag and EOPHyphens then
+          pageflag = true
+          local COLOR = luatypo.colortbl[1]
+          local pg = show_pre_disc (pn,COLOR)
+       end
+    elseif not nextnode and head.id == GLUE and
+                            head.subtype == USRSKIP then
+       if pagelines > 1 and pagelines < PAGEmin and ShortPages then
+          pageflag = true
+          local COLOR = luatypo.colortbl[9]
+          local n = head
+          while n and (n.id ~= HLIST or n.subtype ~= LINE) do
+             n = n.prev
+          end
+          if n then
+             color_line(n, COLOR)
+          end
+       end
+    end
+  head = nextnode
+  end
+  if pageflag then
+     local pl = luatypo.pagelist
+     local p = tonumber(string.match(pl, "%s(%d+),%s$"))
+     if not p or pageno > p then
+        luatypo.pagelist = luatypo.pagelist .. tostring(pageno) .. ", "
+     end
+  end
+  return true
+end
+return luatypo.check_page
+\end{luacode}
+\AtEndOfPackage{%
+  \directlua{
+    if not luatypo.None then
+       luatexbase.add_to_callback
+           ("pre_output_filter",luatypo.check_page,"check_page")
+    end
+  }
+}
+
+\InputIfFileExists{lua-typo.cfg}%
+   {\PackageInfo{lua-typo.sty}{'lua-typo.cfg' file loaded}}%
+   {\PackageInfo{lua-typo.sty}{'lua-typo.cfg' file not found.
+                               \MessageBreak Providing default values.}%
+    \definecolor{mygrey}{gray}{0.6}%
+    \definecolor{myred}{rgb}{1,0.55,0}
+    \luatypoSetColor0{red}%       Paragraph last full line hyphenated
+    \luatypoSetColor1{red}%       Page last word hyphenated
+    \luatypoSetColor2{red}%       Hyphens ending two many consecutive lines
+    \luatypoSetColor3{red}%       Short word at end of line
+    \luatypoSetColor4{cyan}%      Widow
+    \luatypoSetColor5{cyan}%      Orphan
+    \luatypoSetColor6{cyan}%      Paragraph ending on a short line
+    \luatypoSetColor7{blue}%      Overfull lines
+    \luatypoSetColor8{blue}%      Underfull lines
+    \luatypoSetColor9{red}%       Nearly empty page
+    \luatypoSetColor{10}{myred}%  First word matches
+    \luatypoSetColor{11}{myred}%  Last word matches
+    \luatypoSetColor{12}{mygrey}% Paragraph ending on a nearly full line
+    \luatypoBackPI=1em\relax
+    \luatypoBackFuzz=2pt\relax
+    \luatypoLLminWD=2\parindent\relax
+    \luatypoStretchMax=200\relax
+    \luatypoHyphMax=2\relax
+    \luatypoPageMin=5\relax
+    \luatypoMinFull=4\relax
+    \luatypoMinPART=4\relax
+   }%
+%% 
+%%
+%% End of file `lua-typo.sty'.

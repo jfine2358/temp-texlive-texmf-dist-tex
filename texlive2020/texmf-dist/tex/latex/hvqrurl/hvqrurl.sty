@@ -1,0 +1,47 @@
+%% $Id: hvqrurl.sty 1117 2019-11-28 20:54:41Z herbert $
+%%
+%% This file is distributed under the terms of the LaTeX Project Public
+%% License from CTAN archives in directory  macros/latex/base/lppl.txt.
+%% Either version 1.3 or, at your option, any later version.
+%%
+% Copyright 2019 Herbert Voss hvoss@tug.org
+%%
+\ProvidesPackage{hvqrurl}[%
+  2019/12/01 v.0.01a (Herbert Voss) Supports qr images into the margin (hv)] 
+%
+\NeedsTeXFormat{LaTeX2e}
+\RequirePackage{url}
+\RequirePackage{xcolor}
+\RequirePackage{marginnote}
+\RequirePackage{qrcode}
+\RequirePackage{xkeyval}
+
+\newlength\qr@url@qrheight
+\newlength\qr@url@qradjust
+
+\define@key{hvqr}{qrheight}[1cm]{\setlength\qr@url@qrheight{#1}}
+\define@key{hvqr}{qradjust}[-1.5\normalbaselineskip]{\setlength\qr@url@qradjust{#1}}
+\define@key{hvqr}{qrcolor}[black]{\colorlet{qr@url@qrcolor}{#1}}
+\define@key{hvqr}{qrlevel}[M]{\def\qr@url@qrlevel{#1}}
+\define@key{hvqr}{qrlink}[link]{\def\qr@url@qrlink{#1}}
+
+\setkeys{hvqr}{qrheight,qrcolor=black,qradjust,qrlevel,qrlink=link}% the default setting
+
+\newcommand*\hvqrset[1]{\setkeys{hvqr}{#1}}
+
+\def\hvqrurl{\@ifnextchar*{\@tempswafalse\hvqr@url}{\@tempswatrue\hvqr@@url}}
+\def\hvqr@url*{\hvqr@@url}
+
+\newcommand*\hvqr@@url[2][]{%
+  \begingroup
+  \providecommand*\qr@blank{0}%
+  \ifx\relax#1\relax \else\hvqrset{#1}\fi
+  \expandafter\qrset\expandafter{\qr@url@qrlink,height=\qr@url@qrheight,level=\qr@url@qrlevel}%
+  \if@tempswa\url{#2}\fi
+  \edef\reserved@a{\noexpand\marginnote{\noexpand\color{qr@url@qrcolor}\noexpand\qrcode{%
+     \detokenize\expandafter{#2}}}[\qr@url@qradjust]}%
+  \reserved@a
+  \endgroup
+}
+
+\endinput

@@ -1,0 +1,158 @@
+\ProvidesFile{ext-numeric-comp.cbx}
+  [2019/04/04 v0.7a extended biblatex numeric-comp citation style (MW)]
+
+\blx@inputonce{ext-biblatex-aux.def}{auxiliary code for ext-biblatex}
+  {}{}{}{}
+
+\RequireCitationStyle{numeric-comp}
+
+\DeclareOuterCiteDelims{cite}{\bibopenbracket}{\bibclosebracket}
+\DeclareOuterCiteDelimsAlias{parencite}{cite}
+\DeclareOuterCiteDelims{textcite}{}{}
+
+\DeclareInnerCiteDelims{textcite}{\bibopenbracket}{\bibclosebracket}
+
+\renewbibmacro*{textcite}{%
+  \iffieldequals{namehash}{\cbx@lasthash}
+    {\usebibmacro{cite:comp}}
+    {\usebibmacro{cite:dump}%
+     \ifbool{cbx:parens}
+       {\printtext{\csuse{extblx@citedelim@\blx@delimcontext
+                          @inner@close}}%
+        \global\boolfalse{cbx:parens}}
+       {}%
+     \iffirstcitekey
+       {}
+       {\textcitedelim}%
+     \usebibmacro{cite:init}%
+     \ifnameundef{labelname}
+       {\printfield[citetitle]{labeltitle}}
+       {\printnames{labelname}}%
+     \setunit*{\printdelim{namelabeldelim}}%
+     \printtext{\csuse{extblx@citedelim@\blx@delimcontext @inner@open}}%
+     \global\booltrue{cbx:parens}%
+     \ifnumequal{\value{citecount}}{1}
+       {\usebibmacro{prenote}}
+       {}%
+     \usebibmacro{cite:comp}%
+     \stepcounter{textcitecount}%
+     \savefield{namehash}{\cbx@lasthash}}}
+
+\DeclareCiteCommand{\cite}[\mkoutercitedelims]
+  {\usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite:comp}}
+  {}
+  {\usebibmacro{cite:dump}%
+   \usebibmacro{postnote}}
+
+\DeclareCiteCommand{\parencite}[\mkouterparencitedelims]
+  {\usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite:comp}}
+  {}
+  {\usebibmacro{cite:dump}%
+   \usebibmacro{postnote}}
+
+\DeclareCiteCommand{\footcite}[\mkextblxfootcite]
+  {\usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite:comp}}
+  {}
+  {\usebibmacro{cite:dump}%
+   \usebibmacro{postnote}}
+
+\DeclareCiteCommand{\footcitetext}[\mkextblxfootcitetext]
+  {\usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite:comp}}
+  {}
+  {\usebibmacro{cite:dump}%
+   \usebibmacro{postnote}}
+
+% smartcite's delimcontext needs special attention
+% (see ext-biblatex-aux.def)
+\DeclareCiteCommand{\smartcite}[\mksmartcite]
+  {\delimcontext{\extblx@thisdelimcontext}%
+   \usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite:comp}}
+  {}
+  {\usebibmacro{cite:dump}%
+   \usebibmacro{postnote}}
+
+\DeclareCiteCommand{\supercite}[\mkextblxsupercite]
+  {\usebibmacro{cite:init}%
+   \let\multicitedelim=\supercitedelim
+   \iffieldundef{prenote}
+     {}
+     {\BibliographyWarning{Ignoring prenote argument}}%
+   \iffieldundef{postnote}
+     {}
+     {\BibliographyWarning{Ignoring postnote argument}}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite:comp}}
+  {}
+  {\usebibmacro{cite:dump}}
+
+\DeclareCiteCommand{\cbx@textcite}[\mkoutertextcitedelims]
+  {\usebibmacro{cite:init}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{textcite}}
+  {}
+  {\usebibmacro{cite:dump}%
+   \usebibmacro{postnote}%
+   \ifbool{cbx:parens}
+     {\csuse{extblx@citedelim@\blx@delimcontext @inner@close}%
+      \global\boolfalse{cbx:parens}}
+     {}}
+
+\DeclareMultiCiteCommand{\cbx@textcites}[\mkoutertextcitedelims]
+  {\cbx@textcite}{}
+
+\DeclareMultiCiteCommand{\cites}[\mkoutercitedelims]
+  {\cite}{\multicitedelim}
+\DeclareMultiCiteCommand{\parencites}[\mkouterparencitedelims]
+  {\parencite}{\multicitedelim}
+\DeclareMultiCiteCommand{\footcites}[\mkextblxfootcite]
+  {\footcite}{\multicitedelim}
+\DeclareMultiCiteCommand{\footcitetexts}[\mkextblxfootcitetext]
+  {\footcitetext}{\multicitedelim}
+\DeclareMultiCiteCommand{\smartcites}[\mksmartcite]
+  {\smartcite}{\multicitedelim}
+
+\DeclareCiteCommand{\bbx@xrefcite}[\mkouterbbx@xrefcitedelims]
+  {\boolfalse{citetracker}%
+   \boolfalse{pagetracker}%
+   \boolfalse{backtracker}%
+   \usebibmacro{cite:init}}
+  {\usebibmacro{cite:comp}}
+  {\usebibmacro{cite:dump}}
+  {}
+
+\renewbibmacro*{bbx:introcite}{%
+  \printfield{labelprefix}%
+  \printfield{labelnumber}%
+  \ifbool{bbx:subentry}
+    {\printfield{entrysetcount}}
+    {}}
+
+\endinput
+%
+% This file is part of the biblatex-ext bundle.
+% biblatex-ext is released under the LaTeX Project Public License v1.3c
+% or later.
+%
+% A complete list of files included in that package can be found in
+% README.md or - failing that - in ext-standard.bbx.
+%
+% Official releases of this package are on CTAN
+%   https://www.ctan.org/pkg/biblatex-ext
+% development takes place on GitHub
+%   https://github.com/moewew/biblatex-ext
+%

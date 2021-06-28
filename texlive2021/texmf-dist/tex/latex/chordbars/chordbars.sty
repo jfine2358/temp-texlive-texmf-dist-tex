@@ -1,0 +1,393 @@
+%% file: chordbars.sty
+%% Copyright 2018 M. Sebastien Kramm
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3c
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+% 
+% The Current Maintainer of this work is M. Sebastien Kramm
+%
+% This work consists of the files chordbars.sty and chordbars_manual.tex
+
+% Home page: https://github.com/skramm/chordbars
+
+
+% TODO define command to have 1 chord per beat
+
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{chordbars}[2017-12-29 version 1.1]
+
+\RequirePackage{tikz}
+\RequirePackage{pgfmath}
+\RequirePackage{tkz-euclide}
+
+\usetikzlibrary{math,shapes}
+
+\RequirePackage{calc}
+\RequirePackage{ifthen}
+%\RequirePackage{fixltx2e}
+
+\def\vspacebefore{1ex}
+\def\vspaceafter{1ex}
+
+\newcommand{\songtitle}
+{
+  \begin{center}%
+  	\begin{tikzpicture}[line width=1.5pt]
+	\tikzstyle{block} = [rectangle, draw, text width=20em, text centered, minimum height=4em]
+      	\node [block,font=\fontsize{20}{28}\selectfont\bfseries] (init) { \@title\\ \@author };
+  	\end{tikzpicture}
+  \end{center}%
+  \par
+  \vskip 1.5em
+}
+
+\newcounter{NumMesure}
+\newcounter{NumPart}
+\newcounter{CurrentBarInLine}
+\newcounter{CurrentBar}
+\newcounter{CurrentLine}
+
+\newcommand{\bpm}[1]
+{
+	\xdef\tempoBPM{#1}
+	\rightline{Tempo=#1 BPM}
+}
+
+% "Beats Per Bar"
+% default value
+\xdef\bpb{4}
+
+\newcommand{\bpbfour}
+{
+	\xdef\bpb{4}
+}
+\newcommand{\bpbthree}
+{
+	\xdef\bpb{3}
+}
+
+\newcommand{\resetchordbars}
+{
+	\setcounter{NumMesure}{0}
+	\setcounter{NumPart}{0}
+	\setcounter{CurrentBarInLine}{0}
+}
+
+\newcommand{\printNbBars}
+{
+	\ifthenelse{\boolean{printBarNumber}}
+	{
+		Total number of bars: \arabic{NumMesure}, duration=\pgfmathparse{\theNumMesure/\tempoBPM*60*\bpb}\pgfmathresult {} s.
+	}{}
+}
+
+\newboolean{printBarNumber}
+
+\newcommand{\countbarsYes}
+{
+	\setboolean{printBarNumber}{true}  
+}
+
+\newcommand{\countbarsNo}
+{
+	\setboolean{printBarNumber}{false}  
+}
+
+\def\barsize{1.6}%	
+\def\delta{0.36}
+
+\def\chordFontSize{\normalsize \bfseries}
+\def\titleFontSize{\large \bfseries}
+
+\xdef\NumberOfBarsPerLine{4}
+
+% arg1: chord
+% arg2: number of bars
+% arg3: title
+\newcommand{\chordline}[3]
+{
+	{\fontfamily{phv}\selectfont
+	\noindent\ignorespaces %
+	\vspace{\vspacebefore}
+	\refstepcounter{NumMesure}%
+	\refstepcounter{NumPart}%
+	\begin{tikzpicture}[line width=1pt,x=1cm,y=-1cm]
+
+% draw part title	
+	\ifthenelse
+		{\boolean{printBarNumber}}	
+		{
+			\draw (0,-\barsize*.2) node [anchor=west, align=left,font=\titleFontSize] {Part \theNumPart: #3};
+			\draw (-.3,.5*\barsize) node{\bf \theNumMesure};
+		} 
+		{
+			\draw (0,-\barsize*.2) node [anchor=west, align=left,font=\titleFontSize] {#3};
+		} 
+
+	\draw (0,0) -- (#2*\barsize,0);               % horizontal lines
+	\draw (0,\barsize) -- (#2*\barsize,\barsize);
+
+	\draw (0,0) -- (0,\barsize);                  % first vertical line
+	\draw (\barsize,0) -- (\barsize,\barsize);    % second vertical line
+	\draw (\barsize/2,\barsize/2) node [font=\chordFontSize]{#1};      % chord name
+
+	\foreach \k in {2,...,{#2}}
+	{
+		\draw (\k*\barsize,0) -- (\k*\barsize,\barsize);
+
+		\pgfmathsetmacro{\Axa}{(\k-1)*\barsize+\delta*\barsize}
+		\pgfmathsetmacro{\Axb}{\k*\barsize-\delta*\barsize}
+		\pgfmathsetmacro{\Aya}{(1-\delta)*\barsize}
+		\pgfmathsetmacro{\Ayb}{\delta*\barsize}
+
+		\coordinate (A) at (\Axa,\Ayb);
+		\coordinate (B) at (\Axb,\Aya);
+
+		\fill (A) circle[radius=2pt];
+		\fill (B) circle[radius=2pt];
+		\draw [thick] (\Axa,\Aya) -- (\Axb,\Ayb); % Draw "repeat" symbol
+	}					
+				
+	\end{tikzpicture}
+	}
+	\addtocounter{NumMesure}{#2}
+}
+
+%==========================================================================
+% main environment, has 2 mandatory arguments
+% arg 1 (#2 inside): total number of 4 beat bars (4, 8, ...)
+% arg 2 {#3 inside}: part name (can be empty)
+% optional arg: nb of repetitions (default is 1)
+
+\newenvironment{chordbar}[3][1]
+{
+	\newcommand{\newchordline}
+	{
+		\setcounter{CurrentBarInLine}{0}
+		\refstepcounter{CurrentLine}
+	}
+
+	\newcommand{\chordf}[1]%
+	{
+		\ifthenelse
+			{\theCurrentBarInLine=\NumberOfBarsPerLine}
+			{
+				\refstepcounter{CurrentLine}
+				\setcounter{CurrentBarInLine}{0}
+			}
+			{}
+		\refstepcounter{CurrentBarInLine}%
+		\pgfmathsetmacro{\x}{-\barsize/2+\theCurrentBarInLine*\barsize}
+		\pgfmathsetmacro{\y}{\value{CurrentLine})*\barsize+\barsize/2}		
+		\draw (\x,\y) node [font=\chordFontSize]{##1};%
+	}%
+
+	\newcommand{\chordh}[2]%
+	{
+		\ifthenelse
+			{\theCurrentBarInLine=\NumberOfBarsPerLine}
+			{
+				\refstepcounter{CurrentLine}
+				\setcounter{CurrentBarInLine}{0}
+			}
+			{}
+		\refstepcounter{CurrentBarInLine}%
+		\typeout{CurrentBarInLine=\theCurrentBarInLine}
+		\draw ( %
+			{\barsize*(\theCurrentBarInLine-1)}, %
+			{(\theCurrentLine+1)*\barsize} %
+		) %
+		-- %
+		( %
+			{\theCurrentBarInLine*\barsize}, %
+			{\theCurrentLine*\barsize} %
+		);		
+		\draw (
+			{-3*\barsize/4+\theCurrentBarInLine*\barsize},
+			{\theCurrentLine*\barsize+1*\barsize/4}
+		) node [font=\chordFontSize]{##1};
+		\draw (
+			{-\barsize/4+\theCurrentBarInLine*\barsize},
+			{\theCurrentLine*\barsize+3*\barsize/4}
+		) node [font=\chordFontSize]{##2};%	
+		
+	}
+	
+	\newcommand{\repeatBar}%
+	{ %
+		\ifthenelse
+			{\theCurrentBarInLine=\NumberOfBarsPerLine}
+			{
+				\refstepcounter{CurrentLine}
+				\setcounter{CurrentBarInLine}{0}
+			}
+			{}
+		\refstepcounter{CurrentBarInLine}%
+	
+		\pgfmathsetmacro{\Axa}{(\theCurrentBarInLine-1)*\barsize+\delta*\barsize}
+		\pgfmathsetmacro{\Axb}{\theCurrentBarInLine*\barsize-\delta*\barsize}
+		\pgfmathsetmacro{\Aya}{(1-\delta)*\barsize+\theCurrentLine*\barsize}
+		\pgfmathsetmacro{\Ayb}{\delta*\barsize+\theCurrentLine*\barsize}
+
+		\coordinate (A) at (\Axa,\Ayb);
+		\coordinate (B) at (\Axb,\Aya);
+
+		\fill (A) circle[radius=2pt];
+		\fill (B) circle[radius=2pt];
+		\draw [thick] (\Axa,\Aya) -- (\Axb,\Ayb); %
+	}%
+
+	\newcommand{\repeatBarPair}%
+	{ %
+		\pgfmathsetmacro{\Axa}{\theCurrentBarInLine*\barsize+\delta*\barsize}
+		\pgfmathsetmacro{\Axb}{(\theCurrentBarInLine+2)*\barsize-\delta*\barsize}
+		\pgfmathsetmacro{\Aya}{(1-\delta)*\barsize+\theCurrentLine*\barsize}
+		\pgfmathsetmacro{\Ayb}{\delta*\barsize+\theCurrentLine*\barsize}
+
+		\coordinate (A) at (\Axa,\Ayb);
+		\coordinate (B) at (\Axb,\Aya);
+
+		\fill (A) circle[radius=2pt];
+		\fill (B) circle[radius=2pt];
+		\draw [thick] (\Axa,\Aya) -- (\Axb,\Ayb); %
+		%
+		\refstepcounter{CurrentBarInLine}
+		\refstepcounter{CurrentBarInLine}
+		\ifnum\value{CurrentBarInLine}=#2
+		{
+			\refstepcounter{CurrentLine}
+			\setcounter{CurrentBarInLine}{0}
+		}
+		\fi		
+	}%
+
+	\newcommand{\addHalfBar}[1]%
+	{
+		\refstepcounter{NumMesure}%
+		\refstepcounter{CurrentBarInLine}%
+
+%		\pgfmathsetmacro{\xa}{(\theCurrentBarInLine-1)*\barsize}
+%		\pgfmathsetmacro{\xb}{\theCurrentBarInLine*\barsize}
+%
+%		\pgfmathsetmacro{\ya}{\theCurrentLine*\barsize}
+%		\pgfmathsetmacro{\ya}{(\theCurrentLine+1)*\barsize}
+		
+% diagonal line
+%	\draw (\xa,\ya) -- (\xb,\yb);  A BUG HERE: investigate
+		\draw
+		(\theCurrentBarInLine*\barsize,{\theCurrentLine*\barsize})
+			--
+		({(\theCurrentBarInLine-1)*\barsize},{(\theCurrentLine+1)*\barsize});
+
+% horizontal line
+		\draw
+		(\theCurrentBarInLine*\barsize,{\theCurrentLine*\barsize})
+			--
+		({(\theCurrentBarInLine-1)*\barsize},{(\theCurrentLine)*\barsize});
+
+
+		\pgfmathsetmacro{\x}{-3*\barsize/4+\theCurrentBarInLine*\barsize}
+		\pgfmathsetmacro{\y}{\value{CurrentLine})*\barsize+\barsize/4}		
+		\draw (\x,\y) node [font=\chordFontSize]{##1};%
+	
+	}
+		
+	\typeout{chordbar: START #3}
+
+	\fontfamily{phv}\selectfont
+	\setcounter{CurrentLine}{0}
+	\setcounter{CurrentBarInLine}{0}
+	\setcounter{CurrentBar}{0}
+
+	\refstepcounter{NumPart}%
+	\refstepcounter{NumMesure}%
+	\noindent\ignorespaces %
+	\vspace{\vspacebefore}
+%\resizebox{8cm}{!} {	
+%	\scalebox{2}{
+	\begin{tikzpicture}[line width=1pt,x=1cm,y=-1cm] %,scale=2]
+
+	\ifthenelse
+		{\boolean{printBarNumber}}	
+		{\draw (-.3,.5*\barsize) node{\bf \theNumMesure};}
+		{}
+
+% compute the number of bars of the first line
+	\xdef\NbBarsInitialLine{\NumberOfBarsPerLine}
+	\ifthenelse
+		{#2<\NumberOfBarsPerLine}
+		{\xdef\NbBarsInitialLine{#2}}
+		{}
+			
+% initial horizontal line
+	\draw (0,0) -- (\NbBarsInitialLine*\barsize,0);
+
+% draw part title	
+	\ifthenelse
+		{\boolean{printBarNumber}}	
+		{\draw (0,-\barsize*.2) node [anchor=west, align=left,font=\titleFontSize] {Part \theNumPart: #3};} 
+		{\draw (0,-\barsize*.2) node [anchor=west, align=left,font=\titleFontSize] {#3};} 
+
+	\pgfmathtruncatemacro{\nblines}{(#2-1)/\NumberOfBarsPerLine+1}	
+	\typeout{chordbarl: nblines=\nblines}
+	\foreach \line in {1,...,\nblines}
+	{
+
+		\draw (0,{\barsize*(\line-1)}) -- (0,\line*\barsize); % first vertical line
+		\xdef\nbbars{\NumberOfBarsPerLine}
+		\ifnum\line=\nblines
+		{
+			\pgfmathtruncatemacro{\nbbars}{#2-\NumberOfBarsPerLine*(\nblines-1)}
+			\xdef\nbbars{\nbbars}
+		}
+		\fi
+		\typeout{chordbarl: nbbars=\nbbars}
+		\foreach \k in {1,...,{\nbbars}}
+		{
+			\draw (\k*\barsize,{(\line-1)*\barsize}) -- (\k*\barsize,{\line*\barsize});
+			\draw (0,{\line*\barsize}) -- (\k*\barsize,{\line*\barsize});
+			
+			\refstepcounter{CurrentBar}%
+		}
+	}
+	\setcounter{NumMesure}{#1*#2+\value{NumMesure}-1}
+
+% print the number of repetitions
+	\ifnum#1=1 {}
+	\else
+	\ifthenelse
+			{\boolean{printBarNumber}}
+			{\draw (\NbBarsInitialLine*\barsize+1,0.5*\barsize) node {\Large \bf x~#1};}
+			{} 
+	\fi
+}%
+{
+\typeout{chordbar: END}
+	\end{tikzpicture}
+%	} %
+%	\par\noindent%
+%	\ignorespacesafterend	
+	\vspace{\vspaceafter}
+}
+
+% so the user can use # without escaping
+% see https://tex.stackexchange.com/questions/467562
+\AtBeginDocument{\catcode`#=12 }
+
+% additional code: redefine sharp and flat in text mode
+% from https://tex.stackexchange.com/a/422249/11083
+\let\OLDsharp\sharp
+\renewcommand{\sharp}{\ensuremath{\OLDsharp}}
+\let\OLDflat\flat
+\renewcommand{\flat}{\ensuremath{\OLDflat}}
+
+\endinput
+  

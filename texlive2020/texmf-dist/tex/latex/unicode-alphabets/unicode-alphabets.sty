@@ -1,0 +1,118 @@
+\ProvidesPackage{unicode-alphabets}[2020/03/11 Unicode alphabets in the Private Use Area]
+
+% License: CC-BY-SA 4.0
+% Author: Mikkel Eide Eriksen <mikkel.eriksen@gmail.com>
+
+\RequirePackage{pgfkeys}
+\RequirePackage{pgfopts}
+
+\RequirePackage{etoolbox}
+\RequirePackage{xparse}
+\RequirePackage{stringstrings}
+
+\RequirePackage{csvsimple}
+
+\input{csvsimple.tmp.patch}
+
+\makeatletter
+
+\newcommand\alph@keys[1]{\pgfkeys{/unicode-alphabets/.cd,#1}}
+
+\newif\ifalph@noentitymacros
+\alph@keys{
+	fonts/.code={\alph@keys{fonts/.cd,#1}},
+%	disable entity macros/.is if=alph@noentitymacros,
+%	disable entity macros=false,
+	disableentitymacros/.is if=alph@noentitymacros,
+	disableentitymacros=false,
+}
+
+\newcommand\alph@setup[1]{
+	\caselower[q]{#1}
+	\csxdef{#1code}{\thestring}
+	\edef\temp{%
+		\noexpand\alph@keys{
+			fonts/#1/.store in=\unexpanded\expandafter{\csname alph@font@\csuse{#1code}\endcsname},
+		}%
+	}\temp%
+	\alph@keys{
+		#1/.default={\csuse{#1code}},
+		#1/.code={\alph@make@set{\csuse{#1code}}{##1}},
+	}
+}
+\alph@setup{AGL}
+\alph@setup{CYFI}
+\alph@setup{MUFI}
+\alph@setup{SIL}
+\alph@setup{TITUS}
+\alph@setup{UCSUR}
+\alph@setup{UNZ}
+\alph@keys{
+	LINCUA/.style={CYFI,MUFI,TITUS}
+}
+
+\newcommand\alph@make@set[2]{%
+	% #1 = character set
+	% #2 = macro name
+	\newbool{alph@#1@has@entities}%
+	\alph@make@main{#1}{#2}%
+	\csvloop{
+		file={unicode-alphabets.#1.csv},
+		head to column names,
+		head to column names prefix=alph@,
+		command={
+			\ifcsdef{alph@name}{%
+				\ifcsempty{alph@name}{}{%
+					\csxdef{alph@#1@\alph@name}{\alph@codepoint}%
+				}%
+			}{}%
+			\ifcsdef{alph@entity}{%
+				\ifcsempty{alph@entity}{}{%
+					\booltrue{alph@#1@has@entities}%
+					\csxdef{alph@#1@\alph@entity}{\alph@codepoint}%
+					\ifalph@noentitymacros\relax\else%
+						\expanded{\unexpanded{\alph@make@character}{#1}{#2}{\alph@entity}{\alph@codepoint}}%
+					\fi%
+				}%
+			}{}%
+		}%
+	}%
+}
+\newcommand\alph@make@main[2]{%
+	% #1 = character set
+	% #2 = macro name
+	\expandafter\NewDocumentCommand\csname#2\endcsname { s m } {%
+		% #1 = star
+		% #2 = character name
+		{%
+			\IfBooleanF{##1}{%
+				\csuse{alph@font@#1}%
+			}%
+			%!\csuse{alph@#1@##2}!%
+			\ifcsdef{alph@#1@##2}{%
+				\symbol{"\csuse{alph@#1@##2}}%
+			}{%
+				\symbol{"##2}%
+			}%
+		}%
+	}%
+}
+\newcommand\alph@make@character[4]{%
+	% #1 = character set
+	% #2 = macro name
+	% #3 = character name
+	% #4 = code point
+	\expandafter\ProvideDocumentCommand\csname#3\endcsname { s } {%
+		{%
+			\IfBooleanTF{##1}{%
+				\csuse{#2}*{#4}%
+			}{%
+				\csuse{#2}{#4}%
+			}%
+		}%
+	}%
+}
+
+\makeatother
+
+\ProcessPgfPackageOptions{/unicode-alphabets}

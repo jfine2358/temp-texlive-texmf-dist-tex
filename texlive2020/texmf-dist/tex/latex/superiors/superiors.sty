@@ -1,0 +1,97 @@
+\NeedsTeXFormat{LaTeX2e}
+\def\superiorsVersion{1.06}
+\def\superiorsDate{2019/08/18}
+\ProvidesPackage{superiors}[\superiorsDate\space-\space\superiorsVersion
+ superiors (License LPPL) Michael Sharpe]
+\newif\ifsuperiors@KOMA
+\@ifundefined{KOMAClassName}{}{\superiors@KOMAtrue}
+\@ifundefined{ver@scrextend.sty}{}{\superiors@KOMAtrue}
+\ifsuperiors@KOMA
+	\message{Cannot load superiors with any KOMA class or package.^^J}
+	\endinput
+\fi
+\RequirePackage{xkeyval}
+\RequirePackage{pgffor}
+% Ensure that T1 is loaded, but don't change existing default encoding
+\def\t@one{T1}
+\ifx\encodingdefault\t@one\else%
+	\usepackage[T1,\encodingdefault]{fontenc}
+\fi
+\def\sups@tfm{ntxsups-Regular-t1}
+\let\sups@fam\@empty
+\newdimen\superiors@scale
+\newdimen\superiors@raise
+\def\superiors@raised{\z@}
+\def\superiors@spaced{.04em}
+\def\superiors@scaledval{1.0}
+\def\superiors@supscale{1.0}
+\define@key{superiors}{scaled}[1.0]{\def\superiors@scaledval{#1}}
+\define@key{superiors}{supscaled}[1.0]{\def\superiors@supscale{#1}}
+\define@key{superiors}{raised}[\z@]{\def\superiors@raised{#1}}
+\define@key{superiors}{supstfm}{\def\sups@tfm{#1}}
+\define@key{superiors}{supsfam}{\def\sups@fam{#1}}
+\define@key{superiors}{supspaced}[\z@]{\def\superiors@spaced{#1}}
+\DeclareOption*{%
+  \begingroup
+  \edef\x{\endgroup
+    \noexpand\setkeys{superiors}{\CurrentOption}}%
+  \x}
+
+\ProcessOptions*
+
+\setlength{\superiors@raise}{\superiors@raised}
+\setlength{\superiors@scale}{\superiors@scaledval\p@}
+\superiors@scale=\superiors@supscale\superiors@scale %
+\def\superiors@scaled{s*[\strip@pt\superiors@scale]}
+\let\superiors@makefnmark\@makefnmark
+
+\ifx\sups@fam\@empty\else%
+\foreach\x/\y in {newtx/ntxsups-Regular-t1,%
+newtxtext/ntxsups-Regular-t1,%
+newpx/zplsups-Regular-t1,%
+newpxtext/zplsups-Regular-t1,%
+libertine/libertinesups,%
+garamondx/NewG8-sups,%
+zgm/NewG8-sups,%
+erewhon/Erewhon-Regular-sup-t1,%
+xcharter/XCharter-Roman-sup-t1,%
+baskervaldx/Baskervaldx-Reg-sup-t1,%
+baskervillef/BaskervilleF-Regular-sup-t1,%
+Baskervillef/BaskervilleF-Regular-sup-t1,%
+cochineal/Cochineal-Roman-sup-t1,%
+Cochineal/Cochineal-Reoman-sup-t1,%
+cochineal/Cochineal-Regular-sup-t1,%
+stickstoo/SticksToo-Regular-sup-t1,%
+stickstootext/SticksToo-Regular-sup-t1,%
+SticksToo/SticksToo-Regular-sup-t1,%
+fbb/fbb-Regular-sup-t1}
+{\ifx\x\sups@fam\xdef\sups@tfm{\y}\breakforeach\fi}
+\fi
+
+\DeclareFontFamily{U}{zsups}{}%
+  \DeclareFontShape{U}{zsups}{m}{n}{%
+    <-> \superiors@scaled \sups@tfm
+}{}
+\DeclareRobustCommand{\sustyle}{%
+  \not@math@alphabet\sustyle\relax
+  \usefont{U}{zsups}{m}{n}}
+
+\ifdim\superiors@raise=\z@
+	\DeclareRobustCommand{\textsu}[1]{{\sustyle#1}}
+\else
+	\DeclareRobustCommand{\textsu}[1]{%
+	\raisebox{\superiors@raised}{\hbox{{\sustyle#1}}}}
+\fi
+%\def\@makefnmark{\hbox{\textsu{\hspace*{\superiors@spaced}\@thefnmark}}}
+\def\f@@tn@te{footnote}
+\def\@makefnmark{%
+    \ifx\@mpfn\f@@tn@te% we're not in a minipage
+        \raisebox{\superiors@raised}{\hbox%
+        {\sustyle\hspace*{\superiors@spaced}\@thefnmark%
+        \hspace*{.03em}}}%
+    \else% minipage---use original def
+        \superiors@makefnmark%
+    \fi%
+}
+
+\endinput

@@ -1,0 +1,288 @@
+%%
+%% This is file `poetrytex.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% poetrytex.dtx  (with options: `poetrytex')
+%% 
+%%   Copyright 2012 Samuel Whited
+%% 
+%%   This file may be distributed and/or modified under the
+%%   conditions of the LaTeX Project Public License, either
+%%   version 1.3c of this license or (at your option) any later
+%%   version. The latest version of this license is in:
+%% 
+%%   http://www.latex-project.org/lppl.txt
+%% 
+%%   and version 1.3c or later is part of all distributions of
+%%   LaTeX version 2008/05/04 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+\ProvidesPackage{poetrytex}[2013/02/13]
+\RequirePackage{expl3}
+\AtEndOfPackage{\RequirePackage{hyperref}}
+\DeclareOption{verse}{\usepackage{verse}}
+\DeclareOption{numbertop}{\numbertop}
+\DeclareOption{resetnumongroup}{\resetnumongroup}
+\DeclareOption{numberpoems}{\numberpoems}
+\DeclareOption{usedefaulttitles}{\ptusedefaulttitles}
+\DeclareOption{clearpageafterpoem}{\clearpageafterpoem}
+\DeclareOption{clearpageafterpoems}{\clearpageafterpoem}
+\DeclareOption*{%
+  \PassOptionsToPackage{\CurrentOption}{hyperref}%
+}
+\newcommand*{\pttitle}{Title}
+\newcommand*{\ptsubtitle}{Subtitle}
+\newcommand*{\ptauthor}{Author}
+\newcommand*{\ptdate}{\today}
+\title{%
+  \pttitle%
+  \ifx\ptsubtitle\@ptundefined\relax\else\\\ptsubtitle\fi%
+}
+\author{\ptauthor}
+\date{\ptdate}
+\newcommand*{\@ptpoemlabeltext}{poetrytexpoem:}
+\newcounter{poemnum}
+\newcounter{absolutepoemnum}
+\newcounter{untitledpoemnum}
+\newcounter{absoluteuntitledpoemnum}
+\newlength{\poemvspace}
+\setlength{\poemvspace}{0em}
+\newlength{\pttitleleftspace}
+\setlength{\pttitleleftspace}{0em}
+\newlength{\pttitlerightspace}
+\setlength{\pttitlerightspace}{0em}
+\newlength{\ptsubtitleleftspace}
+\setlength{\ptsubtitleleftspace}{0em}
+\newlength{\ptsubtitlerightspace}
+\setlength{\ptsubtitlerightspace}{0em}
+\newcommand*{\ptusedefaulttitles}{\newcommand*{\@ptusedefaulttitles}{}}
+\newcommand*{\ptdefaulttitle}{%
+  Untitled No. \arabic{absoluteuntitledpoemnum}%
+}
+\newcommand*{\ptdefaultenv}{verse}
+\newcommand*{\pttitleenv}{center}
+\newcommand*{\ptannotationenv}{flushleft}
+\newcommand*{\ptdedication}{Renew \textsf{\textbackslash ptdedication}}
+\newcommand*{\makededication}[1][flushright]{%
+  \thispagestyle{empty}
+  \vspace*{\fill}
+  \begin{#1}
+    \emph{\ptdedication}
+  \end{#1}
+  \vspace*{\fill}
+}
+\newcommand*{\toptitle}{List of Poems}
+\newcommand*{\topentrytype}{subsection}
+\setcounter{secnumdepth}{-1}
+\setcounter{tocdepth}{2}
+\renewcommand*{\listtablename}{\toptitle}
+\newcommand{\beforetoc}{}
+\newcommand{\aftertoc}{}
+\newcommand{\beforetop}{}
+\newcommand{\aftertop}{}
+\newcommand*{\maketoc}{%
+  \beforetoc
+  \tableofcontents
+  \pagestyle{plain}
+  \aftertoc
+  \clearpage
+  \thispagestyle{empty}
+}
+\newcommand*{\maketop}{\@ifstar{\@ptmaketopStar}{\@ptmaketopNoStar}}
+\newcommand*{\@ptmaketopStar}{%
+  \cleardoublepage
+  \beforetop
+  \listoftables
+  \pagestyle{plain}
+  \aftertop
+  \clearpage
+}
+\newcommand*{\@ptmaketopNoStar}{%
+  \cleardoublepage
+  \beforetop
+  \phantomsection
+  \addcontentsline{toc}{section}{\toptitle}
+  \listoftables
+  \pagestyle{plain}
+  \aftertop
+  \clearpage
+}
+\newcommand*{\numbertop}{\newcommand*{\@ptnumbertop}{}}
+\newenvironment{poem}[3][\ptdefaultenv]{%
+  \newcommand*{\@ptwrapenvironment}{#1}
+  \poetryheadings
+  \addtocounter{poemnum}{1}
+  \addtocounter{absolutepoemnum}{1}
+  \ifx&#2&%
+    \addtocounter{untitledpoemnum}{1}
+    \addtocounter{absoluteuntitledpoemnum}{1}
+  \fi
+  \vspace*{\poemvspace}
+  \begin{\pttitleenv}
+    \phantomsection%
+    \addcontentsline{lot}{\topentrytype}{%
+      \ifx\@ptnumbertop\@ptundefined%
+        \relax%
+      \else%
+        \toppoemnum%
+      \fi%
+      \ifx&#2&%
+        \ptdefaulttitle%
+      \else%
+        #2%
+      \fi%
+    }%
+    \hypertarget{\@ptpoemlabeltext\arabic{absolutepoemnum}}{}
+    {\poemtitleformat%
+      \ifx\@ptnumberpoems\@ptundefined
+        \relax
+      \else
+        \titlepoemnum
+      \fi%
+      \ifx&#2&%
+        \ifx\@ptusedefaulttitles\@ptundefined%
+          \relax%
+        \else%
+          \hspace*{\pttitleleftspace}\ptdefaulttitle%
+          \hspace*{\pttitlerightspace}\\%
+        \fi%
+      \else
+        \hspace*{\pttitleleftspace}#2\hspace*{\pttitlerightspace}\\%
+      \fi%
+    }%
+    \hspace*{\ptsubtitleleftspace}#3\hspace*{\ptsubtitlerightspace}
+  \end{\pttitleenv}
+  \begin{\@ptwrapenvironment}
+    \begingroup\setlength{\parskip}{\stanzaparskip}%
+}{%
+    \endgroup
+  \end{\@ptwrapenvironment}
+  \ifx\@ptclearpageafterpoem\@ptundefined
+    \relax
+  \else
+    \clearpage
+  \fi
+}
+\newcommand*{\poetryheadings}[0]{%
+  \pagestyle{myheadings}
+  \markboth{\ |\ \textsc{\pttitle}\hfill }
+           {\hfill\textsc{\ptgroup}\ |\ }
+}
+\newcommand*{\resetnumongroup}{\newcommand*{\@ptresetnumongroup}{}}
+\newcommand*{\numberpoems}{\newcommand*{\@ptnumberpoems}{}}
+\newcommand*{\titlepoemnum}{\arabic{poemnum}\\}
+\newcommand*{\toppoemnum}{\arabic{poemnum}.\ }
+\newlength{\stanzaparskip}
+\setlength{\stanzaparskip}{0.7em}
+\newcommand*{\clearpageafterpoem}{\newcommand*{\@ptclearpageafterpoem}{}}
+\newlength{\ptgap}
+\setlength{\ptgap}{2em}
+\newcommand*{\ptind}{%
+  \@ifstar{%
+    \@ptindStar
+  }{%
+    \@ptindNoStar
+  }
+}
+\newcommand*{\@ptindStar}{\hspace*{\ptgap}}
+\newcommand*{\@ptindNoStar}{\hspace{\ptgap}}
+\newcommand*{\poemtitleformat}{\normalfont\bfseries\large}
+\newlength{\ptspacergap}
+\setlength{\ptspacergap}{4em}
+\newcommand*{\ptspacerchar}{\S}
+\newcommand*{\ptspacernum}{3}
+\newcommand*{\ptspacer}{%
+  \@ifstar{%
+    \@ptspacerStar
+  }{%
+    \@ptspacerNoStar
+  }
+}
+\newcommand*{\@ptspacerStar}{%
+  \hspace*{\ptspacergap}%
+  \@ptrepeat{\ptspacernum}{\ptspacerchar}%
+}
+\newcommand*{\@ptspacerNoStar}{%
+  \hspace{\ptspacergap}%
+  \@ptrepeat{\ptspacernum}{\ptspacerchar}%
+}
+\ExplSyntaxOn
+\cs_new_eq:NN \@ptrepeat \prg_replicate:nn
+\ExplSyntaxOff
+\newcommand*{\linktopoem}[2][ptnull]{%
+  \ifx{#1}{ptnull}
+    \hyperlink{\@ptpoemlabeltext#2}{#2}\relax
+  \else
+    \hyperlink{\@ptpoemlabeltext#1}{#2}\relax
+  \fi
+}
+\newcommand*{\ptgroup}{}
+\newcommand*{\poemgroup}{%
+  \@ifstar{%
+    \@ptpoemgroupStar
+  }{%
+    \@ptpoemgroupNoStar
+  }
+}
+\newcommand*{\@ptpoemgroupStar}[1]{%
+  \ifx\@ptresetnumongroup\@ptundefined
+    \relax
+  \else
+    \setcounter{poemnum}{0}
+    \setcounter{untitledpoemnum}{0}
+  \fi
+  \cleardoublepage
+  \vspace*{\fill}
+  \renewcommand*{\ptgroup}{#1}
+  \pagestyle{empty}
+  \begin{center}
+    \section*{#1}
+  \end{center}
+  \vspace*{\fill}
+  \clearpage
+}
+\newcommand*{\@ptpoemgroupNoStar}[1]{%
+  \ifx\@ptresetnumongroup\@ptundefined
+    \relax
+  \else
+    \setcounter{poemnum}{0}
+    \setcounter{untitledpoemnum}{0}
+  \fi
+  \cleardoublepage
+  \vspace*{\fill}
+  \renewcommand*{\ptgroup}{#1}
+  \pagestyle{empty}
+  \begin{center}
+    \section{#1}
+    \addcontentsline{lot}{section}{#1}
+  \end{center}
+  \vspace*{\fill}
+  \clearpage
+}
+\newenvironment{annotation}[2][\ptannotationenv]{%
+  \newcommand*{\@ptwrapenvironment}{#1}
+  \cleardoublepage
+  \poetryheadings
+  \begin{\@ptwrapenvironment}
+  \subsection{#2}
+}{%
+
+  \end{\@ptwrapenvironment}
+  \clearpage
+}
+\ProcessOptions\relax
+%% 
+%%   ___________
+%%   Maintainer: Sam Whited
+%%   Website:    https://samwhited.com
+%%   Contact:    sam@samwhited.com
+%%   Public key: 0xEC2C9934
+%% 
+%%   This work consists of this file poetrytex.dtx
+%%             and the derived files poetrytex.sty
+%%                               and poetrytex.pdf
+%% 
+%%
+%% End of file `poetrytex.sty'.

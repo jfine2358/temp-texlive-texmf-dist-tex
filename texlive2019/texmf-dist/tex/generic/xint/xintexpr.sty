@@ -1,0 +1,3568 @@
+%%
+%% This is file `xintexpr.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% xint.dtx  (with options: `xintexpr')
+%% 
+%% IMPORTANT NOTICE:
+%% 
+%% For the copyright see the source file.
+%% 
+%% Any modified versions of this file must be renamed
+%% with new filenames distinct from xintexpr.sty.
+%% 
+%% For distribution of the original source see the terms
+%% for copying and modification in the file xint.dtx.
+%% 
+%% This generated file may be distributed as long as the
+%% original source files, as listed above, are part of the
+%% same distribution. (The sources need not necessarily be
+%% in the same archive or directory.)
+%% ---------------------------------------------------------------
+%% The xint bundle 1.3e 2019/04/05
+%% Copyright (C) 2013-2019 by Jean-Francois Burnol
+%% xintexpr: Expandable expression parser
+%% ---------------------------------------------------------------
+\begingroup\catcode61\catcode48\catcode32=10\relax%
+  \catcode13=5    % ^^M
+  \endlinechar=13 %
+  \catcode123=1   % {
+  \catcode125=2   % }
+  \catcode64=11   % @
+  \catcode35=6    % #
+  \catcode44=12   % ,
+  \catcode45=12   % -
+  \catcode46=12   % .
+  \catcode58=12   % :
+  \def\z {\endgroup}%
+  \expandafter\let\expandafter\x\csname ver@xintexpr.sty\endcsname
+  \expandafter\let\expandafter\w\csname ver@xintfrac.sty\endcsname
+  \expandafter\let\expandafter\t\csname ver@xinttools.sty\endcsname
+  \expandafter
+    \ifx\csname PackageInfo\endcsname\relax
+      \def\y#1#2{\immediate\write-1{Package #1 Info: #2.}}%
+    \else
+      \def\y#1#2{\PackageInfo{#1}{#2}}%
+    \fi
+  \expandafter
+  \ifx\csname numexpr\endcsname\relax
+     \y{xintexpr}{\numexpr not available, aborting input}%
+     \aftergroup\endinput
+  \else
+    \ifx\x\relax   % plain-TeX, first loading of xintexpr.sty
+      \ifx\w\relax % but xintfrac.sty not yet loaded.
+         \expandafter\def\expandafter\z\expandafter
+                    {\z\input xintfrac.sty\relax}%
+      \fi
+      \ifx\t\relax % but xinttools.sty not yet loaded.
+         \expandafter\def\expandafter\z\expandafter
+                    {\z\input xinttools.sty\relax}%
+      \fi
+    \else
+      \def\empty {}%
+      \ifx\x\empty % LaTeX, first loading,
+      % variable is initialized, but \ProvidesPackage not yet seen
+          \ifx\w\relax % xintfrac.sty not yet loaded.
+            \expandafter\def\expandafter\z\expandafter
+                           {\z\RequirePackage{xintfrac}}%
+          \fi
+          \ifx\t\relax % xinttools.sty not yet loaded.
+            \expandafter\def\expandafter\z\expandafter
+                           {\z\RequirePackage{xinttools}}%
+          \fi
+      \else
+        \aftergroup\endinput % xintexpr already loaded.
+      \fi
+    \fi
+  \fi
+\z%
+\XINTsetupcatcodes%
+\XINT_providespackage
+\ProvidesPackage{xintexpr}%
+  [2019/04/05 1.3e Expandable expression parser (JFB)]%
+\catcode`! 11
+\let\XINT_Cmp \xintiiCmp
+\def\xintexpr       {\romannumeral0\xintexpro      }%
+\def\xintiexpr      {\romannumeral0\xintiexpro     }%
+\def\xintfloatexpr  {\romannumeral0\xintfloatexpro }%
+\def\xintiiexpr     {\romannumeral0\xintiiexpro    }%
+\def\xintexpro   {\expandafter\XINT_expr_wrap\romannumeral0\xintbareeval }%
+\def\xintiiexpro {\expandafter\XINT_iiexpr_wrap\romannumeral0\xintbareiieval }%
+\def\xintiexpro #1%
+{%
+    \ifx [#1\expandafter\XINT_iexpr_withopt\else\expandafter\XINT_iexpr_noopt
+    \fi #1%
+}%
+\def\XINT_iexpr_noopt
+{%
+    \expandafter\XINT_iexpr_preprint\expandafter 0%
+    \romannumeral0\xintbareeval
+}%
+\def\XINT_iexpr_withopt [#1]%
+{%
+    \expandafter\XINT_iexpr_preprint\expandafter
+    {\the\numexpr \xint_zapspaces #1 \xint_gobble_i\expandafter}%
+    \romannumeral0\xintbareeval
+}%
+\def\XINT_iexpr_preprint #1#2%
+{%
+    \expandafter\XINT_expr_wrap
+    \csname .=\xintRound::csv {#1}{\XINT_expr_unlock #2}\endcsname
+}%
+\def\xintfloatexpro #1%
+{%
+    \ifx [#1\expandafter\XINT_flexpr_withopt\else\expandafter\XINT_flexpr_noopt
+    \fi #1%
+}%
+\def\XINT_flexpr_noopt
+{%
+    \expandafter\XINT_flexpr_preprint\expandafter\xinttheDigits
+    \romannumeral0\xintbarefloateval
+}%
+\def\XINT_flexpr_withopt [#1]%
+{%
+    \expandafter\XINT_flexpr_preprint\expandafter
+    {\the\numexpr\xint_zapspaces #1 \xint_gobble_i\expandafter}%
+    \romannumeral0\xintbarefloateval
+}%
+\def\XINT_flexpr_preprint #1#2%
+{%
+    \expandafter\XINT_flexpr_wrap
+    \csname .;#1.=\XINTinFloat::csv {#1}{\XINT_expr_unlock #2}\endcsname
+}%
+\def\XINT_expr_wrap   {!\XINT_expr_usethe\XINT_protectii\XINT_expr_print}%
+\def\XINT_iiexpr_wrap {!\XINT_expr_usethe\XINT_protectii\XINT_iiexpr_print}%
+\def\XINT_flexpr_wrap {!\XINT_expr_usethe\XINT_protectii\XINT_flexpr_print}%
+\def\XINT_protectii #1{\noexpand\XINT_protectii\noexpand #1\noexpand }%
+\protected\def\XINT_expr_usethe\XINT_protectii {\xintError:missing_xintthe!}%
+\def\XINT_expr_print   #1{\xintSPRaw::csv  {\XINT_expr_unlock #1}}%
+\def\XINT_iiexpr_print #1{\xintCSV::csv    {\XINT_expr_unlock #1}}%
+\def\XINT_flexpr_print #1%
+{%
+    \expandafter\xintPFloat::csv
+    \romannumeral`&&@\expandafter\XINT_expr_unlock_sp\string #1!%
+}%
+\def\XINT_expr_unlock_sp #1.;#2.=#3!{{#2}{#3}}%
+\def\xinttheexpr
+   {\romannumeral`&&@\expandafter\XINT_expr_print\romannumeral0\xintbareeval}%
+\def\xinttheiexpr
+   {\romannumeral`&&@\expandafter\xint_gobble_iii\romannumeral`&&@\xintiexpr}%
+\def\xintthefloatexpr
+   {\romannumeral`&&@\expandafter\xint_gobble_iii\romannumeral`&&@\xintfloatexpr}%
+\def\xinttheiiexpr
+   {\romannumeral`&&@\expandafter\XINT_iiexpr_print\romannumeral0\xintbareiieval}%
+\let\thexintexpr     \xinttheexpr
+\let\thexintiexpr    \xinttheiexpr
+\let\thexintfloatexpr\xintthefloatexpr
+\let\thexintiiexpr   \xinttheiiexpr
+\def\xinteval #1%
+   {\romannumeral`&&@\expandafter\XINT_expr_print\romannumeral0\xintbareeval#1\relax}%
+\def\xintieval #1%
+   {\romannumeral`&&@\expandafter\xint_gobble_iii\romannumeral`&&@\xintiexpr#1\relax}%
+\def\xintfloateval #1%
+   {\romannumeral`&&@\expandafter\xint_gobble_iii\romannumeral`&&@\xintfloatexpr#1\relax}%
+\def\xintiieval #1%
+   {\romannumeral`&&@\expandafter\XINT_iiexpr_print\romannumeral0\xintbareiieval#1\relax}%
+\def\xintthe #1{\romannumeral`&&@\expandafter\xint_gobble_iii\romannumeral`&&@#1}%
+\def\xintbareeval
+   {\expandafter\XINT_expr_until_end_a\romannumeral`&&@\XINT_expr_getnext }%
+\def\xintbarefloateval
+   {\expandafter\XINT_flexpr_until_end_a\romannumeral`&&@\XINT_expr_getnext }%
+\def\xintbareiieval
+   {\expandafter\XINT_iiexpr_until_end_a\romannumeral`&&@\XINT_expr_getnext }%
+\def\xintthebareeval      {\expandafter\XINT_expr_unlock\romannumeral0\xintbareeval}%
+\def\xintthebarefloateval {\expandafter\XINT_expr_unlock\romannumeral0\xintbarefloateval}%
+\def\xintthebareiieval    {\expandafter\XINT_expr_unlock\romannumeral0\xintbareiieval}%
+\def\xintboolexpr
+{%
+    \romannumeral0\expandafter\expandafter\expandafter
+    \XINT_boolexpr_done\expandafter\xint_gobble_iv\romannumeral0\xintexpro
+}%
+\def\XINT_boolexpr_done {!\XINT_expr_usethe\XINT_protectii\XINT_boolexpr_print}%
+\def\XINT_boolexpr_print #1{\xintIsTrue::csv {\XINT_expr_unlock #1}}%
+\def\xinttheboolexpr
+{%
+    \romannumeral`&&@\expandafter\expandafter\expandafter
+    \XINT_boolexpr_print\expandafter\xint_gobble_iv\romannumeral0\xintexpro
+}%
+\let\thexintboolexpr\xinttheboolexpr
+\def\xintifboolexpr      #1{\romannumeral0\xintiiifnotzero {\xinttheexpr #1\relax}}%
+\def\xintifboolfloatexpr #1{\romannumeral0\xintiiifnotzero {\xintthefloatexpr #1\relax}}%
+\def\xintifbooliiexpr    #1{\romannumeral0\xintiiifnotzero {\xinttheiiexpr #1\relax}}%
+\def\xintifsgnexpr      #1{\romannumeral0\xintiiifsgn {\xinttheexpr #1\relax}}%
+\def\xintifsgnfloatexpr #1{\romannumeral0\xintiiifsgn {\xintthefloatexpr #1\relax}}%
+\def\xintifsgniiexpr    #1{\romannumeral0\xintiiifsgn {\xinttheiiexpr #1\relax}}%
+\def\xintthecoords  #1{\romannumeral`&&@\expandafter\expandafter\expandafter
+                     \XINT_thecoords_a
+                     \expandafter\xint_gobble_iii\romannumeral0#1}%
+\def\XINT_thecoords_a #1#2% #1=print macro, indispensible for scientific notation
+   {\expandafter\XINT_expr_unlock\csname.=\expandafter\XINT_thecoords_b
+                         \romannumeral`&&@#1#2,!,!,^\endcsname }%
+\def\XINT_thecoords_b #1#2,#3#4,%
+   {\xint_gob_til_! #3\XINT_thecoords_c ! (#1#2, #3#4)\XINT_thecoords_b }%
+\def\XINT_thecoords_c #1^{}%
+\def\xint_gob_til_! #1!{}% ! with catcode 11
+\def\XINT_expr_lockscan#1{% not used for decimal numbers in xintexpr 1.2
+\def\XINT_expr_lockscan##1!{\expandafter#1\csname .=##1\endcsname}%
+}\XINT_expr_lockscan{ }%
+\def\XINT_expr_lockit#1{%
+\def\XINT_expr_lockit##1{\expandafter#1\csname .=##1\endcsname}%
+}\XINT_expr_lockit{ }%
+\def\XINT_expr_unlock_hex_in #1%  expanded inside \csname..\endcsname
+   {\expandafter\XINT_expr_inhex\romannumeral`&&@\XINT_expr_unlock#1;}%
+\def\XINT_expr_inhex #1.#2#3;%    expanded inside \csname..\endcsname
+{%
+    \if#2>%
+      \xintHexToDec{#1}%
+    \else
+      \xintiiMul{\xintiiPow{625}{\xintLength{#3}}}{\xintHexToDec{#1#3}}%
+      [\the\numexpr-4*\xintLength{#3}]%
+    \fi
+}%
+\def\XINT_expr_unlock  {\expandafter\XINT_expr_unlock_a\string }%
+\def\XINT_expr_unlock_a #1.={}%
+\def\XINT_expr_unexpectedtoken {\xintError:ignored }%
+\let\XINT_expr_done\space
+\let\XINT:NEhook:one\empty
+\let\XINT:NEhook:two\empty
+\let\XINT:NEhook:csv\empty
+\def\XINT:NEhook:twosp #1,#2,!#3{#3{#1}{#2}}%
+\def\XINT_::_end #1,#2{\xint_gobble_i #2}%
+\def\xintCSV::csv #1{\expandafter\XINT_csv::_a\romannumeral`&&@#1,^,}%
+\def\XINT_csv::_a {\XINT_csv::_b {}}%
+\def\XINT_csv::_b #1#2,{\expandafter\XINT_csv::_c \romannumeral`&&@#2,{#1}}%
+\def\XINT_csv::_c #1{\if ^#1\expandafter\XINT_::_end\fi\XINT_csv::_d #1}%
+\def\XINT_csv::_d #1,#2{\XINT_csv::_b {#2, #1}}% possibly, item #1 is empty.
+\def\xintSPRaw    {\romannumeral0\xintspraw }%
+\def\xintspraw  #1{\expandafter\XINT_spraw\romannumeral`&&@#1[\W]}%
+\def\XINT_spraw #1[#2#3]{\xint_gob_til_W #2\XINT_spraw_a\W\XINT_spraw_p #1[#2#3]}%
+\def\XINT_spraw_a\W\XINT_spraw_p #1[\W]{ #1}%
+\def\XINT_spraw_p #1[\W]{\xintpraw {#1}}%
+\def\xintSPRaw::csv #1{\romannumeral0\expandafter\XINT_spraw::_a\romannumeral`&&@#1,^,}%
+\def\XINT_spraw::_a {\XINT_spraw::_b {}}%
+\def\XINT_spraw::_b #1#2,{\expandafter\XINT_spraw::_c \romannumeral`&&@#2,{#1}}%
+\def\XINT_spraw::_c #1{\if ,#1\xint_dothis\XINT_spraw::_e\fi
+                       \if ^#1\xint_dothis\XINT_::_end\fi
+                       \xint_orthat\XINT_spraw::_d #1}%
+\def\XINT_spraw::_d #1,{\expandafter\XINT_spraw::_e\romannumeral0\XINT_spraw #1[\W],}%
+\def\XINT_spraw::_e #1,#2{\XINT_spraw::_b {#2, #1}}%
+\def\xintIsTrue::csv #1{\romannumeral0\expandafter\XINT_istrue::_a\romannumeral`&&@#1,^,}%
+\def\XINT_istrue::_a {\XINT_istrue::_b {}}%
+\def\XINT_istrue::_b #1#2,{\expandafter\XINT_istrue::_c \romannumeral`&&@#2,{#1}}%
+\def\XINT_istrue::_c #1{\if ,#1\xint_dothis\XINT_istrue::_e\fi
+                        \if ^#1\xint_dothis\XINT_::_end\fi
+                        \xint_orthat\XINT_istrue::_d #1}%
+\def\XINT_istrue::_d #1,{\expandafter\XINT_istrue::_e\romannumeral0\xintisnotzero {#1},}%
+\def\XINT_istrue::_e #1,#2{\XINT_istrue::_b {#2, #1}}%
+\def\XINT_:::_end #1,#2#3{\xint_gobble_i #3}%
+\def\xintRound::csv #1#2{\romannumeral0\expandafter\XINT_round::_a
+    \the\numexpr#1\expandafter.\romannumeral`&&@#2,^,}%
+\def\XINT_round::_a #1.{\XINT_round::_b #1.{}}%
+\def\XINT_round::_b #1.#2#3,{\expandafter\XINT_round::_c \romannumeral`&&@#3,{#1}{#2}}%
+\def\XINT_round::_c #1{\if ,#1\xint_dothis\XINT_round::_e\fi
+                       \if ^#1\xint_dothis\XINT_:::_end\fi
+                       \xint_orthat\XINT_round::_d #1}%
+\def\XINT_round::_d #1,#2{%
+      \expandafter\XINT_round::_e\romannumeral0\ifnum#2>\xint_c_
+      \expandafter\xintround\else\expandafter\xintiround\fi {#2}{#1},{#2}}%
+\def\XINT_round::_e #1,#2#3{\XINT_round::_b #2.{#3, #1}}%
+\def\XINTinFloat::csv #1#2{\romannumeral0\expandafter\XINT_infloat::_a
+   \the\numexpr #1\expandafter.\romannumeral`&&@#2,^,}%
+\def\XINT_infloat::_a #1#2.%
+   {\expandafter\XINT_infloat::_b\the\numexpr\if#1-\XINTdigits\fi#1#2.{}}%
+\def\XINT_infloat::_b #1.#2#3,{\XINT_infloat::_c #3,{#1}{#2}}%
+\def\XINT_infloat::_c #1{\if ,#1\xint_dothis\XINT_infloat::_e\fi
+                       \if ^#1\xint_dothis\XINT_:::_end\fi
+                       \xint_orthat\XINT_infloat::_d #1}%
+\def\XINT_infloat::_d #1,#2%
+        {\expandafter\XINT_infloat::_e\romannumeral0\XINTinfloat [#2]{#1},{#2}}%
+\def\XINT_infloat::_e #1,#2#3{\XINT_infloat::_b #2.{#3, #1}}%
+\def\xintPFloat::csv #1#2{\romannumeral0\expandafter\XINT_pfloat::_a
+    \the\numexpr #1\expandafter.\romannumeral`&&@#2,^,}%
+\def\XINT_pfloat::_a #1#2.%
+   {\expandafter\XINT_pfloat::_b\the\numexpr\if#1-\XINTdigits\fi#1#2.{}}%
+\def\XINT_pfloat::_b #1.#2#3,{\expandafter\XINT_pfloat::_c \romannumeral`&&@#3,{#1}{#2}}%
+\def\XINT_pfloat::_c #1{\if ,#1\xint_dothis\XINT_pfloat::_e\fi
+                       \if ^#1\xint_dothis\XINT_:::_end\fi
+                       \xint_orthat\XINT_pfloat::_d #1}%
+\def\XINT_pfloat::_d #1,#2%
+ {\expandafter\XINT_pfloat::_e\romannumeral0\XINT_pfloat_opt [\xint:#2]{#1},{#2}}%
+\def\XINT_pfloat::_e #1,#2#3{\XINT_pfloat::_b #2.{#3, #1}}%
+\def\XINT_expr_getnext #1%
+{%
+    \expandafter\XINT_expr_getnext_a\romannumeral`&&@#1%
+}%
+\def\XINT_expr_getnext_a #1%
+{% screens out sub-expressions and \count or \dimen registers/variables
+    \xint_gob_til_! #1\XINT_expr_subexpr !% recall this ! has catcode 11
+    \ifcat\relax#1% \count or \numexpr etc... token or count, dimen, skip cs
+       \expandafter\XINT_expr_countetc
+    \else
+       \expandafter\expandafter\expandafter\XINT_expr_getnextfork\expandafter\string
+    \fi
+    #1%
+}%
+\def\XINT_expr_subexpr !#1\fi !{\expandafter\XINT_expr_getop\xint_gobble_iii }%
+\def\XINT_expr_countetc #1%
+{%
+    \ifx\count#1\else\ifx\dimen#1\else\ifx\numexpr#1\else\ifx\dimexpr#1\else
+    \ifx\skip#1\else\ifx\glueexpr#1\else\ifx\fontdimen#1\else\ifx\ht#1\else
+    \ifx\dp#1\else\ifx\wd#1\else\ifx\fontcharht#1\else\ifx\fontcharwd#1\else
+    \ifx\fontchardp#1\else\ifx\fontcharic#1\else
+      \XINT_expr_unpackvar
+    \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi
+    \expandafter\XINT_expr_getnext\number #1%
+}%
+\def\XINT_expr_unpackvar\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi
+    \expandafter\XINT_expr_getnext\number #1%
+    {\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi
+     \expandafter\XINT_expr_getop\csname .=\number#1\endcsname }%
+\begingroup
+\lccode`*=`#
+\lowercase{\endgroup
+\def\XINT_expr_getnextfork #1{%
+    \if#1*\xint_dothis {\XINT_expr_scan_macropar *}\fi
+    \if#1[\xint_dothis {\xint_c_xviii ({}}\fi
+    \if#1+\xint_dothis \XINT_expr_getnext \fi
+    \if#1.\xint_dothis {\XINT_expr_startdec}\fi
+    \if#1-\xint_dothis -\fi
+    \if#1(\xint_dothis {\xint_c_xviii ({}}\fi
+    \xint_orthat {\XINT_expr_scan_nbr_or_func #1}%
+}}%
+\def\XINT_expr_scan_macropar #1#2{\expandafter\XINT_expr_getop\csname .=#1#2\endcsname }%
+\catcode96 11 % `
+\def\XINT_expr_scan_nbr_or_func #1% this #1 has necessarily here catcode 12
+{%(
+    \if )#1\xint_dothis \XINT_expr_gotnil \fi
+    \if "#1\xint_dothis \XINT_expr_scanhex_I\fi
+    \if `#1\xint_dothis {\XINT_expr_onliteral_`}\fi
+    \ifnum \xint_c_ix<1#1 \xint_dothis \XINT_expr_startint\fi
+    \xint_orthat \XINT_expr_scanfunc #1%
+}%
+\def\XINT_expr_gotnil{\expandafter\XINT_expr_getop\csname.= \endcsname}%
+\def\XINT_expr_onliteral_` #1#2#3({\xint_c_xviii `{#2}}%
+\catcode96 12 % `
+\def\XINT_expr_startint #1%
+{%
+    \if #10\expandafter\XINT_expr_gobz_a\else\XINT_expr_scanint_a\fi #1%
+}%
+\def\XINT_expr_scanint_a #1#2%
+    {\expandafter\XINT_expr_getop\csname.=#1%
+     \expandafter\XINT_expr_scanint_b\romannumeral`&&@#2}%
+\def\XINT_expr_gobz_a #1%
+    {\expandafter\XINT_expr_getop\csname.=%
+     \expandafter\XINT_expr_gobz_scanint_b\romannumeral`&&@#1}%
+\def\XINT_expr_startdec #1%
+    {\expandafter\XINT_expr_getop\csname.=%
+     \expandafter\XINT_expr_scandec_a\romannumeral`&&@#1}%
+\def\XINT_expr_scanint_b #1%
+{%
+    \ifcat \relax #1\expandafter\XINT_expr_scanint_endbycs\expandafter #1\fi
+    \ifnum\xint_c_ix<1\string#1 \else\expandafter\XINT_expr_scanint_c\fi
+    \string#1\XINT_expr_scanint_d
+}%
+\def\XINT_expr_scanint_d #1%
+{%
+    \expandafter\XINT_expr_scanint_b\romannumeral`&&@#1%
+}%
+\def\XINT_expr_scanint_endbycs#1#2\XINT_expr_scanint_d{\endcsname #1}%
+\def\XINT_expr_scanint_c\string #1\XINT_expr_scanint_d
+{%
+    \if    _#1\xint_dothis\XINT_expr_scanint_d\fi
+    \if    e#1\xint_dothis{[\the\numexpr0\XINT_expr_scanexp_a +}\fi
+    \if    E#1\xint_dothis{[\the\numexpr0\XINT_expr_scanexp_a +}\fi
+    \if    .#1\xint_dothis{\XINT_expr_startdec_a .}\fi
+    \xint_orthat {\endcsname #1}%
+}%
+\def\XINT_expr_startdec_a .#1%
+{%
+    \expandafter\XINT_expr_scandec_a\romannumeral`&&@#1%
+}%
+\def\XINT_expr_scandec_a #1%
+{%
+    \if .#1\xint_dothis{\endcsname..}\fi
+    \xint_orthat {\XINT_expr_scandec_b 0.#1}%
+}%
+\def\XINT_expr_gobz_scanint_b #1%
+{%
+    \ifcat \relax #1\expandafter\XINT_expr_gobz_scanint_endbycs\expandafter #1\fi
+    \ifnum\xint_c_x<1\string#1 \else\expandafter\XINT_expr_gobz_scanint_c\fi
+    \string#1\XINT_expr_scanint_d
+}%
+\def\XINT_expr_gobz_scanint_endbycs#1#2\XINT_expr_scanint_d{0\endcsname #1}%
+\def\XINT_expr_gobz_scanint_c\string #1\XINT_expr_scanint_d
+{%
+    \if    _#1\xint_dothis\XINT_expr_gobz_scanint_d\fi
+    \if    e#1\xint_dothis{0[\the\numexpr0\XINT_expr_scanexp_a +}\fi
+    \if    E#1\xint_dothis{0[\the\numexpr0\XINT_expr_scanexp_a +}\fi
+    \if    .#1\xint_dothis{\XINT_expr_gobz_startdec_a .}\fi
+    \if    0#1\xint_dothis\XINT_expr_gobz_scanint_d\fi
+    \xint_orthat {0\endcsname #1}%
+}%
+\def\XINT_expr_gobz_scanint_d #1%
+{%
+    \expandafter\XINT_expr_gobz_scanint_b\romannumeral`&&@#1%
+}%
+\def\XINT_expr_gobz_startdec_a .#1%
+{%
+    \expandafter\XINT_expr_gobz_scandec_a\romannumeral`&&@#1%
+}%
+\def\XINT_expr_gobz_scandec_a #1%
+{%
+    \if .#1\xint_dothis{0\endcsname..}\fi
+    \xint_orthat {\XINT_expr_gobz_scandec_b 0.#1}%
+}%
+\def\XINT_expr_scandec_b #1.#2%
+{%
+    \ifcat \relax #2\expandafter\XINT_expr_scandec_endbycs\expandafter#2\fi
+    \ifnum\xint_c_ix<1\string#2 \else\expandafter\XINT_expr_scandec_c\fi
+    \string#2\expandafter\XINT_expr_scandec_d\the\numexpr #1-\xint_c_i.%
+}%
+\def\XINT_expr_scandec_endbycs #1#2\XINT_expr_scandec_d
+    \the\numexpr#3-\xint_c_i.{[#3]\endcsname #1}%
+\def\XINT_expr_scandec_d #1.#2%
+{%
+    \expandafter\XINT_expr_scandec_b
+    \the\numexpr #1\expandafter.\romannumeral`&&@#2%
+}%
+\def\XINT_expr_scandec_c\string #1#2\the\numexpr#3-\xint_c_i.%
+{%
+    \if    _#1\xint_dothis{\XINT_expr_scandec_d#3.}\fi
+    \if    e#1\xint_dothis{[\the\numexpr#3\XINT_expr_scanexp_a +}\fi
+    \if    E#1\xint_dothis{[\the\numexpr#3\XINT_expr_scanexp_a +}\fi
+    \xint_orthat {[#3]\endcsname #1}%
+}%
+\def\XINT_expr_gobz_scandec_b #1.#2%
+{%
+    \ifcat \relax #2\expandafter\XINT_expr_gobz_scandec_endbycs\expandafter#2\fi
+    \ifnum\xint_c_ix<1\string#2 \else\expandafter\XINT_expr_gobz_scandec_c\fi
+    \if0#2\expandafter\xint_firstoftwo\else\expandafter\xint_secondoftwo\fi
+    {\expandafter\XINT_expr_gobz_scandec_b}%
+    {\string#2\expandafter\XINT_expr_scandec_d}\the\numexpr#1-\xint_c_i.%
+}%
+\def\XINT_expr_gobz_scandec_endbycs #1#2\xint_c_i.{0[0]\endcsname #1}%
+\def\XINT_expr_gobz_scandec_c\if0#1#2\fi #3\numexpr#4-\xint_c_i.%
+{%
+    \if    _#1\xint_dothis{\XINT_expr_gobz_scandec_b #4.}\fi
+    \if    e#1\xint_dothis{0[\the\numexpr0\XINT_expr_scanexp_a +}\fi
+    \if    E#1\xint_dothis{0[\the\numexpr0\XINT_expr_scanexp_a +}\fi
+    \xint_orthat {0[0]\endcsname #1}%
+}%
+\def\XINT_expr_scanexp_a #1#2%
+{%
+    #1\expandafter\XINT_expr_scanexp_b\romannumeral`&&@#2%
+}%
+\def\XINT_expr_scanexp_b #1%
+{%
+    \ifcat \relax #1\expandafter\XINT_expr_scanexp_endbycs\expandafter #1\fi
+    \ifnum\xint_c_ix<1\string#1 \else\expandafter\XINT_expr_scanexp_c\fi
+    \string#1\XINT_expr_scanexp_d
+}%
+\def\XINT_expr_scanexpr_endbycs#1#2\XINT_expr_scanexp_d {]\endcsname #1}%
+\def\XINT_expr_scanexp_d #1%
+{%
+    \expandafter\XINT_expr_scanexp_bb\romannumeral`&&@#1%
+}%
+\def\XINT_expr_scanexp_c\string #1\XINT_expr_scanexp_d
+{%
+    \if    _#1\xint_dothis  \XINT_expr_scanexp_d   \fi
+    \if    +#1\xint_dothis {\XINT_expr_scanexp_a +}\fi
+    \if    -#1\xint_dothis {\XINT_expr_scanexp_a -}\fi
+    \xint_orthat {]\endcsname #1}%
+}%
+\def\XINT_expr_scanexp_bb #1%
+{%
+    \ifcat \relax #1\expandafter\XINT_expr_scanexp_endbycs_b\expandafter #1\fi
+    \ifnum\xint_c_ix<1\string#1 \else\expandafter\XINT_expr_scanexp_cb\fi
+    \string#1\XINT_expr_scanexp_db
+}%
+\def\XINT_expr_scanexp_endbycs_b#1#2\XINT_expr_scanexp_db {]\endcsname #1}%
+\def\XINT_expr_scanexp_db #1%
+{%
+    \expandafter\XINT_expr_scanexp_bb\romannumeral`&&@#1%
+}%
+\def\XINT_expr_scanexp_cb\string #1\XINT_expr_scanexp_db
+{%
+    \if _#1\xint_dothis\XINT_expr_scanexp_d\fi
+    \xint_orthat{]\endcsname #1}%
+}%
+\def\XINT_expr_scanhex_I #1% #1="
+{%
+    \expandafter\XINT_expr_getop\csname.=\expandafter
+    \XINT_expr_unlock_hex_in\csname.=\XINT_expr_scanhexI_a
+}%
+\def\XINT_expr_scanhexI_a #1%
+{%
+    \ifcat #1\relax\xint_dothis{.>\endcsname\endcsname #1}\fi
+    \ifx   !#1\xint_dothis{.>\endcsname\endcsname !}\fi
+    \xint_orthat {\expandafter\XINT_expr_scanhexI_aa\string #1}%
+}%
+\def\XINT_expr_scanhexI_aa #1%
+{%
+    \if\ifnum`#1>`/
+       \ifnum`#1>`9
+       \ifnum`#1>`@
+       \ifnum`#1>`F
+       0\else1\fi\else0\fi\else1\fi\else0\fi 1%
+       \expandafter\XINT_expr_scanhexI_b
+    \else
+       \if _#1\xint_dothis{\expandafter\XINT_expr_scanhexI_bgob}\fi
+       \if .#1\xint_dothis{\expandafter\XINT_expr_scanhex_transition}\fi
+       \xint_orthat % gather what we got so far, leave catcode 12 #1 in stream
+       {\xint_afterfi {.>\endcsname\endcsname}}%
+    \fi
+    #1%
+}%
+\def\XINT_expr_scanhexI_b #1#2%
+{%
+    #1\expandafter\XINT_expr_scanhexI_a\romannumeral`&&@#2%
+}%
+\def\XINT_expr_scanhexI_bgob #1#2%
+{%
+    \expandafter\XINT_expr_scanhexI_a\romannumeral`&&@#2%
+}%
+\def\XINT_expr_scanhex_transition .#1%
+{%
+    \expandafter.\expandafter.\expandafter
+    \XINT_expr_scanhexII_a\romannumeral`&&@#1%
+}%
+\def\XINT_expr_scanhexII_a #1%
+{%
+    \ifcat #1\relax\xint_dothis{\endcsname\endcsname#1}\fi
+    \ifx   !#1\xint_dothis{\endcsname\endcsname !}\fi
+    \xint_orthat {\expandafter\XINT_expr_scanhexII_aa\string #1}%
+}%
+\def\XINT_expr_scanhexII_aa #1%
+{%
+    \if\ifnum`#1>`/
+       \ifnum`#1>`9
+       \ifnum`#1>`@
+       \ifnum`#1>`F
+       0\else1\fi\else0\fi\else1\fi\else0\fi 1%
+       \expandafter\XINT_expr_scanhexII_b
+    \else
+       \if _#1\xint_dothis{\expandafter\XINT_expr_scanhexII_bgob}\fi
+       \xint_orthat{\xint_afterfi {\endcsname\endcsname}}%
+    \fi
+    #1%
+}%
+\def\XINT_expr_scanhexII_b #1#2%
+{%
+    #1\expandafter\XINT_expr_scanhexII_a\romannumeral`&&@#2%
+}%
+\def\XINT_expr_scanhexII_bgob #1#2%
+{%
+    \expandafter\XINT_expr_scanhexII_a\romannumeral`&&@#2%
+}%
+\def\XINT_expr_scanfunc
+{%
+    \expandafter\XINT_expr_func\romannumeral`&&@\XINT_expr_scanfunc_a
+}%
+\def\XINT_expr_scanfunc_a #1#2%
+{%
+    \expandafter #1\romannumeral`&&@\expandafter\XINT_expr_scanfunc_b\romannumeral`&&@#2%
+}%
+\def\XINT_expr_scanfunc_b #1%
+{%
+  \ifx !#1\xint_dothis{(_}\fi
+  \ifcat \relax#1\xint_dothis{(_}\fi
+  \if (#1\xint_dothis{\xint_firstoftwo{(`}}\fi
+  \if @#1\xint_dothis \XINT_expr_scanfunc_a \fi
+  \if _#1\xint_dothis \XINT_expr_scanfunc_a \fi
+  \ifnum \xint_c_ix<1\string#1 \xint_dothis \XINT_expr_scanfunc_a \fi
+  \ifcat a#1\xint_dothis \XINT_expr_scanfunc_a \fi
+  \xint_orthat {(_}%
+    #1%
+}%
+\def\XINT_expr_func #1(#2{\if _#2\xint_dothis\XINT_expr_op__\fi
+                          \xint_orthat{\xint_c_xviii #2}{#1}}%
+\def\XINT_expr_getop #1#2% this #1 is the current locked computed value
+{%
+    \expandafter\XINT_expr_getop_a\expandafter #1\romannumeral`&&@#2%
+}%
+\catcode`* 11
+\def\XINT_expr_getop_a #1#2%
+{%
+    \ifx   \relax #2\xint_dothis\xint_firstofthree\fi
+    \ifcat \relax #2\xint_dothis\xint_secondofthree\fi
+    \ifnum\xint_c_ix<1\string#2 \xint_dothis\xint_secondofthree\fi
+    \if    _#2\xint_dothis      \xint_secondofthree\fi
+    \if    @#2\xint_dothis      \xint_secondofthree\fi
+    \if    (#2\xint_dothis      \xint_secondofthree\fi
+    \ifcat a#2\xint_dothis      \xint_secondofthree\fi
+    \xint_orthat \xint_thirdofthree
+    {\XINT_expr_foundend #1}%
+    {\XINT_expr_precedence_*** *#1#2}% tacit multiplication with higher precedence
+    {\expandafter\XINT_expr_getop_b \string#2#1}%
+}%
+\catcode`* 12
+\def\XINT_expr_foundend {\xint_c_ \relax }% \relax is a place holder here.
+\def\XINT_expr_getop_b #1%
+{%
+     \if '#1\xint_dothis{\XINT_expr_binopwrd }\fi
+     \if ?#1\xint_dothis{\XINT_expr_precedence_? ?}\fi
+     \xint_orthat       {\XINT_expr_scanop_a #1}%
+}%
+\def\XINT_expr_binopwrd #1#2'{\expandafter\XINT_expr_foundop_a
+    \csname XINT_expr_itself_\xint_zapspaces #2 \xint_gobble_i\endcsname #1}%
+\def\XINT_expr_scanop_a #1#2#3%
+    {\expandafter\XINT_expr_scanop_b\expandafter #1\expandafter #2\romannumeral`&&@#3}%
+\def\XINT_expr_scanop_b #1#2#3%
+{%
+  \ifcat#3\relax\xint_dothis{\XINT_expr_foundop_a #1#2#3}\fi
+  \ifcsname XINT_expr_itself_#1#3\endcsname
+  \xint_dothis
+        {\expandafter\XINT_expr_scanop_c\csname XINT_expr_itself_#1#3\endcsname #2}\fi
+  \xint_orthat {\XINT_expr_foundop_a #1#2#3}%
+}%
+\def\XINT_expr_scanop_c #1#2#3%
+{%
+  \expandafter\XINT_expr_scanop_d\expandafter #1\expandafter #2\romannumeral`&&@#3%
+}%
+\def\XINT_expr_scanop_d #1#2#3%
+{%
+  \ifcat#3\relax \xint_dothis{\XINT_expr_foundop #1#2#3}\fi
+  \ifcsname XINT_expr_itself_#1#3\endcsname
+  \xint_dothis
+        {\expandafter\XINT_expr_scanop_c\csname XINT_expr_itself_#1#3\endcsname #2}\fi
+  \xint_orthat {\csname XINT_expr_precedence_#1\endcsname #1#2#3}%
+}%
+\def\XINT_expr_foundop_a #1%
+{%
+    \ifcsname XINT_expr_precedence_#1\endcsname
+        \csname XINT_expr_precedence_#1\expandafter\endcsname
+        \expandafter #1%
+    \else
+        \xint_afterfi{\XINT_expr_unknown_operator {#1}\XINT_expr_getop}%
+    \fi
+}%
+\def\XINT_expr_unknown_operator #1{\xintError:removed \xint_gobble_i {#1}}%
+\def\XINT_expr_foundop #1{\csname XINT_expr_precedence_#1\endcsname #1}%
+\catcode`) 11
+\def\XINT_tmpa #1#2#3#4%
+{%
+    \def#1##1%
+    {%
+        \xint_UDsignfork
+                     ##1{\expandafter#1\romannumeral`&&@#3}%
+                       -{#2##1}%
+        \krof
+    }%
+    \def#2##1##2%
+    {%
+        \ifcase ##1\expandafter\XINT_expr_done
+        \or\xint_afterfi{\XINT_expr_extra_)
+                          \expandafter #1\romannumeral`&&@\XINT_expr_getop }%
+        \else
+        \xint_afterfi{\expandafter#1\romannumeral`&&@\csname XINT_#4_op_##2\endcsname }%
+        \fi
+    }%
+}%
+\def\XINT_expr_extra_) {\xintError:removed }%
+\xintFor #1 in {expr,flexpr,iiexpr} \do {%
+    \expandafter\XINT_tmpa
+    \csname XINT_#1_until_end_a\expandafter\endcsname
+    \csname XINT_#1_until_end_b\expandafter\endcsname
+    \csname XINT_#1_op_-vi\endcsname
+    {#1}%
+}%
+\def\XINT_tmpa #1#2#3#4#5#6%
+{%
+    \def #1##1{\expandafter #3\romannumeral`&&@\XINT_expr_getnext }%
+    \def #2{\expandafter #3\romannumeral`&&@\XINT_expr_getnext }%
+    \def #3##1{\xint_UDsignfork
+                ##1{\expandafter #3\romannumeral`&&@#5}%
+                  -{#4##1}%
+               \krof }%
+    \def #4##1##2{\ifcase ##1\expandafter\XINT_expr_missing_)
+      \or   \csname XINT_#6_op_##2\expandafter\endcsname
+      \else
+      \xint_afterfi{\expandafter #3\romannumeral`&&@\csname XINT_#6_op_##2\endcsname }%
+      \fi
+    }%
+}%
+\def\XINT_expr_missing_) {\xintError:inserted \xint_c_ \XINT_expr_done }%
+\catcode`) 12
+\xintFor #1 in {expr,flexpr,iiexpr} \do {%
+    \expandafter\XINT_tmpa
+    \csname XINT_#1_op_(\expandafter\endcsname
+    \csname XINT_#1_oparen\expandafter\endcsname
+    \csname XINT_#1_until_)_a\expandafter\endcsname
+    \csname XINT_#1_until_)_b\expandafter\endcsname
+    \csname XINT_#1_op_-vi\endcsname
+    {#1}%
+}%
+\expandafter\let\csname XINT_expr_precedence_)\endcsname\xint_c_i
+\expandafter\let\csname XINT_expr_precedence_]\endcsname\xint_c_i
+\expandafter\let\csname XINT_expr_precedence_;\endcsname\xint_c_i
+\let\XINT_expr_precedence_a \xint_c_xviii
+\let\XINT_expr_precedence_!? \xint_c_ii
+\expandafter\let\csname XINT_expr_precedence_++)\endcsname \xint_c_i
+\catcode`. 11 \catcode`= 11 \catcode`+ 11
+\xintFor #1 in {expr,flexpr,iiexpr} \do {%
+    \expandafter\let\csname XINT_#1_op_)\endcsname \XINT_expr_getop
+    \expandafter\let\csname XINT_#1_op_;\endcsname \space
+    \expandafter\def\csname XINT_#1_op_]\endcsname ##1{\XINT_expr_scanop_a a##1}%
+    \expandafter\let\csname XINT_#1_op_a\endcsname \XINT_expr_getop
+    \expandafter\def\csname XINT_#1_op_++)\endcsname ##1##2\relax
+  {\expandafter\XINT_expr_foundend \expandafter
+      {\expandafter\.=+\csname .=\XINT:NEhook:one\xintiCeil{\XINT_expr_unlock ##1}\endcsname }}%
+}%
+\catcode`. 12 \catcode`= 12 \catcode`+ 12
+\catcode`& 12
+\xintFor* #1 in {{==}{<=}{>=}{!=}{&&}{||}{**}{//}{/:}{..}{..[}{].}{]..}%
+                 {+[}{-[}{*[}{/[}{**[}{^[}{a+}{a-}{a*}{a/}{a**}{a^}%
+                 {][}{][:}{:]}{!?}{++}{++)}}%{***}}
+    \do {\expandafter\def\csname XINT_expr_itself_#1\endcsname {#1}}%
+\catcode`& 7
+\expandafter\let\csname XINT_expr_precedence_***\endcsname \xint_c_viii
+\def\XINT_expr_defbin_c #1#2#3#4#5#6#7#8#9%
+{%
+  \def #1##1% \XINT_expr_op_<op> ou flexpr ou iiexpr
+  {% keep value, get next number and operator, then do until
+    \expandafter #2\expandafter ##1%
+    \romannumeral`&&@\expandafter\XINT_expr_getnext }%
+  \def #2##1##2% \XINT_expr_until_<op>_a ou flexpr ou iiexpr
+  {\xint_UDsignfork ##2{\expandafter #2\expandafter ##1\romannumeral`&&@#4}%
+    -{#3##1##2}%
+    \krof }%
+  \def #3##1##2##3##4% \XINT_expr_until_<op>_b ou flexpr ou iiexpr
+  {% either execute next operation now, or first do next (possibly unary)
+    \ifnum ##2>#7%
+    \xint_afterfi {\expandafter #2\expandafter ##1\romannumeral`&&@%
+      \csname XINT_#8_op_##3\endcsname {##4}}%
+    \else \xint_afterfi {\expandafter ##2\expandafter ##3%
+      \csname .=#9#6{\XINT_expr_unlock ##1}{\XINT_expr_unlock ##4}\endcsname }%
+    \fi }%
+  \let #7#5%
+}%
+\def\XINT_expr_defbin_b #1#2#3#4#5%
+{%
+  \expandafter\XINT_expr_defbin_c
+  \csname XINT_#1_op_#2\expandafter\endcsname
+  \csname XINT_#1_until_#2_a\expandafter\endcsname
+  \csname XINT_#1_until_#2_b\expandafter\endcsname
+  \csname XINT_#1_op_-#4\expandafter\endcsname
+  \csname xint_c_#3\expandafter\endcsname
+  \csname #5\expandafter\endcsname
+  \csname XINT_expr_precedence_#2\endcsname {#1}\XINT:NEhook:two
+}%
+\XINT_expr_defbin_b {expr}   |   {iii}{vi} {xintOR}%
+\XINT_expr_defbin_b {flexpr} |   {iii}{vi} {xintOR}%
+\XINT_expr_defbin_b {iiexpr} |   {iii}{vi} {xintOR}%
+\XINT_expr_defbin_b {expr}   &   {iv}{vi}  {xintAND}%
+\XINT_expr_defbin_b {flexpr} &   {iv}{vi}  {xintAND}%
+\XINT_expr_defbin_b {iiexpr} &   {iv}{vi}  {xintAND}%
+\XINT_expr_defbin_b {expr}  {xor}{iii}{vi} {xintXOR}%
+\XINT_expr_defbin_b {flexpr}{xor}{iii}{vi} {xintXOR}%
+\XINT_expr_defbin_b {iiexpr}{xor}{iii}{vi} {xintXOR}%
+\XINT_expr_defbin_b {expr}   <   {v}{vi}   {xintLt}%
+\XINT_expr_defbin_b {flexpr} <   {v}{vi}   {xintLt}%
+\XINT_expr_defbin_b {iiexpr} <   {v}{vi}   {xintiiLt}%
+\XINT_expr_defbin_b {expr}   >   {v}{vi}   {xintGt}%
+\XINT_expr_defbin_b {flexpr} >   {v}{vi}   {xintGt}%
+\XINT_expr_defbin_b {iiexpr} >   {v}{vi}   {xintiiGt}%
+\XINT_expr_defbin_b {expr}   =   {v}{vi}   {xintEq}%
+\XINT_expr_defbin_b {flexpr} =   {v}{vi}   {xintEq}%
+\XINT_expr_defbin_b {iiexpr} =   {v}{vi}   {xintiiEq}%
+\XINT_expr_defbin_b {expr}  {<=} {v}{vi}   {xintLtorEq}%
+\XINT_expr_defbin_b {flexpr}{<=} {v}{vi}   {xintLtorEq}%
+\XINT_expr_defbin_b {iiexpr}{<=} {v}{vi}   {xintiiLtorEq}%
+\XINT_expr_defbin_b {expr}  {>=} {v}{vi}   {xintGtorEq}%
+\XINT_expr_defbin_b {flexpr}{>=} {v}{vi}   {xintGtorEq}%
+\XINT_expr_defbin_b {iiexpr}{>=} {v}{vi}   {xintiiGtorEq}%
+\XINT_expr_defbin_b {expr}  {!=} {v}{vi}   {xintNotEq}%
+\XINT_expr_defbin_b {flexpr}{!=} {v}{vi}   {xintNotEq}%
+\XINT_expr_defbin_b {iiexpr}{!=} {v}{vi}   {xintiiNotEq}%
+\XINT_expr_defbin_b {expr}  {//} {vii}{vii}{xintDivFloor}% CHANGED IN 1.2p!
+\XINT_expr_defbin_b {flexpr}{//} {vii}{vii}{XINTinFloatDivFloor}%   "
+\XINT_expr_defbin_b {iiexpr}{//} {vii}{vii}{xintiiDivFloor}% "
+\XINT_expr_defbin_b {expr}  {/:} {vii}{vii}{xintMod}%        "
+\XINT_expr_defbin_b {flexpr}{/:} {vii}{vii}{XINTinFloatMod}% "
+\XINT_expr_defbin_b {iiexpr}{/:} {vii}{vii}{xintiiMod}%      "
+\XINT_expr_defbin_b {expr}   +   {vi}{vi}  {xintAdd}%
+\XINT_expr_defbin_b {flexpr} +   {vi}{vi}  {XINTinFloatAdd}%
+\XINT_expr_defbin_b {iiexpr} +   {vi}{vi}  {xintiiAdd}%
+\XINT_expr_defbin_b {expr}   -   {vi}{vi}  {xintSub}%
+\XINT_expr_defbin_b {flexpr} -   {vi}{vi}  {XINTinFloatSub}%
+\XINT_expr_defbin_b {iiexpr} -   {vi}{vi}  {xintiiSub}%
+\XINT_expr_defbin_b {expr}   *   {vii}{vii}{xintMul}%
+\XINT_expr_defbin_b {flexpr} *   {vii}{vii}{XINTinFloatMul}%
+\XINT_expr_defbin_b {iiexpr} *   {vii}{vii}{xintiiMul}%
+\XINT_expr_defbin_b {expr}   /   {vii}{vii}{xintDiv}%
+\XINT_expr_defbin_b {flexpr} /   {vii}{vii}{XINTinFloatDiv}%
+\XINT_expr_defbin_b {iiexpr} /   {vii}{vii}{xintiiDivRound}% CHANGED IN 1.1!
+\XINT_expr_defbin_b {expr}   ^   {ix}{ix}  {xintPow}%
+\XINT_expr_defbin_b {flexpr} ^   {ix}{ix}  {XINTinFloatPowerH}%
+\XINT_expr_defbin_b {iiexpr} ^   {ix}{ix}  {xintiiPow}%
+\XINT_expr_defbin_b {expr}  {..[}{iii}{vi} {xintSeqA::csv}%
+\XINT_expr_defbin_b {flexpr}{..[}{iii}{vi} {XINTinFloatSeqA::csv}%
+\XINT_expr_defbin_b {iiexpr}{..[}{iii}{vi} {xintiiSeqA::csv}%
+\def\XINT_expr_defbin_b #1#2#3#4#5%
+{%
+  \expandafter\XINT_expr_defbin_c
+  \csname XINT_#1_op_#2\expandafter\endcsname
+  \csname XINT_#1_until_#2_a\expandafter\endcsname
+  \csname XINT_#1_until_#2_b\expandafter\endcsname
+  \csname XINT_#1_op_-#4\expandafter\endcsname
+  \csname xint_c_#3\expandafter\endcsname
+  \csname #5\expandafter\endcsname
+  \csname XINT_expr_precedence_#2\endcsname {#1}{}%
+}%
+\XINT_expr_defbin_b {expr}  {..} {iii}{vi} {xintSeq::csv}%
+\XINT_expr_defbin_b {flexpr}{..} {iii}{vi} {xintSeq::csv}%
+\XINT_expr_defbin_b {iiexpr}{..} {iii}{vi} {xintiiSeq::csv}%
+\XINT_expr_defbin_b {expr}  {]..}{iii}{vi} {xintSeqB::csv}%
+\XINT_expr_defbin_b {flexpr}{]..}{iii}{vi} {XINTinFloatSeqB::csv}%
+\XINT_expr_defbin_b {iiexpr}{]..}{iii}{vi} {xintiiSeqB::csv}%
+\def\XINT_expr_binop_inline#1%
+   {\XINT_expr_binop_inline_a{\expandafter\XINT:NEhook:two\expandafter#1}}%
+\def\XINT_expr_binop_inline_a
+   {\expandafter\xint_gobble_i\romannumeral`&&@\XINT_expr_binop_inline_b }%
+\def\XINT_expr_binop_inline_b #1#2,{\XINT_expr_binop_inline_c #2,{#1}}%
+\def\XINT_expr_binop_inline_c #1{%
+   \if ,#1\xint_dothis\XINT_expr_binop_inline_e\fi
+   \if ^#1\xint_dothis\XINT_expr_binop_inline_end\fi
+   \xint_orthat\XINT_expr_binop_inline_d #1}%
+\def\XINT_expr_binop_inline_d #1,#2{,#2{#1}\XINT_expr_binop_inline_b {#2}}%
+\def\XINT_expr_binop_inline_e #1,#2{,\XINT_expr_binop_inline_b {#2}}%
+\def\XINT_expr_binop_inline_end #1,#2{}%
+\def\XINT_expr_deflistopr_c #1#2#3#4#5#6#7#8%
+{%
+  \def #1##1% \XINT_expr_op_<op> ou flexpr ou iiexpr
+  {% keep value, get next number and operator, then do until
+    \expandafter #2\expandafter ##1%
+    \romannumeral`&&@\expandafter\XINT_expr_getnext }%
+  \def #2##1##2% \XINT_expr_until_<op>_a ou flexpr ou iiexpr
+  {\xint_UDsignfork ##2{\expandafter #2\expandafter ##1\romannumeral`&&@#4}%
+    -{#3##1##2}%
+    \krof }%
+  \def #3##1##2##3##4% \XINT_expr_until_<op>_b ou flexpr ou iiexpr
+  {% either execute next operation now, or first do next (possibly unary)
+    \ifnum ##2>#7%
+    \xint_afterfi {\expandafter #2\expandafter ##1\romannumeral`&&@%
+      \csname XINT_#8_op_##3\endcsname {##4}}%
+    \else \xint_afterfi {\expandafter ##2\expandafter ##3%
+      \csname .=\expandafter\XINT_expr_binop_inline\expandafter
+      {\expandafter#6\expandafter\xint_exchangetwo_keepbraces\expandafter
+      {\expandafter\XINT_expr_unlock\expandafter ##4\expandafter}\expandafter}%
+         \romannumeral`&&@\XINT_expr_unlock ##1,^,\endcsname }%
+    \fi }%
+  \let #7#5%
+}%
+\def\XINT_expr_deflistopr_b #1#2#3#4%
+{%
+  \expandafter\XINT_expr_deflistopr_c
+  \csname XINT_#1_op_#2\expandafter\endcsname
+  \csname XINT_#1_until_#2_a\expandafter\endcsname
+  \csname XINT_#1_until_#2_b\expandafter\endcsname
+  \csname XINT_#1_op_-#3\expandafter\endcsname
+  \csname xint_c_#3\expandafter\endcsname
+  \csname #4\expandafter\endcsname
+  \csname XINT_expr_precedence_#2\endcsname {#1}%
+}%
+\XINT_expr_deflistopr_b {expr}  {a+}{vi} {xintAdd}%
+\XINT_expr_deflistopr_b {expr}  {a-}{vi} {xintSub}%
+\XINT_expr_deflistopr_b {expr}  {a*}{vii}{xintMul}%
+\XINT_expr_deflistopr_b {expr}  {a/}{vii}{xintDiv}%
+\XINT_expr_deflistopr_b {expr}  {a^}{ix} {xintPow}%
+\XINT_expr_deflistopr_b {iiexpr}{a+}{vi} {xintiiAdd}%
+\XINT_expr_deflistopr_b {iiexpr}{a-}{vi} {xintiiSub}%
+\XINT_expr_deflistopr_b {iiexpr}{a*}{vii}{xintiiMul}%
+\XINT_expr_deflistopr_b {iiexpr}{a/}{vii}{xintiiDivRound}%
+\XINT_expr_deflistopr_b {iiexpr}{a^}{ix} {xintiiPow}%
+\XINT_expr_deflistopr_b {flexpr}{a+}{vi} {XINTinFloatAdd}%
+\XINT_expr_deflistopr_b {flexpr}{a-}{vi} {XINTinFloatSub}%
+\XINT_expr_deflistopr_b {flexpr}{a*}{vii}{XINTinFloatMul}%
+\XINT_expr_deflistopr_b {flexpr}{a/}{vii}{XINTinFloatDiv}%
+\XINT_expr_deflistopr_b {flexpr}{a^}{ix} {XINTinFloatPowerH}%
+\def\XINT_expr_deflistopl_c #1#2#3#4#5#6#7%
+{%
+  \def #1##1{\expandafter#2\expandafter##1\romannumeral`&&@%
+             \expandafter #3\romannumeral`&&@\XINT_expr_getnext }%
+  \def #2##1##2##3##4%
+  {% either execute next operation now, or first do next (possibly unary)
+    \ifnum ##2>#6%
+    \xint_afterfi {\expandafter #2\expandafter ##1\romannumeral`&&@%
+      \csname XINT_#7_op_##3\endcsname {##4}}%
+    \else \xint_afterfi {\expandafter ##2\expandafter ##3%
+      \csname .=\expandafter\XINT_expr_binop_inline\expandafter
+      {\expandafter#5\expandafter
+      {\expandafter\XINT_expr_unlock\expandafter ##1\expandafter}\expandafter}%
+         \romannumeral`&&@\XINT_expr_unlock ##4,^,\endcsname }%
+    \fi }%
+  \let #6#4%
+}%
+\def\XINT_expr_deflistopl_b #1#2#3#4%
+{%
+  \expandafter\XINT_expr_deflistopl_c
+  \csname XINT_#1_op_#2\expandafter\endcsname
+  \csname XINT_#1_until_#2\expandafter\endcsname
+  \csname XINT_#1_until_)_a\expandafter\endcsname
+  \csname xint_c_#3\expandafter\endcsname
+  \csname #4\expandafter\endcsname
+  \csname XINT_expr_precedence_#2\endcsname {#1}%
+}%
+\XINT_expr_deflistopl_b {expr}  {+[}{vi} {xintAdd}%
+\XINT_expr_deflistopl_b {expr}  {-[}{vi} {xintSub}%
+\XINT_expr_deflistopl_b {expr}  {*[}{vii}{xintMul}%
+\XINT_expr_deflistopl_b {expr}  {/[}{vii}{xintDiv}%
+\XINT_expr_deflistopl_b {expr}  {^[}{ix} {xintPow}%
+\XINT_expr_deflistopl_b {iiexpr}{+[}{vi} {xintiiAdd}%
+\XINT_expr_deflistopl_b {iiexpr}{-[}{vi} {xintiiSub}%
+\XINT_expr_deflistopl_b {iiexpr}{*[}{vii}{xintiiMul}%
+\XINT_expr_deflistopl_b {iiexpr}{/[}{vii}{xintiiDivRound}%
+\XINT_expr_deflistopl_b {iiexpr}{^[}{ix} {xintiiPow}%
+\XINT_expr_deflistopl_b {flexpr}{+[}{vi} {XINTinFloatAdd}%
+\XINT_expr_deflistopl_b {flexpr}{-[}{vi} {XINTinFloatSub}%
+\XINT_expr_deflistopl_b {flexpr}{*[}{vii}{XINTinFloatMul}%
+\XINT_expr_deflistopl_b {flexpr}{/[}{vii}{XINTinFloatDiv}%
+\XINT_expr_deflistopl_b {flexpr}{^[}{ix} {XINTinFloatPowerH}%
+\xintFor #1 in {and,or,xor,mod} \do {%
+   \expandafter\def\csname XINT_expr_itself_#1\endcsname {#1}}%
+\expandafter\let\csname XINT_expr_precedence_and\expandafter\endcsname
+                \csname XINT_expr_precedence_&\endcsname
+\expandafter\let\csname XINT_expr_precedence_or\expandafter\endcsname
+                \csname XINT_expr_precedence_|\endcsname
+\expandafter\let\csname XINT_expr_precedence_mod\expandafter\endcsname
+                \csname XINT_expr_precedence_/:\endcsname
+\xintFor #1 in {expr, flexpr, iiexpr} \do {%
+   \expandafter\let\csname XINT_#1_op_and\expandafter\endcsname
+                   \csname XINT_#1_op_&\endcsname
+   \expandafter\let\csname XINT_#1_op_or\expandafter\endcsname
+                   \csname XINT_#1_op_|\endcsname
+   \expandafter\let\csname XINT_#1_op_mod\expandafter\endcsname
+                   \csname XINT_#1_op_/:\endcsname
+}%
+\expandafter\let\csname XINT_expr_precedence_==\expandafter\endcsname
+                \csname XINT_expr_precedence_=\endcsname
+\expandafter\let\csname XINT_expr_precedence_&\string&\expandafter\endcsname
+                \csname XINT_expr_precedence_&\endcsname
+\expandafter\let\csname XINT_expr_precedence_||\expandafter\endcsname
+                \csname XINT_expr_precedence_|\endcsname
+\expandafter\let\csname XINT_expr_precedence_**\expandafter\endcsname
+                \csname XINT_expr_precedence_^\endcsname
+\expandafter\let\csname XINT_expr_precedence_a**\expandafter\endcsname
+                \csname XINT_expr_precedence_a^\endcsname
+\expandafter\let\csname XINT_expr_precedence_**[\expandafter\endcsname
+                \csname XINT_expr_precedence_^[\endcsname
+\xintFor #1 in {expr, flexpr, iiexpr} \do {%
+   \expandafter\let\csname XINT_#1_op_==\expandafter\endcsname
+                   \csname XINT_#1_op_=\endcsname
+   \expandafter\let\csname XINT_#1_op_&\string&\expandafter\endcsname
+                   \csname XINT_#1_op_&\endcsname
+   \expandafter\let\csname XINT_#1_op_||\expandafter\endcsname
+                   \csname XINT_#1_op_|\endcsname
+   \expandafter\let\csname XINT_#1_op_**\expandafter\endcsname
+                   \csname XINT_#1_op_^\endcsname
+   \expandafter\let\csname XINT_#1_op_a**\expandafter\endcsname
+                   \csname XINT_#1_op_a^\endcsname
+   \expandafter\let\csname XINT_#1_op_**[\expandafter\endcsname
+                   \csname XINT_#1_op_^[\endcsname
+}%
+\def\XINT_tmpa #1#2#3#4#5#6%
+{%
+    \def #1##1% \XINT_expr_op_][
+    {%
+        \expandafter #2\expandafter ##1\romannumeral`&&@\XINT_expr_getnext
+    }%
+    \def #2##1##2% \XINT_expr_until_][_a
+    {\xint_UDsignfork
+        ##2{\expandafter #2\expandafter ##1\romannumeral`&&@#4}%
+          -{#3##1##2}%
+     \krof }%
+    \def #3##1##2##3##4% \XINT_expr_until_][_b
+    {%
+      \ifnum ##2>#5%
+        \xint_afterfi {\expandafter #2\expandafter ##1\romannumeral`&&@%
+                       \csname XINT_#6_op_##3\endcsname {##4}}%
+      \else
+        \xint_afterfi
+        {\expandafter ##2\expandafter ##3\csname
+           .=\expandafter\xintListSel:x:csv % will be \xintListSel:f:csv in \xintNewExpr output
+             \romannumeral`&&@\XINT_expr_unlock ##4;% selector
+             \XINT_expr_unlock ##1;\endcsname % unlock already pre-positioned for \xintNewExpr
+        }%
+      \fi
+    }%
+    \let #5\xint_c_ii
+}%
+\xintFor #1 in {expr,flexpr,iiexpr} \do {%
+\expandafter\XINT_tmpa
+    \csname XINT_#1_op_][\expandafter\endcsname
+    \csname XINT_#1_until_][_a\expandafter\endcsname
+    \csname XINT_#1_until_][_b\expandafter\endcsname
+    \csname XINT_#1_op_-vi\expandafter\endcsname
+    \csname XINT_expr_precedence_][\endcsname {#1}%
+}%
+\def\XINT_tmpa #1#2#3#4#5#6%
+{%
+    \def #1##1% \XINT_expr_op_:
+    {%
+        \expandafter #2\expandafter ##1\romannumeral`&&@\XINT_expr_getnext
+    }%
+    \def #2##1##2% \XINT_expr_until_:_a
+    {\xint_UDsignfork
+        ##2{\expandafter #2\expandafter ##1\romannumeral`&&@#4}%
+          -{#3##1##2}%
+     \krof }%
+    \def #3##1##2##3##4% \XINT_expr_until_:_b
+    {%
+      \ifnum ##2>#5%
+        \xint_afterfi {\expandafter #2\expandafter ##1\romannumeral`&&@%
+                       \csname XINT_#6_op_##3\endcsname {##4}}%
+      \else
+        \xint_afterfi
+        {\expandafter ##2\expandafter ##3\csname
+         .=:\XINT:NEhook:one\xintNum{\XINT_expr_unlock ##1};%
+            \XINT:NEhook:one\xintNum{\XINT_expr_unlock ##4}%
+         \endcsname
+        }%
+      \fi
+    }%
+    \let #5\xint_c_iii
+}%
+\xintFor #1 in {expr,flexpr,iiexpr} \do {%
+\expandafter\XINT_tmpa
+    \csname XINT_#1_op_:\expandafter\endcsname
+    \csname XINT_#1_until_:_a\expandafter\endcsname
+    \csname XINT_#1_until_:_b\expandafter\endcsname
+    \csname XINT_#1_op_-vi\expandafter\endcsname
+    \csname XINT_expr_precedence_:\endcsname {#1}%
+}%
+\catcode`[ 11 \catcode`] 11
+\let\XINT_expr_precedence_:] \xint_c_iii
+\def\XINT_expr_op_:] #1%
+{%
+  \expandafter\xint_c_i\expandafter )%
+  \csname .=]\XINT:NEhook:one\xintNum{\XINT_expr_unlock #1}\endcsname
+}%
+\let\XINT_flexpr_op_:] \XINT_expr_op_:]
+\let\XINT_iiexpr_op_:] \XINT_expr_op_:]
+\let\XINT_expr_precedence_][: \xint_c_iii
+\edef\XINT_expr_op_][: #1{\xint_c_ii\noexpand\XINT_expr_itself_][#10\string :}%
+\let\XINT_flexpr_op_][: \XINT_expr_op_][:
+\let\XINT_iiexpr_op_][: \XINT_expr_op_][:
+\catcode`[ 12 \catcode`] 12
+\def\xintListSel:x:csv #1%
+{%
+    \if ]\noexpand#1\xint_dothis\XINT_listsel:_s\fi
+    \if :\noexpand#1\xint_dothis\XINT_listxsel:_:\fi
+    \xint_orthat {\XINT_listsel:_nth #1}%
+}%
+\def\XINT_listsel:_s #1#2;#3;%
+{%
+   \if-#1\expandafter\xintKeep:f:csv\else\expandafter\xintTrim:f:csv\fi
+   {#1#2}{#3}%
+}%
+\def\XINT_listsel:_nth #1;#2;{\xintNthEltPy:f:csv {\xintNum{#1}}{#2}}%
+\def\XINT_listxsel:_: #1#2;#3#4;%
+{%
+    \xint_UDsignsfork
+       #1#3\XINT_listxsel:_N:N
+        #1-\XINT_listxsel:_N:P
+        -#3\XINT_listxsel:_P:N
+         --\XINT_listxsel:_P:P
+    \krof #1#2;#3#4;%
+}%
+\def\XINT_listxsel:_P:P #1;#2;#3;%
+{%
+    \unless\ifnum #1<#2 \expandafter\xint_gobble_iii\fi
+    \xintKeep:x:csv{#2-#1}{\xintTrim:f:csv{#1}{#3}}%
+}%
+\def\XINT_listxsel:_N:N #1;#2;#3;%
+{%
+    \expandafter\XINT_listxsel:_N:N_a
+    \the\numexpr #2-#1\expandafter;\the\numexpr#1+\xintLength:f:csv{#3};#3;%
+}%
+\def\XINT_listxsel:_N:N_a #1;#2;#3;%
+{%
+    \unless\ifnum #1>\xint_c_ \expandafter\xint_gobble_iii\fi
+    \xintKeep:x:csv{#1}{\xintTrim:f:csv{\ifnum#2<\xint_c_\xint_c_\else#2\fi}{#3}}%
+}%
+\def\XINT_listxsel:_N:P #1;#2;#3;{\expandafter\XINT_listxsel:_N:P_a
+                                  \the\numexpr #1+\xintLength:f:csv{#3};#2;#3;}%
+\def\XINT_listxsel:_N:P_a #1#2;%
+   {\if -#1\expandafter\XINT_listxsel:_O:P\fi\XINT_listxsel:_P:P #1#2;}%
+\def\XINT_listxsel:_O:P\XINT_listxsel:_P:P #1;{\XINT_listxsel:_P:P 0;}%
+\def\XINT_listxsel:_P:N #1;#2;#3;{\expandafter\XINT_listxsel:_P:N_a
+                                \the\numexpr #2+\xintLength:f:csv{#3};#1;#3;}%
+\def\XINT_listxsel:_P:N_a #1#2;#3;%
+   {\if -#1\expandafter\XINT_listxsel:_P:O\fi\XINT_listxsel:_P:P #3;#1#2;}%
+\def\XINT_listxsel:_P:O\XINT_listxsel:_P:P #1;#2;{\XINT_listxsel:_P:P #1;0;}%
+\def\xintListSel:f:csv #1%
+{%
+    \if ]\noexpand#1\xint_dothis{\expandafter\XINT_listsel:_s\romannumeral`&&@}\fi
+    \if :\noexpand#1\xint_dothis{\XINT_listsel:_:}\fi
+    \xint_orthat {\XINT_listsel:_nth #1}%
+}%
+\def\XINT_listsel:_: #1;#2;%
+{%
+    \expandafter\XINT_listsel:_:a
+    \the\numexpr #1\expandafter;\the\numexpr #2\expandafter;\romannumeral`&&@%
+}%
+\def\XINT_listsel:_:a #1#2;#3#4;%
+{%
+    \xint_UDsignsfork
+       #1#3\XINT_listsel:_N:N
+        #1-\XINT_listsel:_N:P
+        -#3\XINT_listsel:_P:N
+         --\XINT_listsel:_P:P
+    \krof #1#2;#3#4;%
+}%
+\def\XINT_listsel:_P:P #1;#2;#3;%
+{%
+    \unless\ifnum #1<#2 \xint_afterfi{\expandafter\space\xint_gobble_iii}\fi
+    \xintKeep:f:csv{#2-#1}{\xintTrim:f:csv{#1}{#3}}%
+}%
+\def\XINT_listsel:_N:N #1;#2;#3;%
+{%
+    \unless\ifnum #1<#2 \expandafter\XINT_listsel:_N:N_abort\fi
+    \expandafter\XINT_listsel:_N:N_a
+    \the\numexpr#1+\xintLength:f:csv{#3}\expandafter;\the\numexpr#2-#1;#3;%
+}%
+\def\XINT_listsel:_N:N_abort #1;#2;#3;{ }%
+\def\XINT_listsel:_N:N_a #1;#2;#3;%
+{%
+    \xintKeep:f:csv{#2}{\xintTrim:f:csv{\ifnum#1<\xint_c_\xint_c_\else#1\fi}{#3}}%
+}%
+\def\XINT_listsel:_N:P #1;#2;#3;{\expandafter\XINT_listsel:_N:P_a
+                                \the\numexpr #1+\xintLength:f:csv{#3};#2;#3;}%
+\def\XINT_listsel:_N:P_a #1#2;%
+   {\if -#1\expandafter\XINT_listsel:_O:P\fi\XINT_listsel:_P:P #1#2;}%
+\def\XINT_listsel:_O:P\XINT_listsel:_P:P #1;{\XINT_listsel:_P:P 0;}%
+\def\XINT_listsel:_P:N #1;#2;#3;{\expandafter\XINT_listsel:_P:N_a
+                                \the\numexpr #2+\xintLength:f:csv{#3};#1;#3;}%
+\def\XINT_listsel:_P:N_a #1#2;#3;%
+   {\if -#1\expandafter\XINT_listsel:_P:O\fi\XINT_listsel:_P:P #3;#1#2;}%
+\def\XINT_listsel:_P:O\XINT_listsel:_P:P #1;#2;{\XINT_listsel:_P:P #1;0;}%
+\def\xintKeep:x:csv #1#2%
+{%
+    \expandafter\xint_gobble_i
+    \romannumeral0\expandafter\XINT_keep:x:csv_pos
+    \the\numexpr #1\expandafter.\expandafter{\romannumeral`&&@#2}%
+}%
+\def\XINT_keep:x:csv_pos #1.#2%
+{%
+    \expandafter\XINT_keep:x:csv_loop\the\numexpr#1-\xint_c_viii.%
+    #2\xint_Bye,\xint_Bye,\xint_Bye,\xint_Bye,%
+       \xint_Bye,\xint_Bye,\xint_Bye,\xint_Bye,\xint_bye
+}%
+\def\XINT_keep:x:csv_loop #1%
+{%
+    \xint_gob_til_minus#1\XINT_keep:x:csv_finish-%
+    \XINT_keep:x:csv_loop_pickeight #1%
+}%
+\def\XINT_keep:x:csv_loop_pickeight #1.#2,#3,#4,#5,#6,#7,#8,#9,%
+{%
+    ,#2,#3,#4,#5,#6,#7,#8,#9%
+    \expandafter\XINT_keep:x:csv_loop\the\numexpr#1-\xint_c_viii.%
+}%
+\def\XINT_keep:x:csv_finish-\XINT_keep:x:csv_loop_pickeight -#1.%
+{%
+    \csname XINT_keep:x:csv_finish#1\endcsname
+}%
+\expandafter\def\csname XINT_keep:x:csv_finish1\endcsname
+  #1,#2,#3,#4,#5,#6,#7,{,#1,#2,#3,#4,#5,#6,#7\xint_Bye}%
+\expandafter\def\csname XINT_keep:x:csv_finish2\endcsname
+  #1,#2,#3,#4,#5,#6,{,#1,#2,#3,#4,#5,#6\xint_Bye}%
+\expandafter\def\csname XINT_keep:x:csv_finish3\endcsname
+  #1,#2,#3,#4,#5,{,#1,#2,#3,#4,#5\xint_Bye}%
+\expandafter\def\csname XINT_keep:x:csv_finish4\endcsname
+  #1,#2,#3,#4,{,#1,#2,#3,#4\xint_Bye}%
+\expandafter\def\csname XINT_keep:x:csv_finish5\endcsname
+  #1,#2,#3,{,#1,#2,#3\xint_Bye}%
+\expandafter\def\csname XINT_keep:x:csv_finish6\endcsname
+  #1,#2,{,#1,#2\xint_Bye}%
+\expandafter\def\csname XINT_keep:x:csv_finish7\endcsname
+  #1,{,#1\xint_Bye}%
+\expandafter\let\csname XINT_keep:x:csv_finish8\endcsname\xint_Bye
+\def\xintSeq::csv {\romannumeral0\xintseq::csv }%
+\def\xintseq::csv #1#2%
+{%
+    \expandafter\XINT_seq::csv\expandafter
+       {\the\numexpr \xintiCeil{#1}\expandafter}\expandafter
+       {\the\numexpr \xintiFloor{#2}}%
+}%
+\def\XINT_seq::csv #1#2%
+{%
+   \ifcase\ifnum #1=#2 0\else\ifnum #2>#1 1\else -1\fi\fi\space
+      \expandafter\XINT_seq::csv_z
+   \or
+      \expandafter\XINT_seq::csv_p
+   \else
+      \expandafter\XINT_seq::csv_n
+   \fi
+   {#2}{#1}%
+}%
+\def\XINT_seq::csv_z #1#2{ #1/1[0]}%
+\def\XINT_seq::csv_p #1#2%
+{%
+    \ifnum #1>#2
+      \expandafter\expandafter\expandafter\XINT_seq::csv_p
+    \else
+      \expandafter\XINT_seq::csv_e
+    \fi
+    \expandafter{\the\numexpr #1-\xint_c_i}{#2},#1/1[0]%
+}%
+\def\XINT_seq::csv_n #1#2%
+{%
+    \ifnum #1<#2
+      \expandafter\expandafter\expandafter\XINT_seq::csv_n
+    \else
+      \expandafter\XINT_seq::csv_e
+    \fi
+     \expandafter{\the\numexpr #1+\xint_c_i}{#2},#1/1[0]%
+}%
+\def\XINT_seq::csv_e #1,{ }%
+\def\xintiiSeq::csv {\romannumeral0\xintiiseq::csv }%
+\def\xintiiseq::csv #1#2%
+{%
+    \expandafter\XINT_iiseq::csv\expandafter
+       {\the\numexpr #1\expandafter}\expandafter{\the\numexpr #2}%
+}%
+\def\XINT_iiseq::csv #1#2%
+{%
+   \ifcase\ifnum #1=#2 0\else\ifnum #2>#1 1\else -1\fi\fi\space
+      \expandafter\XINT_iiseq::csv_z
+   \or
+      \expandafter\XINT_iiseq::csv_p
+   \else
+      \expandafter\XINT_iiseq::csv_n
+   \fi
+   {#2}{#1}%
+}%
+\def\XINT_iiseq::csv_z #1#2{ #1}%
+\def\XINT_iiseq::csv_p #1#2%
+{%
+    \ifnum #1>#2
+      \expandafter\expandafter\expandafter\XINT_iiseq::csv_p
+    \else
+      \expandafter\XINT_seq::csv_e
+    \fi
+    \expandafter{\the\numexpr #1-\xint_c_i}{#2},#1%
+}%
+\def\XINT_iiseq::csv_n #1#2%
+{%
+    \ifnum #1<#2
+      \expandafter\expandafter\expandafter\XINT_iiseq::csv_n
+    \else
+      \expandafter\XINT_seq::csv_e
+    \fi
+     \expandafter{\the\numexpr #1+\xint_c_i}{#2},#1%
+}%
+\def\XINT_seq::csv_e #1,{ }%
+\def\xintSeqA::csv #1%
+   {\expandafter\XINT_seqa::csv\expandafter{\romannumeral0\xintraw {#1}}}%
+\def\XINT_seqa::csv #1#2{\expandafter\XINT_seqa::csv_a \romannumeral0\xintraw {#2};#1;}%
+\def\xintiiSeqA::csv #1{\expandafter\XINT_iiseqa::csv\expandafter{\romannumeral`&&@#1}}%
+\def\XINT_iiseqa::csv #1#2{\expandafter\XINT_seqa::csv_a\romannumeral`&&@#2;#1;}%
+\def\XINTinFloatSeqA::csv #1{\expandafter\XINT_flseqa::csv\expandafter
+   {\romannumeral0\XINTinfloat [\XINTdigits]{#1}}}%
+\def\XINT_flseqa::csv #1#2%
+   {\expandafter\XINT_seqa::csv_a\romannumeral0\XINTinfloat [\XINTdigits]{#2};#1;}%
+\def\XINT_seqa::csv_a #1{\xint_UDzerominusfork
+                                   #1-{z}%
+                                   0#1{n}%
+                                   0-{p}%
+                        \krof #1}%
+\def\xintSeqB::csv #1#2%
+   {\expandafter\XINT_seqb::csv \expandafter{\romannumeral0\xintraw{#2}}{#1}}%
+\def\XINT_seqb::csv #1#2{\expandafter\XINT_seqb::csv_a\romannumeral`&&@#2#1!}%
+\def\XINT_seqb::csv_a #1#2;#3;#4!{\expandafter\XINT_expr_seq_empty?
+      \romannumeral0\csname XINT_seqb::csv_#1\endcsname {#3}{#4}{#2}}%
+\def\XINT_seqb::csv_p #1#2#3%
+{%
+   \xintifCmp {#1}{#2}{,#1\expandafter\XINT_seqb::csv_p\expandafter}%
+   {,#1\xint_gobble_iii}{\xint_gobble_iii}%
+   {\romannumeral0\xintadd {#3}{#1}}{#2}{#3}%
+}%
+\def\XINT_seqb::csv_n #1#2#3%
+{%
+    \xintifCmp {#1}{#2}{\xint_gobble_iii}{,#1\xint_gobble_iii}%
+    {,#1\expandafter\XINT_seqb::csv_n\expandafter}%
+    {\romannumeral0\xintadd {#3}{#1}}{#2}{#3}%
+}%
+\def\XINT_seqb::csv_z #1#2#3{,#1}%
+\def\xintiiSeqB::csv #1#2{\XINT_iiseqb::csv #1#2}%
+\def\XINT_iiseqb::csv #1#2#3#4%
+   {\expandafter\XINT_iiseqb::csv_a
+    \romannumeral`&&@\expandafter \XINT_expr_unlock\expandafter#2%
+    \romannumeral`&&@\XINT_expr_unlock #4!}%
+\def\XINT_iiseqb::csv_a #1#2;#3;#4!{\expandafter\XINT_expr_seq_empty?
+      \romannumeral`&&@\csname XINT_iiseqb::csv_#1\endcsname {#3}{#4}{#2}}%
+\def\XINT_iiseqb::csv_p #1#2#3%
+{%
+  \xintSgnFork{\XINT_Cmp {#1}{#2}}{,#1\expandafter\XINT_iiseqb::csv_p\expandafter}%
+  {,#1\xint_gobble_iii}{\xint_gobble_iii}%
+  {\romannumeral0\xintiiadd {#3}{#1}}{#2}{#3}%
+}%
+\def\XINT_iiseqb::csv_n #1#2#3%
+{%
+  \xintSgnFork{\XINT_Cmp {#1}{#2}}{\xint_gobble_iii}{,#1\xint_gobble_iii}%
+  {,#1\expandafter\XINT_iiseqb::csv_n\expandafter}%
+  {\romannumeral0\xintiiadd {#3}{#1}}{#2}{#3}%
+}%
+\def\XINT_iiseqb::csv_z #1#2#3{,#1}%
+\def\XINTinFloatSeqB::csv #1#2{\expandafter\XINT_flseqb::csv \expandafter
+    {\romannumeral0\XINTinfloat [\XINTdigits]{#2}}{#1}}%
+\def\XINT_flseqb::csv #1#2{\expandafter\XINT_flseqb::csv_a\romannumeral`&&@#2#1!}%
+\def\XINT_flseqb::csv_a #1#2;#3;#4!{\expandafter\XINT_expr_seq_empty?
+      \romannumeral`&&@\csname XINT_flseqb::csv_#1\endcsname {#3}{#4}{#2}}%
+\def\XINT_flseqb::csv_p #1#2#3%
+{%
+  \xintifCmp {#1}{#2}{,#1\expandafter\XINT_flseqb::csv_p\expandafter}%
+  {,#1\xint_gobble_iii}{\xint_gobble_iii}%
+  {\romannumeral0\XINTinfloatadd {#3}{#1}}{#2}{#3}%
+}%
+\def\XINT_flseqb::csv_n #1#2#3%
+{%
+  \xintifCmp {#1}{#2}{\xint_gobble_iii}{,#1\xint_gobble_iii}%
+  {,#1\expandafter\XINT_flseqb::csv_n\expandafter}%
+  {\romannumeral0\XINTinfloatadd {#3}{#1}}{#2}{#3}%
+}%
+\def\XINT_flseqb::csv_z #1#2#3{,#1}%
+\def\XINT_tmpa #1#2#3#4#5#6%
+{%
+    \def #1##1% \XINT_expr_op_,
+    {%
+        \expandafter #2\expandafter ##1\romannumeral`&&@\XINT_expr_getnext
+    }%
+    \def #2##1##2% \XINT_expr_until_,_a
+    {\xint_UDsignfork
+        ##2{\expandafter #2\expandafter ##1\romannumeral`&&@#4}%
+          -{#3##1##2}%
+     \krof }%
+    \def #3##1##2##3##4% \XINT_expr_until_,_b
+    {%
+      \ifnum ##2>\xint_c_ii
+        \xint_afterfi {\expandafter #2\expandafter ##1\romannumeral`&&@%
+                       \csname XINT_#6_op_##3\endcsname {##4}}%
+      \else
+        \xint_afterfi
+        {\expandafter ##2\expandafter ##3%
+         \csname .=\XINT_expr_unlock ##1,\XINT_expr_unlock ##4\endcsname }%
+      \fi
+    }%
+    \let #5\xint_c_ii
+}%
+\xintFor #1 in {expr,flexpr,iiexpr} \do {%
+\expandafter\XINT_tmpa
+    \csname XINT_#1_op_,\expandafter\endcsname
+    \csname XINT_#1_until_,_a\expandafter\endcsname
+    \csname XINT_#1_until_,_b\expandafter\endcsname
+    \csname XINT_#1_op_-vi\expandafter\endcsname
+    \csname XINT_expr_precedence_,\endcsname {#1}%
+}%
+\def\XINT_tmpa #1#2#3%
+{%
+    \expandafter\XINT_tmpb
+    \csname XINT_#1_op_-#3\expandafter\endcsname
+    \csname XINT_#1_until_-#3_a\expandafter\endcsname
+    \csname XINT_#1_until_-#3_b\expandafter\endcsname
+    \csname xint_c_#3\endcsname {#1}#2%
+}%
+\def\XINT_tmpb #1#2#3#4#5#6%
+{%
+    \def #1% \XINT_expr_op_-<level>
+    {%  get next number+operator then switch to _until macro
+        \expandafter #2\romannumeral`&&@\XINT_expr_getnext
+    }%
+    \def #2##1% \XINT_expr_until_-<l>_a
+    {\xint_UDsignfork
+        ##1{\expandafter #2\romannumeral`&&@#1}%
+          -{#3##1}%
+     \krof }%
+    \def #3##1##2##3% \XINT_expr_until_-<l>_b
+    {%  _until tests precedence level with next op, executes now or postpones
+        \ifnum ##1>#4%
+         \xint_afterfi {\expandafter #2\romannumeral`&&@%
+                        \csname XINT_#5_op_##2\endcsname {##3}}%
+        \else
+         \xint_afterfi {\expandafter ##1\expandafter ##2%
+                        \csname .=%
+                        \XINT:NEhook:one#6{\XINT_expr_unlock ##3}\endcsname }%
+        \fi
+    }%
+}%
+\xintApplyInline{\XINT_tmpa {expr}\xintOpp}{{vi}{vii}{viii}{ix}}%
+\xintApplyInline{\XINT_tmpa {flexpr}\xintOpp}{{vi}{vii}{viii}{ix}}%
+\xintApplyInline{\XINT_tmpa {iiexpr}\xintiiOpp}{{vi}{vii}{viii}{ix}}%
+\let\XINT_expr_precedence_? \xint_c_x
+\def\XINT_expr_op_? #1#2%
+   {\XINT_expr_op_?checka #2!\xint_bye\XINT_expr_op_?a #1{#2}}%
+\def\XINT_expr_op_?checka #1{\expandafter\XINT_expr_op_?checkb\detokenize{#1}}%
+\def\XINT_expr_op_?checkb #1{\if ?#1\expandafter\XINT_expr_op_?checkc
+                                \else\expandafter\xint_bye\fi }%
+\def\XINT_expr_op_?checkc #1{\xint_gob_til_! #1\XINT_expr_op_?? !\xint_bye}%
+\def\XINT_expr_op_?a #1#2#3%
+{%
+    \xintiiifNotZero{\XINT_expr_unlock  #1}{\XINT_expr_getnext #2}{\XINT_expr_getnext #3}%
+}%
+\let\XINT_flexpr_op_?\XINT_expr_op_?
+\let\XINT_iiexpr_op_?\XINT_expr_op_?
+\def\XINT_expr_op_?? !\xint_bye\xint_bye\XINT_expr_op_?a #1#2#3#4#5%
+{%
+     \xintiiifSgn {\XINT_expr_unlock  #1}%
+     {\XINT_expr_getnext #3}{\XINT_expr_getnext #4}{\XINT_expr_getnext #5}%
+}%
+\let\XINT_expr_precedence_! \xint_c_x
+\def\XINT_expr_op_! #1{\expandafter\XINT_expr_getop
+  \csname .=\XINT:NEhook:one\xintFac{\XINT_expr_unlock #1}\endcsname }%
+\def\XINT_flexpr_op_! #1{\expandafter\XINT_expr_getop
+  \csname .=\XINT:NEhook:one\XINTinFloatFac{\XINT_expr_unlock #1}\endcsname }%
+\def\XINT_iiexpr_op_! #1{\expandafter\XINT_expr_getop
+  \csname .=\XINT:NEhook:one\xintiiFac{\XINT_expr_unlock #1}\endcsname }%
+\catcode`[ 11
+\let\XINT_expr_precedence_[ \xint_c_vii
+\def\XINT_expr_op_[ #1#2]{\expandafter\XINT_expr_getop
+                \csname .=\xintE{\XINT_expr_unlock #1}%
+                {\xint_zapspaces #2 \xint_gobble_i}\endcsname}%
+\def\XINT_iiexpr_op_[ #1#2]{\expandafter\XINT_expr_getop
+                \csname .=\xintiiE{\XINT_expr_unlock #1}%
+                {\xint_zapspaces #2 \xint_gobble_i}\endcsname}%
+\def\XINT_flexpr_op_[ #1#2]{\expandafter\XINT_expr_getop
+                \csname .=\XINTinFloatE{\XINT_expr_unlock #1}%
+                {\xint_zapspaces #2 \xint_gobble_i}\endcsname}%
+\catcode`[ 12
+\def\XINT_tmpa #1#2#3{%
+    \def #1##1%
+    {%
+        \ifcsname XINT_#3_func_##1\endcsname
+          \xint_dothis{\expandafter\expandafter
+                     \csname XINT_#3_func_##1\endcsname\romannumeral`&&@#2}\fi
+        \ifcsname XINT_expr_onliteral_##1\endcsname
+          \xint_dothis{\csname XINT_expr_onliteral_##1\endcsname}\fi
+        \xint_orthat{\XINT_expr_unknown_function {##1}%
+           \expandafter\XINT_expr_func_unknown\romannumeral`&&@#2}%
+   }%
+}%
+\def\XINT_expr_unknown_function #1{\xintError:removed \xint_gobble_i {#1}}%
+\xintFor #1 in {expr,flexpr,iiexpr} \do {%
+     \expandafter\XINT_tmpa
+                 \csname XINT_#1_op_`\expandafter\endcsname
+                 \csname XINT_#1_oparen\endcsname
+                 {#1}%
+}%
+\def\XINT_expr_func_unknown #1#2#3%
+    {\expandafter #1\expandafter #2\csname .=0\endcsname }%
+\def\XINT_expr_onliteral_bool #1)%
+        {\expandafter\XINT_expr_getop\csname .=\xintBool{#1}\endcsname }%
+\def\XINT_expr_onliteral_togl #1)%
+        {\expandafter\XINT_expr_getop\csname .=\xintToggle{#1}\endcsname }%
+\def\XINT_expr_onliteral_protect #1)%
+        {\expandafter\XINT_expr_getop\csname .=\detokenize{#1}\endcsname }%
+\def\XINT_expr_func_break #1#2#3%
+    {\expandafter #1\expandafter #2\csname.=?\romannumeral`&&@\XINT_expr_unlock #3\endcsname }%
+\let\XINT_flexpr_func_break \XINT_expr_func_break
+\let\XINT_iiexpr_func_break \XINT_expr_func_break
+\def\XINT_expr_onliteral_qint #1)%
+        {\expandafter\XINT_expr_getop\csname .=\xintiNum{#1}\endcsname }%
+\def\XINT_expr_onliteral_qfrac #1)%
+        {\expandafter\XINT_expr_getop\csname .=\xintRaw{#1}\endcsname }%
+\def\XINT_expr_onliteral_qfloat #1)%
+        {\expandafter\XINT_expr_getop\csname .=\XINTinFloatSdigits{#1}\endcsname }%
+\def\XINT_expr_onliteral_qraw #1)%
+        {\expandafter\XINT_expr_getop\csname .=#1\endcsname }%
+\def\XINT_expr_onliteral_random #1)%
+   {\expandafter\XINT_expr_getop\csname .=\XINTinRandomFloatSdigits\endcsname }%
+\def\XINT_expr_onliteral_qrand #1)%
+   {\expandafter\XINT_expr_getop\csname .=\XINTinRandomFloatSixteen\endcsname }%
+\def\XINT_expr_op__  #1% op__ with two _'s
+     {%
+         \ifcsname XINT_expr_var_#1\endcsname
+           \expandafter\xint_firstoftwo
+         \else
+           \expandafter\xint_secondoftwo
+         \fi
+         {\expandafter\expandafter\expandafter
+          \XINT_expr_getop\csname XINT_expr_var_#1\endcsname}%
+         {\XINT_expr_unknown_variable {#1}%
+          \expandafter\XINT_expr_getop\csname .=0\endcsname}%
+     }%
+\def\XINT_expr_unknown_variable #1{\xintError:removed \xint_gobble_i {#1}}%
+\let\XINT_flexpr_op__ \XINT_expr_op__
+\let\XINT_iiexpr_op__ \XINT_expr_op__
+\catcode`* 11
+\def\XINT_expr_defvar_one #1#2%
+{%
+    \XINT_global
+    \expandafter\edef\csname XINT_expr_var_#1\endcsname
+              {\expandafter\noexpand#2}%
+    \XINT_global
+    \expandafter\edef\csname XINT_expr_onliteral_#1\endcsname
+              {\XINT_expr_precedence_*** *\expandafter\noexpand#2(}%
+    \ifxintverbose\xintMessage{xintexpr}{Info}
+       {Variable "#1" \ifxintglobaldefs globally \fi
+        defined with value \expandafter\XINT_expr_unlock#2.}%
+    \fi
+}%
+\catcode`* 12
+\catcode`~ 13
+\catcode`: 12
+\def\XINT_expr_defvar_getname #1:#2~{\endgroup
+    \def\XINT_defvar_tmpa{#1}\edef\XINT_defvar_tmpc{\xintCSVLength{#1}}}%
+\def\XINT_expr_defvar #1#2#3;%
+{%
+    \xintexprRestoreCatcodes
+    \begingroup\lccode`~`: \lowercase{\let~}\empty
+    \edef\XINT_defvar_tmpa{#2}%
+    \edef\XINT_defvar_tmpa{\xint_zapspaces_o\XINT_defvar_tmpa}%
+    \expandafter\XINT_expr_defvar_getname
+                \detokenize\expandafter{\XINT_defvar_tmpa}:~%
+    \ifcase\XINT_defvar_tmpc\space
+      \xintMessage {xintexpr}{Warning}
+      {Aborting: not allowed to declare variable with empty name.}%
+    \or
+     \edef\XINT_defvar_tmpb{\romannumeral0#1#3\relax}%
+     \XINT_expr_defvar_one\XINT_defvar_tmpa\XINT_defvar_tmpb
+    \else
+     \edef\XINT_defvar_tmpb
+        {\expandafter\XINT_expr_unlock\romannumeral0#1#3\relax}%
+     \edef\XINT_defvar_tmpd{\xintCSVLength{\XINT_defvar_tmpb}}%
+     \ifnum\XINT_defvar_tmpc=\XINT_defvar_tmpd\space
+       \xintAssignArray\xintCSVtoList\XINT_defvar_tmpa\to\XINT_defvar_tmpvar
+       \xintAssignArray
+         \xintApply\XINT_expr_lockit{\xintCSVtoList\XINT_defvar_tmpb}%
+       \to\XINT_defvar_tmpval
+       \def\XINT_defvar_tmpd{1}%
+       \xintloop
+           \expandafter\XINT_expr_defvar_one
+           \csname XINT_defvar_tmpvar\XINT_defvar_tmpd\expandafter\endcsname
+           \csname XINT_defvar_tmpval\XINT_defvar_tmpd\endcsname
+       \ifnum\XINT_defvar_tmpd<\XINT_defvar_tmpc\space
+           \edef\XINT_defvar_tmpd{\the\numexpr\XINT_defvar_tmpd+1}%
+       \repeat
+       \xintRelaxArray\XINT_defvar_tmpvar
+       \xintRelaxArray\XINT_defvar_tmpval
+     \else
+       \xintMessage {xintexpr}{Warning}
+        {Aborting: mismatch between number of variables (\XINT_defvar_tmpc)
+         and number of values (\XINT_defvar_tmpd).}%
+     \fi
+    \fi
+}%
+\catcode`~ 3
+\catcode`: 11
+\def\xintdefvar      {\xintexprSafeCatcodes\xintdefvar_a}%
+\def\xintdefiivar    {\xintexprSafeCatcodes\xintdefiivar_a}%
+\def\xintdeffloatvar {\xintexprSafeCatcodes\xintdeffloatvar_a}%
+\def\xintdefvar_a      #1={\XINT_expr_defvar\xintbareeval      {#1}}%
+\def\xintdefiivar_a    #1={\XINT_expr_defvar\xintbareiieval    {#1}}%
+\def\xintdeffloatvar_a #1={\XINT_expr_defvar\xintbarefloateval {#1}}%
+\def\xintunassignvar #1{%
+   \edef\XINT_unvar_tmpa{#1}%
+   \edef\XINT_unvar_tmpa {\xint_zapspaces_o\XINT_unvar_tmpa}%
+   \ifcsname XINT_expr_var_\XINT_unvar_tmpa\endcsname
+       \ifnum\expandafter\xintLength\expandafter{\XINT_unvar_tmpa}=\@ne
+         \expandafter\xintnewdummy\XINT_unvar_tmpa
+       \else
+         \XINT_global\expandafter
+           \let\csname XINT_expr_var_\XINT_unvar_tmpa\endcsname\xint_undefined
+         \XINT_global\expandafter
+           \let\csname XINT_expr_onliteral_\XINT_unvar_tmpa\endcsname\xint_undefined
+         \ifxintverbose\xintMessage {xintexpr}{Info}
+           {Variable \XINT_unvar_tmpa\space has been
+            \ifxintglobaldefs globally \fi ``unassigned''.}%
+         \fi
+       \fi
+   \else
+       \xintMessage {xintexpr}{Warning}
+           {Error: there was no such variable \XINT_unvar_tmpa\space to unassign.}%
+   \fi
+}%
+\catcode`* 11
+\def\XINT_expr_makedummy #1%
+{%
+   \ifcsname XINT_expr_var_#1\endcsname
+     \XINT_global
+     \expandafter\let\csname XINT_expr_var_#1/old\expandafter\endcsname
+                     \csname XINT_expr_var_#1\expandafter\endcsname
+   \fi
+   \ifcsname XINT_expr_onliteral_#1\endcsname
+     \XINT_global
+     \expandafter\let\csname XINT_expr_onliteral_#1/old\expandafter\endcsname
+                     \csname XINT_expr_onliteral_#1\expandafter\endcsname
+   \fi
+   \XINT_global
+   \expandafter\def\csname XINT_expr_var_#1\endcsname ##1\relax !#1##2%
+      {##2##1\relax !#1##2}%
+   \XINT_global
+   \expandafter\def\csname XINT_expr_onliteral_#1\endcsname ##1\relax !#1##2%
+      {\XINT_expr_precedence_*** *##2(##1\relax !#1##2}%
+}%
+\xintApplyUnbraced \XINT_expr_makedummy {abcdefghijklmnopqrstuvwxyz}%
+\xintApplyUnbraced \XINT_expr_makedummy {ABCDEFGHIJKLMNOPQRSTUVWXYZ}%
+\def\xintnewdummy #1{%
+    \XINT_expr_makedummy{#1}%
+    \ifxintverbose\xintMessage {xintexpr}{Info}%
+       {#1 (with letter catcode) now
+        \ifxintglobaldefs globally \fi usable as dummy variable.}%
+    \fi
+}%
+\edef\XINT_expr_var_nil  {\expandafter\noexpand\csname .= \endcsname}%
+\edef\XINT_expr_onliteral_nil
+      {\XINT_expr_precedence_*** *\expandafter\noexpand\csname .= \endcsname (}%
+\catcode`* 12
+\def\xintensuredummy #1{%
+    \XINT_expr_makedummy{#1}%
+    \ifxintverbose\xintMessage {xintexpr}{Info}%
+       {#1 (with letter catcode) now
+        \ifxintglobaldefs globally \fi usable as dummy variable.&&J
+        Use \string\xintrestoredummy{#1} to restore it to its former meaning.}%
+    \fi
+}%
+\def\xintrestorelettervar #1{%
+   \ifcsname XINT_expr_var_#1/old\endcsname
+     \XINT_global
+     \expandafter\let\csname XINT_expr_var_#1\expandafter\endcsname
+                     \csname XINT_expr_var_#1/old\expandafter\endcsname
+   \fi
+   \ifcsname XINT_expr_onliteral_#1/old\endcsname
+     \XINT_global
+     \expandafter\let\csname XINT_expr_onliteral_#1\expandafter\endcsname
+                     \csname XINT_expr_onliteral_#1/old\expandafter\endcsname
+   \fi
+    \ifxintverbose\xintMessage {xintexpr}{Info}%
+       {Character #1 (with letter catcode)
+        \ifxintglobaldefs globally \fi restored to its earlier status, if any.}%
+    \fi
+}%
+\edef\XINT_expr_var_omit  #1\relax !{1\string !?!\relax !}%
+\edef\XINT_expr_var_abort #1\relax !{1\string !?^\relax !}%
+\def\XINT_expr_op_!? #1#2\relax {\expandafter\XINT_expr_foundend\csname .=#2\endcsname}%
+\let\XINT_iiexpr_op_!? \XINT_expr_op_!?
+\let\XINT_flexpr_op_!? \XINT_expr_op_!?
+\catcode`? 3 \catcode`* 11
+\def\XINT_expr_var_@ #1~#2{#2#1~#2}%
+\expandafter\let\csname XINT_expr_var_@1\endcsname \XINT_expr_var_@
+\expandafter\def\csname XINT_expr_var_@2\endcsname #1~#2#3{#3#1~#2#3}%
+\expandafter\def\csname XINT_expr_var_@3\endcsname #1~#2#3#4{#4#1~#2#3#4}%
+\expandafter\def\csname XINT_expr_var_@4\endcsname #1~#2#3#4#5{#5#1~#2#3#4#5}%
+\def\XINT_expr_onliteral_@ #1~#2{\XINT_expr_precedence_*** *#2(#1~#2}%
+\expandafter\let\csname XINT_expr_onliteral_@1\endcsname \XINT_expr_onliteral_@
+\expandafter\def\csname XINT_expr_onliteral_@2\endcsname #1~#2#3%
+           {\XINT_expr_precedence_*** *#3(#1~#2#3}%
+\expandafter\def\csname XINT_expr_onliteral_@3\endcsname #1~#2#3#4%
+           {\XINT_expr_precedence_*** *#4(#1~#2#3#4}%
+\expandafter\def\csname XINT_expr_onliteral_@4\endcsname #1~#2#3#4#5%
+           {\XINT_expr_precedence_*** *#5(#1~#2#3#4#5}%
+\catcode`* 12
+\def\XINT_expr_func_@@ #1#2#3#4~#5?%
+{%
+   \expandafter#1\expandafter#2\romannumeral0\xintntheltnoexpand
+                             {\xintNum{\XINT_expr_unlock#3}}{#5}#4~#5?%
+}%
+\def\XINT_expr_func_@@@ #1#2#3#4~#5~#6?%
+{%
+   \expandafter#1\expandafter#2\romannumeral0\xintntheltnoexpand
+   {\xintNum{\XINT_expr_unlock#3}}{#6}#4~#5~#6?%
+}%
+\def\XINT_expr_func_@@@@ #1#2#3#4~#5~#6~#7?%
+{%
+   \expandafter#1\expandafter#2\romannumeral0\xintntheltnoexpand
+   {\xintNum{\XINT_expr_unlock#3}}{#7}#4~#5~#6~#7?%
+}%
+\let\XINT_flexpr_func_@@\XINT_expr_func_@@
+\let\XINT_flexpr_func_@@@\XINT_expr_func_@@@
+\let\XINT_flexpr_func_@@@@\XINT_expr_func_@@@@
+\def\XINT_iiexpr_func_@@ #1#2#3#4~#5?%
+{%
+    \expandafter#1\expandafter#2\romannumeral0\xintntheltnoexpand
+    {\XINT_expr_unlock#3}{#5}#4~#5?%
+}%
+\def\XINT_iiexpr_func_@@@ #1#2#3#4~#5~#6?%
+{%
+    \expandafter#1\expandafter#2\romannumeral0\xintntheltnoexpand
+    {\XINT_expr_unlock#3}{#6}#4~#5~#6?%
+}%
+\def\XINT_iiexpr_func_@@@@ #1#2#3#4~#5~#6~#7?%
+{%
+    \expandafter#1\expandafter#2\romannumeral0\xintntheltnoexpand
+    {\XINT_expr_unlock#3}{#7}#4~#5~#6~#7?%
+}%
+\catcode`? 11
+\def\XINT_expr_onliteral_seq
+ {\expandafter\XINT_expr_onliteral_seq_f\romannumeral`&&@\XINT_expr_onliteral_seq_a {}}%
+\def\XINT_expr_onliteral_seq_f #1#2{\xint_c_xviii `{seqx}#2)\relax #1}%
+\def\XINT_expr_onliteral_seq_a #1#2,%
+{%
+    \ifcase\XINT_isbalanced_a \relax #1#2(\xint_bye)\xint_bye
+           \expandafter\XINT_expr_onliteral_seq_c
+        \or\expandafter\XINT_expr_onliteral_seq_b
+      \else\expandafter\xintError:we_are_doomed
+    \fi {#1#2},%
+}%
+\def\XINT_expr_onliteral_seq_b #1,{\XINT_expr_onliteral_seq_a {#1,}}%
+\def\XINT_expr_onliteral_seq_c #1,#2#3% #3 pour absorber le =
+{%
+    \XINT_expr_onliteral_seq_d {#2{#1}}{}%
+}%
+\def\XINT_expr_onliteral_seq_d #1#2#3)%
+{%
+    \ifcase\XINT_isbalanced_a \relax #2#3(\xint_bye)\xint_bye
+        \or\expandafter\XINT_expr_onliteral_seq_e
+       \else\expandafter\xintError:we_are_doomed
+    \fi
+    {#1}{#2#3}%
+}%
+\def\XINT_expr_onliteral_seq_e #1#2{\XINT_expr_onliteral_seq_d {#1}{#2)}}%
+\def\XINT_isbalanced_a #1({\XINT_isbalanced_b #1)\xint_bye }%
+\def\XINT_isbalanced_b #1)#2%
+   {\xint_bye #2\XINT_isbalanced_c\xint_bye\XINT_isbalanced_error }%
+\def\XINT_isbalanced_error #1)\xint_bye {\xint_c_mone}%
+\def\XINT_isbalanced_c\xint_bye\XINT_isbalanced_error #1%
+    {\xint_bye #1\XINT_isbalanced_yes\xint_bye\XINT_isbalanced_d #1}%
+\def\XINT_isbalanced_yes\xint_bye\XINT_isbalanced_d\xint_bye )\xint_bye {\xint_c_ }%
+\def\XINT_isbalanced_d #1)#2%
+   {\xint_bye #2\XINT_isbalanced_no\xint_bye\XINT_isbalanced_a #1#2}%
+\def\XINT_isbalanced_no\xint_bye #1\xint_bye\xint_bye {\xint_c_i }%
+\def\XINT_expr_func_seqx   #1#2{\XINT_allexpr_seqx \xintthebareeval }%
+\def\XINT_flexpr_func_seqx #1#2{\XINT_allexpr_seqx \xintthebarefloateval}%
+\def\XINT_iiexpr_func_seqx #1#2{\XINT_allexpr_seqx \xintthebareiieval }%
+\def\XINT_allexpr_seqx #1#2#3#4%
+{%
+    \expandafter \XINT_expr_getop
+    \csname .=\expandafter\XINT_expr_seq:_aa
+           \romannumeral`&&@\XINT_expr_unlock #2!{#1#4\relax !#3}\endcsname
+}%
+\def\XINT_expr_seq:_aa #1{\if +#1\expandafter\XINT_expr_seq:_A\else
+                                 \expandafter\XINT_expr_seq:_a\fi #1}%
+\def\XINT_expr_seq:_a #1!#2{\expandafter\XINT_expr_seq_empty?
+                            \romannumeral0\XINT_expr_seq:_b {#2}#1,^,}%
+\def\XINT_expr_seq:_b #1#2#3,{%
+    \if  ,#2\xint_dothis\XINT_expr_seq:_noop\fi
+    \if  ^#2\xint_dothis\XINT_expr_seq:_end\fi
+    \xint_orthat{\expandafter\XINT_expr_seq:_c}\csname.=#2#3\endcsname {#1}%
+}%
+\def\XINT_expr_seq:_noop\csname.=,#1\endcsname #2{\XINT_expr_seq:_b {#2}#1,}%
+\def\XINT_expr_seq:_end \csname.=^\endcsname #1{}%
+\def\XINT_expr_seq:_c #1#2{\expandafter\XINT_expr_seq:_d\romannumeral`&&@#2#1{#2}}%
+\def\XINT_expr_seq:_d #1{\if #1^\xint_dothis\XINT_expr_seq:_abort\fi
+                         \if #1?\xint_dothis\XINT_expr_seq:_break\fi
+                         \if #1!\xint_dothis\XINT_expr_seq:_omit\fi
+                         \xint_orthat{\XINT_expr_seq:_goon #1}}%
+\def\XINT_expr_seq:_abort #1!#2#3#4#5^,{}%
+\def\XINT_expr_seq:_break #1!#2#3#4#5^,{,#1}%
+\def\XINT_expr_seq:_omit  #1!#2#3#4{\XINT_expr_seq:_b {#4}}%
+\def\XINT_expr_seq:_goon  #1!#2#3#4{,#1\XINT_expr_seq:_b {#4}}%
+\def\XINT_expr_seq_empty? #1{%
+\def\XINT_expr_seq_empty? ##1{\if ,##1\expandafter\xint_gobble_i\fi #1\endcsname }}%
+\XINT_expr_seq_empty? { }%
+\def\XINT_expr_seq:_A +#1!%
+   {\expandafter\XINT_expr_seq_empty?\romannumeral0\XINT_expr_seq:_D #1}%
+\def\XINT_expr_seq:_D #1#2{\expandafter\XINT_expr_seq:_E\romannumeral`&&@#2#1{#2}}%
+\def\XINT_expr_seq:_E #1{\if #1^\xint_dothis\XINT_expr_seq:_Abort\fi
+                         \if #1?\xint_dothis\XINT_expr_seq:_Break\fi
+                         \if #1!\xint_dothis\XINT_expr_seq:_Omit\fi
+                         \xint_orthat{\XINT_expr_seq:_Goon #1}}%
+\def\XINT_expr_seq:_Abort #1!#2#3#4{}%
+\def\XINT_expr_seq:_Break #1!#2#3#4{,#1}%
+\def\XINT_expr_seq:_Omit  #1!#2#3%
+    {\expandafter\XINT_expr_seq:_D
+        \csname.=\the\numexpr \XINT_expr_unlock#3+\xint_c_i\endcsname}%
+\def\XINT_expr_seq:_Goon  #1!#2#3%
+    {,#1\expandafter\XINT_expr_seq:_D
+        \csname.=\the\numexpr \XINT_expr_unlock#3+\xint_c_i\endcsname}%
+\def\XINT_expr_onliteral_add
+ {\expandafter\XINT_expr_onliteral_add_f\romannumeral`&&@\XINT_expr_onliteral_seq_a {}}%
+\def\XINT_expr_onliteral_add_f #1#2{\xint_c_xviii `{opxadd}#2)\relax #1}%
+\def\XINT_expr_onliteral_mul
+ {\expandafter\XINT_expr_onliteral_mul_f\romannumeral`&&@\XINT_expr_onliteral_seq_a {}}%
+\def\XINT_expr_onliteral_mul_f #1#2{\xint_c_xviii `{opxmul}#2)\relax #1}%
+\def\XINT_expr_func_opxadd   #1#2{\XINT_allexpr_opx \xintbareeval      {\xintAdd 0}}%
+\def\XINT_flexpr_func_opxadd #1#2{\XINT_allexpr_opx \xintbarefloateval {\XINTinFloatAdd 0}}%
+\def\XINT_iiexpr_func_opxadd #1#2{\XINT_allexpr_opx \xintbareiieval    {\xintiiAdd 0}}%
+\def\XINT_expr_func_opxmul   #1#2{\XINT_allexpr_opx \xintbareeval      {\xintMul 1}}%
+\def\XINT_flexpr_func_opxmul #1#2{\XINT_allexpr_opx \xintbarefloateval {\XINTinFloatMul 1}}%
+\def\XINT_iiexpr_func_opxmul #1#2{\XINT_allexpr_opx \xintbareiieval    {\xintiiMul 1}}%
+\def\XINT_allexpr_opx #1#2#3#4#5%
+{%
+    \expandafter\XINT_expr_getop
+    \csname.=\romannumeral`&&@\expandafter\XINT_expr_op:_a
+             \romannumeral`&&@\XINT_expr_unlock #3!{#1#5\relax !#4}{#2}\endcsname
+}%
+\def\XINT_expr_op:_a #1!#2#3{\XINT_expr_op:_b #3{#2}#1,^,}%
+\def\XINT_expr_op:_b #1#2#3#4#5,{%
+    \if  ,#4\xint_dothis\XINT_expr_op:_noop\fi
+    \if  ^#4\xint_dothis\XINT_expr_op:_end\fi
+    \xint_orthat{\expandafter\XINT_expr_op:_c}\csname.=#4#5\endcsname {#3}#1{#2}%
+}%
+\def\XINT_expr_op:_c #1#2#3#4%
+   {\expandafter\XINT_expr_op:_d\romannumeral0#2#1#3{#4}{#2}}%
+\def\XINT_expr_op:_d #1!#2#3#4#5%
+    {\expandafter\XINT_expr_op:_b\expandafter #4\expandafter
+                {\romannumeral`&&@\XINT:NEhook:two#4{\XINT_expr_unlock#1}{#5}}}%
+\def\XINT_expr_op:_noop\csname.=,#1\endcsname #2#3#4{\XINT_expr_op:_b #3{#4}{#2}#1,}%
+\def\XINT_expr_op:_end \csname.=^\endcsname #1#2#3{#3}%
+\def\XINT_expr_onliteral_subs
+ {\expandafter\XINT_expr_onliteral_subs_f\romannumeral`&&@\XINT_expr_onliteral_seq_a {}}%
+\def\XINT_expr_onliteral_subs_f #1#2{\xint_c_xviii `{subx}#2)\relax #1}%
+\def\XINT_expr_func_subx   #1#2{\XINT_allexpr_subx \xintbareeval }%
+\def\XINT_flexpr_func_subx #1#2{\XINT_allexpr_subx \xintbarefloateval}%
+\def\XINT_iiexpr_func_subx #1#2{\XINT_allexpr_subx \xintbareiieval }%
+\def\XINT_allexpr_subx #1#2#3#4% #2 is the value to assign to the dummy variable
+{% #3 is the dummy variable, #4 is the expression to evaluate
+    \expandafter\expandafter\expandafter\XINT_expr_getop
+    \expandafter\XINT_expr_subx:_end\romannumeral0#1#4\relax !#3#2%
+}%
+\def\XINT_expr_subx:_end #1!#2#3{#1}%
+\def\XINT_expr_func_rseq   {\XINT_allexpr_rseq \xintbareeval      \xintthebareeval      }%
+\def\XINT_flexpr_func_rseq {\XINT_allexpr_rseq \xintbarefloateval \xintthebarefloateval }%
+\def\XINT_iiexpr_func_rseq {\XINT_allexpr_rseq \xintbareiieval    \xintthebareiieval    }%
+\def\XINT_allexpr_rseq #1#2#3%
+{%
+    \expandafter\XINT_expr_rseqx\expandafter #1\expandafter#2\expandafter
+    #3\romannumeral`&&@\XINT_expr_onliteral_seq_a {}%
+}%
+\def\XINT_expr_rseqx #1#2#3#4#5%
+{%
+    \expandafter\XINT_expr_rseqy\romannumeral0#1(#5)\relax #3#4#2%
+}%
+\def\XINT_expr_rseqy #1#2#3#4#5%
+{%
+    \expandafter \XINT_expr_getop
+    \csname .=\XINT_expr_unlock #2%
+    \expandafter\XINT_expr_rseq:_aa
+                \romannumeral`&&@\XINT_expr_unlock #1!{#5#4\relax !#3}#2\endcsname
+}%
+\def\XINT_expr_rseq:_aa #1{\if +#1\expandafter\XINT_expr_rseq:_A\else
+                                  \expandafter\XINT_expr_rseq:_a\fi #1}%
+\def\XINT_expr_rseq:_a #1!#2#3{\XINT_expr_rseq:_b {#3}{#2}#1,^,}%
+\def\XINT_expr_rseq:_b #1#2#3#4,{%
+     \if ,#3\xint_dothis\XINT_expr_rseq:_noop\fi
+     \if ^#3\xint_dothis\XINT_expr_rseq:_end\fi
+     \xint_orthat{\expandafter\XINT_expr_rseq:_c}\csname.=#3#4\endcsname
+     {#1}{#2}%
+}%
+\def\XINT_expr_rseq:_noop\csname.=,#1\endcsname #2#3{\XINT_expr_rseq:_b {#2}{#3}#1,}%
+\def\XINT_expr_rseq:_end \csname.=^\endcsname #1#2{}%
+\def\XINT_expr_rseq:_c #1#2#3%
+   {\expandafter\XINT_expr_rseq:_d\romannumeral`&&@#3#1~#2{#3}}%
+\def\XINT_expr_rseq:_d #1{%
+    \if ^#1\xint_dothis\XINT_expr_rseq:_abort\fi
+    \if ?#1\xint_dothis\XINT_expr_rseq:_break\fi
+    \if !#1\xint_dothis\XINT_expr_rseq:_omit\fi
+    \xint_orthat{\XINT_expr_rseq:_goon #1}}%
+\def\XINT_expr_rseq:_goon  #1!#2#3~#4#5{,#1\expandafter\XINT_expr_rseq:_b
+        \romannumeral0\XINT_expr_lockit {#1}{#5}}%
+\def\XINT_expr_rseq:_omit  #1!#2#3~{\XINT_expr_rseq:_b }%
+\def\XINT_expr_rseq:_abort #1!#2#3~#4#5#6^,{}%
+\def\XINT_expr_rseq:_break #1!#2#3~#4#5#6^,{,#1}%
+\def\XINT_expr_rseq:_A +#1!#2#3{\XINT_expr_rseq:_D #1#3{#2}}%
+\def\XINT_expr_rseq:_D #1#2#3%
+   {\expandafter\XINT_expr_rseq:_E\romannumeral`&&@#3#1~#2{#3}}%
+\def\XINT_expr_rseq:_E #1{\if #1^\xint_dothis\XINT_expr_rseq:_Abort\fi
+                         \if #1?\xint_dothis\XINT_expr_rseq:_Break\fi
+                         \if #1!\xint_dothis\XINT_expr_rseq:_Omit\fi
+                         \xint_orthat{\XINT_expr_rseq:_Goon #1}}%
+\def\XINT_expr_rseq:_Goon  #1!#2#3~#4#5%
+    {,#1\expandafter\XINT_expr_rseq:_D
+        \csname.=\the\numexpr \XINT_expr_unlock#3+\xint_c_i\expandafter\endcsname
+     \romannumeral0\XINT_expr_lockit{#1}{#5}}%
+\def\XINT_expr_rseq:_Omit  #1!#2#3~%#4#5%
+    {\expandafter\XINT_expr_rseq:_D
+       \csname.=\the\numexpr \XINT_expr_unlock#3+\xint_c_i\endcsname }%
+\def\XINT_expr_rseq:_Abort #1!#2#3~#4#5{}%
+\def\XINT_expr_rseq:_Break #1!#2#3~#4#5{,#1}%
+\def\XINT_expr_func_iter   {\XINT_allexpr_iter \xintbareeval      \xintthebareeval      }%
+\def\XINT_flexpr_func_iter {\XINT_allexpr_iter \xintbarefloateval \xintthebarefloateval }%
+\def\XINT_iiexpr_func_iter {\XINT_allexpr_iter \xintbareiieval    \xintthebareiieval    }%
+\def\XINT_allexpr_iter #1#2#3%
+{%
+    \expandafter\XINT_expr_iterx\expandafter #1\expandafter#2\expandafter
+    #3\romannumeral`&&@\XINT_expr_onliteral_seq_a {}%
+}%
+\def\XINT_expr_iterx #1#2#3#4#5%
+{%
+    \expandafter\XINT_expr_itery\romannumeral0#1(#5)\relax #3#4#2%
+}%
+\def\XINT_expr_itery #1#2#3#4#5%
+{%
+    \expandafter \XINT_expr_getop
+    \csname .=%
+    \expandafter\XINT_expr_iter:_aa
+    \romannumeral`&&@\XINT_expr_unlock #1!{#5#4\relax !#3}#2\endcsname
+}%
+\def\XINT_expr_iter:_aa #1{\if +#1\expandafter\XINT_expr_iter:_A\else
+                                  \expandafter\XINT_expr_iter:_a\fi #1}%
+\def\XINT_expr_iter:_a #1!#2#3{\XINT_expr_iter:_b {#3}{#2}#1,^,}%
+\def\XINT_expr_iter:_b #1#2#3#4,{%
+     \if ,#3\xint_dothis\XINT_expr_iter:_noop\fi
+     \if ^#3\xint_dothis\XINT_expr_iter:_end\fi
+     \xint_orthat{\expandafter\XINT_expr_iter:_c}%
+     \csname.=#3#4\endcsname {#1}{#2}%
+}%
+\def\XINT_expr_iter:_noop\csname.=,#1\endcsname #2#3{\XINT_expr_iter:_b {#2}{#3}#1,}%
+\def\XINT_expr_iter:_end \csname.=^\endcsname #1#2{\XINT_expr:_unlock #1}%
+\def\XINT_expr_iter:_c #1#2#3%
+   {\expandafter\XINT_expr_iter:_d\romannumeral`&&@#3#1~#2{#3}}%
+\def\XINT_expr_iter:_d #1{%
+    \if ^#1\xint_dothis\XINT_expr_iter:_abort\fi
+    \if ?#1\xint_dothis\XINT_expr_iter:_break\fi
+    \if !#1\xint_dothis\XINT_expr_iter:_omit\fi
+    \xint_orthat{\XINT_expr_iter:_goon #1}}%
+\def\XINT_expr_iter:_goon  #1!#2#3~#4#5%
+   {\expandafter\XINT_expr_iter:_b\romannumeral0\XINT_expr_lockit {#1}{#5}}%
+\def\XINT_expr_iter:_omit  #1!#2#3~{\XINT_expr_iter:_b }%
+\def\XINT_expr_iter:_abort #1!#2#3~#4#5#6^,{\XINT_expr_unlock #4}%
+\def\XINT_expr_iter:_break #1!#2#3~#4#5#6^,{#1}%
+\def\XINT_expr_iter:_A +#1!#2#3{\XINT_expr_iter:_D #1#3{#2}}%
+\def\XINT_expr_iter:_D #1#2#3%
+   {\expandafter\XINT_expr_iter:_E\romannumeral`&&@#3#1~#2{#3}}%
+\def\XINT_expr_iter:_E #1{\if #1^\xint_dothis\XINT_expr_iter:_Abort\fi
+                         \if #1?\xint_dothis\XINT_expr_iter:_Break\fi
+                         \if #1!\xint_dothis\XINT_expr_iter:_Omit\fi
+                         \xint_orthat{\XINT_expr_iter:_Goon #1}}%
+\def\XINT_expr_iter:_Goon  #1!#2#3~#4#5%
+    {\expandafter\XINT_expr_iter:_D
+     \csname.=\the\numexpr \XINT_expr_unlock#3+\xint_c_i\expandafter\endcsname
+     \romannumeral0\XINT_expr_lockit{#1}{#5}}%
+\def\XINT_expr_iter:_Omit  #1!#2#3~%#4#5%
+    {\expandafter\XINT_expr_iter:_D
+     \csname.=\the\numexpr \XINT_expr_unlock#3+\xint_c_i\endcsname }%
+\def\XINT_expr_iter:_Abort #1!#2#3~#4#5{\XINT_expr:_unlock #4}%
+\def\XINT_expr_iter:_Break #1!#2#3~#4#5{#1}%
+\def\XINT_expr_func_rrseq   {\XINT_allexpr_rrseq \xintbareeval      \xintthebareeval      }%
+\def\XINT_flexpr_func_rrseq {\XINT_allexpr_rrseq \xintbarefloateval \xintthebarefloateval }%
+\def\XINT_iiexpr_func_rrseq {\XINT_allexpr_rrseq \xintbareiieval    \xintthebareiieval    }%
+\def\XINT_allexpr_rrseq #1#2#3%
+{%
+    \expandafter\XINT_expr_rrseqx\expandafter #1\expandafter#2\expandafter
+    #3\romannumeral`&&@\XINT_expr_onliteral_seq_a {}%
+}%
+\def\XINT_expr_rrseqx #1#2#3#4#5%
+{%
+    \expandafter\XINT_expr_rrseqy\romannumeral0#1(#5)\expandafter\relax
+    \expandafter{\romannumeral0\xintapply \XINT_expr_lockit
+       {\xintRevWithBraces{\xintCSVtoListNonStripped{\XINT_expr_unlock #3}}}}%
+    #3#4#2%
+}%
+\def\XINT_expr_rrseqy #1#2#3#4#5#6%
+{%
+    \expandafter \XINT_expr_getop
+    \csname .=\XINT_expr_unlock #3%
+    \expandafter\XINT_expr_rrseq:_aa
+                \romannumeral`&&@\XINT_expr_unlock #1!{#6#5\relax !#4}{#2}\endcsname
+}%
+\def\XINT_expr_rrseq:_aa #1{\if +#1\expandafter\XINT_expr_rrseq:_A\else
+                                  \expandafter\XINT_expr_rrseq:_a\fi #1}%
+\catcode`? 3
+\def\XINT_expr_rrseq:_a #1!#2#3{\XINT_expr_rrseq:_b {#3}{#2}#1,^,}%
+\def\XINT_expr_rrseq:_b #1#2#3#4,{%
+     \if ,#3\xint_dothis\XINT_expr_rrseq:_noop\fi
+     \if ^#3\xint_dothis\XINT_expr_rrseq:_end\fi
+     \xint_orthat{\expandafter\XINT_expr_rrseq:_c}\csname.=#3#4\endcsname
+     {#1}{#2}%
+}%
+\def\XINT_expr_rrseq:_noop\csname.=,#1\endcsname #2#3{\XINT_expr_rrseq:_b {#2}{#3}#1,}%
+\def\XINT_expr_rrseq:_end \csname.=^\endcsname #1#2{}%
+\def\XINT_expr_rrseq:_c #1#2#3%
+   {\expandafter\XINT_expr_rrseq:_d\romannumeral`&&@#3#1~#2?{#3}}%
+\def\XINT_expr_rrseq:_d #1{%
+    \if ^#1\xint_dothis\XINT_expr_rrseq:_abort\fi
+    \if ?#1\xint_dothis\XINT_expr_rrseq:_break\fi
+    \if !#1\xint_dothis\XINT_expr_rrseq:_omit\fi
+    \xint_orthat{\XINT_expr_rrseq:_goon #1}%
+}%
+\def\XINT_expr_rrseq:_goon  #1!#2#3~#4?#5{,#1\expandafter\XINT_expr_rrseq:_b\expandafter
+        {\romannumeral0\xinttrim{-1}{\XINT_expr_lockit{#1}#4}}{#5}}%
+\def\XINT_expr_rrseq:_omit  #1!#2#3~{\XINT_expr_rrseq:_b }%
+\def\XINT_expr_rrseq:_abort #1!#2#3~#4?#5#6^,{}%
+\def\XINT_expr_rrseq:_break #1!#2#3~#4?#5#6^,{,#1}%
+\def\XINT_expr_rrseq:_A +#1!#2#3{\XINT_expr_rrseq:_D #1{#3}{#2}}%
+\def\XINT_expr_rrseq:_D #1#2#3%
+   {\expandafter\XINT_expr_rrseq:_E\romannumeral`&&@#3#1~#2?{#3}}%
+\def\XINT_expr_rrseq:_Goon  #1!#2#3~#4?#5%
+   {,#1\expandafter\XINT_expr_rrseq:_D
+       \csname.=\the\numexpr \XINT_expr_unlock#3+\xint_c_i\expandafter\endcsname
+    \expandafter{\romannumeral0\xinttrim{-1}{\XINT_expr_lockit{#1}#4}}{#5}}%
+\def\XINT_expr_rrseq:_Omit  #1!#2#3~%#4?#5%
+    {\expandafter\XINT_expr_rrseq:_D
+            \csname.=\the\numexpr \XINT_expr_unlock#3+\xint_c_i\endcsname}%
+\def\XINT_expr_rrseq:_Abort #1!#2#3~#4?#5{}%
+\def\XINT_expr_rrseq:_Break #1!#2#3~#4?#5{,#1}%
+\def\XINT_expr_rrseq:_E #1{\if #1^\xint_dothis\XINT_expr_rrseq:_Abort\fi
+                         \if #1?\xint_dothis\XINT_expr_rrseq:_Break\fi
+                         \if #1!\xint_dothis\XINT_expr_rrseq:_Omit\fi
+                         \xint_orthat{\XINT_expr_rrseq:_Goon #1}}%
+\def\XINT_expr_func_iterr   {\XINT_allexpr_iterr \xintbareeval      \xintthebareeval      }%
+\def\XINT_flexpr_func_iterr {\XINT_allexpr_iterr \xintbarefloateval \xintthebarefloateval }%
+\def\XINT_iiexpr_func_iterr {\XINT_allexpr_iterr \xintbareiieval    \xintthebareiieval    }%
+\def\XINT_allexpr_iterr #1#2#3%
+{%
+    \expandafter\XINT_expr_iterrx\expandafter #1\expandafter #2\expandafter
+    #3\romannumeral`&&@\XINT_expr_onliteral_seq_a {}%
+}%
+\def\XINT_expr_iterrx #1#2#3#4#5%
+{%
+    \expandafter\XINT_expr_iterry\romannumeral0#1(#5)\expandafter\relax
+    \expandafter{\romannumeral0\xintapply \XINT_expr_lockit
+       {\xintRevWithBraces{\xintCSVtoListNonStripped{\XINT_expr_unlock #3}}}}%
+    #3#4#2%
+}%
+\def\XINT_expr_iterry #1#2#3#4#5#6%
+{%
+    \expandafter \XINT_expr_getop
+    \csname .=%
+    \expandafter\XINT_expr_iterr:_aa
+    \romannumeral`&&@\XINT_expr_unlock #1!{#6#5\relax !#4}{#2}\endcsname
+}%
+\def\XINT_expr_iterr:_aa #1{\if +#1\expandafter\XINT_expr_iterr:_A\else
+                                  \expandafter\XINT_expr_iterr:_a\fi #1}%
+\def\XINT_expr_iterr:_a #1!#2#3{\XINT_expr_iterr:_b {#3}{#2}#1,^,}%
+\def\XINT_expr_iterr:_b #1#2#3#4,{%
+     \if ,#3\xint_dothis\XINT_expr_iterr:_noop\fi
+     \if ^#3\xint_dothis\XINT_expr_iterr:_end\fi
+     \xint_orthat{\expandafter\XINT_expr_iterr:_c}%
+     \csname.=#3#4\endcsname {#1}{#2}%
+}%
+\def\XINT_expr_iterr:_noop\csname.=,#1\endcsname #2#3{\XINT_expr_iterr:_b {#2}{#3}#1,}%
+\def\XINT_expr_iterr:_end \csname.=^\endcsname #1#2%
+   {\expandafter\xint_gobble_i\romannumeral0\xintapplyunbraced
+          {,\XINT_expr:_unlock}{\xintReverseOrder{#1\space}}}%
+\def\XINT_expr_iterr:_c #1#2#3%
+   {\expandafter\XINT_expr_iterr:_d\romannumeral`&&@#3#1~#2?{#3}}%
+\def\XINT_expr_iterr:_d #1{%
+    \if ^#1\xint_dothis\XINT_expr_iterr:_abort\fi
+    \if ?#1\xint_dothis\XINT_expr_iterr:_break\fi
+    \if !#1\xint_dothis\XINT_expr_iterr:_omit\fi
+    \xint_orthat{\XINT_expr_iterr:_goon #1}%
+}%
+\def\XINT_expr_iterr:_goon  #1!#2#3~#4?#5{\expandafter\XINT_expr_iterr:_b\expandafter
+        {\romannumeral0\xinttrim{-1}{\XINT_expr_lockit{#1}#4}}{#5}}%
+\def\XINT_expr_iterr:_omit  #1!#2#3~{\XINT_expr_iterr:_b }%
+\def\XINT_expr_iterr:_abort #1!#2#3~#4?#5#6^,%
+   {\expandafter\xint_gobble_i\romannumeral0\xintapplyunbraced
+          {,\XINT_expr:_unlock}{\xintReverseOrder{#4\space}}}%
+\def\XINT_expr_iterr:_break #1!#2#3~#4?#5#6^,%
+   {\expandafter\xint_gobble_iv\romannumeral0\xintapplyunbraced
+          {,\XINT_expr:_unlock}{\xintReverseOrder{#4\space}},#1}%
+\def\XINT_expr:_unlock #1{\XINT_expr_unlock #1}%
+\def\XINT_expr_iterr:_A +#1!#2#3{\XINT_expr_iterr:_D #1{#3}{#2}}%
+\def\XINT_expr_iterr:_D #1#2#3%
+   {\expandafter\XINT_expr_iterr:_E\romannumeral`&&@#3#1~#2?{#3}}%
+\def\XINT_expr_iterr:_Goon  #1!#2#3~#4?#5%
+   {\expandafter\XINT_expr_iterr:_D
+    \csname.=\the\numexpr \XINT_expr_unlock#3+\xint_c_i\expandafter\endcsname
+    \expandafter{\romannumeral0\xinttrim{-1}{\XINT_expr_lockit{#1}#4}}{#5}}%
+\def\XINT_expr_iterr:_Omit  #1!#2#3~%#4?#5%
+    {\expandafter\XINT_expr_iterr:_D
+     \csname.=\the\numexpr \XINT_expr_unlock#3+\xint_c_i\endcsname}%
+\def\XINT_expr_iterr:_Abort #1!#2#3~#4?#5%
+   {\expandafter\xint_gobble_i\romannumeral0\xintapplyunbraced
+          {,\XINT_expr:_unlock}{\xintReverseOrder{#4\space}}}%
+\def\XINT_expr_iterr:_Break #1!#2#3~#4?#5%
+   {\expandafter\xint_gobble_iv\romannumeral0\xintapplyunbraced
+          {,\XINT_expr:_unlock}{\xintReverseOrder{#4\space}},#1}%
+\def\XINT_expr_iterr:_E #1{\if #1^\xint_dothis\XINT_expr_iterr:_Abort\fi
+                         \if #1?\xint_dothis\XINT_expr_iterr:_Break\fi
+                         \if #1!\xint_dothis\XINT_expr_iterr:_Omit\fi
+                         \xint_orthat{\XINT_expr_iterr:_Goon #1}}%
+\catcode`? 11
+\def\xintANDof:csv #1{\expandafter\XINT_andof:_a\romannumeral`&&@#1,,^}%
+\def\XINT_andof:_a #1{\if ,#1\expandafter\XINT_andof:_e
+                      \else\expandafter\XINT_andof:_c\fi #1}%
+\def\XINT_andof:_c #1,{\xintiiifNotZero {#1}{\XINT_andof:_a}{\XINT_andof:_no}}%
+\def\XINT_andof:_no #1^{0}%
+\def\XINT_andof:_e  #1^{1}% works with empty list
+\def\xintORof:csv #1{\expandafter\XINT_orof:_a\romannumeral`&&@#1,,^}%
+\def\XINT_orof:_a #1{\if ,#1\expandafter\XINT_orof:_e
+                      \else\expandafter\XINT_orof:_c\fi #1}%
+\def\XINT_orof:_c #1,{\xintiiifNotZero{#1}{\XINT_orof:_yes}{\XINT_orof:_a}}%
+\def\XINT_orof:_yes #1^{1}%
+\def\XINT_orof:_e   #1^{0}% works with empty list
+\def\xintXORof:csv #1{\expandafter\XINT_xorof:_a\expandafter 0\romannumeral`&&@#1,,^}%
+\def\XINT_xorof:_a #1#2,{\XINT_xorof:_b #2,#1}%
+\def\XINT_xorof:_b #1{\if ,#1\expandafter\XINT_xorof:_e
+                      \else\expandafter\XINT_xorof:_c\fi #1}%
+\def\XINT_xorof:_c #1,#2%
+           {\xintiiifNotZero {#1}{\if #20\xint_afterfi{\XINT_xorof:_a 1}%
+                                   \else\xint_afterfi{\XINT_xorof:_a 0}\fi}%
+                                  {\XINT_xorof:_a #2}%
+           }%
+\def\XINT_xorof:_e ,#1#2^{#1}% allows empty list (then returns 0)
+\def\XINT_oncsv:_empty  #1,^,#2{#2}%
+\def\XINT_oncsv:_end    ^,#1#2#3#4{#1}%
+\def\XINT_oncsv:_a #1#2#3%
+   {\if ,#3\expandafter\XINT_oncsv:_empty\else\expandafter\XINT_oncsv:_b\fi #1#2#3}%
+\def\XINT_oncsv:_b #1#2#3,%
+   {\expandafter\XINT_oncsv:_c \expandafter{\romannumeral`&&@#2{#3}}#1#2}%
+\def\XINT_oncsv:_c #1#2#3#4,{\expandafter\XINT_oncsv:_d \romannumeral`&&@#4,{#1}#2#3}%
+\def\XINT_oncsv:_d #1%
+   {\if ^#1\expandafter\XINT_oncsv:_end\else\expandafter\XINT_oncsv:_e\fi #1}%
+\def\XINT_oncsv:_e #1,#2#3#4%
+   {\expandafter\XINT_oncsv:_c\expandafter {\romannumeral`&&@#3{#4{#1}}{#2}}#3#4}%
+\def\xintMaxof:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintmax
+                      \expandafter\xint_firstofone\romannumeral`&&@#1,^,{0/1[0]}}%
+\def\xintiiMaxof:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintiimax
+                       \expandafter\xint_firstofone\romannumeral`&&@#1,^,0}%
+\def\xintMinof:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintmin
+                       \expandafter\xint_firstofone\romannumeral`&&@#1,^,{0/1[0]}}%
+\def\xintiiMinof:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintiimin
+                       \expandafter\xint_firstofone\romannumeral`&&@#1,^,0}%
+\def\xintSum:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintadd
+                    \expandafter\xint_firstofone\romannumeral`&&@#1,^,{0/1[0]}}%
+\def\xintiiSum:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintiiadd
+                      \expandafter\xint_firstofone\romannumeral`&&@#1,^,0}%
+\def\xintPrd:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintmul
+                    \expandafter\xint_firstofone\romannumeral`&&@#1,^,{1/1[0]}}%
+\def\xintiiPrd:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintiimul
+                      \expandafter\xint_firstofone\romannumeral`&&@#1,^,1}%
+\def\xintGCDof:csv #1{\expandafter\XINT_gcdof:_a\romannumeral`&&@#1,^,{1/1[0]}}%
+\def\XINT_gcdof:_a #1%
+   {\if ,#1\expandafter\XINT_oncsv:_empty\else\expandafter\XINT_gcdof:_b\fi #1}%
+\def\XINT_gcdof:_b #1,%
+   {\expandafter\XINT_gcdof:_c\romannumeral0\xintiiabs#1\xint:}%
+\def\XINT_gcdof:_c #1\xint:#2,%
+   {\expandafter\XINT_gcdof:_d\romannumeral0\xintiiabs#2\xint:#1\xint:}%
+\def\XINT_gcdof:_d #1%
+   {\if ^#1\expandafter\XINT_gcdof:_end\else\expandafter\XINT_gcdof:_e\fi #1}%
+\def\XINT_gcdof:_e#1#2\xint:#3\xint:
+{%
+    \if0#1\expandafter\XINT_gcdof:_f\fi
+    \expandafter\XINT_gcdof:_e\romannumeral0\xintmod{#3}{#1#2}\xint:#1#2\xint:
+}%
+\def\XINT_gcdof:_f
+    \expandafter\XINT_gcdof:_e\romannumeral0\xintmod#1#2\xint:#3\xint:#4,%
+{%
+    \expandafter\XINT_gcdof:_d\romannumeral0\xintiiabs#4\xint:#1\xint:
+}%
+\def\XINT_gcdof:_end ^\xint:#1\xint:#2{#1}%
+\def\xintLCMof:csv #1{\expandafter\XINT_lcmof:_a\romannumeral`&&@#1,^,{0/1[0]}}%
+\def\XINT_lcmof:_a #1%
+   {\if ,#1\expandafter\XINT_oncsv:_empty\else\expandafter\XINT_lcmof:_b\fi #1}%
+\def\XINT_lcmof:_b #1,%
+   {\expandafter\XINT_lcmof:_c\romannumeral0\xintiiabs\xintRaw{#1}\xint:}%
+\def\XINT_lcmof:_c #1{\if0#1\expandafter\XINT_lcmof:_zero\fi
+                      \expandafter\XINT_lcmof:_d\romannumeral0\XINT_inv #1}%
+\def\XINT_lcmof:_d #1\xint:#2,%
+   {\expandafter\XINT_lcmof:_e\romannumeral0\xintiiabs#2\xint:#1\xint:}%
+\def\XINT_lcmof:_e #1%
+   {\if ^#1\expandafter\XINT_lcmof:_end\else\expandafter\XINT_lcmof:_f\fi #1}%
+\def\XINT_lcmof:_f#1#2\xint:
+{%
+    \if0#1\expandafter\XINT_lcmof:_zero\fi
+    \expandafter\XINT_lcmof:_g\romannumeral0\expandafter\XINT_inv
+    \romannumeral0\xintraw{#1#2}\xint:
+}%
+\def\XINT_lcmof:_g #1#2\xint:#3\xint:
+{%
+    \if0#1\expandafter\XINT_lcmof:_h\fi
+    \expandafter\XINT_lcmof:_g\romannumeral0\xintmod{#3}{#1#2}\xint:#1#2\xint:
+}%
+\def\XINT_lcmof:_h
+    \expandafter\XINT_lcmof:_g\romannumeral0\xintmod#1#2\xint:#3\xint:#4,%
+{%
+    \expandafter\XINT_lcmof:_e\romannumeral0\xintiiabs#4\xint:#1\xint:
+}%
+\def\XINT_lcmof:_zero #1^,#2{0/1[0]}%
+\def\XINT_lcmof:_end ^\xint:#1\xint:#2{\romannumeral0\XINT_inv #1}%
+\def\xintiiGCDof:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintiigcd
+                      \expandafter\xint_firstofone\romannumeral`&&@#1,^,1}%
+\def\xintiiLCMof:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintiilcm
+                      \expandafter\xint_firstofone\romannumeral`&&@#1,^,0}%
+\def\XINTinFloatdigits     {\XINTinFloat    [\XINTdigits]}%
+\def\XINTinFloatSdigits    {\XINTinFloatS   [\XINTdigits]}%
+\def\XINTinFloatSqrtdigits {\XINTinFloatSqrt[\XINTdigits]}%
+\def\XINTinFloatFacdigits  {\XINTinFloatFac [\XINTdigits]}%
+\def\XINTFloatiLogTendigits{\XINTFloatiLogTen[\XINTdigits]}%
+\def\XINTinFloatMaxof:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintmax
+                         \expandafter\XINTinFloatSdigits\romannumeral`&&@#1,^,{0[0]}}%
+\def\XINTinFloatMinof:csv #1{\expandafter\XINT_oncsv:_a\expandafter\xintmin
+                         \expandafter\XINTinFloatSdigits\romannumeral`&&@#1,^,{0[0]}}%
+\def\XINTinFloatSum:csv #1{\expandafter\XINT_oncsv:_a\expandafter\XINTinfloatadd
+                        \expandafter\XINTinFloatSdigits\romannumeral`&&@#1,^,{0[0]}}%
+\def\XINTinFloatPrd:csv #1{\expandafter\XINT_oncsv:_a\expandafter\XINTinfloatmul
+                        \expandafter\XINTinFloatSdigits\romannumeral`&&@#1,^,{1[0]}}%
+\def\XINT:expr:one:and:opt #1,#2,#3!#4#5%
+{%
+    \if\relax#3\relax\expandafter\xint_firstoftwo\else
+                     \expandafter\xint_secondoftwo\fi
+    {#4}{#5[\xintNum{#2}]}{#1}%
+}%
+\def\XINT:expr:tacitzeroifonearg #1,#2,#3!#4#5%
+{%
+    \if\relax#3\relax\expandafter\xint_firstoftwo\else
+                     \expandafter\xint_secondoftwo\fi
+    {#4{0}}{#5{\xintNum{#2}}}{#1}%
+}%
+\def\XINT:iiexpr:tacitzeroifonearg #1,#2,#3!#4%
+{%
+    \if\relax#3\relax\expandafter\xint_firstoftwo\else
+                     \expandafter\xint_secondoftwo\fi
+    {#4{0}}{#4{#2}}{#1}%
+}%
+\def\XINT:expr:totwo #1#2{#1,#2}%
+\def\XINT:expr:two:to:two #1,#2,!#3%
+{%
+    \expandafter\XINT:expr:totwo\romannumeral`&&@#3{#1}{#2}%
+}%
+\let\XINT:flexpr:two:to:two\XINT:expr:two:to:two
+\let\XINT:iiexpr:two:to:two\XINT:expr:two:to:two
+\def\XINT_expr_func_num #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintNum{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_num\XINT_expr_func_num
+\let\XINT_iiexpr_func_num\XINT_expr_func_num
+\def\XINT_expr_func_reduce #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintIrr{\XINT_expr_unlock #3}[0]\endcsname
+}%
+\let\XINT_flexpr_func_reduce\XINT_expr_func_reduce
+\def\XINT_expr_func_preduce #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintPIrr{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_preduce\XINT_expr_func_preduce
+\def\XINT_expr_func_abs #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintAbs{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_abs\XINT_expr_func_abs
+\def\XINT_iiexpr_func_abs #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiAbs{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_sgn #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintSgn{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_sgn\XINT_expr_func_sgn
+\def\XINT_iiexpr_func_sgn #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiSgn{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_frac #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintTFrac{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_flexpr_func_frac #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\XINTinFloatFracdigits{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_floor #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintFloor{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_floor\XINT_expr_func_floor
+\def\XINT_iiexpr_func_floor #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiFloor{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_ceil #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintCeil{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_ceil\XINT_expr_func_ceil
+\def\XINT_iiexpr_func_ceil #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiCeil{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_sqr #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintSqr{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINTinFloatSqr#1{\XINTinFloatMul{#1}{#1}}% revoir apr^^c3^^a8s
+\def\XINT_flexpr_func_sqr #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\XINTinFloatSqr{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_iiexpr_func_sqr #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiSqr{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_? #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiIsNotZero{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_? \XINT_expr_func_?
+\let\XINT_iiexpr_func_? \XINT_expr_func_?
+\def\XINT_expr_func_! #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiIsZero{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_! \XINT_expr_func_!
+\let\XINT_iiexpr_func_! \XINT_expr_func_!
+\def\XINT_expr_func_not #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiIsZero{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_not \XINT_expr_func_not
+\let\XINT_iiexpr_func_not \XINT_expr_func_not
+\def\XINT_expr_func_odd #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintOdd{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_odd\XINT_expr_func_odd
+\def\XINT_iiexpr_func_odd #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiOdd{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_even #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintEven{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_even\XINT_expr_func_even
+\def\XINT_iiexpr_func_even #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiEven{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_isint #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintIsInt{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_flexpr_func_isint #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintFloatIsInt{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_iiexpr_func_isint\XINT_expr_func_isint % ? perhaps rather always 1
+\def\XINT_expr_func_isone #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintIsOne{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_isone\XINT_expr_func_isone
+\def\XINT_iiexpr_func_isone #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiIsOne{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_nuple #1#2#3%
+   {\expandafter #1\expandafter #2\csname.=\XINT_expr_unlock #3\endcsname }%
+\let\XINT_flexpr_func_nuple\XINT_expr_func_nuple
+\let\XINT_iiexpr_func_nuple\XINT_expr_func_nuple
+\def\XINT_expr_func_factorial #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:one:and:opt
+    \romannumeral`&&@\XINT_expr_unlock#3,,!\xintFac\XINTinFloatFac
+    \endcsname
+}%
+\def\XINT_flexpr_func_factorial #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:one:and:opt
+    \romannumeral`&&@\XINT_expr_unlock#3,,!\XINTinFloatFacdigits\XINTinFloatFac
+    \endcsname
+}%
+\def\XINT_iiexpr_func_factorial #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiFac{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_sqrt #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:one:and:opt
+    \romannumeral`&&@\XINT_expr_unlock#3,,!\XINTinFloatSqrtdigits\XINTinFloatSqrt
+    \endcsname
+}%
+\let\XINT_flexpr_func_sqrt\XINT_expr_func_sqrt
+\def\XINT_iiexpr_func_sqrt #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiSqrt{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_iiexpr_func_sqrtr #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiSqrtR{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_inv #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintInv{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_flexpr_func_inv #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\XINTinFloatInv{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_round #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:tacitzeroifonearg
+    \romannumeral`&&@\XINT_expr_unlock #3,,!\xintiRound\xintRound
+    \endcsname
+}%
+\let\XINT_flexpr_func_round\XINT_expr_func_round
+\def\XINT_iiexpr_func_round #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:iiexpr:tacitzeroifonearg
+    \romannumeral`&&@\XINT_expr_unlock #3,,!\xintiRound
+    \endcsname
+}%
+\def\XINT_expr_func_trunc #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:tacitzeroifonearg
+    \romannumeral`&&@\XINT_expr_unlock #3,,!\xintiTrunc\xintTrunc
+    \endcsname
+}%
+\let\XINT_flexpr_func_trunc\XINT_expr_func_trunc
+\def\XINT_iiexpr_func_trunc #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:iiexpr:tacitzeroifonearg
+    \romannumeral`&&@\XINT_expr_unlock #3,,!\xintiTrunc
+    \endcsname
+}%
+\def\XINT_expr_func_float #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:one:and:opt
+    \romannumeral`&&@\XINT_expr_unlock #3,,!\XINTinFloatdigits\XINTinFloat
+    \endcsname
+}%
+\let\XINT_flexpr_func_float\XINT_expr_func_float
+\def\XINT_expr_func_sfloat #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:one:and:opt
+    \romannumeral`&&@\XINT_expr_unlock #3,,!\XINTinFloatSdigits\XINTinFloatS
+    \endcsname
+}%
+\let\XINT_flexpr_func_sfloat\XINT_expr_func_sfloat
+\expandafter\def\csname XINT_expr_func_ilog10\endcsname #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:one:and:opt
+    \romannumeral`&&@\XINT_expr_unlock #3,,!\xintiLogTen\XINTFloatiLogTen
+    \endcsname
+}%
+\expandafter\def\csname XINT_flexpr_func_ilog10\endcsname #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:one:and:opt
+    \romannumeral`&&@\XINT_expr_unlock #3,,!\XINTFloatiLogTendigits\XINTFloatiLogTen
+    \endcsname
+}%
+\expandafter\def\csname XINT_iiexpr_func_ilog10\endcsname #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:one\xintiiLogTen{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_divmod #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:two:to:two
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintDivMod
+    \endcsname
+}%
+\def\XINT_flexpr_func_divmod #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\XINTinFloatDivMod
+    \endcsname
+}%
+\def\XINT_iiexpr_func_divmod #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:two:to:two
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintiiDivMod
+    \endcsname
+}%
+\def\XINT_expr_func_mod #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintMod
+    \endcsname
+}%
+\def\XINT_flexpr_func_mod #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\XINTinFloatMod
+    \endcsname
+}%
+\def\XINT_iiexpr_func_mod #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintiiMod
+    \endcsname
+}%
+\def\XINT_expr_func_binomial #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintBinomial
+    \endcsname
+}%
+\def\XINT_flexpr_func_binomial #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\XINTinFloatBinomial
+    \endcsname
+}%
+\def\XINT_iiexpr_func_binomial #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintiiBinomial
+    \endcsname
+}%
+\def\XINT_expr_func_pfactorial #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintPFactorial
+    \endcsname
+}%
+\def\XINT_flexpr_func_pfactorial #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\XINTinFloatPFactorial
+    \endcsname
+}%
+\def\XINT_iiexpr_func_pfactorial #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintiiPFactorial
+    \endcsname
+}%
+\def\XINT_expr_func_randrange #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:expr:randrange
+    \romannumeral`&&@\XINT_expr_unlock #3,,!%
+    \endcsname
+}%
+\let\XINT_flexpr_func_randrange\XINT_expr_func_randrange
+\def\XINT_iiexpr_func_randrange #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:iiexpr:randrange
+    \romannumeral`&&@\XINT_expr_unlock #3,,!%
+    \endcsname
+}%
+\def\XINT:expr:randrange #1,#2,#3!%
+{%
+    \if\relax#3\relax\expandafter\xint_firstoftwo\else
+                     \expandafter\xint_secondoftwo\fi
+    {\xintiiRandRange{\XINT:NEhook:one\xintNum{#1}}}%
+    {\xintiiRandRangeAtoB{\XINT:NEhook:one\xintNum{#1}}%
+                         {\XINT:NEhook:one\xintNum{#2}}}%
+}%
+\def\XINT:iiexpr:randrange #1,#2,#3!%
+{%
+    \if\relax#3\relax\expandafter\xint_firstoftwo\else
+                     \expandafter\xint_secondoftwo\fi
+    {\xintiiRandRange{#1}}{\xintiiRandRangeAtoB{#1}{#2}}%
+}%
+\def\XINT_expr_func_quo #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintiQuo
+    \endcsname
+}%
+\let\XINT_flexpr_func_quo\XINT_expr_func_quo
+\def\XINT_iiexpr_func_quo #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintiiQuo
+    \endcsname
+}%
+\def\XINT_expr_func_rem #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintiRem
+    \endcsname
+}%
+\let\XINT_flexpr_func_rem\XINT_expr_func_rem
+\def\XINT_iiexpr_func_rem #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\XINT:NEhook:twosp
+    \romannumeral`&&@\XINT_expr_unlock #3,!\xintiiRem
+    \endcsname
+}%
+\def\XINT_expr_func_gcd #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintGCDof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_gcd\XINT_expr_func_gcd
+\def\XINT_iiexpr_func_gcd #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintiiGCDof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_lcm #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintLCMof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_lcm\XINT_expr_func_lcm
+\def\XINT_iiexpr_func_lcm #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintiiLCMof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_max #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintMaxof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_iiexpr_func_max #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintiiMaxof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_flexpr_func_max #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\XINTinFloatMaxof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_min #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintMinof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_iiexpr_func_min #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintiiMinof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_flexpr_func_min #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\XINTinFloatMinof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\expandafter
+\def\csname XINT_expr_func_+\endcsname #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintSum:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\expandafter
+\def\csname XINT_flexpr_func_+\endcsname #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\XINTinFloatSum:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\expandafter
+\def\csname XINT_iiexpr_func_+\endcsname #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintiiSum:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\expandafter
+\def\csname XINT_expr_func_*\endcsname #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintPrd:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\expandafter
+\def\csname XINT_flexpr_func_*\endcsname #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\XINTinFloatPrd:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\expandafter
+\def\csname XINT_iiexpr_func_*\endcsname #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintiiPrd:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\def\XINT_expr_func_all #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintANDof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_all\XINT_expr_func_all
+\let\XINT_iiexpr_func_all\XINT_expr_func_all
+\def\XINT_expr_func_any #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintORof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_any\XINT_expr_func_any
+\let\XINT_iiexpr_func_any\XINT_expr_func_any
+\def\XINT_expr_func_xor #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintXORof:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_xor\XINT_expr_func_xor
+\let\XINT_iiexpr_func_xor\XINT_expr_func_xor
+\def\XINT_expr_func_len #1#2#3%
+{%
+    \expandafter#1\expandafter#2\csname.=%
+    \XINT:NEhook:csv\xintLength:f:csv{\XINT_expr_unlock#3}\endcsname
+}%
+\let\XINT_flexpr_func_len \XINT_expr_func_len
+\let\XINT_iiexpr_func_len \XINT_expr_func_len
+\def\XINT_expr_func_first #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintFirstItem:f:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_first\XINT_expr_func_first
+\let\XINT_iiexpr_func_first\XINT_expr_func_first
+\def\XINT_expr_func_last #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintLastItem:f:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_last\XINT_expr_func_last
+\let\XINT_iiexpr_func_last\XINT_expr_func_last
+\def\XINT_expr_func_reversed #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \XINT:NEhook:csv\xintReverse:f:csv{\XINT_expr_unlock #3}\endcsname
+}%
+\let\XINT_flexpr_func_reversed\XINT_expr_func_reversed
+\let\XINT_iiexpr_func_reversed\XINT_expr_func_reversed
+\def\xintiiifNotZero: #1,#2,#3,{\xintiiifNotZero{#1}{#2}{#3}}%
+\def\XINT_expr_func_if #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\xintiiifNotZero:%
+    \romannumeral`&&@\XINT_expr_unlock #3,\endcsname
+}%
+\let\XINT_flexpr_func_if\XINT_expr_func_if
+\let\XINT_iiexpr_func_if\XINT_expr_func_if
+\def\xintifInt: #1,#2,#3,{\xintifInt{#1}{#2}{#3}}%
+\def\XINT_expr_func_ifint #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\xintifInt:%
+    \romannumeral`&&@\XINT_expr_unlock #3,\endcsname
+}%
+\let\XINT_iiexpr_func_ifint\XINT_expr_func_ifint
+\def\xintifFloatInt: #1,#2,#3,{\xintifFloatInt{#1}{#2}{#3}}%
+\def\XINT_flexpr_func_ifint #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\xintifFloatInt:%
+    \romannumeral`&&@\XINT_expr_unlock #3,\endcsname
+}%
+\def\xintifOne: #1,#2,#3,{\xintifOne{#1}{#2}{#3}}%
+\def\XINT_expr_func_ifone #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\xintifOne:%
+    \romannumeral`&&@\XINT_expr_unlock #3,\endcsname
+}%
+\let\XINT_flexpr_func_ifone\XINT_expr_func_ifone
+\def\xintiiifOne: #1,#2,#3,{\xintiiifOne{#1}{#2}{#3}}%
+\def\XINT_iiexpr_func_ifone #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\xintiiifOne:%
+    \romannumeral`&&@\XINT_expr_unlock #3,\endcsname
+}%
+\def\xintiiifSgn: #1,#2,#3,#4,{\xintiiifSgn{#1}{#2}{#3}{#4}}%
+\def\XINT_expr_func_ifsgn #1#2#3%
+{%
+    \expandafter #1\expandafter #2\csname.=%
+    \expandafter\xintiiifSgn:%
+    \romannumeral`&&@\XINT_expr_unlock #3,\endcsname
+}%
+\let\XINT_flexpr_func_ifsgn\XINT_expr_func_ifsgn
+\let\XINT_iiexpr_func_ifsgn\XINT_expr_func_ifsgn
+\def\xintSeqB:f:csv #1#2%
+   {\expandafter\XINT_seqb:f:csv \expandafter{\romannumeral0\xintraw{#2}}{#1}}%
+\def\XINT_seqb:f:csv #1#2{\expandafter\XINT_seqb:f:csv_a\romannumeral`&&@#2#1!}%
+\def\XINT_seqb:f:csv_a #1#2;#3;#4!{%
+   \expandafter\xint_gobble_i\romannumeral`&&@%
+   \xintifCmp {#3}{#4}\XINT_seqb:f:csv_bl\XINT_seqb:f:csv_be\XINT_seqb:f:csv_bg
+   #1{#3}{#4}{}{#2}}%
+\def\XINT_seqb:f:csv_be #1#2#3#4#5{,#2}%
+\def\XINT_seqb:f:csv_bl #1{\if #1p\expandafter\XINT_seqb:f:csv_pa\else
+                                  \xint_afterfi{\expandafter,\xint_gobble_iv}\fi }%
+\def\XINT_seqb:f:csv_pa #1#2#3#4{\expandafter\XINT_seqb:f:csv_p\expandafter
+                                 {\romannumeral0\xintadd{#4}{#1}}{#2}{#3,#1}{#4}}%
+\def\XINT_seqb:f:csv_p #1#2%
+{%
+   \xintifCmp {#1}{#2}\XINT_seqb:f:csv_pa\XINT_seqb:f:csv_pb\XINT_seqb:f:csv_pc
+   {#1}{#2}%
+}%
+\def\XINT_seqb:f:csv_pb #1#2#3#4{#3,#1}%
+\def\XINT_seqb:f:csv_pc #1#2#3#4{#3}%
+\def\XINT_seqb:f:csv_bg #1{\if #1n\expandafter\XINT_seqb:f:csv_na\else
+                                  \xint_afterfi{\expandafter,\xint_gobble_iv}\fi }%
+\def\XINT_seqb:f:csv_na #1#2#3#4{\expandafter\XINT_seqb:f:csv_n\expandafter
+                                 {\romannumeral0\xintadd{#4}{#1}}{#2}{#3,#1}{#4}}%
+\def\XINT_seqb:f:csv_n #1#2%
+{%
+   \xintifCmp {#1}{#2}\XINT_seqb:f:csv_nc\XINT_seqb:f:csv_nb\XINT_seqb:f:csv_na
+   {#1}{#2}%
+}%
+\def\XINT_seqb:f:csv_nb #1#2#3#4{#3,#1}%
+\def\XINT_seqb:f:csv_nc #1#2#3#4{#3}%
+\def\xintiiSeqB:f:csv #1#2%
+   {\expandafter\XINT_iiseqb:f:csv \expandafter{\romannumeral`&&@#2}{#1}}%
+\def\XINT_iiseqb:f:csv #1#2{\expandafter\XINT_iiseqb:f:csv_a\romannumeral`&&@#2#1!}%
+\def\XINT_iiseqb:f:csv_a #1#2;#3;#4!{%
+   \expandafter\xint_gobble_i\romannumeral`&&@%
+   \xintSgnFork{\XINT_Cmp {#3}{#4}}%
+                 \XINT_iiseqb:f:csv_bl\XINT_seqb:f:csv_be\XINT_iiseqb:f:csv_bg
+   #1{#3}{#4}{}{#2}}%
+\def\XINT_iiseqb:f:csv_bl #1{\if #1p\expandafter\XINT_iiseqb:f:csv_pa\else
+                                  \xint_afterfi{\expandafter,\xint_gobble_iv}\fi }%
+\def\XINT_iiseqb:f:csv_pa #1#2#3#4{\expandafter\XINT_iiseqb:f:csv_p\expandafter
+                               {\romannumeral0\xintiiadd{#4}{#1}}{#2}{#3,#1}{#4}}%
+\def\XINT_iiseqb:f:csv_p #1#2%
+{%
+    \xintSgnFork{\XINT_Cmp {#1}{#2}}%
+    \XINT_iiseqb:f:csv_pa\XINT_iiseqb:f:csv_pb\XINT_iiseqb:f:csv_pc {#1}{#2}%
+}%
+\def\XINT_iiseqb:f:csv_pb #1#2#3#4{#3,#1}%
+\def\XINT_iiseqb:f:csv_pc #1#2#3#4{#3}%
+\def\XINT_iiseqb:f:csv_bg #1{\if #1n\expandafter\XINT_iiseqb:f:csv_na\else
+                                  \xint_afterfi{\expandafter,\xint_gobble_iv}\fi }%
+\def\XINT_iiseqb:f:csv_na #1#2#3#4{\expandafter\XINT_iiseqb:f:csv_n\expandafter
+                               {\romannumeral0\xintiiadd{#4}{#1}}{#2}{#3,#1}{#4}}%
+\def\XINT_iiseqb:f:csv_n #1#2%
+{%
+    \xintSgnFork{\XINT_Cmp {#1}{#2}}%
+    \XINT_seqb:f:csv_nc\XINT_seqb:f:csv_nb\XINT_iiseqb:f:csv_na {#1}{#2}%
+}%
+\def\XINTinFloatSeqB:f:csv #1#2{\expandafter\XINT_flseqb:f:csv \expandafter
+   {\romannumeral0\XINTinfloat [\XINTdigits]{#2}}{#1}}%
+\def\XINT_flseqb:f:csv #1#2{\expandafter\XINT_flseqb:f:csv_a\romannumeral`&&@#2#1!}%
+\def\XINT_flseqb:f:csv_a #1#2;#3;#4!{%
+   \expandafter\xint_gobble_i\romannumeral`&&@%
+   \xintifCmp {#3}{#4}\XINT_flseqb:f:csv_bl\XINT_seqb:f:csv_be\XINT_flseqb:f:csv_bg
+   #1{#3}{#4}{}{#2}}%
+\def\XINT_flseqb:f:csv_bl #1{\if #1p\expandafter\XINT_flseqb:f:csv_pa\else
+                                  \xint_afterfi{\expandafter,\xint_gobble_iv}\fi }%
+\def\XINT_flseqb:f:csv_pa #1#2#3#4{\expandafter\XINT_flseqb:f:csv_p\expandafter
+                          {\romannumeral0\XINTinfloatadd{#4}{#1}}{#2}{#3,#1}{#4}}%
+\def\XINT_flseqb:f:csv_p #1#2%
+{%
+    \xintifCmp {#1}{#2}%
+    \XINT_flseqb:f:csv_pa\XINT_flseqb:f:csv_pb\XINT_flseqb:f:csv_pc {#1}{#2}%
+}%
+\def\XINT_flseqb:f:csv_pb #1#2#3#4{#3,#1}%
+\def\XINT_flseqb:f:csv_pc #1#2#3#4{#3}%
+\def\XINT_flseqb:f:csv_bg #1{\if #1n\expandafter\XINT_flseqb:f:csv_na\else
+                                  \xint_afterfi{\expandafter,\xint_gobble_iv}\fi }%
+\def\XINT_flseqb:f:csv_na #1#2#3#4{\expandafter\XINT_flseqb:f:csv_n\expandafter
+                          {\romannumeral0\XINTinfloatadd{#4}{#1}}{#2}{#3,#1}{#4}}%
+\def\XINT_flseqb:f:csv_n #1#2%
+{%
+    \xintifCmp {#1}{#2}%
+    \XINT_seqb:f:csv_nc\XINT_seqb:f:csv_nb\XINT_flseqb:f:csv_na {#1}{#2}%
+}%
+\def\XINT_tmpa #1#2#3#4%
+{%
+  \def #1##1(##2)##3=##4;{%
+   \edef\XINT_deffunc_tmpa {##1}%
+   \edef\XINT_deffunc_tmpa {\xint_zapspaces_o \XINT_deffunc_tmpa}%
+   \def\XINT_deffunc_tmpb {0}%
+   \def\XINT_deffunc_tmpc {(##4)}%
+   \edef\XINT_deffunc_tmpd {##2}%
+   \ifnum\xintLength:f:csv{\XINT_deffunc_tmpd}>\xint_c_
+     \xintFor ####1 in {\XINT_deffunc_tmpd}\do
+      {\edef\XINT_deffunc_tmpb {\the\numexpr\XINT_deffunc_tmpb+\xint_c_i}%
+       \edef\XINT_deffunc_tmpc {subs(\unexpanded\expandafter{\XINT_deffunc_tmpc},%
+                             ####1=################\XINT_deffunc_tmpb)}%
+      }%
+   \fi
+   \ifnum\XINT_deffunc_tmpb=\xint_c_
+    \expandafter\XINT_expr_defuserfunc_none\csname
+   \else
+   \expandafter\XINT_expr_defuserfunc\csname
+   \fi
+      XINT_#2_func_\XINT_deffunc_tmpa\expandafter\endcsname
+     \expandafter{\XINT_deffunc_tmpa}{#2}%
+   \expandafter#3\csname XINT_#2_userfunc_\XINT_deffunc_tmpa\endcsname
+                              [\XINT_deffunc_tmpb]{\XINT_deffunc_tmpc}%
+   \ifxintverbose\xintMessage {xintexpr}{Info}
+        {Function \XINT_deffunc_tmpa\space for \string\xint #4 parser
+         associated to \string\XINT_#2_userfunc_\XINT_deffunc_tmpa\space
+         with \ifxintglobaldefs global \fi meaning \expandafter\meaning
+         \csname XINT_#2_userfunc_\XINT_deffunc_tmpa\endcsname}%
+   \fi
+   \xintexprRestoreCatcodes
+  }%
+}%
+\def\xintdeffunc      {\xintexprSafeCatcodes\xintdeffunc_a}%
+\def\xintdefiifunc    {\xintexprSafeCatcodes\xintdefiifunc_a}%
+\def\xintdeffloatfunc {\xintexprSafeCatcodes\xintdeffloatfunc_a}%
+\XINT_tmpa\xintdeffunc_a     {expr}  \XINT_NewFunc     {expr}%
+\XINT_tmpa\xintdefiifunc_a   {iiexpr}\XINT_NewIIFunc   {iiexpr}%
+\XINT_tmpa\xintdeffloatfunc_a{flexpr}\XINT_NewFloatFunc{floatexpr}%
+\def\XINT_expr_defuserfunc #1#2#3%
+{%
+    \XINT_global
+    \def #1##1##2##3{\expandafter ##1\expandafter ##2%
+     \csname.=\XINT:expr:userfunc{#3}{#2}{\XINT_expr_unlock ##3}\endcsname
+    }%
+}%
+\def\XINT:expr:userfunc #1#2#3%
+{%
+    \csname XINT_#1_userfunc_#2\expandafter\endcsname
+       \romannumeral0\xintcsvtolistnonstripped{#3}%
+}%
+\def\XINT_expr_defuserfunc_none #1#2#3%
+{%
+    \XINT_global
+    \def #1##1##2##3{\expandafter ##1\expandafter ##2%
+     \csname.=\XINT:expr:userfunc:none{#3}{#2}\endcsname
+    }%
+}%
+\def\XINT:expr:userfunc:none #1#2{\csname XINT_#1_userfunc_#2\endcsname}%
+\def\XINT_tmpa #1#2#3#4%
+{%
+  \def #1##1(##2)##3=##4;{%
+   \edef\XINT_defefunc_tmpa {##1}%
+   \edef\XINT_defefunc_tmpa {\xint_zapspaces_o \XINT_defefunc_tmpa}%
+   \def\XINT_defefunc_tmpb {0}%
+   \def\XINT_defefunc_tmpc {(##4)}%
+   \edef\XINT_defefunc_tmpd {##2}%
+   \ifnum\xintLength:f:csv{\XINT_defefunc_tmpd}>\xint_c_
+     \xintFor ####1 in {\XINT_defefunc_tmpd}\do
+      {\edef\XINT_defefunc_tmpb {\the\numexpr\XINT_defefunc_tmpb+\xint_c_i}%
+       \edef\XINT_defefunc_tmpc {subs(\unexpanded\expandafter{\XINT_defefunc_tmpc},%
+                             ####1=################\XINT_defefunc_tmpb)}%
+      }%
+   \fi
+   \expandafter#3\csname XINT_#2_userefunc_\XINT_defefunc_tmpa\endcsname
+                              [\XINT_defefunc_tmpb]{\XINT_defefunc_tmpc}%
+   \edef\XINT_defefunc_tmpd{\xintLength:f:csv
+       {\expandafter\meaning\csname
+         XINT_#2_userfunc_\XINT_defefunc_tmpa\endcsname}}%
+   \ifcase\XINT_defefunc_tmpb\space
+    \expandafter\XINT_expr_defuserefunc_none\csname
+   \or
+        \expandafter\XINT_expr_defuserefunc_one\csname
+   \or
+        \expandafter\XINT_expr_defuserefunc_two\csname
+   \else
+        \expandafter\XINT_expr_defuserefunc_many\csname
+   \fi
+      XINT_#2_func_\XINT_defefunc_tmpa\expandafter\endcsname
+     \expandafter{\XINT_defefunc_tmpa}{#2}%
+   \ifxintverbose\xintMessage {xintexpr}{Info}
+        {Function \XINT_defefunc_tmpa\space for \string\xint #4 parser
+         associated to \string\XINT_#2_userefunc_\XINT_defefunc_tmpa\space
+         with \ifxintglobaldefs global \fi meaning \expandafter\meaning
+         \csname XINT_#2_userefunc_\XINT_defefunc_tmpa\endcsname}%
+   \fi
+   \xintexprRestoreCatcodes
+  }%
+}%
+\def\xintdefefunc      {\xintexprSafeCatcodes\xintdefefunc_a}%
+\def\xintdefiiefunc    {\xintexprSafeCatcodes\xintdefiiefunc_a}%
+\def\xintdeffloatefunc {\xintexprSafeCatcodes\xintdeffloatefunc_a}%
+\XINT_tmpa\xintdefefunc_a     {expr}  \XINT_NewFunc     {expr}%
+\XINT_tmpa\xintdefiiefunc_a   {iiexpr}\XINT_NewIIFunc   {iiexpr}%
+\XINT_tmpa\xintdeffloatefunc_a{flexpr}\XINT_NewFloatFunc{floatexpr}%
+\def\XINT_expr_defuserefunc_none #1#2#3%
+{%
+    \expandafter\XINT_expr_defuserefunc_none_a
+    \csname XINT_#3_userefunc_#2\endcsname
+}%
+\def\XINT_expr_defuserefunc_none_a #1#2%
+{%
+    \XINT_global
+    \def #2##1##2##3{\expandafter ##1\expandafter ##2\csname.=#1\endcsname}%
+}%
+\def\XINT_expr_defuserefunc_one #1#2#3%
+{%
+    \expandafter\XINT_expr_defuserefunc_one_a
+    \csname XINT_#3_userefunc_#2\expandafter\endcsname
+    \csname XINT_#3_userefunc:f_#2\endcsname #1{#2}{#3}%
+}%
+\def\XINT_expr_defuserefunc_one_a #1#2#3#4#5%
+{%
+    \XINT_global
+    \def #2##1{\expandafter#1\expandafter{\romannumeral`&&@##1}}%
+    \XINT_global
+    \def #3##1##2##3%
+    {%
+       \expandafter ##1\expandafter ##2%
+       \csname.=\XINT:expr:userefunc:one{#5}{#4}{\XINT_expr_unlock##3}\endcsname
+    }%
+}%
+\def\XINT:expr:userefunc:one #1#2#3%
+{%
+    \csname XINT_#1_userefunc_#2\expandafter\endcsname\expandafter
+    {\romannumeral`&&@#3}%
+}%
+\def\XINT_expr_defuserefunc_two #1#2#3%
+{%
+    \expandafter\XINT_expr_defuserefunc_two_a
+    \csname XINT_#3_userefunc:f_#2\endcsname #1{#2}{#3}%
+}%
+\def\XINT_expr_defuserefunc_two_a #1#2#3#4%
+{%
+    \XINT_global
+    \def #1##1##2{\xintExpandArgs{XINT_#4_userefunc_#3}{{##1}{##2}}}%
+    \XINT_global
+    \def #2##1##2##3%
+    {%
+       \expandafter ##1\expandafter ##2%
+       \csname.=\XINT:expr:userefunc:two{#4}{#3}{\XINT_expr_unlock##3}\endcsname
+    }%
+}%
+\def\XINT:expr:userefunc:two #1#2#3%
+{%
+    \expandafter\XINT:expr:userefunc:two_a
+    \csname XINT_#1_userefunc_#2\expandafter\endcsname
+    \romannumeral`&&@#3,%
+}%
+\def\XINT:expr:userefunc:two_a #1#2,#3,{#1{#2}{#3}}%
+\def\XINT_expr_defuserefunc_many #1#2#3%
+{%
+    \XINT_global
+    \def #1##1##2##3%
+    {%
+         \expandafter ##1\expandafter ##2%
+         \csname.=\XINT:expr:userefunc{#3}{#2}{\XINT_expr_unlock##3}\endcsname
+    }%
+}%
+\def\XINT:expr:userefunc #1#2#3%
+{%
+    \csname XINT_#1_userefunc_#2\expandafter\endcsname
+       \romannumeral0\xintcsvtolistnonstripped{#3}%
+}%
+\def\XINT_tmpa #1{\expandafter\def\csname xintunassign#1func\endcsname ##1{%
+   \edef\XINT_unfunc_tmpa{##1}%
+   \edef\XINT_unfunc_tmpa {\xint_zapspaces_o\XINT_unfunc_tmpa}%
+   \XINT_global\expandafter
+     \let\csname XINT_#1_func_\XINT_unfunc_tmpa\endcsname\xint_undefined
+   \XINT_global\expandafter
+     \let\csname XINT_#1_userfunc_\XINT_unfunc_tmpa\endcsname\xint_undefined
+   \XINT_global\expandafter
+     \let\csname XINT_#1_userefunc_\XINT_unfunc_tmpa\endcsname\xint_undefined
+   \ifxintverbose\xintMessage {xintexpr}{Info}
+    {Function \XINT_unfunc_tmpa\space for \string\xint #1 parser now
+     \ifxintglobaldefs globally \fi undefined.}%
+   \fi}}%
+\XINT_tmpa{expr}\XINT_tmpa{iiexpr}\XINT_tmpa{floatexpr}%
+\def\XINT_expr_wrapit #1{\expandafter\XINT_expr_wrap\csname.=#1\endcsname}%
+\def\xintNewFunction #1#2[#3]#4%
+{%
+  \edef\XINT_newfunc_tmpa {#1}%
+  \edef\XINT_newfunc_tmpa {\xint_zapspaces_o \XINT_newfunc_tmpa}%
+  \def\XINT_newfunc_tmpb ##1##2##3##4##5##6##7##8##9{#4}%
+  \begingroup
+    \ifcase #3\relax
+        \toks0{}%
+    \or \toks0{##1}%
+    \or \toks0{##1##2}%
+    \or \toks0{##1##2##3}%
+    \or \toks0{##1##2##3##4}%
+    \or \toks0{##1##2##3##4##5}%
+    \or \toks0{##1##2##3##4##5##6}%
+    \or \toks0{##1##2##3##4##5##6##7}%
+    \or \toks0{##1##2##3##4##5##6##7##8}%
+    \else \toks0{##1##2##3##4##5##6##7##8##9}%
+    \fi
+    \expandafter
+  \endgroup\expandafter
+  \XINT_global\expandafter
+  \def\csname XINT_expr_macrofunc_\XINT_newfunc_tmpa\expandafter\endcsname
+  \the\toks0\expandafter{\XINT_newfunc_tmpb
+    {\XINT_expr_wrapit{##1}}{\XINT_expr_wrapit{##2}}{\XINT_expr_wrapit{##3}}%
+    {\XINT_expr_wrapit{##4}}{\XINT_expr_wrapit{##5}}{\XINT_expr_wrapit{##6}}%
+    {\XINT_expr_wrapit{##7}}{\XINT_expr_wrapit{##8}}{\XINT_expr_wrapit{##9}}}%
+  \expandafter\XINT_expr_newfunction
+    \csname XINT_expr_func_\XINT_newfunc_tmpa\expandafter\endcsname
+    \expandafter{\XINT_newfunc_tmpa}{eval}\xintbareeval
+  \expandafter\XINT_expr_newfunction
+    \csname XINT_iiexpr_func_\XINT_newfunc_tmpa\expandafter\endcsname
+    \expandafter{\XINT_newfunc_tmpa}{iieval}\xintbareiieval
+  \expandafter\XINT_expr_newfunction
+    \csname XINT_flexpr_func_\XINT_newfunc_tmpa\expandafter\endcsname
+    \expandafter{\XINT_newfunc_tmpa}{floateval}\xintbarefloateval
+  \ifxintverbose
+    \xintMessage {xintexpr}{Info}
+        {Function \XINT_newfunc_tmpa\space for the expression parsers is
+         associated to \string\XINT_expr_macrofunc_\XINT_newfunc_tmpa\space
+         with \ifxintglobaldefs global \fi meaning \expandafter\meaning
+         \csname XINT_expr_macrofunc_\XINT_newfunc_tmpa\endcsname}%
+  \fi
+}%
+\def\XINT_expr_newfunction #1#2#3#4%
+{%
+    \XINT_global
+    \def#1##1##2##3{\expandafter ##1\expandafter ##2\romannumeral0%
+       \XINT:expr:macrofunc{#4}{#3}{#2}{\XINT_expr_unlock##3}}%
+}%
+\def\XINT:expr:macrofunc #1#2#3#4%
+{%
+    #1\csname XINT_expr_macrofunc_#3\expandafter\endcsname
+      \romannumeral0\xintcsvtolistnonstripped{#4}\relax
+}%
+\catcode`~ 12
+\def\XINT:newexpr:macrofunc #1{%
+\def\XINT:newexpr:macrofunc ##1##2##3##4%
+{%
+    \expandafter#1\csname.=~XINT:newexpr:macrofunc:a{##2}{##3}%
+    {\xintCSVtoListNonStripped{##4}}\endcsname
+}%
+}\XINT:newexpr:macrofunc { }%
+\catcode`~ 3
+\def\XINT:newexpr:macrofunc:a #1#2#3%
+{%
+    \expandafter\XINT_expr_unlock\romannumeral0\csname xintbare#1\endcsname
+    \csname XINT_expr_macrofunc_#2\endcsname#3\relax
+}%
+\def\xintApply::csv #1#2%
+   {\expandafter\XINT_applyon::_a\expandafter {\romannumeral`&&@#2}{#1}}%
+\def\XINT_applyon::_a #1#2{\XINT_applyon::_b {#2}{}#1,,}%
+\def\XINT_applyon::_b #1#2#3,{\expandafter\XINT_applyon::_c \romannumeral`&&@#3,{#1}{#2}}%
+\def\XINT_applyon::_c #1{\if #1,\expandafter\XINT_applyon::_end
+                                \else\expandafter\XINT_applyon::_d\fi #1}%
+\def\XINT_applyon::_d #1,#2{\expandafter\XINT_applyon::_e\romannumeral`&&@#2{#1},{#2}}%
+\def\XINT_applyon::_e #1,#2#3{\XINT_applyon::_b {#2}{#3, #1}}%
+\def\XINT_applyon::_end #1,#2#3{\xint_secondoftwo #3}%
+\def\xintApply:::csv #1#2#3%
+   {\expandafter\XINT_applyon:::_a\expandafter{\romannumeral`&&@#2}{#1}{#3}}%
+\def\XINT_applyon:::_a #1#2#3{\XINT_applyon:::_b {#2}{#3}{}#1,,}%
+\def\XINT_applyon:::_b #1#2#3#4,%
+   {\expandafter\XINT_applyon:::_c \romannumeral`&&@#4,{#1}{#2}{#3}}%
+\def\XINT_applyon:::_c #1{\if #1,\expandafter\XINT_applyon:::_end
+                     \else\expandafter\XINT_applyon:::_d\fi #1}%
+\def\XINT_applyon:::_d #1,#2#3%
+   {\expandafter\XINT_applyon:::_e\expandafter
+    {\romannumeral`&&@\xintApply::csv {#2{#1}}{#3}},{#2}{#3}}%
+\def\XINT_applyon:::_e #1,#2#3#4{\XINT_applyon:::_b {#2}{#3}{#4, #1}}%
+\def\XINT_applyon:::_end #1,#2#3#4{\xint_secondoftwo #4}%
+\catcode`~ 12
+\catcode`$ 12 % $
+\def\xint_dfork  #1$#2#3\krof {#2}% $
+\def\xint_ddfork #1$$#2#3\krof {#2}% $$
+\def\XINT:NE:RApply::csv #1#2#3#4%
+   {~xintApply::csv{~expandafter #2~xint_exchangetwo_keepbraces{#4}}{#3}}%
+\def\XINT:NE:LApply::csv #1#2#3{~xintApply::csv{#2{#3}}}%
+\def\XINT:NE:RLApply:::csv #1{~xintApply:::csv}%
+\def\XINT:NE:two#1{\XINT:NE:two_{#1}{\detokenize{#1}}}%
+\def\XINT:NE:two_#1#2#3#4%
+    {\expandafter\XINT:NE:two_a\romannumeral`&&@#4!{#3}{#1}{#2}}%
+\def\XINT:NE:two_a#1#2!#3#4#5%
+    {\expandafter\XINT:NE:two_b\romannumeral`&&@#3!#1{#4}{#5}{#1#2}}%
+\def\XINT:NE:two_b#1#2!#3#4#5{\XINT:NE:two_fork_dd#1#3{#4}{#5}{#1#2}}%
+\def\XINT:NE:two_fork_dd #1#2{%
+    \xint_ddfork
+      #1#2\XINT:NE:RLApply:::csv
+      #1$\XINT:NE:RApply::csv% $
+      $#2\XINT:NE:LApply::csv% $
+      $${\XINT:NE:two_fork_nn #1#2}% $$
+    \krof
+}%
+\def\XINT:NE:two_fork_nn #1#2#3#4{%
+    \if #1##\xint_dothis{#4}\fi
+    \if  #1~\xint_dothis{#4}\fi
+    \if #2##\xint_dothis{#4}\fi
+    \if  #2~\xint_dothis{#4}\fi
+    \xint_orthat{#3}%
+}%
+\def\XINT:NE:twosp#1#2,#3#4,!#5%
+{%
+    \XINT:NE:two_fork_dd#1#3{#5}{\detokenize{#5}}{#1#2}{#3#4}%
+}%
+\def\XINT:NE:one#1#2{\expandafter\XINT:NE:one_a\romannumeral`&&@#2!#1}%
+\def\XINT:NE:one_a#1#2!#3%
+{%
+    \if ###1\xint_dothis {\detokenize{#3}}\fi
+    \if  ~#1\xint_dothis {\detokenize{#3}}\fi
+    \if  $#1\xint_dothis {~xintApply::csv{\detokenize{#3}}}\fi %$
+    \xint_orthat #3{#1#2}%
+}%
+\def\XINT:NE:userfunc #1#2#3%
+   {~xintExpandArgs{XINT_#1_userfunc_#2}{\xintCSVtoListNonStripped{#3}}}%
+\def\XINT:NE:userfunc:none #1#2{~!{XINT_#1_userfunc_#2}}%
+\def\XINT:NE:userefunc:one#1#2#3%
+   {\expandafter\XINT:NE:userefunc:one_a\romannumeral`&&@#3!{#1}{#2}}%
+\def\XINT:NE:userefunc:one_a#1#2!#3#4%
+{%
+    \if ###1\xint_dothis {~!{XINT_#3_userefunc:f_#4}}\fi
+    \if  ~#1\xint_dothis {~!{XINT_#3_userefunc:f_#4}}\fi
+    \if  $#1\xint_dothis {~xintApply::csv~!{XINT_#3_userefunc:f_#4}}\fi %$
+    \xint_orthat {\csname XINT_#3_userefunc_#4\endcsname}%
+    {#1#2}%
+}%
+\def\XINT:NE:twosp#1#2,#3#4,!#5%
+{%
+    \XINT:NE:two_fork_dd#1#3{#5}{\detokenize{#5}}{#1#2}{#3#4}%
+}%
+\def\XINT:NE:userefunc:two#1#2#3%
+    {\expandafter\XINT:NE:userefunc:two_a\romannumeral`&&@#3,!{#1}{#2}}%
+\def\XINT:NE:userefunc:two_a#1#2,#3#4,!#5#6%
+{%
+    \XINT:NE:two_fork_dd#1#3{\csname XINT_#5_userefunc_#6\endcsname}%
+                            {~!{XINT_#5_userefunc:f_#6}}%
+    {#1#2}{#3#4}%
+}%
+\def\XINT:NE:userefunc#1#2#3%
+{%
+    \expandafter\XINT:NE:userefunc_a\romannumeral`&&@#3,2,3,4,5,6,7,8,9,!%
+    {#1}{#2}{#3}%
+}%
+\def\XINT:NE:userefunc_a#1#2,#3#4,#5#6,#7#8,#9%
+{%
+    \XINT:NE:userefunc_b{#1#3#5#7#9}%
+}%
+\def\XINT:NE:userefunc_b#1#2,#3#4,#5#6,#7#8,#9%
+{%
+    \XINT:NE:userefunc_c{#1#3#5#7#9}%
+}%
+\def\XINT:NE:iftilde  #1~#2#3\relax{\unless\if !#21\fi}%
+\def\XINT:NE:ifdollar #1$#2#3\relax{\unless\if !#21\fi}%$
+\def\XINT:NE:ifhash#1{%
+\def\XINT:NE:ifhash##1#1##2##3\relax{\unless\if !##21\fi}%
+}\expandafter\XINT:NE:ifhash\string#%
+\def\XINT:NE:userefunc_c#1#2!%
+{%
+    \if0\XINT:NE:iftilde #1~!\relax\XINT:NE:ifdollar #1$!\relax%$
+        \XINT:NE:ifhash #1##!\relax 0%
+      \expandafter\XINT:NE:userefunc_x
+    \else
+      \expandafter\XINT:NE:userefunc_p
+    \fi
+}%
+\def\XINT:NE:userefunc_x#1#2%
+   {\csname XINT_#1_userefunc_#2\expandafter\endcsname
+    \romannumeral0\xintcsvtolistnonstripped}%
+\def\XINT:NE:userefunc_p #1#2#3%
+   {~xintExpandArgs{XINT_#1_userefunc_#2}{\xintCSVtoListNonStripped{#3}}}%
+\def\XINT:NE:oneopt#1[#2]#3%
+   {\expandafter\XINT:NE:oneopt_a\romannumeral`&&@#3!{#2}#1}%
+\def\XINT:NE:oneopt_a#1#2!#3#4%
+   {\expandafter\XINT:NE:oneopt_b\romannumeral`&&@#3!#1#4{#1#2}}%
+\def\XINT:NE:oneopt_b#1#2!#3#4%
+   {\expandafter\XINT:NE:oneopt_fork#1#3#4{#1#2}}%
+\def\XINT:NE:oneopt_fork#1#2#3#4{%
+    \if1\if###11\else\if~#11\else\if###21\else\if~#21\else0\fi\fi\fi\fi
+           \xint_dothis {\detokenize{#3}[#4]}\fi
+    \if $#2\xint_dothis {~xintApply::csv{\detokenize{#3}[#4]}}\fi %$
+    \xint_orthat{#3[#4]}%
+}% pas compl^^c3^^a9tement g^^c3^^a9n^^c3^^a9ral, mais bon
+\def\XINT:NE:csv #1{\detokenize{#1}}% radicalement fain^^c3^^a9ant
+\def\XINT:newexpr:one:and:opt #1,#2,#3!#4#5%
+{%
+    \if\relax#3\relax\expandafter\xint_firstoftwo\else
+                     \expandafter\xint_secondoftwo\fi
+    {\XINT:NE:one#4}{\XINT:NE:oneopt#5[\XINT:NE:one\xintNum{#2}]}{#1}%
+}%
+\def\XINT:newexpr:tacitzeroifonearg #1,#2,#3!#4#5%
+{%
+    \if\relax#3\relax\expandafter\xint_firstoftwo\else
+                     \expandafter\xint_secondoftwo\fi
+    {\XINT:NE:two#4{0}}{\XINT:NE:two#5{\XINT:NE:one\xintNum{#2}}}{#1}%
+}%
+\def\XINT:newiiexpr:tacitzeroifonearg #1,#2,#3!#4%
+{%
+    \if\relax#3\relax\expandafter\xint_firstoftwo\else
+                     \expandafter\xint_secondoftwo\fi
+    {\XINT:NE:two#4{0}}{\XINT:NE:two#4{#2}}{#1}%
+}%
+\def\XINT:newexpr:insertdollar~{$noexpand$}%
+\def\XINT:newexpr:two:to:two #1,#2,!#3%
+{%
+    \XINT:NE:two_
+    {\expandafter\XINT:expr:totwo\romannumeral`&&@#3}%
+    {$noexpand$expandafter~XINT:expr:totwo~romannumeral-`0\detokenize{#3}}%
+    {#1}{#2}%
+}%
+\def\XINT:newflexpr:two:to:two #1,#2,!#3%
+{%
+    \XINT:NE:two_
+    {#3}%
+    {\expandafter\XINT:newexpr:insertdollar\detokenize{#3}}%
+    {#1}{#2}%
+}%
+\def\xintiiifNotZeroNE:#1#2,#3,#4,%
+{%
+    \if1\if###11\else\if~#11\else\if$#11\else0%$
+        \fi\fi\fi
+    \xint_dothis{~xintiiifNotZero}\fi
+    \xint_orthat\xintiiifNotZero
+    {#1#2}{#3}{#4}%
+}%
+\def\xintifIntNE:#1#2,#3,#4,%
+{%
+    \if1\if###11\else\if~#11\else\if$#11\else0%$
+        \fi\fi\fi
+    \xint_dothis{~xintifInt}\fi
+    \xint_orthat\xintifInt
+    {#1#2}{#3}{#4}%
+}%
+\def\xintifFloatIntNE:#1#2,#3,#4,%
+{%
+    \if1\if###11\else\if~#11\else\if$#11\else0%$
+        \fi\fi\fi
+    \xint_dothis{~xintifFloatInt}\fi
+    \xint_orthat\xintifFloatInt
+    {#1#2}{#3}{#4}%
+}%
+\def\xintiiifOneNE:#1#2,#3,#4,%
+{%
+    \if1\if###11\else\if~#11\else\if$#11\else0%$
+        \fi\fi\fi
+    \xint_dothis{~xintiiifOne}\fi
+    \xint_orthat\xintiiifOne
+    {#1#2}{#3}{#4}%
+}%
+\def\xintifOneNE:#1#2,#3,#4,%
+{%
+    \if1\if###11\else\if~#11\else\if$#11\else0%$
+        \fi\fi\fi
+    \xint_dothis{~xintifOne}\fi
+    \xint_orthat\xintifOne
+    {#1#2}{#3}{#4}%
+}%
+\def\xintiiifSgnNE:#1#2,#3,#4,#5,%
+{%
+    \if1\if###11\else\if~#11\else\if$#11\else0%$
+        \fi\fi\fi
+    \xint_dothis{~xintiiifSgn}\fi
+    \xint_orthat\xintiiifSgn
+    {#1#2}{#3}{#4}{#5}%
+}%
+\def\XINT_expr_redefinemacros {%
+  \let\XINT:NEhook:one  \XINT:NE:one
+  \let\XINT:NEhook:two  \XINT:NE:two
+  \let\XINT:NEhook:csv  \XINT:NE:csv
+  \let\XINT:NEhook:twosp\XINT:NE:twosp
+  \let\XINT:expr:userfunc      \XINT:NE:userfunc
+  \let\XINT:expr:userfunc:none \XINT:NE:userfunc:none
+  \let\XINT:expr:userefunc     \XINT:NE:userefunc
+  \let\XINT:expr:userefunc:one \XINT:NE:userefunc:one
+  \let\XINT:expr:userefunc:two \XINT:NE:userefunc:two
+  \let\XINT:expr:macrofunc     \XINT:newexpr:macrofunc
+  \let\XINT:expr:one:and:opt         \XINT:newexpr:one:and:opt
+  \let\XINT:expr:one:or:two:nums     \XINT:newexpr:one:or:two:nums
+  \let\XINT:iiexpr:one:or:two:       \XINT:newiiexpr:one:or:two:
+  \let\XINT:expr:tacitzeroifonearg   \XINT:newexpr:tacitzeroifonearg
+  \let\XINT:iiexpr:tacitzeroifonearg \XINT:newiiexpr:tacitzeroifonearg
+  \let\XINT:expr:two:to:two          \XINT:newexpr:two:to:two
+  \let\XINT:flexpr:two:to:two        \XINT:newflexpr:two:to:two
+  \let\xintiiifNotZero:       \xintiiifNotZeroNE:
+  \let\xintifInt:             \xintifIntNE:
+  \let\xintifFloatInt:        \xintifFloatIntNE:
+  \let\xintiiifOne:           \xintiiifOneNE:
+  \let\xintifOne:             \xintifOneNE:
+  \let\xintiiifSgn:           \xintiiifSgnNE:
+  \let\xintSeqNumeric::csv         \xintSeq::csv
+  \let\xintiiSeqNumeric::csv       \xintiiSeq::csv
+  \let\XINTinFloatSeqNumeric::csv  \XINTinFloatSeq::csv
+  \let\xintSeqBNumeric::csv        \xintSeqB::csv
+  \let\xintiiSeqBNumeric::csv      \xintiiSeqB::csv
+  \let\XINTinFloatSeqBNumeric::csv\XINTinFloatSeqB::csv
+  \def\xintSeq::csv
+    {\XINT:NE:two_\xintSeqNumeric::csv{$noexpand$xintSeq::csv}}%
+  \def\xintiiSeq::csv
+    {\XINT:NE:two_\xintiiSeqNumeric::csv{$noexpand$xintiiSeq::csv}}%
+  \def\XINTinFloatSeq::csv
+    {\XINT:NE:two_\XINTinFloatSeqNumeric::csv{$noexpand$XINTinFloatSeq::csv}}%
+  \def\xintSeqB::csv
+    {\XINT:NE:two_\xintSeqBNumeric::csv{$noexpand$xintSeqB:f:csv}}%
+  \def\xintiiSeqB::csv
+    {\XINT:NE:two_\xintiiSeqBNumeric::csv{$noexpand$xintiiSeqB:f:csv}}%
+  \def\XINTinFloatSeqB::csv
+    {\XINT:NE:two_\XINTinFloatSeqBNumeric::csv{$noexpand$XINTinFloatSeqB:f:csv}}%
+  \def\xintListSel:x:csv  {~xintListSel:f:csv }%
+  \def\XINTinRandomFloatSdigits{~XINTinRandomFloatSdigits }%
+  \def\XINTinRandomFloatSixteen{~XINTinRandomFloatSixteen }%
+  \def\xintiiRandRange{~xintiiRandRange }%
+  \def\xintiiRandRangeAtoB{~xintiiRandRangeAtoB }%
+}%
+\def\XINT_expr_redefineprints
+{%
+   \def\XINT_flexpr_noopt
+   {%
+       \expandafter
+       \XINT_flexpr_preprint\expandafter-\romannumeral0\xintbarefloateval
+   }%
+   \def\XINT_flexpr_preprint ##1##2%
+   {%
+       \expandafter\XINT_flexpr_wrap
+       \csname .;##1.=\XINT_expr_unlock##2\endcsname
+   }%
+   \def\XINT_expr_unlock_sp ##1.;##2##3.=##4!%
+   {%
+       \if -##2\expandafter\xint_firstoftwo\else\expandafter\xint_secondoftwo\fi
+       \XINTdigits{{##2##3}}{##4}%
+   }%
+   \def\XINT_expr_print ##1{\expandafter
+       \xintSPRaw::csv\expandafter{\romannumeral`&&@\XINT_expr_unlock ##1}}%
+   \def\XINT_iiexpr_print ##1{\expandafter
+       \xintCSV::csv\expandafter{\romannumeral`&&@\XINT_expr_unlock ##1}}%
+   \def\XINT_boolexpr_print ##1{\expandafter
+       \xintIsTrue::csv\expandafter{\romannumeral`&&@\XINT_expr_unlock ##1}}%
+   \def\xintCSV::csv     {~xintCSV::csv    }%
+   \def\xintSPRaw::csv   {~xintSPRaw::csv  }%
+   \def\xintPFloat::csv  {~xintPFloat::csv }%
+   \def\xintIsTrue::csv  {~xintIsTrue::csv }%
+   \def\xintRound::csv   {~xintRound::csv  }%
+}%
+\def\xintNewExpr     {\XINT_NewExpr\XINT_expr_redefineprints\xint_firstofone
+                                 \xinttheexpr\XINT_newexpr_clean}%
+\def\xintNewFloatExpr{\XINT_NewExpr\XINT_expr_redefineprints\xint_firstofone
+                                 \xintthefloatexpr\XINT_newexpr_clean}%
+\def\xintNewIExpr    {\XINT_NewExpr\XINT_expr_redefineprints\xint_firstofone
+                                 \xinttheiexpr\XINT_newexpr_clean}%
+\def\xintNewIIExpr   {\XINT_NewExpr\XINT_expr_redefineprints\xint_firstofone
+                                 \xinttheiiexpr\XINT_newexpr_clean}%
+\def\xintNewBoolExpr {\XINT_NewExpr\XINT_expr_redefineprints\xint_firstofone
+                                 \xinttheboolexpr\XINT_newexpr_clean}%
+\def\XINT_newexpr_clean #1>{\noexpand\romannumeral`&&@}%
+\def\XINT_NewFunc
+ {\XINT_NewExpr\XINT_expr_redefineprints\xint_gobble_i\xintthebareeval\XINT_newfunc_clean}%
+\def\XINT_NewFloatFunc
+ {\XINT_NewExpr\XINT_expr_redefineprints\xint_gobble_i\xintthebarefloateval\XINT_newfunc_clean}%
+\def\XINT_NewIIFunc
+ {\XINT_NewExpr\XINT_expr_redefineprints\xint_gobble_i\xintthebareiieval\XINT_newfunc_clean}%
+\def\XINT_newfunc_clean #1>{}%
+\def\XINT_NewExpr #1#2#3#4#5#6[#7]%
+{%
+ \begingroup
+    \ifcase #7\relax
+        \toks0 {\endgroup\XINT_global\def#5}%
+    \or \toks0 {\endgroup\XINT_global\def#5##1}%
+    \or \toks0 {\endgroup\XINT_global\def#5##1##2}%
+    \or \toks0 {\endgroup\XINT_global\def#5##1##2##3}%
+    \or \toks0 {\endgroup\XINT_global\def#5##1##2##3##4}%
+    \or \toks0 {\endgroup\XINT_global\def#5##1##2##3##4##5}%
+    \or \toks0 {\endgroup\XINT_global\def#5##1##2##3##4##5##6}%
+    \or \toks0 {\endgroup\XINT_global\def#5##1##2##3##4##5##6##7}%
+    \or \toks0 {\endgroup\XINT_global\def#5##1##2##3##4##5##6##7##8}%
+    \or \toks0 {\endgroup\XINT_global\def#5##1##2##3##4##5##6##7##8##9}%
+    \fi
+    #2\xintexprSafeCatcodes
+    \XINT_expr_redefinemacros
+    #1%
+    \XINT_NewExpr_a #2#3#4#5%
+}%
+\catcode`~ 13 \catcode`@ 14 \catcode`\% 6 \catcode`# 12 \catcode`$ 11 @ $
+\def\XINT_NewExpr_a %1%2%3%4%5@
+{@
+    \def\XINT_tmpa %%1%%2%%3%%4%%5%%6%%7%%8%%9{%5}@
+    \def~%%1{\if !%%1\noexpand~\else $noexpand$%%1\fi}@
+    \catcode`: 11 \catcode`_ 11
+    \catcode`# 12 \catcode`~ 13 \escapechar 126
+    \endlinechar -1 \everyeof {\noexpand }@
+    \edef\XINT_tmpb
+    {\scantokens\expandafter{\romannumeral`&&@\expandafter
+     %2\XINT_tmpa{#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8}{#9}\relax}@
+    }@
+    \escapechar 92 \catcode`# 6 \catcode`$ 0 @ $
+    \def~%%1{\expandafter\noexpand\csname %%1\endcsname}@
+    \edef\XINT_tmpa %%1%%2%%3%%4%%5%%6%%7%%8%%9@
+      {\scantokens\expandafter{\expandafter%3\meaning\XINT_tmpb}}@
+    \the\toks0\expandafter
+      {\XINT_tmpa{%%1}{%%2}{%%3}{%%4}{%%5}{%%6}{%%7}{%%8}{%%9}}@
+    %1{\ifxintverbose
+        \xintMessage{xintexpr}{Info}@
+                    {\string%4\space now with @
+                     \ifxintglobaldefs global \fi meaning \meaning%4}@
+       \fi}@
+}@
+\catcode`% 14
+\XINT_setcatcodes % clean up to avoid surprises if something changes
+\newif\ifxintexprsafecatcodes
+\let\xintexprRestoreCatcodes\empty
+\def\xintexprSafeCatcodes
+{%
+  \unless\ifxintexprsafecatcodes
+    \edef\xintexprRestoreCatcodes  {%
+        \catcode59=\the\catcode59   % ;
+        \catcode34=\the\catcode34   % "
+        \catcode63=\the\catcode63   % ?
+        \catcode124=\the\catcode124 % |
+        \catcode38=\the\catcode38   % &
+        \catcode33=\the\catcode33   % !
+        \catcode93=\the\catcode93   % ]
+        \catcode91=\the\catcode91   % [
+        \catcode94=\the\catcode94   % ^
+        \catcode95=\the\catcode95   % _
+        \catcode47=\the\catcode47   % /
+        \catcode41=\the\catcode41   % )
+        \catcode40=\the\catcode40   % (
+        \catcode42=\the\catcode42   % *
+        \catcode43=\the\catcode43   % +
+        \catcode62=\the\catcode62   % >
+        \catcode60=\the\catcode60   % <
+        \catcode58=\the\catcode58   % :
+        \catcode46=\the\catcode46   % .
+        \catcode45=\the\catcode45   % -
+        \catcode44=\the\catcode44   % ,
+        \catcode61=\the\catcode61   % =
+        \catcode96=\the\catcode96   % `
+        \catcode32=\the\catcode32\relax % space
+        \noexpand\xintexprsafecatcodesfalse
+    }%
+  \fi
+  \xintexprsafecatcodestrue
+        \catcode59=12  % ;
+        \catcode34=12  % "
+        \catcode63=12  % ?
+        \catcode124=12 % |
+        \catcode38=4   % &
+        \catcode33=12  % !
+        \catcode93=12  % ]
+        \catcode91=12  % [
+        \catcode94=7   % ^
+        \catcode95=8   % _
+        \catcode47=12  % /
+        \catcode41=12  % )
+        \catcode40=12  % (
+        \catcode42=12  % *
+        \catcode43=12  % +
+        \catcode62=12  % >
+        \catcode60=12  % <
+        \catcode58=12  % :
+        \catcode46=12  % .
+        \catcode45=12  % -
+        \catcode44=12  % ,
+        \catcode61=12  % =
+        \catcode96=12  % `
+        \catcode32=10  % space
+}%
+\let\XINT_tmpa\undefined \let\XINT_tmpb\undefined \let\XINT_tmpc\undefined
+\ifdefined\RequirePackage\expandafter\xint_firstoftwo\else\expandafter\xint_secondoftwo\fi
+{\RequirePackage{xinttrig}%
+\RequirePackage{xintlog}}%
+{\input xinttrig.sty
+\input xintlog.sty
+}%
+\XINT_restorecatcodes_endinput%
+\endinput
+%%
+%% End of file `xintexpr.sty'.

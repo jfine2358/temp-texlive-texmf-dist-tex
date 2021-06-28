@@ -1,0 +1,1680 @@
+%
+% This is bagpipe.tex version 3.02
+%
+\def\bptversion{3.02}%
+\message{Version \bptversion\space -- May 27, 2014}%
+%
+%               by    Walt Innes (walt@slac.stanford.edu)
+%
+%  Copyright Walt Innes. License is granted to distribute and use this product according to
+%  the The LaTeX Project Public License (lp­pl1.3),
+%  which may be found at http://www.ctan.org/license/lppl1.3.
+%
+%
+%       This is a macro package for use with MusicTeX or MusiXTeX
+%       by Daniel Taupin.
+%       It is intended to aid the type setting of music for
+%       Scottish Highland bagpipes. It contains a reasonably complete
+%       set of definitions for grace notes and a mechanism for easily
+%       defining any additional ones that might be needed for a particular
+%       piece. There are also definitions for generating beamed note groups.
+%       This package modifies a few macros in Musi(c|X)TeX. It has been tested
+%       with MusicTeX version 5.20 and MusiXteX T.88.
+%       It may not be compatible with
+%       future releases of Musi(c|X)TeX. It is definitely not compatible
+%       with releases earlier than MusicTeX 4.7.
+%
+%  History:
+%   1.30 7/21/93 Changes in margin handling so that multipage documents
+%       do odd/even margins automatically. Change beam structure for
+%       groups of four notes with the two internal notes short.
+%       \wideodd and \wideeven no longer exist. The user may define
+%       them as being \widewidth for backward compatibility.
+%
+%   1.31 1/34/95 Fix oversight in newpitch and oldpitch macros for
+%       \g and \G .
+%
+%   1.32 5/95 Minor spacing adjustments for \pscp and similar macros.
+%
+%   1.33 5/95 Adjust tight spacing code in an effort to prevent overlapping
+%        notes.
+%
+%   1.40 5/95 Add additional pickup note macros so that the bar numbers can be
+%        put after the pickup notes. Add \setelemq.
+%
+%   1.41 10/95 Add definitions for \h and \N to ease conversion of
+%        oldpitch to newpitch
+%
+%   1.50 5/96 Add grace notes to match BMW. Add \medtall. Add \ggr{}.
+%
+%   1.51 5/96 Add more four note definitions.
+%
+%   1.52 6/96 Fix a duplicate macro name
+%
+%   1.53 6/13/96 Make changes to clean up the interface to MusicTeX 5.17
+%
+%   1.54 6/20/97 Change \landscape to use recommended \special
+%
+%   1.55 11/19/97 add \Afour and \USletter contributed by Phil Scott
+%
+%   1.56 12/19/97 add double dots and four new \bdddd macros
+%                 restore 11 pt fonts for small music grace notes
+%                 (9 pt fonts are broken)
+%
+%   1.57 01/15/98 some modifications of beam macros. 16/48 4 note beam
+%                 macros are known to not work with grace notes.
+%                 \bgrx work around for beam macro problems.
+%
+%   1.60 02/17/98 major change in the way grace notes are generated.
+%                 \notes..\enotes no longer used to change note
+%                 spacing if the \newgrace option is selected.
+%                 This eliminates a problem with some embedded
+%                 grace notes.
+%
+%   2.00 03/05/98 major changes to allow multiple parts: beam numbering,
+%                 [no]autoglue, some internal changes needed to make
+%                 things work on the extra staves,
+%                 a change in the way pickup notes are handled linked to
+%                 the [no]autoglue options. Remove \bgrx.
+%
+%   2.01 03/17/98 add \alabreve to accommodate a typo in bmw2tex
+%
+%   2.02 03/27/98 fix bug involving \newgrace and \staffspacing /= 1.
+%
+%   2.10 08/05/98 add switch for MusiXTeX
+%
+%   2.11 03/21/99 fix bug with edre and dare definitions
+%
+%   2.20 03/22/99 restore nine point fonts
+%
+%   2.21 03/13/00 fix bug in \btst. Bug report and fix by Peter Hurwood.
+%
+%   3.0  04/25/02 add many new embellishments for compatibility with bww
+%
+%   3.01 07/24/02 bug fixes submitted by Sven Axelsson. These fixes correct
+%                 problems with cadences.
+%
+%   3.02 05/27/14 make MusixTeX the default. Usage terms changed to the LaTeX Project Public License
+% ____________________________________________________________________
+%
+%    load bagpipe.tex only once
+%
+\ifx\bagpipeisloaded\relax\endinput\else\let\bagpipeisloaded=\relax\fi
+%
+\let\usemusixtex\relax% this sets the flag to use MusixTeX instead of MusicTeX
+%
+%
+ \ifx\usemusixtex\undefined %       the musictex version
+%
+ \input musicnft
+%
+%  Select one set of nine point font declarations:
+%
+% \font\musicnine=musikn11% for use if 9pt fonts are not available (old, better solution below)
+% \font\beamnine=beamn11%
+%
+\font\musicnine=musikn11 at 9pt %  for use with 16 pt musicsize
+\font\beamnine=beamn11 at 9pt %
+%
+ \input musictex%
+ \input musicvbm%
+%
+%  at signs are now letters and can be used in control sequences
+ \def\makeatletter{\catcode`\@=11}
+%  at signs are now not letters and can't be used in control sequences
+ \def\makeatother{\catcode`\@=12}
+%
+\else %        the musixtex version
+ \input musixtex%
+ \font\musicnine=musix11 at 9pt% for use if 9pt fonts are not available
+% \font\musicnine=musix11% for use if 9pt fonts are not available
+ \input musixcpt%
+%
+\fi
+%
+% macros for setting page sizes and offsets. These have nothing do
+% with bagpipe music per se.
+% set default
+%
+\newcount\natv
+\newdimen\theoffset
+\newdimen\oddoffset\oddoffset=0.in%
+\newdimen\evenoffset\evenoffset=0.in%
+%
+\def\USletter{%
+ \hoffset=0.0in%
+ \hsize=7.0in%
+ \vsize=9.0in%
+ \voffset=0.in%
+% landscape works with Tom Rokicki's dvips.
+ \def\landscape{%
+   \special{papersize=11in,8.5in}\hoffset=0.in\hsize=9.0in\vsize=6.5in}%
+ \def\realwidewidth{%
+   \special{papersize=11in,8.5in}%
+   \hoffset=-10.0mm\voffset=-10mm\hsize=10in\vsize=6.5in}%
+% page layout tools
+ \def\normalwidth{\hsize=7.0in \oddoffset=-0.11in \evenoffset=-0.36in}%
+ \def\medwidewidth{\hsize=7.35in \oddoffset=-0.21in\evenoffset=-0.56in}%
+ \def\widewidth{\hsize=7.6in \oddoffset=-0.40in \evenoffset=-0.66in}%
+ \def\normalheight{\vsize=9.0in\voffset=0.in%
+   \def\makefootline{\baselineskip=0pt\line{\the\footline}}}%
+ \def\tall{\voffset=-.50in\vsize=10.25in%
+   \def\makefootline{\baselineskip=0pt\vskip-15pt\line{\the\footline}}}%
+ \def\medtall{\voffset=-.25in\vsize=9.5in%
+   \def\makefootline{\baselineskip=0pt\vskip-5pt\line{\the\footline}}}%
+}%
+%
+\def\Afour{%
+% set default
+% PSc was here 8-11-1997. These dimensions are modified for A4 paper
+ \hoffset=0.0in%
+ \hsize=160.0mm%
+ \vsize=247.0mm%
+ \voffset=0.in%
+% landscape works with Tom Rokicki's dvips.
+%
+% This is the (new) preferred dvips specification for landscape
+%
+ \def\landscape{%
+  \special{papersize=297mm,210mm}%
+  \voffset=-10.0mm\hoffset=0.0mm\hsize=247.0mm\vsize=175.0mm}%
+ \def\realwidewidth{%
+  \special{papersize=297mm,210mm}%
+  \hoffset=-10.0mm\voffset=-10mm\hsize=267.0mm\vsize=175.0mm}%
+% page layout tools
+ \def\normalwidth{\hsize=160.0mm \oddoffset=0.in \evenoffset=0.in}%
+ \def\medwidewidth{\hsize=170.0mm \hoffset=-5.0mm}%
+ \def\widewidth{\hsize=180.0mm \hoffset=-10.0mm}%
+ \def\normalheight{\vsize=247.0mm\voffset=0.in%
+  \def\makefootline{\baselineskip=0pt\line{\the\footline}}}%
+ \def\tall{\voffset=-.50in\vsize=10.25in%
+  \def\makefootline{\baselineskip=0pt\vskip-15pt\line{\the\footline}}}%
+}%
+%
+%
+\def\sectionedpagenumbers{%
+  \footline={\hss\tenrm\number\count1.\number\pageno\hss}}%
+\def\pagenumbers{%
+  \footline={\hss\tenrm\number\folio\hss}}%
+%
+%
+\USletter     %  set default paper size
+\pageno=1\normalwidth  %  set default page width and offset
+\nopagenumbers
+%
+% Speical ouput routine. This is needed to do different margins on
+% odd and even pages
+\output={%
+ \ifodd
+  \pageno\let\theoffset=\oddoffset
+ \else
+  \let\theoffset=\evenoffset
+ \fi
+ \shipout\vbox{%
+  \moveright\theoffset\vbox{\makeheadline\pagebody\makefootline}%
+              }%
+ \advancepageno
+ \ifnum\outputpenalty>-20000 \else\dosupereject\fi
+        }%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\catcodesmusic% various special characters change category for music
+%
+\makeatletter%  at signs are now letters and can used in control sequences
+%
+%          extend musicnft to add a teenynotesize
+%          this is helpful only for musicsize=20 since we have no font
+%          smaller than eleven
+%
+%  new width definitions which aid setting compressed music
+%
+\newdimen\pskwidth
+\newdimen\f@kwidth
+\newdimen\fskwidth%
+\ifx\mxversion\undefined
+  \def\set@teenynotesize{%
+    \def\beamfont{\beamteenyfont}%
+    \def\musicnfont{\musicteenyfont}%
+    \def\i@nterbeam{0.41\Interligne}%
+    \def\b@alkthick{0.130\Interligne}}%
+\else
+  \def\set@teenynotesize{\let\musixfont\musicteenyfont
+    \let\xgregfont\xgregtinyfont
+    \b@amthick\p@ne30\Interligne \interbeam.41\Interligne}%
+\fi
+%
+%
+\ifx\mxversion\undefined
+ \def\computespecifics{\ifnum\musicsize=0\relax\musicsize=20\relax\fi
+  \ifnum\musicsize=20\relax
+   \def\ppff{\ppfftwenty}%
+   \def\beamnorfont{\beamtwenty}\def\musicnorfont{\musictwenty}%
+   \def\beamsmallfont{\beamsixteen}\def\musicsmallfont{\musicsixteen}%
+   \def\beamtinyfont{\beamthirteen}\def\musictinyfont{\musicthirteen}%
+   \def\beamteenyfont{\beameleven}\def\musicteenyfont{\musiceleven}%
+   \def\meternorfont{\cmbx}\def\metersmallfont{\cmbxsmall}%
+   \def\metertinyfont{\cmbxtiny}\def\slurnorfont{\slurntwenty}%
+   \def\meterbigfont{\cmbxbig}%
+  \else
+   \def\ppff{\ppffsixteen}%
+   \def\beamnorfont{\beamsixteen}\def\musicnorfont{\musicsixteen}%
+   \def\beamsmallfont{\beamthirteen}\def\musicsmallfont{\musicthirteen}%
+   \def\beamtinyfont{\beameleven}\def\musictinyfont{\musiceleven}%
+   \def\beamteenyfont{\beamnine}\def\musicteenyfont{\musicnine}% if available
+   \def\meternorfont{\cmbxsmall}\def\metersmallfont{\cmbxtiny}%
+   \def\metertinyfont{\cmbxmicro}\def\slurnorfont{\slurnsixteen}%
+   \def\meterbigfont{\cmbx}%
+  \fi
+  \Interligne=\musicsize pt\divide\Interligne by 4\relax
+  \Internote=0.5\Interligne %%%%%
+  \interbeam=\i@nterbeam
+  \computeqn@w}%
+\else
+ \def\comput@fonts{%
+  \ifnum\musicsize=\sixt@@n
+    \let\musicLargefont\musictwentyfour
+    \let\musiclargefont\musictwenty
+    \let\musicnorfont\musicsixteen
+    \let\musicsmallfont\musicthirteen
+    \let\musictinyfont\musiceleven
+    \let\musicteenyfont\musicnine
+    \let\xgregLargefont\xgregtwentyfour
+    \let\xgreglargefont\xgregtwenty
+    \let\xgregnorfont\xgregsixteen
+    \let\xgregsmallfont\xgregthirteen
+    \let\xgregtinyfont\xgregeleven
+    \let\slurd\slurdsixteen \let\sluru\slurusixteen
+    \let\hslurd\hslurdsixteen \let\hsluru\hslurusixteen
+    \let\meternorfont\tenbf \let\metersmallfont\eightbf
+    \let\meterbigfont\twelvebf \let\meterlargefont\bigfont
+    \let\meterLargefont\Bigfont
+    \let\ppff\ppffsixteen
+  \else\ifnum\musicsize=\@xxiv
+    \let\musicLargefont\musictwentynine
+    \let\musiclargefont\musictwentynine
+    \let\musicnorfont\musictwentyfour
+    \let\musicsmallfont\musictwenty
+    \let\musictinyfont\musicsixteen
+    \let\musicteenyfont\musicthirteen
+    \let\xgregLargefont\xgregtwentynine
+    \let\xgreglargefont\xgregtwentynine
+    \let\xgregnorfont\xgregtwentyfour
+    \let\xgregsmallfont\xgregtwenty
+    \let\xgregtinyfont\xgregsixteen
+    \let\sluru\slurutwenty \let\slurd\slurdtwenty
+    \let\hsluru\hslurutwenty \let\hslurd\hslurdtwenty
+    \let\meternorfont\bigfont \let\metersmallfont\twelvebf
+    \let\meterbigfont\Bigfont \let\meterlargefont\BIgfont
+    \let\meterlargefont\BIGfont
+    \let\ppff\ppfftwentyfour
+  \else\ifnum\musicsize=\@xxix
+    \let\musicLargefont\musictwentynine
+    \let\musiclargefont\musictwentynine
+    \let\musicnorfont\musictwentynine
+    \let\musicsmallfont\musictwentyfour
+    \let\musictinyfont\musictwenty
+    \let\musicteenyfont\musicsixteen
+    \let\xgregLargefont\xgregtwentynine
+    \let\xgreglargefont\xgregtwentynine
+    \let\xgregnorfont\xgregtwentynine
+    \let\xgregsmallfont\xgregtwentyfour
+    \let\xgregtinyfont\xgregtwenty
+    \let\sluru\slurutwenty \let\slurd\slurdtwenty
+    \let\hsluru\hslurutwenty \let\hslurd\hslurdtwenty
+    \let\slurud\slurutwentyd \let\slurdd\slurdtwentyd %    +ickd
+    \let\hslurud\hslurutwentyd \let\hslurdd\hslurdtwentyd %+ickd
+    \let\meternorfont\Bigfont \let\metersmallfont\bigfont
+    \let\meterbigfont\BIgfont \let\meterlargefont\BIGfont
+    \let\meterLargefont\BIGfont
+    \let\ppff\ppfftwentynine
+  \else
+    \ifnum\musicsize=\tw@nty
+    \else\ifnum\musicsize=\z@
+         \else\errmessage{\noexpand\musicsize=\the\musicsize\space not supported, set to default of 20}%
+         \fi
+    \fi\musicsize\tw@nty
+    \let\musicLargefont\musictwentynine
+    \let\musiclargefont\musictwentyfour
+    \let\musicnorfont\musictwenty
+    \let\musicsmallfont\musicsixteen
+    \let\musictinyfont\musicthirteen
+    \let\musicteenyfont\musiceleven
+    \let\xgreglargefont\xgregtwentyfour
+    \let\xgregLargefont\xgregtwentynine
+    \let\xgregnorfont\xgregtwenty
+    \let\xgregsmallfont\xgregsixteen
+    \let\xgregtinyfont\xgregthirteen
+    \let\sluru\slurutwenty \let\slurd\slurdtwenty
+    \let\hsluru\hslurutwenty \let\hslurd\hslurdtwenty
+    \let\meternorfont\twelvebf \let\metersmallfont\tenbf
+    \let\meterbigfont\bigfont \let\meterlargefont\Bigfont
+    \let\meterLargefont\BIgfont
+    \let\ppff\ppfftwenty
+  \fi\fi\fi
+ }%
+\fi
+%
+\ifx\mxversion\undefined
+ \def\computeqn@w{%
+  \setbox\ch@box=\hbox{\w@h}\wn@width=\wd\ch@box
+  \setbox\ch@box=\hbox{\s@bv}\sb@width=\wd\ch@box
+  \setbox\ch@box=\hbox{\b@rv}\bv@width=\wd\ch@box
+  \setbox\ch@box=\hbox{\c@arrg}\gr@width=\wd\ch@box
+  \setbox\ch@box=\hbox{\h@a}\hn@width=\wd\ch@box
+  \setbox\ch@box=\hbox{\q@u}\qn@width=\wd\ch@box
+  \qd@skip=\qn@width\advance\qd@skip by -\hlthick
+  \hd@skip=\hn@width\advance\hd@skip by -\hlthick
+  \wd@skip=\wn@width\advance\wd@skip by -\hlthick
+  \setpskwidth\setf@kwidth\setfskwidth}%
+\else
+ \def\comput@sizes{%
+  \Interligne\fontdimen\fiv@\musicnorfont
+  \Internote\h@lf\Interligne \big@spc.6\Interligne
+  \qn@width\fontdimen\si@\musixfont
+  \wn@width1\qu@rt\qn@width
+  \txt@ff\h@lf\qn@width
+  \qd@skip\qn@width\advance\qd@skip-\hlthick
+  \setpskwidth\setf@kwidth\setfskwidth}%
+\fi
+%
+%           add teeny fonts
+%
+\ifx\mxversion\undefined
+ \def\teenynotesize{\set@teenynotesize\computespecifics
+ \def\currentsize{\teenynotesize}}%
+\else
+ \def\teenynotesize{\set@teenynotesize\comput@specifics
+  \let\curr@ntsiz@\teenynotesize}%
+\fi
+%
+%
+\ifx\mxversion\undefined
+ \def\begininstrument{\global\advance\noinstrument by 1\relax
+  \selectinstr\resetstem
+  \ifdim\internote<0.60\Internote\csname set@teenynotesize\endcsname
+   \computespecifics
+  \else
+   \ifdim\internote<0.76\Internote\csname set@tinynotesize\endcsname
+     \computespecifics
+   \else
+    \ifdim\internote<0.95\Internote\csname set@smallnotesize\endcsname
+     \computespecifics
+    \else
+     \csname currentsize\endcsname
+    \fi
+   \fi
+  \fi
+  \global\noportee=0\relax\beginstaff
+ }%
+\else
+ \def\p@six{.6}%
+ \def\begininstrument{\advance\noinstrum@nt\@ne \s@l@ctinstr
+  \ifdim\internote<\p@six0\Internote \set@teenynotesize \comput@sizes
+  \else
+    \ifdim\internote<\p@seven6\Internote \set@tinynotesize \comput@sizes
+    \else
+      \ifdim\internote<.95\Internote \set@smallnotesize \comput@sizes
+      \else
+        \ifdim\internote<1.19\Internote \set@normalnotesize \comput@sizes
+        \else
+          \ifdim\internote<1.43\Internote \set@largenotesize \comput@sizes
+          \else
+            \set@Largenotesize \comput@sizes
+          \fi
+        \fi
+      \fi
+    \fi
+  \fi
+ \noport@@\z@ \beginstaff}%
+\fi
+%
+%  modify flag macros so that they tolerate very compressed music better.
+%
+\ifx\mxversion\undefined
+  \def\adv@locx@mqn{\advance\locx@skip by -\f@kwidth}%
+\else
+  \def\C@b#1#2{%
+    \n@ii\b@n \ifnum\n@ii<\z@ \n@ii-\n@ii \fi
+    \ifnum\n@ii>\n@v #1\fi
+    \loop
+    \advance\n@v\m@ne
+    \ifnum\n@ii=\n@v {\advance\locx@skip-\f@kwidth#2}\fi
+    \ifnum\n@v>\@ne \repeat}%
+\fi
+%
+% define some more skip macros
+\ifx\mxversion\undefined
+  \def\psk{\off\pskwidth}%
+  \def\f@k{\off\f@kwidth}%
+  \let\fsk=\f@k%
+  \def\bqsk{\off{1.3\qn@width}}%
+  \def\abqsk{\off{2.0\qn@width}}%
+  \def\nqsk{\off{-1.4\qn@width}}%
+  \def\tqsk{\off{2.5\qn@width}}%
+  \def\fgsk{\off{1.0\qn@width}}%
+  \def\setpskwidth{\ifdim 1.5\qn@width > \noteskip
+   \pskwidth=0.75\qn@width \else \pskwidth=0.5\noteskip \fi}%
+  \def\setf@kwidth{\ifdim 1.6\qn@width>\noteskip
+   \f@kwidth=.6\noteskip \else \f@kwidth=\qn@width \fi}%
+  \def\setfskwidth{\ifdim 1.6\qn@width>\noteskip
+   \fskwidth=.6\noteskip \else \fskwidth=\qn@width \fi}%
+\else
+  \def\psk{\off\pskwidth}%
+  \def\f@k{\off\f@kwidth}%
+  \def\fsk{\off\fskwidth}%
+  \def\bqsk{\off{1.3\qn@width}}%
+  \def\abqsk{\off{2.0\qn@width}}%
+  \def\nqsk{\off{-1.4\qn@width}}%
+  \def\tqsk{\off{2.2\qn@width}}%
+  \def\fgsk{\off{1.0\qn@width}}%
+  \def\vbqsk{\off{1.3\elemskip}}%
+  \def\vnabqsk{\off{1.0\elemskip}}%
+%  \def\abqsk{\off{1.0\elemskip}}%
+%  \def\nqsk{\off{-0.85\elemskip}}%
+  \def\vtqsk{\off{2.5\elemskip}}%
+%  \def\setpskwidth{\ifdim 1.5\qn@width > \noteskip
+%   \pskwidth=0.75\elemskip \else \pskwidth=0.5\noteskip \fi}%
+  \def\setpskwidth{\pskwidth=0.7\noteskip}%
+  \def\setf@kwidth{\ifdim 1.6\qn@width>\noteskip
+   \f@kwidth=.6\noteskip \else \f@kwidth=\qn@width \fi}%
+  \def\setfskwidth{\fskwidth=0.5\noteskip}%
+\fi
+%
+%
+\ifx\mxversion\undefined
+ \def\notes{\ifdim \elemskip<1.2\qn@width
+  \noteskip=1.2\qn@width \n@otes \else \vnotes 1.0\elemskip \fi
+  \setpskwidth\setf@kwidth\setfskwidth
+  \def\sf{\ccl f}}%
+\else
+ \def\notes{\vnotes 2.0\elemskip
+  \def\sf{\ccl f}}%
+\fi
+%
+%  note spacings for grace notes
+%
+\ifx\mxversion\undefined
+  \def\gnotes{\ifdim .35\elemskip<0.75\qn@width
+   \noteskip=0.75\qn@width\n@otes \else \vnotes 0.35\elemskip \fi
+   }%   teeny note spacing for grace notes
+  \def\Gnotes{\ifdim .7\elemskip<.9\qn@width
+   \noteskip=.9\qn@width\n@otes \else \vnotes 0.7\elemskip \fi
+   }%  spacing between grace notes & normal notes
+  \def\GNotes{\ifdim .7\elemskip<1.2\qn@width
+   \noteskip=1.2\qn@width\n@otes \else \vnotes 0.7\elemskip \fi
+   }%  spacing between grace notes & normal notes
+  \def\hnotes{\ifdim .7\elemskip<\qn@width
+   \noteskip=\qn@width\n@otes \else \vnotes 0.5\elemskip \fi
+   }%  half of a note spacing
+\else
+  \def\gnotes{\vnotes 1.0\elemskip
+   }%   teeny note spacing for grace notes
+  \def\Gnotes{\vnotes 1.5\elemskip
+   }%  spacing between grace notes & normal notes
+  \def\GNotes{\vnotes 2.0\elemskip
+   }%  spacing between grace notes & normal notes
+  \def\hnotes{\vnotes 1.0\elemskip
+   }%  half of a note spacing
+\fi
+%
+\ifx\mxversion\undefined
+ \def\setelemq#1{\elemskip=#1\qn@width}%
+ \setelemq{1.6} % the default is unfortunate.
+\else
+ \def\setelemq#1{\relax}%
+ \autolines{8}{8}{48}%
+\fi
+%
+\makeatother% at signs are no longer letters
+%
+% some synonyms to make some music set for musixtex work with musictex
+%
+\ifx\mxversion\undefined
+ \let\en\enotes
+ \let\instrumentnumber\nbinstruments
+ \let\startpiece\debutmorceau
+ \let\bar\barre
+ \let\itie\iten
+ \let\ttie\tten
+ \let\contpiece\reprmorceau
+ \let\stoppiece\suspmorceau
+ \let\Stoppiece\finmorceau
+ \let\Endpiece\finmorceau
+ \let\leftrepeat\leftrepeatsymbol
+ \let\rightrepeat\rightrepeatsymbol
+ \def\setstaffs#1#2{natv#1\relax
+   \csname nbportees\romannumeral\natv\endcsname#2}%
+\fi
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\def\nbinstruments{1}% bagpipe music is written for one instrument
+%          % although this could be redefined to add more.
+%
+% for multipart scores, set the number of staves and turn off auto glue
+% insertion
+% after beamed groups
+\def\multipart#1{\noautoglue\newgrace\nbporteesi=#1}%
+%
+\parindent=0pt%
+%
+\transpose=7
+\def\N{N}%
+\def\G{N}%        define some alternate pitch names to allow
+\def\a{a}%        consistent readable identifiers
+\def\b{b}%
+\def\c{c}%
+\def\d{d}%
+\def\e{e}%
+\def\f{f}%
+\def\g{g}%
+\def\A{h}%
+\def\h{h}%
+%
+% in pipe music melody notes are normally stem down, and since there are
+% only 9 pitches, let's define explicit macros for each note
+%
+\def\whG{\wh N}%    whole notes
+\def\whN{\wh N}%
+\def\wha{\wh a}%
+\def\whb{\wh b}%
+\def\whc{\wh c}%
+\def\whd{\wh d}%
+\def\whe{\wh e}%
+\def\whf{\wh f}%
+\def\whg{\wh G}%
+\def\whA{\wh h}%
+\def\whh{\wh h}%
+%
+\def\hG{\hl N}%    half notes
+\def\hN{\hl N}%
+\def\ha{\hl a}%
+\def\hb{\hl b}%
+\def\hc{\hl c}%
+\def\hd{\hl d}%
+\def\he{\hl e}%
+\def\hf{\hl f}%
+\def\hg{\hl g}%
+\def\hA{\hl h}%
+\def\hh{\hl h}%
+%
+\def\qlG{\ql N}%    quarter notes
+\def\qlN{\ql N}%
+\def\qla{\ql a}%
+\def\qlb{\ql b}%
+\def\qlc{\ql c}%
+\def\qld{\ql d}%
+\def\qle{\ql e}%
+\def\qlf{\ql f}%
+\def\qlg{\ql g}%
+\def\qlA{\ql h}%
+\def\qlh{\ql h}%
+%
+\def\cG{\cl N}%    eighth notes
+\def\cN{\cl N}%
+\def\ca{\cl a}%
+\def\cb{\cl b}%
+\def\cc{\cl c}%
+\def\cd{\cl d}%
+\def\ce{\cl e}%
+\def\cf{\cl f}%
+\def\cg{\cl g}%
+\def\cA{\cl h}%
+\def\ch{\cl h}%
+%
+\def\sG{\ccl N}%    sixteenth notes
+\def\sN{\ccl N}%
+\def\sa{\ccl a}%
+\def\sb{\ccl b}%
+\def\sc{\ccl c}%
+\def\sd{\ccl d}%
+\def\se{\ccl e}%
+\def\sf{\ccl f}% caution : this redefines a macro used for sforzando
+\def\sg{\ccl g}%
+\def\sA{\ccl h}%
+\let\shp\sh%
+\def\sh{\ccl h}% caution : this redefines a macro for sharps
+%
+\def\tG{\cccl N}%    thirtysecond notes
+\def\tN{\cccl N}%
+\def\ta{\cccl a}%
+\def\tb{\cccl b}%
+\def\tc{\cccl c}%
+\def\td{\cccl d}%
+\def\te{\cccl e}%
+\def\tf{\cccl f}%
+\def\tg{\cccl g}%
+\def\tA{\cccl h}%
+\def\th{\cccl h}%
+%
+\def\sfG{\ccccl N}%  sixty-fourth notes
+\def\sfN{\ccccl N}%
+\def\sfa{\ccccl a}%
+\def\sfb{\ccccl b}%
+\def\sfc{\ccccl c}%
+\def\sfd{\ccccl d}%
+\def\sfe{\ccccl e}%
+\def\sff{\ccccl f}%
+\def\sfg{\ccccl g}%
+\def\sfA{\ccccl h}%
+\def\sfh{\ccccl h}%
+%
+\def\bG{\qb0N}%  beam notes
+\def\bN{\qb0N}%
+\def\ba{\qb0a}%
+\def\bb{\qb0b}%
+\def\bc{\qb0c}%
+\def\bd{\qb0d}%
+\def\be{\qb0e}%
+\def\bf{\qb0f}%
+\def\bg{\qb0g}%
+\def\bA{\qb0h}%
+\def\bh{\qb0h}%
+%
+\def\bGp{\qbp0N\psk}%   dotted beam notes
+\def\bNp{\qbp0N\psk}%
+\def\bap{\qbp0a\psk}%
+\def\bbp{\qbp0b\psk}%
+\def\bcp{\qbp0c\psk}%
+\def\bdp{\qbp0d\psk}%
+\def\bep{\qbp0e\psk}%
+\def\bfp{\qbp0f\psk}%
+\def\bgp{\qbp0g\psk}%
+\def\bAp{\qbp0h\psk}%
+\def\bhp{\qbp0h\psk}%
+%
+\def\bGpp{\qbpp0N\psk\psk}%  double dotted beam notes
+\def\bNpp{\qbpp0N\psk\psk}%
+\def\bapp{\qbpp0a\psk\psk}%
+\def\bbpp{\qbpp0b\psk\psk}%
+\def\bcpp{\qbpp0c\psk\psk}%
+\def\bdpp{\qbpp0d\psk\psk}%
+\def\bepp{\qbpp0e\psk\psk}%
+\def\bfpp{\qbpp0f\psk\psk}%
+\def\bgpp{\qbpp0g\psk\psk}%
+\def\bApp{\qbpp0h\psk\psk}%
+\def\bhpp{\qbpp0h\psk\psk}%
+%
+%   macros for dotted notes
+%
+\def\hp#1{\hl{.#1}\psk}%
+\def\qlp#1{\ql{.#1}\psk}% caution : this redefines a macro used for rests
+\def\cp#1{\cl{.#1}\psk}%
+\def\sp#1{\ccl{.#1}\psk}%
+\def\tp#1{\cccl{.#1}\psk}%
+\def\sfp#1{\cccl{.#1}\psk}%
+%
+%   macros for double dotted notes
+%
+\def\hpp#1{\hlpp{#1}\psk\psk}%
+\makeatletter%  at signs are now letters and can used in control sequences
+\ifx\usemusixtex\relax
+ \def\qlpp#1{\q@symbol\@qlpp{#1}\psk}%
+\else
+ \def\qlpp#1{\advancetrue\qlpp@z{#1}\psk}%
+\fi
+\makeatother% at signs are no longer letters
+\def\cpp#1{\clpp{#1}\psk\psk}%
+%    some macros for beginning and ending grace note sequences
+%
+\def\tns{\teenynotesize}%
+%
+\ifx\mxversion\undefined
+ \def\nns{\ifdim\internote<0.76\Internote\tinynotesize
+     \else\ifdim\internote<0.95\Internote\smallnotesize
+     \else                               \normalnotesize
+     \fi\fi}%
+\else
+ \def\nns{\ifdim\internote<0.76\Internote\tinynotesize
+     \else\ifdim\internote<0.95\Internote\smallnotesize
+     \else\ifdim\internote<1.19\Internote\normalnotesize
+     \else\ifdim\internote<1.43\Internote\largenotesize
+     \else                               \Largenotesize
+     \fi\fi\fi\fi}%
+\fi
+%
+\def\gnss{\enotes\gnotes\tns}%
+\def\Gnss{\enotes\Gnotes\tns}%
+\def\GNss{\enotes\GNotes\tns}%
+\def\enn{\enotes\notes}%
+\def\etn{\enotes\temps\notes}%
+%\def\ehn{\enotes\hnotes}%
+\def\bart{\barre\temps}%
+\ifx\mxversion\undefined\relax\else\def\temps{\notes\sk\enotes}\fi
+%
+%
+\def\backput#1{\rlap{\off{-1.0\noteskip}#1}}
+%
+% the old way of doing grace notes
+\def\oldgrace{%
+ \ifx\mxversion\undefined\def\stdafterruleskip{\Internote}\else\relax\fi
+% simple grace notes
+ \def\Grace##1{\GNss\cccu {##1}\enn}%
+ \def\Echo##1{\GNss\ccu {##1}\enn}%
+ \def\Them##1{\GNss\cu {##1}\enn}%
+% general complex grace note macros
+% for transposed pitch specification ( N - h )
+ \ifx\mxversion\undefined
+  \def\multigr##1##2##3{\gnss\ibbbu1{##1}0\qh1{##2}\tbu1\Gnss\qh1{##3}\enn}%
+  \def\smultigr##1##2##3##4{\gnss\ibbbu1{##1}{##2}\qh1{##3}\Gnss\tbu1\qh1{##4}\enn}%
+ \else
+  \def\multigr##1##2##3{\gnss\ibbbu1{##1}0\qh1{##2}\tbu1%\Gnss
+   \qh1{##3}\off{0.6\elemskip}\enn}%
+  \def\smultigr##1##2##3##4{\gnss\ibbbu1{##1}{##2}\qh1{##3}%\Gnss
+   \tbu1\qh1{##4}\off{0.6\elemskip}\enn}%
+ \fi
+}% end \def\oldgrace
+%
+%
+% the new way of doing grace notes
+\def\newgrace{%
+% general complex grace note macros
+% for transposed pitch specification ( N - h )
+ \ifx\mxversion\undefined
+  \def\stdafterruleskip{3\Internote}%
+% general complex grace note macros
+% for transposed pitch specification ( N - h )
+% for simple grace notes
+  \def\Grace##1{\tns\zcccu##1\tqsk\nns}%
+  \def\Echo##1{\tns\zccu##1\tqsk\nns}%
+  \def\Them##1{\tns\zcu##1\tqsk\nns}%
+  \def\multigr##1##2##3{\tns\ibbbu1{##1}0\vargr##2\end\nqsk\tbu1\zqh1##3\abqsk\nns}%
+  \def\smultigr##1##2##3##4{\tns\ibbbu1{##1}{##2}\vargr##3\end\nqsk\tbu1\zqh1##4\abqsk\nns}%
+  \def\cadt##1##2##3##4{\tns\ibu1{##1}0\rlap{\fgsk\tbbbu1\tbbu1}\zqh1##2\abqsk\zqh1##3\abqsk\tbbbu1\tbbu1\tbu1\zqh1##4\abqsk\nns}%
+  \def\cadf##1##2##3{\tns\ibu1{##1}0\rlap{\fgsk\tbbbu1\tbbu1}\zqh1##2\abqsk\tbu1\zqh1##3\abqsk\nns}%
+  \def\cadl##1##2##3{\tns\ibu1{##1}0\zqh1##2\abqsk\tbbbu1\tbbu1\tbu1\zqh1##3\abqsk\nns}%
+  \def\tra{\tns\ibbu1c0\zqh1N\bqsk\nbbbu1\zqh1d\bqsk\tbbbu1\tbu1\zqh1c\abqsk\nns}%
+  \def\trac{\tns\ibu1c0\zqh1N\bqsk\nbbbu1\zqh1d\bqsk\tbbbu1\tbbu1\tbu1\zqh1c\abqsk\nns}%
+  \def\chelalho{\tns\ibu1e0\zqh1f\bqsk\nbbbu1\zqh1d\bqsk\tbbbu1\tbu1\zqh1e\abqsk\nns}%
+  \def\darodos{\tns\ibbu1e0\zqh1N\bqsk\nbbbu1\zqh1d\bqsk\zqh1N\bqsk\tbbbu1\zqh1c\bqsk\tbu1\zqh1N\abqsk\nns}%
+  \def\fcadt##1##2##3##4##5{\tns\ibu1{##1}0\rlap{\fgsk\tbbbu1\tbbu1}\zqh1##2\abqsk\pointdorgue##5\zqh1##3\abqsk\tbbbu1\tbbu1\tbu1\zqh1##4\abqsk\nns}%
+  \def\fcadf##1##2##3##4{\tns\ibu1{##1}0\rlap{\fgsk\tbbbu1\tbbu1}\zqh1##2\abqsk\tbu1\pointdorgue##4\zqh1##3\abqsk\nns}%
+  \def\fcadl##1##2##3##4{\tns\ibu1{##1}0\pointdorgue##4\zqh1##2\abqsk\tbbbu1\tbbu1\tbu1\zqh1##3\abqsk\nns}%
+ \else
+% for simple grace notes
+  \def\Grace##1{\vtqsk\llap{\tns\zcccu##1\tqsk\nns}}%
+  \def\Echo##1{\vtqsk\llap{\tns\zccu##1\tqsk\nns}}%
+  \def\Them##1{\vtqsk\llap{\tns\zcu##1\tqsk\nns}}%
+  \def\multigr##1##2##3{\varsp##2\end\vnabqsk
+   \llap{\tns\ibbbu1{##1}0\vargr##2\end\nqsk\tbu1\zqh1##3\abqsk\nns}}%
+  \def\smultigr##1##2##3##4{\varsp##3\end\vnabqsk
+   \llap{\tns\ibbbu1{##1}{##2}\vargr##3\end\nqsk\tbu1\zqh1##4\abqsk\nns}}%
+  \def\cadt##1##2##3##4{\vbqsk\vbqsk\vnabqsk
+   \llap{\tns\ibu1{##1}0\rlap{\fgsk\tbbbu1\tbbu1}\zqh1##2\bqsk\zqh1##3\bqsk\tbbbu1\tbbu1\tbu1\zqh1##4\abqsk\nns}}%
+  \def\cadf##1##2##3{\vbqsk\vnabqsk
+   \llap{\tns\ibu1{##1}0\rlap{\fgsk\tbbbu1\tbbu1}\zqh1##2\bqsk\tbu1\zqh1##3\abqsk\nns}}%
+  \def\cadl##1##2##3{\vbqsk\vnabqsk
+   \llap{\tns\ibu1{##1}0\zqh1##2\bqsk\tbbbu1\tbbu1\tbu1\zqh1##3\abqsk\nns}}%
+  \def\tra{\vbqsk\vbqsk\vnabqsk
+   \llap{\tns\ibbu1c0\zqh1N\bqsk\nbbbu1\zqh1d\bqsk\tbbbu1\tbu1\zqh1c\abqsk\nns}}%
+  \def\trac{\vbqsk\vbqsk\vnabqsk
+   \llap{\tns\ibu1c0\zqh1N\bqsk\nbbbu1\zqh1d\bqsk\tbbbu1\tbbu1\tbu1\zqh1c\abqsk\nns}}%
+  \def\chelalho{\vbqsk\vbqsk\vnabqsk
+   \llap{\tns\ibu1e0\zqh1f\bqsk\nbbbu1\zqh1d\bqsk\tbbbu1\tbu1\zqh1e\abqsk\nns}}%
+  \def\darodos{\vbqsk\vbqsk\vbqsk\vbqsk\vnabqsk
+   \llap{\tns\ibbu1e0\zqh1N\bqsk\nbbbu1\zqh1d\bqsk\zqh1N\bqsk\tbbbu1\zqh1c\bqsk\tbu1\zqh1N\abqsk\nns}}%
+  \def\fcadt##1##2##3##4##5{\vbqsk\vbqsk\vnabqsk
+   \llap{\tns\ibu1{##1}0\rlap{\fgsk\tbbbu1\tbbu1}\zqh1##2\bqsk\pointdorgue##5\zqh1##3\bqsk\tbbbu1\tbbu1\tbu1\zqh1##4\abqsk\nns}}%
+  \def\fcadf##1##2##3##4{\vbqsk\vnabqsk
+    \llap{\tns\ibu1{##1}0\rlap{\fgsk\tbbbu1\tbbu1}\zqh1##2\bqsk\tbu1\pointdorgue##4\zqh1##3\abqsk\nns}}%
+  \def\fcadl##1##2##3##4{\vbqsk\vnabqsk
+    \llap{\tns\ibu1{##1}0\pointdorgue##4\zqh1##2\bqsk\tbbbu1\tbbu1\tbu1\zqh1##3\abqsk\nns}}%
+ \fi
+}% end \def\new grace
+%
+\oldgrace % make the old grace note scheme the default
+%
+% compatible with new and old grace
+%
+% obsolete old grace note macros
+\def\grace#1{\Gnss\cccu {#1}\enn}%
+%
+% for non transposed pitch specification ( g - o ) (old way)
+\def\omultigr#1#2#3{\gnss\ibbbu1{`#1}0\qh1{#2}\tbu1\Gnss\qh1{`#3}\enn}%
+\def\osmultigr#1#2#3#4{\gnss\ibbbu1{`#1}{#2}\qh1{#3}\Gnss\tbu1\qh1{`#4}\enn}%
+%
+% the tricky variable argument number macro for new grace
+\def\vargr#1{\zqh1#1\bqsk\ifx#1\end\let\next=\relax\else\let\next=\vargr\fi\next}%
+% the note counting spacing macro for the muxiXtex version of the \newgrace scheme
+\def\varsp#1{\vbqsk\ifx#1\end\let\next=\relax\else\let\next=\varsp\fi\next}%
+%
+% make any sequence of notes grace notes (good for piobaireachd) (old way)
+% may cause problems when embedded in certain beamed note sequences
+% not compatible with multipart music.
+\def\ggr#1{\gnss #1\enn\psk}%
+%
+%
+%
+% now for the actual grace note definitions
+%
+% simple grace notes and strikes
+%
+\def\grG{\Grace N}%
+\def\grN{\Grace N}%
+\def\gra{\Grace a}%
+\def\grb{\Grace b}%
+\def\grc{\Grace c}%
+\def\grd{\Grace d}%
+\def\gre{\Grace e}%
+\def\grf{\Grace f}%
+\def\grg{\Grace g}%
+\def\grA{\Grace h}%
+\def\grh{\Grace h}%
+%
+%
+% doublings
+%
+\def\dblright#1{\smultigr e{-4}{g#1}d}%
+\def\dblG{\dblright{N}}%
+\def\dblN{\dblright{N}}%
+\def\dbla{\dblright{a}}%
+\def\dblb{\dblright{b}}%
+\def\dblc{\dblright{c}}%
+\def\dbld{\multigr f{gd}e}%
+\def\dble{\multigr f{ge}f}%
+\def\dblf{\multigr f{gf}g}%
+\def\dblg{\multigr fgf}% this is the same as \hdblG
+\def\dblA{\multigr fhg}% this is the same as \hdblA
+\let\dblh\dblA
+%
+% half doublings
+%
+\def\hdblright#1{\smultigr c{4}{#1}d}%
+\def\hdblG{\hdblright{N}}%
+\def\hdblN{\hdblright{N}}%
+\def\hdbla{\hdblright{a}}%
+\def\hdblb{\hdblright{b}}%
+\def\hdblc{\hdblright{c}}%
+\def\hdbld{\multigr dde}%
+\def\hdble{\multigr eef}%
+\def\hdblf{\multigr ffg}%
+\let\hdblg\dblg
+\let\hdblA\dblA
+\let\hdblh\dblA
+%
+% thumb doublings
+%
+\def\tdblright#1{\smultigr f{-4}{h#1}d}%
+\def\tdblG{\tdblright{N}}%
+\def\tdblN{\tdblright{N}}%
+\def\tdbla{\tdblright{a}}%
+\def\tdblb{\tdblright{b}}%
+\def\tdblc{\tdblright{c}}%
+\def\tdbld{\multigr f{hd}e}%
+\def\tdble{\multigr f{he}f}%
+\def\tdblf{\multigr f{hf}g}%
+\def\tdblg{\multigr f{hg}f}%
+%
+% slurred doublings
+%
+\def\sdblright#1{\smultigr e{-4}{g#1d#1}N}%
+\def\sdbla{\sdblright{a}}%
+\def\sdblb{\sdblright{b}}%
+\def\sdblc{\sdblright{c}}%
+\def\sdbld{\multigr f{gded}N}%
+\def\sdble{\multigr f{gefe}a}%
+\def\sdblf{\multigr f{gfgf}a}%
+\def\sdblg{\multigr f{gfg}a}%
+\def\sdblG{\multigr f{gfg}a}%
+\def\sdblA{\multigr f{hgh}a}%
+\def\sdblh{\multigr f{hgh}a}%
+%
+% slurred half doublings
+%
+\def\shdblright#1{\smultigr d{-3}{#1d#1}N}%
+\def\shdbla{\shdblright{a}}%
+\def\shdblb{\shdblright{b}}%
+\def\shdblc{\shdblright{c}}%
+\def\shdbld{\multigr f{ded}N}%
+\def\shdble{\multigr f{efe}a}%
+\def\shdblf{\multigr f{fgf}a}%
+\def\shdblg{\multigr f{gfg}a}%
+\def\shdblG{\multigr f{gfg}a}%
+\def\shdblA{\multigr f{hgh}a}%
+\def\shdblh{\multigr f{hgh}a}%
+%
+% slurred thumb doublings
+%
+\def\stdblright#1{\smultigr g{-4}{h#1d#1}N}%
+\def\stdbla{\stdblright{a}}%
+\def\stdblb{\stdblright{b}}%
+\def\stdblc{\stdblright{c}}%
+\def\stdbld{\multigr g{hded}N}%
+\def\stdble{\multigr g{hefe}a}%
+\def\stdblf{\multigr g{hfgf}a}%
+\def\stdblg{\multigr g{hfg}a}%
+\def\stdblG{\multigr g{hfg}a}%
+\def\stdblA{\multigr g{hgh}a}%
+\def\stdblh{\multigr g{hgh}a}%
+%
+% shaken doublings
+%
+%\def\shkdblright#1{\smultigr e{-4}{g#1d#1}N}%
+%\def\shkdbla{\shkdblright{a}}%
+%\def\shkdblb{\shkdblright{b}}%
+%\def\shkdblc{\shkdblright{c}}%
+\def\shkdbld{\multigr f{gded}c}%
+%\def\shkdble{\multigr f{gefe}a}%
+%\def\shkdblf{\multigr f{gfgf}e}%
+%\def\shkdblg{\multigr f{gfg}e}%
+%\def\shkdblG{\multigr f{gfg}e}%
+%
+% shaken thumb doublings
+%
+%\def\shtdblright#1{\smultigr g{-4}{h#1d#1}N}%
+%\def\shtdbla{\shtdblright{a}}%
+%\def\shtdblb{\shtdblright{b}}%
+%\def\shtdblc{\shtdblright{c}}%
+\def\shtdbld{\multigr g{hded}c}%
+%\def\shtdble{\multigr g{hefe}a}%
+%\def\shtdblf{\multigr g{hfgf}a}%
+%\def\shtdblg{\multigr g{hfg}a}%
+%\def\shtdblG{\multigr g{hfg}a}%
+%\def\shtdblA{\multigr g{hgh}a}%
+%\def\shtdblh{\multigr g{hgh}a}%
+%
+%
+% double grace notes
+%
+\def\dblgr#1#2{\multigr #1#1#2}
+\def\ddgrN{\dblgr dN}
+\def\ddgra{\dblgr da}
+\def\ddgrb{\dblgr db}
+\def\ddgrc{\dblgr dc}
+\def\edgrN{\dblgr eN}
+\def\edgra{\dblgr ea}
+\def\edgrb{\dblgr eb}
+\def\edgrc{\dblgr ec}
+\def\edgrd{\dblgr ed}
+\def\fdgrN{\dblgr fN}
+\def\fdgra{\dblgr fa}
+\def\fdgrb{\dblgr fb}
+\def\fdgrc{\dblgr fc}
+\def\fdgrd{\dblgr fd}
+\def\fdgre{\dblgr fe}
+\def\gdgrN{\dblgr gN}
+\def\gdgra{\dblgr ga}
+\def\gdgrb{\dblgr gb}
+\def\gdgrc{\dblgr gc}
+\def\gdgrd{\dblgr gd}
+\def\gdgre{\dblgr ge}
+\def\gdgrf{\dblgr gf}
+\def\tdgrN{\dblgr hN}
+\def\tdgra{\dblgr ha}
+\def\tdgrb{\dblgr hb}
+\def\tdgrc{\dblgr hc}
+\def\tdgrd{\dblgr hd}
+\def\tdgre{\dblgr he}
+\def\tdgrf{\dblgr hf}
+\def\tdgrg{\dblgr hg}
+%
+% miscellaneous common complex grace notes
+%
+\def\thrwd{\multigr d{Nd}c}%
+\def\hthrwd{\smultigr d{-1}{d}c}%
+\let\Nthrwd\hthrwd%
+\let\Gthrwd\hthrwd%
+\let\gthrwd\hthrwd%
+\def\thrwf{\multigr g{feg}e}%
+\def\gripthrwd{\multigr e{NdN}c}%
+\def\hgripthrwd{\multigr d{dN}c}%
+\def\grip{\multigr c{Nd}N}%  also used for leumluaths and throws on b and c
+\def\dgrip{\multigr c{Nb}N}%
+\def\ggrip{\multigr cdN}%
+\let\Ggrip\ggrip%
+\let\Ngrip\ggrip%
+\def\taor{\multigr d{NdN}e}%
+\def\Ntaor{\multigr d{dN}e}%
+\let\Gtaor\Ntaor%
+\let\gtaor\Ntaor%
+\def\dtaor{\multigr d{NbN}e}%
+\def\ahtaor{\multigr e{da}e}%
+%
+% birls
+%
+\def\birl{\multigr c{aNa}N}%
+\def\sbirl{\multigr e{gaNa}N}%
+\def\wbirl{\multigr c{Na}N}%
+\def\tbirl{\multigr g{haNa}N}%
+%
+% slurs (sometimes called slaps)
+%
+\def\slur#1{\smultigr f{-8}{g#1}N}%
+\def\slura{\slur a}%
+\def\slurb{\slur b}%
+\def\slurc{\slur c}%
+\def\slurd{\slur d}%
+\def\slure{\smultigr f{-8}{ge}a}%
+\def\slurf{\smultigr f{-8}{gf}a}%
+\let\slapa\slura% slapx is a synonym for slurx
+\let\slapb\slurb
+\let\slapc\slurc
+\let\slapd\slurd
+\let\slape\slure
+\let\slapf\slurf
+%
+% half slurs (half slaps)
+%
+\def\hslur#1{\smultigr c{-4}{#1}N}%
+\def\hslura{\hslur a}%
+\def\hslurb{\hslur b}%
+\def\hslurc{\hslur c}%
+\def\hslurd{\hslur d}%
+\def\hslure{\smultigr c{-4}ea}%
+\def\hslurf{\smultigr d{-4}fa}%
+\let\hslapa\hslura
+\let\hslapb\hslurb
+\let\hslapc\hslurc
+\let\hslapd\hslurd
+\let\hslape\hslure
+\let\hslapf\hslurf
+%
+% thumb slurs (thumb slaps)
+%
+\def\tslur#1{\smultigr g{-8}{h#1}N}%
+\def\tslura{\tslur a}%
+\def\tslurb{\tslur b}%
+\def\tslurc{\tslur c}%
+\def\tslurd{\tslur d}%
+\def\tslure{\smultigr g{-8}{he}a}%
+\def\tslurf{\smultigr g{-8}{hf}a}%
+\let\tslapa\tslura
+\let\tslapb\tslub
+\let\tslapc\tslurc
+\let\tslapd\tslurd
+\let\tslape\tslure
+\let\tslapf\stslurf
+%
+% shakes
+%
+\let\shka\slura
+\let\shkb\slurb
+\let\shkc\slurc
+\def\shkd{\smultigr g{-3}{gd}c}%
+\def\shke{\smultigr g{-2}{ge}a}%
+\def\shkf{\smultigr g{-1}{gf}e}%
+\def\shkg{\smultigr h{-1}{hg}e}%
+\def\shkG{\smultigr h{-1}{hg}e}%
+%
+% half shakes
+%
+\let\hshka\hslura
+\let\hshkb\hslurb
+\let\hshkc\hslurc
+\let\hshkd\hthrwd%
+\def\hshke{\smultigr e{-1}{e}a}%
+\def\hshkf{\smultigr f{-1}{f}e}%
+\def\hshkg{\smultigr g{-1}{g}e}%
+\def\hshkG{\smultigr g{-1}{g}e}%
+%
+% thumb shakes
+%
+\let\tshka\tslura
+\let\tshkb\tslurb
+\let\tshkc\tslurc
+\def\tshkd{\smultigr g{-3}{hd}c}%
+\def\tshke{\smultigr g{-2}{he}a}%
+\def\tshkf{\smultigr g{-1}{hf}e}%
+%
+% catches
+%
+\def\catcha{\multigr d{aNd}N}%
+\def\catchb{\multigr d{bNd}N}%
+\def\catchc{\multigr d{cNd}N}%
+\def\catchd{\multigr d{dNb}N}%
+\def\catche{\multigr e{eNd}N}%
+\def\scatcha{\smultigr g{-3}{gaNd}N}%
+\def\scatchb{\smultigr g{-3}{gbNd}N}%
+\def\scatchc{\smultigr g{-3}{gcNd}N}%
+\def\scatchd{\smultigr g{-3}{gdNb}N}%
+\def\scatche{\smultigr g{-3}{geNd}N}%
+\def\tcatcha{\smultigr h{-3}{haNd}N}%
+\def\tcatchb{\smultigr h{-3}{hbNd}N}%
+\def\tcatchc{\smultigr h{-3}{hcNd}N}%
+\def\tcatchd{\smultigr h{-3}{hdNb}N}%
+\def\tcatche{\smultigr h{-3}{heNd}N}%
+%
+% double strikes
+%
+\def\dstra{\multigr a{Na}N}%
+\let\dstrb\dgrip %
+\def\dstrc{\multigr c{Nc}N}%
+\let\dstrd=\grip %
+\def\dstre{\multigr e{ae}a}%
+\def\dstrf{\multigr f{ef}e}%
+\def\ldstrd{\multigr d{cd}c}%
+%
+% g double strikes
+%
+\let\gdstra\sbirl
+\def\gdblstr#1#2{\multigr f{g#1#2#1}#2}%
+\def\gdstrb{\gdblstr bN}%
+\def\gdstrc{\gdblstr cN}%
+\def\gdstrd{\gdblstr dN}%
+\def\gdstre{\gdblstr ea}%
+\def\gdstrf{\gdblstr fe}%
+\def\lgdstrd{\multigr d{dcd}c}%
+%
+% thumb double strikes
+%
+\let\tdstra\tbirl
+\def\tdblstr#1#2{\multigr g{h#1#2#1}#2}%
+\def\tdstrb{\tdblstr bN}%
+\def\tdstrc{\tdblstr cN}%
+\def\tdstrd{\tdblstr dN}%
+\def\tdstre{\tdblstr ea}%
+\def\tdstrf{\tdblstr fe}%
+\def\tdstrg{\tdblstr gf}%
+\def\ltdstrd{\multigr g{hdcd}c}%
+%
+% half double strikes
+%
+\let\hdstra\grip
+\def\hdblstr#1#2{\multigr #1{#1#2#1}#2}%
+\def\hdstrb{\hdblstr bN}%
+\def\hdstrc{\hdblstr cN}%
+\def\hdstrd{\hdblstr dN}%
+\def\hdstre{\hdblstr ea}%
+\def\hdstrf{\hdblstr fe}%
+\def\hdstrg{\hdblstr gf}%
+\def\hdstrh{\hdblstr hg}%
+\def\lhdstrd{\multigr d{dcd}c}%
+%
+%
+% triple strikes
+%
+\def\tstra{\multigr a{NaNa}N}%
+\def\tstrb{\multigr b{NbNb}N}%
+\def\tstrc{\multigr c{NcNc}N}%
+\def\tstrd{\multigr d{NdNd}N}
+\def\ltstrd{\multigr d{cdcd}c}%
+\def\tstre{\multigr e{aeae}a}%
+\def\tstrf{\multigr f{efef}e}%
+\def\tstrg{\multigr f{fgfg}f}%
+\def\tstrh{\multigr g{ghgh}g}%
+%
+% g triple strikes
+%
+\def\gtrpstr#1#2{\multigr f{g#1#2#1#2#1}#2}%
+\def\gtstra{\gtrpstr aN}%
+\def\gtstrb{\gtrpstr bN}%
+\def\gtstrc{\gtrpstr cN}%
+\def\gtstrd{\gtrpstr dN}%
+\def\gtstre{\gtrpstr ea}%
+\def\gtstrf{\gtrpstr fe}%
+\def\lgtstrd{\gtrpstr dc}%
+%
+% thumb triple strikes
+%
+\def\ttrpstr#1#2{\multigr g{h#1#2#1#2#1}#2}%
+\def\ttstra{\ttrpstr aN}%
+\def\ttstrb{\ttrpstr bN}%
+\def\ttstrc{\ttrpstr cN}%
+\def\ttstrd{\ttrpstr dN}%
+\def\ttstre{\ttrpstr ea}%
+\def\ttstrf{\ttrpstr fe}%
+\def\ttstrg{\ttrpstr gf}%
+\def\lttstrd{\ttrpstr dc}%
+%
+% half triple strikes
+%
+\def\htrpstr#1#2{\multigr #1{#1#2#1#2#1}#2}%
+\def\htstra{\htrpstr aN}%
+\def\htstrb{\htrpstr bN}%
+\def\htstrc{\htrpstr cN}%
+\def\htstrd{\htrpstr dN}%
+\def\htstre{\htrpstr ea}%
+\def\htstrf{\htrpstr fe}%
+\def\htstrg{\htrpstr gf}%
+\def\htstrh{\htrpstr hg}%
+\def\lhtstrd{\htrpstr dc}%
+%
+%  peles aka hornpipe shakes
+%
+\def\pel#1{\multigr g{g#1e#1}N}%
+\def\pelb{\pel b}%
+\def\pelc{\pel c}%
+\def\peld{\pel d}%
+\def\pele{\multigr g{gefe}a}%
+\def\lpeld{\multigr g{gded}c}%
+%
+\def\tpel#1{\multigr g{h#1e#1}N}%
+\def\tpelb{\tpel b}%
+\def\tpelc{\tpel c}%
+\def\tpeld{\tpel d}%
+\def\tpele{\multigr g{hefe}a}%
+\def\ltpeld{\multigr g{hded}c}%
+%
+\def\hpel#1{\multigr e{#1e#1}N}%
+\def\hpelb{\hpel b}%
+\def\hpelc{\hpel c}%
+\def\hpeld{\hpel d}%
+\def\hpele{\multigr f{efe}a}%
+\def\lhpeld{\multigr f{ded}c}%
+%
+%%%%%%%%%%%% piobaireachd grace notes %%%%%%%%%%%%%%%%%%%%%%
+%
+% echoes
+%
+\def\echoG{\Echo N}%
+\def\echoN{\Echo N}%
+\def\echoa{\Echo a}%
+\def\echob{\Echo b}%
+\def\echoc{\Echo c}%
+\def\echod{\Echo d}%
+\def\echoe{\Echo e}%
+\def\echof{\Echo f}%
+\def\echog{\Echo g}%
+\def\echoA{\Echo h}%
+\def\echoh{\Echo h}%
+%
+% themal grace notes
+%
+\def\themG{\Them N}%
+\def\themN{\Them N}%
+\def\thema{\Them a}%
+\def\themb{\Them b}%
+\def\themc{\Them c}%
+\def\themd{\Them d}%
+\def\theme{\Them e}%
+\def\themf{\Them f}%
+\def\themg{\Them g}%
+\def\themA{\Them h}%
+\def\themh{\Them h}%
+%
+\def\crun{\multigr e{NdNeaf}a}%
+\def\dcrun{\multigr e{NbNeaf}a}%
+\def\crunf{\multigr e{eaf}a}%
+\def\crunme{\multigr f{feg}e}%
+\def\crunmd{\multigr e{edf}d}%
+\def\crunmc{\multigr e{NdNcecf}c}%
+\def\crunmb{\multigr e{NdNbebf}b}%
+\def\ahcrun{\multigr e{daeaf}a}%
+\def\Nhcrun{\multigr e{dNeaf}a}%
+\def\crunbr{\multigr e{NdNeNf}N}%
+\def\dcrunbr{\multigr e{NbNeNf}N}%
+\def\ahcrunbr{\multigr e{dNeNf}N}%
+%
+\def\dre{\multigr e{aeaf}a}%
+\def\edre{\multigr e{eaf}a}%
+\def\edreb{\multigr e{ebf}b}%
+\def\edrec{\multigr e{ecf}c}%
+\let\edred\crunmd% same as crunmd
+\let\dare\thrwf% same as thrwf
+\def\gedre{\multigr f{geaf}a}%
+\def\gdare{\multigr f{gfeg}e}%
+\def\tedre{\multigr g{heaf}a}%
+\def\tdare{\multigr g{hfeg}e}%
+\def\tchechere{\multigr g{hgeh}e}%
+\def\hdre{\multigr f{af}a}%
+\def\hedale{\multigr g{eg}e}%
+\def\hchechere{\multigr g{eh}e}%
+\def\hedari{\multigr f{geh}e}%
+\let\Nedre\scatchb
+\let\aedre\scatchc
+%
+\def\deda{\multigr e{Ne}N}%
+%
+\def\bain#1{\multigr d{#1Nd}N}%
+\def\enbain{\bain a}%
+\def\otro{\bain b}%
+\def\odro{\bain c}%
+\def\adela{\multigr e{dNe}N}%
+\def\gbain#1{\multigr f{g#1Nd}N}%
+\def\genbain{\gbain a}%
+\def\gotro{\gbain b}%
+\def\godro{\gbain c}%
+\def\gadela{\gbain d}%
+\def\tbain#1{\multigr g{h#1Nd}N}%
+\def\tenbain{\tbain a}%
+\def\totro{\tbain b}%
+\def\todro{\tbain c}%
+\def\tadela{\tbain d}%
+%
+\def\hiharin{\multigr d{daNa}N}%
+%
+\def\dbstf{\multigr g{fg}f}%
+\def\dbsth{\multigr g{gh}g}%
+\let\dstrg\dbstf%
+\let\dstrh\dbsth%
+
+%
+\def\darodo{\multigr d{NdNc}N}%
+\def\gdarodo{\multigr d{dNc}N}%
+\let\Gdarodo\gdarodo
+\def\Ndarodo{\multigr d{dNc}N}%
+\let\bubbly\darodo% bubbly is a synonym for darodo
+\let\Nbubbly\Ndarodo
+\let\gbubbly\gdarodo
+\let\Gbubbly\gdarodo
+%
+\def\cadged{\cadt gged}
+\def\cadhed{\cadt hhed}
+\def\cadge{\cadf gge}
+\def\cadgf{\cadf ggf}
+\def\caded{\cadl eed}
+\def\cadhe{\cadf hhe}
+\def\fcadged{\fcadt ggedj}
+\def\fcadhed{\fcadt hhedk}
+\def\fcadge{\fcadf ggej}
+\def\fcadgf{\fcadf ggfj}
+\def\fcaded{\fcadl eedh}
+\def\fcadhe{\fcadf hhek}
+\def\fcade{\tns\pointdorgue g\zcu e\tqsk\nns}
+%
+% macros for switching between pitch schemes
+%
+\def\oldpitch{%
+\def\g{N}%
+\def\G{g}%
+\def\whg{\wh N}%
+\def\whG{\wh g}%
+\def\hg{\hl N}%
+\def\hG{\hl g}%
+\def\qlg{\ql N}%
+\def\qlG{\ql g}%
+\def\cg{\cl N}%
+\def\cG{\cl g}%
+\def\sg{\ccl N}%
+\def\sG{\ccl g}%
+\def\tg{\cccl N}%
+\def\tG{\cccl g}%
+\def\sfg{\ccccl N}%
+\def\sfG{\ccccl g}%
+\def\bg{\qb0 N}%
+\def\bG{\qb0 g}%
+\def\bgp{\qbp0 N\psk}%
+\def\bGp{\qbp0 g\psk}%
+\def\grg{\Grace N}%
+\def\grG{\Grace g}%
+\def\dblg{\dblright{N}}%
+\def\dblG{\multigr fgf}% this is the same as \hdblG
+\def\hdblg{\hdblright{N}}%
+\def\hdblG{\multigr fgf}%
+\def\tdblg{\tdblright{N}}%
+\def\tdblG{\multigr f{hg}f}%
+}%
+\def\newpitch{%
+\def\g{g}%
+\def\G{N}%
+\def\whG{\wh N}%
+\def\whg{\wh g}%
+\def\hG{\hl N}%
+\def\hg{\hl g}%
+\def\qlG{\ql N}%
+\def\qlg{\ql g}%
+\def\cG{\cl N}%
+\def\cg{\cl g}%
+\def\sG{\ccl N}%
+\def\sg{\ccl g}%
+\def\tG{\cccl N}%
+\def\tg{\cccl g}%
+\def\sfG{\ccccl N}%
+\def\sfg{\ccccl g}%
+\def\bG{\qb0 N}%
+\def\bg{\qb0 g}%
+\def\bGp{\qbp0 N\psk}%
+\def\bgp{\qbp0 g\psk}%
+\def\grG{\Grace N}%
+\def\grg{\Grace g}%
+\def\dblG{\dblright{g}}%
+\def\dblg{\multigr fgf}% this is the same as \hdblG
+\def\hdblG{\hdblright{g}}%
+\def\hdblg{\multigr fgf}%
+\def\tdblg{\multigr f{hg}f}%
+\def\tdblG{\tdblright{N}}%
+}%
+%
+% some options concerning automatic insertion of glue and spacing of
+% pickup notes
+%
+% \autoglue causes glue to be inserted after beamed note groups
+% \noautoglue turns this feature off
+\def\autoglue{\def\bmend{\etn}\def\ttn{\etn\etn}%
+% for pickup notes
+  \def\pickup##1{\notes\qsk##1\enotes\advance\barno by -1\relax\xbarre}%
+  \ifx\mxversion\undefined
+    \def\reppickup##1{%
+    \advance\barno by -1\relax\reprmorceau\notes\fsk##1\enotes\xbarre}%
+    \def\repreppickup##1{\advance\barno by -1\relax\reprmorceau%
+    \rlap\leftrepeatsymbol\notes\sk\fsk##1\fsk\enotes\xbarre}%
+  \else
+    \def\reppickup##1{%
+    \advance\barno by -1\relax\reprmorceau\notes\qsk##1\enotes\xbarre}%
+    \def\repreppickup##1{\advance\barno by -1\relax\reprmorceau%
+%    \rlap\leftrepeatsymbol\notes\sk\qsk##1\qsk\enotes\xbarre}%
+    \leftrepeatsymbol\notes\psk##1\psk\enotes\xbarre}%
+  \fi
+}%
+%
+\def\noautoglue{%
+  \def\bmend{}\def\ttn{\etn}%
+% for pickup notes
+  \def\pickup##1{\notes##1\enotes\advance\barno by -1\relax\xbarre}%
+  \def\reppickup##1{%
+   \advance\barno by -1\relax\reprmorceau\notes##1\enotes\xbarre}%
+  \ifx\mxversion\undefined
+   \def\repreppickup##1{\advance\barno by -1\relax\reprmorceau%
+    \rlap\leftrepeatsymbol\notes\sk\fsk\enn##1\enotes\xbarre}%
+  \else
+   \def\repreppickup##1{\advance\barno by -1\relax\reprmorceau%
+%    \rlap\leftrepeatsymbol\notes\sk\qsk\enn##1\enotes\xbarre}%
+    \leftrepeatsymbol\notes\psk##1\psk\enotes\xbarre}%
+  \fi
+}%
+% the default is to automatically insert glue after beamed note groups
+\autoglue
+% note that autoglue is incompatible with multipart settings and is
+% turned off by \multipart
+%
+% definitions for beamed combinations
+%
+% first for explicit arrangements of note pairs
+%
+\makeatletter
+%
+\def\pcc#1#2{\Ibl0#1{#2}1\qb0{#1}\tbl0\qb0{#2}\bmend}%
+\def\pcgc#1#2#3{\Ibl0#1{#3}4\qb0#1#2\tbl0\qb0#3\bmend}%
+\def\pcs#1#2{\Ibl0{#1}{#2}1\qb0{#1}\tbbl0\tbl0\qb0{#2}\bmend}%
+\def\pcps#1#2{\Ibl0{#1}{#2}1\qbp0{#1}\psk\tbbl0\tbl0\qb0{#2}\bmend}%
+\def\pcgs#1#2#3{\Ibl0{#1}{#3}2\qb0{#1}#2\tbbl0\tbl0\qb0{#3}\bmend}%
+\def\pcpgs#1#2#3{\Ibl0{#1}{#3}2\qbp0{#1}\psk#2\tbbl0\tbl0\qb0{#3}\bmend}%
+\def\psc#1#2{\Ibbl0{#1}{#2}1\rlap{\f@k\tbbl0}\qb0{#1}\tbl0\qb0{#2}\bmend}%
+\def\pscp#1#2{\Ibbl0{#1}{#2}1\rlap{\f@k\tbbl0}\qb0{#1}\tbl0\qbp0{#2}\psk\bmend}%
+\def\psgc#1#2#3{\Ibl0{#1}{#3}2\rlap{\f@k\tbbl0}\qb0{#1}#2\tbl0\qb0{#3}\bmend}%
+\def\psgcp#1#2#3{%
+     \Ibl0{#1}{#3}3\rlap{\f@k\tbbl0}\qb0{#1}#2\tbl0\qbp0{#3}\psk\bmend}%
+%
+\def\pss#1#2{\Ibbl0{#1}{#2}1\qb0{#1}\tbl0\qb0{#2}}%
+\def\psgs#1#2#3{\Ibbl0#1{#3}4\qb0#1#2\tbl0\qb0#3}%
+\def\pst#1#2{\Ibbl0{#1}{#2}1\qb0{#1}\tbbbl0\tbl0\qb0{#2}}%
+\def\pspt#1#2{\Ibbl0{#1}{#2}1\qbp0{#1}\psk\tbbbl0\tbl0\qb0{#2}}%
+\def\psgt#1#2#3{\Ibbl0{#1}{#3}2\qb0{#1}#2\tbbbl0\tbl0\qb0{#3}}%
+\def\pspgt#1#2#3{\Ibbl0{#1}{#3}2\qbp0{#1}\psk#2\tbbbl0\tbl0\qb0{#3}}%
+\def\pts#1#2{\Ibbbl0{#1}{#2}1\rlap{\f@k\tbbbl0}\qb0{#1}\tbl0\qb0{#2}}%
+\def\ptsp#1#2{\Ibbbl0{#1}{#2}1\rlap{\f@k\tbbbl0}\qb0{#1}\tbl0\qbp0{#2}\psk}%
+\def\ptgs#1#2#3{\Ibbl0{#1}{#3}2\rlap{\f@k\tbbbl0}\qb0{#1}#2\tbl0\qb0{#3}}%
+\def\ptgsp#1#2#3{\Ibbl0{#1}{#3}2\rlap{\f@k\tbbbl0}\qb0{#1}#2\tbl0\qbp0{#3}\psk}%
+%
+\def\ptt#1#2{\Ibbbl0{#1}{#2}1\qb0{#1}\tbl0\qb0{#2}}%
+%
+% now more general definitions where the beam is specified first and then
+% the notes.
+%
+% pairs
+%
+\def\bcc#1#2#3#4#5{\Ibl0#1#2#3#4\tbl0#5\bmend}%
+\def\bss#1#2#3#4#5{\Ibbl0#1#2#3#4\tbl0#5\psk}%
+\def\btt#1#2#3#4#5{\Ibbbl0#1#2#3#4\tbl0#5\psk}%
+%
+\def\bcs#1#2#3#4#5{\Ibl0#1#2#3#4\tbbl0\tbl0#5\bmend}%
+\def\bsc#1#2#3#4#5{\Ibl0#1#2#3\rlap{\f@k\tbbl0}#4\tbl0#5\bmend}%
+\def\bst#1#2#3#4#5{\Ibbl0#1#2#3#4\tbbbl0\tbl0#5\bmend}%
+\def\bts#1#2#3#4#5{\Ibbl0#1#2#3\rlap{\f@k\tbbbl0}#4\tbl0#5\bmend}%
+\def\bct#1#2#3#4#5{\Ibl0#1#2#3#4\tbbbl0\tbbl0\tbl0#5\bmend}%
+\def\btc#1#2#3#4#5{\Ibl0#1#2#3\rlap{\f@k\tbbbl0\tbbl0}#4\tbl0#5\bmend}%
+%\def\bct#1#2#3#4#5{%
+%\enotes\hnotes\Ibl0#1#2#3#4\nbbbl0\sk\tbbbl0\tbbbl0\tbl0#5\bmend}%
+%\def\btc#1#2#3#4#5{\enotes\hnotes\Ibbbl0#1#2#3#4\tbbbl0\tbbl0\sk\tbl0#5\bmend}%
+%
+% triplets
+%
+\def\bccc#1#2#3#4#5#6{\Ibl0#1#2#3#4#5\tbl0#6\bmend}%
+\def\bsss#1#2#3#4#5#6{\Ibbl0#1#2#3#4#5\tbl0#6\bmend}%
+\def\bttt#1#2#3#4#5#6{\Ibbbl0#1#2#3#4#5\tbl0#6\psk}%
+%
+\def\bccs#1#2#3#4#5#6{\Ibl0#1#2#3#4#5\tbbl0\tbl0#6\bmend}%
+\def\bcsc#1#2#3#4#5#6{\Ibl0#1#2#3#4\tbbl0#5\tbl0#6\bmend}%
+\def\bscc#1#2#3#4#5#6{\Ibl0#1#2#3\rlap{\f@k\tbbl0}#4#5\tbl0#6\bmend}%
+%
+\def\bcss#1#2#3#4#5#6{\Ibl0#1#2#3#4\nbbl0#5\tbl0#6\bmend}%
+\def\bscs#1#2#3#4#5#6{\Ibl0#1#2#3\rlap{\f@k\tbbl0}#4#5\tbbl0\tbl0#6\bmend}%
+\def\bssc#1#2#3#4#5#6{\Ibbl0#1#2#3#4\tbbl0#5\tbl0#6\bmend}%
+%
+\def\bsst#1#2#3#4#5#6{\Ibbl0#1#2#3#4#5\tbbbl0\tbl0#6\enn}%
+\def\bsts#1#2#3#4#5#6{\Ibbl0#1#2#3#4\tbbbl0#5\tbl0#6\enn}%
+\def\btss#1#2#3#4#5#6{\Ibbl0#1#2#3\rlap{\f@k\tbbbl0}#4#5\tbl0#6\enn}%
+%
+\def\bstt#1#2#3#4#5#6{\Ibbl0#1#2#3#4\nbbbl0#5\tbl0#6\psk}%
+\def\btst#1#2#3#4#5#6{\Ibbl0#1#2#3\rlap{\f@k\tbbbl0}#4#5\tbbbl0\tbl0#6\psk}%
+\def\btts#1#2#3#4#5#6{\Ibbbl0#1#2#3#4\tbbbl0#5\tbl0#6\psk}%
+%
+\def\bcst#1#2#3#4#5#6{\Ibl0#1#2#3#4\nbbl0#5\tbbbl0\tbl0#6\bmend}%
+\def\bsct#1#2#3#4#5#6{\Ibl0#1#2#3\rlap{\f@k\tbbl0}#4#5\tbbbl0\tbbl0\tbl0#6\bmend}%
+\def\bcts#1#2#3#4#5#6{\Ibl0#1#2#3#4\nbbl0\rlap{\f@k\tbbbl0}#5\tbl0#6\bmend}%
+\def\bstc#1#2#3#4#5#6{\Ibbl0#1#2#3#4\tbbbl0\tbbl0#5\tbl0#6\bmend}%
+\def\btsc#1#2#3#4#5#6{\Ibbl0#1#2#3\rlap{\f@k\tbbbl0}#4\tbbl0#5\tbl0#6\bmend}%
+\def\btcs#1#2#3#4#5#6{\Ibl0#1#2#3\rlap{\f@k\tbbbl0\tbbl0}#4#5\tbbl0\tbl0#6\bmend}%
+%
+% quadruplets
+%
+%  all the same
+%
+\def\bcccc#1#2#3#4#5#6#7{\Ibl0#1#2#3#4#5#6\tbl0#7\bmend}%
+\def\bssss#1#2#3#4#5#6#7{\Ibbl0#1#2#3#4#5#6\tbl0#7\bmend}%
+\def\btttt#1#2#3#4#5#6#7{\Ibbbl0#1#2#3#4#5#6\tbl0#7\bmend}%
+%
+%  3 c's, 1 s
+%
+\def\bcccs#1#2#3#4#5#6#7{\Ibl0#1#2#3#4#5#6\tbbl0\tbl0#7\bmend}%
+\def\bccsc#1#2#3#4#5#6#7{\Ibl0#1#2#3#4#5\tbbl0#6\tbl0#7\bmend}%
+\def\bcscc#1#2#3#4#5#6#7{\Ibl0#1#2#3#4\tbbl0#5#6\tbl0#7\bmend}%
+\def\bsccc#1#2#3#4#5#6#7{\Ibbl0#1#2#3\rlap{\f@k\tbbl0}#4#5#6\tbl0#7\bmend}%
+%
+%  2 c's, 2 s's
+%
+\def\bccss#1#2#3#4#5#6#7{\Ibl0#1#2#3#4#5\nbbl0#6\tbl0#7\bmend}%
+\def\bcscs#1#2#3#4#5#6#7{\Ibl0#1#2#3#4\tbbl0#5#6\tbbl0\tbl0#7\bmend}%
+\def\bcssc#1#2#3#4#5#6#7{\Ibl0#1#2#3#4\tbbl0#5\rlap{\f@k\tbbl0}#6\tbl0#7\bmend}%
+\def\bsccs#1#2#3#4#5#6#7{\Ibl0#1#2#3\rlap{\f@k\tbbl0}#4#5#6\tbbl0\tbl0#7\bmend}%
+\def\bscsc#1#2#3#4#5#6#7{%
+     \Ibl0#1#2#3\rlap{\f@k\tbbl0}#4#5\rlap{\f@k\tbbl0}#6\tbl0#7\bmend}%
+\def\bsscc#1#2#3#4#5#6#7{\Ibbl0#1#2#3#4\tbbl0#5#6\tbl0#7\bmend}%
+%
+%  2 c's, 1 s, 1 t
+%
+\def\bccst#1#2#3#4#5#6#7{\Ibl0#1#2#3#4#5\nbbl0#6\tbbbl0\tbbl0\tbl0#7\bmend}%
+\def\bccts#1#2#3#4#5#6#7{%
+     \Ibl0#1#2#3#4#5\nbbl0\rlap{\f@k\tbbbl0}#6\tbl0#7\bmend}%
+\def\bcstc#1#2#3#4#5#6#7{\Ibl0#1#2#3#4\nbbl0#5\tbbbl0\tbbl0#6\tbl0#7\bmend}%
+\def\bctsc#1#2#3#4#5#6#7{%
+     \Ibl0#1#2#3#4\nbbl0\rlap{\f@k\tbbbl0}#5\tbbl0#6\tbl0#7\bmend}%
+\def\bstcc#1#2#3#4#5#6#7{\Ibbl0#1#2#3#4\tbbbl0\tbbl0#5#6\tbl0#7\bmend}%
+\def\btscc#1#2#3#4#5#6#7{%
+     \Ibbl0#1#2#3\rlap{\f@k\tbbbl0}#4\tbbl0#5#6\tbl0#7\bmend}%
+%
+%  1 c, 3 s's
+%
+\def\bcsss#1#2#3#4#5#6#7{\Ibl0#1#2#3#4\nbbl0#5#6\tbbl0\tbl0#7\bmend}%
+\def\bscss#1#2#3#4#5#6#7{%
+   \Ibl0#1#2#3\rlap{\f@k\tbbl0}#4#5\nbbl0#6\tbl0#7\bmend}%
+\def\bsscs#1#2#3#4#5#6#7{\Ibbl0#1#2#3#4\tbbl0#5#6\tbbl0\tbl0#7\bmend}%
+\def\bsssc#1#2#3#4#5#6#7{\Ibbl0#1#2#3#4#5\tbbl0#6\tbl0#7\bmend}%
+%
+%  1 c, 2 s's, 1 t
+%
+\def\bcsst#1#2#3#4#5#6#7{\Ibl0#1#2#3#4\nbbl0#5#6\tbbbl0\tbbl0\tbl0#7\bmend}%
+\def\bcsts#1#2#3#4#5#6#7{%
+     \Ibl0#1#2#3#4\nbbl0#5\rlap{\f@k\tbbbl0}#6\tbbl0\tbl0#7\bmend}%
+\def\bscst#1#2#3#4#5#6#7{%
+     \Ibl0#1#2#3\rlap{\f@k\tbbl0}#4#5\nbbl0#6\tbbbl0\tbbl0\tbl0#7\bmend}%
+\def\bscts#1#2#3#4#5#6#7{%
+   \Ibl0#1#2#3\rlap{\f@k\tbbl0}#4#5\nbbl0\rlap{\f@k\tbbbl0}#6\tbbl0\tbl0#7\bmend}%
+\def\bstcs#1#2#3#4#5#6#7{%
+    \Ibbl0#1#2#3#4\tbbbl0\tbbl0#5#6\tbbl0\tbl0#7\bmend}%
+\def\btscs#1#2#3#4#5#6#7{%
+    \Ibbl0#1#2#3\rlap{\f@k\tbbbl0}#4\tbbl0#5#6\tbbl0\tbl0#7\bmend}%
+\def\bstsc#1#2#3#4#5#6#7{%
+    \Ibbl0#1#2#3#4\tbbbl0\tbbl0#5\rlap{\f@k\tbbl0}#6\tbl0#7\bmend}%
+\def\btssc#1#2#3#4#5#6#7{%
+     \Ibbl0#1#2#3\rlap{\f@k\tbbbl0}#4\tbbl0#5\rlap{\f@k\tbbl0}#6\tbl0#7\bmend}%
+\def\btcss#1#2#3#4#5#6#7{%
+     \Ibl0#1#2#3\rlap{\f@k\tbbbl0\tbbl0}#4#5\nbbl0#6\tbl0#7\bmend}%
+\def\bctss#1#2#3#4#5#6#7{%
+    \Ibl0#1#2#3#4\tbbbl0\tbbl0#5\nbbl0#6\tbbl0\tbl0#7\bmend}%
+\def\bssct#1#2#3#4#5#6#7{%
+    \Ibbl0#1#2#3#4\tbbl0#5#6\tbbbl0\tbbl0\tbl0#7\bmend}%
+\def\bsstc#1#2#3#4#5#6#7{%
+    \Ibbl0#1#2#3#4\tbbl0#5\rlap{\f@k\tbbbl0\tbbl0}#6\tbl0#7\bmend}%
+%
+%  3 s's, 1 t
+%
+\def\bssst#1#2#3#4#5#6#7{\Ibbl0#1#2#3#4#5#6\tbbbl0\tbl0#7\bmend}%
+\def\bssts#1#2#3#4#5#6#7{\Ibbl0#1#2#3#4#5\tbbbl0#6\tbl0#7\bmend}%
+\def\bstss#1#2#3#4#5#6#7{\Ibbl0#1#2#3#4\tbbbl0#5#6\tbl0#7\bmend}%
+\def\btsss#1#2#3#4#5#6#7{%
+    \Ibbl0#1#2#3\rlap{\f@k\tbbbl0}#4#5#6\tbbl0\tbl0#7\bmend}%
+%
+%  2 s's, 2 t's
+%
+\def\bsstt#1#2#3#4#5#6#7{\Ibbl0#1#2#3#4#5\nbbbl0#6\tbl0#7\bmend}%
+\def\bstst#1#2#3#4#5#6#7{\Ibbl0#1#2#3#4\tbbbl0#5#6\tbbbl0\tbl0#7\bmend}%
+\def\bstts#1#2#3#4#5#6#7{%
+     \Ibbl0#1#2#3#4\tbbbl0#5\rlap{\f@k\tbbbl0}#6\tbl0#7\bmend}%
+\def\btsst#1#2#3#4#5#6#7{\Ibbl0#1#2#3\rlap{\f@k\tbbbl0}#4#5#6\tbbbl0\tbl0#7\bmend}%
+\def\btsts#1#2#3#4#5#6#7{%
+     \Ibbl0#1#2#3\rlap{\f@k\tbbbl0}#4#5\rlap{\f@k\tbbbl0}#6\tbl0#7\bmend}%
+\def\bttss#1#2#3#4#5#6#7{\Ibbbl0#1#2#3#4\tbbbl0#5#6\tbl0#7\bmend}%
+%
+%  1 s, 3 t's
+%
+\def\bsttt#1#2#3#4#5#6#7{\Ibbl0#1#2#3#4\nbbbl0#5#6\tbbbl0\tbbl0\tbl0#7\bmend}%
+\def\btstt#1#2#3#4#5#6#7{%
+   \Ibbl0#1#2#3\rlap{\f@k\tbbbl0}#4#5\nbbbl0#6\tbbbl0\tbbl0\tbl0#7\bmend}%
+\def\bttst#1#2#3#4#5#6#7{%
+    \Ibbbl0#1#2#3#4\tbbbl0#5#6\tbbbl0\tbbl0\tbl0#7\bmend}%
+\def\bttts#1#2#3#4#5#6#7{\Ibbbl0#1#2#3#4#5\tbbbl0#6\tbbl0\tbl0#7\bmend}%
+%
+\makeatother
+%
+\def\downtext#1{\zcharnote H{#1}}
+\def\Downtext#1{\zcharnote D{#1}}
+%
+\let\alabreve\allabreve% accommodate a typo in bmw2tex
+%
+\endcatcodesmusic% restore characters to their standard usage
+%
+%  miscellaneous useful non-music macro definitions
+%
+\def\USdate{%
+\def\today{\ifcase\month\or Jan.\or Feb.\or Mar.\or Apr. \or
+           May.\or June\or July\or Aug.\or Sep.\or Oct.\or Nov.\or Dec.\fi
+           \ \number\day, \number\year}}% this is from the TeXbook
+%
+\def\Eurodate{%
+\def\today{\number\day\ \ifcase\month\or Jan.\or Feb.\or Mar.\or Apr. \or
+           May.\or June\or July\or Aug.\or Sep.\or Oct.\or Nov.\or Dec.\fi
+           \  \number\year}}% this is from the TeXbook
+%
+\USdate
+%
+\font\twelvebf=\fonthdg mbx12% useful for part headings
+%
+\def\medley{\let\medleyflag=\relax}% useful for making medleys
+\def\byemedley{\ifx\medleyflag\relax\endinput\fi}%
+%
+\endinput
+%
+\endmain
+\end{document}%

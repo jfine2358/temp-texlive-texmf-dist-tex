@@ -1,0 +1,207 @@
+%
+% CoDi: Commutative Diagrams for TeX
+% Copyright (c) 2015-2020 Paolo Brasolin <paolo.brasolin@gmail.com>
+% SPDX-License-Identifier: MIT
+%
+% This file is part of CoDi 1.0.1, released on 2020/06/11 under MIT license.
+%
+
+% μήτρα • (mítra)
+%   1. womb
+%   2. matrix
+%   3. mold
+
+% Mitra is an alternative parsing mechanism for TiKz matrices of nodes.
+% It couples with ozos to ensure the node contents  always pass through the TikZ key.
+
+\usetikzlibrary{matrix}
+\usetikzlibrary{commutative-diagrams.koinos}
+
+%==[ TikZ/pgf layer ]===========================================================
+
+\pgfkeys{
+  /mitra/every node/.style={},
+  /mitra/every matrix/.style={
+    /tikz/matrix,
+    /tikz/cells={
+      /tikz/anchor=base
+    }
+  },
+  % NOTE: the alias key *cannot* be put along with global node styles
+  %   because of execution order.
+  /mitra/matrix coordinates alias/.style={
+    /tikz/alias=\tikzmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn
+  }
+}
+
+%==[ main macro ]===============================================================
+
+\def\kDMitra
+  {\kDMitraFetchMatrixThen
+  {\kDMitraParseMatrixTableThen
+   \kDMitraOutput}}
+
+% General purpose scratch register.
+\newtoks\kDMitraTmpTok
+
+%==[ fetching routine ]=========================================================
+
+% I use the general one implemented by koinos.
+\let\kDMitraFetchMatrixThen\kDFetchOptAndGrpThen
+
+%==[ parsing routine: /table ]==================================================
+
+\newtoks\kDMitraMatOutTok
+
+\def\kDMitraParseMatrixTableThen#1{%
+  \kDMitraMatOutTok={}%
+  \expandafter\kDMitraParseTable\the\kDGrpTok\kD
+  #1}
+
+\def\kDMitraParseTable
+  {\kDMitraParseAllRowsThen\relax}
+
+\def\kDMitraParseAllRowsThen#1{%
+  \def\kDExit{#1}%
+  \kDIfNextHardCh\kD
+    {\expandafter\kDExit\kDGobbleHardTok}%
+    {\kDMitraParseOneRowThen{\kDMitraParseAllRowsThen{#1}}}}
+
+%==[ parsing routine: /table/row ]==============================================
+
+\def\kDMitraParseOneRowThen#1%
+  {\kDMitraMarkRowEndBefore
+  {\kDMitraParseAllColsThen
+  {\kDMitraParseRowEndThen
+  {#1}}}}
+
+\kDStoreCatcodeOf &
+\ifConTeXt\catcode`&=12\else\catcode`&=4\fi
+\def\kDMitraMarkRowEndBefore#1#2\\{#1#2&\kD\\}
+\kDRestoreCatcodeOf &
+
+\def\kDMitraParseAllColsThen#1{%
+  \def\kDExit{#1}%
+  \kDIfNextHardCh\kD
+    {\expandafter\kDExit\kDGobbleHardTok}%
+    {\kDMitraParseOneColThen{\kDMitraParseAllColsThen{#1}}}}
+
+\def\kDMitraParseRowEndThen#1%
+  {\kDMitraFetchRowEndThen
+  {\kDMitraPrintRowEndThen
+  {#1}}}
+
+\def\kDMitraFetchRowEndThen#1\\{\kDMitraMaybeFetchRowOptionsThen{#1}}
+
+\newtoks\kDMitraRowOptTok
+
+\def\kDMitraPrintRowEndThen#1{%
+  \edef\kDAct{\noexpand\kDMitraTmpTok={\noexpand\\\the\kDMitraRowOptTok}}%
+  \kDAct
+  \kDAppend\kDMitraTmpTok\kDMitraMatOutTok
+  #1}
+
+\def\kDMitraMaybeFetchRowOptionsThen#1{%
+  \kDMitraRowOptTok={}%
+  \kDIfNextHardCh[%
+    {\kDMitraFetchRowOptionsThen{#1}}%
+    {#1}}
+
+\def\kDMitraFetchRowOptionsThen#1[#2]{\kDMitraRowOptTok={[#2]}#1}
+
+%==[ parsing routine: /table/row/column ]=======================================
+
+\def\kDMitraParseOneColThen#1%
+  {\kDMitraParseCellThen
+  {\kDMitraParseColEndThen
+  {#1}}}
+
+\def\kDMitraParseColEndThen#1%
+  {\kDMitraMaybeFetchColOptionsThen
+  {\kDMitraMaybePrintColEndThen
+  {#1}}}
+
+\newtoks\kDMitraColOptTok
+
+\def\kDMitraMaybeFetchColOptionsThen#1{%
+  \kDMitraColOptTok={}%
+  \kDIfNextHardCh[%
+    {\kDMitraFetchColOptionsThen{#1}}%
+    {#1}}
+
+\def\kDMitraFetchColOptionsThen#1[#2]{\kDMitraColOptTok={[#2]}#1}
+
+\def\kDMitraMaybePrintColEndThen#1{%
+  \kDIfNextHardCh\kD
+    {#1}%
+    {% NOTE: we use \pgfmatrixnextcell instead of & to avoid catcode juggling
+      \edef\kDAct{\noexpand\kDMitraTmpTok={\noexpand\pgfmatrixnextcell\the\kDMitraColOptTok}}%
+      \kDAct
+      \kDAppend\kDMitraTmpTok\kDMitraMatOutTok
+      #1%
+    }}
+
+%==[ parsing routine: /table/row/column/cell ]==================================
+
+\def\kDMitraParseCellThen#1%
+  {\kDMitraMaybeFetchCellOptionsThen
+  {\kDMitraFetchCellContentThen
+  {\kDMitraPrintCellThen
+  {#1}}}}
+
+\newtoks\kDMitraCelOptTok
+
+\def\kDMitraMaybeFetchCellOptionsThen#1{%
+  \kDMitraCelOptTok={}%
+  \kDIfNextHardCh|%
+    {\kDMitraFetchCellOptionsThen{#1}}
+    {#1}}
+
+\def\kDMitraFetchCellOptionsThen#1|#2|{\kDMitraCelOptTok={#2}#1}
+
+\newtoks\kDMitraCelCntTok
+
+\kDStoreCatcodeOf &
+\ifConTeXt\catcode`&=12\else\catcode`&=4\fi
+\def\kDMitraFetchCellContentThen#1#2&{%
+  \kDMitraCelCntTok={#2}%
+  \kDTrimLeadingSpace\kDMitraCelCntTok
+  \kDTrimTrailingSpace\kDMitraCelCntTok
+  #1}
+\kDRestoreCatcodeOf &
+
+\def\kDMitraMaybeDoCellThen#1{%
+  \kDIfNextHardCh\kD
+    {#1}%
+    {\kDMitraParseOneColThen{#1}}}
+
+\def\kDMitraPrintCellThen#1{%
+  \edef\kDAct{%
+    \noexpand\kDMitraTmpTok={%
+      \noexpand\node
+        [/mitra/every node]
+        \the\kDMitraCelOptTok
+        [node contents={\the\kDMitraCelCntTok},/mitra/matrix coordinates alias];
+      \kDMitraMaybeDumpCell}}%
+  \kDAct
+  \kDAppend\kDMitraTmpTok\kDMitraMatOutTok
+  #1}
+
+%==[ dumping routine ]==========================================================
+
+\def\kDMitraMaybeDumpCell{\noexpand\pgfextra{%
+  \noexpand\kDDump{'\noexpand\the\noexpand\pgfmatrixcurrentrow-\noexpand\the\noexpand\pgfmatrixcurrentcolumn':}%
+  \noexpand\kDDump{\space\space options: '\the\kDMitraCelOptTok'}%
+  \noexpand\kDDump{\space\space content: '\the\kDMitraCelCntTok'}}}
+
+%==[ output routine ]===========================================================
+
+\def\kDMitraOutput{%
+  \edef\kDAct{%
+    \noexpand\kDMitraTmpTok={%
+      \noexpand\matrix
+        [/mitra/every matrix]%
+        \the\kDOptTok
+        {\the\kDMitraMatOutTok};}}%
+  \kDAct
+  \the\kDMitraTmpTok}

@@ -1,0 +1,133 @@
+%D \module
+%D   [       file=lang-url,
+%D        version=2008.01.22, % used to be lang-mis
+%D          title=\CONTEXT\ Language Macros,
+%D       subtitle=Language Options,
+%D         author=Hans Hagen,
+%D           date=\currentdate,
+%D      copyright={PRAGMA ADE \& \CONTEXT\ Development Team}]
+%C
+%C This module is part of the \CONTEXT\ macro||package and is
+%C therefore copyrighted by \PRAGMA. See mreadme.pdf for
+%C details.
+
+\registerctxluafile{lang-url}{1.001}
+
+\unprotect
+
+%D Traditionally this code is in the language namespace as
+%D hyphenation relates to languages.
+
+%D \macros
+%D   {hyphenatedurl}
+%D
+%D For those who want to put full \URL's in a text, we offer
+%D
+%D \startbuffer
+%D \hyphenatedurl{http://optimist.optimist/optimist/optimist.optimist#optimist}
+%D \stopbuffer
+%D
+%D \typebuffer
+%D
+%D which breaks at the appropriate places. Watch the \type{#}
+%D hack.
+%D
+%D When passed as argument, like in \type {\goto}, one needs
+%D to substitute a \type {\\} for each \type{#}.
+%D
+%D \startbuffer
+%D \hyphenatedurl{http://this.is.a.rather/strange/reference#indeed}
+%D \stopbuffer
+%D
+%D \typebuffer
+
+\newtoks\everyhyphenatedurl
+
+\appendtoks
+   \let\&\letterampersand
+   \let\#\letterhash
+   \let\~\lettertilde
+   \let\\\letterbackslash
+   \let\$\letterdollar
+   \let\^\letterhat
+   \let\_\letterunderscore
+   \let\{\letterleftbrace
+   \let\}\letterrightbrace
+   \let\|\letterbar
+   \let~=\lettertilde
+   \let|=\letterbar
+\to \everyhyphenatedurl
+
+\let\hyphenatedurlseparator    \empty % \periodcentered
+\let\hyphenatedurldiscretionary\empty
+
+\setnewconstant\hyphenatedurllefthyphenmin \plusthree
+\setnewconstant\hyphenatedurlrighthyphenmin\plusthree
+
+\def\lang_url_space         {\nobreak\hskip\zeropoint plus\onepoint\nobreak}
+\def\lang_url_after       #1{\char#1\discretionary{}{\hyphenatedurlseparator}{}}
+\def\lang_url_before      #1{\discretionary{\hyphenatedurlseparator}{}{}\char#1\relax}
+\def\lang_url_normal      #1{\char#1\relax}
+\def\lang_url_disc        #1{\discretionary{}{}{}}
+
+\def\lang_url_space_trace   {\nobreak\begingroup\darkyellow\ruledhskip\zeropoint plus\onepoint\endgroup\nobreak}
+\def\lang_url_after_trace #1{\char#1\hsmash{\darkblue\vl}\discretionary{}{\hyphenatedurlseparator}{}}
+\def\lang_url_before_trace#1{\discretionary{\hyphenatedurlseparator}{}{}\hsmash{\darkred\vl}\char#1\relax}
+\def\lang_url_normal_trace#1{\char#1\relax}
+\def\lang_url_disc_trace  #1{\discretionary{\hsmash{\darkgreen\vl}}{\hsmash{\darkgreen\vl}}{\hsmash{\darkgreen\vl}}}
+
+\def\showhyphenatedurlbreaks
+ {\let\lang_url_space \lang_url_space_trace
+  \let\lang_url_after \lang_url_after_trace
+  \let\lang_url_before\lang_url_before_trace
+  \let\lang_url_normal\lang_url_normal_trace
+  \let\lang_url_disc  \lang_url_disc_trace}
+
+\def\sethyphenatedurlnormal#1{\ctxcommand{hyphenatedurl.setcharacters(\!!bs#1\!!es,0)}} % Lua names will change
+\def\sethyphenatedurlbefore#1{\ctxcommand{hyphenatedurl.setcharacters(\!!bs#1\!!es,1)}} % Lua names will change
+\def\sethyphenatedurlafter #1{\ctxcommand{hyphenatedurl.setcharacters(\!!bs#1\!!es,2)}} % Lua names will change
+
+% \sethyphenatedurlafter{ABCDEF}
+
+\unexpanded \def\hyphenatedurl#1%
+  {\dontleavehmode
+   \begingroup
+   \the\everyhyphenatedurl
+   \normallanguage\zerocount
+   \let\s\lang_url_space
+   \let\a\lang_url_after
+   \let\b\lang_url_before
+   \let\n\lang_url_normal
+   \let\d\lang_url_disc
+   \normalexpanded{\noexpand\ctxcommand{hyphenatedurl(
+        \!!bs\noexpand\detokenize{#1}\!!es,
+        \number\hyphenatedurllefthyphenmin,
+        \number\hyphenatedurlrighthyphenmin,
+        "\hyphenatedurldiscretionary"
+    )}}%
+   \endgroup}
+
+%D \macros
+%D   {hyphenatedfilename}
+%D
+%D For the moment we treat filenames in a similar way,
+%D
+%D \starttyping
+%D \hyphenatedfilename{here/there/filename.suffix}
+%D \stoptyping
+
+\ifx\hyphenatedfilename\undefined \let\hyphenatedfilename\hyphenatedurl \fi
+
+% \def\test#1%
+%   {\dontleavehmode
+%    \begingroup
+%    \tttf
+%    \hyphenatedurl {%
+%      \letterampersand #1\letterampersand #1\letterampersand #1\letterampersand #1\letterampersand
+%      \letterhash      #1\letterhash      #1\letterpercent   #1\letterslash     #1\letterampersand
+%    }%
+%    \endgroup}
+
+% \dorecurse{100}{\test{a} \test{ab} \test{abc} \test{abcd} \test{abcde} \test{abcdef}}
+
+\protect \endinput

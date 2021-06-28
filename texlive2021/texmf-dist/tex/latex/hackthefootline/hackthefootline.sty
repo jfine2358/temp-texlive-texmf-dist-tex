@@ -1,0 +1,397 @@
+%%	This is file 'hackthefootline.sty', Version 2018-01-29
+%%	Copyright 2017-18 Sebastian Friedl <sfr682k@t-online.de>
+%% 
+%%	This work may be distributed and/or modified under the conditions of the LaTeX Project
+%%	Public License, either version 1.3c of this license or (at your option) any later version.
+%%	The latest version of this license is available at
+%%		http://www.latex-project.org/lppl.txt
+%%	and version 1.3c or later is part of all distributions of LaTeX version 2008-05-04 or later
+%%
+%%	This work has the LPPL maintenace status 'maintained'.
+%%	The current maintainer of this work is Sebastian Friedl.
+%%
+%%	This work consists of the files hackthefootline.sty, hackthefootline-examples.tex and
+%%	hackthefootline-doc.tex
+%%
+%%	-------------------------------------------------------------------------------------------
+%%
+%%	The hackthefootline package is a tool providing arbitrary footline selection and
+%%	configuration for LaTeX beamer's standard themes (it may work with other themes as well)
+%%
+%%	-------------------------------------------------------------------------------------------
+%%
+%%	Please report bugs and other problems as well as suggestions for improvements
+%%	to my email address (sfr682k@t-online.de).
+%%
+%%	-------------------------------------------------------------------------------------------
+%%
+%%	Acknowledgement:
+%%	The basic layout of the two- and three-column footline is based on the original LaTeX
+%%	beamer split and infolines outer themes written by Till Tantau.
+%%
+%%	-------------------------------------------------------------------------------------------
+
+
+\ProvidesPackage{hackthefootline}[2018/01/29 hackthefootline: Arbitrary footline selection and configuration for LaTeX beamer's standard themes]
+\mode<presentation>
+
+\RequirePackage{ifthen}
+\RequirePackage{pgfkeys}
+
+\newcommand{\htfprintmessage}{%
+	\typeout{}
+	\typeout{========================================}
+	\typeout{THE FOOTLINE HAS BEEN TAKEN OVER}
+	\typeout{by the hackthefootline package}
+	\typeout{Version 2018/01/29}
+	\typeout{}
+	\typeout{(c) 2017-18 Sebastian Friedl}
+	\typeout{Licensed under LPPL 1.3c or later}
+	\typeout{========================================}
+	\typeout{}}
+
+
+
+% PACKAGE OPTIONS AND VARIABLES -- INCLUDES AUXILIARY STUFF -------------------------------------------------------------------------------------
+
+\DeclareOptionBeamer{onecol}{%
+	\htfconfig{title=short, authinst=both, date=none, framenrs=fraction, atsep=colon}%
+	\AtBeginDocument{\htfconfig{cols=one}}\htfprintmessage}
+\DeclareOptionBeamer{twocols}{%
+	\htfconfig{title=short, authinst=onlyauthor, date=none, framenrs=none, atsep=colon}%
+	\AtBeginDocument{\htfconfig{cols=two}}\htfprintmessage}
+\DeclareOptionBeamer{threecols}{%
+	\htfconfig{title=short, authinst=instpths, date=short, framenrs=fraction, atsep=colon}%
+	\AtBeginDocument{\htfconfig{cols=three}}\htfprintmessage}
+
+\newif\ifbeamer@htfcountappendixframes
+\beamer@htfcountappendixframesfalse
+\DeclareOptionBeamer{countappendixframes}{\beamer@htfcountappendixframestrue}
+
+\newif\ifbeamer@htffunnystuff
+\beamer@htffunnystufftrue
+\DeclareOptionBeamer{nofun}{\beamer@htffunnystufffalse}
+
+
+
+% Check for author and/or institute when inserting the separation symbol?
+\newif\ifbeamer@htfcheckauth
+\newif\ifbeamer@htfcheckinst
+\newif\ifbeamer@htfinsertsep
+\newcommand{\htfcheckauthor}{\beamer@htfcheckauthtrue\beamer@htfcheckinstfalse}
+\newcommand{\htfcheckinstit}{\beamer@htfcheckauthfalse\beamer@htfcheckinsttrue}
+\newcommand{\htfcheckboth}{\beamer@htfcheckauthtrue\beamer@htfcheckinsttrue}
+\newcommand{\htfchecknone}{\beamer@htfcheckauthfalse\beamer@htfcheckinstfalse}
+
+% Variables
+\newif\ifbeamer@htfnotitle
+\newif\ifbeamer@htfshowframenrs
+
+% Own replacement for \beamer@inappendix; required for compatibility reasons
+\newif\ifbeamer@htfinsideappendix
+\beamer@htfinsideappendixfalse
+
+
+
+% TEMPLATES -------------------------------------------------------------------------------------------------------------------------------------
+% Please **always** use \defbeamertemplate **without asterisk**!!
+
+% Title
+\defbeamertemplate{htf-title}{none}{}
+\defbeamertemplate{htf-title}{short}{\insertshorttitle}
+\defbeamertemplate{htf-title}{long}{\inserttitle}
+
+% Author/Institute
+\defbeamertemplate{htf-authinst}{none}{}
+\defbeamertemplate{htf-authinst}{onlyauth}{\insertshortauthor}
+\defbeamertemplate{htf-authinst}{onlyinst}{\insertshortinstitute}
+\defbeamertemplate{htf-authinst}{instpths}{\insertshortauthor\ifx\beamer@shortinstitute\@empty\else~~(\insertshortinstitute)\fi}
+\defbeamertemplate{htf-authinst}{authpths}{\insertshortinstitute\ifx\beamer@shortauthor\@empty\else~~(\insertshortauthor)\fi}
+\defbeamertemplate{htf-authinst}{bothcmma}{\insertshortauthor\ifx\beamer@shortinstitute\@empty\else,~\insertshortinstitute\fi}
+
+% Date
+\defbeamertemplate{htf-date}{none}{}
+\defbeamertemplate{htf-date}{short}{\insertshortdate}
+\defbeamertemplate{htf-date}{long}{\insertdate}
+
+% Frame Numbers
+\defbeamertemplate{htf-framenrs}{none}{}
+\defbeamertemplate{htf-framenrs}{counter}{\insertframenumber}
+\defbeamertemplate{htf-framenrs}{fraction}{%
+	\ifbeamer@htfcountappendixframes{\insertframenumber~/~\inserttotalframenumber}%
+	\else%
+		\ifx\insertmainframenumber\@undefined{\insertframenumber~/~\inserttotalframenumber}%
+		\else%
+			% beamer v3.49 and later: detect whether appendix has been entered and use the required templates and use internal cmds
+			\ifbeamer@htfinsideappendix{\insertframenumberinappendix~/~\insertappendixframenumber}%
+			\else{\insertframenumber~/~\insertmainframenumber}%
+			\fi%
+		\fi%
+	\fi}
+\ifbeamer@htffunnystuff
+	\defbeamertemplate{htf-framenrs}{percent}{\htfupdateprogress\nprounddigits{0}\lenprint[htfpercent]{\htfprogress}}
+\fi
+
+
+% Author-Title-Seperator
+\defbeamertemplate{htf-atsep}{colon}{:~~~~}
+\defbeamertemplate{htf-atsep}{comma}{,~}
+\defbeamertemplate{htf-atsep}{space}{~~~~~~~~~~}
+
+
+
+% FOOTLINE DEFINITIONS --------------------------------------------------------------------------------------------------------------------------
+
+% Auxiliary length
+\newlength{\htfframenrboxwidth}%
+
+% No footline
+\defbeamertemplate*{footline}{htf-none}{}
+
+% One column
+\defbeamertemplate{footline}{htf-onecol}{%
+	\begin{beamercolorbox}[wd=\paperwidth,ht=2.25ex,dp=1ex,leftskip=.3cm,rightskip=.3cm]{palette primary}%
+		\usebeamerfont{author in head/foot}%
+		\usebeamertemplate{htf-authinst}%
+		%
+		\beamer@htfinsertsepfalse
+		\ifbeamer@htfcheckauth\ifx\beamer@shortauthor\@empty\else\beamer@htfinsertseptrue\fi\fi
+		\ifbeamer@htfcheckinst\ifx\beamer@shortinstitute\@empty\else\beamer@htfinsertseptrue\fi\fi
+		%
+		\ifx\beamer@shorttitle\@empty\beamer@htfinsertsepfalse\fi
+		\ifbeamer@htfnotitle\beamer@htfinsertsepfalse\fi
+		%
+		\ifbeamer@htfinsertsep\usebeamertemplate{htf-atsep}\fi
+		%
+		\usebeamerfont{title in head/foot}
+		\usebeamertemplate{htf-title}
+		\hfill
+		\usebeamercolor{date in head/foot}
+		\usebeamertemplate{htf-date}
+		%
+		% Measure the largest required space when printing frame numbers
+		\newbox\htfpagenumbox%
+		\newbox\htfpercframenumbox%
+		\setbox\htfpagenumbox=\hbox{0\inserttotalframenumber~/~0\inserttotalframenumber}%
+		\setbox\htfpercframenumbox=\hbox{100\,\%}%
+		\ifthenelse{\lengthtest{\wd\htfpagenumbox > \wd\htfpercframenumbox}}%
+			{\setlength{\htfframenrboxwidth}{\wd\htfpagenumbox}}%
+			{\setlength{\htfframenrboxwidth}{\wd\htfpercframenumbox}}%
+		%
+		\ifbeamer@htfshowframenrs \hspace{\htfframenrboxwidth}\hspace{.2\htfframenrboxwidth}~\fi%
+	\end{beamercolorbox}%
+	\ifbeamer@htfshowframenrs
+		\vspace{-3.25ex}
+		\hfill%
+		\addtolength{\htfframenrboxwidth}{.3cm}%
+		\addtolength{\htfframenrboxwidth}{2em}%
+		\addtolength{\htfframenrboxwidth}{.5\htfframenrboxwidth}%
+		\hspace{-1.3\htfframenrboxwidth}%
+		\begin{beamercolorbox}[wd=1.3\htfframenrboxwidth,ht=2.25ex,dp=1ex,right,rightskip=.3cm]{bg}%
+			% The color *has* to be set here; otherwise, the page number box will cover parts of the date
+			\usebeamercolor[fg]{date in head/foot}\usebeamertemplate{htf-framenrs}
+		\end{beamercolorbox}%
+	\fi}
+
+% Two columns
+\defbeamertemplate{footline}{htf-twocols}{%
+	\leavevmode%
+	\hbox{\begin{beamercolorbox}[wd=.5\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm,rightskip=.3cm]{author in head/foot}%
+			\usebeamerfont{author in head/foot}\usebeamertemplate{htf-date}\hfill\usebeamertemplate{htf-authinst}
+		\end{beamercolorbox}%
+		\begin{beamercolorbox}[wd=.5\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm,rightskip=.3cm]{title in head/foot}%
+			\usebeamerfont{title in head/foot}\usebeamertemplate{htf-title}\hfill
+			\ifbeamer@htfshowframenrs \usebeamertemplate{htf-framenrs} \fi
+	\end{beamercolorbox}}%
+	\vskip0pt}
+
+% Three columns
+\defbeamertemplate{footline}{htf-threecols}{
+	\leavevmode%
+	\hbox{%
+		\begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,left,leftskip=.3cm]{author in head/foot}%
+			\usebeamerfont{author in head/foot}\usebeamertemplate{htf-authinst}
+		\end{beamercolorbox}%
+		\begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+			\usebeamerfont{title in head/foot}\usebeamertemplate{htf-title}
+		\end{beamercolorbox}%
+		\begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right,rightskip=.3cm]{date in head/foot}%
+			\usebeamerfont{date in head/foot}\usebeamertemplate{htf-date}%
+			%
+			% Measure the largest required space when printing frame numbers
+			\newbox\htfpagenumbox%
+			\newbox\htfpercframenumbox%
+			\setbox\htfpagenumbox=\hbox{0\inserttotalframenumber~/~0\inserttotalframenumber}%
+			\setbox\htfpercframenumbox=\hbox{100\,\%}%
+			\ifthenelse{\lengthtest{\wd\htfpagenumbox > \wd\htfpercframenumbox}}%
+				{\setlength{\htfframenrboxwidth}{\wd\htfpagenumbox}}%
+				{\setlength{\htfframenrboxwidth}{\wd\htfpercframenumbox}}%
+			%
+			\ifbeamer@htfshowframenrs \hspace{\htfframenrboxwidth}\hspace{.2\htfframenrboxwidth}~\fi%
+		\end{beamercolorbox}%
+		\ifbeamer@htfshowframenrs%
+			\addtolength{\htfframenrboxwidth}{.3cm}%
+			\addtolength{\htfframenrboxwidth}{2em}%
+			\addtolength{\htfframenrboxwidth}{.5\htfframenrboxwidth}%
+			\hspace{-1.3\htfframenrboxwidth}%
+			\begin{beamercolorbox}[wd=1.3\htfframenrboxwidth,ht=2.25ex,dp=1ex,right,rightskip=.3cm]{bg}%
+				% The color *has* to be set here; otherwise, the page number box will cover parts of the date
+				\usebeamercolor[fg]{date in head/foot}\usebeamertemplate{htf-framenrs}
+			\end{beamercolorbox}%
+		\fi}%
+	\vskip0pt}
+
+
+
+% PGF KEYS STORING THE CURRENT FOOTLINE CONFIGURATION -------------------------------------------------------------------------------------------
+
+\pgfkeys{/hackthefootline/cols/.cd,
+	.is choice, .default=none,
+	one/.code={\setbeamertemplate{footline}[htf-onecol]\beamer@calculateheadfoot},
+	two/.code={\setbeamertemplate{footline}[htf-twocols]\beamer@calculateheadfoot},
+	three/.code={\setbeamertemplate{footline}[htf-threecols]\beamer@calculateheadfoot},
+	none/.code={%
+		\htfconfig{framenrs=none}%
+		\setbeamertemplate{footline}[htf-none]%
+		\beamer@calculateheadfoot},
+}
+
+\pgfkeys{/hackthefootline/title/.cd,
+	.is choice, .default=none,
+	short/.code={\setbeamertemplate{htf-title}[short]\beamer@htfnotitlefalse},
+	long/.code={\setbeamertemplate{htf-title}[long]\beamer@htfnotitlefalse},
+	none/.code={\setbeamertemplate{htf-title}[none]\beamer@htfnotitletrue},
+}
+
+\pgfkeys{/hackthefootline/authinst/.cd,
+	.is choice, .default=none,
+	onlyauthor/.code={\setbeamertemplate{htf-authinst}[onlyauth]\htfcheckauthor},
+	onlyinst/.code={\setbeamertemplate{htf-authinst}[onlyinst]\htfcheckinstit},
+	instpths/.code={\setbeamertemplate{htf-authinst}[instpths]\htfcheckboth},
+	authpths/.code={\setbeamertemplate{htf-authinst}[authpths]\htfcheckboth},
+	both/.code={\setbeamertemplate{htf-authinst}[bothcmma]\htfcheckboth},
+	none/.code={\setbeamertemplate{htf-authinst}[none]\htfchecknone},
+}
+
+\pgfkeys{/hackthefootline/date/.cd,
+	.is choice, .default=none,
+	short/.code={\setbeamertemplate{htf-date}[short]},
+	long/.code={\setbeamertemplate{htf-date}[long]},
+	none/.code={\setbeamertemplate{htf-date}[none]}
+}
+
+\pgfkeys{/hackthefootline/framenrs/.cd,
+	.is choice, .default=none,
+	counter/.code={\setbeamertemplate{htf-framenrs}[counter]\beamer@htfshowframenrstrue},
+	fraction/.code={\setbeamertemplate{htf-framenrs}[fraction]\beamer@htfshowframenrstrue},
+	percent/.code={%
+		\ifbeamer@htffunnystuff    \setbeamertemplate{htf-framenrs}[percent]%
+		\else                      \PackageError{hackthefootline}{Do not pass the nofun option when using percent frame numbers!}{}%
+		\fi
+		\beamer@htfshowframenrstrue%
+	},
+	none/.code={\setbeamertemplate{htf-framenrs}[none]\beamer@htfshowframenrsfalse},
+}
+
+\pgfkeys{/hackthefootline/atsep/.cd,
+	.is choice, .default=colon,
+	colon/.code={\setbeamertemplate{htf-atsep}[colon]},
+	comma/.code={\setbeamertemplate{htf-atsep}[comma]},
+	space/.code={\setbeamertemplate{htf-atsep}[space]},
+}
+
+% Configruation Command
+\newcommand{\htfconfig}[1]{\pgfkeys{/hackthefootline/.cd,#1}}
+
+
+
+% FORMER CONFIGURATION COMMANDS (OBSOLETE!!) ----------------------------------------------------------------------------------------------------
+
+% These configuration commands have been introduced in the initial release of this package and were implemented very ineffective.
+% Since using pgfkeys for switching the templates, the \htfconfig command has been introduced for easier footline configuration.
+% All commands defined in this section obsolete now and should be replaced by \htfconfig, since they may be removed soon.
+
+% Obsolete commands for switching templates
+\newcommand{\htfnotitle}{\htfObsoleteCMD\htfconfig{title=none}}
+\newcommand{\htfshorttitle}{\htfObsoleteCMD\htfconfig{title=short}}
+\newcommand{\htflongtitle}{\htfObsoleteCMD\htfconfig{title=none}}
+\newcommand{\htfnoauthinst}{\htfObsoleteCMD\htfconfig{authinst=none}}
+\newcommand{\htfonlyauthor}{\htfObsoleteCMD\htfconfig{authinst=onlyauthor}}
+\newcommand{\htfonlyinstitute}{\htfObsoleteCMD\htfconfig{authinst=onlyinst}}
+\newcommand{\htfinstitutepths}{\htfObsoleteCMD\htfconfig{authinst=instpths}}
+\newcommand{\htfauthorpths}{\htfObsoleteCMD\htfconfig{authinst=authpths}}
+\newcommand{\htfauthinst}{\htfObsoleteCMD\htfconfig{authinst=both}}
+\newcommand{\htfnodate}{\htfObsoleteCMD\htfconfig{date=none}}
+\newcommand{\htfshortdate}{\htfObsoleteCMD\htfconfig{date=short}}
+\newcommand{\htflongdate}{\htfObsoleteCMD\htfconfig{date=long}}
+\newcommand{\htfnoframenrs}{\htfObsoleteCMD\htfconfig{framenrs=none}}
+\newcommand{\htfcounterframenrs}{\htfObsoleteCMD\htfconfig{framenrs=counter}}
+\newcommand{\htffractionframenrs}{\htfObsoleteCMD\htfconfig{framenrs=fraction}}
+\newcommand{\htfpercentframenrs}{\htfObsoleteCMD\htfconfig{framenrs=percent}}
+\newcommand{\htfcolonsep}{\htfObsoleteCMD\htfconfig{atsep=colon}}
+\newcommand{\htfcommasep}{\htfObsoleteCMD\htfconfig{atsep=comma}}
+\newcommand{\htfsepspace}{\htfObsoleteCMD\htfconfig{atsep=space}}
+
+% This command was used to apply changes, but is useless now.
+\newcommand{\hackthefootline}{%
+	\PackageWarning{hackthefootline}{%
+		The \protect\hackthefootline command is obsolete and may be removed soon. Consider using \noexpand\htfconfig instead}}
+
+% A shorthand for printing an "this command is obsolete" warning
+\newcommand{\htfObsoleteCMD}{%
+	\PackageWarning{hackthefootline}{%
+		The old \noexpand\htf... commands are obsolete and may be removed soon. Consider using \noexpand\htfconfig instead}
+}
+
+
+
+% PROCESS OPTIONS -------------------------------------------------------------------------------------------------------------------------------
+% This *has* to be done here, otherwise mysterious things will happen ...
+% and too many packages will be required ...
+
+\ProcessOptionsBeamer
+
+
+
+% ACTIONS FOR NOT COUNTING APPENDIX FRAMES ------------------------------------------------------------------------------------------------------
+
+\ifbeamer@htfcountappendixframes\else
+	% Required packages
+	\ifx\insertmainframenumber\@undefined\RequirePackage{appendixnumberbeamer}\fi % only beamer v3.48 and earlier
+	\RequirePackage{etoolbox}
+	
+	% Removes frame numbers for appendix slides
+	\apptocmd{\appendix}{%
+		\htfconfig{framenrs=none}
+		\beamer@htfinsideappendixtrue
+	}{}{}
+\fi
+
+
+
+% REQUIREMENTS FOR SOME "FUNNY STUFF" -----------------------------------------------------------------------------------------------------------
+
+\ifbeamer@htffunnystuff
+	% Frame numbering in %: requirements, package settings, variables, commands
+	\RequirePackage{calc}
+	\RequirePackage[addmissingzero,autolanguage,nosepfour]{numprint}
+	\npdefunit{htfpercent}{\%}{1}
+	\newlength{\htfprogress}
+	\def\htfupdateprogress{%
+		\ifbeamer@htfcountappendixframes\setlength{\htfprogress}{100pt*\ratio{\insertframenumber pt}{\inserttotalframenumber pt}}%
+		\else%
+			\ifx\insertmainframenumber\@undefined\setlength{\htfprogress}{100pt*\ratio{\insertframenumber pt}{\inserttotalframenumber pt}}%
+			\else%
+				\ifbeamer@htfinsideappendix\setlength{\htfprogress}{100pt*\ratio{\insertframenumberinappendix pt}{\insertappendixframenumber pt}}%
+				\else\setlength{\htfprogress}{100pt*\ratio{\insertframenumber pt}{\insertmainframenumber pt}}%
+				\fi%
+			\fi%
+		\fi}
+\fi
+
+
+
+% END OF FILE -----------------------------------------------------------------------------------------------------------------------------------
+
+\mode<all>
+\endinput

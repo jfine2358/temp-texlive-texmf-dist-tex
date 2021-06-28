@@ -1,0 +1,376 @@
+% \iffalse meta-comment
+%
+% This is file `exppl2e.sty', for experimental pLaTeX2e.
+%
+% Copyright (c) 2016-2017 Japanese TeX Development Community
+%
+% This file is part of the pLaTeX2e system (community edition).
+% -------------------------------------------------------------
+%
+% ====================================================================
+%   開発者の方へ (2016-06-29 aminophen)
+%
+% このファイルのコードを実際にカーネルに取り入れるとき、単純にカット・
+% ペーストで dtx ファイルへ挿入します。ペーストした dtx ファイルから
+% ltx / sty ファイル等を生成したあとには、必ず
+%   * フォーマット作成に使われる ltx ファイルが意図どおり変更されたか
+%   * platexrelease.sty に新たなブロックが一つだけ追加されたか
+%     （例外的に 0000/00/00 の日付が含まれる場合は、ブロックが二つか）
+% を確認します。
+% ====================================================================
+%
+%%%%%%%% ^^A driver-like trick using catcode difference
+%
+% This file `exppl2e.sty' is a normal LaTeX package, so
+%   \RequirePackage{exppl2e}
+% and
+%   \usepackage{exppl2e}
+% works. However, it can also be typeset alone:
+%   platex exppl2e.sty
+% for convenience.
+%
+%<*hack>
+\ifx\undefined\@undefined\relax
+% case 1: This file must be a normal package
+  \NeedsTeXFormat{pLaTeX2e}
+  \ProvidesPackage{exppl2e}
+                [2017/05/04 v1.0l Experimental pLaTeX2e features]
+  \PackageWarningNoLine{exppl2e}{%
+      This is the unstable, experimental part of pLaTeX2e.\MessageBreak
+      This package may contain:\MessageBreak
+       * future patches to pLaTeX\MessageBreak
+       * experimental new features\MessageBreak
+      Please note that these can be removed without any\MessageBreak
+      announcement at some point in the future, and may\MessageBreak
+      also have some critical bugs. We appreciate any\MessageBreak
+      reports and comments. Thank you for your cooperation}
+  \RequirePackage[latest]{platexrelease}
+\else
+% case 2: This file pretends to be a document
+  \documentclass{jltxdoc}
+  \title{Experimental p\LaTeXe}
+  \author{Japanese \TeX\ Development Community}
+  \begin{document}
+    \maketitle
+    \DocInput{exppl2e.sty}
+  \end{document}
+\fi %     ^^A   In case 2, this \fi comes after \end{document}
+%</hack>  ^^A   so it has no effect.
+% \fi     ^^A   This \fi corresponds to \iffalse, and another
+%         ^^A   \fi is required for \ifx, see below;)
+%
+%%%%%%%% ^^A trick end
+%
+% \fi
+%
+%
+% \emph{注意}：これはExperimentalなp\LaTeXe{}、すなわちunstableな
+% 実験的p\LaTeX{}コードを提供するパッケージです。
+%
+%
+% \section{このパッケージの目的}
+%
+% コードの不用意な改変は即エンバグにつながり、利用者の多いp\LaTeX{}や
+% up\LaTeX{}では特に影響が大きいと思われます。その一方で、unstableなもの
+% もなるべく手軽にテストして頂きたいとも考えます。
+%
+% このパッケージ\file{exppl2e.sty}は、カーネル(stable)に将来含める
+% ことを想定したunstableな実験的コードを配布することを目的に作成しました。
+% テストをよろしくお願いします。
+%
+%
+% \section{実験的コードの読みこみかた}
+%
+% デフォルトの配布では、実験的なコードは無効化されています。
+% 実験的なp\LaTeXe{}を試したい場合は、以下のいずれかの方法を使います：
+%
+% \subsection{少しだけ試してみたい場合}
+%
+% パッケージ\file{exppl2e.sty}を読み込みます。ただし、|\usepackage|命令
+% を使うのではなく、文書クラスより\emph{前}に読み込んでおくのが無難です。
+%\begin{verbatim}
+%   \RequirePackage{exppl2e}
+%   \documentclass{article}
+%\end{verbatim}
+%
+% \subsection{常に実験的コードを使用したい場合}
+%
+% このパッケージと一緒にインストールされる新しいp\LaTeX{}は、お使いの
+% \texttt{platex}などのプログラムが見つけることのできる場所（簡単なの
+% はカレントディレクトリ、あるいは|$TEXMFLOCAL/tex|以下の適切な場所）
+% に\file{platex.cfg}というファイルがあれば、起動時にそれを読み込み
+% ます。この機能を利用すると、以下の内容の\file{platex.cfg}を用意し
+% ておくだけで、自動的に毎回\file{exppl2e.sty}が読み込まれます。
+%\begin{verbatim}
+% \RequirePackage{exppl2e}
+%\end{verbatim}
+%
+%
+% \section{このドキュメントについて}
+%
+% コミュニティ版p\LaTeX{}が配布するほかのstyファイルとは異なり、
+% 実質的には\file{exppl2e.sty}はdtxファイルと同等です。すなわち、
+% コードと一緒にdtx互換ドキュメントが含まれています。このドキュメント
+% を組版するには
+%\begin{verbatim}
+%   # platex exppl2e.sty
+%\end{verbatim}
+% を実行します。
+%
+%
+% \section{コード}
+%
+% ここからp\LaTeXe{}のexperimentalコード本体です。
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \section{PDFのブックマークとアクセント文字}
+%
+% \begin{macro}{\pltx@isletter}
+% \changes{v???}{????/??/??}{PDFのしおりにアクセント文字が含まれる場合に対応}
+%    \begin{macrocode}
+%<platexrelease>\plIncludeInRelease{????/??/??}{\pltx@isletter}
+%<platexrelease>                   {Support PD1 encoding}%
+%<*pldefs|platexrelease>
+\def\pltx@mark{\pltx@mark@}
+\let\pltx@scanstop\relax
+\long\def\pltx@cond#1\fi{%
+  #1\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
+\def\pltx@pdfencA{PD1}
+\def\pltx@composite@chkenc{%
+  \ifx\pltx@pdfencA\f@encoding
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
+\long\def\pltx@isletter#1{%
+  \expandafter\pltx@isletter@i#1\pltx@scanstop}
+\long\def\pltx@isletter@i#1\pltx@scanstop{%
+  \pltx@cond\ifx\pltx@mark#1\pltx@mark\fi{\@firstoftwo}%
+    {\pltx@isletter@ii\pltx@scanstop#1\pltx@scanstop{}#1\pltx@mark}}
+\long\def\pltx@isletter@ii#1\pltx@scanstop#{%
+  \pltx@cond\ifx\pltx@mark#1\pltx@mark\fi%
+    {\pltx@isletter@iii}{\pltx@isletter@iv}}
+\long\def\pltx@isletter@iii#1\pltx@mark{\@secondoftwo}
+\long\def\pltx@isletter@iv#1#2#3\pltx@mark{%
+  \pltx@cond\ifx\pltx@mark#3\pltx@mark\fi{%
+    \pltx@cond{\ifnum0\ifcat A\noexpand#21\fi\ifcat=\noexpand#21\fi>\z@}\fi
+      {\@firstoftwo}{\pltx@composite@chkenc}%
+  }{\pltx@composite@chkenc}}
+%</pldefs|platexrelease>
+%<platexrelease>\plEndIncludeInRelease
+%<platexrelease>\plIncludeInRelease{2016/06/10}{\pltx@isletter}
+%<platexrelease>                   {Added \pltx@isletter}%
+%<platexrelease>\def\pltx@mark{\pltx@mark@}
+%<platexrelease>\let\pltx@scanstop\relax
+%<platexrelease>\long\def\pltx@cond#1\fi{%
+%<platexrelease>  #1\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
+%<platexrelease>\long\def\pltx@isletter#1{%
+%<platexrelease>  \expandafter\pltx@isletter@i#1\pltx@scanstop}
+%<platexrelease>\long\def\pltx@isletter@i#1\pltx@scanstop{%
+%<platexrelease>  \pltx@cond\ifx\pltx@mark#1\pltx@mark\fi{\@firstoftwo}%
+%<platexrelease>    {\pltx@isletter@ii\pltx@scanstop#1\pltx@scanstop{}#1\pltx@mark}}
+%<platexrelease>\long\def\pltx@isletter@ii#1\pltx@scanstop#{%
+%<platexrelease>  \pltx@cond\ifx\pltx@mark#1\pltx@mark\fi%
+%<platexrelease>    {\pltx@isletter@iii}{\pltx@isletter@iv}}
+%<platexrelease>\long\def\pltx@isletter@iii#1\pltx@mark{\@secondoftwo}
+%<platexrelease>\long\def\pltx@isletter@iv#1#2#3\pltx@mark{%
+%<platexrelease>  \pltx@cond\ifx\pltx@mark#3\pltx@mark\fi{%
+%<platexrelease>    \pltx@cond{\ifnum0\ifcat A\noexpand#21\fi\ifcat=\noexpand#21\fi>\z@}\fi
+%<platexrelease>      {\@firstoftwo}{\@secondoftwo}%
+%<platexrelease>  }{\@secondoftwo}}
+%<platexrelease>\plEndIncludeInRelease
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\@text@composite@x}
+% \changes{v???}{????/??/??}{v1.6eでいったんパッチを除去したコードを再導入}
+%    \begin{macrocode}
+%<platexrelease>\plIncludeInRelease{????/??/??}{\@text@composite@x}
+%<platexrelease>                   {Fix for non-zero baselineshift}%
+%<*pldefs|platexrelease>
+\def\@text@composite@x#1#2{%
+  \ifx#1\relax
+    #2%
+  \else\pltx@isletter{#1}{#1}{%
+    \begingroup
+    \setbox\z@\hbox\bgroup%
+      \ybaselineshift\z@\tbaselineshift\z@
+      #1%
+      \g@tlastchart@\@tempcntb
+      \xdef\pltx@composite@temp{\noexpand\@tempcntb=\the\@tempcntb\relax}%
+      \aftergroup\pltx@composite@temp
+    \egroup
+%    \end{macrocode}
+%    \begin{macrocode}
+    \ifnum\@tempcntb<\z@
+      \@tempdima=\iftdir
+          \ifmdir
+            \ifmmode\tbaselineshift\else\ybaselineshift\fi
+          \else
+            \tbaselineshift
+          \fi
+        \else
+          \ybaselineshift
+        \fi
+      \@tempcntb=\@cclvi
+    \else\@tempdima=\z@
+    \fi
+%    \end{macrocode}
+% アクセントが付く「本体の文字」が欧文文字と推測される場合には、
+% 一旦数式モードに入ることによって\cs{xkanjiskip}が前後に入るようにします。
+% 必要なら、数式モードの前後に\cs{null}を補って\cs{xkanjiskip}の挿入を抑制します。
+%    \begin{macrocode}
+    \ifnum\@tempcntb<\@cclvi
+      \ifnum\@tempcntb>\m@ne\ifnum\@tempcntb<\@cclvi
+        \ifodd\xspcode\@tempcntb\else\leavevmode\hbox{}\fi
+      \fi\fi
+      \begingroup\mathsurround\z@$%
+        \ifx\textbaselineshiftfactor\@undefined\else
+          \textbaselineshiftfactor\z@\fi
+        \box\z@
+      $\endgroup%
+      \ifnum\@tempcntb>\m@ne\ifnum\@tempcntb<\@cclvi
+        \ifnum\xspcode\@tempcntb<2\hbox{}\fi
+      \fi\fi
+%    \end{macrocode}
+%    \begin{macrocode}
+    \else
+      \ifdim\@tempdima=\z@{\ybaselineshift\z@\tbaselineshift\z@#1}%
+      \else\leavevmode\lower\@tempdima\box\z@\fi
+    \fi
+    \endgroup}%
+  \fi
+}
+%</pldefs|platexrelease>
+%<platexrelease>\plEndIncludeInRelease
+%    \end{macrocode}
+% \end{macro}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \section{脚注の合印直後での改行を許可}
+%
+% p\LaTeXe{}カーネル(2016/09/03)に導入したため削除。
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \section{支柱}
+%
+% p\LaTeXe{}カーネル(2017/04/08)に導入したため削除。
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \section{e-p\TeX{}でのFAM256パッチの利用}
+%
+% p\LaTeXe{}カーネル(2016/11/29)に導入したため削除。
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \section{改行}
+%
+% 強制改行|\\|と|\par|が連続した場合の挙動については以下のとおり保留中。
+%
+% \begin{macro}{\@gnewline}
+% \changes{v1.1c}{1995/08/25}{行頭禁則文字の直前での改行での不具合の修正}
+% 日本語\TeX{}の行頭禁則処理は、禁則対象文字の直前に、
+% |\prebreakpenalty|で指定されたペナルティの値を挿入することで
+% 行なっています。
+% ところが、改行コマンドは負のペナルティの値を挿入することで改行を行ないます。
+% そのために、禁則ペナルティの値が$10000$の文字の直後では、ペナルティの値が
+% 相殺され、改行することができません。
+%
+%\begin{verbatim}
+% あいうえお\\
+% ！かきくけこ
+%\end{verbatim}
+%
+% したがって、|\newline|マクロに|\mbox{}|を入れることによって、
+% |\newline|マクロのペナルティ$-10000$と行頭文字のペナルティ$10000$が
+% 加算されないようにします。|\\|は|\newline|マクロを呼び出しています。
+%
+% なお、|\newline|マクロは\file{ltspaces.dtx}で定義されています。
+%
+% \changes{v1.1j}{1999/04/05}{オプションを付けた場合に、余計な空白
+%    が入ってしまうのを修正。ありがとう、鈴木隆志＠京都大学さん。}
+% \changes{v1.1h}{1997/06/25}{\LaTeX\ の改行マクロの変更に対応。
+%    ありがとう、奥村さん。}
+% \LaTeX\ \texttt{<1996/12/01>}で改行マクロが変更され、|\\|が
+% |\newline|を呼び出さなくなったため、変更された改行マクロに対応しまし
+% た。|\null|の挿入位置は同じです。
+% \file{ltspace.dtx}の定義を上記に合わせて、定義しなおしました。
+%
+% \emph{日本語\TeX{}開発コミュニティによる補足}：
+% アスキーによるp\LaTeX{}では、行頭禁則文字の直前で|\\|による強制改行を
+% 行えるようにするという目的で
+% |\null|を|\@gnewline|マクロ内に挿入していました。
+% しかし、これでは|\\\par|と書いた場合にUnderfull警告が出なくなって
+% います（|tests/newline_par.tex|を\texttt{latex}と\texttt{platex}で
+% 処理してみてください）。
+%
+% もし|\null|の代わりに|\hskip\z@|を挿入すれば、\LaTeX{}と同様に
+% Underfull警告を出すことができます。
+% ただし、|\null|を挿入した場合と異なり、強制改行後の行頭に
+% JFMグル―が入らなくなります。これはむしろ、奥村さんのjsclassesで
+% 行頭を天ツキに直しているのと同じですが、p\LaTeX{}としては挙動が
+% 変化してしまいますので、現時点では|\null|→|\hskip\z@|への変更を
+% 見送っています。
+% \changes{v1.2n}{2017/04/23}{ドキュメントの追加}
+%
+% もし変更するならば、以下のコードを有効にします。
+%    \begin{macrocode}
+%<platexrelease>\plIncludeInRelease{????/??/??}{\@gnewline}
+%<platexrelease>                   {Restore Underfull warning for |\\\par|}%
+%<*plcore|platexrelease>
+%\def\@gnewline #1{%
+%  \ifvmode
+%    \@nolnerr
+%  \else
+%    \unskip \reserved@e {\reserved@f#1}\nobreak \hfil \break \hskip \z@
+%    \ignorespaces
+%  \fi}
+%</plcore|platexrelease>
+%<platexrelease>\plEndIncludeInRelease
+%<platexrelease>\plIncludeInRelease{0000/00/00}{\@gnewline}
+%<platexrelease>                   {Restore Underfull warning for |\\\par|}%
+%<platexrelease>\def\@gnewline #1{%
+%<platexrelease>  \ifvmode
+%<platexrelease>    \@nolnerr
+%<platexrelease>  \else
+%<platexrelease>    \unskip \reserved@e {\reserved@f#1}\nobreak \hfil \break \null
+%<platexrelease>    \ignorespaces
+%<platexrelease>  \fi}
+%<platexrelease>\plEndIncludeInRelease
+%    \end{macrocode}
+% \end{macro}
+%
+% 行頭禁則文字の前での|\linebreak|の挙動の修正は、
+% p\LaTeXe{}カーネル(2017/05/05)に導入したため削除。
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \section{相互参照}
+%
+% p\LaTeXe{}カーネル(2017/04/08)に導入したため削除。
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \section{脚注とボトムフロートの順序および垂直位置}
+%
+% p\LaTeXe{}カーネル(2017/04/08)に導入したため削除。
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \section{下線マクロ}
+%
+% p\LaTeXe{}カーネル(2017/04/08)に導入したため削除。
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \section{verbatimとハイフネーション}
+%
+% p\LaTeXe{}カーネル(2017/04/08)に導入したため削除。
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\endinput

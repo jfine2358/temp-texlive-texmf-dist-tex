@@ -1,0 +1,628 @@
+%% This is file `tikzlibrarycircuits.plc.ladder.code.tex'
+%% Version: 1.1
+%% Version date: 2018-02-06
+%% 
+%% 
+%% Copyright (C) 2018 by Luis Paulo Laus, laus@utfpr.edu.br
+%%
+%% This package can be redistributed and/or modified under the terms
+%% of the LaTeX Project Public License distributed from CTAN
+%% archives in directory macros/latex/base/lppl.txt; either
+%% version 1 of the License, or (at your option) any later version,
+%% with `The Package' referring to the software
+%% `tikzlibrarycircuits.plc.ladder.code.tex'
+%% and its accompanying documentation and `The Copyright Holder'
+%% referring to the person Luis Paulo Laus.
+%% 
+%% 
+%% IMPORTANT NOTICE: 
+%% 
+%% For error reports, comments or suggestions in case of UNCHANGED 
+%% versions send mail to:
+%% laus@utfpr.edu.br
+%% 
+%%
+%% Change History:
+%% 1.0: 10 January 2018:  Original Version
+%% 1.1: 06 February 2018: Macro file renamed to proper TikZ library file name.
+%%                        Parent library changed from `circuit.ee' to `circuits'.
+%%                        Bug fixes: added \pgfusepathqstroke where is was missing,
+%%                        block anchors reworked.
+
+\usetikzlibrary{circuits}
+%
+% Setting up an ladder
+%
+\tikzset{
+  circuit plc ladder/.style={
+    circuit,
+    inputs/.style={block ladder inputs={##1}},
+    outputs/.style={block ladder outputs={##1}},
+    input sep/.style={block ladder input sep={##1}},
+    output sep/.style={block ladder output sep={##1}},
+    clksize/.style={block ladder clksize={##1}},
+    symbol/.style={ladder symbol={##1}},
+    symbol color/.style={ladder symbol color={##1}},
+    every circuit plc ladder/.try
+  }
+}       
+
+\makeatletter
+
+\newif\ifpgfnormallyclosednegated%
+\pgfkeys{
+  /pgf/crossed ladder/.is if=pgfnormallyclosednegated,%
+}
+
+\pgfkeys{/pgf/.cd,
+  contact ladder symbol/.initial=, % no value
+  contact NC ladder symbol/.initial=, % no value
+  var contact NC ladder symbol/.initial=$/$,
+  contact N ladder symbol/.initial=N,
+  contact P ladder symbol/.initial=P,
+  coil ladder symbol/.initial=, % no value
+  coil NA ladder symbol/.initial=, % no value
+  var coil NA ladder symbol/.initial=$/$,
+  coil S ladder symbol/.initial=S,
+  coil R ladder symbol/.initial=R,
+  coil ladder curvature/.initial=0.2, % parameter for ( and ) in coils
+  ladder symbol color/.initial=, % no value
+  ladder symbol/.initial=,
+  block ladder input sep/.initial=1.6\tikzcircuitssizeunit,
+  block ladder output sep/.initial=1.6\tikzcircuitssizeunit,
+  block ladder inputs/.initial={IN},
+  block ladder outputs/.initial={Q},
+  block ladder clksize/.initial=0.8\tikzcircuitssizeunit,
+  block ladder symbol/.initial=TON, % blocks like TON, TOF, TP, ADD, CDU, CDUD\_*
+}
+
+% Internal macro for parsing inputs, outputs and clock inputs (no short version).
+%
+\expandafter\ifx\csname pgf@lib@sh@ladder@parseinout\endcsname\relax%
+\def\pgf@lib@sh@ladder@parseinout#1{%
+	\edef\pgf@lib@sh@temp{\pgfkeysvalueof{/pgf/block ladder \pgf@lib@sh@ladder@inout}}%
+	\c@pgf@counta#1\relax%
+	\c@pgf@countb0\relax%
+	\expandafter\pgfutil@in@\expandafter,\expandafter{\pgf@lib@sh@temp}%
+	\let\pgf@lib@sh@next\pgf@lib@sh@ladder@parseinout@long%
+	\pgf@lib@sh@next%
+}	
+\def\pgf@lib@sh@ladder@parseinout@long{%
+	\expandafter\pgf@lib@sh@ladder@parseinout@@long\pgf@lib@sh@temp,\pgf@stop,%
+}
+\def\pgf@lib@sh@ladder@parseinout@@long#1,{%
+	\ifx#1\pgf@stop%
+		\expandafter\edef\csname pgf@lib@sh@ladder@num\pgf@lib@sh@ladder@inout\endcsname{\the\c@pgf@countb}%
+		\let\pgf@lib@sh@next\relax%
+	\else%
+		\ifnum\c@pgf@countb=\c@pgf@counta%
+			\expandafter\edef\csname pgf@lib@sh@ladder@num\pgf@lib@sh@ladder@inout\endcsname{\the\c@pgf@countb}%
+			\let\pgf@lib@sh@next\relax%
+		\else%
+			\advance\c@pgf@countb1\relax%
+			\def\pgf@lib@sh@temp{#1}%
+			\expandafter\pgf@sh@resavedmacro\expandafter{\csname \pgf@lib@sh@ladder@inout-\the\c@pgf@countb\endcsname}{%
+				\expandafter\def\csname \pgf@lib@sh@ladder@inout-\the\c@pgf@countb\endcsname{\expandafter\pgf@lib@sh@temp}}%
+			\let\pgf@lib@sh@next\pgf@lib@sh@ladder@parseinout@@@long%
+		\fi%
+	\fi%
+	\pgf@lib@sh@next%
+}
+\def\pgf@lib@sh@ladder@parseinout@@@long{%
+	\pgfutil@ifnextchar x{\pgf@lib@sh@ladder@parseinout@@long}%
+		{\pgf@lib@sh@ladder@parseinout@@long}%
+}
+\fi%
+
+
+% Adjust the width and height of the ladder block  symbol.
+\def\pgf@lib@sh@ladder@dimensions{
+  \pgf@x.5\wd\pgfnodeparttextbox
+  \pgf@y.5\ht\pgfnodeparttextbox
+  \advance\pgf@y.5\dp\pgfnodeparttextbox
+
+  %
+  % Adjust the height for the number of inputs and for the width and height of the ladder block  symbol.
+  %
+  \c@pgf@counta\pgf@lib@sh@ladder@numinputs
+  \pgfmathsetlength\pgf@yb{\pgfkeysvalueof{/pgf/block ladder input sep}}
+  \edef\inputsep{\the\pgf@yb}
+  \addtosavedmacro\inputsep
+  \pgf@ya\pgf@yb
+  \advance\c@pgf@counta-1\relax
+  \multiply\pgf@yb\c@pgf@counta
+   \c@pgf@counta\pgf@lib@sh@ladder@numoutputs
+  \pgfmathsetlength\pgf@yc{\pgfkeysvalueof{/pgf/block ladder output sep}}
+  \edef\outputsep{\the\pgf@yc}
+  \addtosavedmacro\outputsep
+  \pgf@ya\pgf@yc
+  \advance\c@pgf@counta-1\relax
+  \multiply\pgf@yc\c@pgf@counta
+  \ifdim\pgf@yb<\pgf@yc% the highest between inputs and outputs
+    \pgf@yb\pgf@yc
+  \fi
+  % now the symbol width and height
+  \setbox\pgf@hbox\hbox{{$\mathrm{\pgfkeysvalueof{/pgf/ladder symbol}}$}}% add braces as color-aftergroup-fix TT (error when contains \_)
+%  \setbox\pgf@hbox\hbox{{$\ensuremath{\mathrm{\pgfkeysvalueof{/pgf/ladder symbol}}$}}}% add braces as color-aftergroup-fix TT
+%  \setbox\pgf@hbox\hbox{{$\mathrm{TESTE}$}}% add braces as color-aftergroup-fix TT
+% \typeout{Test \the\wd\pgf@hbox  \the\ht\pgf@hbox  \the\dp\pgf@hbox}
+  \pgf@xc.5\wd\pgf@hbox
+  \pgf@yc\ht\pgf@hbox
+  \advance\pgf@yc\dp\pgf@hbox
+  \advance\pgf@yc1pt
+  \advance\pgf@yb0.5\pgf@yc
+  \advance\pgf@yc2pt
+  \edef\symbolypos{\the\pgf@yc}
+  \addtosavedmacro\symbolypos
+  \advance\pgf@yc0.5\pgf@yc
+  \advance\pgf@yc\pgf@yb
+  \advance\pgf@yc0pt
+  \pgf@yc.5\pgf@yc
+  \ifdim\pgf@x<\pgf@xc
+    \pgf@x\pgf@xc
+  \fi
+  \ifdim\pgf@y<\pgf@yc
+    \pgf@y\pgf@yc
+  \fi
+  \pgfmathaddtolength\pgf@x{\pgfkeysvalueof{/pgf/inner xsep}}
+  \pgfmathaddtolength\pgf@y{\pgfkeysvalueof{/pgf/inner ysep}}
+
+  %
+  % Adjust for minimum height and width.
+  %
+  \pgfmathsetlength\pgf@xa{\pgfkeysvalueof{/pgf/minimum width}}%
+  \pgfmathsetlength\pgf@ya{\pgfkeysvalueof{/pgf/minimum height}}%
+  \ifdim\pgf@x<.5\pgf@xa%
+    \pgf@x.5\pgf@xa%
+  \fi%
+  \ifdim\pgf@y<.5\pgf@ya%
+    \pgf@y.5\pgf@ya%
+  \fi%
+  %
+  % Take into account the outer sep.
+  %
+  \pgfmathaddtolength\pgf@x{\pgfkeysvalueof{/pgf/outer xsep}}%
+  \pgfmathaddtolength\pgf@y{\pgfkeysvalueof{/pgf/outer ysep}}%
+  %
+  \edef\halfwidth{\the\pgf@x}%
+  \edef\halfheight{\the\pgf@y}%
+  \addtosavedmacro\halfwidth%
+  \addtosavedmacro\halfheight%
+
+  \advance\pgf@yb\pgf@y
+  \advance\pgf@yb-\pgf@yc
+  \edef\boxdepth{\the\pgf@yb}% below 1st input
+  \addtosavedmacro\boxdepth
+}%
+
+
+\def\pgf@lib@sh@ladder@inputanchor#1{%
+  \dimensions%
+  \pgfpointorigin%
+  \advance\pgf@x-\halfwidth%
+  %
+  \pgfutil@tempdima\inputsep%
+  \multiply\pgfutil@tempdima#1\relax%
+  \advance\pgf@y-\pgfutil@tempdima%
+  \advance\pgf@y\inputsep%
+}
+
+\def\pgf@lib@sh@ladder@outputanchor#1{%
+  \dimensions%
+  \pgfpointorigin%
+  \advance\pgf@x\halfwidth%
+  %
+  \pgfutil@tempdima\outputsep%
+  \multiply\pgfutil@tempdima#1\relax%
+  \advance\pgf@y-\pgfutil@tempdima%
+  \advance\pgf@y\outputsep%
+}
+
+\def\pgfutil@first@until@relax#1#2\relax{#1}
+
+% Shapes
+% block
+\pgfdeclareshape{block ladder}{
+	\expandafter\pgfutil@g@addto@macro\csname pgf@sh@s@block ladder\endcsname{%
+	     \def\pgf@lib@sh@ladder@inout{inputs}
+		\pgf@lib@sh@ladder@parseinout{1024}% Maximum 1024 (!) inputs.
+		%
+		\pgfmathloop%
+			\ifnum\pgfmathcounter>\pgf@lib@sh@ladder@numinputs%
+			\else%
+				\pgfutil@ifundefined{pgf@anchor@block ladder@input \pgfmathcounter}{%
+					\expandafter\xdef\csname pgf@anchor@block ladder@input \pgfmathcounter\endcsname{%
+						\noexpand\pgf@lib@sh@ladder@inputanchor{\pgfmathcounter}%
+					}%
+				}{}%
+		\repeatpgfmathloop%
+		\ifnum\pgf@lib@sh@ladder@numinputs<1\relax%
+			\pgferror{A block must have at least one input}%
+		\fi%
+		%
+	     \def\pgf@lib@sh@ladder@inout{outputs}
+		\pgf@lib@sh@ladder@parseinout{1024}% Maximum 1024 (!) outputs.
+		%
+		\pgfmathloop%
+			\ifnum\pgfmathcounter>\pgf@lib@sh@ladder@numoutputs%
+			\else%
+				\pgfutil@ifundefined{pgf@anchor@block ladder@output \pgfmathcounter}{%
+					\expandafter\xdef\csname pgf@anchor@block ladder@output \pgfmathcounter\endcsname{%
+						\noexpand\pgf@lib@sh@ladder@outputanchor{\pgfmathcounter}%
+					}%
+				}{}%
+		\repeatpgfmathloop%
+		\ifnum\pgf@lib@sh@ladder@numoutputs<1\relax%
+			\pgferror{A block must have at least one output}%
+		\fi%
+	}%
+
+	\savedmacro\numinputs{\let\numinputs\pgf@lib@sh@ladder@numinputs}%
+	\savedmacro\numoutputs{\let\numoutputs\pgf@lib@sh@ladder@numoutputs}%
+	\savedmacro\dimensions{%
+		\pgf@lib@sh@ladder@dimensions%
+	}
+	\savedanchor\centerpoint{%
+		\pgfpointorigin
+	}
+	\savedanchor\midpoint{%
+      \pgfpointorigin
+      \advance\pgf@y-.5\ht\pgfnodeparttextbox
+      \advance\pgf@y.5\dp\pgfnodeparttextbox
+		\pgfmathaddtolength\pgf@y{+0.5ex}%
+	}
+   \savedanchor\basepoint{%
+      \pgfpointorigin
+      \advance\pgf@y-.5\ht\pgfnodeparttextbox
+      \advance\pgf@y.5\dp\pgfnodeparttextbox
+   }
+	\savedanchor\textpoint{%
+      \pgfpointorigin
+      \advance\pgf@x-.5\wd\pgfnodeparttextbox
+      \advance\pgf@y-.5\ht\pgfnodeparttextbox
+      \advance\pgf@y.5\dp\pgfnodeparttextbox
+   }
+	\anchor{center}{\pgfpointorigin}%
+	\anchor{block center}{\dimensions\pgfpointorigin\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth}%
+	\anchor{text}{\dimensions\textpoint\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth}%
+	\anchor{mid}{\dimensions\midpoint\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth}%
+	\anchor{mid west}{\dimensions\midpoint\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth\advance\pgf@x-\halfwidth}%
+	\anchor{mid east}{\dimensions\midpoint\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth\advance\pgf@x\halfwidth}%
+	\anchor{base}{\dimensions\basepoint\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth}%
+	\anchor{base west}{\dimensions\basepoint\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth\advance\pgf@x-\halfwidth}%
+	\anchor{base east}{\dimensions\basepoint\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth\advance\pgf@x\halfwidth}%
+	\anchor{north}{\dimensions\pgfpointorigin\advance\pgf@y\halfheight\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth}%
+	\anchor{south}{\dimensions\pgfpointorigin\advance\pgf@y-\boxdepth}%
+	\anchor{east}{\dimensions\pgfpointorigin\advance\pgf@x\halfwidth\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth}%
+	\anchor{west}{\dimensions\pgfpointorigin\advance\pgf@x-\halfwidth\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth}%
+	\anchor{north east}{\dimensions\pgfpointorigin\advance\pgf@x\halfwidth\advance\pgf@y\halfheight\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth}%
+	\anchor{north west}{\dimensions\pgfpointorigin\advance\pgf@x-\halfwidth\advance\pgf@y\halfheight\advance\pgf@y\halfheight\advance\pgf@y-\boxdepth}%
+	\anchor{south east}{\dimensions\pgfpointorigin\advance\pgf@x\halfwidth\advance\pgf@y-\boxdepth}%
+	\anchor{south west}{\dimensions\pgfpointorigin\advance\pgf@x-\halfwidth\advance\pgf@y-\boxdepth}%
+	\backgroundpath{%
+		\dimensions%
+		\pgf@xc\halfwidth%
+		\pgf@yc\halfheight%
+		\pgfmathaddtolength\pgf@xc{-\pgfkeysvalueof{/pgf/outer xsep}}%
+		\pgfmathaddtolength\pgf@yc{-\pgfkeysvalueof{/pgf/outer ysep}}%
+		      
+		\pgf@yb\boxdepth%
+		\pgfmathaddtolength\pgf@yb{-\pgfkeysvalueof{/pgf/outer ysep}}%
+		{%
+			\pgfpathrectangle{\pgfqpoint{-\pgf@xc}{-\pgf@yb}}%
+			{%
+				\pgf@x2.0\pgf@xc%
+				\pgf@y2.0\pgf@yc%
+			}%
+			\pgfpathclose%
+		}%
+	}
+	\foregroundpath{
+		\dimensions%
+		{%
+			%
+			% Write block type (symbol)
+			%
+			\pgf@yc\symbolypos
+			\expandafter\pgftext\expandafter[/pgf/text/at=\pgfqpoint{0pt}{\pgf@yc},/pgf/text/center]{%
+				\pgfkeysgetvalue{/pgf/ladder symbol color}{\pgf@lib@sh@temp}%
+				\ifx\pgf@lib@sh@temp\pgfutil@empty%
+				\else%
+					\expandafter\color\expandafter{\pgf@lib@sh@temp}%
+				\fi%
+				{\pgfkeysvalueof{/pgf/ladder symbol}}%
+			}%
+			% Draw inputs.
+			%
+			\pgf@xc-\halfwidth%
+			\pgfmathaddtolength\pgf@xc{\pgfkeysvalueof{/pgf/outer xsep}}
+			\pgf@xa\pgf@xc
+			\pgfmathaddtolength\pgf@xc{\pgfkeysvalueof{/pgf/inner xsep}}
+  			\pgf@yc\inputsep%
+			\pgfmathloop%
+			\ifnum\pgfmathcounter>\numinputs%
+			\else%
+				\advance\pgf@yc-\inputsep%
+				\edef\pgf@lib@sh@temp{\csname inputs-\pgfmathcounter\endcsname}
+				\pgf@xb\pgf@xc
+				\if>\expandafter\pgfutil@first@until@relax\pgf@lib@sh@temp\relax
+                           \edef\pgf@lib@sh@temp{\expandafter\expandafter\expandafter\pgfutil@gobble\pgf@lib@sh@temp}
+					\pgf@ya\pgf@yc
+					\pgfmathsetlength\pgf@yb{\pgfkeysvalueof{/pgf/block ladder clksize}}
+					\pgfmathaddtolength\pgf@ya{0.5\pgf@yb}
+					\pgfpathmoveto{\pgfqpoint{\pgf@xa}{\pgf@ya}}
+					\pgfmathaddtolength\pgf@ya{-0.5\pgf@yb}
+					\pgfmathaddtolength\pgf@xa{\pgf@yb}
+					\pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@ya}}
+					\pgfmathaddtolength\pgf@ya{-0.5\pgf@yb}
+					\pgfmathaddtolength\pgf@xa{-\pgf@yb}
+					\pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@ya}}
+					\pgfmathaddtolength\pgf@xb{\pgf@yb}
+					\pgfpathclose
+				\fi
+				\expandafter\pgftext\expandafter[/pgf/text/at=\pgfqpoint{\pgf@xb}{\pgf@yc},/pgf/text/left]{%
+					\pgfkeysgetvalue{/pgf/ladder symbol color}{\pgf@lib@sh@@temp}%
+					\ifx\pgf@lib@sh@@temp\pgfutil@empty%
+					\else%
+						\expandafter\color\expandafter{\pgf@lib@sh@@temp}%
+					\fi%
+					{\pgf@lib@sh@temp}%
+				}%
+			\repeatpgfmathloop%
+			% Draw outputs.
+			%
+			\pgf@xc\halfwidth%
+			\pgfmathaddtolength\pgf@xc{-\pgfkeysvalueof{/pgf/inner xsep}}
+			\pgfmathaddtolength\pgf@xc{-\pgfkeysvalueof{/pgf/outer xsep}}
+  			\pgf@yc\outputsep%
+			\pgfmathloop%
+			\ifnum\pgfmathcounter>\numoutputs%
+			\else%
+				\advance\pgf@yc-\outputsep%
+				\expandafter\pgftext\expandafter[/pgf/text/at=\pgfqpoint{\pgf@xc}{\pgf@yc},/pgf/text/right]{%
+					\pgfkeysgetvalue{/pgf/ladder symbol color}{\pgf@lib@sh@temp}%
+					\ifx\pgf@lib@sh@temp\pgfutil@empty%
+					\else%
+						\expandafter\color\expandafter{\pgf@lib@sh@temp}%
+					\fi%
+					{\csname outputs-\pgfmathcounter\endcsname}%
+				}%
+			\repeatpgfmathloop%
+		}%
+	} 
+	\anchorborder{%
+		\dimensions%
+		\pgfextract@process\externalpoint{}%
+		\ifdim\pgf@y<0pt%
+			\pgf@process{\pgfpointborderrectangle{\externalpoint}{\pgfqpoint{\halfwidth}{\boxdepth}}}%
+		\else%
+			\pgf@yc\halfheight
+			\advance\pgf@yc\halfheight\advance\pgf@yc-\boxdepth
+			\pgf@process{\pgfpointborderrectangle{\externalpoint}{\pgfqpoint{\halfwidth}{\pgf@yc}}}%
+		\fi%
+	}%  
+}
+
+
+
+
+% contact
+\pgfdeclareshape{contact ladder}
+{
+  \inheritsavedanchors[from=rectangle]
+  \inheritanchor[from=rectangle]{center}
+  \inheritanchor[from=rectangle]{north}
+  \inheritanchor[from=rectangle]{south}
+  \inheritanchor[from=rectangle]{east}
+  \inheritanchor[from=rectangle]{west}
+  \inheritanchor[from=rectangle]{north east}
+  \inheritanchor[from=rectangle]{north west}
+  \inheritanchor[from=rectangle]{south east}
+  \inheritanchor[from=rectangle]{south west}
+  \inheritanchor[from=rectangle]{input}
+  \inheritanchor[from=rectangle]{output}
+  \inheritanchorborder[from=rectangle]  % New:
+  \anchor{input}{
+    \pgf@process{\northeast}%
+    \pgf@ya=.5\pgf@y%
+    \pgf@process{\southwest}%
+    \pgf@y=.5\pgf@y%
+    \advance\pgf@y by \pgf@ya%
+  }
+  \anchor{output}{%
+    \pgf@process{\southwest}%
+    \pgf@ya=.5\pgf@y%
+    \pgf@process{\northeast}%
+    \pgf@y=.5\pgf@y%
+    \advance\pgf@y by \pgf@ya%
+  }
+  \savedanchor\centerpoint{%
+    \pgf@x.5\wd\pgfnodeparttextbox%
+    \pgf@y.5\ht\pgfnodeparttextbox%
+    \advance\pgf@y-.5\dp\pgfnodeparttextbox%
+  }
+
+  \backgroundpath{
+    \pgf@process{\pgfpointadd{\southwest}{\pgfpoint{\pgfkeysvalueof{/pgf/outer xsep}}{\pgfkeysvalueof{/pgf/outer ysep}}}}
+    \pgf@xa=\pgf@x \pgf@ya=\pgf@y
+    \pgf@process{\pgfpointadd{\northeast}{\pgfpointscale{-1}{\pgfpoint{\pgfkeysvalueof{/pgf/outer xsep}}{\pgfkeysvalueof{/pgf/outer ysep}}}}}
+    \pgf@xb=\pgf@x \pgf@yb=\pgf@y
+    \pgfpathmoveto{\pgfqpoint{\pgf@xa}{\pgf@ya}}
+    \pgfpathmoveto{\pgfqpoint{\pgf@xa}{\pgf@yb}}
+    \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@ya}}
+    \ifpgfnormallyclosednegated
+       \pgfsetbeveljoin
+       \pgfpathlineto{\pgfqpoint{\pgf@xb}{\pgf@yb}}
+    \else
+       \pgfpathmoveto{\pgfqpoint{\pgf@xb}{\pgf@yb}}
+    \fi
+    \pgfpathlineto{\pgfqpoint{\pgf@xb}{\pgf@ya}}
+    \pgfusepathqstroke
+  }
+  \foregroundpath{
+    \pgftransformshift{\centerpoint}
+    \pgftext{\pgfkeysvalueof{/pgf/ladder symbol}}
+  }
+}
+
+% coil
+\pgfdeclareshape{coil ladder}
+{
+  \inheritsavedanchors[from=rectangle]
+  \inheritanchor[from=rectangle]{center}
+  \inheritanchor[from=rectangle]{north}
+  \inheritanchor[from=rectangle]{south}
+  \inheritanchor[from=rectangle]{east}
+  \inheritanchor[from=rectangle]{west}
+  \inheritanchor[from=rectangle]{north east}
+  \inheritanchor[from=rectangle]{north west}
+  \inheritanchor[from=rectangle]{south east}
+  \inheritanchor[from=rectangle]{south west}
+  \inheritanchor[from=rectangle]{input}
+  \inheritanchor[from=rectangle]{output}
+  \inheritanchorborder[from=rectangle]  % New:
+  \anchor{input}{
+    \pgf@process{\northeast}%
+    \pgf@ya=.5\pgf@y%
+    \pgf@process{\southwest}%
+    \pgf@y=.5\pgf@y%
+    \advance\pgf@y by \pgf@ya%
+  }
+  \anchor{output}{%
+    \pgf@process{\southwest}%
+    \pgf@ya=.5\pgf@y%
+    \pgf@process{\northeast}%
+    \pgf@y=.5\pgf@y%
+    \advance\pgf@y by \pgf@ya%
+  }
+  \savedanchor\centerpoint{%
+    \pgf@x.5\wd\pgfnodeparttextbox%
+    \pgf@y.5\ht\pgfnodeparttextbox%
+    \advance\pgf@y-.5\dp\pgfnodeparttextbox%
+  }
+
+  \backgroundpath{
+    \pgf@process{\pgfpointadd{\southwest}{\pgfpoint{\pgfkeysvalueof{/pgf/outer xsep}}{\pgfkeysvalueof{/pgf/outer ysep}}}}
+    \pgf@xa=\pgf@x \pgf@ya=\pgf@y
+    \pgf@process{\pgfpointadd{\northeast}{\pgfpointscale{-1}{\pgfpoint{\pgfkeysvalueof{/pgf/outer xsep}}{\pgfkeysvalueof{/pgf/outer ysep}}}}}
+    \pgf@xb=\pgf@x \pgf@yb=\pgf@y
+    
+    \pgfmathsetlength\pgf@xc{\pgfkeysvalueof{/pgf/coil ladder curvature}\pgf@xb-\pgfkeysvalueof{/pgf/coil ladder curvature}\pgf@xa} % uses a reduction of 20% (by default) for beginning of the arcs, if it is 0.5 and width=height we got a circle, do not set to zero
+    \pgfmathsetlength\pgf@yc{.5\pgf@yb-.5\pgf@ya}
+    \pgfmathsetlength\pgf@ya{0.5\pgf@xc + 0.5\pgf@yc*\pgf@yc / \pgf@xc} % radius
+    \advance\pgf@xa by \pgf@xc
+    \advance\pgf@xb by-\pgf@xc
+    \pgfmathsetlength\pgf@yc{\pgf@yc / \pgf@ya}
+    \pgfmathasin{\pgf@yc}
+    \pgfmathsetlength\pgf@yc{\pgfmathresult} % angle
+    \pgfpathmoveto{\pgfqpoint{\pgf@xa}{\pgf@yb}}
+    \pgfpatharc{180-\pgf@yc}{180+\pgf@yc}{\pgf@ya}
+    \ifpgfnormallyclosednegated
+       \pgfsetbeveljoin
+       \pgfpathlineto{\pgfqpoint{\pgf@xb}{\pgf@yb}}
+    \else
+       \pgfpathmoveto{\pgfqpoint{\pgf@xb}{\pgf@yb}}
+    \fi
+    \pgfpatharc{\pgf@yc}{-\pgf@yc}{\pgf@ya}
+    \pgfusepathqstroke
+  }
+  \foregroundpath{
+    \pgftransformshift{\centerpoint}
+    \pgftext{\pgfkeysvalueof{/pgf/ladder symbol}}
+  }
+}
+\makeatother
+
+\tikzset{
+  circuit declare symbol=contact NO,
+  circuit declare symbol=contact NC,
+  circuit declare symbol=var contact NC,
+  circuit declare symbol=contact P,
+  circuit declare symbol=contact N,
+  circuit declare symbol=coil,
+  circuit declare symbol=coil NA,
+  circuit declare symbol=var coil NA,
+  circuit declare symbol=coil S,
+  circuit declare symbol=coil R,
+  circuit declare symbol=block,
+  set contact NO graphic={
+    circuit symbol lines,
+    circuit symbol size=width 1.5 height 2,
+    transform shape,
+    shape=contact ladder
+  },
+  set contact NC graphic={
+    circuit symbol lines,
+    circuit symbol size=width 1.5 height 2,
+    transform shape,
+    crossed ladder=true,
+    shape=contact ladder
+  },
+  set var contact NC graphic={
+    circuit symbol lines,
+    circuit symbol size=width 1.5 height 2,
+    transform shape,
+    ladder symbol=\pgfkeysvalueof{/pgf/var contact NC ladder symbol},
+    shape=contact ladder
+  },
+  set contact P graphic={
+    circuit symbol lines,
+    circuit symbol size=width 1.5 height 2,
+    transform shape,
+    ladder symbol=\pgfkeysvalueof{/pgf/contact P ladder symbol},
+    shape=contact ladder
+  },
+  set contact N graphic={
+    circuit symbol lines,
+    circuit symbol size=width 1.5 height 2,
+    transform shape,
+    ladder symbol=\pgfkeysvalueof{/pgf/contact N ladder symbol},
+    shape=contact ladder
+  },
+  set coil graphic={
+    circuit symbol lines,
+    fill=none,
+    circuit symbol size=width 2.4 height 2,
+    transform shape,
+    shape=coil ladder
+  },
+  set coil NA graphic={
+    circuit symbol lines,
+    circuit symbol size=width 2.4 height 2,
+    crossed ladder=true,
+    transform shape,
+    shape=coil ladder
+  },
+  set var coil NA graphic={
+    circuit symbol lines,
+    circuit symbol size=width 2.4 height 2,
+    ladder symbol=\pgfkeysvalueof{/pgf/var coil NA ladder symbol},
+    transform shape,
+    shape=coil ladder
+  },
+  set coil S graphic={
+    circuit symbol lines,
+    circuit symbol size=width 2.4 height 2,
+    ladder symbol=\pgfkeysvalueof{/pgf/coil S ladder symbol},
+    transform shape,
+    shape=coil ladder
+  },
+  set coil R graphic={
+    circuit symbol lines,
+    circuit symbol size=width 2.4 height 2,
+    ladder symbol=\pgfkeysvalueof{/pgf/coil R ladder symbol},
+    transform shape,
+    shape=coil ladder
+  },
+  set block graphic={
+    circuit symbol lines,
+    circuit symbol size=width 2.4 height 2,
+    ladder symbol=\pgfkeysvalueof{/pgf/block ladder symbol},
+    transform shape,
+    inner sep=.5ex,
+    shape=block ladder,
+    every ladder block/.try
+  }
+}
+
+\endinput

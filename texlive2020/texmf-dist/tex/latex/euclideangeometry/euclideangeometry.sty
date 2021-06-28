@@ -1,0 +1,381 @@
+%%
+%% This is file `euclideangeometry.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% euclideangeometry.dtx  (with options: `package')
+%% 
+%%   Copyright (C)  2020 Claudio Beccari all rights reserved.
+%%   License information appended
+%% 
+\NeedsTeXFormat{LaTeX2e}[2019/01/01]
+\ProvidesPackage{euclideangeometry}%
+        [2020-02-12 v.0.1.5 Extension package for curve2e]
+
+\RequirePackage{curve2e}
+\@ifpackagelater{curve2e}{2020/01/18}{}%
+ {%
+  \typeout{*************************************************************}
+  \typeout{Package curve2e too old}
+  \typeout{Be sure that your TeX installation is complete and up to date}
+  \typeout{*************************************************************}
+  \typeout{Input of euclideangeometry stopped and job aborted}
+  \typeout{*************************************************************}
+  \@@end
+ }%
+
+\providecommand\Pbox{}
+\newlength\PbDim
+\RenewDocumentCommand\Pbox{D(){0,0} O{cc} m O{0.5ex} s D<>{0}}{%
+\put(#1){\rotatebox{#6}{\makebox(0,0){%
+\settowidth\PbDim{#2}%
+\edef\Rapp{\fpeval{\PbDim/{1ex}}}%
+\fptest{\Rapp > 1.5}{\fboxsep=0.5ex}{\fboxsep=0.75ex}%
+\IfBooleanTF{#5}{\fboxrule=0.4pt}{\fboxrule=0pt}%
+\fptest{#4 = 0sp}%
+  {\makebox(0,0)[#2]{\fbox{$\relax#3\relax$}}}%
+  {\edef\Diam{\fpeval{(#4)/\unitlength}}%
+   \makebox(0,0){\circle*{\Diam}}%
+   \makebox(0,0)[#2]{\fbox{$\relax\mathsf#3\relax$}}%
+  }}}%
+}\ignorespaces}
+\DeclareRobustCommand\setfontsize[2][1.2]{%
+  \linespread{#1}\fontsize{#2}{#2}\selectfont}
+
+\def\EUGsplitArgs(#1,#2)#3#4{\edef#3{#1}\edef#4{#2}}
+\newlength\EUGZbox
+\providecommand\Zbox{}
+\RenewDocumentCommand\Zbox{r() D(){0,0} O{bl} m}{%
+\EUGsplitArgs(#2)\ZboxX\ZboxY % splits box dimensions
+\fboxsep=2\unitlength
+\ifnum\ZboxX=\z@
+  \def\ZTesto{\fbox{#4}}%
+\else
+  \ifnum\ZboxY=\z@
+    \def\ZTesto{\fbox{\parbox{\ZboxX\unitlength}{#4}}}%
+  \else
+    \def\ZTesto{%
+    \setbox\EUGZbox=\hbox{\fbox{%
+         \parbox[c][\ZboxY\unitlength][c]{\ZboxX\unitlength}{#4}}}%
+      \dimen\EUGZbox=\dimexpr(\ht\EUGZbox +\dp\EUGZbox)/2\relax
+      \ht\EUGZbox=\dimen\EUGZbox\relax
+      \dp\EUGZbox=\dimen\EUGZbox\relax
+      \box\EUGZbox%
+      }%
+  \fi
+\fi
+\put(#1){\makebox(0,0)[#3]{\ZTesto}}\ignorespaces}
+
+
+\NewDocumentCommand\ellisse{ s m m}{%
+\IfBooleanTF{#1}%
+  {\let\fillstroke\fillpath}%
+  {\let\fillstroke\strokepath}%
+\Sellisse{#2}{#3}%
+}
+
+\NewDocumentCommand\Xellisse{ s D(){0,0} O{0} m m O{} o}{%
+\IfBooleanTF{#1}%
+  {\XSellisse*(#2)[#3]{#4}{#5}[#6][#7]}%
+  {\XSellisse(#2)[#3]{#4}{#5}[#6][#7]}%
+}
+
+\def\polyvector(#1){\roundcap\def\EUGpreviouspoint{#1}\EUGpolyvector}
+\def\EUGpolyvector(#1){%
+\@ifnextchar({%
+    \segment(\EUGpreviouspoint)(#1)\def\EUGpreviouspoint{#1}\EUGpolyvector}%
+  {\VECTOR(\EUGpreviouspoint)(#1)}%
+}
+
+
+\def\IntersectionOfLines(#1)(#2)and(#3)(#4)to#5{\bgroup
+\def\IntPu{#1}\def\Uu{#2}\def\IntPd{#3}\def\Ud{#4}%
+ \DirOfVect\Uu to\Du
+ \DirOfVect\Ud to\Dd
+ \XpartOfVect\Du to \a  \YpartOfVect\Du to \b
+ \XpartOfVect\Dd to \c  \YpartOfVect\Dd to \d
+ \XpartOfVect\IntPu to \xu \YpartOfVect\IntPu to \yu
+ \XpartOfVect\IntPd to \xd \YpartOfVect\IntPd to \yd
+ \edef\Den{\fpeval{-(\a*\d-\b*\c)}}%
+ \fptest{abs(\Den)<1e-5}{% Almost vanishing determinant
+   \def#5{0,0}%
+ }{% Determinant OK
+   \edef\Numx{\fpeval{(\c*(\b*\xu-\a*\yu)-\a*(\d*\xd-\c*\yd))/\Den}}%
+   \edef\Numy{\fpeval{(\d*(\b*\xu-\a*\yu)-\b*(\d*\xd-\c*\yd))/\Den}}%
+   \CopyVect\Numx,\Numy to\Paux
+   \edef\x{\egroup\noexpand\edef\noexpand#5{\Paux}}\x\ignorespaces}}
+
+\def\IntersectionOfSegments(#1)(#2)and(#3)(#4)to#5{%
+\SubVect#1from#2to\IoSvectu \DirOfVect\IoSvectu to\DirIoSVecu
+\SubVect#3from#4to\IoSvectd \DirOfVect\IoSvectd to\DirIoSVecd
+\IntersectionOfLines(#1)(\DirIoSVecu)and(#3)(\DirIoSVecd)to#5\ignorespaces}
+
+\NewDocumentCommand\ThreePointCircle{s r() r() r()}{%
+\AxisOf#2and#3to\Mu\Du \AxisOf#2and#4to\Md\Dd
+\IntersectionOfLines(\Mu)(\Du)and(\Md)(\Dd)to\C
+\SubVect#2from\C to\R
+\IfBooleanTF{#1}{\CircleWithCenter\C Radius\R}{}\ignorespaces}
+
+\NewDocumentCommand\ThreePointCircleCenter{r() r() r() m}{%
+\ThreePointCircle(#1)(#2)(#3)\CopyVect\C to#4}
+\def\CircleWithCenter#1Radius#2{\put(#1){\ModOfVect#2to\CWR
+\circle{\fpeval{2*\CWR}}}\ignorespaces}
+\def\Circlewithcenter#1radius#2{\put(#1){\circle{\fpeval{2*abs(#2)}}}%
+\ignorespaces}
+
+\def\AxisOf#1and#2to#3#4{%
+\SubVect#1from#2to\Base \ScaleVect\Base by0.5to\Base
+\AddVect\Base and#1to#3 \MultVect\Base by0,1to#4}
+
+\def\SegmentCenter(#1)(#2)to#3{\AddVect#1and#2to\Segm
+\ScaleVect\Segm by0.5to#3\ignorespaces}
+
+\let\MiddlePointOf\SegmentCenter
+
+\def\TriangleMedianBase#1on#2and#3to#4{%
+\SubVect#1from#2to\TMBu \SubVect#1from#3to\TMBd
+\SubVect\TMBu from\TMBd to\Base
+\ScaleVect\Base by0.5to\TMBm\AddVect#2and\TMBm to#4\ignorespaces}
+\def\TriangleHeightBase#1on#2and#3to#4{%
+\SubVect#2from#3to\Base
+\ArgOfVect\Base to\Ang \CopyVect\fpeval{\Ang+90}:1 to\Perp
+\IntersectionOfLines(#1)(\Perp)and(#2)(\Base)to#4\ignorespaces}
+\def\TriangleBisectorBase#1on#2and#3to#4{%
+\SubVect#2from#1to\Luno \SubVect#3from#1to\Ldue
+\SubVect#2from#3to\Base
+\ArgOfVect\Luno to\Arguno \ArgOfVect\Ldue to\Argdue
+\edef\ArgBis{\fpeval{(\Arguno+\Argdue)/2}}%
+\CopyVect \ArgBis:1to \Bisect
+\IntersectionOfLines(#2)(\Base)and(#1)(\Bisect)to#4\ignorespaces}
+
+\let\TriangleCircumcenter\ThreePointCircleCenter
+\let\TriangleCircummcircle\ThreePointCircle
+
+\def\TriangleBarycenter(#1)(#2)(#3)to#4{%
+\TriangleMedianBase#1on#2and#3to\Pa
+\TriangleMedianBase#2on#3and#1to\Pb
+\DistanceAndDirOfVect#1minus\Pa to\ModPa and\AngPa
+\DistanceAndDirOfVect#2minus\Pb to\ModPb and\AngPb
+\IntersectionOfLines(#1)(\AngPa)and(#2)(\AngPb)to#4}
+
+\def\TriangleOrthocenter(#1)(#2)(#3)to#4{%
+\TriangleHeightBase#1on#2and#3to\Pa
+\TriangleHeightBase#2on#3and#1to\Pb
+\DistanceAndDirOfVect#1minus\Pa to\ModPa and\AngPa
+\DistanceAndDirOfVect#2minus\Pb to\ModPb and\AngPb
+\IntersectionOfLines(#1)(\AngPa)and(#2)(\AngPb)to#4}
+
+\def\TriangleIncenter(#1)(#2)(#3)to#4{%
+\TriangleBisectorBase#1on#2and#3to\Pa
+\TriangleBisectorBase#2on#3and#1to\Pb
+\DistanceAndDirOfVect#1minus\Pa to\ModPa and\AngPa
+\DistanceAndDirOfVect#2minus\Pb to\ModPb and\AngPb
+\IntersectionOfLines(#1)(\AngPa)and(#2)(\AngPb)to#4}
+
+\def\DistanceOfPoint#1from(#2)(#3)to#4{%
+\SubVect#2from#3to\Base \MultVect\Base by0,1to\AB
+\IntersectionOfLines(#1)(\AB)and(#2)(\Base)to\D
+\SubVect#1from\D to\D
+\ModOfVect\D to#4}
+
+\def\AxisFromAxisAndFocus#1and#2to#3{%
+\fptest{abs(#1)>abs(#2)}%
+   {\edef#3{\fpeval{sqrt(#1**2-#2**2)}}}%
+   {\edef#3{\fpeval{sqrt(#2**2+#1**2)}}}}
+
+\def\MainAxisFromAxisAndFocus#1and#2to#3{%
+\edef#3{\fpeval{sqrt(#2**2+#1**2)}}}
+
+\def\SegmentLength(#1)(#2)to#3{\SubVect#1from#2to\Segm
+\ModOfVect\Segm to#3}
+
+\def\SegmentArg(#1)(#2)to#3{\SubVect#1from#2to\Segm
+\GetCoord(\Segm)\SegmX\SegmY\edef#3{\fpeval{atand(\SegmY,\SegmX)}}%
+\ignorespaces}
+
+\def\ShearVect(#1)(#2)by#3to#4{%
+\SubVect#1from#2to\AUX
+\GetCoord(\AUX)\Aux\Auy
+\edef\Aux{\fpeval{\Aux + #3*\Auy}}%
+\edef\Auy{\fpeval{\Auy}}%
+\AddVect\Aux,\Auy and#1to#4\ignorespaces}
+
+
+\def\ScaleVector(#1)(#2)by#3to#4{%
+\SubVect#1from#2to\AUX
+\ScaleVect\AUX by#3to\AUX
+\AddVect\AUX and#1to#4\ignorespaces}
+\NewDocumentCommand\Sellisse{s m m O{0}}{\bgroup
+\CopyVect#2,#3to\Ptr \ScaleVect\Ptr by-1to\Pbl
+\CopyVect#2,-#3to\Pbr \ScaleVect\Pbr by-1to\Ptl
+\edef\Ys{\fpeval{tand{#4}}}%
+\edef\K{\fpeval{4*(sqrt(2)-1)/3}}%
+\ShearVect(0,0)(0,#3)by\Ys to\Pmt
+\ShearVect(0,0)(0,-#3)by\Ys to\Pmb
+\ShearVect(0,0)(#2,0)by\Ys to\Pmr
+\ShearVect(0,0)(-#2,0)by\Ys to\Pml
+\ShearVect(\Pmr)(\Ptr)by\Ys to\Ptr
+\ShearVect(\Pml)(\Ptl)by\Ys to\Ptl
+\ShearVect(\Pmr)(\Pbr)by\Ys to\Pbr
+\ShearVect(\Pml)(\Pbl)by\Ys to\Pbl
+\IfBooleanTF{#1}{\Pbox(\Ptr)[bl]{P_{tr}}\Pbox(\Pbl)[tr]{P_{bl}}%
+\Pbox(\Pbr)[tl]{P_{br}}\Pbox(\Ptl)[br]{P_{tl}}%
+\polygon(\Pbr)(\Ptr)(\Ptl)(\Pbl)}{}%
+\ScaleVector(\Pmr)(\Ptr)by\K to\Crt
+\ScaleVector(\Pmr)(\Pbr)by\K to\Crb
+\ScaleVector(\Pml)(\Ptl)by\K to\Clt
+\ScaleVector(\Pml)(\Pbl)by\K to\Clb
+\ScaleVector(\Pmt)(\Ptr)by\K to\Ctr
+\ScaleVector(\Pmt)(\Ptl)by\K to\Ctl
+\ScaleVector(\Pmb)(\Pbr)by\K to\Cbr
+\ScaleVector(\Pmb)(\Pbl)by\K to\Cbl
+\IfBooleanTF{#1}{%
+ \Pbox(\Crt)[l]{C_{rt}}\Pbox(\Crb)[l]{C_{rb}}
+ \Pbox(\Clt)[r]{C_{lt}}\Pbox(\Clb)[r]{C_{lb}}
+ \Pbox(\Ctr)[b]{C_{tr}}\Pbox(\Ctl)[b]{C_{tl}}
+ \Pbox(\Cbr)[t]{C_{br}}\Pbox(\Cbl)[t]{C_{bl}}
+\Pbox(\Pmr)[l]{P_{mr}}\Pbox(\Pmt)[b]{P_{mt}}%
+\Pbox(\Pml)[r]{P_{ml}}\Pbox(\Pmb)[t]{P_{mb}}%
+\polygon(\Pbr)(\Ptr)(\Ptl)(\Pbl)\thicklines}{}%
+\moveto(\Pmr)
+\curveto(\Crt)(\Ctr)(\Pmt)
+\curveto(\Ctl)(\Clt)(\Pml)
+\curveto(\Clb)(\Cbl)(\Pmb)
+\curveto(\Cbr)(\Crb)(\Pmr)
+\fillstroke
+\egroup}
+
+
+\NewDocumentCommand\XSellisse{ s D(){0,0} O{0} D<>{0} m m s O{} o }%
+    {\IfBooleanTF#1{\let\fillstroke\fillpath}%
+                   {\let\fillstroke\strokepath}%
+    \put(#2){\rotatebox{#3}{#8\relax
+    \IfBooleanTF{#7}{\Sellisse*{#5}{#6}[#4]}%
+                  {\Sellisse{#5}{#6}[#4]}%
+    \IfValueTF{#9}{\let\fillstroke\strokepath
+                   #9\Sellisse{#5}{#7}[#4]}{}}}%
+    \ignorespaces}
+\newcount\RPI
+\NewDocumentCommand\RegPolygon{s D(){0,0}  m m O{0} D<>{\relax} }{{%
+\RPI=0
+\CopyVect#5:#3to\P
+\CopyVect\fpeval{360/#4}:1to\R
+\put(#2){#6\relax
+         \moveto(\P)\fpdowhile{\RPI < #4}%
+         {\MultVect\P by\R to\P
+         \lineto(\P)\advance\RPI by 1}%
+         \IfBooleanTF{#1}%
+         {\fillpath}{#6\strokepath}}}\ignorespaces}
+%%%%%%%%%
+\def\DirOfVect#1to#2{\GetCoord(#1)\t@X\t@Y
+\ModOfVect#1to\@tempa
+\unless\ifdim\@tempa\p@=\z@
+   \DividE\t@X by\@tempa to\t@X
+   \DividE\t@Y by\@tempa to\t@Y
+\fi\MakeVectorFrom\t@X\t@Y to#2\ignorespaces}%
+
+\NewDocumentCommand\SteinerEllipse{s d() d() d() O{1}}{\bgroup
+\IfBooleanTF{#1}{}{\put(#2)}{%
+  \CopyVect0,0to\Pu
+  \SubVect#2from#3to\Pd
+  \SubVect#2from#4to\Pt
+  \ModAndAngleOfVect\Pd to\M and\Rot
+  \MultVect\Pd by-\Rot:1 to\Pd  \MultVect\Pt by-\Rot:1 to\Pt
+  \IfBooleanTF{#1}{}{\rotatebox{\Rot}}{\makebox(0,0)[bl]{%
+  \Pbox(\Pu)[r]{P_1}[#5]<-\Rot>\Pbox(\Pd)[t]{P_2}[#5]<-\Rot>
+  \Pbox(\Pt)[b]{P_3}[#5]<-\Rot>%
+  \polygon(\Pu)(\Pd)(\Pt)%
+  \edef\B{\fpeval{\M/2}}\edef\H{\fpeval{\B*tand(60)}}
+  \IfBooleanTF{#1}{\Pbox(\B,\H)[b]{H}[#5]
+  \polygon(\Pu)(\B,\H)(\Pd)}{}%
+  \edef\R{\fpeval{\B*tand(30)}}
+  \IfBooleanTF{#1}{\Pbox(\B,\R)[bl]{C}[#5]
+    \Circlewithcenter\B,\R radius{\R}}{}%
+  \GetCoord(\Pt)\Xt\Yt\edef\VScale{\fpeval{\Yt/\H}}
+  \IfBooleanTF{#1}{\polyline(\Pu)(\B,\Yt)(\Pd)
+  \Pbox(\B,\Yt)[b]{V}[#5]}{}%
+  \edef\Ce{\fpeval{\R*\VScale}}
+  \IfBooleanTF{#1}{\Xellisse(\B,\Ce){\R}{\Ce}
+    \Pbox(\B,\Ce)[r]{C_e}[#5]\Pbox(\B,0)[t]{B}[#5]}{}%
+  \SubVect\B,0 from\Pt to\SlMedian
+  \IfBooleanTF{#1}{\Dotline(\B,0)(\Pt){2}[1.5]}{}%
+  \ModAndAngleOfVect\SlMedian to\Med and\Alfa
+  \edef\Alfa{\fpeval{90-\Alfa}}
+    \IfBooleanTF{#1}{\Dotline(\B,\Yt)(\B,0){2}[1.5]
+    \Pbox(\fpeval{\B+\Ce*tand{\Alfa}},\Ce)[l]{C_i}[#5]
+    \VectorArc(\B,0)(\B,15){-\Alfa}
+    \Pbox(\fpeval{\B+2.5},14)[t]{\alpha}[0]}{}%
+  \edef\a{\R}\edef\b{\Ce}%
+\CopyVect\fpeval{\B+\Ce*tand{\Alfa}},\Ce to\CI
+\XSellisse(\CI)<\Alfa>{\R}{\Ce}
+}}}%
+\egroup\ignorespaces}
+\let\EllisseSteiner\SteinerEllipse
+
+\def\SymmetricalPointOf#1respect#2to#3{\ScaleVect#2by2to\Segm
+\SubVect#1from\Segm to#3\ignorespaces}
+
+\NewDocumentCommand\EllipseWithFocus{s d() d() d() d()}{\bgroup%
+\CopyVect#2to\Pu
+\CopyVect#3to\Pd
+\CopyVect#4to\Pt
+\CopyVect#5to\F
+\polygon(\Pu)(\Pd)(\Pt)
+\Pbox(\Pu)[r]{P_1}[1.5pt]\Pbox(\Pd)[t]{P_2}[1.5pt]
+\Pbox(\Pt)[b]{P_3}[1.5pt]\Pbox(\F)[b]{F}[1.5pt]
+\SegmentArg(\Pu)(\Pt)to\At
+\SegmentArg(\Pu)(\Pd)to\Ad
+\SegmentArg(\Pd)(\Pt)to\Au
+\IntersectionOfLines(\Pu)(\At:1)and(\F)(\fpeval{\At+90}:1)to\Mt
+\IntersectionOfLines(\Pd)(\Ad:1)and(\F)(\fpeval{\Ad+90}:1)to\Md
+\IntersectionOfLines(\Pd)(\Au:1)and(\F)(\fpeval{\Au+90}:1)to\Mu
+\IfBooleanTF{#1}{\Pbox(\Mt)[br]{M_3}[1.5pt]\Pbox(\Md)[t]{M_2}[1.5pt]
+  \Pbox(\Mu)[b]{M_1}[1.5pt]}{}
+\SymmetricalPointOf\F respect\Mu to\Gu
+\IfBooleanTF{#1}{\Pbox(\Gu)[l]{G_1}[1.5pt]}{}
+\SymmetricalPointOf\F respect \Md to\Gd
+\IfBooleanTF{#1}{\Pbox(\Gd)[t]{G_2}[1.5pt]}{}
+\SymmetricalPointOf\F respect \Mt to\Gt
+\IfBooleanTF{#1}{\Pbox(\Gt)[r]{G_3}[1.5pt]}{}
+\IfBooleanTF{#1}{\ThreePointCircle*(\Gu)(\Gd)(\Gt)}%
+                {\ThreePointCircle(\Gu)(\Gd)(\Gt)}
+\CopyVect\C to\Fp \Pbox(\Fp)[l]{F'}[1.5pt]
+\IfBooleanTF{#1}{%
+\Dotline(\F)(\Gt){2}[1.5pt]
+\Dotline(\F)(\Gd){2}[1.5pt]
+\Dotline(\F)(\Gu){2}[1.5pt]}{}
+\IntersectionOfSegments(\Pu)(\Pt)and(\Fp)(\Gt)to\Tt
+\IntersectionOfSegments(\Pu)(\Pd)and(\Fp)(\Gd)to\Td
+\IntersectionOfSegments(\Pd)(\Pt)and(\Fp)(\Gu)to\Tu
+\IfBooleanTF{#1}{\Pbox(\Tu)[l]{T_1}[1.5pt]
+\Pbox(\Td)[b]{T_2}[1.5pt]
+\Pbox(\Tt)[tl]{T_3}[1.5pt]
+\Dashline(\Fp)(\Gu){1}\Dashline(\Fp)(\Gd){1}\Dashline(\Fp)(\Gt){1}}{}
+\DistanceAndDirOfVect\Fp minus\Tt to\DFp and\AFu
+\DistanceAndDirOfVect\F  minus\Tt to\DF and\AF
+\SegmentCenter(\F)(\Fp)to\CE \Pbox(\CE)[b]{C}[1.5pt]
+\edef\a{\fpeval{(\DFp+\DF)/2}}
+\SegmentArg(\F)(\Fp)to\AngFocalAxis
+\SegmentLength(\F)(\CE)to\c
+\AxisFromAxisAndFocus\a and\c to\b
+\Xellisse(\CE)[\AngFocalAxis]{\a}{\b}[\thicklines]
+\VECTOR(-30,0)(120,0)\Pbox(120,0)[t]{x}[0]
+\VECTOR(0,-20)(0,130)\Pbox(0,130)[r]{y}[0]\Pbox(0,0)[tr]{O}[1.5pt]
+\egroup\ignorespaces}
+\let\EllisseConFuoco\EllipseWithFocus
+%% 
+%% Distributable under the LaTeX Project Public License,
+%% version 1.3c or higher (your choice). The latest version of
+%% this license is at: http://www.latex-project.org/lppl.txt
+%% 
+%% This work is "maintained"
+%% 
+%% This work consists of files:
+%% 1) euclideangeometry.dtx, and the derived files euclideangeometry.sty
+%%                           and euclideangeometry.pdf,
+%% 2) euclideangeometry-man.tex and the derived file euclideangeometry-man.pdf,
+%% 3) the auxiliary derived file README.txt
+%% 
+%%
+%% End of file `euclideangeometry.sty'.

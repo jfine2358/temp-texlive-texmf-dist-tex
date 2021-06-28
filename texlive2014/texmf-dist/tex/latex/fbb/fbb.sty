@@ -1,0 +1,95 @@
+%% fbb.sty
+%%
+\NeedsTeXFormat{LaTeX2e}
+
+\def\fileversion{1.04}
+\def\filedate{2014/01/27}
+\ProvidesPackage{fbb}[\filedate\space v\fileversion]
+
+\message{`fbb' v\fileversion, \filedate\space Text macros for fbb, a Bembo-like font family (msharpe)}
+
+\RequirePackage[LY1,T1]{fontenc}
+\RequirePackage{textcomp}
+\IfFileExists{mweights.sty}{\RequirePackage{mweights}}{}
+\IfFileExists{fontaxes.sty}{
+    \RequirePackage{fontaxes}
+    \fa@naming@exception{figures}{{superior}{proportional}}{Sup}
+    \fa@naming@exception{figures}{{superior}{tabular}}{Sup}
+    \def\sufigures{\@nomath\sufigures
+        \fontfigurestyle{superior}\selectfont}
+    \DeclareTextFontCommand{\textsu}{\sufigures}
+    \let\textsuperior\textsu
+%    \def\@makefnmark{\hbox{\textsu{\@thefnmark}}}
+}{}
+
+\newcommand*{\fbb@scale}{1}
+\IfFileExists{xkeyval.sty}{
+    \RequirePackage{xkeyval}
+    \DeclareOptionX{scale}{\renewcommand*{\fbb@scale}{##1}}
+    \DeclareOptionX{scaled}{\renewcommand*{\fbb@scale}{##1}}
+}{
+    \let\DeclareOptionX\DeclareOption
+    \let\ExecuteOptionsX\ExecuteOptions
+    \let\ProcessOptionsX\ProcessOptions
+}
+
+\let\orig@footnote=\thefootnote
+\let\orig@makefnmark=\@makefnmark
+
+\newif\if@fbb@sups
+\DeclareOptionX{lining}{\edef\fbb@figurestyle{LF}}
+\DeclareOptionX{oldstyle}{\edef\fbb@figurestyle{OsF}}
+\DeclareOptionX{tabular}{\edef\fbb@figurealign{T}}
+\DeclareOptionX{proportional}{\edef\fbb@figurealign{}}
+\DeclareOptionX{bold}{\edef\bfseries@rm{b}}
+\DeclareOptionX{regular}{\edef\mdseries@rm{m}}
+\DeclareOptionX{sups}{\@fbb@supstrue}
+\ExecuteOptionsX{lining,tabular,bold,regular}
+\ProcessOptionsX\relax
+
+\DeclareTextCommand{\textcircled}{TS1}[1]{\hmode@bgroup
+   \ooalign{%
+      \hfil \raise .39ex\hbox {\fontencoding{T1}\fontseries{m}\fontshape{sc}\fontsize{7.5}{9}\selectfont \lowercase{#1}}\hfil \crcr
+     \textbigcircle   % bigcircle
+   }%
+ \egroup}
+
+\def\useosf{\edef\fbb@figurestyle{OsF}\edef\fbb@figurealign{}%
+  \renewcommand*{\rmdefault}{fbb-OsF}}
+\@onlypreamble\useosf
+\def\usetosf{\edef\fbb@figurestyle{OsF}\edef\fbb@figurealign{T}%
+  \renewcommand*{\rmdefault}{fbb-TOsF}}
+\@onlypreamble\usetosf
+
+\DeclareRobustCommand{\textlf}[1]{%
+  {\fontfamily{fbb-LF}\selectfont #1}%
+}% to get lf
+\DeclareRobustCommand{\texttlf}[1]{%
+  {\fontfamily{fbb-TLF}\selectfont #1}%
+}% to get tlf
+\DeclareRobustCommand{\textosf}[1]{%
+  {\fontfamily{fbb-OsF}\selectfont #1}%
+}% to get osf
+\DeclareRobustCommand{\texttosf}[1]{%
+  {\fontfamily{fbb-TOsF}\selectfont #1}%
+}% to get tosf
+
+\renewcommand*{\rmdefault}{fbb-\fbb@figurealign\fbb@figurestyle}
+\renewcommand*{\familydefault}{\rmdefault}
+\if@fbb@sups %
+ \ifdefined\sufigures
+  \def\f@@tn@te{footnote}
+  \def\@makefnmark{%
+    \ifx\@mpfn\f@@tn@te%
+      \ifx\thefootnote\orig@footnote%
+        \hbox{\sufigures\hspace*{.04em}\@thefnmark\hspace*{.04em}}%
+      \else%
+        \orig@makefnmark%
+      \fi
+    \else%
+      \orig@makefnmark%
+    \fi}%
+ \fi%
+\fi
+
+\endinput

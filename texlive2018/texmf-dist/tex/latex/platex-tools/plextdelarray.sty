@@ -1,0 +1,48 @@
+%
+% plextdelarray.sty
+% written by Hironobu Yamashita (@aminophen)
+%
+% This package is part of the platex-tools bundle.
+% https://github.com/aminophen/platex-tools
+%
+% This package `plextdelarray.sty' is based on:
+%   * delarray.sty in latex-tools (2014/10/28 v1.01)
+%   * plext.sty in platex (2016/08/20 v1.2a)
+%
+
+\NeedsTeXFormat{pLaTeX2e}
+\ProvidesPackage{plextdelarray}
+  [2016/09/11 v1.0 array delimiter package for plext and delarray]
+\RequirePackage{plextarray}
+\RequirePackage{delarray}
+
+%% patching internal code for array.sty and plext.sty
+%
+\def\@tabarray{\@ifnextchar<\p@tabarray{\p@tabarray<Z>}}
+%
+%% adopt from \p@tabarray (from plext.sty)
+\def\p@tabarray<#1>{\m@th\@ifnextchar[%]
+   {\p@@array<#1>}{\p@@array<#1>[c]}}
+%
+%% adopt from \@@array (from delarray.sty)
+\def\p@@array<#1>[#2]{\@ifnextchar\bgroup
+  {\let\@arrayleft\relax\let\@arrayright\relax\p@array<#1>[#2]}%
+  {\p@del@array<#1>[#2]}}
+%
+%% adopt from \@del@array (from delarray.sty)
+\def\p@del@array<#1>[#2]#3#4#5{%
+  \setbox\z@\hbox{$\left#3\right#5$}%
+  \if#2c\def\@arrayleft{\left#3}\def\@arrayright{\right#5}%
+  \else\def\@arrayleft{\setbox\z@=\hbox\bgroup}% !!!
+  \def\@arrayright{\egroup% !!!
+     \dimen@=\dp\z@
+     \advance\dimen@-\ht\z@
+     \divide \dimen@ by \tw@
+     \advance\dimen@ by\fontdimen22 \textfont\tw@
+     \lower\dimen@\hbox{$\left#3\vcenter{\box\z@}\right#5$}}% !!!
+  \fi
+  \p@array<#1>[#2]{#4}}
+%
+%% all done
+
+\endinput

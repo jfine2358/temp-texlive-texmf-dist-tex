@@ -1,0 +1,163 @@
+%% lato.sty
+%% Copyright 2017 Mohamed El Morabity
+%
+% This work may be distributed and/or modified under the conditions of the LaTeX
+% Project Public License, either version 1.3 of this license or (at your option)
+% any later version. The latest version of this license is in
+% http://www.latex-project.org/lppl.txt and version 1.3 or later is part of all
+% distributions of LaTeX version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+%
+% The Current Maintainer of this work is Mohamed El Morabity
+%
+% This work consists of all files listed in manifest.txt.
+
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{lato}[2017/10/22 Style file for Lato.]
+
+\RequirePackage{fontaxes}
+\RequirePackage{ifluatex}
+\RequirePackage{ifxetex}
+\RequirePackage{xkeyval}
+
+\newif\iflato@otf
+\ifxetex
+    \lato@otftrue
+\else
+    \ifluatex
+        \lato@otftrue
+    \else
+        \lato@otffalse
+    \fi
+\fi
+
+\newif\iflato@lining
+\newif\iflato@oldstyle
+
+\newif\iflato@tabular
+\newif\iflato@proportional
+
+\newif\iflato@default
+\lato@defaultfalse
+
+\newif\iflato@defaultsans
+\lato@defaultsansfalse
+
+\newcommand*{\lato@scale}{1}
+\DeclareOptionX{scale}{\renewcommand*{\lato@scale}{#1}}
+
+\DeclareOptionX{default}{\lato@defaulttrue}
+\DeclareOptionX{defaultsans}{\lato@defaultsanstrue}
+\DeclareOptionX{lining}{\lato@liningtrue}
+\DeclareOptionX{oldstyle}{\lato@liningfalse}
+\DeclareOptionX{tabular}{\lato@tabulartrue}
+\DeclareOptionX{proportional}{\lato@tabularfalse}
+\DeclareOptionX{type1}{\lato@otffalse}
+
+\ExecuteOptionsX{tabular,lining}
+\ProcessOptionsX
+\relax
+
+\iflato@tabular
+    \newcommand*{\lato@figurewidth@otf}{Monospaced}
+    \newcommand*{\lato@figurewidth@pfb}{T}
+\else
+    \newcommand*{\lato@figurewidth@otf}{Proportional}
+    \newcommand*{\lato@figurewidth@pfb}{}
+\fi
+\iflato@lining
+    \newcommand*{\lato@figurestyle@otf}{Lining}
+    \newcommand*{\lato@figurestyle@pfb}{LF}
+\else
+    \newcommand*{\lato@figurestyle@otf}{OldStyle}
+    \newcommand*{\lato@figurestyle@pfb}{OsF}
+\fi
+
+\newcommand*{\lato@familyprefix}{lato}
+\newcommand*{\lato@family}[1]{\lato@familyprefix-#1}
+\newcommand*{\latofamily}{\lato@family{\lato@figurewidth@pfb\lato@figurestyle@pfb}}
+
+\iflato@otf
+    \RequirePackage{fontspec}
+
+    \ifxetex
+        \XeTeXtracingfonts=1
+    \fi
+
+    \newcommand*{\lato@otf@features}{%
+        Ligatures=Common,%
+        Scale=\lato@scale,%
+        FontFace={ul}{n}{Lato Hairline},%
+        FontFace={ul}{it}{Lato Hairline Italic},%
+        FontFace={el}{n}{Lato Thin},%
+        FontFace={el}{it}{Lato Thin Italic},%
+        FontFace={l}{n}{Lato Light},%
+        FontFace={l}{it}{Lato Light Italic},%
+        FontFace={mb}{n}{Lato Medium},%
+        FontFace={mb}{it}{Lato Medium Italic},%
+        FontFace={sb}{n}{Lato Semibold},%
+        FontFace={sb}{it}{Lato Semibold Italic},%
+        FontFace={eb}{n}{Lato Heavy},%
+        FontFace={eb}{it}{Lato Heavy Italic},%
+        FontFace={ub}{n}{Lato Black},%
+        FontFace={ub}{it}{Lato Black Italic}%
+    }
+
+    % Define family for each figure style/width, with corresponding
+    % NFSS family, for fontaxes support
+    \newfontfamily{\lato@otf@TLF}[%
+        \lato@otf@features,%
+        Numbers={Monospaced,Lining},%
+        NFSSFamily=\lato@family{TLF}%
+    ]{Lato}
+    \newfontfamily{\lato@otf@LF}[%
+        \lato@otf@features,%
+        Numbers={Proportional,Lining},%
+        NFSSFamily=\lato@family{LF}%
+    ]{Lato}
+    \newfontfamily{\lato@otf@TOsF}[%
+        \lato@otf@features,%
+        Numbers={Monospaced,OldStyle},%
+        NFSSFamily=\lato@family{TOsF}%
+    ]{Lato}
+    \newfontfamily{\lato@otf@OsF}[%
+        \lato@otf@features,%
+        Numbers={Proportional,OldStyle},%
+        NFSSFamily=\lato@family{OsF}%
+    ]{Lato}
+
+    \expandafter\let\expandafter\lato\csname lato@otf@\lato@figurewidth@pfb\lato@figurestyle@pfb\endcsname
+    % Legacy compatibility
+    \newfontfamily{\flafamily}[%
+      Numbers={Monospaced,Lining},%
+      NFSSFamily=fla%
+    ]{Lato}
+
+    \iflato@defaultsans
+        \setsansfont[%
+            \lato@otf@features,%
+            Numbers={\lato@figurewidth@otf,\lato@figurestyle@otf},%
+        ]{Lato}
+    \fi
+    \iflato@default
+        \setmainfont[%
+            \lato@otf@features,%
+            Numbers={\lato@figurewidth@otf,\lato@figurestyle@otf},%
+        ]{Lato}
+    \fi
+\else
+    \newcommand*{\lato}{\fontfamily{\latofamily}\selectfont}
+    % Legacy compatibility
+    \newcommand*{\flafamily}{\fontfamily{lato-TLF}\selectfont}
+
+    \iflato@defaultsans
+        \renewcommand*{\sfdefault}{\latofamily}
+    \fi
+    \iflato@default
+        \renewcommand*{\familydefault}{\latofamily}
+    \fi
+\fi
+
+\endinput

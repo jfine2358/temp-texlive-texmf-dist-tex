@@ -1,0 +1,406 @@
+%------------------------------------------------------------------------------------------------------------%
+% Package worksheet by Benjamin Zöllner (c)2018                                                              %
+%                                                                                                            %
+% This work may be distributed and/or modified under the                                                     %
+% conditions of the LaTeX Project Public License (latest version).                                           %
+%------------------------------------------------------------------------------------------------------------%
+
+\NeedsTeXFormat{LaTeX2e}[2018]
+\ProvidesPackage{worksheet}[2018/08/08 by Benjamin Zoellner (c)2018 v1.1 This Package provides macros and an environment for easy worksheet creation]
+
+\PassOptionsToPackage{headsepline=1pt}{scrlayer-scrpage}
+\RequirePackage{scrlayer-scrpage}
+
+% BEWARE!
+% DO NOT CHANGE THE FORMATTING OF FOLLOWING CODE! DO NOT DELETE EMPTY COMMENTS!
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Extraxt Number From \jobname
+
+% Bools for Number Detection
+\newcounter{@worksheet@numberFound}
+\newcounter{@worksheet@numberEnded}
+
+% evil String Search Hacking using Latex-Kernel Macros \in@ & \ifin@
+\def\@worksheet@isInString#1#2{TT\fi\begingroup % What the f**k?!
+\edef\x{\endgroup\noexpand\in@{#1}{#2}}\x\ifin@}
+
+% Character-wise expanding Macro Loop for extracting containing Numbers leaving leading Zeroes
+% if a single Character #1 is a natural Number less than 10, a containing Number is found
+%     @worksheet@numberFound will be set
+%     #1 will be displayed
+% every following natural Number less than 10 including 0 will be displayed until #1 is a Character other than
+% a natural Number less than 10 or 0
+%     @worksheet@numberEnded will be set when #1 is not a number
+\def\@worksheet@loopElementsExtractNumber#1{%
+	\ifx\relax#1\else
+		\ifnum\value{@worksheet@numberEnded}=0
+			\ifnum\value{@worksheet@numberFound}=0
+				\if\@worksheet@isInString{#1}{123456789}#1\setcounter{@worksheet@numberFound}{1}\fi
+			\else
+				\if\@worksheet@isInString{#1}{0123456789}#1\else\setcounter{@worksheet@numberEnded}{1}\fi
+			\fi
+		\fi
+	\expandafter\@worksheet@loopElementsExtractNumber%
+	\fi
+}
+
+% expand Loop and extract a containing Number
+\def\@worksheet@expandNumberExtractingLoop#1{\setcounter{@worksheet@numberFound}{0}\setcounter{@worksheet@numberEnded}{0}\@worksheet@loopElementsExtractNumber#1\relax}
+
+% expand \jobname
+\edef\@worksheet@expandjobname{\jobname}
+
+% accurate Loop Command Expansion
+\def\@worksheet@numberInFileName{\expandafter\@worksheet@expandNumberExtractingLoop\expandafter{\@worksheet@expandjobname}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Language Selection
+
+% Babel conforming Macros
+\def\@worksheet@selectLanguage@english{
+	\xdef\@worksheet@languageSelection@exercise{Exercise}
+	\xdef\@worksheet@languageSelection@score{Maximum Score}
+	\xdef\@worksheet@languageSelection@learningTargets{Learning Targets}
+	\xdef\@worksheet@languageSelection@difficulty{Difficulty Level}
+	\xdef\@worksheet@languageSelection@easy{easy}
+	\xdef\@worksheet@languageSelection@medium{medium}
+	\xdef\@worksheet@languageSelection@hard{hard}
+}
+\def\@worksheet@selectLanguage@french{
+	\xdef\@worksheet@languageSelection@exercise{Exercice}
+	\xdef\@worksheet@languageSelection@score{Points}
+	\xdef\@worksheet@languageSelection@learningTargets{Buts}
+	\xdef\@worksheet@languageSelection@difficulty{Difficulté}
+	\xdef\@worksheet@languageSelection@easy{facile}
+	\xdef\@worksheet@languageSelection@medium{moyen}
+	\xdef\@worksheet@languageSelection@hard{difficile}
+}
+\def\@worksheet@selectLanguage@german{
+	\xdef\@worksheet@languageSelection@exercise{Aufgabe}
+	\xdef\@worksheet@languageSelection@score{Punkte}
+	\xdef\@worksheet@languageSelection@learningTargets{Lernziele}
+	\xdef\@worksheet@languageSelection@difficulty{Schwierigkeitsgrad}
+	\xdef\@worksheet@languageSelection@easy{leicht}
+	\xdef\@worksheet@languageSelection@medium{mittel}
+	\xdef\@worksheet@languageSelection@hard{schwer}
+}
+\def\@worksheet@selectLanguage@ngerman{\@worksheet@selectLanguage@german}
+
+% call Babel conforming Macro if defined
+\def\@worksheet@checkLanguage{
+	\expandafter\ifdefined\csname @worksheet@selectLanguage@\languagename\endcsname
+		\csname @worksheet@selectLanguage@\languagename\endcsname
+	\fi
+}
+
+% Macros to call at \begin{document}
+\def\@worksheet@languageSelection@beginDocument{
+	\let\@worksheet@originalselectlanguage\selectlanguage
+	\def\selectlanguage##1{\@worksheet@originalselectlanguage{##1}\@worksheet@checkLanguage}
+
+	\@worksheet@checkLanguage
+}
+
+% select default Language
+\@worksheet@selectLanguage@english
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title of worksheet
+
+% worksheet internal Title & Subtitle
+\def\@worksheet@title{}
+\def\@worksheet@subTitle{}
+
+% set worksheet internal Title & Subtitle by redifining
+\def\worksheetTitle#1{\edef\@worksheet@title{#1}}
+\def\worksheetSubTitle#1{\edef\@worksheet@subTitle{#1}}
+
+% general Title Command
+\def\worksheetMakeTitle{
+	\ifx\relax\@worksheet@title\relax\else%
+		\begin{center}
+			\textbf{\sffamily\huge\@worksheet@title~\@worksheet@numberInFileName\nopagebreak}%
+			\ifx\relax\@worksheet@subTitle\relax\else%
+				\nopagebreak\par\addvspace{\topsep}{\sffamily\LARGE\@worksheet@subTitle}
+			\fi
+		\end{center}
+		\nopagebreak\par\addvspace{\topsep}
+	\fi	
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Directory File Name Extraction for temporary defining \@worksheet@currentFileName
+
+% seperate Name and Extension and leave Extension out
+\def\@worksheet@omitFileExtension#1.#2\@nil{#1}
+
+% loop through Directory Elements and seperate Extension from last Element
+\def\@worksheet@loopDirectoryElementsExtractName#1/#2/#3\@nil{\ifx\relax#2\relax\expandafter\@worksheet@omitFileExtension#1.\@nil\else\expandafter\@worksheet@loopDirectoryElementsExtractName#2/#3/\@nil\fi}
+
+% accurate Loop Command Expansion
+\def\@worksheet@ExtractFileName#1{\expandafter\@worksheet@loopDirectoryElementsExtractName#1//\@nil}
+
+% define empty current File Name
+\def\@worksheet@currentFileName{}
+
+% redefining \@iinput using original \@iinput
+\let\@worksheet@original@iinput\@iinput
+\def\@iinput#1{\edef\@worksheet@currentFileName{\@worksheet@ExtractFileName{#1}}\@worksheet@original@iinput{#1}\def\@worksheet@currentFileName{}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Environment Exercise
+
+% Counter for Number of Exercises
+\newcounter{@worksheet@numberOfExercises}
+
+% Control Flags
+\newcounter{@worksheet@showFileNameFlag}
+\newcounter{@worksheet@showScoreFlag}
+\newcounter{@worksheet@showLearningTargetsFlag}
+\newcounter{@worksheet@showDifficultyFlag}
+\newcounter{@worksheet@showOccurrenceFlag}
+
+% Commands: set and unset Flags
+\def\worksheetShowFileName{\setcounter{@worksheet@showFileNameFlag}{1}}
+\def\worksheetHideFileName{\setcounter{@worksheet@showFileNameFlag}{0}}
+\def\worksheetShowScore{\setcounter{@worksheet@showScoreFlag}{1}}
+\def\worksheetHideScore{\setcounter{@worksheet@showScoreFlag}{0}}
+\def\worksheetShowLearningTargets{\setcounter{@worksheet@showLearningTargetsFlag}{1}}
+\def\worksheetHideLearningTargets{\setcounter{@worksheet@showLearningTargetsFlag}{0}}
+\def\worksheetShowDifficulty{\setcounter{@worksheet@showDifficultyFlag}{1}}
+\def\worksheetHideDifficulty{\setcounter{@worksheet@showDifficultyFlag}{0}}
+\def\worksheetShowOccurrence{\setcounter{@worksheet@showOccurrenceFlag}{1}}
+\def\worksheetHideOccurrence{\setcounter{@worksheet@showOccurrenceFlag}{0}}
+
+% Commands: set local Attributes of Exercise
+\def\score#1{%
+	\ignorespaces%
+	\ifdefined\@worksheet@localExerciseGroup%
+		\if\relax#1\relax\else%
+			\edef\@worksheet@localScore{#1}%
+		\fi%
+	\fi%
+	\ignorespaces%
+}
+\def\learningtargets#1{%
+	\ignorespaces%
+	\ifdefined\@worksheet@localExerciseGroup%
+		\if\relax#1\relax\else%
+			\edef\@worksheet@localLearningTargets{#1}%
+		\fi%
+	\fi%
+	\ignorespaces%
+}
+\def\easy{%
+	\ignorespaces%
+	\ifdefined\@worksheet@localExerciseGroup%
+		\edef\@worksheet@localDifficulty{\@worksheet@languageSelection@easy}%
+	\fi%
+	\ignorespaces%
+}
+\def\medium{%
+	\ignorespaces%
+	\ifdefined\@worksheet@localExerciseGroup%
+		\edef\@worksheet@localDifficulty{\@worksheet@languageSelection@medium}%
+	\fi%
+	\ignorespaces%
+}
+\def\hard{%
+	\ignorespaces%
+	\ifdefined\@worksheet@localExerciseGroup%
+		\edef\@worksheet@localDifficulty{\@worksheet@languageSelection@hard}%
+	\fi%
+	\ignorespaces%
+}
+
+% Commands: set global self emptying Attributes of Exercise
+\def\@worksheet@occurence{}
+\def\occurrence#1{%
+	\ignorespaces%
+	\ifdefined\@worksheet@localExerciseGroup%
+		\if\relax#1\relax\else%
+			\xdef\@worksheet@occurence{#1}%
+		\fi%
+	\fi%
+	\ignorespaces%
+}
+
+% Exercise
+\newenvironment{exercise}[1][]{
+
+	% increase @worksheet@numberOfExercises
+	\stepcounter{@worksheet@numberOfExercises}
+
+	\begingroup\def\@worksheet@localExerciseGroup{}
+	\sffamily
+	% prevent other Text Sizes than normal, new Paragraph, make chaptersized vertical Space
+	\normalsize\par\addvspace{\topsep}%
+
+	% make Aufgabe Title preventing Indents and ignoring Spaces
+	\noindent\ignorespaces\textbf{\@worksheet@languageSelection@exercise~\the@worksheet@numberOfExercises}%
+	% call Commands in optional Argument which define \@worksheet@localScore, \@worksheet@localLearningTargets and \@worksheet@localDifficulty locally within this group
+	#1%
+	% check if Score should be shown and if Score have been set
+	%     show footnotesized raggedleft Score
+	\ifnum\value{@worksheet@showScoreFlag}=0\else
+		\ifdefined\@worksheet@localScore
+			{\hfill\footnotesize\@worksheet@languageSelection@score:~\@worksheet@localScore}
+		\fi
+	\fi
+
+	% check if Difficulty should be shown and if Difficulty have been set
+	%     show footnotesized natural Difficulty
+	%     prevent Pagebreaks, Indents and Spaces
+	\ifnum\value{@worksheet@showDifficultyFlag}=0\else
+		\ifdefined\@worksheet@localDifficulty
+			\nopagebreak\par\noindent\ignorespaces
+			{\footnotesize\@worksheet@languageSelection@difficulty:~\@worksheet@localDifficulty%
+			\ifnum\value{@worksheet@showLearningTargetsFlag}=0\else%
+				\ifdefined\@worksheet@localLearningTargets%
+					,%
+				\fi%
+			\fi%
+			}%
+		\fi%
+	\fi%
+	%
+	% check if Learning Targets should be shown and if Learning Targets have been set
+	%     show footnotesized raggedleft Learning Targets
+	%     prevent Pagebreaks, Indents and Spaces
+	\ifnum\value{@worksheet@showLearningTargetsFlag}=0\else%
+		\ifdefined\@worksheet@localLearningTargets%
+			\ifnum\value{@worksheet@showDifficultyFlag}=0%
+				\nopagebreak\par\noindent\ignorespaces%
+			\else%
+				\ifdefined\@worksheet@localDifficulty\else%
+					\nopagebreak\par\noindent\ignorespaces%
+				\fi%
+			\fi%
+			{\footnotesize\hfill\@worksheet@languageSelection@learningTargets:~\@worksheet@localLearningTargets}
+		\fi
+	\fi
+
+	\endgroup
+
+	% prevent Pagebreaks, Indents and Spaces
+	\nopagebreak\par\noindent\ignorespaces
+}{
+	% check if File Name should be shown and if \@worksheet@currentFilename is not empty
+	%     prevent Pagebreaks, Indents and Spaces
+	%     show tinyed non-empty \@worksheet@currentFileName
+	\ifnum\value{@worksheet@showFileNameFlag}=0\else
+		\if\@worksheet@currentFileName\relax\relax\else
+			\nopagebreak\par\noindent\ignorespaces
+			{\scriptsize\sffamily[\@worksheet@currentFileName]}%
+		\fi%
+	\fi%
+	%
+	% check if Occurrence should be shown and if \@worksheet@occurence is not empty
+	%     prevent Pagebreaks, Indents and Spaces
+	%     show tinyed non-empty \@worksheet@occurence
+	\ifnum\value{@worksheet@showOccurrenceFlag}=0\else%
+		\if\@worksheet@occurence\relax\relax\else%
+			\ifnum\value{@worksheet@showFileNameFlag}=0%
+				\nopagebreak\par\noindent\ignorespaces%
+			\else%
+				\if\@worksheet@currentFileName\relax\relax%
+					\nopagebreak\par\noindent\ignorespaces%
+				\fi%
+			\fi%
+			{\scriptsize\sffamily\hfill[\@worksheet@occurence]}
+		\fi
+	\fi
+	\gdef\@worksheet@occurence{}
+	
+	\par\addvspace{\topsep}%
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Header
+
+% Header Flags
+\newcounter{@worksheet@hideHeader}
+\newcounter{@worksheet@noSFFamilyInHeader}
+
+% prevent Header
+\def\worksheetHideHeader{\setcounter{@worksheet@hideHeader}{1}}
+\def\worksheetNoSFFamilyInHeader{\setcounter{@worksheet@noSFFamilyInHeader}{1}}
+
+% lv-File which should be loaded
+\edef\@worksheet@lvFile{./lv.tex}
+
+% change lv-File Name and Path
+\def\worksheetChangelvFile#1{\edef\@worksheet@lvFile{#1}}
+
+% define Header Information
+%     only if not empty
+\def\worksheetAuthors#1{\if\relax#1\relax\else\xdef\@worksheet@authors{#1}\fi}
+\def\worksheetCourseName#1{\if\relax#1\relax\else\xdef\@worksheet@course{#1}\fi}
+
+% formatting of worksheet Header
+%\def\@worksheet@head#1#2{\vbox{\sffamily\small#1\hfill #2\par\vspace{3pt}\hrule}}
+
+% make Header
+%     make Header \sffamily if Document Class is KOMA
+\def\@worksheet@makeHead#1#2{
+	\clearpairofpagestyles
+	\cfoot*{\pagemark}
+	\@ifundefined{KOMAClassName}{%
+		\ihead{#1}
+		\ohead{#2}
+    }{%
+		\ihead{\ifnum\value{@worksheet@hideHeader}=0\sffamily\fi#1}
+		\ohead{\ifnum\value{@worksheet@hideHeader}=0\sffamily\fi#2}
+    }
+	\pagestyle{headings}
+}
+
+% Macros to call at \begin{document}
+\def\@worksheet@header@beginDocument{
+	% default Pagestyle
+	\pagestyle{plain}
+
+	% load \@worksheet@lvFile ("./lv.tex" by default) if existing
+	\begingroup
+	\IfFileExists{\@worksheet@lvFile}{
+		\input{\@worksheet@lvFile}
+		\ifdefined\coursename\if\relax\coursename\relax\else\worksheetCourseName{\coursename}\fi\fi
+		\ifdefined\authors\if\relax\authors\relax\else\worksheetAuthors{\authors}\fi\fi
+		\ifdefined\lvname\if\relax\lvname\relax\else\worksheetCourseName{\lvname}\fi\fi
+		\ifdefined\autoren\if\relax\autoren\relax\else\worksheetAuthors{\autoren}\fi\fi
+	}{}
+	\endgroup
+
+	% make Header at Begin of Document if \@worksheet@authors or \@worksheet@course is defined
+	\ifnum\value{@worksheet@hideHeader}=0
+		\ifdefined\@worksheet@authors
+			\ifdefined\@worksheet@course
+				\@worksheet@makeHead{\@worksheet@course}{\@worksheet@authors}
+			\else
+				\@worksheet@makeHead{}{\@worksheet@authors}
+			\fi
+		\else
+			\ifdefined\@worksheet@course
+				\@worksheet@makeHead{\@worksheet@course}{}
+			\fi
+		\fi
+	\fi
+	\def\@worksheet@header@beginDocument{}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% At Document Begin
+
+\AtBeginDocument{
+	\@worksheet@header@beginDocument
+	\@worksheet@languageSelection@beginDocument
+}
+
+\endinput

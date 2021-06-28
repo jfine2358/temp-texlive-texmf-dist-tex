@@ -1,0 +1,100 @@
+%
+% pxatbegshi.sty
+% written by Hironobu Yamashita (@aminophen)
+%
+% This package is part of the platex-tools bundle.
+% https://github.com/aminophen/platex-tools
+%
+% Largely based on bxpapersize.sty by T. Yato.
+% Previous versions were largely based on H. Kitagawa's
+% code on GitHub:texjporg/tex-jp-build#21.
+%
+
+%% package declaration
+\NeedsTeXFormat{pLaTeX2e}
+\ProvidesPackage{pxatbegshi}
+    [2018/09/21 v0.4 Patch to atbegshi for (u)pLaTeX]
+
+%% preparations
+\def\pxabgs@pkgname{pxatbegshi}
+\def\pxabgs@warn{\PackageWarningNoLine\pxabgs@pkgname}
+
+%% load it
+\RequirePackage{atbegshi}
+
+%% internal macros are locally effective
+\begingroup
+
+%--------------------------------------- helpers
+
+%% unique tokens
+\def\pxabgs@mark{\pxabgs@mark@}
+\def\pxabgs@fin{\pxabgs@fin@}
+
+%% \pxabgs@patch@cmd\CMD{<orig>}{<new>}
+\@onlypreamble\pxabgs@patch@cmd
+\def\pxabgs@patch@cmd#1#2#3{%
+  \def\pxabgs@next##1#2##2\pxabgs@mark##3\pxabgs@fin{%
+    \ifx\pxabgs@mark##3\pxabgs@mark
+      \let\pxabgs@fragment\relax
+    \else
+      \def\pxabgs@fragment{##2}%
+      \def#1{##1#3##2}%
+    \fi}%
+  \expandafter\pxabgs@next#1\pxabgs@mark#2\pxabgs@mark\pxabgs@fin}
+
+%---------------------------------------
+
+%% patch \AtBegShi@Output
+%  concept: execute all hooks in temporary yoko direction,
+%  by prepending \yoko and switching back to the original
+%
+% prepare
+\let\pxabgs@AtBegShi@Output\AtBegShi@Output
+% first, check hooks inserted by bxpapersize.sty
+% -> if detected, nothing to do
+\pxabgs@patch@cmd\pxabgs@AtBegShi@Output
+  {\bxpr@ABS@prehook}{\bxpr@ABS@prehook}%
+\ifx\pxabgs@fragment\relax\else % found
+  \pxabgs@patch@cmd\pxabgs@AtBegShi@Output
+    {\bxpr@ABS@posthook}{\bxpr@ABS@posthook}%
+  \ifx\pxabgs@fragment\relax\else % found
+    \let\pxabgs@AtBegShi@Output\relax
+  \fi
+\fi
+% -> if not detected, prepend/append hooks
+\ifx\pxabgs@AtBegShi@Output\relax\else
+  \expandafter\def\expandafter\pxabgs@AtBegShi@Output\expandafter{%
+    \expandafter\pxabgs@ABS@prehook
+    \pxabgs@AtBegShi@Output
+    \pxabgs@ABS@posthook
+  }
+  % adjust for atbegshi.sty on non-e-TeX ...
+  % (for e-TeX, this patch should fail but does nothing!)
+  \pxabgs@patch@cmd\pxabgs@AtBegShi@Output
+    {\pxabgs@ABS@prehook\egroup\endgroup}
+    {\egroup\endgroup\pxabgs@ABS@prehook}%
+  % commit the change
+  \global\let\AtBegShi@Output\pxabgs@AtBegShi@Output
+\fi
+%
+%% done
+
+%--------------------------------------- done
+
+\endgroup
+%% internal macros are no longer effective
+
+%% hooks
+\let\pxabgs@restore@dir\relax
+\def\pxabgs@ABS@prehook{%
+  \iftdir
+    \yoko
+    \let\pxabgs@restore@dir\tate
+  \else
+    \let\pxabgs@restore@dir\relax
+  \fi}
+\def\pxabgs@ABS@posthook{\pxabgs@restore@dir}
+
+\endinput
+%% EOF

@@ -1,0 +1,152 @@
+%%
+%% This is file `mi-solns.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% mi-solns.dtx  (with options: `copyright,package')
+%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% mi-solns package                                      %%
+%% Copyright (C) 2018  D. P. Story                       %%
+%%   dpstory@uakron.edu                                  %%
+%%                                                       %%
+%% This program can redistributed and/or modified under  %%
+%% the terms of the LaTeX Project Public License         %%
+%% Distributed from CTAN archives in directory           %%
+%% macros/latex/base/lppl.txt; either version 1.2 of the %%
+%% License, or (at your option) any later version.       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{mi-solns}
+ [2018/12/28 v0.6 extract solutions from exerquiz (dps)]
+\RequirePackage{shellesc}
+\ProcessOptions\relax
+\def\mi@reqChk{\begingroup\mifoundfalse
+  \@ifpackageloaded{exerquiz}{\mifoundtrue\def\reqDate{2018/12/13}
+    \@ifpackagelater{exerquiz}{\reqDate}
+      {}{\PackageWarning{mi-solns}{exerquiz dated \reqDate\space
+        or later\MessageBreak required}}%
+  }{}%
+  \@ifpackageloaded{eqexam}{\mifoundtrue
+      \def\reqDate{2018/12/13}\@ifpackagelater{eqexam}{\reqDate}
+      {\mi@solutionsonlyfix}{\PackageWarning{mi-solns}
+        {eqexam dated \reqDate\space or\MessageBreak
+         later required}}%
+  }{}%
+  \ifmifound\else
+    \PackageWarning{mi-solns}{For this package to be
+    effective\MessageBreak you need either exerquiz
+    or eqexam, as appropriate}\fi
+\endgroup}
+\AtBeginDocument{\mi@reqChk}
+\def\mi@solutionsonlyfix{\ifsolutionsonly
+  \edef\eqExSolFileName{\misolout}\expandafter
+  \global\copySolnsOff\global\notamiopfalse\fi}
+\def\declSOLIn#1{\def\misolin{#1}}\def\declSOLOut#1{\def\misolout{#1}}
+\def\misolin{\jobname.sol}\def\misolout{\jobname-cpy.sol}
+\def\declQSLIn#1{\def\miqslin{#1}}\def\declQSLOut#1{\def\miqslout{#1}}
+\def\miqslin{\jobname.qsl}\def\miqslout{\jobname-cpy.qsl}
+\newcommand*{\copyfileCmdEx}{copy \misolin\space\misolout}
+\newcommand*{\copyfileCmdQz}{copy \miqslin\space\miqslout}
+\def\mi@copysolns{%
+  \ShellEscape{\copyfileCmdEx}\ShellEscape{\copyfileCmdQz}}
+\def\copySolnsOn{\let\mi@copySolns\mi@copysolns}
+\def\copySolnsOff{\let\mi@copySolns\relax}
+\@onlypreamble\copySolnsOn
+\@onlypreamble\copySolnsOff
+\copySolnsOn
+\AtEndDocument{\mi@copySolns}
+\newif\ifmifound \mifoundfalse
+\newif\ifnotamiop \notamioptrue
+\newif\ifmi@OKtoRead \mi@OKtoReadtrue
+\def\readSolnsOn{\mi@OKtoReadtrue}
+\def\readSolnsOff{\mi@OKtoReadfalse}
+\newcommand*{\miReadOffMsg}{(\textbf{?? read is off ??})}
+\newcommand\mi@wrt@fix[1]{\protect\ifnotamiop^^J%
+  #1^^J\protect\fi}
+\renewcommand\writeToExSolns[1]{\writeT@ExSolns{\mi@wrt@fix{#1}}}
+\renewcommand\writeToQzSolns[1]{\writeT@QzSolns{\mi@wrt@fix{#1}}}
+\@ifpackageloaded{eqexam}
+  {\renewcommand\writeToSolnFile[1]{\writeT@SolnFile{\mi@wrt@fix{#1}}}}
+  {\let\writeToSolnFile\writeToExSolns}
+\def\ignoreterminex{\let\eqterminex\relax\let\decleqterminex\@gobble}
+\let\ignoreques\ignoreterminex
+\long\def\gobbleiiterminex#1\eqterminex{}
+\long\def\gobbleiiendinput#1\endinput{\endinput}
+\long\def\gobbleiiendgroup#1\endgroup{}
+\long\def\mi@griii#1#2#3{}
+\def\eqMrkSolnCpyEx#1{\def\eqargi{#1}%
+  \ifx\eqargi\eqMrkCpyArg
+    \mifoundtrue
+    \let\par\par@SAVE
+    \ifmakeExSlLocal
+      \long\def\endeqEXt##1##2##3{##3\gobbleiiendinput}\else
+      \let\endeqEXt\gobbleiiendinput\fi
+      \let\eqEXt\@gobbletwo
+      \let\mi@next\relax
+  \else
+    \long\def\endeqEXt##1##2{}%
+    \let\mi@next\gobbleToEndEXt
+  \fi
+\mi@next}
+\def\eqMrkSolnCpySQ#1{\def\eqargi{#1}%
+  \ifx\eqargi\eqMrkCpyArg
+    \mifoundtrue
+    \let\par\par@SAVE
+    \ifmakeQzSlLocal
+      \long\def\endeqSQt##1##2{##2\gobbleiiendinput}\else
+      \let\endeqSQt\gobbleiiendinput
+    \fi
+    \let\mi@next\gobbleiiterminex
+  \else
+    \long\def\endeqSQt##1{}%
+    \let\mi@next\gobbleToEndSQt
+  \fi
+\mi@next}
+\def\eqMrkSolnCpyQz#1{\def\eqargi{#1}%
+  \ifx\eqargi\eqMrkCpyArg
+    \mifoundtrue
+    \let\par\par@SAVE
+    \ifmakeQzSlLocal
+      \long\def\endeqQt##1##2{##2\gobbleiiendinput}\else
+      \let\endeqQt\gobbleiiendinput
+    \fi
+    \let\mi@next\gobbleiiterminex
+  \else
+    \long\def\endeqQt##1{}%
+    \let\mi@next\gobbleToEndSQt
+  \fi
+\mi@next}
+
+\let\addToMINullify\relax
+\def\mi@nullify{\let\par@SAVE\par\let\par\relax
+  \let\eqgrii\@gobbletwo\let\eqgriii\mi@griii\let\solnItemMngt\relax
+  \def\exerSolnHeader##1##2##3{}\def\ReturnTo##1##2{\unskip}%
+  \let\eqTopOfSolnPage\relax\let\preExamSolnHead\relax
+  \let\eqTopOfQslPage\relax
+  \let\examSolnHeadFmt\@gobble\let\postExamSolnHead\relax
+  \let\btwnExamSkip\relax\def\quizSolnHeader##1##2{}\addToMINullify}
+\newcommand{\insExSoln}[2][]{\begingroup\withinsoldoctrue#1\relax
+  \notamiopfalse\mi@nullify
+  \let\eqMrkSoln\eqMrkSolnCpyEx
+  \useEXtFilter\filterFor{@NOMATCH@}\def\eqMrkCpyArg{#2}%
+  \ifmi@OKtoRead\InputIfFileExists{\misolout}{}{}\ifmifound\else
+  \textbf{??}\PackageWarning{mi-solns}{The name '#2' defined by
+    \string\mrkForIns\MessageBreak was not found}\fi\else
+    \miReadOffMsg\fi\endgroup}
+\newcommand\mi@insSQzSoln[4][]{\begingroup\withinqsldoctrue#1\relax
+  \notamiopfalse\mi@nullify
+  \let\eqMrkSoln#3\relax
+  #4\filterFor{@NOMATCH@}\def\eqMrkCpyArg{#2}%
+  \ifmi@OKtoRead\InputIfFileExists{\miqslout}{}{}\ifmifound\else
+  \textbf{??}\PackageWarning{mi-solns}
+  {The name '#2' defined by \string\mrkForIns\MessageBreak
+    was not found}\fi\else\miReadOffMsg\fi\endgroup}
+\newcommand{\insSqSoln}[2][]{%
+  \mi@insSQzSoln[#1]{#2}{\eqMrkSolnCpySQ}{\useSQtFilter}}
+\newcommand{\insQzSoln}[2][]{%
+  \mi@insSQzSoln[#1]{#2}{\eqMrkSolnCpyQz}{\useQtFilter}}
+\endinput
+%%
+%% End of file `mi-solns.sty'.

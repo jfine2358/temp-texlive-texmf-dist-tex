@@ -1,0 +1,164 @@
+%
+% lltjp-listings.sty
+%
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{lltjp-listings}[2013/05/14 Patch to listings for LuaTeX-ja]
+\RequirePackage{listings,luatexbase-cctb}
+
+% lowest level
+\def\lst@kanjitrue{\let\lst@ifkanji\iftrue}
+\def\lst@kanjifalse{\let\lst@ifkanji\iffalse}
+\lst@AddToHook{InitVars}{\lst@kanjifalse}
+
+\def\lst@AppendLetter{%
+    \ltj@lst@setletterflag\lst@Append}
+\def\lst@AppendOther{%
+    \lst@ifletter\lst@Output\lst@letterfalse\fi\lst@kanjifalse
+    \futurelet\lst@lastother\lst@Append}
+
+\def\ltj@lst@setletterflag{%
+  \lst@ifletter
+    \lst@ifkanji\lst@Output\lst@kanjifalse\fi
+  \else
+    \lst@lettertrue\lst@ifkanji\lst@kanjifalse\else\lst@OutputOther\fi
+  \fi}
+
+\def\ltj@lst@setkanjiflag{%
+  \lst@ifletter
+    \lst@Output
+  \else
+    \lst@ifkanji\else\lst@OutputOther\fi\lst@lettertrue
+  \fi}
+
+\def\ltj@lst@setopenflag{%
+  \lst@ifletter
+    \lst@letterfalse\lst@Output
+  \else
+    \lst@ifkanji\else\lst@OutputOther\fi
+  \fi\lst@kanjitrue}
+
+\def\ltj@lst@setcloseflag{%
+  \lst@ifletter\else\lst@lettertrue\fi\lst@kanjitrue}
+
+\def\lst@ProcessJALetter#1{%
+  \lst@whitespacefalse
+  \ifnum\ltjgetparameter{jacharrange}{\ltjgetparameter{chartorange}{`#1}}=0
+    \ifnum\ltjgetparameter{postbreakpenalty}{`#1}>0
+      \ltj@lst@setopenflag    % 開き括弧類
+    \else
+      \ifnum\ltjgetparameter{prebreakpenalty}{`#1}>0
+        \ltj@lst@setcloseflag % 閉じ括弧類，句読点
+      \else
+        \ltj@lst@setkanjiflag % 通常の和文文字
+    \fi\fi
+    \advance\lst@length\@ne   % 和文文字は通常の2倍の幅
+  \else
+    \ltj@lst@setletterflag
+  \fi
+  \lst@Append#1}
+
+\def\lst@ProcessJALetterHalf#1{%
+  \lst@whitespacefalse
+  \ifnum\ltjgetparameter{jacharrange}{\ltjgetparameter{chartorange}{`#1}}=0
+    \ifnum\ltjgetparameter{postbreakpenalty}{`#1}>0
+      \ltj@lst@setopenflag    % 開き括弧類
+    \else
+      \ifnum\ltjgetparameter{prebreakpenalty}{`#1}>0
+        \ltj@lst@setcloseflag % 閉じ括弧類
+      \else
+        \ltj@lst@setkanjiflag % 通常の和文文字
+    \fi\fi
+    % 半角カナは欧文文字と同じ幅
+  \else
+    \ltj@lst@setletterflag
+  \fi
+  \lst@Append#1}
+
+
+% 半角カナの扱い
+
+\def\ltj@@listing@jpsetN#1#2#3{% for (not large) range
+  \@tempcnta=#1 \@tempcntb=\numexpr 1+#2\relax \@temptokena{}%
+  \loop \global\advance\@tempcnta\@ne\ifnum\@tempcnta<\@tempcntb\relax
+    \ltj@@listing@jpsetN@{\@tempcnta}{#3}\repeat
+  \ltj@@listing@jpset@after{#1}
+}
+
+\def\ltj@@listing@jpset@after#1{%
+  \expandafter\edef\csname ltj@@listing@jpcmd@i#1\endcsname{\the\@temptokena}%
+  \toks@\expandafter\expandafter\expandafter\expandafter%
+  \expandafter\expandafter\expandafter{\expandafter\expandafter%
+  \expandafter\the\expandafter\toks@\csname ltj@@listing@jpcmd@i#1\endcsname}%
+  \@temptokena{}%
+}
+
+\def\ltj@@listing@jpsetN@#1#2{{%
+    \@tempcnta=#1 \lccode`\~=\@tempcnta \lccode`\/=\@tempcnta
+    \lowercase{\gdef\@temp{\gdef~{#2/}}}}%
+  \@temptokena\expandafter\expandafter\expandafter\expandafter%
+  \expandafter\expandafter\expandafter{\expandafter\expandafter%
+  \expandafter\the\expandafter\@temptokena\@temp}%
+}
+
+\toks@{}
+\ltj@@listing@jpsetN{65377}{65439}{\lst@ProcessJALetterHalf}
+\edef\ltj@@listing@jpcmd{\the\toks@}\toks@{}
+
+% catcode 対策
+\newluatexcatcodetable\CatcodeTableLTJlistings
+\setluatexcatcodetable\CatcodeTableLTJlistings{
+  \luatexcatcodetable\CatcodeTableLaTeXAtLetter
+  \catcode"FFFFF=13%"
+  \setcatcoderange{"FF61}{"FF9F}{13}%   半角文字
+}
+
+% hook!
+\lst@AddToHook{Init}{
+  \luatexcatcodetable\CatcodeTableLTJlistings\ltj@@listing@jpcmd
+  \lccode`\~="FFFFF\lowercase{\let~\lst@ProcessJALetter}%"
+  \directlua{luatexbase.add_to_callback('process_input_buffer',
+    function(buf)
+      local ret = ''
+      for i = 1, utf.len(buf) do
+        local c = utf.sub(buf, i, i)
+        local cu = utf.byte(c)
+        if cu > 0x80 and tex.getcatcode(cu) \string~= 13 then
+          ret = ret .. utf.char(1048575) % U+FFFFF
+        end
+        ret = ret .. c
+      end
+      return ret
+    end, 'ltj.listings_unicode', 1)}}
+\lst@AddToHook{ExitVars}{\directlua{luatexbase.remove_from_callback('process_input_buffer', 'ltj.listings_unicode')}}
+
+
+% 白線対策
+\def\lst@OutputToken{%
+    \lst@TrackNewLines \lst@OutputLostSpace
+    \lst@ifgobbledws
+        \lst@gobbledwhitespacefalse
+        \lst@@discretionary
+    \fi
+    \lst@CheckMerge
+    {\lst@thestyle{\lst@FontAdjust
+     \setbox\@tempboxa\lst@hbox
+        {\lsthk@OutputBox
+         \lst@lefthss
+         \expandafter\lst@FillOutputBox\the\lst@token\@empty
+         \lst@righthss}%
+     \ht\@tempboxa=0pt\dp\@tempboxa=0pt
+     \lst@CalcLostSpaceAndOutput}}%
+    \lst@ResetToken}
+
+
+%    \begin{修正事項}{1.3} from jlisting.sty
+% ちょっとした修正
+\gdef\lst@breakProcessOther#1{\lst@ProcessOther#1}
+% ソースコード目次における文字と番号の空き
+\let \l@lstlisting = \l@figure
+% キャプションとソースコード目次に対する日本語対応
+\def\lstlistingname{ソースコード}
+\def\lstlistlistingname{ソースコード目次}
+%    \end{修正事項}
+\endinput

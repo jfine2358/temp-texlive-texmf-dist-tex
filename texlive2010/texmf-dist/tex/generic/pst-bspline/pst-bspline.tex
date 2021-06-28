@@ -1,0 +1,267 @@
+%% BEGIN pst-bspline.tex
+%% Author: Michael Sharpe (msharpe at ucsd.edu)
+\def\fileversion{1.2}
+\def\filedate{2010/06/12}
+%%
+%\message{ v\fileversion, \filedate}
+\csname PSTBsplineLoaded\endcsname
+\let\PSTBsplineLoaded\endinput
+\ProvidesFile{pst-bspline.tex}[\filedate\space v\fileversion\space Bspline routines for pstricks]
+\ifx\PSTnodesLoaded\endinput\else\input pst-node.tex \fi\relax
+\edef\TheAtCode{\the\catcode`\@}\catcode`\@=11
+%
+%\newcount\pst@args%used in several macros--now defined in pst-node.tex
+\def\PST@root{}
+\newcount\bsp@args
+\newcount\bsp@cntA
+\newcount\bsp@cntB
+\newif\ifbsp@omitends
+\newif\ifbsp@closed
+%\newif\ifbsp@showpoints
+%\newif\ifbsp@doubleline
+\newif\ifbsp@seq
+%
+\def\bsp@init{%these items are used only within the plotting macros
+\def\bsp@arrowA{}%
+\def\bsp@arrowB{}%
+}%
+\def\refreshbspopts{%
+\bsp@closedfalse%
+\bsp@omitendsfalse%
+\bsp@seqfalse%
+}%
+% showframe key and its default are global
+\newif\ifshowframe%
+\def\psset@showframe#1{\@nameuse{showframe#1}}%
+\psset@showframe{false}%
+%
+%Bspline drawing macros
+\def\psBsplineNodes{\def\pst@par{}\pst@object{psBsplineNodes}}%
+\def\psBsplineNodesC{\def\pst@par{}\pst@object{psBsplineCNodes}}%
+\def\psBsplineNodesE{\def\pst@par{}\pst@object{psBsplineENodes}}%
+\def\psBsplineC{\def\pst@par{}\pst@object{psBsplineC}}%
+\def\psBsplineE{\def\pst@par{}\pst@object{psBsplineE}}%
+\def\psBspline{\def\pst@par{}\pst@object{psBspline}}%
+%Bspline internal macros, level 1
+\def\psBsplineC@i{\bsp@init\refreshbspopts\bsp@closedtrue\ps@bspline}%
+\def\psBsplineE@i{\bsp@init\refreshbspopts\bsp@omitendstrue\ps@bspline}%
+\def\psBspline@i{\bsp@init\refreshbspopts\ps@bspline}%
+\def\psBsplineNodes@i{\bsp@init\refreshbspopts\bsp@seqtrue\ps@bsplineNodes}%
+\def\psBsplineCNodes@i{\bsp@init\refreshbspopts\bsp@seqtrue\bsp@closedtrue%
+\ps@bsplineNodes}%
+\def\psBsplineENodes@i{\bsp@init\refreshbspopts\bsp@seqtrue\bsp@omitendstrue%
+\ps@bsplineNodes}%
+%Bspline internal macros, level 2
+\def\ps@bsplineNodes#1#2{%noderoot, endindex
+\def\bsp@root{#1}%
+\bsp@args=#2\relax%
+\next@Point%
+}%
+%
+\def\ps@bspline{\bsp@args=0\relax%
+\@ifnextchar({\psBspline@read{pn@de}}{\psBspline@read}}%
+%   
+\def\psBspline@read#1{%
+\def\bsp@root{#1}%
+\next@Point%
+}%
+%
+\def\next@Point{\@ifnextchar({\next@Point@i}{\psBsplineMain}}%
+\def\next@Point@i(#1){%
+\pnode(#1){\bsp@root\the\bsp@args}%
+\advance\bsp@args by \@ne%
+\next@Point}%
+% The main drawing routine
+\def\psBsplineMain{%done reading nodes
+\pst@killglue%
+\begingroup%
+\use@par%
+\ifbsp@closed\begin@ClosedObj \else \begin@OpenObj \fi%
+\let\bsp@linecolor\pslinecolor%
+\let\bsp@arrowA\psk@arrowA%
+\let\bsp@arrowB\psk@arrowB%
+\let\bsp@linestyle\pslinestyle%
+\ifbsp@seq\advance\bsp@args by \@ne\fi%
+\ifbsp@closed%
+  \psset{doubleline=false}%
+  \pnode(\bsp@root0){\bsp@root\the\bsp@args}%
+  \advance\bsp@args by \@ne%
+  \pnode(\bsp@root1){\bsp@root\the\bsp@args}%
+  \advance\bsp@args by \@ne%
+\fi%
+\advance\bsp@args by \m@ne%
+% Define the left and right bezier control points in each interval. These are 
+% denoted (root+) R0, L1, R1, L2, R2, etc
+\multido{\ia=0+1,\ib=1+1}{\bsp@args}{%
+\ifshowframe%
+  \ncline[linestyle=dashed,linecolor=gray,arrows=*-*]{\bsp@root\ia}{\bsp@root\ib}%
+\fi%
+  \nodexn{.667(\bsp@root\ia)+.333(\bsp@root\ib)}{\bsp@root R\ia}%
+  \nodexn{.333(\bsp@root\ia)+.667(\bsp@root\ib)}{\bsp@root L\ib}%
+  }%
+%Finally, define the bezier endpoints for each interval
+\advance\bsp@args by \m@ne%
+\mmultido{\ia=0+1}{\bsp@args}{%
+\ifshowframe%
+  \ncline[linestyle=solid,linecolor=red]{\bsp@root L\ia}{\bsp@root R\ia}%
+\fi%
+\midAB(\bsp@root L\ia)(\bsp@root R\ia){\bsp@root S\ia}%
+\ifshowframe%
+  \psdot[linecolor=red](\bsp@root S\ia)%
+\fi%
+}%
+\ifbsp@closed%
+  \pnode(\bsp@root S\the\bsp@args){\bsp@root S0}%
+ \else%
+   \advance\bsp@args by \@ne%
+   \pnode(\bsp@root0){\bsp@root S0}%
+   \pnode(\bsp@root\the\bsp@args){\bsp@root S\the\bsp@args}%
+ \fi%
+\advance\bsp@args by \m@ne%
+%the pieces of bezier curve
+\ifbsp@closed%
+\pscustom[arrows=-]{%
+\psbezier[showpoints=false](\bsp@root S0)(\bsp@root R0)(\bsp@root L1)(\bsp@root S1)%
+\multido{\ia=1+1,\ib=2+1}{\bsp@args}{\psbezier(\bsp@root R\ia)(\bsp@root L\ib)%
+(\bsp@root S\ib)}%
+%within \pscustom, \psbezier takes 3 args, using last point of previous
+}%
+\else %open curve---make arrows, don't use \pscustom
+ \advance\bsp@args by \m@ne%
+ \ifbsp@omitends \bsp@cntA=2\relax \bsp@cntB=\@ne \advance\bsp@args by -2\relax%
+ \else \bsp@cntA=\@ne\bsp@cntB=\z@ \fi%
+ \psbezier[arrows=-\bsp@arrowA,showpoints=false](\bsp@root S\the\bsp@cntA)%
+ (\bsp@root L\the\bsp@cntA)(\bsp@root R\the\bsp@cntB)(\bsp@root S\the\bsp@cntB)%
+ \mmultido{\ia=\the\bsp@cntA+1,\ib=\the\bsp@cntB+1}{\bsp@args}%
+ {\psbezier[arrows=-,showpoints=false](\bsp@root S\ib)(\bsp@root R\ib)%
+ (\bsp@root L\ia)(\bsp@root S\ia)}%
+ %
+ \ifbsp@omitends \advance\bsp@args by \@ne \fi%
+ \advance\bsp@args by \@ne%
+ \bsp@cntA=\bsp@args%
+ \bsp@cntB=\bsp@cntA%
+ \advance\bsp@cntB by \@ne%
+ \psbezier[arrows=-\bsp@arrowB,showpoints=false](\bsp@root S\the\bsp@cntA)%
+ (\bsp@root R\the\bsp@cntA)(\bsp@root L\the\bsp@cntB)(\bsp@root S\the\bsp@cntB)%
+ \ifshowframe \psdot[linecolor=red](\bsp@root L\the\bsp@cntB) \fi%
+\fi% end \ifbsp@closed
+\ifshowframe% 
+  \psdot[linecolor=red](\bsp@root R0)%
+  \psdot[linecolor=red](\bsp@root L\the\bsp@args)%
+\fi%
+\ifshowpoints%
+  \multido{\i=0+1}{\bsp@args}{\psdot(\bsp@root S\i)}%
+\fi%
+ \ifbsp@closed%
+   \end@ClosedObj%
+ \else%
+   \end@OpenObj%
+ \fi%
+\endgroup%
+\ignorespaces%
+}
+%
+\def\psbspline{\def\pst@par{}\pst@object{psbspline}}%
+\def\psbspline@i{\pst@getarrows\psbspline@ii}%
+\def\psbspline@ii{%
+\pnodesX%make the following sequences into nodes named S@0,...
+%last index=\pst@args
+}%
+\def\psbspline@iii{%
+\pst@killglue%
+\psBsplineInterp{S@}{\the\pst@args}%creates S@B0...
+\begingroup%
+\use@par%
+\psBsplineNodes{S@B}{\the\pst@args}%draw curve
+\endgroup\ignorespaces}%
+%
+\def\pnodesX{%version of \pnodes where the last step moves to \psbspline@iii
+\pst@args=\z@%
+\def\PST@root{S@}%
+\next@NodeX}%
+%
+\def\next@NodeX{\@ifnextchar({\next@NodeX@i}{\advance\pst@args by \m@ne\typeout{Defined nodes \PST@root0 ..  \PST@root\the\pst@args.}\psbspline@iii}}%
+%
+\def\next@NodeX@i(#1){%
+\pnode(#1){\PST@root\the\pst@args}%
+\advance\pst@args\@ne%
+\next@NodeX}%
+%
+\def\make@mcoeff#1{%
+\pstVerb{ /mcoeff #1\space 1 add array def %
+ mcoeff 1 0.25 put %
+ 1 1 #1\space 1 sub %
+ {/j exch def %j is counter
+ mcoeff j 1 add 1 4 mcoeff j get sub div put  } for }}%
+ %
+\def\psBsplineInterp#1#2{%
+% #1=node name root to interpolate, #2=end index, 
+% eg, if we want to interpolate S0,..., S100,  #1=S, #2=100,
+\newcount\top@mone \top@mone=#2\relax%100
+\newcount\top@ndx \top@ndx=\top@mone% 
+\advance\top@ndx by -1\relax%99
+\advance\top@mone by -2\relax%98
+\newcount\top@mtwo \top@mtwo=\top@mone \advance\top@mtwo by \m@ne%97
+\make@mcoeff{#2}%
+\def\noderoot{#1}%
+\pnode(\noderoot 0){\noderoot B0}%
+\pnode(\noderoot #2){\noderoot B#2}%
+\psLCNode(\noderoot 1){6}(\noderoot 0){-1}{\noderoot B1}% 6*S1-S0->SB1
+\multido{\iA=2+1,\iAA=1+1}{\top@mone}{\psLCNodeVar(\noderoot\iA)(\noderoot B\iAA)(! 6 mcoeff \iAA\space get neg ){\noderoot B\iA}}%2 to n-2, 6*S_k-m_{k-1}*SB_{k-1}->SB_k
+\psLCNodeVar(\noderoot \the\top@ndx)(\noderoot #2)(! mcoeff \the\top@ndx\space get dup 6 mul exch neg  ){tmp@node}%m_{99}*(6*S99-S100)->tmp@node
+\psLCNodeVar(tmp@node)(\noderoot B\the\top@mone)(! 1 mcoeff \the\top@ndx\space get mcoeff \the\top@mone\space get mul neg ){\noderoot B\the\top@ndx}% temp@node -m_{98}*m_{99}*SB98->SB99
+\multido{\iA=\the\top@mone+-1,\iAA=\the\top@ndx+-1}{\the\top@mone}{\psLCNodeVar(\noderoot B\iA)(\noderoot B\iAA)(! mcoeff \iA\space get dup neg ){\noderoot B\iA}% m_k*SB_k-m_k*SB_{k+1}->SB_k, k=98 downto 1
+}% end multido
+}% end def
+\def\psBsplineInterpC#1#2{%
+ % #1=node name root, #2=top index,
+ % eg, if we want to interpolate S0,..., S100, #1=100, #2=S
+ % interpolation in this case is periodic (closed curve)
+\pst@killglue
+\newcount\top@mone \top@mone=#2\relax%
+\newcount\top@ndx \top@ndx=\top@mone% 
+\advance\top@ndx by \@ne%number of nodes to interpolate
+\newcount\top@mtwo \top@mtwo=\top@mone \advance\top@mtwo\m@ne%
+% After copying S0 to S101, \top@ndx, \top@mone, \top@mtwo are top index, top index-1, top index-two---101, 100, 99 in the example
+\make@mcoeff{\the\top@ndx}%
+\def\noderoot{#1}%
+\pstVerb{ /bcoeff #2\space 2 add array def  /ccoeff #2\space 2 add array def /xcoeff #2\space 2 add array def /ycoeff #2\space 2 add array def
+%% initialize b, c, x ,y values
+ 1 1 \the\top@ndx\space %1 add
+ {/j exch def %j is counter
+ ccoeff j 0 put bcoeff j 0 put } for 
+bcoeff 1 1 put bcoeff #2\space 1 put bcoeff #2\space 1 add  4 put 
+ccoeff 1 0.25 put ccoeff #2\space 1 put }%
+%end \pstVerb
+\pnode(\noderoot 0){\noderoot\the\top@ndx}%copy node 0 to top end
+\pstVerb{ xcoeff 1 1 put ycoeff 1 1.5 put }
+\pnode(! \psGetNodeCenter{\noderoot 1} xcoeff  1 \noderoot 1.x 1.5 mul put ycoeff 1  \noderoot 1.y 1.5 mul put 1 1){temp@}% 1.5=6*0.25
+\multido{\iA=2+1}{\the\top@mone}{\pnode(! ycoeff \iA\space xcoeff  \iA\space \psGetNodeCenter{#1\iA} #1\iA.x 6 mul put #1\iA.y 6 mul put 1 1){temp@}}% move x, y coords times 6 to arrays
+\multido{\iA=2+1,\iB=1+1}{\the\top@mtwo}{\pstVerb{%
+ ccoeff \iA\space ccoeff \iA\space get ccoeff \iB\space get sub mcoeff \iA\space get mul put
+ xcoeff \iA\space xcoeff \iA\space get xcoeff \iB\space get sub mcoeff \iA\space get mul put
+ ycoeff \iA\space ycoeff \iA\space get ycoeff \iB\space get sub mcoeff \iA\space get mul put
+bcoeff \iA\space bcoeff \iA\space get bcoeff \iB\space get mcoeff \iB\space get mul sub put
+bcoeff \the\top@ndx\space bcoeff \the\top@ndx\space get bcoeff \iB\space get ccoeff \iB\space get mul sub put
+xcoeff \the\top@ndx\space xcoeff \the\top@ndx\space get xcoeff \iB\space get bcoeff \iB\space get mul sub put
+ycoeff \the\top@ndx\space ycoeff \the\top@ndx\space get ycoeff \iB\space get bcoeff \iB\space get mul sub put 
+}% end \pstVerb
+}% end \multido
+\pstVerb{%
+ bcoeff \the\top@ndx\space bcoeff \the\top@ndx\space get bcoeff \the\top@mone\space get 
+ccoeff \the\top@mone\space get mul sub put %b(n)=b(n)-b(n-1)*c(n-1)
+xcoeff \the\top@ndx\space xcoeff \the\top@ndx\space get xcoeff \the\top@mone\space get bcoeff \the\top@mone\space get mul sub bcoeff \the\top@ndx\space get div put %x(n)=(x(n)-x(n-1)*b(n-1))/b(n)
+ycoeff \the\top@ndx\space ycoeff \the\top@ndx\space get ycoeff \the\top@mone\space get bcoeff \the\top@mone\space get mul sub bcoeff \the\top@ndx\space get div put %y(n)=(y(n)-y(n-1)*b(n-1))/b(n)
+xcoeff \the\top@mone\space xcoeff \the\top@mone\space get xcoeff \the\top@ndx\space get ccoeff \the\top@mone\space get mul sub put %x(n-1)=x(n-1)-c(n-1)*x(n)
+ycoeff \the\top@mone\space ycoeff \the\top@mone\space get ycoeff \the\top@ndx\space get ccoeff \the\top@mone\space get mul sub put %y(n-1)=y(n-1)-c(n-1)*y(n)
+}% end pstVerb
+\mmultido{\iA=\the\top@mone+-1,\iB=\the\top@ndx+-1}{\the\top@mtwo}{%
+\pstVerb{ xcoeff \iA\space xcoeff \iA\space get mcoeff \iA\space get xcoeff \iB\space get mul sub ccoeff \iA\space get xcoeff \the\top@ndx\space get mul sub put % x(k)=x(k)-m(k)*x(k+1)-c(k)*x(n)
+ycoeff \iA\space ycoeff \iA\space get mcoeff \iA\space get ycoeff \iB\space get mul sub ccoeff \iA\space get ycoeff \the\top@ndx\space get mul sub put 
+}}%y(k)=...
+\multido{\iA=1+1}{\the\top@ndx}{\pnode(! xcoeff \iA\space get ycoeff \iA\space get )%
+{\noderoot B\iA}}%
+\pnode(\noderoot B\the\top@ndx){\noderoot B0}%
+\ignorespaces}%
+\catcode`\@=\TheAtCode\relax
+\endinput

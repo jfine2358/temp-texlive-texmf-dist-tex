@@ -1,0 +1,297 @@
+% This is piTeX, a set of macros I (Paul Isambert) use to
+% typeset documentations for my packages (that's why it is
+% archived on CTAN).
+%
+% Perhaps in the future, when this achieves some kind of
+% format-like completude, there'll be a documentation and
+% it'll be publicly announced.
+%
+% You can of course use those macros, but you are on your
+% own, and the files will probably be modified without announcement.
+% The file is supposed to be \input on plain TeX with LuaTeX, at least v.0.6.
+%
+%
+% The files needed are:
+%
+% texapi.tex (an independent package \input in the following file)
+% yax.tex (an independent package)
+% fonts.ptx (piTeX font "management")
+% luaotfload.sty (an independent package (not by me))
+% sections.ptx (piTeX sectionning commands)
+%
+% Date: July 2010.
+%
+%
+% User interface
+\input yax % which itself \input's texapi
+
+\setcatcodes{\@\_=11}
+\def\ptx@error{\senderror{PiTeX}}
+
+% This to write in latin1.
+\directlua{%
+ function convert(buf)
+   return string.gsub(buf,"(.)", function (ch)
+       return unicode.utf8.char(string.byte(ch))
+     end)
+ end
+ callback.register('process_input_buffer',convert)
+ }
+
+\newdimen\urvsize
+\urvsize\vsize
+
+\def\inputpitexfile#1 {\input #1.ptx }
+
+\inputpitexfile fonts
+\inputpitexfile sections
+% No footnotes in documentations.
+%\input footnotes.tex
+% I redefine the output routine on every job.
+%\input output.tex
+
+\defactiveparameter document{%
+  \pdfinfo{%
+    /Author (\usevalueor #1 : author {Unknown author})
+    /Title  (\usevalueor #1 : pdftitle  {\usevalueor #1 : title {No title}})
+    \ifattribute #1 : subject {/Subject (\usevalue #1 : subject )}{}
+    \ifattribute #1 : keywords {/Keywords (\usevalue #1 : keywords )}{}
+    }%
+  \pdfcatalog{%
+    /PageMode
+      \ifcasevalue #1 : display
+        \val outlines   /UseOutlines
+        \val signets    /UseOutlines % French!
+        \val thumbs     /UseThumbs
+        \val thumbnails /UseThumbs
+        \val full       /FullScreen
+        \val fullscreen /FullScreen
+        \elseval        /UseNone
+      \endval
+    }%
+  }
+
+\restrictparameter document : author title pdftitle date subject keywords display version\par
+\restrictattribute document:display outlines signets thumbs thumbnails full fullscreen\par
+
+
+\defactiveparameter page{%
+  \settovalue\pdfpagewidth  #1 : pagewidth
+  \settovalue\pdfpageheight #1 : pageheight
+  \settovalue\baselineskip  #1 : baselineskip
+  \settovalueor\topskip     #1 : topskip {\topskip=\baselineskip}%
+  \settovalue\pdfhorigin    #1 : left
+  \ifattribute #1 : right
+              {\hsize = \dimexpr(\pdfpagewidth-\pdfhorigin-\usevalue #1 : right )\relax}
+              {\settovalue\hsize #1 : hsize }%
+  \settovalue\pdfvorigin    #1 : top
+  \settovalue\parindent     #1 : parindent
+  \settovalue\parskip       #1 : parskip
+  \ifattribute #1 : lines {\vsize=\usevalue #1 : lines \baselineskip}{}%
+  }
+\restrictparameter page : pagewidth
+                          pageheight
+                          hsize
+                          baselineskip
+                          topskip
+                          left
+                          right
+                          top
+                          lines
+                          parindent
+                          parskip
+                          \par
+
+% Defaults... they don't produce anything beautiful.
+% I redefine them on every job.
+\setparameter page:
+  pageheight   = 28cm
+  pagewidth    = 21cm
+  hsize        = 15cm
+  baselineskip = 12pt
+  lines        = 42
+  left         = 1in
+  top          = 1in
+  parskip      = 0pt
+
+
+% Should be used with YaX to set parameters.
+\long\pdef\newblock{%
+  \ifnext*{\gobbleoneand\ptx@newblock_group}
+          {\ptx@newblock_nogroup}%
+  }
+\def\ptx@newblock_nogroup#1#2#3{%
+  \def#1{\ifnext/{\gobbleoneand{#3}}{#2}}%
+  }
+\def\ptx@newblock_group#1#2#3{%
+  \def#1{\ifnext/{\gobbleoneand{#3\egroup}}{\bgroup#2}}%
+  }
+\def\antigobblespace{%
+  \ifcatnext a{ }{\iffnext({ }}%
+  }
+
+
+% PDF links
+\def\dest#1#2{%
+  \ifcs{ptx@link_name=#1}
+       {\ptx@error{Link `#1' already exists}#2}
+       {\letcs{ptx@link_name=#1}\relax
+        \bgroup
+          \ifvmode
+            \pdfdest name {#1} xyz #2%
+          \else
+            \setbox0=\hbox{#2}%
+            \raise\ht0\hbox{\pdfdest name {#1} xyz}#2%
+          \fi
+        \egroup
+        }%
+  }
+\def\link#1#2{%
+  \pdfstartlink attr {/Border [0 0 0]} goto name {#1}#2\pdfendlink
+  }
+
+% Verbatim facilities.
+
+\def\tcode#1{{\codefont#1}}
+\long\def\com#1{%
+  \bgroup
+    \codefont
+    \string#1%
+  \egroup
+  \antigobblespace
+  }
+\def\arg#1{{\codefont\it<#1>}\iffnext\spacechar{\kern.2ex }}
+\def\barg#1{{\codefont\char"007B\relax{\it<#1>}\char"007D\relax}}
+\def\oarg#1{{\codefont[{\it<#1>}]}}
+
+
+\def\exampleskip{\vskip\baselineskip}
+\def\example{%
+  \exampleskip
+  \bgroup
+  \parindent0pt
+  \setcatcodes{\\\{\}\$\&\#\^\_\ \~\%=12,\^^M=13}%
+  \codefont
+  \readexample
+  }%
+\bgroup
+\setcatcodes{\\=12,\|=0,\^^M=13}%
+|gdef|readexample#1^^M#2\example/{#2|egroup|exampleskip}%
+|restorecatcodes%
+\setcatcodes{\^^M=13}%
+\gdef^^M{\quitvmode\endgraf}%
+\egroup%
+\def\verb#1{%
+  \def\ptx@verb##1#1{##1\egroup}%
+  \bgroup
+  \setcatcodes{\\\{\}\$\&\#\^\_\ \~\%=12}%
+  \codefont
+  \ptx@verb
+  }
+
+%
+% Read and process examples.
+%
+\newwrite\ptx@examplewrite
+
+\bgroup
+\setcatcodes{\%=12,\/=14}
+\gdef\Example{/
+  \immediate\openout\ptx@examplewrite=\jobname.pex
+  \immediate\write\ptx@examplewrite{% This is a scratch file used to typeset examples in \jobname.tex.}/
+  \immediate\write\ptx@examplewrite{% You can delete it.}/
+  \immediate\write\ptx@examplewrite{%}/
+  \bgroup
+  \setcatcodes{\\\#\%\^^M\ =12}/
+  \writeexample
+  }/
+\egroup
+
+\bgroup
+\setcatcodes{\^^M=12}%
+\gdef\writeexample#1^^M{%
+  \immediate\write\ptx@examplewrite{\noexpand\example}%  
+  \ptx@writeexample}%
+\gdef\ptx@writeexample#1^^M{%
+  \passexpanded{\ifstring{#1}}{\examplestring}%
+               {\immediate\write\ptx@examplewrite{\string\example/}%
+                \immediate\closeout\ptx@examplewrite\egroup%
+                \processexample}%
+               {\immediate\write\ptx@examplewrite{\primunexpanded{#1}}%
+                \ptx@writeexample}%
+  }%
+{\setcatcodes{\\=12,\|=0}|gdef|examplestring{\Example/}}%
+\egroup
+
+\def\typesetexample{{\input\jobname.pex }}
+\def\doexample{{\let\example\ptx@Example\input\jobname.pex }}
+\def\ptx@Example{%
+  \iffnext/{\gobbleoneand\endinput}%
+  }
+% To be redefined for different layout.
+\def\processexample{\typesetexample\doexample}
+
+\def\verb#1{%
+  \def\ptx@verb##1#1{##1\egroup}%
+  \bgroup
+  \setcatcodes{\\\{\}\$\&\#\^\_\ \~\%=12}%
+  \codefont
+  \ptx@verb
+  }
+
+
+\newdimen\extraboxspace
+\newdimen\ptx@extraboxspace_top
+\newdimen\ptx@extraboxspace_right
+\newdimen\ptx@extraboxspace_bottom
+\newdimen\ptx@extraboxspace_left
+
+\newfornoempty\ptx@colorbox_loop{1}#2,{%
+  \ifcase#1
+    \ptx@extraboxspace_top    =#2
+    \ptx@extraboxspace_right  =#2
+    \ptx@extraboxspace_bottom =#2
+    \ptx@extraboxspace_left   =#2
+  \or
+    \ptx@extraboxspace_right  =#2
+    \ptx@extraboxspace_left   =#2
+  \or
+    \ptx@extraboxspace_bottom =#2
+  \or
+    \ptx@extraboxspace_left   =#2
+  \fi
+  \passarguments{\numexpr(#1+1)}%
+  }
+\def\colorbox{%
+  \ifnextnospace[\ptx@colorbox_setborders
+          {\ptx@extraboxspace_top    =\extraboxspace
+           \ptx@extraboxspace_right  =\extraboxspace
+           \ptx@extraboxspace_bottom =\extraboxspace
+           \ptx@extraboxspace_left   =\extraboxspace
+           \ptx@colorbox_do}%
+  }
+\def\ptx@colorbox_setborders[#1]{%
+  \ptx@colorbox_loop{0}{#1,}%
+  \ptx@colorbox_do
+  }
+{\setcatcodes{pt=12}
+\gdef\noPT#1pt{#1 }}
+\def\ptx@colorbox_do#1#2{%
+  \bgroup
+  \setbox0=\hbox{#2}%
+  \hbox{%
+    \pdfliteral{
+      q #1 rg #1 RG
+      -\expandafter\noPT\the\ptx@extraboxspace_left
+       \expandafter\noPT\the\dimexpr(\ht0+\ptx@extraboxspace_top)\relax
+       \expandafter\noPT\the\dimexpr(\wd0+\ptx@extraboxspace_left+\ptx@extraboxspace_right)\relax
+      -\expandafter\noPT\the\dimexpr(\ht0+\ptx@extraboxspace_top+\dp0+\ptx@extraboxspace_bottom)\relax
+      re f Q}%
+    #2}%
+  \egroup
+  }
+
+\def\trace{\tracingcommands4 \tracingmacros4 }
+\def\untrace{\tracingcommands0 \tracingmacros0 }
+
+\restorecatcodes

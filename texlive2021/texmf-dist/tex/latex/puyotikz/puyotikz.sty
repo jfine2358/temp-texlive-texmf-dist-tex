@@ -1,0 +1,72 @@
+% PuyoTikZ package for LaTeX.
+% Created by amosborne (GitHub) / terramyst (Twitter).
+% MIT License
+
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+\ProvidesPackage{puyotikz}[2020/12/28 v1.0.1 PuyoTikZ]
+
+\RequirePackage{pythontex}
+\RequirePackage{tikz}
+\RequirePackage{keyval}
+
+\begin{pycode}
+import sys, subprocess
+ptha = subprocess.check_output(['kpsewhich', '-var-value=TEXMFDIST'], universal_newlines=True)
+ptha = ptha.rstrip('\n')
+pthb = ptha + '/scripts/puyotikz'
+sys.path.append(pthb)
+
+import puyotikz as puyo
+\end{pycode}
+
+\def\puyosmallscale{0.34}
+\def\puyobigscale{0.65}
+
+\newenvironment{puyotikz}[1][\puyobigscale]
+	{\begin{tikzpicture}[scale=#1, every node/.style={transform shape}]}
+	{\end{tikzpicture}}
+
+\define@key{puyoboard}{ncols}{\def\puyo@ncols{#1}}
+\define@key{puyoboard}{nrows}{\def\puyo@nrows{#1}}
+\define@key{puyoboard}{nhidrows}{\def\puyo@nhidrows{#1}}
+\define@key{puyoboard}{showlabels}{\def\puyo@showlabels{#1}}
+\setkeys{puyoboard}{ncols=6, nrows=12, nhidrows=1, showlabels=True}
+
+\setpythontexcontext{
+	ncols=\puyo@ncols,
+	nrows=\puyo@nrows,
+	nhidrows=\puyo@nhidrows,
+	showlabels=\puyo@showlabels
+}
+
+\newcommand{\puyoboard}[3][]{
+	\setkeys{puyoboard}{#1}
+	\pyc{puyo.puyoboard(cols=int(pytex.context.ncols), %
+		                rows=int(pytex.context.nrows), %
+		                hrows=int(pytex.context.nhidrows), %
+		                boardpuyos="#2", %
+		                nextpuyos="#3", %
+		                label=pytex.context.showlabels=="True")}
+}
+
+\newcommand{\puyomarker}[1]{\pyc{puyo.puyomarker("#1")}}
+
+\newcommand{\puyogrid}[2][]{
+	\setkeys{puyoboard}{nhidrows=0, showlabels=False}
+	\begin{puyotikz}[\puyosmallscale]
+		\puyoboard[#1]{#2}{}
+	\end{puyotikz}
+}
+
+\newcommand{\puyocolor}[2]{
+	\definecolor{#1puyo}{RGB}{#2}
+	\colorlet{dark#1puyo}{#1puyo!80!black}
+}
+\puyocolor{red}{255,82,98}
+\puyocolor{green}{82,213,98}
+\puyocolor{blue}{32,115,213}
+\puyocolor{yellow}{255,220,24}
+\puyocolor{purple}{131,90,213}
+\puyocolor{gray}{180,172,189}
+
+\endinput

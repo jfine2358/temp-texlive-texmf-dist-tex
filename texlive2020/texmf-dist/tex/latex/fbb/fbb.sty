@@ -1,0 +1,139 @@
+%% fbb.sty
+%%
+\NeedsTeXFormat{LaTeX2e}
+
+\def\fileversion{1.13}
+\def\filedate{2017/06/24}
+\ProvidesPackage{fbb}[\filedate\space v\fileversion]
+
+\message{`fbb' v\fileversion, \filedate\space Text macros for fbb, a Bembo-like font family (msharpe)}
+
+\RequirePackage[LY1,T1]{fontenc}
+\RequirePackage{textcomp}
+\RequirePackage{ifetex}
+\ifetex\RequirePackage{etoolbox}\fi %etoolbox loads etex.sty
+\IfFileExists{mweights.sty}{\RequirePackage{mweights}}{}
+\IfFileExists{fontaxes.sty}{
+    \RequirePackage{fontaxes}
+    \fa@naming@exception{figures}{{superior}{proportional}}{Sup}
+    \fa@naming@exception{figures}{{superior}{tabular}}{Sup}
+    \fa@naming@exception{figures}{{inferior}{proportional}}{Inf}
+    \fa@naming@exception{figures}{{inferior}{tabular}}{Inf}
+    \def\sufigures{\@nomath\sufigures
+        \fontfigurestyle{superior}\selectfont}
+    \DeclareTextFontCommand{\textsu}{\sufigures}
+    \let\textsuperior\textsu
+    \def\infigures{\@nomath\infigures
+        \fontfigurestyle{inferior}\selectfont}
+    \DeclareTextFontCommand{\textin}{\infigures}
+    \let\textinferior\textin
+%    \def\@makefnmark{\hbox{\textsu{\@thefnmark}}}
+}{}
+\newcommand*{\fbb@scale}{1}
+\IfFileExists{xkeyval.sty}{
+    \RequirePackage{xkeyval}
+    \DeclareOptionX{scale}{\renewcommand*{\fbb@scale}{##1}}
+    \DeclareOptionX{scaled}{\renewcommand*{\fbb@scale}{##1}}
+}{
+    \let\DeclareOptionX\DeclareOption
+    \let\ExecuteOptionsX\ExecuteOptions
+    \let\ProcessOptionsX\ProcessOptions
+}
+
+\let\orig@footnote=\thefootnote
+\let\orig@makefnmark=\@makefnmark
+\def\bfseries@rm{b}
+\def\mdseries@rm{m}
+\def\useosf{\edef\fbb@figurestyle{OsF}}
+\@onlypreamble\useosf
+\def\useproportional{\edef\fbb@figurealign{}}
+\@onlypreamble\useproportional
+%\newif\iffbb@babel
+%\ifdefined\bbl@tempa \fbb@babeltrue\fi
+%\ifetex\else\fbb@babeltrue\fi
+\newif\if@fbb@sups
+\newif\if@fbb@scosf
+\def\fbb@altP{} % should be empty or P
+\DeclareOptionX{altP}{\xdef\fbb@altP{P}}
+\DeclareOptionX{lining}{\edef\fbb@figurestyle{LF}}
+\DeclareOptionX{oldstyle}{\useosf}
+\DeclareOptionX{osf}{\useosf}
+\DeclareOptionX{tabular}{\edef\fbb@figurealign{T}}
+\DeclareOptionX{p}{\useproportional}
+\DeclareOptionX{proportional}{\useproportional}
+\DeclareOptionX{sups}{\@fbb@supstrue}
+\DeclareOptionX{scosf}{\@fbb@scosftrue}
+\ExecuteOptionsX{lining,tabular}
+\ProcessOptionsX\relax
+
+\DeclareTextCommand{\textcircled}{TS1}[1]{\hmode@bgroup
+   \ooalign{%
+      \hfil \raise .39ex\hbox {\fontencoding{T1}\fontseries{m}\fontshape{sc}\fontsize{7.5}{9}\selectfont \lowercase{#1}}\hfil \crcr
+     \textbigcircle   % bigcircle
+   }%
+ \egroup}
+
+\renewcommand*{\rmdefault}{fbb-TLF}
+%\def\usetosf{\edef\fbb@figurestyle{OsF}\edef\fbb@figurealign{T}%
+%%  \AtEndPreamble{\renewcommand*{\rmdefault}{fbb-TOsF}}
+%}
+%\@onlypreamble\usetosf
+
+\DeclareRobustCommand{\lfstyle}{%
+  \not@math@alphabet\lfstyle\relax
+  \fontfamily{fbb-LF}\selectfont %
+}% to get lf
+\DeclareRobustCommand{\tlfstyle}{%
+  \not@math@alphabet\tlfstyle\relax
+  \fontfamily{fbb-TLF}\selectfont %
+}% to get tlf
+\DeclareRobustCommand{\osfstyle}{%
+  \not@math@alphabet\osfstyle\relax
+  \fontfamily{fbb-OsF}\selectfont %
+}% to get osf
+\DeclareRobustCommand{\tosfstyle}{%
+  \not@math@alphabet\tosfstyle\relax
+  \fontfamily{fbb-TOsF}\selectfont %
+}% to get tosf
+\DeclareRobustCommand{\textlf}[1]{%
+  {\lfstyle #1}%
+}% to get lf
+\DeclareRobustCommand{\texttlf}[1]{%
+  {\tlfstyle #1}%
+}% to get tlf
+\DeclareRobustCommand{\textosf}[1]{%
+  {\osfstyle #1}%
+}% to get osf
+\DeclareRobustCommand{\texttosf}[1]{%
+  {\tosfstyle #1}%
+}% to get tosf
+\if@fbb@scosf %
+\DeclareRobustCommand{\textsc}[1]{%
+{\fontfamily{fbb-\fbb@figurealign OsF}\fontshape{sc}\selectfont #1}%
+}\fi
+
+\renewcommand*{\familydefault}{\rmdefault}
+\if@fbb@sups %
+ \ifdefined\sufigures
+  \def\f@@tn@te{footnote}
+  \def\@makefnmark{%
+    \ifx\@mpfn\f@@tn@te%
+      \ifx\thefootnote\orig@footnote%
+        \hbox{\sufigures\hspace*{.04em}\@thefnmark\hspace*{.04em}}%
+      \else%
+        \orig@makefnmark%
+      \fi
+    \else%
+      \orig@makefnmark%
+    \fi}%
+ \fi%
+\fi
+
+%\iffbb@babel
+%    \renewcommand*{\rmdefault}{fbb-\fbb@figurealign\fbb@figurestyle}
+%	\normalfont
+%\else
+    \AtEndPreamble{\renewcommand*{\rmdefault}{fbb-\fbb@figurealign\fbb@figurestyle}
+\normalfont}
+%\fi
+\endinput

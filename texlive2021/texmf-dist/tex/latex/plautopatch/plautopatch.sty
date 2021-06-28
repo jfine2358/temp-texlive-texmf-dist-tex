@@ -1,0 +1,268 @@
+%
+% plautopatch.sty
+% written by Hironobu Yamashita (@aminophen)
+%
+% This package is part of the plautopatch bundle.
+% https://github.com/aminophen/plautopatch
+%
+
+\NeedsTeXFormat{LaTeX2e}% not pLaTeX2e on purpose!
+\ProvidesPackage{plautopatch}
+    [2021/02/13 v0.9n Automated patches for pLaTeX/upLaTeX]
+
+\ifx\pfmtname\@undefined
+  \PackageInfo{plautopatch}{%
+    This package is meant for pLaTeX/upLaTeX,\MessageBreak
+    you will not need it.}
+  \expandafter\endinput
+\fi
+
+\NeedsTeXFormat{pLaTeX2e}% just in case ...
+\def\platpc@pkgname{plautopatch}
+\def\platpc@err{\PackageError\platpc@pkgname}
+\def\platpc@warn{\PackageWarningNoLine\platpc@pkgname}
+\def\platpc@info{\PackageInfo\platpc@pkgname}
+\let\platpc@debug\@gobble
+%\def\platpc@debug#1{\typeout{\platpc@pkgname: [DEBUG] #1}}% for debug
+
+%% Since LaTeX2e 2020-10-01, most of features in filehook.sty
+%% is available in ltfilehook.dtx.
+%% The new code defines \declare@file@substitution,
+%% so we can detect it!
+
+\ifx\declare@file@substitution\@undefined
+  % LaTeX2e 2020-02-02 PL5 or older
+  \RequirePackage{filehook}
+  \let\platpc@ExecuteAfterPackage=\AtEndOfPackageFile
+  \let\platpc@ExecuteBeforePackage=\AtBeginOfPackageFile
+\else
+  % LaTeX2e 2020-10-01 or newer
+  \def\platpc@ExecuteAfterPackage#1{\AddToHook{package/after/#1}}
+  \def\platpc@ExecuteBeforePackage#1{\AddToHook{package/before/#1}}
+\fi
+
+% low-level helpers
+
+%% \platpc@ifreq@add{<package>}
+% = if not loaded yet, \RequirePackage{<package>}
+%   and add to list.
+\def\platpc@ifreq@add#1{%
+  \@ifpackageloaded{#1}{}{%
+    \RequirePackage{#1}\platpc@addtolist{#1}%
+  }%
+}
+
+%% \platpc@addtolist{<package>}
+% = add <package> to list named \platpc@list.
+\def\platpc@addtolist#1{\xdef\platpc@list{\platpc@list, #1}}
+\def\platpc@list{}% initialize
+
+%% \platpc@ifnotdisabled{<package>}{<code>}
+% = execute <code> if <package> is not disabled.
+\def\platpc@ifnotdisabled#1{%
+  \expandafter\ifx\csname platpc@disable@#1\endcsname\relax
+    \expandafter\@firstofone
+  \else
+    \platpc@debug{Patch for #1 is disabled, not applying}%
+    \expandafter\@gobble
+  \fi
+}
+
+%% \platpc@err@toolate{<package>}
+% = content of the "too-late" error.
+\def\platpc@err@toolate#1{%
+  \platpc@err{Package `#1' already loaded!\MessageBreak
+    Use \string\RequirePackage{\platpc@pkgname} earlier}\@ehc
+}
+
+% high-level helpers
+
+%% \platpc@patch@after{<orig>}{<patch>}
+% = Load <patch> after <orig>.
+\def\platpc@patch@after#1#2{%
+  \expandafter\def\csname platpc@end@#1\endcsname{%
+    \platpc@ifnotdisabled{#1}{\platpc@ifreq@add{#2}}%
+  }%
+  \@ifpackageloaded{#1}{%
+    \csname platpc@end@#1\endcsname
+  }{%
+    \platpc@ExecuteAfterPackage{#1}{\csname platpc@end@#1\endcsname}%
+  }%
+}
+\@onlypreamble\platpc@patch@after
+
+%% \platpc@patch@after@both{<orig 1>}{<orig 2>}{<patch>}
+% = Load <patch> after both <orig 1> & <orig 2>.
+\def\platpc@patch@after@both#1#2#3{%
+  \expandafter\def\csname platpc@end@#1+#2\endcsname{%
+    \platpc@ifnotdisabled{#1}{\platpc@ifnotdisabled{#2}{%
+      \platpc@ifreq@add{#3}%
+    }}%
+  }%
+  \@ifpackageloaded{#1}{%
+    \@ifpackageloaded{#2}{%
+      \csname platpc@end@#1+#2\endcsname
+    }{%
+      \platpc@ExecuteAfterPackage{#2}{\csname platpc@end@#1+#2\endcsname}%
+    }%
+  }{%
+    \@ifpackageloaded{#2}{%
+      \platpc@ExecuteAfterPackage{#1}{\csname platpc@end@#1+#2\endcsname}%
+    }{%
+      \platpc@ExecuteAfterPackage{#1}{%
+        \@ifpackageloaded{#2}{\csname platpc@end@#1+#2\endcsname}{}%
+      }%
+      \platpc@ExecuteAfterPackage{#2}{%
+        \@ifpackageloaded{#1}{\csname platpc@end@#1+#2\endcsname}{}%
+      }%
+    }%
+  }%
+}
+\@onlypreamble\platpc@patch@after@both
+
+%% \platpc@patch@before{<orig>}{<patch>}
+% = Load <patch> before <orig>.
+%   used when both conditions are met:
+%   - <patch> must be loaded *before* <orig>
+%   - <patch> contains \RequirePackage{<orig>}
+\def\platpc@patch@before#1#2{%
+  \expandafter\def\csname platpc@begin@#1\endcsname{%
+    \platpc@ifnotdisabled{#1}{%
+      % if <patch> is already loaded, nothing to do
+      \@ifpackageloaded{#2}{}{% else
+        % the code (*!) should be used only once,
+        % remove it immediately when this macro is executed
+        \expandafter\let\csname platpc@begin@#1\endcsname\relax
+        % pretend as if <orig> not loaded
+        \expandafter\let\csname ver@#1.sty\endcsname\relax
+        % load the <patch> package
+        \RequirePackage{#2}\platpc@addtolist{#2}%
+        % avoid loading <orig> twice by discarding "\@@input <orig>" (*!)
+        \platpc@discard@input{#1}%
+        % all done
+      }%
+    }%
+  }%
+  % if <orig> is already loaded at this point, too late!
+  \@ifpackageloaded{#1}{%
+    \platpc@err@toolate{#1}%
+  }{% else
+    \platpc@ExecuteBeforePackage{#1}{\csname platpc@begin@#1\endcsname}%
+  }%
+}
+\@onlypreamble\platpc@patch@before
+
+\ifx\declare@file@substitution\@undefined
+  % LaTeX2e 2020-02-02 PL5 or older
+  \def\platpc@discard@input#1{%
+    \let\platpc@filehook@@atbegin\filehook@@atbegin
+    \def\filehook@@atbegin\@@input##1\filehook@atend{%
+      \let\filehook@@atbegin\platpc@filehook@@atbegin
+      % avoid infinite loop even when \AtEndOfPackageFile used
+      \expandafter\let\csname filehook@atend@#1.sty\endcsname\relax
+      \filehook@@atbegin
+      \filehook@atend}}
+\else
+  % LaTeX2e 2020-10-01 or newer
+  \def\platpc@discard@input#1{%
+    \let\platpc@InputIfFileExists\InputIfFileExists
+    \def\InputIfFileExists##1##2##3{%
+      \let\InputIfFileExists\platpc@InputIfFileExists}}
+\fi
+\@onlypreamble\platpc@discard@input
+
+% interface for users who want don't patches
+
+%% \plautopatchdisable{<orig 1>,<orig 2>,...}
+% = Disable patches triggered by <orig 1>, <orig 2>, ...
+\newcommand{\plautopatchdisable}[1]{%
+  \edef\@tempa{\zap@space#1 \@empty}%
+  \@for\@tempa:=\@tempa\do{%
+    \expandafter\let\csname platpc@disable@\@tempa\endcsname\@empty
+    \platpc@debug{Disabled patch for #1}%
+  }%
+}
+\@onlypreamble\plautopatchdisable
+
+% show list of loaded patches
+
+\AtEndDocument{\platpc@showlist}
+\def\platpc@showlist{%
+  \ifx\platpc@list\@empty
+    \platpc@info{No additional packages loaded}
+  \else
+    % the first token of \platpc@list should be ','
+    \typeout{%
+      ***** List of packages loaded by `\platpc@pkgname': *****^^J%
+      \expandafter\@gobble\platpc@list.^^J%
+      *****************************************************}%
+  \fi
+}
+
+% register patches
+
+\platpc@patch@after{doc}{pldocverb}% platex-tools
+\ifx\enablecjktoken\@undefined
+  \platpc@patch@after{tracefnt}{ptrace}% platex
+\else
+  \platpc@patch@after{tracefnt}{uptrace}% uplatex
+\fi
+\platpc@patch@after{fltrace}{pfltrace}% platex
+\platpc@patch@after{array}{plarray}% platex-tools
+\platpc@patch@after@both{array}{plext}{plextarray}% platex-tools
+\platpc@patch@after@both{delarray}{plext}{plextdelarray}% platex-tools
+\platpc@patch@after@both{colortbl}{plext}{plextcolortbl}% platex-tools
+\platpc@patch@after{arydshln}{plarydshln}% (maintained here!)
+\platpc@patch@after@both{arydshln}{plext}{plextarydshln}% (maintained here!)
+\platpc@patch@after{siunitx}{plsiunitx}% (maintained here!)
+\platpc@patch@after{collcell}{plcollcell}% (maintained here!)
+% --- in most cases, pxeverysel can be safely loaded even after everysel
+% --- but it can fail when \AtBeginDocument{everysel} is involved
+% --- [Update] since LaTeX2e 2021-05-01, everysel.sty is merely
+% --- an emulation by everysel-ltx.sty from firstaid,
+% --- which is supported by pLaTeX2e kernel natively
+\@ifl@t@r{\fmtversion}{2021/05/01}{}%
+  {\platpc@patch@before{everysel}{pxeverysel}}% platex-tools
+% --- [Update] since LaTeX2e 2020-10-01, everyshi.sty is merely
+% --- an emulation by everyshi-ltx.sty from ltshipout.dtx,
+% --- which is supported by pLaTeX2e kernel natively
+\@ifl@t@r{\fmtversion}{2020/10/01}{}%
+  {\platpc@patch@after{everyshi}{pxeveryshi}}% platex-tools
+% --- [Update] since LaTeX2e 2020-10-01, atbegshi.sty is merely
+% --- an emulation by atbegshi-ltx.sty from ltshipout.dtx,
+% --- which is supported by pLaTeX2e kernel natively
+\@ifl@t@r{\fmtversion}{2020/10/01}{}%
+  {\platpc@patch@after{atbegshi}{pxatbegshi}}% platex-tools
+\platpc@patch@before{ftnright}{pxftnright}% platex-tools
+\platpc@patch@after{multicol}{pxmulticol}% platex-tools
+\platpc@patch@after{xspace}{pxxspace}% platex-tools
+\platpc@patch@after{textpos}{pxtextpos}% gentombow
+% --- until LaTeX2e 2020-10-01, patching eso-pic automatically
+% --- is not supported by pxesopic
+\@ifl@t@r{\fmtversion}{2020/10/01}%
+  {\platpc@patch@before{eso-pic}{pxesopic}}{}% gentombow
+\platpc@patch@after{pdfpages}{pxpdfpages}% gentombow
+\platpc@patch@before{stfloats}{pxstfloats}% pxsttools -- (!!)
+% --- in most cases, pxjahyper works without explicit options
+% --- however, in case a user specifies some, delay it
+% --- [TODO] if \AtBeginDocument{\usepackage{hyperref}} appears,
+% ----       writing to \jobname.out (= 'jacommentline' feature)
+% ----       does not work because it's too late.
+\AtBeginDocument
+  {\platpc@patch@after{hyperref}{pxjahyper}}% by Takayuki YATO (ZR)
+
+% for TikZ/PGF
+\platpc@patch@after{pgfrcs}{pxpgfrcs}% (maintained here!)
+% --- pxpgfmark is useful on e-(u)pTeX + dvipdfmx
+% --- but does no harm for other conditions
+% --- [Update] pgf 2019-01-05 v3.1 (with \gdef\pgfversion{3.1})
+% ----         already supports inter-picture connections
+% ----         so pxpgfmark is no longer required
+\platpc@patch@after{pgfcore}{pxpgfmark}% by Takayuki YATO (ZR)
+
+% special case, mainly for problematic packages
+% --- mdwtab forbids loading array
+% --- so plarray should also be forbidden
+\platpc@ExecuteAfterPackage{mdwtab}{\@namedef{ver@plarray.sty}{}}
+
+\endinput

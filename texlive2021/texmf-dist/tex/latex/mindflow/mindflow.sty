@@ -1,0 +1,149 @@
+%%
+%% This is file `mindflow.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% mindflow.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2021 by Jinwen XU
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.3c of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{mindflow}
+    [2021/03/17 Mindflow environment]
+\RequirePackage{kvoptions}
+\SetupKeyvalOptions{%
+    family = @mindflow,
+    prefix = @mindflow@
+}
+\DeclareBoolOption[false]{off}           % Turn off mindflow
+\DeclareBoolOption[false]{leftmarker}    % Left marker
+\DeclareBoolOption[false]{rightmarker}   % Right marker
+\DeclareBoolOption[false]{linenumber}    % Line numbers
+\DeclareBoolOption[false]{twocolumn}     % Two column
+\DeclareBoolOption[false]{incolumn}      % Separation line fits in the column
+
+\ProcessKeyvalOptions*\relax
+
+\if@mindflow@twocolumn
+  \@mindflow@incolumntrue
+\fi
+
+%%================================
+%% Initialization
+%%================================
+\RequirePackage{lineno}
+\RequirePackage{xcolor}
+
+\colorlet{mfSavedColor}{.}
+\colorlet{mindflowLine}{mfSavedColor!30}
+\colorlet{mindflowText}{mfSavedColor!30}
+\colorlet{mindflowMarker}{mfSavedColor!30}
+\colorlet{mindflowNum}{mfSavedColor!8}
+
+\newcommand{\mindflowTextFont}{\normalfont\footnotesize}
+\newcommand{\mindflowNumFont}{\normalfont\scriptsize\ttfamily}
+\newcommand{\mindflowMarkerFont}{\normalfont\scriptsize\ttfamily}
+\newcommand{\mindflowLeft}{*}
+\newcommand{\mindflowRight}{*}
+\newlength{\mindflowLineHeight}
+\setlength{\mindflowLineHeight}{0.4pt}
+
+%%================================
+%% The mindflow environment
+%%================================
+\newif\ifLNturnsON
+
+\newcommand*{\mfSepLine}{%
+  \parskip=0pt
+  \LNturnsONfalse%
+  \ifLineNumbers\LNturnsONtrue\fi\nolinenumbers%
+  \par\noindent\nopagebreak%
+  \if@mindflow@incolumn%
+    \makebox[\linewidth]{\rule{\linewidth}{\mindflowLineHeight}}%
+  \else%
+    \hspace*{-\paperwidth}\makebox[\linewidth]{\rule{4\paperwidth}{\mindflowLineHeight}}%
+  \fi%
+  \nopagebreak\par%
+  \ifLNturnsON\linenumbers\fi%
+}
+
+\newcounter{recordLN}
+\newcounter{mfLN}
+\setcounter{mfLN}{1}
+
+\if@mindflow@off
+  \RequirePackage{verbatim}
+  \let\mindflow=\comment
+  \let\endmindflow=\endcomment
+\else
+  \newenvironment{mindflow}
+  {%
+    \setcounter{recordLN}{\value{linenumber}}%
+    \setcounter{linenumber}{\value{mfLN}}%
+    \LNturnsONfalse%
+    \ifLineNumbers\LNturnsONtrue\fi\nolinenumbers%
+    \color{mindflowLine}\mfSepLine%
+    \mindflowTextFont\color{mindflowText}%
+    \linenumbers%
+    \renewcommand\makeLineNumber{%
+      \hss%
+      \if@mindflow@linenumber%
+        \mindflowNumFont\color{mindflowNum}\LineNumber\hspace{1em}%
+      \fi%
+      \color{mindflowMarker}%
+      \if@mindflow@leftmarker%
+        \mindflowMarkerFont\mindflowLeft\hspace{1em}%
+      \fi%
+      \if@mindflow@rightmarker%
+        \rlap{\hskip\textwidth\hspace{1em}\mindflowRight}%
+      \fi%
+    }%
+  }
+  {%
+    \par%
+    \vspace{-.5\baselineskip}\color{mindflowLine}\mfSepLine%
+    \ifLNturnsON\linenumbers\fi%
+    \setcounter{mfLN}{\value{linenumber}}%
+    \setcounter{linenumber}{\value{recordLN}}%
+  }
+\fi
+
+\ifdefined\linenomathpatch\else
+  \RequirePackage{amsmath}
+  \RequirePackage{etoolbox}
+  \newcommand*\linenomathpatch[1]{%
+    \cspreto{#1}{\linenomath}%
+    \cspreto{#1*}{\linenomath}%
+    \cspreto{end#1}{\endlinenomath}%
+    \cspreto{end#1*}{\endlinenomath}%
+  }
+  \newcommand*\linenomathpatchAMS[1]{%
+    \cspreto{#1}{\linenomathAMS}%
+    \cspreto{#1*}{\linenomathAMS}%
+    \csappto{end#1}{\endlinenomath}%
+    \csappto{end#1*}{\endlinenomath}%
+  }
+  \expandafter\ifx\linenomath\linenomathWithnumbers
+    \let\linenomathAMS\linenomathWithnumbers
+    \patchcmd\linenomathAMS{\advance\postdisplaypenalty\linenopenalty}{}{}{}
+  \else
+    \let\linenomathAMS\linenomathNonumbers
+  \fi
+  \linenomathpatch{equation}
+  \linenomathpatchAMS{gather}
+  \linenomathpatchAMS{multline}
+  \linenomathpatchAMS{align}
+  \linenomathpatchAMS{alignat}
+  \linenomathpatchAMS{flalign}
+\fi
+\endinput
+%%
+%% End of file `mindflow.sty'.

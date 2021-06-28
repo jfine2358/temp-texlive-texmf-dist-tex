@@ -1,0 +1,984 @@
+\NeedsTeXFormat{LaTeX2e}%
+\def\PackageName{luamesh}%
+\def\fileversion{v0.51}%
+\def\filedate{2017/04/15}%
+\ProvidesPackage{luamesh}[\filedate\space\fileversion]%
+%
+% package to load
+\RequirePackage{xkeyval,xcolor,ifthen}%
+%% one global option: mp or tikz
+%\newif\ifluameshmp%
+%\define@key{luamesh.sty}{mp}[]{\luameshmptrue}%
+%\define@key{luamesh.sty}{tikz}[]{\luameshmpfalse}%
+%
+%\RequirePackage{etoolbox} % pour robustifier les commandes
+%
+%
+%\ifluameshmp%
+   \RequirePackage{luamplib}%
+%\else%
+   \RequirePackage{tikz}%
+%\fi%
+%
+% load the lua code
+\directlua{require("luamesh.lua")}%
+%
+%%
+% for tikz (default value)
+% default color for the plot of a global mesh
+\definecolor{TeXCluaMeshTikZ}{rgb}{0.,0.,0.}
+% default color for a new element
+\definecolor{TeXCluaMeshNewTikZ}{rgb}{0.5,0.1,0.1}
+% defaut color for the background of new element
+\definecolor{TeXCluaMeshBackTikZ}{rgb}{0.99,0.85,0.85}
+% default color for circoncircle
+\definecolor{TeXCluaMeshCircleTikZ}{rgb}{0.1,0.6,0.1}
+%%
+%
+%%%%%%%%%%%%%%%% the buildMesh command inc
+%% the user can write code (tikz or MP)
+%% before and after the generated code
+\define@boolkey{buildMeshInc}{tikz}[true]{}%
+%% show the bounding box for delaunay
+\define@choicekey*{buildMeshInc}{bbox}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bmi@bbox{none}%
+  \or%
+  \def\luameshval@bmi@bbox{bbox}%
+  \fi%
+}%
+%% the scale
+\define@key{buildMeshInc}{scale}[1cm]{\def\luameshval@bmi@scale{#1}}%
+%% print ponits ?
+\define@choicekey*{buildMeshInc}{print}[\val\nr]{none, points,dotpoints}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bmi@print{none}%
+  \or%
+  \def\luameshval@bmi@print{points}%
+  \or%
+  \def\luameshval@bmi@print{dotpoints}%
+  \fi%
+}%
+%% the name of the point
+\define@key{buildMeshInc}{meshpoint}[P]{\def\luameshval@bmi@meshpoint{#1}}%
+%% the mode for reading the points
+\define@choicekey*{buildMeshInc}{mode}[\val\nr]{int, ext}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bmi@mode{int}%
+  \or%
+  \def\luameshval@bmi@mode{ext}%
+  \fi%
+}%
+%% the name of the color of drawing
+\define@key{buildMeshInc}{color}[black]{\def\luameshval@bmi@color{#1}}%
+%% the name of the color of drawing the bbox
+\define@key{buildMeshInc}{colorBbox}[black]{\def\luameshval@bmi@colorbbox{#1}}%
+%
+\presetkeys{buildMeshInc}{tikz=false,bbox=none,scale, meshpoint,mode=int,print=none,color,colorBbox}{}%
+%
+\newcommand*{\buildMeshBWinc}[4][]{%
+  % #1 : optionnal arguments
+  % #2 : the string containing the list of points
+  %      (x1,y1);(x2,y2);... or the name file containing the points
+  % #3 : the code to place before the generated one
+  % #4 : the code to place after the generated one
+  \setkeys{buildMeshInc}{#1} %
+  \def\MeshPoint{\luameshval@bmi@meshpoint}%
+  \ifKV@buildMeshInc@tikz% if we are using tikz
+  \directlua{%
+    buildMeshTikZBWinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshval@bmi@mode","\luameshval@bmi@print","\luameshval@bmi@bbox","\luameshval@bmi@scale","\luameshval@bmi@color","\luameshval@bmi@colorbbox")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@bmi@color}%
+  \mplibcolor{\luameshmpcolorBbox}{\luameshval@bmi@colorbbox}%
+  \directlua{%
+    buildMeshMPBWinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshval@bmi@mode","\luameshval@bmi@print","\luameshval@bmi@bbox","\luameshval@bmi@scale")%
+  }%
+  %
+  \fi%
+}%
+%
+%%%%%%%%%%%%%%%% the buildMeshBW command
+%% the code is complete and we don't have any callbacks
+\define@boolkey{buildMesh}{tikz}[true]{}%
+%% show the bounding box for delaunay
+\define@choicekey*{buildMesh}{bbox}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bm@bbox{none}%
+  \or%
+  \def\luameshval@bm@bbox{bbox}%
+  \fi%
+}%
+%% the scale
+\define@key{buildMesh}{scale}[1cm]{\def\luameshval@bm@scale{#1}}%
+%% print points
+\define@choicekey*{buildMesh}{print}[\val\nr]{none, points, dotpoints}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bm@print{none}%
+  \or%
+  \def\luameshval@bm@print{points}%
+  \or%
+  \def\luameshval@bm@print{dotpoints}%
+  \fi%
+}%
+%% the name of the point
+\define@key{buildMesh}{meshpoint}[P]{\def\luameshval@bm@meshpoint{#1}}%
+%% the mode for reading the points
+\define@choicekey*{buildMesh}{mode}[\val\nr]{int, ext}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bm@mode{int}%
+  \or%
+  \def\luameshval@bm@mode{ext}%
+  \fi%
+}%
+%% the name of the color of drawing
+\define@key{buildMesh}{color}[black]{\def\luameshval@bm@color{#1}}%
+%% the name of the color of drawing the bbox
+\define@key{buildMesh}{colorBbox}[black]{\def\luameshval@bm@colorbbox{#1}}%
+%
+\presetkeys{buildMesh}{tikz=false,bbox=none,scale, meshpoint,mode=int,print=none,color,colorBbox}{}%
+%
+\newcommand{\buildMeshBW}[2][]{%
+  % #1 : optionnal arguments
+  % #2 : the string containing the list of points
+  % (x1,y1);(x2,y2);... or the name file containing the points
+  \setkeys{buildMesh}{#1} %
+  \def\MeshPoint{\luameshval@bm@meshpoint}%
+  \ifKV@buildMesh@tikz% if we are using tikz
+  \directlua{%
+    buildMeshTikZBW("#2","\luameshval@bm@mode","\luameshval@bm@print","\luameshval@bm@bbox","\luameshval@bm@scale","\luameshval@bm@color","\luameshval@bm@colorbbox")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@bm@color}%
+  \mplibcolor{\luameshmpcolorBbox}{\luameshval@bm@colorbbox}%
+  \directlua{%
+    buildMeshMPBW("#2","\luameshval@bm@mode","\luameshval@bm@print","\luameshval@bm@bbox","\luameshval@bm@scale")%
+  }%
+  %
+  \fi%
+}%
+%%%%%%%%%%%%%%%% the buildVoronoi command
+%% the user can write code (tikz or MP)
+%% before and after the generated code
+\define@boolkey{buildVoronoiInc}{tikz}[true]{}%
+%% show the bounding box for delaunay
+\define@choicekey*{buildVoronoiInc}{bbox}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bvi@bbox{none}%
+  \or%
+  \def\luameshval@bvi@bbox{bbox}%
+  \fi%
+}%
+%% the scale
+\define@key{buildVoronoiInc}{scale}[1cm]{\def\luameshval@bvi@scale{#1}}%
+%% print ponits ?
+\define@choicekey*{buildVoronoiInc}{print}[\val\nr]{none, points}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bvi@print{none}%
+  \or%
+  \def\luameshval@bvi@print{points}%
+  \fi%
+}%
+%% style dashed Delaunay
+\define@choicekey*{buildVoronoiInc}{styleDelaunay}[\val\nr]{none, dashed}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bvi@styleDelaunay{none}%
+  \or%
+  \def\luameshval@bvi@styleDelaunay{dashed}%
+  \fi%
+}%
+%% style dashed Voronoi
+\define@choicekey*{buildVoronoiInc}{styleVoronoi}[\val\nr]{none, dashed}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bvi@styleVoronoi{none}%
+  \or%
+  \def\luameshval@bvi@styleVoronoi{dashed}%
+  \fi%
+}%
+%% the name of the point
+\define@key{buildVoronoiInc}{meshpoint}[P]{\def\luameshval@bvi@meshpoint{#1}}%
+%% the name of the circum point
+\define@key{buildVoronoiInc}{circumpoint}[P]{\def\luameshval@bvi@circumpoint{#1}}%
+%% the mode for reading the points
+\define@choicekey*{buildVoronoiInc}{mode}[\val\nr]{int, ext}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bvi@mode{int}%
+  \or%
+  \def\luameshval@bvi@mode{ext}%
+  \fi%
+}%
+%% the mode for reading the points
+\define@choicekey*{buildVoronoiInc}{delaunay}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bvi@delaunay{none}%
+  \or%
+  \def\luameshval@bvi@delaunay{show}%
+  \fi%
+}%
+%% the name of the color of drawing
+\define@key{buildVoronoiInc}{color}[black]{\def\luameshval@bvi@color{#1}}%
+%% the name of the color of drawing Voronoi
+\define@key{buildVoronoiInc}{colorVoronoi}[red]{\def\luameshval@bvi@colorvoronoi{#1}}%
+%% the name of the color of drawing the bbox
+\define@key{buildVoronoiInc}{colorBbox}[black]{\def\luameshval@bvi@colorbbox{#1}}%
+%
+\presetkeys{buildVoronoiInc}{tikz=false,bbox=none,scale, meshpoint,circumpoint,mode=int,print=none,color,colorVoronoi,colorBbox,delaunay=none,styleDelaunay=none,styleVoronoi=none}{}%
+%
+\newcommand*{\buildVoronoiBWinc}[4][]{%
+  % #1 : optionnal arguments
+  % #2 : the string containing the list of points
+  % (x1,y1);(x2,y2);... or the name file containing the points
+  % #3 : the code to place before the generated one
+  % #4 : the code to place after the generated one
+  \setkeys{buildVoronoiInc}{#1} %
+  \def\MeshPoint{\luameshval@bvi@meshpoint}%
+  \def\CircumPoint{\luameshval@bvi@circumpoint}%
+  \ifKV@buildVoronoiInc@tikz% if we are using tikz
+  \directlua{%
+    buildVoronoiTikZBWinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshval@bvi@mode","\luameshval@bvi@print","\luameshval@bvi@bbox","\luameshval@bvi@scale","\luameshval@bvi@delaunay","\luameshval@bvi@color","\luameshval@bvi@colorbbox","\luameshval@bvi@colorvoronoi","\luameshval@bvi@styleDelaunay","\luameshval@bvi@styleVoronoi")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@bvi@color}%
+  \mplibcolor{\luameshmpcolorBbox}{\luameshval@bvi@colorbbox}%
+  \mplibcolor{\luameshmpcolorVoronoi}{\luameshval@bvi@colorvoronoi}%
+  \directlua{%
+    buildVoronoiMPBWinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshval@bvi@mode","\luameshval@bvi@print","\luameshval@bvi@bbox","\luameshval@bvi@scale","\luameshval@bvi@delaunay","\luameshval@bvi@styleDelaunay","\luameshval@bvi@styleVoronoi")%
+  }%
+  %
+  \fi%
+}%
+%
+%%%%%%%%%%%%%%%% the buildVoronoiBW command
+%% the code is complete and we don't have any callbacks
+\define@boolkey{buildVoronoi}{tikz}[true]{}%
+%% show the bounding box for delaunay
+\define@choicekey*{buildVoronoi}{bbox}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bv@bbox{none}%
+  \or%
+  \def\luameshval@bv@bbox{bbox}%
+  \fi%
+}%
+%% the scale
+\define@key{buildVoronoi}{scale}[1cm]{\def\luameshval@bv@scale{#1}}%
+%% print points
+\define@choicekey*{buildVoronoi}{print}[\val\nr]{none, points}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bv@print{none}%
+  \or%
+  \def\luameshval@bv@print{points}%
+  \fi%
+}%
+%% the name of the point
+\define@key{buildVoronoi}{meshpoint}[P]{\def\luameshval@bv@meshpoint{#1}}%
+%% the name of the circum point
+\define@key{buildVoronoi}{circumpoint}[P]{\def\luameshval@bv@circumpoint{#1}}%
+%% the mode for reading the points
+\define@choicekey*{buildVoronoi}{mode}[\val\nr]{int, ext}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bv@mode{int}%
+  \or%
+  \def\luameshval@bv@mode{ext}%
+  \fi%
+}%
+%% style dashed Delaunay
+\define@choicekey*{buildVoronoi}{styleDelaunay}[\val\nr]{none, dashed}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bv@styleDelaunay{none}%
+  \or%
+  \def\luameshval@bv@styleDelaunay{dashed}%
+  \fi%
+}%
+%% style dashed Voronoi
+\define@choicekey*{buildVoronoi}{styleVoronoi}[\val\nr]{none, dashed}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bv@styleVoronoi{none}%
+  \or%
+  \def\luameshval@bv@styleVoronoi{dashed}%
+  \fi%
+}%
+%% the mode for reading the points
+\define@choicekey*{buildVoronoi}{delaunay}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@bv@delaunay{none}%
+  \or%
+  \def\luameshval@bv@delaunay{show}%
+  \fi%
+}%
+%% the name of the color of drawing
+\define@key{buildVoronoi}{color}[black]{\def\luameshval@bv@color{#1}}%
+%% the name of the color of drawing Voronoi
+\define@key{buildVoronoi}{colorVoronoi}[red]{\def\luameshval@bv@colorVoronoi{#1}}%
+%% the name of the color of drawing the bbox
+\define@key{buildVoronoi}{colorBbox}[black]{\def\luameshval@bv@colorbbox{#1}}%
+%
+\presetkeys{buildVoronoi}{tikz=false,bbox=none,scale,
+  meshpoint,circumpoint,mode=int,print=none,color,colorVoronoi,colorBbox,delaunay=none,styleDelaunay=none, styleVoronoi=none}{}%
+%
+\newcommand{\buildVoronoiBW}[2][]{%
+  % #1 : optionnal arguments
+  % #2 : the string containing the list of points
+  % (x1,y1);(x2,y2);... or the name file containing the points
+  \setkeys{buildVoronoi}{#1} %
+  \def\MeshPoint{\luameshval@bv@meshpoint}%
+  \def\CircumPoint{\luameshval@bv@circumpoint}%
+  \ifKV@buildVoronoi@tikz% if we are using tikz
+  \directlua{%
+    buildVoronoiTikZBW("#2","\luameshval@bv@mode","\luameshval@bv@print","\luameshval@bv@bbox","\luameshval@bv@scale","\luameshval@bv@delaunay","\luameshval@bv@color","\luameshval@bv@colorbbox","\luameshval@bv@colorVoronoi","\luameshval@bv@styleDelaunay","\luameshval@bv@styleVoronoi")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@bv@color}%
+  \mplibcolor{\luameshmpcolorBbox}{\luameshval@bv@colorbbox}%
+  \mplibcolor{\luameshmpcolorVoronoi}{\luameshval@bv@colorVoronoi}%
+  \directlua{%
+    buildVoronoiMPBW("#2","\luameshval@bv@mode","\luameshval@bv@print","\luameshval@bv@bbox","\luameshval@bv@scale","\luameshval@bv@delaunay","\luameshval@bv@styleDelaunay","\luameshval@bv@styleVoronoi")%
+  }%
+  %
+  \fi%
+}%
+%
+%
+%%%%%%%%%%%%%%%%% the draw Points macro
+%% plot the list of points given in argument
+% the engine
+\define@boolkey{drawPoints}{tikz}[true]{}%
+%% show the bounding box for delaunay
+\define@choicekey*{drawPoints}{bbox}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@tp@bbox{none}%
+  \or%
+  \def\luameshval@tp@bbox{bbox}%
+  \fi%
+}%
+%% the scale
+\define@key{drawPoints}{scale}[1cm]{\def\luameshval@tp@scale{#1}}%
+%% print points
+\define@choicekey*{drawPoints}{print}[\val\nr]{none, points}{%
+  \ifcase\nr\relax%
+  \def\luameshval@tp@print{none}%
+  \or%
+  \def\luameshval@tp@print{points}%
+  \fi%
+}%
+%% the name of the point
+\define@key{drawPoints}{meshpoint}[P]{\def\luameshval@tp@meshpoint{#1}}%
+%% the mode for reading the points
+\define@choicekey*{drawPoints}{mode}[\val\nr]{int, ext}{%
+  \ifcase\nr\relax%
+  \def\luameshval@tp@mode{int}%
+  \or%
+  \def\luameshval@tp@mode{ext}%
+  \fi%
+}%
+%% the name of the color of drawing
+\define@key{drawPoints}{color}[black]{\def\luameshval@tp@color{#1}}%
+%% the name of the color of drawing the bbox
+\define@key{drawPoints}{colorBbox}[black]{\def\luameshval@tp@colorbbox{#1}}%
+%
+\presetkeys{drawPoints}{tikz=false,bbox=none,scale, meshpoint,mode=int,print=none,color,colorBbox}{}%
+%
+\newcommand{\drawPointsMesh}[2][]{%
+  % #1 : optionnal arguments
+  % #2 : the string containing the list of points
+  % (x1,y1);(x2,y2);... or the name file containing the points
+  \setkeys{drawPoints}{#1} %
+  \def\MeshPoint{\luameshval@tp@meshpoint}%
+  \ifKV@drawPoints@tikz% if we are using tikz
+  \directlua{%
+    printPointsTikZ("#2","\luameshval@tp@mode","\luameshval@tp@print","\luameshval@tp@bbox","\luameshval@tp@scale","\luameshval@tp@color","\luameshval@tp@colorbbox")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@tp@color}%
+  \mplibcolor{\luameshmpcolorBbox}{\luameshval@tp@colorbbox}%
+  \directlua{%
+    printPointsMP("#2","\luameshval@tp@mode","\luameshval@tp@print","\luameshval@tp@bbox","\luameshval@tp@scale")%
+  }%
+  %
+  \fi%
+}%
+%
+
+%%%%%%%%%%%%%%%% the draw Points macro inc with callbacks
+%% engine of drawing
+\define@boolkey{drawPointsInc}{tikz}[true]{}%
+%% show the bounding box for delaunay
+\define@choicekey*{drawPointsInc}{bbox}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@tpi@bbox{none}%
+  \or%
+  \def\luameshval@tpi@bbox{bbox}%
+  \fi%
+}%
+%% the scale
+\define@key{drawPointsInc}{scale}[1cm]{\def\luameshval@tpi@scale{#1}}%
+%% print points
+\define@choicekey*{drawPointsInc}{print}[\val\nr]{none, points}{%
+  \ifcase\nr\relax%
+  \def\luameshval@tpi@print{none}%
+  \or%
+  \def\luameshval@tpi@print{points}%
+  \fi%
+}%
+%% the name of the point
+\define@key{drawPointsInc}{meshpoint}[P]{\def\luameshval@tpi@meshpoint{#1}}%
+%% the mode for reading the points
+\define@choicekey*{drawPointsInc}{mode}[\val\nr]{int, ext}{%
+  \ifcase\nr\relax%
+  \def\luameshval@tpi@mode{int}%
+  \or%
+  \def\luameshval@tpi@mode{ext}%
+  \fi%
+}%
+%
+% color
+%% the name of the color of drawing
+\define@key{drawPointsInc}{color}[black]{\def\luameshval@tpi@color{#1}}%
+%% the name of the color of drawing the bbox
+\define@key{drawPointsInc}{colorBbox}[black]{\def\luameshval@tpi@colorbbox{#1}}%
+%
+\presetkeys{drawPointsInc}{tikz=false,bbox=none,scale, meshpoint,mode=int,print=none,color,colorBbox}{}%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*{\drawPointsMeshinc}[4][]{%
+  % #1 : optionnal arguments
+  % #2 : the string containing the list of points
+  % (x1,y1);(x2,y2);... or the name file containing the points
+  % #3 : the code to place before the generated one
+  % #4 : the code to place after the generated one
+  \setkeys{drawPointsInc}{#1} %
+  \def\MeshPoint{\luameshval@tpi@meshpoint}%
+  \ifKV@drawPointsInc@tikz% if we are using tikz
+  \directlua{%
+    printPointsTikZinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshval@tpi@mode","\luameshval@tpi@print","\luameshval@tpi@bbox","\luameshval@tpi@scale","\luameshval@tpi@color","\luameshval@tpi@colorbbox")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@tpi@color}%
+  \mplibcolor{\luameshmpcolorBbox}{\luameshval@tpi@colorbbox}%
+  \directlua{%
+    printPointsMPinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshval@tpi@mode","\luameshval@tpi@print","\luameshval@tpi@bbox","\luameshval@tpi@scale")%
+  }%
+  \fi%
+}%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% the meshAddOnePointBW commande
+%%engine of draiwng
+\define@boolkey{MeshAddOneBW}{tikz}[true]{}%
+%% the scale
+\define@key{MeshAddOneBW}{scale}[1cm]{\def\luameshval@ap@scale{#1}}%
+%% the name of the points
+\define@key{MeshAddOneBW}{meshpoint}[P]{\def\luameshval@ap@meshpoint{#1}}%
+%% the name of the new point
+\define@key{MeshAddOneBW}{newpoint}[P]{\def\luameshval@ap@newpoint{#1}}%
+%% a complete picture or some code of the engine
+\define@choicekey*{MeshAddOneBW}{step}[\val\nr]{badtriangles, cavity, newtriangles}{%
+  \ifcase\nr\relax%
+  \def\luameshval@ap@step{badT}%
+  \or%
+  \def\luameshval@ap@step{cavity}%
+  \or%
+  \def\luameshval@ap@step{newT}%
+  \fi%
+}%
+% color
+%% the color of drawing
+\define@key{MeshAddOneBW}{color}[black]{\def\luameshval@ap@color{#1}}%
+%% the color of background of new element
+\define@key{MeshAddOneBW}{colorBack}[black!20]{\def\luameshval@ap@colorback{#1}}%
+%% the color of new element
+\define@key{MeshAddOneBW}{colorNew}[red]{\def\luameshval@ap@colornew{#1}}%
+%% the color of circoncircle
+\define@key{MeshAddOneBW}{colorCircle}[green]{\def\luameshval@ap@colorcircle{#1}}%
+%% the name of the color of drawing the bbox
+\define@key{MeshAddOneBW}{colorBbox}[black]{\def\luameshval@ap@colorbbox{#1}}%
+%
+%% a complete picture or some code of the engine
+\define@choicekey*{MeshAddOneBW}{mode}[\val\nr]{int, ext}{%
+  \ifcase\nr\relax%
+  \def\luameshval@ap@mode{int}%
+  \or%
+  \def\luameshval@ap@mode{ext}%
+  \fi%
+}%
+\define@choicekey*{MeshAddOneBW}{bbox}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@ap@bbox{none}%
+  \or%
+  \def\luameshval@ap@bbox{bbox}%
+  \fi%
+}%
+\presetkeys{MeshAddOneBW}{tikz=false,scale, meshpoint,newpoint,color,colorBack,colorNew,colorCircle,step=badtriangles,mode=int,bbox=none,colorBbox}{}%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*{\meshAddPointBW}[3][]{%
+  % #1 : optionnal arguments
+  % #2 : the string containing the list of points
+  % (x1,y1);(x2,y2);... or the name file containing the points
+  \setkeys{MeshAddOneBW}{#1} %
+  \def\MeshPoint{\luameshval@ap@meshpoint}%
+  \def\NewPoint{\luameshval@ap@newpoint}%
+  \ifKV@MeshAddOneBW@tikz% if we are using tikz
+  \directlua{%
+    TeXOnePointTikZBW("#2","#3","\luameshval@ap@step","\luameshval@ap@scale","\luameshval@ap@mode","\luameshval@ap@bbox","\luameshval@ap@color","\luameshval@ap@colorback","\luameshval@ap@colornew","\luameshval@ap@colorcircle","\luameshval@ap@colorbbox")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@ap@color}
+  \mplibcolor{\luameshmpcolorBack}{\luameshval@ap@colorback}
+  \mplibcolor{\luameshmpcolorNew}{\luameshval@ap@colornew}
+  \mplibcolor{\luameshmpcolorCircle}{\luameshval@ap@colorcircle}
+  \mplibcolor{\luameshmpcolorBbox}{\luameshval@ap@colorbbox}
+  \directlua{%
+    TeXOnePointMPBW("#2","#3","\luameshval@ap@step","\luameshval@ap@scale","\luameshval@ap@mode","\luameshval@ap@bbox")%
+  }%
+  %
+  \fi%
+}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% the meshAddPointBWinc commande with callbacks
+%% engine of drawing
+\define@boolkey{MeshAddOneBWinc}{tikz}[true]{}%
+%% the scale
+\define@key{MeshAddOneBWinc}{scale}[1cm]{\def\luameshval@api@scale{#1}}%
+%% the name of the points
+\define@key{MeshAddOneBWinc}{meshpoint}[P]{\def\luameshval@api@meshpoint{#1}}%
+%% the name of the new point
+\define@key{MeshAddOneBWinc}{newpoint}[P]{\def\luameshval@api@newpoint{#1}}%
+%% a complete picture or some code of the engine
+\define@choicekey*{MeshAddOneBWinc}{step}[\val\nr]{badtriangles, cavity, newtriangles}{%
+  \ifcase\nr\relax%
+  \def\luameshval@api@step{badT}%
+  \or%
+  \def\luameshval@api@step{cavity}%
+  \or%
+  \def\luameshval@api@step{newT}%
+  \fi%
+}%
+% color
+%% the color of drawing
+\define@key{MeshAddOneBWinc}{color}[black]{\def\luameshval@api@color{#1}}%
+%% the color of background of new element
+\define@key{MeshAddOneBWinc}{colorBack}[black!20]{\def\luameshval@api@colorback{#1}}%
+%% the color of new element
+\define@key{MeshAddOneBWinc}{colorNew}[red]{\def\luameshval@api@colornew{#1}}%
+%% the color of circoncircle
+\define@key{MeshAddOneBWinc}{colorCircle}[green]{\def\luameshval@api@colorcircle{#1}}%
+\define@key{MeshAddOneBWinc}{colorBbox}[black]{\def\luameshval@api@colorbbox{#1}}%
+%
+%% a complete picture or some code of the engine
+\define@choicekey*{MeshAddOneBWinc}{mode}[\val\nr]{int, ext}{%
+  \ifcase\nr\relax%
+  \def\luameshval@api@mode{int}%
+  \or%
+  \def\luameshval@api@mode{ext}%
+  \fi%
+}%
+\define@choicekey*{MeshAddOneBWinc}{bbox}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@api@bbox{none}%
+  \or%
+  \def\luameshval@api@bbox{bbox}%
+  \fi%
+}%
+\presetkeys{MeshAddOneBWinc}{tikz=false,scale, meshpoint,newpoint,color,colorBack,colorNew,colorCircle,step=badtriangles,mode=int,bbox=none,colorBbox}{}%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*{\meshAddPointBWinc}[5][]{%
+  % #1 : optionnal arguments
+  % #2 : the string containing the list of points
+  % (x1,y1);(x2,y2);... or the name file containing the points
+  % #3 : the code to place before the generated one
+  % #4 : the code to place after the generated one
+  \setkeys{MeshAddOneBWinc}{#1} %
+  \def\MeshPoint{\luameshval@api@meshpoint}%
+  \def\NewPoint{\luameshval@api@newpoint}%
+  \ifKV@MeshAddOneBWinc@tikz% if we are using tikz
+  \directlua{%
+    TeXOnePointTikZBWinc("#2","#3","\luaescapestring{\unexpanded{#4}}","\luaescapestring{\unexpanded{#5}}","\luameshval@ap@step","\luameshval@ap@scale","\luameshval@ap@mode","\luameshval@ap@bbox","\luameshval@ap@color","\luameshval@ap@colorback","\luameshval@ap@colornew","\luameshval@ap@colorcircle","\luameshval@ap@colorbbox")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@api@color}
+  \mplibcolor{\luameshmpcolorBack}{\luameshval@api@colorback}
+  \mplibcolor{\luameshmpcolorNew}{\luameshval@api@colornew}
+  \mplibcolor{\luameshmpcolorCircle}{\luameshval@api@colorcircle}
+  \mplibcolor{\luameshmpcolorBbox}{\luameshval@api@colorbbox}
+  \directlua{%
+    TeXOnePointMPBWinc("#2","#3","\luaescapestring{\unexpanded{#4}}","\luaescapestring{\unexpanded{#5}}","\luameshval@api@step","\luameshval@api@scale","\luameshval@api@mode","\luameshval@api@bbox")%
+  }%
+  %
+  \fi%
+}%
+%
+%%%%%%%%%%%%%%%% the drawGmsh command inc
+%% the user can write code (tikz or MP)
+%% before and after the generated code
+\define@boolkey{drawGmshInc}{tikz}[true]{}%
+%% the scale
+\define@key{drawGmshInc}{scale}[1cm]{\def\luameshvaldgi@scale{#1}}%
+%% print ponits ?
+\define@choicekey*{drawGmshInc}{print}[\val\nr]{none, points}{%
+  \ifcase\nr\relax%
+  \def\luameshvaldgi@print{none}%
+  \or%
+  \def\luameshvaldgi@print{points}%
+  \fi%
+}%
+%% the name of the point
+\define@key{drawGmshInc}{meshpoint}[P]{\def\luameshvaldgi@meshpoint{#1}}%
+%% the name of the color of drawing
+\define@key{drawGmshInc}{color}[black]{\def\luameshvaldgi@color{#1}}%
+%
+\presetkeys{drawGmshInc}{tikz=false,scale, meshpoint,print=none,color}{}%
+%
+\newcommand*{\drawGmshinc}[4][]{%
+  % #1 : optionnal arguments
+  % #2 : the string containing the gmsh file
+  % #3 : the code to place before the generated one
+  % #4 : the code to place after the generated one
+  \setkeys{drawGmshInc}{#1} %
+  \def\MeshPoint{\luameshvaldgi@meshpoint}%
+  \ifKV@drawGmshInc@tikz% if we are using tikz
+  \directlua{%
+    drawGmshTikZinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshvaldgi@print","\luameshvaldgi@scale","\luameshvaldgi@color")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshvaldgi@color}%
+  \directlua{%
+    drawGmshMPinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshvaldgi@print","\luameshvaldgi@scale")%
+  }%
+  %
+  \fi%
+}%
+%
+%%%%%%%%%%%%%%%% the drawGmshBW command
+%% the code is complete and we don't have any callbacks
+\define@boolkey{drawGmsh}{tikz}[true]{}%
+%% the scale
+\define@key{drawGmsh}{scale}[1cm]{\def\luameshvaldg@scale{#1}}%
+%% print points
+\define@choicekey*{drawGmsh}{print}[\val\nr]{none, points}{%
+  \ifcase\nr\relax%
+  \def\luameshvaldg@print{none}%
+  \or%
+  \def\luameshvaldg@print{points}%
+  \fi%
+}%
+%% the name of the point
+\define@key{drawGmsh}{meshpoint}[P]{\def\luameshvaldg@meshpoint{#1}}%
+%% the name of the color of drawing
+\define@key{drawGmsh}{color}[black]{\def\luameshvaldg@color{#1}}%
+%
+\presetkeys{drawGmsh}{tikz=false,scale, meshpoint,print=none,color}{}%
+%
+\newcommand{\drawGmsh}[2][]{%
+  % #1 : optionnal arguments
+  % #2 : the gmsh file
+  \setkeys{drawGmsh}{#1} %
+  \def\MeshPoint{\luameshvaldg@meshpoint}%
+  \ifKV@drawGmsh@tikz% if we are using tikz
+  \directlua{%
+    drawGmshTikZ("#2","\luameshvaldg@print","\luameshvaldg@scale","\luameshvaldg@color")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshvaldg@color}%
+  \directlua{%
+    drawGmshMP("#2","\luameshvaldg@print","\luameshvaldg@scale")%
+  }%
+  %
+  \fi%
+}%
+%%%%%%%%%%%%%%%% the gmshVoronoi command
+%% the user can write code (tikz or MP)
+%% before and after the generated code
+\define@boolkey{gmshVoronoiInc}{tikz}[true]{}%
+%% the scale
+\define@key{gmshVoronoiInc}{scale}[1cm]{\def\luameshval@gvi@scale{#1}}%
+%% print ponits ?
+\define@choicekey*{gmshVoronoiInc}{print}[\val\nr]{none, points}{%
+  \ifcase\nr\relax%
+  \def\luameshval@gvi@print{none}%
+  \or%
+  \def\luameshval@gvi@print{points}%
+  \fi%
+}%
+%% the name of the point
+\define@key{gmshVoronoiInc}{meshpoint}[P]{\def\luameshval@gvi@meshpoint{#1}}%
+%% the name of the circum point
+\define@key{gmshVoronoiInc}{circumpoint}[P]{\def\luameshval@gvi@circumpoint{#1}}%
+%% the mode for reading the points
+\define@choicekey*{gmshVoronoiInc}{delaunay}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@gvi@delaunay{none}%
+  \or%
+  \def\luameshval@gvi@delaunay{show}%
+  \fi%
+}%
+%% style dashed Delaunay
+\define@choicekey*{gmshVoronoiInc}{styleDelaunay}[\val\nr]{none, dashed}{%
+  \ifcase\nr\relax%
+  \def\luameshval@gvi@styleDelaunay{none}%
+  \or%
+  \def\luameshval@gvi@styleDelaunay{dashed}%
+  \fi%
+}%
+%% style dashed Voronoi
+\define@choicekey*{gmshVoronoiInc}{styleVoronoi}[\val\nr]{none, dashed}{%
+  \ifcase\nr\relax%
+  \def\luameshval@gvi@styleVoronoi{none}%
+  \or%
+  \def\luameshval@gvi@styleVoronoi{dashed}%
+  \fi%
+}%
+%% the name of the color of drawing
+\define@key{gmshVoronoiInc}{color}[black]{\def\luameshval@gvi@color{#1}}%
+%% the name of the color of drawing Voronoi
+\define@key{gmshVoronoiInc}{colorVoronoi}[red]{\def\luameshval@gvi@colorvoronoi{#1}}%
+%
+\presetkeys{gmshVoronoiInc}{tikz=false,scale,
+  meshpoint,circumpoint,print=none,color,colorVoronoi,delaunay=none,styleVoronoi=none, styleDelaunay=none}{}%
+%
+\newcommand*{\gmshVoronoiinc}[4][]{%
+  % #1 : optionnal arguments
+  % #2 : the gmsh file
+  % #3 : the code to place before the generated one
+  % #4 : the code to place after the generated one
+  \setkeys{gmshVoronoiInc}{#1} %
+  \def\MeshPoint{\luameshval@gvi@meshpoint}%
+  \def\CircumPoint{\luameshval@gvi@circumpoint}%
+  \ifKV@gmshVoronoiInc@tikz% if we are using tikz
+  \directlua{%
+    gmshVoronoiTikZinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshval@gvi@print","\luameshval@gvi@scale","\luameshval@gvi@delaunay","\luameshval@gvi@color","\luameshval@gvi@colorvoronoi","\luameshval@gvi@styleDelaunay","\luameshval@gvi@styleVoronoi")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@gvi@color}%
+  \mplibcolor{\luameshmpcolorVoronoi}{\luameshval@gvi@colorvoronoi}%
+  \directlua{%
+    gmshVoronoiMPinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshval@gvi@print","\luameshval@gvi@scale","\luameshval@gvi@delaunay","\luameshval@gvi@styleDelaunay","\luameshval@gvi@styleVoronoi")%
+  }%
+  %
+  \fi%
+}%
+%
+%%%%%%%%%%%%%%%% the gmshVoronoiBW command
+%% the code is complete and we don't have any callbacks
+\define@boolkey{gmshVoronoi}{tikz}[true]{}%
+%% the scale
+\define@key{gmshVoronoi}{scale}[1cm]{\def\luameshval@gv@scale{#1}}%
+%% print points
+\define@choicekey*{gmshVoronoi}{print}[\val\nr]{none, points}{%
+  \ifcase\nr\relax%
+  \def\luameshval@gv@print{none}%
+  \or%
+  \def\luameshval@gv@print{points}%
+  \fi%
+}%
+%% the name of the point
+\define@key{gmshVoronoi}{meshpoint}[P]{\def\luameshval@gv@meshpoint{#1}}%
+%% the name of the circum point
+\define@key{gmshVoronoi}{circumpoint}[P]{\def\luameshval@gv@circumpoint{#1}}%
+%% the mode for reading the points
+\define@choicekey*{gmshVoronoi}{delaunay}[\val\nr]{none, show}{%
+  \ifcase\nr\relax%
+  \def\luameshval@gv@delaunay{none}%
+  \or%
+  \def\luameshval@gv@delaunay{show}%
+  \fi%
+}%
+%% style dashed Delaunay
+\define@choicekey*{gmshVoronoi}{styleDelaunay}[\val\nr]{none, dashed}{%
+  \ifcase\nr\relax%
+  \def\luameshval@gv@styleDelaunay{none}%
+  \or%
+  \def\luameshval@gv@styleDelaunay{dashed}%
+  \fi%
+}%
+%% style dashed Voronoi
+\define@choicekey*{gmshVoronoi}{styleVoronoi}[\val\nr]{none, dashed}{%
+  \ifcase\nr\relax%
+  \def\luameshval@gv@styleVoronoi{none}%
+  \or%
+  \def\luameshval@gv@styleVoronoi{dashed}%
+  \fi%
+}%
+%% the name of the color of drawing
+\define@key{gmshVoronoi}{color}[black]{\def\luameshval@gv@color{#1}}%
+%% the name of the color of drawing Voronoi
+\define@key{gmshVoronoi}{colorVoronoi}[red]{\def\luameshval@gv@colorVoronoi{#1}}%
+%
+\presetkeys{gmshVoronoi}{tikz=false,scale, meshpoint,circumpoint,print=none,color,colorVoronoi,delaunay=none,styleVoronoi=none, styleDelaunay=none}{}%
+%
+\newcommand{\gmshVoronoi}[2][]{%
+  % #1 : optionnal arguments
+  % #2 : the gmsh file
+  \setkeys{gmshVoronoi}{#1} %
+  \def\MeshPoint{\luameshval@gv@meshpoint}%
+  \def\CircumPoint{\luameshval@gv@circumpoint}%
+  \ifKV@gmshVoronoi@tikz% if we are using tikz
+  \directlua{%
+    gmshVoronoiTikZ("#2","\luameshval@gv@print","\luameshval@gv@scale","\luameshval@gv@delaunay","\luameshval@gv@color","\luameshval@gv@colorVoronoi","\luameshval@gv@styleDelaunay","\luameshval@gv@styleVoronoi")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@gv@color}%
+  \mplibcolor{\luameshmpcolorVoronoi}{\luameshval@gv@colorVoronoi}%
+  \directlua{%
+    gmshVoronoiMP("#2","\luameshval@gv@print","\luameshval@gv@scale","\luameshval@gv@delaunay","\luameshval@gv@styleDelaunay","\luameshval@gv@styleVoronoi")%
+  }%
+  %
+  \fi%
+}%
+%
+%
+%
+%%%%%%%%%%%%%%%% the meshPolygon command
+%%
+\define@boolkey{meshPolygon}{tikz}[true]{}%
+
+%% the scale
+\define@key{meshPolygon}{scale}[1cm]{\def\luameshval@mp@scale{#1}}%
+%% print points
+\define@choicekey*{meshPolygon}{print}[\val\nr]{none, points,dotpoints}{%
+  \ifcase\nr\relax%
+  \def\luameshval@mp@print{none}%
+  \or%
+  \def\luameshval@mp@print{points}%
+  \or%
+  \def\luameshval@mp@print{dotpoints}%
+  \fi%
+}%
+%% the name of the point
+\define@key{meshPolygon}{meshpoint}[P]{\def\luameshval@mp@meshpoint{#1}}%
+%% the grid parameter
+\define@key{meshPolygon}{h}[0.2]{\def\luameshval@mp@h{#1}}%
+%% the mode for reading the points
+\define@choicekey*{meshPolygon}{mode}[\val\nr]{int, ext}{%
+  \ifcase\nr\relax%
+  \def\luameshval@mp@mode{int}%
+  \or%
+  \def\luameshval@mp@mode{ext}%
+  \fi%
+}%
+%% the mode for the generation of gridpoints
+\define@choicekey*{meshPolygon}{gridpoints}[\val\nr]{rect, perturb}{%
+  \ifcase\nr\relax%
+  \def\luameshval@mp@gridpoints{rect}%
+  \or%
+  \def\luameshval@mp@gridpoints{perturb}%
+  \fi%
+}%
+%% the different steps of the  meshing
+\define@choicekey*{meshPolygon}{step}[\val\nr]{polygon, grid, points, mesh}{%
+  \ifcase\nr\relax%
+  \def\luameshval@mp@step{polygon}%
+  \or%
+  \def\luameshval@mp@step{grid}%
+  \or%
+  \def\luameshval@mp@step{points}%
+  \or%
+  \def\luameshval@mp@step{mesh}%
+  \fi%
+}%
+
+%% the name of the color of drawing
+\define@key{meshPolygon}{color}[black]{\def\luameshval@mp@color{#1}}%
+%% the name of the color of drawing Voronoi
+\define@key{meshPolygon}{colorPolygon}[red]{\def\luameshval@mp@colorPolygon{#1}}%
+%% the name of the color of drawing the bbox
+%
+\presetkeys{meshPolygon}{tikz=false,scale,mode=int,step=mesh,print=none,color,colorPolygon,h,meshpoint,gridpoints=rect}{}%
+%
+\newcommand{\meshPolygon}[2][]{%
+  % #1 : optionnal arguments
+  % #2 : the string containing the list of points
+  % (x1,y1);(x2,y2);... or the name file containing the points
+  \setkeys{meshPolygon}{#1} %
+  \def\MeshPoint{\luameshval@mp@meshpoint}%
+  \ifKV@meshPolygon@tikz% if we are using tikz
+  \directlua{%
+    drawMeshPolygonTikZ("#2","\luameshval@mp@mode","\luameshval@mp@h","\luameshval@mp@step","\luameshval@mp@print","\luameshval@mp@scale","\luameshval@mp@color","\luameshval@mp@colorPolygon","\luameshval@mp@gridpoints")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@mp@color}%
+  \mplibcolor{\luameshmpcolorPoly}{\luameshval@mp@colorPolygon}%
+  \directlua{%
+    drawMeshPolygonMP("#2","\luameshval@mp@mode","\luameshval@mp@h","\luameshval@mp@step","\luameshval@mp@print","\luameshval@mp@scale","\luameshval@mp@gridpoints")%
+  }%
+  %
+  \fi%
+}%
+%%%%%%%%%%%%%%%% the meshPolygonInc command
+%%
+\define@boolkey{meshPolygonInc}{tikz}[true]{}%
+
+%% the scale
+\define@key{meshPolygonInc}{scale}[1cm]{\def\luameshval@mpi@scale{#1}}%
+%% print points
+\define@choicekey*{meshPolygonInc}{print}[\val\nr]{none, points,dotpoints}{%
+  \ifcase\nr\relax%
+  \def\luameshval@mpi@print{none}%
+  \or%
+  \def\luameshval@mpi@print{points}%
+  \or%
+  \def\luameshval@mpi@print{dotpoints}%
+  \fi%
+}%
+%% the mode for the generation of gridpoints
+\define@choicekey*{meshPolygonInc}{gridpoints}[\val\nr]{rect, perturb}{%
+  \ifcase\nr\relax%
+  \def\luameshval@mpi@gridpoints{rect}%
+  \or%
+  \def\luameshval@mpi@gridpoints{perturb}%
+  \fi%
+}%
+%% the name of the point
+\define@key{meshPolygonInc}{meshpoint}[P]{\def\luameshval@mpi@meshpoint{#1}}%
+%% the grid parameter
+\define@key{meshPolygonInc}{h}[0.2]{\def\luameshval@mpi@h{#1}}%
+%% the mode for reading the points
+\define@choicekey*{meshPolygonInc}{mode}[\val\nr]{int, ext}{%
+  \ifcase\nr\relax%
+  \def\luameshval@mpi@mode{int}%
+  \or%
+  \def\luameshval@mpi@mode{ext}%
+  \fi%
+}%
+%% the different steps of the  meshing
+\define@choicekey*{meshPolygonInc}{step}[\val\nr]{polygon, grid, points, mesh}{%
+  \ifcase\nr\relax%
+  \def\luameshval@mpi@step{polygon}%
+  \or%
+  \def\luameshval@mpi@step{grid}%
+  \or%
+  \def\luameshval@mpi@step{points}%
+  \or%
+  \def\luameshval@mpi@step{mesh}%
+  \fi%
+}%
+
+%% the name of the color of drawing
+\define@key{meshPolygonInc}{color}[black]{\def\luameshval@mpi@color{#1}}%
+%% the name of the color of drawing Voronoi
+\define@key{meshPolygonInc}{colorPolygon}[red]{\def\luameshval@mpi@colorPolygon{#1}}%
+%% the name of the color of drawing the bbox
+%
+\presetkeys{meshPolygonInc}{tikz=false,scale,mode=int,step=mesh,print=none,color,colorPolygon,h,meshpoint,gridpoints=rect}{}%
+%
+\newcommand{\meshPolygonInc}[4][]{%
+  % #1 : optionnal arguments
+  % #2 : the string containing the list of points
+  % (x1,y1);(x2,y2);... or the name file containing the points
+  % #3 : the code to place before the generated one
+  % #4 : the code to place after the generated one
+  \setkeys{meshPolygonInc}{#1} %
+  \def\MeshPoint{\luameshval@mpi@meshpoint}%
+  \ifKV@meshPolygonInc@tikz% if we are using tikz
+  \directlua{%
+    drawMeshPolygonTikZinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshval@mpi@mode","\luameshval@mpi@h","\luameshval@mpi@step","\luameshval@mpi@print","\luameshval@mpi@scale","\luameshval@mpi@color","\luameshval@mpi@colorPolygon","\luameshval@mpi@gridpoints")%
+  }%
+  \else % we are using MP
+  \mplibcolor{\luameshmpcolor}{\luameshval@mpi@color}%
+  \mplibcolor{\luameshmpcolorPoly}{\luameshval@mpi@colorPolygon}%
+  \directlua{%
+    drawMeshPolygonMPinc("#2","\luaescapestring{\unexpanded{#3}}","\luaescapestring{\unexpanded{#4}}","\luameshval@mpi@mode","\luameshval@mpi@h","\luameshval@mpi@step","\luameshval@mpi@print","\luameshval@mpi@scale","\luameshval@mpi@gridpoints")%
+  }%
+  %
+  \fi%
+}%

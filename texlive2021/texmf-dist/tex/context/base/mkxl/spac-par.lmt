@@ -1,0 +1,81 @@
+if not modules then modules = { } end modules ['spac-par'] = {
+    version   = 1.001,
+    comment   = "companion to spac-par.mkxl",
+    author    = "Hans Hagen, PRAGMA-ADE, Hasselt NL",
+    copyright = "PRAGMA ADE / ConTeXt Development Team",
+    license   = "see context related readme files"
+}
+
+local context = context
+local implement = interfaces.implement
+
+local collected = utilities.storage.allocate()
+local tobesaved = utilities.storage.allocate()
+local wrappers  = { }
+
+local jobparwrappers = {
+    collected = collected,
+    tobesaved = tobesaved,
+}
+
+job.parwrappers = jobparwrappers
+
+local function initializer()
+    tobesaved = jobparwrappers.tobesaved
+    collected = jobparwrappers.collected
+end
+
+local function finalizer()
+    -- nothing yet
+end
+
+job.register('job.parwrappers.collected', tobesaved, initializer, finalizer)
+
+implement {
+    name      = "newparwrapper",
+    arguments = "string",
+    actions   = function(id)
+        local t = tobesaved[id]
+        local n
+        if t then
+            n = #t + 1
+            t[n] = 0
+        else
+            n = 1
+            tobesaved[id] = { 0 }
+        end
+        wrappers[id] = n
+    end
+}
+
+implement {
+    name      = "setparwrapper",
+    arguments = "string",
+    protected = true,
+    actions   = function(id)
+        local t = tobesaved[id]
+        local n = #t
+        t[n] = t[n] + 1
+    end
+}
+
+implement {
+    name      = "getparwrapper",
+    arguments = "string",
+    public    = true,
+    actions   = function(id)
+        local t = tobesaved[id]
+        context(t and t[#t] or 0)
+    end
+}
+
+implement {
+    name      = "lastparwrapper",
+    arguments = "string",
+    public    = true,
+    actions   = function(id)
+        local t = collected and collected[id]
+        context(t and t[wrappers[id]] or 0)
+    end
+}
+

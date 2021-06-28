@@ -1,0 +1,504 @@
+%%
+%% This is file `lisp-on-tex.sty'.
+%%
+%%  License: Modified BSD - see LICENSE file
+%%
+%% input buffer and read function
+
+
+%%===========================================
+%%  Macros for Input Programs
+%%===========================================
+
+%%===========================================
+%% Public Field
+%%===========================================
+%% \setinputbuffer : Set the input
+\def\setinputbuffer#1{\gdef\@read@buffer{#1}}
+%% \readchar : Read a letter from the input
+\def\readchar{%
+  \ifx\@eof\@read@buffer
+    \gdef\@currentread{\@@eof}%
+  \else
+    \expandafter\@car@buffer\@read@buffer\relax
+  \fi}
+%% \unreadchar : Unread a letter from the input
+\def\unreadchar{%
+  \ifx\@eof\@currentread\else
+       \expandafter\@unreadchar\@currentread
+       \gdef\@currentread{}\fi}
+
+%%===========================================
+%% Private Field
+%%===========================================
+\def\@dummy{\@@dummy}
+\def\@read@buffer{} % The input
+\def\@currentread{} % The front letter
+\def\@eof{\@@eof}   % EOF
+
+\def\@car@buffer#1#2\relax{\gdef\@currentread{#1}\gdef\@read@buffer{#2}}
+\def\@unreadchar#1{%
+   \expandafter\gdef
+   \expandafter\@read@buffer
+   \expandafter{\expandafter#1\@read@buffer}}
+
+%% assoc \cs -> value
+% constructor
+\def\makeassoc#1{\def#1{}}
+% add member
+\def\addassoc#1#2#3{%#1(assoc),#2(\cs),#3(value)
+\gdef\@temp@add{#3}%
+\expandafter\expandafter\expandafter\gdef\expandafter\expandafter
+\expandafter#1\expandafter\expandafter\expandafter{%
+\expandafter\expandafter\expandafter#2\expandafter\expandafter\expandafter{\expandafter\@temp@add\expandafter}#1}}
+% remove member. It cause error if there is no member
+\def\rmassoc#1#2{% #1(assoc), #2(\cs)
+\def\@rmassoc##1#2##2##3\relax{##1##3}%
+\expandafter\expandafter\expandafter\gdef\expandafter\expandafter\expandafter#1\expandafter\expandafter\expandafter{\expandafter\@rmassoc#1\relax}}
+% exist?
+\def\ifmemassoc#1#2{%
+\expandafter\@ifmemassoc\expandafter#2#1\relax}
+\def\@ifmemassoc#1#2\relax{\ifx\@dummy#2\@dummy\let\@next\@iffalse\else\def\@next{\@@ifmemassoc#1#2\relax}\fi\@next}
+\def\@@ifmemassoc#1#2#3#4\relax{%
+\begingroup\def#1{\@@target}%
+\ifx#1#2\endgroup\let\@next\@iftrue\else\endgroup\def\@next{\@ifmemassoc#1#4\relax}\fi\@next}
+\def\@iffalse{\iffalse}
+\def\@iftrue{\iftrue}
+% get It cause error if there is no member
+\def\getassoc#1#2#3{%
+\def\@getassoc##1#2##2##3\relax{\gdef#3{##2}\relax}\expandafter\@getassoc#1\relax}
+% show
+\def\showassoc#1{\expandafter\@showassoc#1\relax}
+\def\@showassoc#1\relax{\ifx\@dummy#1\@dummy
+\let\@next\relax\else\def\@next{\@@showassoc#1\relax}\fi\@next}
+\def\@@showassoc#1#2#3\relax{\string#1:#2,\ifx\@dummy#3\@dummy\else
+\@showassoc#3\relax\fi}
+
+
+% interface
+\def\@lisp@empty{}
+\def\lispinterp#1{%
+  \@lispread\@lisp@read@eval@loop#1\@end@lispread}
+\def\@lisp@read@eval@loop#1#2{%
+  \ifx#1\@tlabel@exception
+    \let\@@next\relax
+  \else
+    \def\@reg@tmp{#1{#2}}%
+    \def\@@next{%
+      \lispeval\@reg@tmp\@reg@tmp
+      \@lispread\@lisp@read@eval@loop}%
+  \fi\@@next}
+
+
+% eval
+%% write buffer
+\gdef\@temp@write@buffer{}
+\def\@add@to@write@buffer#1#2{%
+ \expandafter\gdef\expandafter#1\expandafter{#1#2}}
+
+%% global environment
+\makeassoc\@globalenv
+
+% implemeted functions
+
+
+% CONS CAR CDR
+\newcount\@malloc
+\def\@get@car#1\@tlabel@cons#2{\@@get@car#1#2}
+\def\@@get@car#1#2#3{\global\let#1#2}
+\def\@get@cdr#1\@tlabel@cons#2{\@@get@cdr#1#2}
+\def\@@get@cdr#1#2#3{\global\let#1#3}
+\def\@make@cons#1#2#3#4#5{%
+   \expandafter\gdef\csname car\the\@malloc\endcsname{#2{#3}}%
+   \expandafter\gdef\csname cdr\the\@malloc\endcsname{#4{#5}}%
+   \@@make@cons#1\csname car\the\@malloc\endcsname\csname cdr\the\@malloc\endcsname
+   \global\advance\@malloc1\relax}
+\def\@@make@cons#1{\expandafter\@@@make@cons\expandafter#1}
+\def\@@@make@cons#1#2{\expandafter\@@@@make@cons\expandafter#1\expandafter#2}
+\def\@@@@make@cons#1#2#3{\gdef#1{\@tlabel@cons{#2#3}}}
+
+
+\def\@defined@datatype{symbol,string,int,bool,dimen,skip,cons,nil,func,closure,macro,envfunc,mutable,exception}
+\def\@defined@specialform{lambda,quote,define,if,defmacro,begin,mdefine,setb,@let,@mlet,macroexpand}
+\edef\@defined@lisp@on@tex{\@defined@datatype,\@defined@specialform}
+
+
+%%%%%MEMO
+% \@tlabel@xxx -> \@eval@xxx\@apply@xxx\@@apply@xxx
+% \@dummy => ;
+% \@eval@xxx#1#2#3 : #1 = cont, #2 = env, #3 = reg
+%%%%%
+\def\@@select@eval#1#2#3{#1}
+\def\@@select@apply#1#2#3{#2}
+\def\@@select@@apply#1#2#3{#3}
+
+\def\@type@define@filed#1{\expandafter\@@type@define@filed\expandafter#1}
+\def\@@type@define@filed#1#2{\expandafter\@@@type@define@filed
+  \expandafter#1\expandafter#2}
+\def\@@@type@define@filed#1#2#3{\expandafter\@@@@type@define@field
+  \expandafter#1\expandafter#2\expandafter#3}
+\def\@@@@type@define@field#1#2#3#4{%
+  \def#1##1##2##3{\gdef##3{#4{##1}}}%
+  \def#2{\errmessage{LISP on TeX [internal apply]: cannot apply}}%
+  \def#3{\errmessage{LISP on teX [function --- apply]: cannot apply}}%
+  \def#4{#1#2#3}}
+
+\@for\@type:=\@defined@lisp@on@tex\do{%
+  \expandafter\@type@define@filed%
+  \csname @eval@\@type\endcsname%
+  \csname @apply@\@type\endcsname%
+  \csname @@apply@\@type\endcsname%
+  \csname @tlabel@\@type\endcsname}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% memo of fasteval branch
+% Each bound variables \var
+% is defined as TeX macro [[@lisp@env@\var]]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\@lisp@expand@env@last{\@lisp@expand@env@last}
+
+\def\@lisp@expand@environment#1#2{%
+  \ifx#1\@lisp@expand@env@last
+    \let\@@next\relax
+  \else
+    \expandafter\def\csname @lisp@env@\string#1\endcsname{#2}%
+    \let\@@next\@lisp@expand@environment
+  \fi
+  \@@next}
+
+\def\lispeval#1#2{% #1 : \cs -> S-exp, #2 : target register
+  \gdef\@temp@write@buffer{}%
+    \expandafter\@lisp@expand@environment\@globalenv\@lisp@expand@env@last\@lisp@expand@env@last% 
+    \expandafter\@eval#1{}#2%
+  \@temp@write@buffer}
+
+\def\@eval#1#2#3#4{%
+  \begingroup
+    \@lisp@expand@environment#3\@lisp@expand@env@last\@lisp@expand@env@last
+    \expandafter\@@select@eval#1{#2}{#3}#4%
+  \endgroup}
+
+\def\@append@env@global#1#2{%
+  \def#2{#1}%
+  \expandafter\expandafter\expandafter\def
+  \expandafter\expandafter\expandafter#2%
+  \expandafter\expandafter\expandafter{\expandafter#2\@globalenv}}
+
+% \def\@eval@symbol#1#2#3{%
+%   \@append@env@global{#2}\@temp@env
+%   %% \@temp@env = #2(local environment) ++ global environment
+%   \getassoc\@temp@env#1#3%
+%   \expandafter\@expand@if@mutable#3#3}
+\def\@eval@symbol#1#2#3{% #1 symbol #2 current env (ignored) #3 dist
+  \expandafter\global\expandafter\let\expandafter#3\csname @lisp@env@\string#1\endcsname
+  \ifx#3\relax % not found
+    \errmessage{LISP on TeX [evaluation of a symbol]: unbound variable...}%
+  \else
+    \expandafter\@expand@if@mutable#3#3%
+  \fi}
+\def\@expand@if@mutable#1#2#3{%
+  \let\@@next\@expand@if@mutable@next@f
+  \ifx#1\@tlabel@mutable\let\@@next\@expand@if@mutable@next@t\fi
+  \@@next{#2}{#3}}
+\def\@expand@if@mutable@next@f#1#2{}
+\def\@expand@if@mutable@next@t#1#2{\global\let#2#1}
+
+
+\def\@eval@envcs#1#2#3#4{\expandafter\@@eval@envcs\expandafter{#1}#2{#3}#4}
+\def\@@eval@envcs#1#2#3#4{\@eval#2{#3}{#1}#4}
+
+\def\@eval@cons#1#2#3{\@@eval@cons#1{#2}#3}
+\def\@@eval@cons#1#2#3#4{%
+  \expandafter\@eval#1{#3}\@temp@i
+  \def\@temp@ii{}% init
+  \expandafter\@flatten@args#2\@temp@ii
+  \expandafter\expandafter\expandafter\@@select@apply@pre\expandafter\@temp@i\@temp@ii\@{#3}#4}
+\def\@@select@apply@pre{\expandafter\@@select@apply}
+
+\def\@flatten@args#1#2#3{%
+  \ifx#1\@tlabel@cons
+    \let\@flatten@next\@@flatten@next
+  \else\ifx#1\@tlabel@nil
+    \let\@flatten@next\@@flatten@fin
+  \else
+    \errmessage{LISP on TeX [internal apply]: Invalid args}%
+  \fi\fi
+  \@flatten@next#2#3}
+
+\def\@@flatten@next#1#2#3{%
+  \expandafter\expandafter\expandafter\def
+  \expandafter\expandafter\expandafter#3%
+  \expandafter\expandafter\expandafter{\expandafter#3#1}%
+  \expandafter\@flatten@args#2#3}
+
+\def\@@flatten@fin#1{}
+
+\def\@apply@lambda#1#2#3#4#5\@#6#7{%
+  \def\@lambda@args{}% init
+  \@create@bind#2{#3}\@lambda@args % convert arg list into internal form
+  \expandafter\@create@closure\@lambda@args\@{#6}#4{#5}#7}
+\def\@create@closure#1\@#2#3#4#5{\gdef#5{\@tlabel@closure{{#1}{#2}#3{#4}}}}
+
+\def\@create@bind#1#2#3{%
+  \ifx#1\@tlabel@symbol
+    \let\@create@bind@next\@@create@listarg
+  \else\ifx#1\@tlabel@cons
+    \let\@create@bind@next\@@create@normalarg
+  \else\ifx#1\@tlabel@nil
+    \let\@create@bind@next\@@create@finarg
+  \fi\fi\fi
+  \@create@bind@next#2#3}
+\def\@@create@listarg#1#2{\expandafter\def\expandafter#2\expandafter{#2:#1}}
+\def\@@create@normalarg#1#2#3{%
+  \expandafter\@@create@bind@symbol#1#3%
+  \expandafter\@create@bind#2#3}
+\def\@@create@bind@symbol\@tlabel@symbol#1#2{\expandafter\def\expandafter#2\expandafter{#2#1}}
+\def\@@create@finarg#1{\expandafter\def\expandafter#1\expandafter{#1:\@@unused}}
+\def\@@unused{\@@unused}
+
+\def\@apply@quote#1#2#3\@#4#5{\gdef#5{#2{#3}}}
+
+\def\@apply@define#1\@tlabel@symbol#2#3#4\@#5#6{%
+  \@eval#3{#4}{#5}#6% define does NOT use local environment
+  \expandafter\addassoc\expandafter\@globalenv\expandafter#2\expandafter{#6}%
+  \gdef#6{\@tlabel@nil{}}}
+
+\def\@apply@mdefine#1\@tlabel@symbol#2#3#4\@#5#6{%
+  \@eval#3{#4}{#5}#6% mdefine does NOT use local environment
+  \expandafter\@mutable@allocate#6%
+  \expandafter\addassoc
+  \expandafter\@globalenv
+  \expandafter#2%
+  \expandafter{\expandafter\@tlabel@mutable
+  \expandafter{\csname mutable\the\@malloc\endcsname}}%
+  \global\advance\@malloc1\relax
+  \gdef#6{\@tlabel@nil{}}}
+\def\@mutable@allocate#1#2{\expandafter\gdef\csname mutable\the\@malloc\endcsname{#1{#2}}}
+
+
+\def\@apply@setb#1\@tlabel@symbol#2#3#4\@#5#6{%
+  \@eval#3{#4}{#5}#6%
+  \let\@@save#6%
+  \@append@env@global{#5}\@temp@env
+  \getassoc\@temp@env#2\@temp@i
+  \let#6\@@save%
+  \expandafter\@set@mutable\@temp@i#6%
+  \gdef#6{\@tlabel@nil{}}}
+\def\@set@mutable\@tlabel@mutable#1#2{\global\let#1#2}
+
+
+\def\@apply@@let#1\@tlabel@symbol#2#3#4#5#6\@#7#8{%
+  \@eval#3{#4}{#7}#8%
+  \expandafter\def\expandafter\@temp@env\expandafter{\expandafter#2\expandafter{#8}#7}%
+  \expandafter\gdef\expandafter\@@tco
+    \expandafter{\expandafter\@@eval@envcs\expandafter{\@temp@env}#5{#6}#8}%
+  \aftergroup\@@tco}
+
+\def\@apply@@mlet#1\@tlabel@symbol#2#3#4#5#6\@#7#8{%
+  \@eval#3{#4}{#7}#8%
+  \expandafter\global\expandafter\let\csname mutable\the\@malloc\endcsname#8%
+  \expandafter\def\expandafter#8\expandafter{\expandafter\@tlabel@mutable
+    \expandafter{\csname mutable\the\@malloc\endcsname}}%
+  \global\advance\@malloc1\relax
+  \expandafter\def\expandafter\@temp@env\expandafter{\expandafter#2\expandafter{#8}#7}%
+  \expandafter\gdef\expandafter\@@tco
+    \expandafter{\expandafter\@@eval@envcs\expandafter{\@temp@env}#5{#6}#8}%
+  \aftergroup\@@tco}
+
+
+\def\@apply@defmacro#1\@tlabel@symbol#2#3#4\@#5#6{%
+  \@eval#3{#4}{#5}#6% NOT use local env!
+  \expandafter\@apply@defmacro@next\expandafter#2#6%
+  \gdef#6{\@tlabel@nil{}}}
+\def\@apply@defmacro@next#1\@tlabel@closure#2{\addassoc\@globalenv#1{\@tlabel@macro{#2}}}
+
+\def\@apply@if#1#2#3#4#5#6#7\@#8#9{%
+  \@eval#2{#3}{#8}#9%
+  \expandafter\@apply@if@next#9#4{#5}#6{#7}{#8}#9%
+  \aftergroup\@@tco
+  }
+\def\@apply@if@next\@tlabel@bool#1#2#3#4#5#6#7{%
+  \let\@@next\relax
+  \ifx#1t%
+    \let\@@next\@apply@if@next@t
+  \else\ifx#1f%
+    \let\@@next\@apply@if@next@f
+  \else
+    \errmessage{LISP on TeX [if]: Invalid boolean. It's BUG. Please report.}%
+  \fi\fi\@@next{#1}{#2}{#3}{#4}{#5}{#6}{#7}}
+\def\@apply@if@next@t#1#2#3#4#5#6#7{\gdef\@@tco{\@eval#2{#3}{#6}#7}}
+\def\@apply@if@next@f#1#2#3#4#5#6#7{\gdef\@@tco{\@eval#4{#5}{#6}#7}}
+
+
+%% use general
+\def\@apply@eval@args#1#2#3#4{%
+  \let\@@next@pre\@apply@eval@args@pre@default
+  \ifx#3\relax
+    \let\@@next\@@next@fin
+  \else
+    \let\@@next@pre\@apply@eval@args@pre@i
+  \fi\@@next@pre{#1}{#2}{#3}{#4}\@@next#1{#2}}
+
+\def\@apply@eval@args@pre@default#1#2#3#4{}
+\def\@apply@eval@args@pre@i#1#2#3#4{%
+  \let\@@save#1%
+  \@eval#3{#4}{#2}#1%
+  \expandafter\expandafter\expandafter\def
+  \expandafter\expandafter\expandafter#1\expandafter\expandafter\expandafter{%
+  \expandafter\@@save#1}%
+  \let\@@next\@apply@eval@args}
+
+\def\@@next@fin#1#2{}
+
+\def\@apply@func#1#2\@#3#4{%
+  \def\@temp@i{}%
+  \@apply@eval@args\@temp@i{#3}#2\relax\relax
+  \expandafter\@apply@func@next\expandafter{\@temp@i}{#1}{#3}#4}
+\def\@apply@func@next#1#2#3#4{\@@apply@func{#2}#1\@{#3}#4}
+
+\def\@@apply@func#1#2\@#3#4{\gdef\@@tco{#1#4#2\relax\relax}\aftergroup\@@tco}
+
+
+\def\@apply@envfunc#1#2\@#3#4{%
+  \def\@temp@i{}%
+  \@apply@eval@args\@temp@i{#3}#2\relax\relax
+  \expandafter\@apply@envfunc@next\expandafter{\@temp@i}{#1}{#3}#4}
+\def\@apply@envfunc@next#1#2#3#4{\@@apply@envfunc{#2}#1\@{#3}#4}
+
+\def\@@apply@envfunc#1#2\@#3#4{\gdef\@@tco{#1#4{#3}#2\relax\relax}\aftergroup\@@tco}
+
+
+\def\@apply@closure#1#2\@#3#4{%
+  \def\@temp@i{}%
+  \@apply@eval@args\@temp@i{#3}#2\relax\relax
+  \expandafter\@apply@closure@next\expandafter{\@temp@i}{#1}{#3}#4}
+\def\@apply@closure@next#1#2#3#4{\@@apply@closure{#2}#1\@{#3}#4}
+
+\def\@@apply@closure#1#2\@#3#4{\@@apply@closure@next#1#2\@#4}
+\def\@@apply@closure@next#1#2#3#4#5\@#6{%
+  \def\@temp@env{}%
+  \@@apply@create@env\@temp@env#1#5\relax\relax
+  \expandafter\gdef\expandafter\@@tco\expandafter{%
+    \expandafter\@@eval@envcs\expandafter{\@temp@env#2}#3{#4}#6}%
+  \aftergroup\@@tco}
+
+\def\@@apply@create@env#1#2:#3#4#5{%
+  \let\@@next@pre\@@apply@create@env@pre@default
+  \ifx!#2!% if #2 is empty
+    \let\@@next@args@\@empty
+    \ifx#3\@@unused
+      \let\@@next\@@apply@create@env@fin
+    \else
+      \ifx#4\relax
+        \let\@@next\@@apply@create@env@fin
+        \@@apply@modify@env#1\@tlabel@nil{}#3\@
+      \else
+        \let\@@next@pre\@@apply@create@env@pre@i
+      \fi
+    \fi
+  \else
+    \let\@@next@pre\@@apply@create@env@pre@ii
+  \fi\@@next@pre{#1}{#2}{#3}{#4}{#5}\expandafter\@@next\expandafter#1\@@next@args@:#3}
+
+\def\@@apply@create@env@pre@default#1#2#3#4#5{}
+\def\@@apply@create@env@pre@i#1#2#3#4#5{%
+  \@@apply@create@env@phantom
+  \expandafter\@@apply@modify@env\expandafter#1\@@@@ph#3\@
+  \expandafter\gdef\csname car\the\@malloc\endcsname{#4{#5}}%
+  \let\@@next\@@apply@create@env@cdr}
+\def\@@apply@create@env@pre@ii#1#2#3#4#5{%
+  \@@apply@modify@env#1#4{#5}#2\@
+  \@@next@args#2\@
+  \let\@@next\@@apply@create@env}
+
+
+\def\@@apply@create@env@cdr#1:#2{\@@@apply@create@env@cdr}
+\def\@@@apply@create@env@cdr#1#2{%
+  \ifx#1\relax
+    \expandafter\gdef\csname cdr\the\@malloc\endcsname{\@tlabel@nil{}}%
+    \global\advance\@malloc1\relax
+    \let\@@next\relax
+  \else
+    \global\advance\@malloc1\relax
+    \@@apply@create@env@phantom
+    \global\advance\@malloc-1\relax
+    \expandafter\@@set@cdr\@@@@ph
+    \global\advance\@malloc1\relax
+    \expandafter\gdef\csname car\the\@malloc\endcsname{#1{#2}}%
+    \let\@@next\@@@apply@create@env@cdr
+  \fi\@@next}
+
+\def\@@set@cdr#1#2{\expandafter\gdef\csname cdr\the\@malloc\endcsname{#1{#2}}}
+\def\@@apply@create@env@phantom{%
+  \expandafter\@@@apply@ph\csname car\the\@malloc\endcsname\csname cdr\the\@malloc\endcsname}
+\def\@@@apply@ph#1{\expandafter\@@@@apply@ph\expandafter#1}
+\def\@@@@apply@ph#1#2{\def\@@@@ph{\@tlabel@cons{#1#2}}}
+\def\@@apply@create@env@fin#1:#2{}
+\def\@@apply@modify@env#1#2#3#4#5\@{%
+  \ifx#2\relax
+    \errmessage{LISP on TeX [apply --- closure]: too few args}%
+  \else
+    \expandafter\def\expandafter#1\expandafter{#1#4{#2{#3}}}%
+  \fi}
+\def\@@next@args#1#2\@{\def\@@next@args@{#2}}
+
+\def\@@apply@macro#1#2\@#3#4{\@@apply@macro@next#1#2\@{#3}#4}
+\def\@@apply@macro@next#1#2#3#4#5\@#6#7{%
+  \def\@temp@env{}%
+  \@@apply@create@env\@temp@env#1#5\relax\relax
+  \expandafter\gdef\expandafter\@@tco\expandafter{%
+    \expandafter\@@eval@envcs\expandafter{\@temp@env#2}#3{#4}#7%
+    \expandafter\@eval#7{#6}#7}%
+  \aftergroup\@@tco}
+\let\@apply@macro\@@apply@macro
+
+\def\@apply@macroexpand#1#2#3\@#4#5{% cont, args, \@ env, reg
+  \let\@@apply@macro@next\@@apply@macro@next@expand@only
+  \@eval#2{#3}{#4}#5%
+  \expandafter\@eval#5{#4}#5}
+\def\@@apply@macro@next@expand@only#1#2#3#4#5\@#6#7{%
+  \def\@temp@env{}%
+  \@@apply@create@env\@temp@env#1#5\relax\relax
+  \expandafter\gdef\expandafter\@@tco\expandafter{%
+    \expandafter\@@eval@envcs\expandafter{\@temp@env#2}#3{#4}#7%
+    \expandafter\@eval@if@macro#7{#6}#7}%
+  \aftergroup\@@tco}
+\def\@eval@if@macro#1#2#3#4{%
+  \ifx#1\@tlabel@cons\@eval@if@macro@#2{#3}#4\fi}
+\def\@eval@if@macro@#1#2#3#4{%
+  \expandafter\@eval#1{#3}\@temp@i
+  \expandafter\@eval@if@macro@@\@temp@i#1#2{#3}#4}
+\def\@eval@if@macro@@#1#2#3#4#5#6{%
+  \ifx#1\@tlabel@macro\@eval\@tlabel@cons{#3#4}{#5}#6\else\gdef#6{\@tlabel@cons{#3#4}}\fi}
+
+
+
+\def\@apply@begin#1#2\@#3#4{%
+  \@apply@begin@next#4{#3}#2\relax\relax}
+\def\@apply@begin@next#1#2#3#4#5#6{%
+  \ifx#5\relax
+    \gdef\@@tco{\@eval#3{#4}{#2}#1}%
+    \aftergroup\@@tco
+    \let\@@next\relax
+  \else
+    \@eval#3{#4}{#2}#1%
+    \def\@@next{\@apply@begin@next#1{#2}#5{#6}}%
+  \fi\@@next}
+
+% reader
+\input{lisp-read.sty}
+
+%arithmetical functions
+\input{lisp-arith.sty}
+
+%string manipulation
+\input{lisp-string.sty}
+
+% connection to TeX world
+\input{lisp-latexutil.sty}
+
+\input{lisp-prim.sty}
+
+\input{lisp-util.sty}

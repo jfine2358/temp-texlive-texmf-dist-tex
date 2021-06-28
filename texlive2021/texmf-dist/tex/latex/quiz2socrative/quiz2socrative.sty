@@ -1,0 +1,230 @@
+%
+% quiz2socrative.sty -- preparing questions for socrative quizzes
+% by Paolo Lella <paolo.lella@polimi.it>
+%
+% quiz2socrative.sty is a LaTeX package for preparing
+% multiple choice, true/false and short answer questions.
+% The main purpouse is to offer a tool to easily insert rather complicated 
+% mathematical stuff in socrative quizzes (see https://socrative.com).
+%
+% This is quiz2socrative version 1.0, October 2019. 
+% quiz2socrative is distributed under the LaTeX Project Public License 1.3c.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{quiz2socrative}[2019/10/01 version 1.0 (Paolo Lella)]
+
+\RequirePackage{calc}
+\RequirePackage{tikz}
+\RequirePackage{etoolbox}
+\RequirePackage{pgfmath}
+\RequirePackage{graphicx}
+\RequirePackage{xcolor}
+\RequirePackage{moresize}
+\RequirePackage{listofitems}
+\RequirePackage{xparse}
+\RequirePackage{ifthen}
+
+\setsepchar{\!\!}
+
+\usetikzlibrary{positioning,shapes.misc,shapes.geometric,backgrounds,fit}
+
+\newcommand{\@showBorder}{0}
+\newcommand{\showBorder}{\renewcommand{\@showBorder}{1}}
+\newcommand{\hideBorder}{\renewcommand{\@showBorder}{0}}
+
+\newcommand{\@mode}{0}
+
+\DeclareOption{pdfQuiz}{
+  \renewcommand{\@mode}{1}
+  \renewcommand{\@showBorder}{1}
+}
+
+\DeclareOption{socrativeQuiz}{
+  \renewcommand{\@mode}{0}
+  \renewcommand{\@showBorder}{0}
+}
+
+\newcommand{\usePdf}{\renewcommand{\@mode}{1}}
+\newcommand{\useSocrative}{\renewcommand{\@mode}{0}}
+
+\newcommand{\@enumType}{}
+
+\DeclareOption{numbers}{
+  \renewcommand{\@enumType}{\arabic}
+}
+
+\DeclareOption{letters}{
+  \renewcommand{\@enumType}{\Alph}
+}
+
+\newcommand{\useNumbers}{\renewcommand{\@enumType}{\arabic}}
+\newcommand{\useLetters}{\renewcommand{\@enumType}{\Alph}}
+
+\newcommand{\@trueLabel}{}
+\newcommand{\@falseLabel}{}
+
+\DeclareOption{italian}{
+  \renewcommand{\@trueLabel}{VERO}
+  \renewcommand{\@falseLabel}{FALSO}
+}
+
+\DeclareOption{english}{
+  \renewcommand{\@trueLabel}{TRUE}
+  \renewcommand{\@falseLabel}{FALSE}
+}
+
+\newcommand{\useItalian}{ 
+	\renewcommand{\@trueLabel}{VERO}
+	  \renewcommand{\@falseLabel}{FALSO}
+	 }
+\newcommand{\useEnglish}{
+	\renewcommand{\@trueLabel}{TRUE}
+  	\renewcommand{\@falseLabel}{FALSE}
+	}
+
+\ExecuteOptions{letters,italian,socrativeQuiz}
+\ProcessOptions\relax
+
+\newcommand{\@showSolution}{0}
+\newcommand{\showSolution}{\renewcommand{\@showSolution}{1} \renewcommand{\@mode}{1}}
+\newcommand{\hideSolution}{\renewcommand{\@showSolution}{0}}
+
+\newcounter{rispostaCorrente}
+\newcounter{rispostaGiusta}
+
+
+\NewDocumentCommand{\socrativeTF}{O{8cm} m o}{
+\begin{tikzpicture}[node distance = 0mm]
+\node (Q) at (0,0) [rectangle,minimum width=#1,inner ysep=0.25cm] {\parbox{#1-.5cm}{#2}};
+\ifnumcomp{\@mode}{=}{1}{
+	\node (V) [below=of Q,xshift=-0.25*#1,minimum width=0.5*#1-0.5cm,minimum height=1cm,draw,rectangle,inner ysep=0.25cm] {\large\bf \@trueLabel};
+	\node (F) [below=of Q,xshift=0.25*#1,minimum width=0.5*#1-0.5cm,minimum height=1cm,draw,rectangle,inner ysep=0.25cm] {\large\bf \@falseLabel};
+	\ifnumcomp{\@showSolution}{=}{1}{
+		\IfNoValueTF{#3}{
+			\PackageError{quiz2socrative}{missing solution}{add [0] if the answer is FALSE and [1] if the answer is TRUE at the end of the command string}
+		}{
+			\ifnumcomp{#3}{=}{1}{%
+				\node [below=of Q,xshift=-0.25*#1,minimum width=0.5*#1-0.5cm,minimum height=1cm,draw,cross out,thick] {};
+			}{}%
+			\ifnumcomp{#3}{=}{0}{%
+				\node [below=of Q,xshift=0.25*#1,minimum width=0.5*#1-0.5cm,minimum height=1cm,draw,cross out,thick] {};
+			}{}%
+		}
+	}{}%
+}{}
+\ifnumcomp{\@showBorder}{=}{1}{
+	\ifnumcomp{\@mode}{=}{1}{
+		\node (A) [below=of Q,minimum width=#1,minimum height=1.25cm,rectangle] {};
+		\draw (Q.north east) -- (Q.north west) -- (A.south west) -- (A.south east) -- cycle;
+	}{
+		\draw (Q.north east) -- (Q.north west) -- (Q.south west) -- (Q.south east) -- cycle;
+	}
+}{}
+\end{tikzpicture}
+}% end \socrativeTF
+
+\NewDocumentCommand{\socrativeMC}{O{8cm} m m o}{
+\setsepchar{\!\!}
+\readlist*\listaRisposte{#3}
+\ifnumcomp{\@showSolution}{=}{1}{
+	\IfNoValueTF{#4}{
+		\PackageError{quiz2socrative}{missing solution}{add the list [ , ... , ] of the correct answers at the end of the command string}
+	}{
+		\setsepchar{,}
+		\readlist*\listaRisposteCorrette{#4}
+	}
+}{}
+\setcounter{rispostaCorrente}{0}
+\begin{tikzpicture}[node distance=0mm]
+\node (0) at (0,0) [] {};
+\node (Q) [above=of 0,yshift=-0.3cm,rectangle,minimum width=#1,inner ysep=0.3cm] {\parbox[t]{#1-0.5cm}{#2}};
+
+\foreach \i in {1,...,\listaRispostelen}{
+\addtocounter{rispostaCorrente}{1}
+\node (0) [below=of 0,rectangle, minimum width=#1,minimum height=1cm,inner ysep=0.3cm] {\hspace*{0.75cm}\parbox[t]{#1-1.25cm}{\listaRisposte[\i]}};
+\node at (0.north west) [xshift=0.5cm,yshift=-0.5cm,rectangle,draw,minimum width=0.6cm,minimum height=0.6cm] {\bf\large \@enumType{rispostaCorrente}};
+\ifnumcomp{\@showSolution}{=}{1}{
+	\setcounter{rispostaGiusta}{0}
+	\foreach \j in {1,...,\listaRisposteCorrettelen}{
+		\ifnumcomp{\listaRisposteCorrette[\j]}{=}{\value{rispostaCorrente}}{\breakforeach}{\addtocounter{rispostaGiusta}{1}}
+	}
+	\ifnumcomp{\value{rispostaGiusta}}{<}{\listaRisposteCorrettelen}{
+		\node at (0.north west) [xshift=0.5cm,yshift=-0.5cm,cross out,thick,draw,minimum width=0.5cm,minimum height=0.5cm] {\bf \phantom{\@enumType{rispostaCorrente}}};
+	}{}
+}{}
+}
+
+\ifnumcomp{\@showBorder}{=}{1}{
+		\draw (Q.north east) -- (Q.north west) -- (0.south west) -- (0.south east) -- cycle;
+}{}
+\end{tikzpicture}
+}% end \socrativeMC
+
+\NewDocumentCommand{\socrativeTwoMC}{O{8cm} m m m o}{
+\IfNoValueTF{#5}{
+	\socrativeMC[#1]{#2}{#3 \!\! #4}
+}{
+	\socrativeMC[#1]{#2}{#3 \!\! #4}[#5]
+}
+}
+
+\NewDocumentCommand{\socrativeThreeMC}{O{8cm} m m m m o}{
+\IfNoValueTF{#6}{
+	\socrativeMC[#1]{#2}{#3 \!\! #4 \!\! #5}
+}{
+	\socrativeMC[#1]{#2}{#3 \!\! #4 \!\! #5}[#6]
+}
+}
+
+\NewDocumentCommand{\socrativeFourMC}{O{8cm} m m m m m o}{
+\IfNoValueTF{#7}{
+	\socrativeMC[#1]{#2}{#3 \!\! #4 \!\! #5 \!\! #6}
+}{
+	\socrativeMC[#1]{#2}{#3 \!\! #4 \!\! #5 \!\! #6}[#7]
+}
+}
+
+\NewDocumentCommand{\socrativeFiveMC}{O{8cm} m m m m m m o}{
+\IfNoValueTF{#8}{
+	\socrativeMC[#1]{#2}{#3 \!\! #4 \!\! #5 \!\! #6 \!\! #7}
+}{
+	\socrativeMC[#1]{#2}{#3 \!\! #4 \!\! #5 \!\! #6 \!\! #7}[#8]
+}
+}
+
+\NewDocumentCommand{\socrativeSA}{O{8cm} m o}{
+\begin{tikzpicture}[node distance = 0mm]
+\node (Q) at (0,0) [rectangle,minimum width=#1,inner ysep=0.25cm] {\parbox{#1-.5cm}{#2}};
+\ifnumcomp{\@mode}{=}{1}{
+	\IfNoValueTF{#3}{
+		\ifnumcomp{\@showSolution}{=}{1}{
+			\PackageError{quiz2socrative}{missing solution}{add the answer in square brackets at the end of the command string}		
+		}{
+			\node (A) [below=of Q,minimum width=#1-0.5cm,minimum height=1cm,rectangle,draw] {};	
+		}
+	}{
+		\ifnumcomp{\@showSolution}{=}{1}{
+			\node (A) [below=of Q,minimum width=#1-0.5cm,minimum height=1cm,rectangle,draw] {\parbox{#1-1cm}{#3}};		
+		}{
+			\node (A) [below=of Q,minimum width=#1-0.5cm,minimum height=1cm,rectangle,draw,fill=white] {\parbox{#1-1cm}{\textcolor{white}{#3}}};				
+		}
+	}
+}{}
+\ifnumcomp{\@showBorder}{=}{1}{
+	\ifnumcomp{\@mode}{=}{1}{
+		\node (L) [below=of A,inner sep = 0pt,yshift=-0.15cm] {};
+		\begin{pgfonlayer}{background}
+   			\node [draw,rectangle,inner xsep=0,inner ysep=0.2pt,fit=(Q) (L)] {};
+  		\end{pgfonlayer}	
+	}{
+		\begin{pgfonlayer}{background}
+   			\node [draw,rectangle,inner sep=0,fit=(Q)] {};
+  		\end{pgfonlayer}	
+	}
+}{}
+\end{tikzpicture}
+}% end \socrativeSA
+
+
+\endinput
+

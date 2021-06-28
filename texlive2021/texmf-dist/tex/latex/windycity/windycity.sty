@@ -1,0 +1,293 @@
+% Last modified: Tue 10 Nov 2020 07:45:15 AM CST
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{windycity}
+\RequirePackage{ifxetex}
+
+\setlength{\parindent}{1.1em}
+\frenchspacing
+\widowpenalty=1000
+\clubpenalty=1000
+
+\ifxetex
+  \usepackage{xltxtra}
+  \usepackage{xunicode}
+  \usepackage{fontspec}
+  \PassOptionsToPackage{unicode,xetex}{hyperref}
+  \defaultfontfeatures{Ligatures=TeX,Numbers={OldStyle,Proportional}}
+  \setmainfont[
+    Extension=.otf,
+    UprightFont=*-regular,
+    BoldFont=*-bold,
+    ItalicFont=*-italic,
+    BoldItalicFont=*-bolditalic]{texgyretermes}
+  \setmonofont[
+    Scale=0.94,
+    Numbers=Lining,
+    Extension=.otf,
+    UprightFont=*mono10-regular,
+    ItalicFont=*mono10-italic]{lm}
+  \renewcommand{\@makefnmark}{%
+    \hbox{\@textsuperscript{\liningnums{\@thefnmark}}}}
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage{pifont}
+  \usepackage[full]{textcomp}
+  \usepackage[utf8]{inputenc}
+  \usepackage{tgtermes}
+  \usepackage[scaled=.90]{helvet}
+  \newcommand{\liningnums}[1]{#1}%
+  \renewcommand{\ttdefault}{lmtt}%
+\fi
+
+\gdef\@email{}%
+\gdef\@subtitle{}%
+\gdef\@version{}%
+\gdef\@website{}%
+\newcommand{\email}[1]{\gdef\@email{\mailto{#1}}}%
+\newcommand{\mailto}[1]{\href{mailto:#1}{#1}}
+\newcommand{\subtitle}[1]{\gdef\@subtitle{#1}}%
+\newcommand{\version}[1]{\gdef\@version{Version \liningnums{#1}}}
+%\newcommand{\website}[1]{\gdef\@website{\textcolor{blue}{\url{#1}}}}
+\newcommand{\website}[1]{\gdef\@website{\url{#1}}}%
+
+\renewcommand\@maketitle{%
+  \begin{center}%
+    {\LARGE\@title}%
+    \vskip 4ex%
+    {\Large\@subtitle}%
+    \vskip 4ex%
+    {\large\@author\par\@website\par\@email\par\@version}% dropped '\par\@date'
+  \end{center}%
+  \vskip 4ex}%
+
+\usepackage[american]{babel}
+\usepackage{csquotes}
+\usepackage[style=windycity]{biblatex}
+\addbibresource{windycity.bib}
+\setcounter{biburlnumpenalty}{9000}
+\setcounter{biburllcpenalty}{9000}
+
+\renewcommand\@makefntext[1]{%
+  \parindent 1em%
+  \normalfont\@thefnmark.\hspace{0.4em}#1}%
+\newcommand{\nfootnote}[1]{%
+  \insert\footins{\normalfont\footnotesize
+  \interlinepenalty\interfootnotelinepenalty
+  \splittopskip\footnotesep
+  \splitmaxdepth \dp\strutbox \floatingpenalty \@MM
+  \hsize\columnwidth \@parboxrestore
+  \footnoterule
+  {\rule{\z@}{\footnotesep}\ignorespaces
+    #1\strut}}}
+
+\usepackage{tocloft}
+\setcounter{tocdepth}{2}
+\renewcommand{\cftbeforesecskip}{0pt}%
+\renewcommand{\cftmarktoc}{\@mkboth{\contentsname}{\contentsname}}%
+\renewcommand{\cftsecfont}{\normalfont}%
+\renewcommand{\cftsecpagefont}{\normalfont}%
+
+\usepackage{ragged2e}
+\usepackage[inline]{enumitem}
+\setlist[enumerate,itemize]{noitemsep}
+
+% Allow line breaks in '\item[]':
+\newcommand{\tshortstack}{\@ifnextchar[\@tshortstack{\@tshortstack[c]}}%
+\let\@tshortstack\@shortstack
+\patchcmd\@tshortstack\vbox\vtop{}{}%
+
+\newenvironment{citebib}
+  {\begin{enumerate}[%
+     before=\RaggedRight\citereset\newrefsegment\small,
+     itemindent=2.2em,
+     labelsep=0.2em,
+     leftmargin=1.1em]}%
+  {\end{enumerate}
+   \printbibliography[env=bib,heading=none,segment=\therefsegment]
+   \endrefsegment}%
+\newenvironment{citeref}
+  {\begin{itemize}[label=,labelsep=0.2em,leftmargin=1.1em]
+   \item\begin{enumerate*}[%
+     afterlabel=,
+     before=\citereset\newrefsegment\small\noindent,
+     itemjoin={{, }},
+     label=]}%
+  {\end{enumerate*}
+   \end{itemize}
+   \printbibliography[env=ref,heading=none,segment=\therefsegment]
+   \endrefsegment}%
+\newenvironment{citeonly}
+  {\begin{enumerate}[%
+     before=\RaggedRight\citereset\newrefsegment\small,
+     itemindent=2.2em,
+     labelsep=0.2em,
+     leftmargin=1.1em]}%
+  {\end{enumerate}}%
+\newenvironment{bibonly}
+  {\citereset\newrefsegment\small}%
+  {\printbibliography[env=bib,heading=none,segment=\therefsegment]
+   \endrefsegment}%
+\newenvironment{refonly}
+  {\citereset\newrefsegment\small}%
+  {\printbibliography[env=ref,heading=none,segment=\therefsegment]
+   \endrefsegment}%
+\defbibenvironment{bib}
+  {\list{}{%
+     \small
+     \setlength{\leftmargin}{2.2em}%
+     \setlength{\itemindent}{-1.1em}%
+     \itemsep 0\baselineskip
+     \parsep 0\baselineskip}}
+  {\endlist}
+  {\item}
+\defbibenvironment{ref}
+  {\global\toggletrue{reflist}%
+   \list{}{%
+     \small
+     \setlength{\leftmargin}{2.2em}%
+     \setlength{\itemindent}{-1.1em}%
+     \itemsep 0\baselineskip
+     \parsep 0\baselineskip}}
+  {\endlist
+   \global\togglefalse{reflist}}%
+  {\item}
+\defbibheading{none}{}%
+\DeclareSortingTemplate{reverse}{%
+  \sort[direction=descending]{\citeorder}}%
+
+\newcounter{sh}
+\renewcommand{\thesh}{Abbreviations}%
+\newcounter{bib}
+\renewcommand{\thebib}{Bibliography}%
+\newcounter{ref}
+\renewcommand{\theref}{References}%
+
+\defbibheading{biblist}{%
+  \newpage
+  \begin{center}\section*{Abbreviations}\end{center}
+  \addcontentsline{toc}{section}{Abbreviations}
+  \markright{Abbreviations}}%
+\defbibheading{bibliography}{%
+  \newpage
+  \begin{center}\section*{Bibliography (Standard Format)}\end{center}
+  \addcontentsline{toc}{section}{Bibliography (Standard Format)}
+  \markright{Bibliography}}%
+\defbibheading{references}{%
+  \newpage
+  \begin{center}\section*{References (Author-Date Format)}\end{center}
+  \addcontentsline{toc}{section}{References (Author-Date Format)}
+  \markright{References}}%
+\defbibheading{none}{}%
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LO,RE]{\small\rightmark}%
+\fancyhead[LE,RO]{\small\thepage}%
+\renewcommand{\headrulewidth}{0pt}%
+\renewcommand{\footrulewidth}{0pt}%
+\renewcommand{\sectionmark}[1]{\markright{\thesection.\ #1}}%
+\renewcommand{\subsectionmark}[1]{\markright{\thesubsection\ #1}}%
+
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}%
+\renewcommand*{\@seccntformat}[1]{%
+  \csname the#1\endcsname
+  \csname adddot@#1\endcsname\quad}%
+\newcommand*{\adddot@section}{.}%
+\renewcommand\thesubsubsection{%
+  \normalfont\arabic{subsection}.\arabic{subsubsection}}%
+
+\usepackage[clearempty]{titlesec}
+\titleformat{\section}
+  {\large\bfseries}{\thesection.}{2ex}{}
+\titleformat{\subsection}
+  {\normalsize\bfseries}{\thesubsection}{2ex}{}
+\titleformat{\subsubsection}
+  {\normalsize\it}{\thesection.\thesubsubsection}{2ex}{}
+\titlespacing*{\section}
+  {0ex}{3.5ex plus 1ex minus .2ex}{1.5ex plus .2ex}[0ex]
+\titlespacing*{\subsection}
+  {0ex}{3.5ex plus 1ex minus .2ex}{1.5ex plus .2ex}[0ex]
+\titlespacing*{\subsubsection}
+  {0ex}{3.5ex plus 1ex minus .2ex}{1.5ex plus .2ex}[0ex]
+
+\AtBeginEnvironment{quote}{\small}
+\AtBeginEnvironment{verbatim}{\small}
+\usepackage[%
+  anchorcolor=,
+  breaklinks=true,
+  citecolor=,
+  colorlinks=true,
+  linkcolor=blue,
+  pdfauthor={Brian Chase},
+  pdftitle={Windy City for biblatex},
+  urlcolor=]{hyperref}
+\urlstyle{rm}
+\newcommand{\babel}{%
+  \href{http://www.ctan.org/pkg/babel}{\textcolor{blue}{babel}}\xspace}%
+\newcommand{\biblatex}{%
+  \href{http://www.ctan.org/pkg/biblatex}{\textcolor{blue}{biblatex}}\xspace}%
+\newcommand{\BibTeX}{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+   \TeX}}%
+\newcommand{\polyglossia}{%
+  \href{http://www.ctan.org/pkg/polyglossia}{\textcolor{blue}{polyglossia}}\xspace}%
+\emergencystretch=1em
+\hyphenation{bib-la-tex Chi-ca-go}
+\usepackage{btxdockit}% For \bibfield, \bibtype, \cmd, marglist, optionlist, etc.
+\renewenvironment*{marglist}
+  {\list{}{%
+     \setlength{\labelwidth}{\marglistwidth}%
+% Commented next line for normal paragraphing:
+%     \setlength{\labelsep}{\marglistsep}%
+     \setlength{\leftmargin}{0pt}%
+% Added next line for normal paragraphing:
+     \setlength{\parsep}{0pt}%
+     \setlength{\listparindent}{\parindent}%
+     \renewcommand*{\makelabel}[1]{\hss\marglistfont##1}}}
+  {\endlist}
+\renewenvironment*{optionlist}
+  {\list{}{%
+     \setlength{\labelwidth}{\marglistwidth}%
+     \setlength{\labelsep}{\z@}%
+% Added next two lines for normal paragraphing:
+     \setlength{\leftmargin}{0pt}%
+     \setlength{\parsep}{0pt}%
+     \setlength{\listparindent}{\parindent}%
+     \renewcommand*{\makelabel}[1]{\hss\optionlistfont##1}}%
+   \ltd@optionlist}
+  {\endlist}
+\renewenvironment*{typelist}
+  {\list{}{%
+     \setlength{\labelwidth}{\marglistwidth}%
+     \setlength{\labelsep}{\marglistsep}%
+     \setlength{\leftmargin}{0pt}%
+% Added next line for less vertical space:
+     \setlength{\itemsep}{0pt}%
+     \renewcommand*{\makelabel}[1]{\hss\marglistfont##1}}%
+   \def\typeitem##1{%
+     \item[{##1}]%
+     \ltd@pdfbookmark{##1}{##1}}%
+   \def\reqitem{%
+     \par\begingroup\itemsep0.5\itemsep\item
+     Required fields: \btd@fieldloop}
+   \def\optitem{%
+     \par\begingroup\itemsep0.5\itemsep\item
+     Optional fields: \btd@fieldloop}}
+  {\endlist}
+\lstset{basicstyle=\small\ttfamily}
+\renewcommand{\bibfield}[1]{\emph{#1}}%
+\renewcommand{\bibtype}[1]{\emph{#1}}% Don't affix with '@'!
+\renewcommand{\cmd}[1]{\textbackslash\emph{#1}}%
+\renewcommand{\env}[1]{\emph{#1}}%
+\renewcommand{\file}[1]{\emph{#1}}%
+\renewcommand{\opt}[1]{\emph{#1}}%
+\renewcommand{\sty}[1]{\emph{#1}}%
+
+% For tables:
+\usepackage{booktabs}% Enhanced layout
+\usepackage{float}% For nonfloating tables
+\usepackage[it,small]{caption}% Adjust captions
+\gappto{\@floatboxreset}{\centering}% Center floats
+\AtBeginEnvironment{tabular}{\small}% Adjust fonts
+
+\endinput

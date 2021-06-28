@@ -1,0 +1,75 @@
+% This is file sectionbreak.sty
+%% (c) 2017--2018 Michal Hoftich
+\ProvidesPackage{sectionbreak}[2019-03-11 v0.1d (Michal Hoftich)]
+\RequirePackage{kvoptions}
+\DeclareStringOption[\relax]{preskip}
+\DeclareStringOption[\relax]{postskip}
+\DeclareStringOption[\relax]{skip}
+\DeclareStringOption[\relax]{style}
+\DeclareStringOption[~]{mark}
+\DeclareBoolOption{asterism}
+\DeclareBoolOption{disable}
+
+\ProcessKeyvalOptions*
+
+% the skip option can be used to set both preskip and postskip
+
+\if\sectionbreak@skip\relax\else%
+  % set skips only if the options haven't been used
+  \if\sectionbreak@preskip\relax% 
+    \def\sectionbreak@preskip{\sectionbreak@skip}%
+  \fi%
+  \if\sectionbreak@postskip\relax%
+    \def\sectionbreak@postskip{\sectionbreak@skip}%
+  \fi%
+\fi
+
+% add default value for preskip
+\if\sectionbreak@preskip\relax%
+  \def\sectionbreak@preskip{2em}%
+\fi
+
+% add default value for postskip
+\if\sectionbreak@postskip\relax%
+  \def\sectionbreak@postskip{2em}%
+\fi
+
+\newdimen\asterism@width
+% asterism is character which consists of three asterisks layed out as a triangel
+\newcommand\asterism{%
+  \settowidth{\asterism@width}{*}%
+  % these values were found by trial and error
+  \raise-0.6\asterism@width\hbox{*\kern-.6\asterism@width\raise.7\asterism@width\hbox{*}\kern-.6\asterism@width*}%
+}
+
+\newcommand\pre@sectionbreak{\par\vskip\sectionbreak@preskip\relax}
+\newcommand\post@sectionbreak{\par\vskip\sectionbreak@postskip\relax}
+% print centered section break mark
+\newcommand\print@sectionbreak[1]{%
+  \bgroup%
+  \noindent\null\hfill\sectionbreak@style\hbox{#1}\hfill\null\par%
+  \egroup%
+}
+% default section break mark is an unbreakable space
+
+\newcommand\sectionbreak[1][\sectionbreak@mark]{%
+  \pre@sectionbreak%
+  \print@sectionbreak{#1}%
+  \post@sectionbreak%
+}
+
+\newcommand\sectionbreakmark[1]{%
+  \gdef\sectionbreak@mark{#1}%
+}
+
+% test the asterism option and set the section mark accordingly
+\ifsectionbreak@asterism
+  \sectionbreakmark{\asterism}
+\fi
+
+% disable the section break in the document with the `disable` option
+\ifsectionbreak@disable%
+  \renewcommand\sectionbreak[1][]{}%
+\fi
+
+\endinput

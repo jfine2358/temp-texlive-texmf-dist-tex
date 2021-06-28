@@ -1,0 +1,252 @@
+%%
+%% This is file `tagpdf-tree-code.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% tagpdf-tree.dtx  (with options: `tree')
+%% 
+%% Copyright (C) 2019 Ulrike Fischer
+%% 
+%% It may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License (LPPL), either version 1.3c of
+%% this license or (at your option) any later version.  The latest
+%% version of this license is in the file:
+%% 
+%%    https://www.latex-project.org/lppl.txt
+%% 
+%% This file is part of the "tagpdf bundle" (The Work in LPPL)
+%% and all files in that bundle must be distributed together.
+%% 
+%% File: tagpdf-tree.dtx
+\ProvidesExplPackage {tagpdf-tree-code} {2021/02/23} {0.80}
+ {part of tagpdf - code related to writing trees and dictionaries to the pdf}
+
+\hook_gput_code:nnn{begindocument}{tagpdf}
+  {
+    \bool_if:NT \g__tag_active_tree_bool
+      {
+        \AfterEndDocument { \tag_finish_structure: }
+      }
+  }
+
+
+\pdf_object_new:nn { c__tag_struct_0_obj }{ dict }
+
+ %need to think about the best place ...
+\hook_gput_code:nnn{begindocument}{tagpdf}
+  {
+    \bool_if:NT \g__tag_active_struct_bool
+      {
+        \pdfmanagement_add:nnx
+          { Catalog }
+          { StructTreeRoot }
+          { \pdf_object_ref:n { c__tag_struct_0_obj } }
+      }
+  }
+\cs_new_protected:Nn \__tag_tree_write_structtreeroot:
+  {
+    \__tag_struct_write_obj:n { 0 }
+  }
+
+\cs_new_protected:Nn \__tag_tree_write_structelements:
+  {
+    \int_step_inline:nnnn {1}{1}{\c@g__tag_struct_abs_int}
+      {
+        %\prop_show:c {g__tag_struct_##1_prop}
+        \__tag_struct_write_obj:n { ##1 } %write the object
+      }
+  }
+
+
+\pdf_object_new:nn { c__tag_tree_parenttree_obj }{ dict }
+
+\newcounter  { g__tag_parenttree_obj_int }
+\hook_gput_code:nnn{begindocument}{tagpdf}
+  {
+    \int_gset:Nn
+      \c@g__tag_parenttree_obj_int
+      { \__tag_ref_value_lastpage:nn{abspage}{100}  }
+  }
+
+
+\tl_new:N \g__tag_parenttree_objr_tl
+
+\cs_new_protected:Nn \__tag_parenttree_add_objr:nn %#1 Structparent number, #2 objref
+  {
+    \tl_gput_right:Nx \g__tag_parenttree_objr_tl
+      {
+        #1 \c_space_tl #2 ^^J
+      }
+  }
+
+\tl_new:N \l__tag_parenttree_content_tl
+
+\cs_new_protected:Nn \__tag_tree_fill_parenttree:
+  {
+    \int_step_inline:nnnn{1}{1}{\__tag_ref_value_lastpage:nn{abspage}{-1}} %not quite clear if labels are needed. See lua code
+      { %page ##1\par
+        \prop_clear:N \l_tmpa_prop
+        \int_step_inline:nnnn{1}{1}{\__tag_ref_value_lastpage:nn{tagmcabs}{-1}}
+          {
+            %mcid####1
+            \int_compare:nT%F
+              {\__tag_ref_value:enn{mcid-####1}{tagabspage}{-1}=##1} %mcid is on current page
+              {% yes\par
+                \prop_put:Nxx
+                  \l_tmpa_prop
+                  {\__tag_ref_value:enn{mcid-####1}{tagmcid}{-1}}
+                  {\prop_item:Nn \g__tag_mc_parenttree_prop {####1}}
+              }
+          }
+          %\prop_show:N \l_tmpa_prop
+        \tl_put_right:Nx\l__tag_parenttree_content_tl
+          {
+            \int_eval:n {##1-1}\c_space_tl
+            [\c_space_tl %]
+          }
+        \int_step_inline:nnnn
+          {0}
+          {1}
+          { \prop_map_function:NN \l_tmpa_prop\__tag_prop_count:nn -1 }
+          {
+            \prop_get:NnNTF \l_tmpa_prop {####1} \l_tmpb_tl
+              {% page#1:mcid##1:\l_tmpb_tl :content
+                \tl_put_right:Nx \l__tag_parenttree_content_tl
+                  {
+                    \prop_item:cn { g__tag_struct_\l_tmpb_tl _prop } {objref}
+                    \c_space_tl
+                  }
+                %\tl_show:N \l__tag_parenttree_content_tl
+              }
+              {
+                \msg_warning:nn { tag } {tree-mcid-index-wrong}
+              }
+          }
+        \tl_put_right:Nn
+          \l__tag_parenttree_content_tl
+          {%[
+            ]^^J
+          }
+      }
+  }
+
+\cs_new_protected:Nn \__tag_tree_lua_fill_parenttree:
+  {
+    \tl_set:Nn \l__tag_parenttree_content_tl
+      {
+        \directlua
+          {
+            ltx.__tag.func.output_parenttree
+              (
+                \int_use:N\g_shipout_readonly_int
+              )
+          }
+      }
+  }
+
+\cs_new_protected:Nn \__tag_tree_write_parenttree:
+  {
+    \bool_if:NTF \g__tag_mode_lua_bool
+      {
+        \__tag_tree_lua_fill_parenttree:
+      }
+      {
+        \__tag_tree_fill_parenttree:
+      }
+    \tl_put_right:NV \l__tag_parenttree_content_tl\g__tag_parenttree_objr_tl
+    \pdf_object_write:nx  { c__tag_tree_parenttree_obj }
+      {
+        /Nums\c_space_tl [\l__tag_parenttree_content_tl]
+      }
+  }
+
+
+\pdf_object_new:nn { c__tag_tree_rolemap_obj }{ dict }
+
+\tl_new:N \l__tag_rolemap_content_tl
+
+\cs_new_protected:Nn \__tag_tree_fill_rolemap:
+  {
+    \prop_map_inline:Nn \g__tag_role_rolemap_prop
+      {
+        \tl_put_right:Nx \l__tag_rolemap_content_tl
+          {
+            /##1\c_space_tl/##2^^J
+          }
+      }
+  }
+
+\cs_new_protected:Nn \__tag_tree_write_rolemap:
+  {
+    \__tag_tree_fill_rolemap:
+    \pdf_object_write:nx  { c__tag_tree_rolemap_obj }
+      {
+        \l__tag_rolemap_content_tl
+      }
+  }
+
+
+\cs_new_protected:Nn \__tag_tree_write_classmap:
+  {
+    \tl_gclear:N \g__tag_attr_class_content_tl
+    \seq_gremove_duplicates:N \g__tag_attr_class_used_seq
+    \seq_set_map:NNn \l_tmpa_seq \g__tag_attr_class_used_seq
+      {
+        /##1\c_space_tl
+        <<
+          \prop_item:Nn
+            \g__tag_attr_entries_prop
+            {##1}
+        >>
+      }
+    \tl_gset:Nx \g__tag_attr_class_content_tl
+      {
+        \seq_use:Nn
+          \l_tmpa_seq
+          { \iow_newline: }
+      }
+    \tl_if_empty:NF
+      \g__tag_attr_class_content_tl
+      {
+        \pdf_object_new:nn { c__tag_tree_classmap_obj }{ dict }
+     %   \__tag_pdfreserveobjnum:N \l_tmpa_tl
+     %   \tl_const:Nx \c__tag_tree_obj_classmap_tl { \l_tmpa_tl }
+        \pdf_object_write:nx
+          { c__tag_tree_classmap_obj }
+          { \g__tag_attr_class_content_tl }
+        \__tag_prop_gput:cnx
+          { g__tag_struct_0_prop }
+          { ClassMap }
+          { \pdf_object_ref:n { c__tag_tree_classmap_obj }  }
+      }
+  }
+
+\cs_new_protected:Nn \tag_finish_structure:
+  {
+    \__tag_tree_write_parenttree:
+    \__tag_tree_write_rolemap:
+    \__tag_tree_write_classmap:
+    \__tag_tree_write_structelements: %this is rather slow!!
+    \__tag_tree_write_structtreeroot:
+  }
+
+\cs_set_eq:NN \uftag_finish_structure: \tag_finish_structure:
+
+\hook_gput_code:nnn{begindocument}{tagpdf}
+  {
+    \bool_if:NT\g__tag_active_tree_bool
+      {
+       \hook_gput_code:nnn{shipout/before} { tagpdf/structparents }
+         {
+             \pdfmanagement_add:nnx
+               { Page }
+               {StructParents}
+               {\int_eval:n { \g_shipout_readonly_int}}
+         }
+      }
+  }
+
+%% 
+%%
+%% End of file `tagpdf-tree-code.sty'.

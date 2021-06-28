@@ -1,0 +1,122 @@
+%% $Id: pst-spirograph.tex 80 2014-08-23 05:50:14Z herbert $
+%%
+%% This is file `pst-spirograph.tex',
+%%
+%% IMPORTANT NOTICE:
+%%
+%% Package `pst-spirograph.tex'
+%%
+%% COPYRIGHT 2015 by 
+%%     Manuel Luque <manuel.luque27@gmail.com>
+%%     Herbert Voss <hvoss@tug.org>
+%%
+%% This program can be redistributed and/or modified under the terms
+%% of the LaTeX Project Public License Distributed from CTAN archives
+%% in directory CTAN:/macros/latex/base/lppl.txt.
+%%
+%% DESCRIPTION:
+%%   `pst-spirograph' is a PSTricks package to show spirograph curves
+%%
+%%
+\csname PSTSPIROGRAPHLoaded\endcsname
+\let\PSTSPIROGRAPHLoaded\endinput
+% Requires some packages
+\ifx\PSTricksLoaded\endinput\else \input pstricks \fi
+\ifx\PSTXKeyLoaded\endinput\else  \input pst-xkey \fi
+\def\fileversion{0.41}
+\def\filedate{2014/08/23}
+\message{`PSTSPIROGRAPH' v\fileversion, \filedate\ (ml,hv)}
+
+\edef\PstAtCode{\the\catcode`\@} 
+\catcode`\@=11\relax 
+\pst@addfams{pst-spirograph}
+\pstheader{pst-spirograph.pro}
+\define@key[psset]{pst-spirograph}{Z1}[20]{\def\psk@ZA{#1 }}
+\psset[pst-spirograph]{Z1=20}
+\define@key[psset]{pst-spirograph}{Z2}[10]{\def\psk@ZB{#1 }}
+\psset[pst-spirograph]{Z2=10}
+\define@key[psset]{pst-spirograph}{m}[0.5]{\def\psk@m{#1 }}
+\psset[pst-spirograph]{m=0.5}
+\define@key[psset]{pst-spirograph}{ap}[20]{\def\psk@ap{#1 }}
+\psset[pst-spirograph]{ap=20}
+\define@key[psset]{pst-spirograph}{polarangle}[0]{\def\psk@polarangle{#1 }}
+\psset[pst-spirograph]{polarangle=0}
+\define@key[psset]{pst-spirograph}{holenumber}[1]{\def\psk@holenumber{#1 }}
+\psset[pst-spirograph]{holenumber=1}
+\define@key[psset]{pst-spirograph}{thetamax}[360]{\def\psk@thetamax{#1 }}
+\psset[pst-spirograph]{thetamax=360}
+%
+\define@key[psset]{pst-spirograph}{color1}[{[rgb]{0.625 0.75 1}}]{\pst@getcolor{#1}\pscolora}
+\psset[pst-spirograph]{color1={[rgb]{0.625 0.75 1}}}
+\define@key[psset]{pst-spirograph}{color2}[{[rgb]{0.75 1 0.75}}]{\pst@getcolor{#1}\pscolorb}
+\psset[pst-spirograph]{color2={[rgb]{0.75 1 0.75}}}
+\define@key[psset]{pst-spirograph}{circlescolor}[red]{\pst@getcolor{#1}\pscolorc}
+\psset[pst-spirograph]{circlescolor=red}
+\define@key[psset]{pst-spirograph}{curvecolor}[red]{\pst@getcolor{#1}\pscolord}
+\psset[pst-spirograph]{curvecolor=red}
+%
+\newdimen\pscurvewidth
+\define@key[psset]{pst-spirograph}{curvewidth}[1pt]{\pssetlength\pscurvewidth{#1}}
+\psset[pst-spirograph]{curvewidth=1pt}
+%% === Option pour dessiner le type d'engrenage ---------------------
+\define@boolkey[psset]{pst-spirograph}[Pst@spirograph@]{inner}[true]{}
+\psset[pst-spirograph]{inner}
+%% === pour dessiner cercle de base et cercle primitif
+\define@boolkey[psset]{pst-spirograph}[Pst@spirograph@]{circles}[true]{}
+\psset[pst-spirograph]{circles=false}
+%
+\def\psSpirograph{\def\pst@par{}\pst@object{psSpirograph}}
+\def\psSpirograph@i{\@ifnextchar({\psSpirograph@ii}{\psSpirograph@ii(0,0)}}
+\def\psSpirograph@ii(#1){%
+  \begin@SpecialObj
+  \pst@@getcoor{#1}%
+  \addto@pscode{
+    tx@spirographDict begin
+    \pst@coor /t@@y ED /t@@x ED
+    1 setlinejoin
+    /cm { \pst@number\psunit mul } bind def
+    /Z1 \psk@ZA def
+    /m1 \psk@m def
+    /Z2 \psk@ZB def
+    /m2 \psk@m def
+    /ap \psk@ap def
+    /polarAngle  \psk@polarangle def
+    /setlinedash { [ \psk@dash\space ] 0 setdash } def 
+    /ni \psk@holenumber def % numero du trou
+    ni 8 gt {/ni 8 def} if
+    /thetamax \psk@thetamax def
+%
+    /ifinner \ifPst@spirograph@inner true \else false \fi def
+    /ifcircles \ifPst@spirograph@circles true \else false \fi def 
+    /iffill \ifx\psk@fillstyle\relax false \else true \fi def
+    /Fill { \tx@setTransparency fill } def
+%
+    /ki 1 ni 9 div sub def
+    /r2 m1 Z2 mul 2 div def
+    /qi Z1 Z2 div 1 sub def
+    /qi2 Z1 Z2 div 1 add def
+    thetamax 0 le {/pas -1 def}{/pas 1 def} ifelse
+% tableau des points de l'hypocycloide
+    /tabSpirograph [ 0 pas thetamax {/i_ exch def [i_ coorPen]} for ] def
+% tableau des points de l'epicycloide
+    /tabSpirograph2 [ 0 pas thetamax {/i_ exch def [i_ coorPen2]} for ] def
+    /nPts tabSpirograph length 1 sub def
+    /nPts2 tabSpirograph2 length 1 sub def
+    /color1 {\pst@usecolor\pscolora } def
+    /color2 {\pst@usecolor\pscolorb } def
+    /circlescolor {\pst@usecolor\pscolorc } def
+    /curvecolor {\pst@usecolor\pscolord } def
+    /linecolor  {\pst@usecolor\pslinecolor} def
+    /fillopacity \psk@opacityalpha def
+    /SetCurveWidth { \pst@number\pscurvewidth SLW } def
+%
+    Roue1
+    Roue2
+    end
+  }%
+  \end@SpecialObj
+  \ignorespaces}
+%
+\catcode`\@=\PstAtCode\relax
+%
+\endinput 

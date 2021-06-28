@@ -1,0 +1,121 @@
+% $Id: philosophy-verbose.cbx,v 0.8b 2012/05/06 valbusa beta $
+%	Copyright 2009-2012 Ivan Valbusa. This package is author-maintained. 
+%	Permission is granted to copy, distribute and/or modify this software under the 
+%	terms of the LaTeX Project Public License, version 1.3c 
+%	http://www.ctan.org/tex-archive/macros/latex/base/lppl.txt.
+
+\ProvidesFile{philosophy-verbose.cbx}
+[$Id: philosophy-verbose.cbx,v 0.8b 2012/05/06 Valbusa$]
+
+\RequireCitationStyle{verbose-trad2}
+
+\newtoggle{cbx:scauthorscite}
+\newtoggle{cbx:latinemph}
+\newtoggle{cbx:commacit}
+\DeclareBibliographyOption{scauthorscite}[true]{%
+  \settoggle{cbx:scauthorscite}{#1}}
+\DeclareBibliographyOption{latinemph}[true]{%
+  \settoggle{cbx:latinemph}{#1}}
+\DeclareBibliographyOption{commacit}[true]{%
+  \settoggle{cbx:commacit}{#1}}
+\ExecuteBibliographyOptions{%
+	idemtracker=false,
+	loccittracker=strict,
+	scauthorscite=false,
+	latinemph=false,
+	commacit=false}
+
+\AtEveryCite{%
+	\togglefalse{bbx:annotation}%
+	\iftoggle{cbx:latinemph}{\renewcommand*{\mkibid}{\emph}}{}%
+	\iftoggle{cbx:scauthorscite}{\DeclareNameFormat{labelname}{%
+	\ifcase\value{uniquename}%
+		  \usebibmacro{name:last}{\textsc{#1}}{\textsc{#3}}{\textsc{#5}}{\textsc{#7}}%
+		\or
+		  \ifuseprefix
+		    {\usebibmacro{name:first-last}{\textsc{#1}}{\textsc{#4}}{\textsc{#5}}{\textsc{#8}}}%
+		    {\usebibmacro{name:first-last}{\textsc{#1}}{\textsc{#4}}{\textsc{#6}}{\textsc{#8}}}%
+		\or
+		    \usebibmacro{name:first-last}{\textsc{#1}}{\textsc{#3}}{\textsc{#5}}{\textsc{#7}}%
+		\fi
+	\usebibmacro{name:andothers}}}{}}
+
+\DeclareNameFormat{scdefault}{%
+	\iffirstinits
+	  {\usebibmacro{name:first-last}{\textsc{#1}}{\textsc{#4}}{\textsc{#5}}{\textsc{#7}}}
+	  {\ifblank{#3}%
+	    {\usebibmacro{name:first-last}{\textsc{#1}}{#3}{#5}{\textsc{#7}}}%
+	    {\usebibmacro{name:first-last}{\textsc{#1}}{\textsc{#3}}{\textsc{#5}}{\textsc{#7}}}}%
+	\usebibmacro{name:andothers}}
+
+  
+\newbibmacro*{cite:opcit}{%
+  \printtext[bibhyperlink]{\bibstring[\mkibid]{opcit}}}
+                
+\newbibmacro*{cite:loccit}{%
+  \printtext{%
+    \bibhyperlink{cite\csuse{cbx@lastcite@\thefield{entrykey}}}{%
+      \bibstring[\mkibid]{loccit}}}%
+  \global\toggletrue{cbx:loccit}}
+  
+\renewbibmacro*{cite:ibid}{%
+ \ifloccit
+   {\usebibmacro{cite:loccit}}{%
+  \printtext{%
+    \bibhyperlink{cite\csuse{cbx@lastcite@\thefield{entrykey}}}{%
+      \bibstring[\mkibid]{ibidem}}}}}%
+
+\renewbibmacro*{cite:title}{%OK
+ \ifsingletitle{\usebibmacro{cite:opcit}}{%
+  \printtext[bibhyperlink]{%
+    \printfield[citetitle]{labeltitle}%
+    \iftoggle{cbx:commacit}{\setunit{\addcomma\space}}%
+    {\setunit{\addspace\midsentence}}}%
+      \bibstring{cited}\midsentence}}
+
+ \renewbibmacro*{cite:full}{%OK
+  \usebibmacro{cite:full:citepages}%
+  \global\toggletrue{cbx:fullcite}%
+  \printtext[bibhypertarget]{%
+    \usedriver
+      {\iftoggle{cbx:scauthorscite}{%
+      \DeclareNameAlias{sortname}{scdefault}}%
+      {\DeclareNameAlias{sortname}{default}}}%
+      {\thefield{entrytype}}}%
+  \usebibmacro{shorthandintro}}
+
+\DeclareNameFormat{noname}{} 
+    
+\DeclareCiteCommand{\ccite}               
+	{\usebibmacro{prenote}\unspace\addspace}% 
+	{\global\togglefalse{cbx:loccit}% 
+	\usedriver{\DeclareNameAlias{sortname}{noname}} 
+	{\thefield{entrytype}}} 
+	{\multicitedelim} 
+	{\usebibmacro{cite:postnote}} 
+
+\DeclareCiteCommand{\cbx@crossref}
+  {}%
+  {\ifciteseen{\usebibmacro{editor+others}%
+  \setunit*{\addcomma\space}\printtext[bibhyperlink]{%
+    \printfield[citetitle]{labeltitle}%
+       \iftoggle{cbx:commacit}{\setunit{\addcomma\space}}%
+    {\setunit{\addspace\midsentence}}%
+        \bibstring{cited}}}{\usebibmacro{incollection:full}}}%
+  {}%
+  {}%	
+
+\DeclareCiteCommand{\cbx@inbookcrossref}
+  {}%
+  {\ifciteseen
+  	{\usebibmacro{bybookauthor}\setunit*{\addcomma\space}%
+	\printtext[bibhyperlink]{%
+		\printfield[citetitle]{labeltitle}%
+			\iftoggle{cbx:commacit}
+				{\setunit{\addcomma\space}}%
+				{\setunit{\addspace\midsentence}}%
+		\bibstring{cited}}}{\usebibmacro{inbook:full}}}%
+  {}%
+  {}%
+
+\endinput

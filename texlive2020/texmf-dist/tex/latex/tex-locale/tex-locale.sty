@@ -1,0 +1,640 @@
+%%
+%% This is file `tex-locale.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% tex-locale.dtx  (with options: `tex-locale.sty,package')
+%% 
+%%  tex-locale.dtx
+%%  Copyright 2018 Nicola Talbot
+%% 
+%%  This work may be distributed and/or modified under the
+%%  conditions of the LaTeX Project Public License, either version 1.3
+%%  of this license or (at your option) any later version.
+%%  The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%%  and version 1.3 or later is part of all distributions of LaTeX
+%%  version 2005/12/01 or later.
+%% 
+%%  This work has the LPPL maintenance status `maintained'.
+%% 
+%%  The Current Maintainer of this work is Nicola Talbot.
+%% 
+%%  This work consists of the files tex-locale.dtx and tex-locale.ins and the derived files tex-locale.sty, tex-locale.tex, tex-locale-scripts-enc.def, tex-locale-encodings.def, tex-locale-support.def.
+%% 
+%% \CharacterTable
+%%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%%   Digits        \0\1\2\3\4\5\6\7\8\9
+%%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%%   Dollar        \$     Percent       \%     Ampersand     \&
+%%   Acute accent  \'     Left paren    \(     Right paren   \)
+%%   Asterisk      \*     Plus          \+     Comma         \,
+%%   Minus         \-     Point         \.     Solidus       \/
+%%   Colon         \:     Semicolon     \;     Less than     \<
+%%   Equals        \=     Greater than  \>     Question mark \?
+%%   Commercial at \@     Left bracket  \[     Backslash     \\
+%%   Right bracket \]     Circumflex    \^     Underscore    \_
+%%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%%   Right brace   \}     Tilde         \~}
+%% arara: xetex: {shell: on}
+%% arara: xetex: {shell: on}
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{tex-locale}[2018/08/26 v1.0 (NLCT) localisation support]
+\RequirePackage{etoolbox}
+\RequirePackage{xfor}
+\RequirePackage{tracklang}[2016/11/03]
+\AnyTrackedLanguages
+{%
+   \ForEachTrackedDialect{\locale@this@dialect}
+   {
+      \ifx\LocaleMain\undefined
+        \edef\LocaleMain{\GetTrackedLanguageTag{\locale@this@dialect}}
+        \let\@locale@trackedmain\LocaleMain
+      \else
+        \ifx\LocaleOther\undefined
+          \edef\LocaleOther{\GetTrackedLanguageTag{\locale@this@dialect}}
+        \else
+          \edef\LocaleOther{\LocaleOther,\GetTrackedLanguageTag{\locale@this@dialect}}
+        \fi
+      \fi
+   }
+}
+{}
+\RequirePackage{ifxetex}
+\RequirePackage{ifluatex}
+\ifxetex
+  \newcommand*{\@locale@ifxeorlua}[2]{#1}
+\else
+  \ifluatex
+    \newcommand*{\@locale@ifxeorlua}[2]{#1}
+  \else
+    \newcommand*{\@locale@ifxeorlua}[2]{#2}
+  \fi
+\fi
+\RequirePackage{xkeyval}
+\newcommand*{\@locale@declareoption}[2]{%
+  \DeclareOptionX{#1}{#2}%
+  \DeclareOption{#1}{#2}%
+}
+\define@key{tex-locale.sty}{main}{%
+  \ifx\@locale@trackedmain\undefined
+  \else
+    \ifx\LocaleOther\undefined
+      \let\LocaleOther\@locale@trackedmain
+    \else
+      \edef\LocaleOther{\@locale@trackedmain,\LocaleOther}%
+    \fi
+    \let\@locale@trackedmain\undefined
+  \fi
+  \def\LocaleMain{#1}%
+}
+\define@key{tex-locale.sty}{other}{%
+  \ifx\LocaleOther\undefined
+    \def\LocaleOther{#1}%
+  \else
+    \edef\LocaleOther{\LocaleOther,#1}%
+  \fi
+}
+\@locale@ifxeorlua{\def\@locale@symbols{none}}{\def\@locale@symbols{textcomp}}
+\define@key{tex-locale.sty}{symbols}{\def\@locale@symbols{#1}}
+\newcount\@locale@supportopt
+\@ifpackageloaded{polyglossia}
+{\@locale@supportopt=0\relax}
+{
+  \@ifpackageloaded{babel}
+  {\@locale@supportopt=0\relax}
+  {
+    \@ifpackageloaded{CJK}
+    {\@locale@supportopt=0\relax}
+    {\@locale@supportopt=1\relax}
+  }
+}
+\define@choicekey{tex-locale.sty}{support}%
+ [\@locale@support@val\@locale@support@nr]%
+ {none,auto,babel,polyglossia,cjk}
+{\@locale@supportopt=\@locale@support@nr\relax}
+\define@boolkey{tex-locale.sty}[@locale@]{fontspec}[true]{}
+\@locale@ifxeorlua{\@locale@fontspectrue}{\@locale@fontspecfalse}
+\define@key{tex-locale.sty}{fontenc}{%
+ \edef\@locale@fontenc{#1}%
+ \ifdefstring{\@locale@fontenc}{false}{\def\@locale@fontenc{none}}{}%
+}
+\@ifpackageloaded{fontenc}
+{\def\@locale@fontenc{none}}
+{\def\@locale@fontenc{auto}}
+\define@key{tex-locale.sty}{inputenc}{%
+  \edef\@locale@inputenc{#1}%
+  \ifdefstring{\@locale@inputenc}{false}{\def\@locale@inputenc{none}}{}%
+}
+\@ifpackageloaded{inputenc}
+{\def\@locale@inputenc{none}}
+{\def\@locale@inputenc{auto}}
+\@ifpackageloaded{datetime2}
+{
+  \newcommand\@locale@load@dtm{}
+}
+{
+  \newcommand\@locale@load@dtm{%
+    \IfFileExists{datetime2.sty}%
+      {\@locale@load@regional@dtm}%
+      {\@locale@set@today}%
+  }%
+}
+\newcommand\@locale@load@regional@dtm{%
+  \localedatechoice
+    {%full
+     \PassOptionsToPackage{showdow}{datetime2}%
+     \PassOptionsToPackage{useregional=text}{datetime2}%
+    }%
+    {%long
+      \PassOptionsToPackage{useregional=text}{datetime2}%
+    }%
+    {%medium
+      \PassOptionsToPackage{useregional=text}{datetime2}%
+    }%
+    {%short
+      \PassOptionsToPackage{useregional=numeric}{datetime2}%
+    }%
+  \RequirePackage{datetime2}%
+  \localedatechoice{}{}{\DTMlangsetup*{abbr}}{}%
+}%
+\newcommand*{\@locale@set@today}{%
+  \ifdefempty\CurrentLocaleDate
+  {}%
+  {%
+    \renewcommand{\today}{\CurrentLocaleDate}%
+    \ForEachTrackedDialect{\locale@this@dialect}
+    {%
+      \SetCurrentTrackedDialect{\locale@this@dialect}%
+      \@TrackLangAddToHook
+       {\renewcommand{\today}{\CurrentLocaleDate}}
+       {date}%
+    }%
+  }%
+}
+\define@choicekey{tex-locale.sty}{datetime}%
+ [\@locale@datetime@val\@locale@datetime@nr]%
+ {false,iso,text,num,numeric,locale}
+{%
+  \ifcase\@locale@datetime@nr
+    \def\@locale@load@dtm{}%
+  \or
+    \def\@locale@load@dtm{%
+      \PassOptionsToPackage{useregional=false}{datetime2}%
+      \RequirePackage{datetime2}%
+      \DTMsetstyle{iso}%
+    }%
+  \or
+    \def\@locale@load@dtm{%
+      \@locale@load@regional@dtm
+    }%
+  \or
+    \def\@locale@load@dtm{%
+      \PassOptionsToPackage{useregional=numeric}{datetime2}%
+      \RequirePackage{datetime2}%
+    }%
+  \or
+    \def\@locale@load@dtm{%
+      \PassOptionsToPackage{useregional=numeric}{datetime2}%
+      \RequirePackage{datetime2}%
+    }%
+  \or
+    \def\@locale@load@dtm{\@locale@set@today}%
+  \fi
+}
+\@locale@declareoption{iso}{%
+  \def\@locale@load@dtm{%
+    \PassOptionsToPackage{useregional=false}{datetime2}%
+    \RequirePackage{datetime2}%
+    \DTMsetstyle{iso}%
+  }%
+}
+\define@choicekey{tex-locale.sty}{date}%
+[\@locale@date@val\@locale@date@nr]{full,long,medium,short}
+{%
+  \ifcase\@locale@date@nr
+    \def\localedatechoice##1##2##3##4{##1}%
+  \or
+    \def\localedatechoice##1##2##3##4{##2}%
+  \or
+    \def\localedatechoice##1##2##3##4{##3}%
+  \or
+    \def\localedatechoice##1##2##3##4{##4}%
+  \fi
+}
+\newcommand*{\localedatechoice}[4]{#2}%
+\define@choicekey{tex-locale.sty}{time}%
+[\@locale@time@val\@locale@time@nr]{full,long,medium,short}
+{%
+  \ifcase\@locale@time@nr
+    \def\localetimechoice##1##2##3##4{##1}%
+  \or
+    \def\localetimechoice##1##2##3##4{##2}%
+  \or
+    \def\localetimechoice##1##2##3##4{##3}%
+  \or
+    \def\localetimechoice##1##2##3##4{##4}%
+  \fi
+}
+\newcommand*{\localetimechoice}[4]{#3}%
+\define@choicekey{tex-locale.sty}{timedata}%
+[\@locale@timedata@val\@locale@timedata@nr]{true,false}[true]
+{%
+  \ifcase\@locale@timedata@nr
+    \def\LocaleIfDateTimePatternsSupported##1##2{##1}%
+  \or
+    \def\LocaleIfDateTimePatternsSupported##1##2{##2}%
+  \fi
+}
+\define@choicekey{tex-locale.sty}{currency}%
+[\@locale@currency@val\@locale@currency@nr]%
+{official,unofficial,sym,tex}
+{%
+  \ifcase\@locale@currency@nr
+    \def\localecurrchoice##1##2##3##4{##1}%
+  \or
+    \def\localecurrchoice##1##2##3##4{##2}%
+  \or
+    \def\localecurrchoice##1##2##3##4{##3}%
+  \or
+    \def\localecurrchoice##1##2##3##4{##4}%
+  \fi
+}
+\@locale@ifxeorlua
+ {\newcommand*{\localecurrchoice}[4]{#3}}
+ {\newcommand*{\localecurrchoice}[4]{#4}}
+\@for\CurrentOption:=\@declaredoptions\do{%
+  \ifx\CurrentOption\@empty
+  \else
+    \@expandtwoargs
+      \in@{,\CurrentOption,}{,\@classoptionslist,\@curroptions,}%
+    \ifin@
+      \@use@ption
+      \expandafter\let\csname ds@\CurrentOption\endcsname\@empty
+    \fi
+  \fi
+}
+\ProcessOptionsX
+\@ifpackageloaded{babel}
+{%
+  \@locale@supportopt=0\relax
+}
+{}
+\ifx\LocaleMain\undefined
+  \def\LocaleMain{locale}
+\fi
+\ifx\LocaleOther\undefined
+  \def\LocaleOther{}
+\fi
+\newcommand*{\@locale@postparse@hook}{%
+  \input{tex-locale-support.def}%
+}
+\ifdefstring{\@locale@symbols}{none}
+{}
+{\RequirePackage{\@locale@symbols}}
+\RequirePackage{texosquery}
+\newcommand\@locale@trackall{%
+  \ifdefstring\LocaleMain{locale}%
+  {%
+    \ifx\LocaleOStag\empty
+      \PackageWarning{tex-locale}{Unable to determine locale
+        (check shell escape)}%
+    \else
+      \TrackLanguageTag{\LocaleOStag}%
+    \fi
+  }%
+  {\TrackLanguageTag{\LocaleMain}}%
+  \@for\locale@this@dialect:=\LocaleOther\do{%
+    \ifdefstring\locale@this@dialect{locale}
+    {%
+      \ifx\LocaleOStag\empty
+        \PackageWarning{tex-locale}{Unable to determine locale
+          (check shell escape)}%
+      \else
+        \TrackLanguageTag{\LocaleOStag}%
+      \fi
+    }%
+    {\TrackLanguageTag{\locale@this@dialect}}%
+  }%
+  \let\@locale@trackall\relax
+}
+\newcommand{\@locale@loadinputenc}{}
+\newcommand*\@locale@pre@query@params{}%
+\newcommand*\@locale@pre@query@parsetag{%
+  \ifx\LocaleStyQueryFile\undefined
+   \TeXOSQuery{\@locale@result}{\@locale@pre@query@params}%
+  \else
+   \ifx\LocaleStyQueryFile\empty
+     \TeXOSQuery{\@locale@result}{\@locale@pre@query@params}%
+   \else
+     \ifx\TeXOSQueryFromFile\undefined
+       \PackageError{locale}{texosquery too old to support
+       \string\LocaleStyQueryFile. At least v1.4 required}
+       {You need to update your version of texosquery}
+       \def\@locale@result{}%
+     \else
+       \PackageInfo{locale}{Fetching query results from `\LocaleStyQueryFile'}%
+       \TeXOSQueryFromFile{\@locale@result}{\LocaleStyQueryFile}%
+     \fi
+   \fi
+  \fi
+  \edef\LocaleOStag{\@locale@result}%
+}%
+\newcommand*\@locale@pre@query@parsecodeset{%
+  \TeXOSQuery{\@locale@result}{\@locale@pre@query@params}%
+  \edef\LocaleOScodeset{\@locale@result}%
+}%
+\newcommand*\@locale@pre@query@parsetagcodeset{%
+  \def\LocaleOStag{}%
+  \def\LocaleOScodeset{}%
+  \TeXOSQuery{\@locale@result}{\@locale@pre@query@params}%
+  \ifx\@locale@result\@empty
+  \else
+    \edef\LocaleOStag{\expandafter\@firstoftwo\@locale@result}%
+    \edef\LocaleOScodeset{\expandafter\@secondoftwo\@locale@result}%
+  \fi
+}%
+\let\@locale@pre@query@parse\relax
+\@locale@ifxeorlua
+{%
+  \if@locale@fontspec\RequirePackage{fontspec}\fi
+  \ifnum\@locale@supportopt=1\relax
+    \ifdefstring\LocaleMain{locale}
+    {%
+       \def\@locale@pre@query@params{\string-b }%
+       \let\@locale@pre@query@parse\@locale@pre@query@parsetag
+    }%
+    {%
+      \@for\locale@this@dialect:=\LocaleOther\do{%
+       \ifdefstring\locale@this@dialect{locale}
+       {%
+         \def\@locale@pre@query@params{\string-b }%
+         \let\@locale@pre@query@parse\@locale@pre@query@parsetag
+         \@endfortrue
+       }%
+       {}%
+      }%
+    }%
+  \@locale@pre@query@parse
+  \fi
+}
+{%
+  \ifdefstring{\@locale@fontenc}{auto}
+  {%
+    \ifdefstring\LocaleMain{locale}
+    {%
+       \def\@locale@pre@query@params{\string-b }%
+       \let\@locale@pre@query@parse\@locale@pre@query@parsetag
+    }%
+    {%
+      \@for\locale@this@dialect:=\LocaleOther\do{%
+       \ifdefstring\locale@this@dialect{locale}
+       {%
+         \def\@locale@pre@query@params{\string-b }%
+         \let\@locale@pre@query@parse\@locale@pre@query@parsetag
+         \@endfortrue
+       }%
+       {}%
+      }%
+    }%
+  }%
+  {}%
+  \ifdefstring{\@locale@inputenc}{auto}
+  {%
+     \ifx\@locale@pre@query@params\@empty
+       \let\@locale@pre@query@parse\@locale@pre@query@parsecodeset
+     \else
+       \let\@locale@pre@query@parse\@locale@pre@query@parsetagcodeset
+     \fi
+     \edef\@locale@pre@query@params{\@locale@pre@query@params\string-C}%
+  }%
+  {}%
+  \@locale@pre@query@parse
+  \ifdefstring{\@locale@fontenc}{none}
+  {}
+  {%
+    \ifdefstring{\@locale@fontenc}{auto}
+    {%
+     \input{tex-locale-scripts-enc.def}%
+     \@locale@trackall
+     \ForEachTrackedDialect{\locale@this@dialect}%
+     {
+       \edef\@locale@lang{\TrackedLanguageFromDialect{\locale@this@dialect}}%
+       \@locale@if@langenc@map{\locale@this@dialect}%
+       {%
+           \edef\@locale@fontenc@opt{%
+             \@locale@get@langenc@map{\locale@this@dialect}}%
+           \expandafter\PassOptionsToPackage\expandafter
+             {\@locale@fontenc@opt}{fontenc}%
+       }%
+       {%
+         \@locale@if@langenc@map{\@locale@lang}%
+         {%
+           \edef\@locale@fontenc@opt{%
+             \@locale@get@langenc@map{\@locale@lang}}%
+           \expandafter\PassOptionsToPackage\expandafter
+             {\@locale@fontenc@opt}{fontenc}%
+         }%
+         {%
+           \edef\@locale@script{\GetTrackedDialectScript{\locale@this@dialect}}%
+           \ifx\@locale@script\empty
+            \edef\@locale@script{\TrackLangGetDefaultScript{\@locale@lang}}%
+           \fi
+           \@locale@if@scriptenc@map{\@locale@script}%
+           {%
+             \edef\@locale@fontenc@opt{%
+               \@locale@get@scriptenc@map{\@locale@script}}%
+             \expandafter\PassOptionsToPackage\expandafter
+               {\@locale@fontenc@opt}{fontenc}%
+           }%
+           {}%
+         }%
+       }%
+     }%
+     \ifx\@locale@fontenc@opt\empty
+       \PackageWarning{tex-locale}{Option `fontenc=auto' failed.
+         Can't determine an appropriate font encoding for dialect(s).
+         (Dialect list: \@tracklang@dialects.)
+         Either set the encoding explicitly or switch to XeLaTeX%
+       }%
+     \else
+       \RequirePackage{fontenc}%
+     \fi
+    }
+    {%
+      \expandafter\PassOptionsToPackage\expandafter{\@locale@fontenc}{fontenc}%
+      \RequirePackage{fontenc}%
+    }
+  }
+  \ifdefstring{\@locale@inputenc}{none}
+  {}
+  {%
+    \ifdefstring{\@locale@inputenc}{auto}
+    {%
+       \ifx\LocaleOScodeset\empty
+        \PackageWarning{tex-locale}{Option `inputenc=auto' failed.
+        (Check shell escape.) Default file encoding unavailable}
+       \else
+        \IfFileExists{\LocaleOScodeset.def}%
+        {%
+          \renewcommand{\@locale@loadinputenc}{%
+            \RequirePackage{inputenc}%
+            \inputencoding{\LocaleOScodeset}%
+          }
+          \let\@locale@inputenc\LocaleOScodeset
+        }%
+        {%
+           \input{tex-locale-encodings.def}%
+           \@locale@ifhasencmap{\LocaleOScodeset}
+           {
+              \edef\@locale@inputenc{\@locale@getencmap\LocaleOScodeset}
+              \renewcommand{\@locale@loadinputenc}{%
+                \RequirePackage{inputenc}%
+                \inputencoding{\@locale@inputenc}%
+              }
+           }
+           {%
+             \PackageWarning{tex-locale}{Option `inputenc=auto' failed.
+              Don't know how to interpret codeset `\LocaleOScodeset'}%
+           }%
+        }
+       \fi
+    }
+    {%
+      \renewcommand{\@locale@loadinputenc}{%
+        \RequirePackage{inputenc}%
+        \inputencoding{\@locale@inputenc}%
+      }
+    }
+  }
+}
+\newcommand{\@locale@loadscripts}{%
+  \RequirePackage{tracklang-scripts}%
+  \let\@locale@loadscripts\relax
+}
+\providecommand*{\@secondofthree}[3]{#2}
+\newcommand*{\@locale@ifsupportbabelorpoly}[3]{#1}
+\newcommand*{\@locale@ifsupportcjk}[2]{#2}
+\newcommand*{\@locale@ifsupportpinyin}[2]{#2}
+\newcommand*{\@locale@cjklist}{}
+\listadd{\@locale@cjklist}{chinese}
+\listadd{\@locale@cjklist}{japanese}
+\listadd{\@locale@cjklist}{korean}
+\listadd{\@locale@cjklist}{thai}
+\newcommand*{\@locale@ifcjk}[1]{%
+  \xifinlist{#1}{\@locale@cjklist}%
+}
+\newcommand*{\@locale@iflatinscript}[1]{%
+  \ifcsstring{@tracklang@script@#1}{Latn}%
+}
+\ifcase\@locale@supportopt
+\or
+  \@locale@trackall
+  \ForEachTrackedDialect{\locale@this@dialect}%
+  {%
+    \edef\this@root@lang{\TrackedLanguageFromDialect{\locale@this@dialect}}%
+    \@locale@ifcjk{\this@root@lang}%
+    {
+      \let\@locale@ifsupportcjk\@firstoftwo
+      \@locale@iflatinscript{\locale@this@dialect}%
+      {\let\@locale@ifsupportpinyin\@firstoftwo}%
+      {}
+    }
+    {}
+    \@locale@ifxeorlua
+    {
+      \@locale@ifsupportbabelorpoly
+      {
+        \IfFileExists{gloss-\this@root@lang.ldf}
+        {
+          \let\@locale@ifsupportbabelorpoly\@thirdofthree
+        }
+        {
+          \IfFileExists{\this@root@lang.ldf}
+          {\let\@locale@ifsupportbabelorpoly\@secondofthree}
+          {}
+        }
+      }
+      {}
+      {
+        \IfFileExists{gloss-\this@root@lang.ldf}
+        {}
+        {
+          \IfFileExists{\this@root@lang.ldf}
+          {\let\@locale@ifsupportbabelorpoly\@secondofthree}
+          {}
+        }
+      }
+    }
+    {
+      \IfFileExists{\this@root@lang.ldf}
+      {\let\@locale@ifsupportbabelorpoly\@secondofthree}
+      {}
+    }
+  }
+\or
+  \let\@locale@ifsupportbabelorpoly\@secondofthree
+\or
+  \let\@locale@ifsupportbabelorpoly\@thirdofthree
+\or
+  \let\@locale@currentiscjk\@secondoftwo
+  \ForEachTrackedDialect{\locale@this@dialect}%
+  {%
+    \edef\this@root@lang{\TrackedLanguageFromDialect{\locale@this@dialect}}%
+    \@locale@ifcjk{\this@root@lang}%
+    {
+      \@locale@iflatinscript{\locale@this@dialect}%
+      {\let\@locale@ifsupportpinyin\@firstoftwo}%
+      {}
+    }
+    {}
+  }
+\fi
+\@locale@ifsupportcjk
+{
+  \@locale@ifxeorlua
+  {
+    \RequirePackage{xeCJK}%
+  }
+  {
+    \ifdefstring\@locale@inputenc{utf8}%
+    {%
+      \RequirePackage{CJKutf8}%
+      \renewcommand{\@locale@loadinputenc}{}%
+      \newcommand*{\localeprequery}{\begin{CJK}{UTF8}{}\makeatletter}
+      \newcommand*{\localepostquery}{\end{CJK}}
+    }%
+    {%
+      \RequirePackage{CJK}%
+      \PackageWarning{tex-locale}{Unsupported encoding `\@locale@loadinputenc'}%
+    }%
+  }
+  \@locale@ifsupportpinyin
+  {\RequirePackage{pinyin}}%
+  {}%
+}
+{}
+
+\@locale@loadinputenc
+\newcommand{\localenopolypunct}[1]{{#1}}
+\newrobustcmd{\@locale@nopolypunct}[1]{%
+  {%
+    \@tracklang@ifundef{no\languagename @punctuation}{}%
+    {\csname no\languagename @punctuation\endcsname}%
+    #1%
+  }%
+}
+\input{tex-locale}
+\@locale@load@dtm
+\@ifpackageloaded{polyglossia}
+{\newcommand{\LocaleSupportPackageCase}[3]{#2}}
+{%
+  \@ifpackageloaded{babel}
+  {\newcommand{\LocaleSupportPackageCase}[3]{#1}}%
+  {\newcommand{\LocaleSupportPackageCase}[3]{#3}}%
+}
+\endinput
+%%
+%% End of file `tex-locale.sty'.

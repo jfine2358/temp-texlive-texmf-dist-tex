@@ -1,0 +1,247 @@
+\ProvidesFile{ext-biblatex-aux.def}
+  [2019/04/04 v0.7a auxiliaries for extended biblatex citation style
+   (MW)]
+
+\def\extblx@requiredbiblatexversion{3.12}
+\def\extblx@requiredbiblatexdate{2018/11/02}
+
+\newrobustcmd*{\extblx@info}{\PackageInfo{biblatex-ext}}
+\newrobustcmd*{\extblx@warning}{\PackageWarning{biblatex-ext}}
+\newrobustcmd*{\extblx@warning@noline}{%
+  \PackageWarningNoLine{biblatex-ext}}
+
+\newrobustcmd*{\extblx@error}[2]{\PackageError{biblatex-ext}{#1}{#2.}}
+
+\@ifpackagelater{biblatex}{\extblx@requiredbiblatexdate}
+  {}
+  {\extblx@warning@noline{%
+      Outdated version of biblatex detected.\MessageBreak
+      Upgrade to biblatex \extblx@requiredbiblatexversion\space
+      (\extblx@requiredbiblatexdate) or later.\MessageBreak
+      I found '\csuse{abx@version} (\csuse{abx@date})'}}
+
+\newrobustcmd*{\extblx@DeclareBTEOption}[2][boolean]{%
+  \@ifnextchar[%]
+    {\extblx@DeclareBTEOption@i[#1]{#2}}
+    {\extblx@DeclareBTEOption@i[#1]{#2}[]}}
+
+\def\extblx@DeclareBTEOption@i[#1]#2[#3]#4{%
+  \DeclareBibliographyOption[#1]{#2}[#3]{#4}%
+  \DeclareTypeOption[#1]{#2}[#3]{#4}
+  \DeclareEntryOption[#1]{#2}[#3]{#4}}
+
+%{<context>}{<opening delim>}{<closing delim>}
+\newrobustcmd*{\DeclareOuterCiteDelims}{%
+  \extblx@declareciteddelims{outer}}
+\newrobustcmd*{\DeclareInnerCiteDelims}{%
+  \extblx@declareciteddelims{inner}}
+
+%{<inner/outer>}{<cite context>}{<opening delim>}{<closing delim>}
+\def\extblx@declareciteddelims#1#2#3#4{%
+  \csdef{extblx@citedelim@#2@#1@open}{#3}%
+  \csdef{extblx@citedelim@#2@#1@close}{#4}}
+
+%{<context>}
+\newrobustcmd*{\UndeclareOuterCiteDelims}{%
+  \extblx@undeclareciteddelims{outer}}
+\newrobustcmd*{\UndeclareInnerCiteDelims}{%
+  \extblx@undeclareciteddelims{inner}}
+
+%{<inner/outer>}{<cite context>}
+\def\extblx@undeclareciteddelims#1#2{%
+  \csundef{extblx@citedelim@#2@#1@open}%
+  \csundef{extblx@citedelim@#2@#1@close}}
+
+%{<alias>}{<cite context>}
+\newrobustcmd*{\DeclareOuterCiteDelimsAlias}{%
+  \@ifstar
+    {\extblx@declareciteddelims@alias@i{outer}}
+    {\extblx@declareciteddelims@alias{outer}}}
+\newrobustcmd*{\DeclareInnerCiteDelimsAlias}{%
+  \@ifstar
+    {\extblx@declareciteddelims@alias@i{inner}}
+    {\extblx@declareciteddelims@alias{inner}}}
+
+%{<inner/outer>}{<alias>}{<cite context>}
+\def\extblx@declareciteddelims@alias#1#2#3{%
+  \csdef{extblx@citedelim@#2@#1@open}{%
+    \csuse{extblx@citedelim@#3@#1@open}}%
+  \csdef{extblx@citedelim@#2@#1@close}{%
+    \csuse{extblx@citedelim@#3@#1@close}}}
+\def\extblx@declareciteddelims@alias@i#1#2#3{%
+  \csletcs{extblx@citedelim@#2@#1@open}{extblx@citedelim@#3@#1@open}%
+  \csletcs{extblx@citedelim@#2@#1@close}{extblx@citedelim@#3@#1@close}}
+
+% declare \mk...delim commands
+\newrobustcmd*{\RegisterCiteDelims}[2]{%
+  \ifcsundef{mk#1#2delims}
+    {}
+    {\extblx@error
+       {Command \expandafter\string\csname mk#1#2delims\endcsname\space
+        already defined}
+       {biblatex-ext needs to define this command for the citation
+        delimiter feature,\MessageBreak
+        but \expandafter\string\csname mk#1#2delims\endcsname\space
+        is already defined.\MessageBreak
+        I don't want to overwrite the existing definition to avoid
+        breaking your document.\MessageBreak
+        If you force compilation despite the error, the command will be
+        overwritten\MessageBreak
+        with potentially catastrophic consequences}}%
+  \protected\csdef{mk#1#2delims}##1{%
+    \begingroup
+      \blx@blxinit
+      \blx@setsfcodes
+      \csuse{extblx@citedelim@#2@#1@open}%
+      ##1%
+      \csuse{extblx@citedelim@#2@#1@close}%
+    \endgroup}}
+
+\RegisterCiteDelims{outer}{cite}
+\RegisterCiteDelims{outer}{parencite}
+\RegisterCiteDelims{outer}{supercite}
+\RegisterCiteDelims{outer}{textcite}
+\RegisterCiteDelims{outer}{footcite}
+\RegisterCiteDelims{outer}{footcitetext}
+\DeclareOuterCiteDelimsAlias{footcite}{footcitetext}
+
+\RegisterCiteDelims{inner}{cite}
+\RegisterCiteDelims{inner}{parencite}
+\RegisterCiteDelims{inner}{supercite}
+\RegisterCiteDelims{inner}{textcite}
+\RegisterCiteDelims{inner}{footcite}
+\RegisterCiteDelims{inner}{footcitetext}
+\DeclareInnerCiteDelimsAlias{footcite}{footcitetext}
+
+\newrobustcmd*{\mkextblxsupercite}[1]{%
+  \mkbibsuperscript{%
+    \mkoutersupercitedelims{#1}}}
+\newrobustcmd*{\mkextblxfootcite}[1]{%
+  \mkbibfootnote{%
+    \mkouterfootcitedelims{#1}}}
+\newrobustcmd*{\mkextblxfootcitetext}[1]{%
+  \mkbibfootnotetext{%
+    \mkouterfootcitetextdelims{#1}}}
+
+% smartcite is special
+% According to the docs it is like \parencite in a footnote and
+% \footcite in the body.
+% To mirror that as closely as possible, we need to change the
+% delimiter context. The delimcontext is set in the pre-code, it is too
+% late to detect a footnote at that point (since we will have started
+% the footnote ourselves with \mkbibfootnote from the body), so we
+% need to do it earlier.
+\newrobustcmd*{\mksmartcite}[1]{%
+  \iffootnote
+    {\mkouterparencitedelims{%
+       \def\extblx@thisdelimcontext{parencite}%
+       #1}}
+    {\mkextblxfootcite{%
+       \def\extblx@thisdelimcontext{footcite}%
+       #1}}}
+
+% Legacy names
+
+% Compability for versions <= 0.3
+% Changes were made for v0.4 2018-06-10.
+\def\extblx@deprecate@delimcommand@robust#1#2{%
+  \protected\csedef{#1}{%
+    \noexpand\extblx@warning{%
+      \expandafter\string\csname#1\endcsname\space is deprecated.
+      \MessageBreak
+      Use \expandafter\string\csname#2\endcsname\space (with s) instead.
+      \MessageBreak
+      Using \expandafter\string\csname#2\endcsname}%
+  \expandonce{\csname#2\endcsname}}}
+
+\extblx@deprecate@delimcommand@robust{DeclareOuterCiteDelim}
+  {DeclareOuterCiteDelims}
+\extblx@deprecate@delimcommand@robust{DeclareInnerCiteDelim}
+  {DeclareInnerCiteDelims}
+\extblx@deprecate@delimcommand@robust{UndeclareOuterCiteDelim}
+  {UndeclareOuterCiteDelims}
+\extblx@deprecate@delimcommand@robust{UndeclareInnerCiteDelim}
+  {UndeclareInnerCiteDelims}
+\extblx@deprecate@delimcommand@robust{DeclareOuterCiteDelimAlias}
+  {DeclareOuterCiteDelimsAlias}
+\extblx@deprecate@delimcommand@robust{DeclareInnerCiteDelimAlias}
+  {DeclareInnerCiteDelimsAlias}
+
+\newrobustcmd*{\extblx@create@mkcitedelim}{%
+  \extblx@warning{%
+    '\string\extblx@create@mkcitedelim' is deprecated.\MessageBreak
+    Use '\string\RegisterCiteDelims' instead.\MessageBreak
+    Using '\string\RegisterCiteDelims'}
+  \RegisterCiteDelims}
+
+% Some very rudimentary backwards warning code for old names
+% this only warns, it can't salvage anything.
+% Can/should this be removed in the future?
+\AtEndDocument{%
+  \ifcsundef{abx@ffd@*@bbx:introcite}
+    {}
+    {\extblx@warning@noline{%
+       Field format 'bbx:introcite' defined.\MessageBreak
+       The format has been renamed to 'bbx@introcite'.\MessageBreak
+       This could mean that you are using the old name\MessageBreak
+       which does not work any more.\MessageBreak
+       No effort is made to switch to the new name.\MessageBreak
+       Please use 'bbx@introcite' instead}}%
+  \ifcsundef{abx@ffd@*@bbx:introcitelabeldate}
+    {}
+    {\extblx@warning@noline{%
+       Field format 'bbx:introcitelabeldate'\MessageBreak
+       defined.\MessageBreak
+       The format has been renamed to\MessageBreak
+       'bbx@introcitelabeldate'.\MessageBreak
+       This could mean that you are using the old name\MessageBreak
+       which does not work any more.\MessageBreak
+       No effort is made to switch to the new name.\MessageBreak
+       Please use\MessageBreak'bbx@introcitelabeldate'\MessageBreak
+       instead}}%
+  \ifcsundef{blx@delimcontextalias@bbx:introcite}
+    {}
+    {\extblx@warning@noline{%
+       Delimiter context 'bbx:introcite' detected.\MessageBreak
+       The context has been renamed to 'bbx@introcite'.\MessageBreak
+       This could mean that you are using the old name\MessageBreak
+       which does not work any more.\MessageBreak
+       No effort is made to switch to the new name.\MessageBreak
+       Please use 'bbx@introcite' instead}}%
+  \ifcsundef{extblx@citedelim@bbx:introcite@inner@open}
+    {}
+    {\extblx@warning@noline{%
+       Opening inner delimiter 'bbx:introcite' found.\MessageBreak
+       The delimiters have been renamed to\MessageBreak
+       'bbx@introcite'.\MessageBreak
+       This could mean that you are using the old name\MessageBreak
+       which does not work any more.\MessageBreak
+       No effort is made to switch to the new name.\MessageBreak
+       Please use 'bbx@introcite' instead}}%
+  \ifcsundef{extblx@citedelim@bbx:introcite@inner@close}
+    {}
+    {\extblx@warning@noline{%
+       Closing inner delimiter 'bbx:introcite' found.\MessageBreak
+       The delimiters have been renamed to\MessageBreak
+       'bbx@introcite'.\MessageBreak
+       This could mean that you are using the old name\MessageBreak
+       which does not work any more.\MessageBreak
+       No effort is made to switch to the new name.\MessageBreak
+       Please use 'bbx@introcite' instead}}%
+}
+
+
+\endinput
+%
+% This file is part of the biblatex-ext bundle.
+% biblatex-ext is released under the LaTeX Project Public License v1.3c
+% or later.
+%
+% A complete list of files included in that package can be found in
+% README.md or - failing that - in ext-standard.bbx.
+%
+% Official releases of this package are on CTAN
+%   https://www.ctan.org/pkg/biblatex-ext
+% development takes place on GitHub
+%   https://github.com/moewew/biblatex-ext
+%

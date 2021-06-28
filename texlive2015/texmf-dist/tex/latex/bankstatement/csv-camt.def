@@ -1,0 +1,36 @@
+%
+% definitions for the csv-mt940 format
+%
+% define the order of keys in your csv file
+% simply use arbitrary keys for unused fields
+\renewcommand*\STM@JK@dbkeys{Account,PostingDate,ValueDate,Type,Reference,CreditorIdentifier,MandateReference,EndToEndReference,AAA,BBB,CCC,Recipient,IBAN,BIC,Amount,Currency,Info}%
+% define usage of key values inside the used longtable
+% dates & mixed information & amount
+\renewcommand*\STM@JK@DTLforeach%
+{%
+  \DTLforeach{\STM@JK@dbname}%
+  {\postingdate=PostingDate,\valuedate=ValueDate,\type=Type,\reference=Reference,\credid=CreditorIdentifier,\mref=MandateReference,\eref=EndToEndReference,\recipient=Recipient,\iban=IBAN,\bic=BIC,\amount=Amount,\currency=Currency}%
+  {%
+    \parbox[t]{\widthof{ DD.MM.YYYY }}{\hspace{\STM@JK@parspace}\postingdate\\(\valuedate)} &%
+    \parbox[t]{\STM@JK@referencewidth}{\raggedright%
+                                       \DTLifstringeq{\type}{}{}{\type\\}%
+                                       \DTLifstringeq{\bic}{}{-}{\bic{}}\DTLifstringeq{\iban}{}{}{ / \iban}\\%
+                                       \DTLifstringeq{\recipient}{}{}{\recipient\\}%
+                                       \DTLifstringeq{\credid}{}{}{CRED: \credid\\}%
+                                       \DTLifstringeq{\mref}{}{}{MREF: \mref\\}%
+                                       \DTLifstringeq{\eref}{}{}{EREF: \eref\\}%
+                                       \reference} &%
+    \DTLifStartsWith{\amount}{-}{\textcolor{\STM@JK@negativecolor}{\amount}}{\amount}%
+    \DTLiflastrow{%
+                   \ifthenelse{\equal{\STM@JK@closingbalance}{none}}%
+                   {}%
+                   {\\\midrule\\ & \STM@JK@closingbalancenamename & \DTLifStartsWith{\STM@JK@closingbalance}{-}{\textcolor{\STM@JK@negativecolor}{\STM@JK@closingbalance}}{\STM@JK@closingbalance}}%
+                   \\\bottomrule%
+                 }%
+                 {\\ & & \\}%
+  }%
+}%
+% set separator of csv file
+\DTLsetseparator{;}%
+% does the csv file (not) have a header row? ;-)
+\renewcommand*\STM@JK@noheader{false}%

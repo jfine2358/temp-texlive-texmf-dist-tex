@@ -1,0 +1,75 @@
+%D \module
+%D   [       file=node-bck,
+%D        version=2009.06.08,
+%D          title=\CONTEXT\ Node Macros,
+%D       subtitle=Backgrounds,
+%D         author=Hans Hagen,
+%D           date=\currentdate,
+%D      copyright=PRAGMA]
+%C
+%C This module is part of the \CONTEXT\ macro||package and is
+%C therefore copyrighted by \PRAGMA. See mreadme.pdf for
+%C details.
+
+\writestatus{loading}{ConTeXt Node Support / Backgrounds}
+
+%D This is first attempt to replacing backgrounds in a few
+%D tables mechanisms.
+
+\unprotect
+
+\registerctxluafile{node-bck}{1.001}
+
+\def\doinitializeboxbackgrounds
+  {\ctxlua{nodes.tasks.enableaction("shipouts","nodes.handlers.backgrounds")}%
+   \glet\doinitializeboxbackgrounds\donothing}
+
+%D Box helpers:
+
+% \backgroundvbox[green] {\input tufte } \par
+% \backgroundvbox[blue]  {\input ward } \par
+% \backgroundvbox[red]   {\input knuth } \par
+% \backgroundhbox[yellow]{\rotate[rotation=45]{hello world}} \par
+
+\def\doaddbackgroundtobox#1[#2]%
+  {\begingroup\doinitializeboxbackgrounds\faststartcolor[#2]%
+   \normalexpanded{\noexpand\faststopcolor\endgroup#1
+     attr \backgroundattribute   \plusone
+     attr \colormodelattribute   \the\attribute\colormodelattribute
+     attr \colorattribute        \the\attribute\colorattribute
+     attr \transparencyattribute \the\attribute\transparencyattribute}}
+
+\def\backgroundvbox{\doaddbackgroundtobox\vbox}
+\def\backgroundvtop{\doaddbackgroundtobox\vtop}
+\def\backgroundhbox{\doaddbackgroundtobox\hbox}
+
+\def\colorattr#1%
+  {\ifcsname(cs:\currentpalet#1)\endcsname
+     \thecolorattr{\currentpalet#1}%
+   \else\ifcsname(cs:#1)\endcsname
+     \thecolorattr{#1}%
+   \fi\fi}
+
+\def\thecolorattr#1%
+  {attr \colormodelattribute   \attribute\colormodelattribute
+   attr \colorattribute        \csname(cs:#1)\endcsname
+   attr \transparencyattribute \csname(ts:#1)\endcsname}
+
+\def\backgroundcolorattr#1%
+  {\ifcsname(cs:\currentpalet#1)\endcsname
+     \thebackgroundcolorattr{\currentpalet#1}%
+   \else\ifcsname(cs:#1)\endcsname
+     \thebackgroundcolorattr{#1}%
+   \fi\fi}
+
+\def\thebackgroundcolorattr#1%
+  {attr \backgroundattribute   \plusone
+   attr \colormodelattribute   \attribute\colormodelattribute
+   attr \colorattribute        \csname(cs:#1)\endcsname
+   attr \transparencyattribute \csname(ts:#1)\endcsname}
+
+% \def\backgroundvbox[#1]{\vbox \backgroundcolorattr{#1}}
+% \def\backgroundvtop[#1]{\vtop \backgroundcolorattr{#1}}
+% \def\backgroundhbox[#1]{\hbox \backgroundcolorattr{#1}}
+
+\protect \endinput

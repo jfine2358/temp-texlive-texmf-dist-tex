@@ -1,0 +1,811 @@
+%%
+%% This is file `sankey.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% sankey.dtx  (with options: `sankey')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (C) 2016, 2021 by Paul Gaborit
+%% 
+%% This work may be distributed and/or modified under the conditions of the
+%% LaTeX Project Public License, either version 1.3 of this license or (at
+%% your option) any later version.  The latest version of this license is
+%% in
+%% 
+%% <http://www.latex-project.org/lppl.txt>
+%% 
+%% and version 1.3 or later is part of all distributions of LaTeX version
+%% 2005/12/01 or later.
+%% 
+%% This work has the LPPL maintenance status “maintained”.
+%% 
+%% The Current Maintainer of this work is Paul Gaborit.
+%% 
+%% This work consists of the files sankey.dtx, sankey.ins and the derived
+%% files sankey.sty, tikzlibrarydubins.code.tex, sankey-doc-preamble.sty,
+%% sankey-example1.tex, sankey-example2.tex, sankey-example3.tex,
+%% sankey-example3-variation.tex, sankey-example4.tex,
+%% sankey-example-energy.tex
+%% 
+\NeedsTeXFormat{LaTeX2e}[2015/10/01]
+\ProvidesPackage{sankey}[2021/03/14 v3.0 to draw Sankey diagrams]
+\RequirePackage{xparse}
+\RequirePackage{etoolbox}
+\RequirePackage{xfp}
+\RequirePackage{tikz}
+\usetikzlibrary{
+  calc,
+  decorations.markings,
+  dubins
+}
+%% add a new layer to debug sankey diagrams
+\pgfdeclarelayer{background}
+\pgfdeclarelayer{foreground}
+\pgfdeclarelayer{sankeydebug}
+\pgfsetlayers{background,main,foreground,sankeydebug}
+\def\snk@newfield#1#2#3#4#5{
+  % setter
+  \def#2##1##2{\expandafter#1\csname #4\endcsname{##2}}
+  % getter
+  \def#3##1{%
+    \ifcsdef{#4}{%
+      \csname#4\endcsname%
+    }{%
+      \PackageError{sankey}{#5}{unknown key with \string#3}%
+    }%
+  }
+}
+\snk@newfield\xdef\snk@setnodeqty\sankeygetnodeqty%
+{@snk@node@qty@#1}{Unknown sankey node '#1'}
+\snk@newfield\xdef\snk@setnodeorient\sankeygetnodeorient%
+{@snk@node@orient@#1}{Unknown sankey node '#1'}
+\snk@newfield\def\snk@setstartfill\snk@getstartfill%
+{@snk@start@fill@#1}{Unknown sankey start fill path #1}
+
+\snk@newfield\def\snk@setstartdraw\snk@getstartdraw%
+{@snk@start@draw@#1}{Unknown sankey start draw path #1}
+\snk@newfield\def\snk@setendfill\snk@getendfill%
+{@snk@end@fill@#1}{Unknown sankey end fill path #1}
+
+\snk@newfield\def\snk@setenddraw\snk@getenddraw%
+{@snk@end@draw@#1}{Unknown sankey end draw path #1}
+
+\newcommand\snk@ifnodedefined[3]{%
+  \ifcsdef{@snk@node@qty@#1}{#2}{#3}%
+}
+\newcommand\snk@errorifnotdefined[1]{%
+  \snk@ifnodedefined{#1}{}%
+  {\PackageError{sankey}{Unknown sankey node '#1'}{}}%
+}
+\pgfdeclareshape{sankey node}{
+  \inheritsavedanchors[from=rectangle]
+  \inheritanchor[from=rectangle]{center}
+  \inheritanchorborder[from=rectangle]
+  \anchor{left}{\pgf@process{\northeast}}
+  \anchor{right}{\pgf@process{\southwest}}
+  % compatibility with 'fit' library
+  \inheritanchor[from=rectangle]{west}
+  \inheritanchor[from=rectangle]{east}
+  \inheritanchor[from=rectangle]{north}
+  \inheritanchor[from=rectangle]{south}
+  \inheritanchor[from=rectangle]{north west}
+  \inheritanchor[from=rectangle]{south east}
+  \inheritanchor[from=rectangle]{north east}
+  \inheritanchor[from=rectangle]{south west}
+}
+\pgfkeys{/sankey/.is family}
+\NewDocumentCommand\sankeyset{m}{\pgfkeys{sankey,#1}}
+\sankeyset{
+  ratio quantity/.code={\edef\snk@totalqty{\fpeval{#1}}},
+  ratio quantity/.value required,
+  ratio length/.code={
+    \pgfmathsetmacro\snk@totallen{#1}
+    \edef\snk@totallen{\snk@totallen pt}
+  },
+  ratio length/.value required,
+  ratio/.style args={#1/#2}{
+    ratio length=#1,
+    ratio quantity=#2,
+  },
+  ratio/.value required,
+}
+\sankeyset{
+  rotate/.code={\edef\snk@rotate{\fpeval{#1}}},
+  rotate/.value required,
+}
+\sankeyset{
+  minimum radius/.code={
+    \pgfmathsetmacro\snk@minradius{#1}
+    \edef\snk@minradius{\snk@minradius pt}
+  },
+  minimum radius/.value required,
+}
+\sankeyset{
+  outin steps/.estore in=\snk@stepoutin,
+  outon steps/.value required,
+}
+\newtoggle{sankey debug}
+\sankeyset{
+  debug/.is choice,
+  debug/true/.code={\toggletrue{sankey debug}},
+  debug/false/.code={\togglefalse{sankey debug}},
+  debug/.default=true,
+}
+\sankeyset{
+  start style/.is choice,
+  end style/.is choice,
+  % to define new start and end styles
+  new start style/.code n args={3}{% name, fill path, draw path
+    \snk@setstartfill{#1}{#2}
+    \snk@setstartdraw{#1}{#3}
+    \sankeyset{start style/#1/.code={\def\snk@startstyle{#1}}}
+  },
+  new end style/.code n args={3}{% name, fill path, draw path
+    \snk@setendfill{#1}{#2}
+    \snk@setenddraw{#1}{#3}
+    \sankeyset{end style/#1/.code={\def\snk@endstyle{#1}}}
+  },
+}
+\sankeyset{
+  debug color/.style={/utils/exec={\colorlet{debug color}{#1}}},
+  @initial options/.style={
+    ratio=1cm/10,
+    minimum radius=5mm,%
+    outin steps=10,
+    debug=false,
+    start style=none,
+    end style=none,
+    rotate=0,
+    % default fill/draw styles,
+    fill/.style={line width=0pt,fill=white},
+    draw/.style={draw=black,line width=.4pt},
+    % debug color used by all debug macros
+    debug color=red!75!black,
+    % debug line between left and right anchors
+    debug line/.style={overlay,draw=debug color,|-|},
+    % debug line between center and label
+    debug normal/.style={overlay,draw=debug color},
+    % debug node label
+    debug label/.style={
+      overlay,
+      draw,
+      font=\ttfamily\tiny,
+      text=debug color,text opacity=1,
+      inner sep=.1em,
+      fill=white,fill opacity=1,
+      rounded corners=.1em,
+      node contents={\name},
+    },
+    every node/.style={},
+  },
+  every diagram/.style={},
+}
+
+\sankeyset{node parameters/.is family}
+\sankeyset{node parameters,
+  name/.estore in=\name,
+  name/.value required,
+  quantity/.code={\edef\qty{\fpeval{#1}}},
+  quantity/.value required,
+  angle/.code={\edef\orient{\snk@normalize@angle{#1}}},
+  angle/.value required,
+  at/.code={\snk@getpos\pos{#1}},
+  at/.value required,
+}
+\sankeyset{node parameters,
+  as/.style={
+    name=#1,
+    quantity=\sankeygetnodeqty{#1},
+    angle=\sankeygetnodeorient{#1},
+    at={#1.center},
+  },
+  as/.value required,
+}
+\sankeyset{node parameters,
+  anchor/.is choice,
+  anchor/left/.code={\def\snk@anchor{left}},
+  anchor/right/.code={\def\snk@anchor{right}},
+  anchor/center/.code={\def\snk@anchor{center}},
+  anchor/.value required,
+}
+\newtoggle{sankey node start}
+\newtoggle{sankey node end}
+\sankeyset{node parameters,
+  start/.is choice,
+  start/true/.code={\toggletrue{sankey node start}},
+  start/false/.code={\togglefalse{sankey node start}},
+  start/.default=true,
+  %
+  end/.is choice,
+  end/true/.code={\toggletrue{sankey node end}},
+  end/false/.code={\togglefalse{sankey node end}},
+  end/.default=true,
+}
+\sankeyset{node parameters,
+  forked/.estore in=\snk@listofforks,
+  forked/.value required,
+  fork anchor/.estore in=\snk@forkanchor,
+  fork anchor/.value required,
+}
+\sankeyset{node parameters,
+  @initial parameters/.style={
+    start=false,
+    end=false,
+    forked=,
+    fork anchor=,
+    anchor=center,
+    at={0,0},
+    angle=0,
+  },
+}
+\sankeyset{
+  % sankey node TikZ style
+  @sankey node/.style n args={3}{% name, pos, anchor
+    shape=sankey node,
+    inner sep=0,
+    minimum height={\sankeyqtytolen{\sankeygetnodeqty{#1}}},
+    minimum width=0,
+    draw=none,
+    line width=0pt,
+    fill=none,
+    node contents={},
+    rotate=\sankeygetnodeorient{#1}+\snk@rotate,
+    at={(#2)},
+    name=#1,
+    anchor=#3,
+  },
+}
+\NewDocumentEnvironment{sankeydiagram}{O{}}{
+  \def\snk@getpos##1##2{%
+    \tikz@scan@one@point\pgfutil@firstofone(##2)\relax%
+    \edef##1{\the\pgf@x,\the\pgf@y}%
+  }
+  \def\snk@modulo##1##2{\fpeval{##1-(floor((##1)/(##2),0)*##2)}}
+  \def\snk@normalize@angle##1{%
+    \fpeval{\snk@modulo{(##1)+180}{360}-180}%
+  }
+  \def\snk@show@debug##1{% node name
+    \iftoggle{sankey debug}{
+      \begingroup
+      \edef\name{##1}
+      \edef\qty{\sankeygetnodeqty{\name}}
+      \edef\orient{\sankeygetnodeorient{\name}}
+      \begin{pgfonlayer}{sankeydebug}
+        \path[/sankey/debug line] (\name.left) -- (\name.right);
+        \pgfmathsetmacro{\snk@len}{\sankeyqtytolen{\qty}/3}
+        \path[/sankey/debug normal] (\name.center)
+        -- ($(\name.center)!\snk@len pt!90:(\name.right)$)
+        node[/sankey/debug label,rotate=\orient+90+\snk@rotate,anchor=north];
+      \end{pgfonlayer}
+      \endgroup
+    }{}
+  }
+  \def\snk@makeforkednode{
+    \begingroup
+    \ifdefempty{\snk@listofforks}{
+      \ifdefempty{\snk@forkanchor}{}{
+        \PackageWarning{sankey}%
+        {Can't use 'fork anchor' key without 'forked' key}
+      }
+    }{
+      \def\snk@tot{0}
+      \def\snk@added@values{}
+      \sankeyset{
+        @add forked node/.code args={####1/####2}{
+          \coordinate (####2) at ($(\name.left)%
+          !\fpeval{(\snk@tot+.5*(####1))/\qty}%
+          !(\name.right)$);
+          \edef\snk@orient{\orient}
+          \sankeynode[debug=false]
+          {name=####2,quantity=####1,at=####2,angle=\snk@orient}
+          \edef\snk@tot{\fpeval{\snk@tot+####1}}
+          \edef\snk@added@values{\snk@added@values+####1}
+        },
+        @add forked node/.list/.expand once=\snk@listofforks,
+      }
+      \edef\snk@diff{\fpeval{abs(\qty-\snk@tot)}}
+      \ifnumequal{\snk@diff}{0}{}{
+        \PackageWarning{sankey}%
+        {^^J*** Warning: bad sankey fork: %
+          \qty\space!=\space\snk@added@values(=\snk@tot)%
+          ^^J\snk@listofforks}
+      }
+      \ifdefempty{\snk@forkanchor}{
+        \edef\snk@forkanchor{\name.\snk@anchor}
+      }{}
+      \snk@getpos\snk@c{$(\snk@forkanchor) - (\pos)$}
+      \sankeynode{as=\name,at={$(\name) - (\snk@c)$}}
+      \foreach \snk@subnodeqty/\snk@subnodename in \snk@listofforks {
+        \sankeynode{as=\snk@subnodename,at={$(\snk@subnodename) - (\snk@c)$}}
+      }
+    }
+    \endgroup
+  }
+  \def\snk@makenode{
+    \begingroup
+    \snk@setnodeqty{\name}{\qty}
+    \edef\orient{\snk@normalize@angle{\orient}}
+    \snk@setnodeorient{\name}{\orient}
+    \ifundef{\snk@anchor}{\def\snk@anchor{center}}{}
+    \node[/sankey/@sankey node={\name}{\pos}{\snk@anchor}];
+    \endgroup
+  }
+  \def\snk@filldrawstart{
+    \begin{scope}[shift={(\name)},rotate=\orient]
+      \path[/sankey/fill] \snk@getstartfill{\snk@startstyle};
+      \path[/sankey/draw] \snk@getstartdraw{\snk@startstyle};
+    \end{scope}
+  }
+  \def\snk@filldrawend{
+    \begin{scope}[shift={(\name)},rotate=\sankeygetnodeorient{\name}]
+      \path[/sankey/fill] \snk@getendfill{\snk@endstyle};
+      \path[/sankey/draw] \snk@getenddraw{\snk@endstyle};
+    \end{scope}
+  }
+  \def\snk@checkquantities##1##2##3{
+    \begingroup
+    \edef\snk@qtyi{\sankeygetnodeqty{##1}}
+    \edef\snk@qtyii{\sankeygetnodeqty{##2}}
+    \ifdefstrequal{\snk@qtyi}{\snk@qtyii}{}{
+      \PackageError{sankey}%
+      {^^J*** \string##3: quantities differ between %
+        ##1 (\snk@qtyi) and ##2 (\snk@qtyii)%
+        ^^J}%
+      {The quantities of the two Sankey nodes must be equal.}
+    }
+    \endgroup
+  }
+  \NewDocumentCommand\sankeydubins{O{}mm}{% options, sn, en
+    \snk@errorifnotdefined{##2}
+    \snk@errorifnotdefined{##3}
+    \snk@checkquantities{##2}{##3}{\sankeydubins}
+    \begingroup
+    \sankeyset{##1}
+    \pgfmathsetmacro\qty{\sankeygetnodeqty{##2}}
+    \dubinspathset{
+      sankey/.style={
+        start point=##2.center,start angle=\sankeygetnodeorient{##2},
+        end point=##3.center,end angle=\sankeygetnodeorient{##3},
+        minimum radius=\snk@minradius + .5 * \sankeyqtytolen{\qty} pt,
+      },
+    }
+    \dubinspathcalc{sankey,store=sankey}
+    \dubinspathset{
+      left border/.style={
+        sankey, use store=sankey,
+        left and right minimum radii={\snk@minradius}
+        and {\snk@minradius + \sankeyqtytolen{\qty} pt},
+      },
+      right border/.style={
+        sankey, use store=sankey,
+        left and right minimum radii=
+        {\snk@minradius + \sankeyqtytolen{\qty} pt}
+        and {\snk@minradius},
+      },
+    }
+    % fill the region
+    \path[/sankey/fill] (##2.left)  \dubinspath{left border}
+    -- (##3.left) -- (##3.right) \dubinspath{right border,reverse}
+    -- (##2.right) -- cycle;
+    % draw left and right borders
+    \path[/sankey/draw] (##2.left) \dubinspath{left border}
+    (##2.right) \dubinspath{right border};
+    \endgroup
+  }
+  \NewDocumentCommand\sankeyoutin{O{}mm}{% options, sn, en
+    \snk@errorifnotdefined{##2}
+    \snk@errorifnotdefined{##3}
+    \snk@checkquantities{##2}{##3}{\sankeyoutin}
+    \begingroup
+    \sankeyset{##1}
+    \edef\qty{\sankeygetnodeqty{##2}}
+    \pgfmathsetmacro\snk@len{\sankeyqtytolen{\qty}/2}
+    \edef\snk@step{\fpeval{1/\snk@stepoutin}}
+    \edef\snk@laststep{\inteval{\snk@stepoutin-1}}
+    \path[overlay,decorate,decoration={
+      markings,
+      mark=between positions \snk@step and {\fpeval{1-.5*\snk@step}}
+      step \snk@step with {
+        \edef\snk@outinmidptname{%
+          snk@outinmidpt-%
+          \pgfkeysvalueof{/pgf/decoration/mark info/sequence number}%
+        }
+        \path
+        (0,0) coordinate(\snk@outinmidptname)
+        (0,-\snk@len pt) coordinate (\snk@outinmidptname-r)
+        (0,\snk@len pt) coordinate (\snk@outinmidptname-l)
+        ;
+      }
+    }]
+    (##2.center)
+    to[out=\sankeygetnodeorient{##2},in=\sankeygetnodeorient{##3}+180]
+    (##3.center);
+    \foreach \snk@ptnum in {1,...,\snk@laststep}{
+      \edef\snk@outinmidptname{snk@outinmidpt-\snk@ptnum}
+      \dbp@anglebetween\snk@outinmidptangle%
+      {\snk@outinmidptname-r}{\snk@outinmidptname-l}
+      \sankeynode[debug=false]{%
+        name=\snk@outinmidptname,
+        quantity=\qty,
+        angle=\snk@outinmidptangle-90,%
+        at=\snk@outinmidptname%
+      }
+    }
+    \sankeynode[debug=false]{%
+      name={snk@outinmidpt-0},
+      quantity=\sankeygetnodeqty{##2},
+      angle=\sankeygetnodeorient{##2},%
+      at={##2}%
+    }
+    \sankeynode[debug=false]{%
+      name={snk@outinmidpt-\snk@stepoutin},
+      quantity={\sankeygetnodeqty{##3}},
+      angle={\sankeygetnodeorient{##3}},%
+      at={##3}%
+    }
+    \path[/sankey/fill,looseness=1]
+    (snk@outinmidpt-0.left)
+    \foreach \snk@curpt
+    [remember=\snk@curpt as \snk@prevpt (initially 0)]
+    in {1,...,\snk@stepoutin}{
+      to[out=\sankeygetnodeorient{snk@outinmidpt-\snk@prevpt},
+      in=\sankeygetnodeorient{snk@outinmidpt-\snk@curpt}+180]
+      (snk@outinmidpt-\snk@curpt.left)
+    }
+    --
+    (snk@outinmidpt-\snk@stepoutin.right)
+    \foreach \snk@curpt
+    [remember=\snk@curpt as \snk@prevpt (initially \snk@stepoutin)]
+    in {\snk@laststep,...,0}{
+      to[out=\sankeygetnodeorient{snk@outinmidpt-\snk@prevpt}+180,
+      in=\sankeygetnodeorient{snk@outinmidpt-\snk@curpt}]
+      (snk@outinmidpt-\snk@curpt.right)
+    }
+    -- cycle;
+    \path[/sankey/draw,looseness=1]
+    (snk@outinmidpt-0.left)
+    \foreach \snk@curpt
+    [remember=\snk@curpt as \snk@prevpt (initially 0)]
+    in {1,...,\snk@stepoutin}{
+      to[out=\sankeygetnodeorient{snk@outinmidpt-\snk@prevpt},
+      in=\sankeygetnodeorient{snk@outinmidpt-\snk@curpt}+180]
+      (snk@outinmidpt-\snk@curpt.left)
+    }
+    (snk@outinmidpt-\snk@stepoutin.right)
+    \foreach \snk@curpt
+    [remember=\snk@curpt as \snk@prevpt (initially \snk@stepoutin)]
+    in {\snk@laststep,...,0}{
+      to[out=\sankeygetnodeorient{snk@outinmidpt-\snk@prevpt}+180,
+      in=\sankeygetnodeorient{snk@outinmidpt-\snk@curpt}]
+      (snk@outinmidpt-\snk@curpt.right)
+    };
+    \endgroup
+  }
+  \NewDocumentCommand\sankeynodealias{mm}{%name, alias
+    \snk@errorifnotdefined{##1}
+    \path[late options={name=##1,alias=##2}];
+    \snk@setnodeqty{##2}{\sankeygetnodeqty{##1}}
+    \snk@setnodeorient{##2}{\sankeygetnodeorient{##1}}
+  }
+  \NewDocumentCommand\sankeynode{O{}m}{% options, node parameters
+    \begingroup
+    \sankeyset{##1}
+    \sankeyset{node parameters,@initial parameters,/sankey/every node,##2}
+    \snk@makenode{}
+    \snk@makeforkednode{}
+    \iftoggle{sankey node start}{\snk@filldrawstart}{}
+    \iftoggle{sankey node end}{\snk@filldrawend}{}
+    \snk@show@debug{\name}
+    \endgroup
+  }
+  \NewDocumentCommand\sankeystart{O{}m}{% options, name
+    \snk@errorifnotdefined{##2}
+    \begingroup
+    \sankeyset{##1}
+    \edef\name{##2}
+    \edef\orient{\sankeygetnodeorient{##2}}
+    \edef\qty{\sankeygetnodeqty{##2}}
+    \snk@filldrawstart
+    \endgroup
+  }
+  \NewDocumentCommand\sankeynodestart{O{}m}{% option, node parameters
+    \sankeynode[##1]{start,##2}
+  }
+  \NewDocumentCommand\sankeyend{O{}m}{%options, name
+    \snk@errorifnotdefined{##2}
+    \begingroup
+    \sankeyset{##1}
+    \edef\name{##2}
+    \edef\orient{\sankeygetnodeorient{##2}}
+    \edef\qty{\sankeygetnodeqty{##2}}
+    \snk@filldrawend
+    \endgroup
+  }
+  \NewDocumentCommand\sankeynodeend{O{}m}{% options, node parameters
+    \sankeynode[##1]{end,##2}
+  }
+  \NewDocumentCommand\sankeyadvance{sO{}mm}{%
+    %params: *(reverse), options, name, distance
+    \snk@errorifnotdefined{##3}
+    \begingroup
+    \sankeyset{##2}
+    \edef\name{##3}
+    \edef\snk@oldname{##3-old}
+    \sankeynodealias{\name}{\snk@oldname}
+    \IfBooleanTF{##1}{
+      % move backward
+      \sankeynode{
+        at={$(\snk@oldname.center)!##4!90:(\snk@oldname.left)$},
+        angle=\sankeygetnodeorient{\snk@oldname},
+        quantity=\sankeygetnodeqty{\snk@oldname},
+        name=\name,
+      }
+      \path[/sankey/fill]
+      (\name.left) -- (\snk@oldname.left)
+      -- (\snk@oldname.right) -- (\name.right) -- cycle;
+      \path[/sankey/draw]
+      (\name.left) -- (\snk@oldname.left)
+      (\snk@oldname.right) -- (\name.right);
+    }{
+      % move forward
+      \sankeynode{
+        at={$(\snk@oldname.center)!##4!-90:(\snk@oldname.left)$},
+        angle=\sankeygetnodeorient{\snk@oldname},
+        quantity=\sankeygetnodeqty{\snk@oldname},
+        name=\name,
+      }
+      \path[/sankey/fill]
+      (\snk@oldname.left) -- (\name.left)
+      -- (\name.right) -- (\snk@oldname.right) -- cycle;
+      \path[/sankey/draw]
+      (\snk@oldname.left) -- (\name.left)
+      (\name.right) -- (\snk@oldname.right);
+    }
+    \snk@show@debug{\name}
+    \endgroup
+  }
+  \NewDocumentCommand\sankeyturnright{sO{}mm}{
+    % *(reverse), options, name, angle
+    \snk@errorifnotdefined{##3}
+    \begingroup
+    \IfBooleanTF{##1}
+    {\edef\snk@angle{\fpeval{-1*##4}}}
+    {\edef\snk@angle{\fpeval{1*##4}}}
+    \edef\snk@anglesign{\fpeval{sign(\snk@angle)}}
+    \ifnumgreater{\snk@anglesign}{-1}{
+      \sankeyset{##2}
+      \edef\name{##3}
+      \edef\snk@oldname{##3-old}
+      \sankeynodealias{\name}{\snk@oldname}
+      \edef\qty{\sankeygetnodeqty{\name}}
+      \edef\orient{\snk@normalize@angle{\sankeygetnodeorient{\name}-\snk@angle}}
+      \snk@getpos\snk@c{$(\name.right)!-\snk@minradius!(\name.left)$}
+      \snk@getpos\pos{$(\snk@c)!1!-\snk@angle:(\name.center)$}
+      \snk@makenode{}
+      % fill the region
+      \path[/sankey/fill] let
+      \p1=(\snk@oldname.left),\p2=(\snk@oldname.right),
+      \p3=(\name.left),\p4=(\name.right),
+      \n1={\sankeyqtytolen{\qty}},
+      \n{maxr}={\snk@minradius+\n1},
+      \n{minr}={\snk@minradius}
+      in
+      (\p1) arc(\orient+\snk@angle+90:\orient+90:\n{maxr}) -- (\p3) --
+      (\p4) arc(\orient+90:\orient+\snk@angle+90:\n{minr}) -- (\p2) -- cycle;
+      % draw left and right borders
+      \path[/sankey/draw] let
+      \p1=(\snk@oldname.left),\p2=(\snk@oldname.right),
+      \p3=(\name.left),\p4=(\name.right),
+      \n1={\sankeyqtytolen{\qty}},
+      \n{maxr}={\snk@minradius+\n1},
+      \n{minr}={\snk@minradius}
+      in
+      (\p1) arc(\orient+\snk@angle+90:\orient+90:\n{maxr})
+      (\p4) arc(\orient+90:\orient+\snk@angle+90:\n{minr});
+      \snk@show@debug{\name}
+    }{
+      \sankeyturnrightbackward[##2]{##3}{-1*\snk@angle}
+    }
+    \endgroup
+  }
+  \NewDocumentCommand\sankeyturnrightbackward{sO{}mm}{
+    % *(reverse), options, name, angle
+    \snk@errorifnotdefined{##3}
+    \begingroup
+    \IfBooleanTF{##1}
+    {\edef\snk@angle{\fpeval{-1*##4}}}
+    {\edef\snk@angle{\fpeval{1*##4}}}
+    \edef\snk@anglesign{\fpeval{sign(\snk@angle)}}
+    \ifnumgreater{\snk@anglesign}{-1}{
+      \sankeyset{##2}
+      \edef\name{##3}
+      \edef\snk@oldname{##3-old}
+      \sankeynodealias{\name}{\snk@oldname}
+      \edef\qty{\sankeygetnodeqty{\name}}
+      \edef\orient{\snk@normalize@angle{\sankeygetnodeorient{\name}+\snk@angle}}
+      \snk@getpos\snk@c{$(\name.right)!-\snk@minradius!(\name.left)$}
+      \snk@getpos\pos{$(\snk@c)!1!\snk@angle:(\name.center)$}
+      \snk@makenode{}
+      % fill the region
+      \path[/sankey/fill] let
+      \p1=(\name.left),\p2=(\name.right),
+      \p3=(\snk@oldname.left),\p4=(\snk@oldname.right),
+      \n1={\sankeyqtytolen{\qty}},
+      \n{maxr}={\snk@minradius+\n1}, \n{minr}={\snk@minradius}
+      in
+      (\p1) arc(\orient+90:\orient-\snk@angle+90:\n{maxr}) -- (\p3) --
+      (\p4) arc(\orient-\snk@angle+90:\orient+90:\n{minr}) -- (\p2) -- cycle;
+      % draw left and right borders
+      \path[/sankey/draw] let
+      \p1=(\name.left),\p2=(\name.right),
+      \p3=(\snk@oldname.left),\p4=(\snk@oldname.right),
+      \n1={\sankeyqtytolen{\qty}},
+      \n{maxr}={\snk@minradius+\n1}, \n{minr}={\snk@minradius}
+      in
+      (\p1) arc(\orient+90:\orient-\snk@angle+90:\n{maxr})
+      (\p4) arc(\orient-\snk@angle+90:\orient+90:\n{minr});
+      \snk@show@debug{\name}
+    }{
+      \sankeyturnright[##2]{##3}{-1*\snk@angle}
+    }
+    \endgroup
+  }
+  \NewDocumentCommand\sankeyturnleft{sO{}mm}{
+    % *(reverse), options, name, angle
+    \snk@errorifnotdefined{##3}
+    \begingroup
+    \IfBooleanTF{##1}
+    {\edef\snk@angle{\fpeval{-1*##4}}}
+    {\edef\snk@angle{\fpeval{1*##4}}}
+    \edef\snk@anglesign{\fpeval{sign(\snk@angle)}}
+    \ifnumgreater{\snk@anglesign}{-1}{
+      \sankeyset{##2}
+      \edef\name{##3}
+      \edef\snk@oldname{##3-old}
+      \sankeynodealias{\name}{\snk@oldname}
+      \edef\qty{\sankeygetnodeqty{\name}}
+      \edef\orient{\snk@normalize@angle{\sankeygetnodeorient{\name}+\snk@angle}}
+      \snk@getpos\snk@c{$(\name.left)!-\snk@minradius!(\name.right)$}
+      \snk@getpos\pos{$(\snk@c)!1!\snk@angle:(\name.center)$}
+      \snk@makenode{}
+      % fill the region
+      \path[/sankey/fill] let
+      \p1=(\snk@oldname.left),\p2=(\snk@oldname.right),
+      \p3=(\name.left),\p4=(\name.right),
+      \n1={\sankeyqtytolen{\qty}},
+      \n{maxr}={\snk@minradius+\n1}, \n{minr}={\snk@minradius}
+      in
+      (\p1) arc(\orient-\snk@angle-90:\orient-90:\n{minr}) -- (\p3) --
+      (\p4) arc(\orient-90:\orient-\snk@angle-90:\n{maxr}) -- (\p2) -- cycle;
+      % draw left and right borders
+      \path[/sankey/draw] let
+      \p1=(\snk@oldname.left),\p2=(\snk@oldname.right),
+      \p3=(\name.left),\p4=(\name.right),
+      \n1={\sankeyqtytolen{\qty}},
+      \n{maxr}={\snk@minradius+\n1}, \n{minr}={\snk@minradius}
+      in
+      (\p1) arc(\orient-\snk@angle-90:\orient-90:\n{minr})
+      (\p4) arc(\orient-90:\orient-\snk@angle-90:\n{maxr});
+      \snk@show@debug{\name}
+    }{
+      \sankeyturnleftbackward[##2]{##3}{-1*\snk@angle}
+    }
+    \endgroup
+  }
+  \NewDocumentCommand\sankeyturnleftbackward{sO{}mm}{
+    % *(reverse), options, name, angle
+    \snk@errorifnotdefined{##3}
+    \begingroup
+    \IfBooleanTF{##1}
+    {\edef\snk@angle{\fpeval{-1*##4}}}
+    {\edef\snk@angle{\fpeval{1*##4}}}
+    \edef\snk@anglesign{\fpeval{sign(\snk@angle)}}
+    \ifnumgreater{\snk@anglesign}{-1}{
+      \sankeyset{##2}
+      \edef\name{##3}
+      \edef\snk@oldname{##3-old}
+      \sankeynodealias{\name}{\snk@oldname}
+      \edef\qty{\sankeygetnodeqty{\name}}
+      \edef\orient{\snk@normalize@angle{\sankeygetnodeorient{\name}-\snk@angle}}
+      \snk@getpos\snk@c{$(\name.left)!-\snk@minradius!(\name.right)$}
+      \snk@getpos\pos{$(\snk@c)!1!-\snk@angle:(\name.center)$}
+      \snk@makenode{}
+      % fill the region
+      \path[/sankey/fill] let
+      \p1=(\name.left),\p2=(\name.right),
+      \p3=(\snk@oldname.left),\p4=(\snk@oldname.right),
+      \n1={\sankeyqtytolen{\qty}},
+      \n{maxr}={\snk@minradius+\n1}, \n{minr}={\snk@minradius}
+      in
+      (\p1) arc(\orient-90:\orient+\snk@angle-90:\n{minr}) -- (\p3) --
+      (\p4) arc(\orient+\snk@angle-90:\orient-90:\n{maxr}) -- (\p2) -- cycle;
+      % draw left and right borders
+      \path[/sankey/draw] let
+      \p1=(\name.left),\p2=(\name.right),
+      \p3=(\snk@oldname.left),\p4=(\snk@oldname.right),
+      \n1={\sankeyqtytolen{\qty}},
+      \n{maxr}={\snk@minradius+\n1}, \n{minr}={\snk@minradius}
+      in
+      (\p1) arc(\orient-90:\orient+\snk@angle-90:\n{minr})
+      (\p4) arc(\orient+\snk@angle-90:\orient-90:\n{maxr});
+      \snk@show@debug{\name}
+    }{
+      \sankeyturnleft[##2]{##3}{-1*\snk@angle}
+    }
+    \endgroup
+  }
+  \NewDocumentCommand\sankeyturn{sO{}mm}{%
+    % *(reverse), options, name, angle
+    \snk@errorifnotdefined{##3}
+    \begingroup
+    \edef\snk@anglesign{\fpeval{sign(##4)}}
+    \IfBooleanTF{##1}{
+      \ifnumgreater{\snk@anglesign}{-1}
+      {\sankeyturnleftbackward[##2]{##3}{##4}}
+      {\sankeyturnrightbackward[##2]{##3}{-1*##4}}
+    }{
+      \ifnumgreater{\snk@anglesign}{-1}
+      {\sankeyturnleft[##2]{##3}{##4}}
+      {\sankeyturnright[##2]{##3}{-1*##4}}
+    }
+    \endgroup
+  }
+  \NewDocumentCommand\sankeyfork{O{}mm}{%options, name, list of forks
+    \snk@errorifnotdefined{##2}
+    \begingroup
+    \sankeyset{##1}
+    \sankeynode[debug=false]{as={##2},forked={##3}}
+    \foreach \qty/\snk@subnodename in {##3}{\sankeynode{as={\snk@subnodename}}}
+    \endgroup
+  }
+  \def\sankeyqtytolen##1{\fpeval{(##1)/\snk@totalqty*\snk@totallen}}
+  \sankeyset{
+    @initial options,
+    every diagram,
+    % user values
+    #1}
+}
+{} % empty but mandatory ! :-)
+\sankeyset{
+  new start style={none}{}{},
+  new end style={none}{}{},
+}
+\sankeyset{
+  new start style={simple}{
+    (\name.left) -- ([xshift=-.5\pgflinewidth]\name.left)
+    -- ([xshift=-.5\pgflinewidth]\name.right) -- (\name.right) -- cycle
+  }{
+    (\name.left) -- ([xshift=-.5\pgflinewidth]\name.left)
+    -- ([xshift=-.5\pgflinewidth]\name.right) -- (\name.right)
+  },
+  new end style={simple}{
+    (\name.left) -- ([xshift=2mm]\name.center)
+    -- (\name.right) -- cycle
+  }{
+    (\name.left)  -- ([xshift=2mm]\name.center) -- (\name.right)
+  },
+}
+\sankeyset{
+  new start style={arrow}{
+    (\name.left) -- ++(-10pt,0) -- ([xshift=-10pt/6]\name.center)
+    -- ([xshift=-10pt]\name.right) -- (\name.right) -- cycle
+  }{
+    (\name.left) -- ++(-10pt,0) -- ([xshift=-10pt/6]\name.center)
+    -- ([xshift=-10pt]\name.right) -- (\name.right)
+  },
+  new end style={arrow}{
+    (\name.left) -- ([yshift=1mm]\name.left)
+    -- ([xshift=10pt]\name.center) -- ([yshift=-1mm]\name.right)
+    -- (\name.right) -- cycle
+  }{
+    (\name.left) -- ([yshift=1mm]\name.left)
+    -- ([xshift=10pt]\name.center) -- ([yshift=-1mm]\name.right)
+    -- (\name.right)
+  },
+}
+\endinput
+%%
+%% End of file `sankey.sty'.

@@ -1,0 +1,395 @@
+\ProvidesFile{biblatex-jura2.bbx}[2019/12/28 v0.3]
+% biblatex-jura2 is released under the LaTeX Project Public License v1.3c or later.
+
+\RequireBibliographyStyle{ext-authortitle-ibid}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Globale Änderungen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Keine Ausgabe des Verlags
+\AtEveryBibitem{\clearlist{publisher}}
+
+%%% Keine Ausgabe des Ortes
+%\AtEveryBibitem{\clearlist{location}}
+
+%%% Im Literaturverzeichnis Doppelpunkt nach Namen, kein Punkt
+% nicht:\renewcommand*{\labelnamepunct}{\addcolon\space} 
+\DeclareDelimFormat[bib]{nametitledelim}{\addcolon\space} 
+
+%%% Kein Punkt am Ende des Eintrags im LitVZ
+%\renewcommand{\finentrypunct}{}
+
+%%% kein Punkt vor Addendum
+\renewbibmacro*{addendum+pubstate}{%
+  \iffieldundef{addendum}
+    {\newunit\newblock
+     \printfield{pubstate}}
+    {\setunit{\space}%
+     \printfield{addendum}%
+     \newunit\newblock
+     \printfield{pubstate}}}
+
+%%% kein Punkt nach Addendum
+%\renewcommand*{\finentrypunct}{%
+%  \iffieldundef{addendum}%
+%    {\addperiod}%
+%    {}%
+%  }
+
+%%% 'Auflage' statt 'Aufl.'
+%\DefineBibliographyStrings{german}{%
+%  edition = {\ifbibliography{Auflage}{Aufl\adddot}},%
+%}%
+
+%%% Kein Komma zwischen Ort und Datum
+\renewcommand*{\locdatedelim}{\addspace}
+
+%%% Einheitlicher Strich
+%\renewcommand*\bibnamedash{\mbox{\textemdash\space\space}}
+
+% URLs nicht mit Monospace-Font
+%\urlstyle{rm}
+%\renewcommand{\UrlFont}{\small\sffamily}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Änderungen betr. book
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% AUS ext-standard.bbx (STAND: DEZEMBER 2019)
+\DeclareBibliographyDriver{book}{% 
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/editor+others/translator+others}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{maintitle+title}%
+  \newunit
+  \printlist{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \usebibmacro{edition}%
+  \printunit*{\addcomma\space}% NEU
+  %\iffieldundef{edition}%  NEU für Komma nach Aufl.
+  %  {}%                    NEU 
+  %  {\addcomma}%           NEU
+  \newunit
+  \iffieldundef{maintitle}
+    {\printfield{volume}%
+     \printfield{part}}
+    {}%
+  \newunit
+  \usebibmacro{barevolume+volumes}%
+  \newunit\newblock
+  \usebibmacro{series+number}%
+  \newunit\newblock
+  \printfield{note}%
+  \newunit\newblock
+  \usebibmacro{publisher+location+date}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit
+  \printfield{pagetotal}%
+  \newunit\newblock
+  \usebibmacro{isbn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Änderungen betr. 'article'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Seitenzahl im Literaturverzeichnis ohne "S. "
+\DeclareFieldFormat[article]{pages}{#1}
+
+%%% 'journal' im Literaturverzeichnis nicht kursiv
+\DeclareFieldFormat[article]{journaltitle}{#1\isdot}
+
+%%% Titel ohne Anführungszeichen 
+\DeclareFieldFormat[article]{title}{#1} 
+
+%%% Klammer ums Jahr, wenn 'volume' angegeben
+\renewbibmacro*{issue+date}{%
+  \iffieldundef{volume}
+    {\printfield{issue}%
+    \setunit*{\addspace}%
+    \usebibmacro{date}}
+    {\printtext[parens]{%
+      \printfield{issue}%
+      \setunit*{\addspace}%
+      \usebibmacro{date}}}%
+  \newunit}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Definition von 'commentary'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newtoggle{tnbcbx@citedbytitle}
+\DeclareEntryOption[boolean]{citedbytitle}[true]{\settoggle{tnbcbx@citedbytitle}{#1}}
+\DeclareBibliographyOption[boolean]{citedbytitle}[true]{\settoggle{tnbcbx@citedbytitle}{#1}}
+\DeclareTypeOption[boolean]{citedbytitle}[true]{\settoggle{tnbcbx@citedbytitle}{#1}}
+
+\DeclareBibliographyDriver{commentary}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \iftoggle{tnbcbx@citedbytitle}%  
+    {\usebibmacro{maintitle+title}\newunit\newblock}%
+    {\usebibmacro{author/editor+others/translator+others}%
+     \setunit{\printdelim{nametitledelim}}\newblock%
+     \usebibmacro{maintitle+title}%
+     \newunit\newblock}%
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \printfield{edition}%
+  %\newunit
+  %\usebibmacro{location+date}%
+  \setunit*{\addcomma\space}%
+  \printlist{location}%
+  \setunit*{\space}%
+  \usebibmacro{date}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}%
+  \newblock
+  \usebibmacro{finentry}}
+
+%%% 'editortype' in Klammern
+\DeclareFieldFormat[commentary]{editortype}{%
+  %\iffieldequalstr{citedby}{title}%
+  \iftoggle{tnbcbx@citedbytitle}%  
+    {#1}%
+    {\mkbibparens{#1}}%
+  }%
+
+%%% Titel nicht kursiv
+\DeclareFieldFormat[commentary]{maintitle}{%
+  %\iffieldequalstr{citedby}{title}%
+  \iftoggle{tnbcbx@citedbytitle}%  
+    {\mkbibemph{#1}}%
+    {\normalfont{#1}}%
+  }
+\DeclareFieldFormat[commentary]{title}{%
+  \ifboolexpr{%
+    test {\iffieldundef{maintitle}}%
+    and
+    test {\iftoggle{tnbcbx@citedbytitle}}}%
+  {{\mkbibemph{#1}}}%
+  {\normalfont{#1}}%
+}
+
+%\DeclareFieldFormat[commentary]{title}{\normalfont{#1}}
+
+%%% Doppelpunkt nach 'editortype'
+% Neudefinition mit \DeclareDelimFormat funktioniert nicht
+\renewcommand*{\editortypedelim}{%
+  \ifentrytype{commentary}%
+    {\space}%
+    {\addcomma\space}%
+  }%
+
+%%% AUS biblatex.def (STAND: DEZEMBER 2019)
+\DeclareSortingTemplate{nty}{
+  \sort{
+    \field{presort}
+  }
+  \sort[final]{
+    \field{sortkey}
+  }
+  \sort{
+    \field{sortname}
+    \field{shorthand}% NEU
+    \field{author}
+    \field{editor}
+    \field{translator}
+    \field{sorttitle}
+    \field{maintitle}% NEU
+    \field{title}
+  }
+  \sort{
+    \field{sorttitle}
+    \field{maintitle}% NEU
+    \field{title}
+  }
+  \sort{
+    \field{sortyear}
+    \field{year}
+  }
+  \sort{
+    \field{volume}
+    \literal{0}
+  }
+}
+
+%%% Kommentare: zitiert als Option 
+
+\newtoggle{tnbcbx@howcited}
+\DeclareEntryOption[boolean]{howcited}[true]{\settoggle{tnbcbx@howcited}{#1}}
+\DeclareBibliographyOption[boolean]{howcited}[true]{\settoggle{tnbcbx@howcited}{#1}}
+\DeclareTypeOption[boolean]{howcited}[true]{\settoggle{tnbcbx@howcited}{#1}}
+
+\newtoggle{tnbcbx@bearbeiterin}
+\DeclareEntryOption[boolean]{bearbeiterin}[true]{\settoggle{tnbcbx@bearbeiterin}{#1}}
+\DeclareBibliographyOption[boolean]{bearbeiterin}[true]{\settoggle{tnbcbx@bearbeiterin}{#1}}
+\DeclareTypeOption[boolean]{bearbeiterin}[true]{\settoggle{tnbcbx@bearbeiterin}{#1}}
+
+\newbibmacro{howcited}{%
+  \iftoggle{tnbcbx@howcited}%
+    {\iffieldundef{shorthand}%
+      {}%
+      {\setunit{\addspace}%
+      \iftoggle{tnbcbx@bearbeiterin}
+        {\iffieldundef{shorthand}
+          {}%
+          {\setunit{\addspace}%
+          \printtext[parens]{%
+            \bibstring{zitiertals}%
+            \setunit{\space}%
+            \bibstring[\emph]{bearbeiter}%
+            \setunit{\space}%
+            \bibstring{kommentarin}\addspace%
+            \printfield{shorthand}%
+            }%
+          }%
+        }%
+        {\iffieldundef{shorthand}%
+          {}%
+          {\setunit{\addspace}%
+          \printtext[parens]{%
+            \bibstring{zitiertals}%
+            %\setunit{\addcolon\space}%
+            \setunit{\space}%
+            \printfield{shorthand}%
+            \setunit{\addslash}%
+            \bibstring[\emph]{bearbeiter}%
+            }%
+          }%
+        }%
+      }%
+    {}%
+  }%
+}%
+
+\renewbibmacro{finentry}{%
+  \ifentrytype{commentary}{%
+    \usebibmacro{howcited}\newunit\newblock}%
+    {}%
+  \ifentrytype{incollection}{%
+    \usebibmacro{fshowcited}\newunit\newblock}%
+    {}%
+  \ifentrytype{online}{%
+    \usebibmacro{fshowcited}\newunit\newblock}%
+    {}%
+  \finentry}%
+
+\NewBibliographyString{bearbeiter}
+\NewBibliographyString{zitiertals}
+\NewBibliographyString{kommentarin}
+\DefineBibliographyStrings{ngerman}{
+  zitiertals = {zit. als},
+  bearbeiter = {Bearbeiter},
+  kommentarin = {in}, 
+}
+\DefineBibliographyStrings{german}{
+  zitiertals = {zit. als},
+  bearbeiter = {Bearbeiter},
+  kommentarin = {in}, 
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Änderungen betr. 'incollection'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Titel nicht kursiv
+\DeclareFieldFormat[incollection]{booktitle}{\normalfont{#1}} 
+\DeclareFieldFormat[incollection]{title}{\normalfont{#1}}
+
+%%% editor für incollection nicht kursiv
+\DeclareNameWrapperFormat{sortnamenorm}{\mkbibemph{#1}}
+\DeclareNameAlias[incollection]{editor}{sortname}
+\DeclareNameWrapperAlias[incollection]{editor}{sortnamenorm}
+
+\newtoggle{tnbcbx@fshowcited}
+\DeclareEntryOption[boolean]{fshowcited}[true]{\settoggle{tnbcbx@fshowcited}{#1}}
+\DeclareBibliographyOption[boolean]{fshowcited}[true]{\settoggle{tnbcbx@fshowcited}{#1}}
+\DeclareTypeOption[boolean]{fshowcited}[true]{\settoggle{tnbcbx@fshowcited}{#1}}
+
+\newbibmacro{fshowcited}{%
+  \iftoggle{tnbcbx@fshowcited}
+    {\iffieldundef{shorttitle}
+       {}
+       {\setunit{\addspace}%
+        \printtext[parens]{%
+          \bibstring{zitiertals}%
+          \setunit{\space}%
+          \printfield{shorttitle}%          
+          }}}%
+    {}}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Änderungen betr. 'online' und andere
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\DeclareFieldFormat[online]{title}{%
+  \iffieldundef{author}%
+    {#1}%    
+    {\mkbibemph{#1}}%
+  }%
+
+\DefineBibliographyStrings{german}{%
+  urlseen = {zuletzt besucht am}}
+
+\DeclareFieldFormat[misc]{title}{#1}
+
+\DeclareFieldFormat[report]{title}{%
+  \iffieldundef{author}%
+    {#1}%
+    {\mkbibemph{#1}}%
+  }%
+
+\DeclareFieldFormat[report]{subtitle}{#1}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Änderungen betr. 'jurisdiction'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\DeclareStyleSourcemap{
+  \maps[datatype=bibtex]{
+  \map[overwrite=false]{
+    \pertype{jurisdiction}
+    \step[fieldsource=gericht,
+          fieldtarget=institution]
+    \step[fieldsource=dokumententyp,
+          fieldtarget=usera]
+    \step[fieldsource=entscheidungsdatum,
+          fieldtarget=date]
+    \step[fieldsource=aktenzeichen,
+          fieldtarget=userb]
+    \step[fieldsource=datenbank,
+          fieldtarget=userc]
+    \step[fieldsource=fundstelle,
+          fieldtarget=userd]
+    \step[fieldsource=ecli,
+          fieldtarget=usere]
+    \step[fieldsource=entscheidungsname,
+          fieldtarget=userf]
+  }}}
+
+
+\endinput

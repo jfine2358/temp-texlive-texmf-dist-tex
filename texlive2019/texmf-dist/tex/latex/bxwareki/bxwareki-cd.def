@@ -1,0 +1,409 @@
+%%
+%% This is file 'bxwareki-cd.def'.
+%%
+%% Copyright (c) 2018 Takayuki YATO (aka. "ZR")
+%%   GitHub:   https://github.com/zr-tex8r
+%%   Twitter:  @zr_tex8r
+%%
+%% This package is distributed under the MIT License.
+%%
+
+% Note: This file must be encoded in UTF-8.
+
+%% file declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesFile{bxwareki-cd.def}[2018/10/01 v0.4]
+
+\ifbxwy@epTeXinputencoding@ok
+  \epTeXinputencoding utf8
+\fi
+
+%% branch for download mode
+\ifbxwy@download
+  \long\def\bxwy@next#1\bxwy@download{}
+  \expandafter\bxwy@next
+\fi
+
+%--------------------------------------- helpers
+
+%% \bxwy@burst-`>...
+\let\bxwy@burst\romannumeral
+
+%% \bxwy@cond\ifXXX...\fi{<true>}{<false>}
+\@gobbletwo\if\if \def\bxwy@cond#1\fi{%
+  #1\expandafter\@firstoftwo \else \expandafter\@secondoftwo \fi}
+
+%% \bxwy@catch@mk...\bxwy@mk
+\def\bxwy@catch@mk#1\bxwy@mk{#1}
+
+%--------------------------------------- kanji numerals
+
+%% \bxwy@Jkansuji{<number>}
+% The kansuji-by-reading with use of ten-composites (廿, 卅).
+% NB. Only valid in range 0..99; otherwise fallback to \bxwy@jkansuji.
+\def\bxwy@Jkansuji#1{%
+  \expandafter\bxwy@Jkansuji@a\number#1\bxwy@mk}
+\def\bxwy@Jkansuji@a#1\bxwy@mk{%
+  \ifnum#1<\bxwy@jk@x
+    \bxwy@jkansuji@a#1\bxwy@mk
+  \else\ifnum#1<\bxwy@jk@c
+    \bxwy@Jkansuji@b#1%
+  \else
+    \bxwy@jkansuji@a#1\bxwy@mk
+  \fi\fi}
+\def\bxwy@Jkansuji@b#1#2{%
+  \ifcase#1\relax \or 十\or 廿\or 卅%
+  \else \csname bxwy@jcd/#1\endcsname 十%
+  \fi
+  \ifnum#2>\z@ \csname bxwy@jcd/#2\endcsname \fi}
+
+%--------------------------------------- custom date format
+
+%% \warekicustomdate{<options>}
+% Renders the date in the form specified by the options.
+% [calendar] def. seireki; w = wareki;
+% [numerals] def. western numerals; k = kansuji; j = kansuji-by-reading;
+%   J = kansuji-by-reading, with ten-composites (廿, 卅);
+% [month names] def. by numbers; o = 異名 (old month names);
+%   O = Izumo-style 異名 (use 神在月 instead of 神無月);
+\def\warekicustomdate#1{%
+  \bxwy@custom@date@parse@opt{#1}\bxwy@custom@date@a}
+\def\bxwy@custom@date@a#1{%
+  \expandafter\bxwy@custom@date@b\bxwy@date#1}
+\def\bxwy@custom@date@b#1#2#3#4#5#6{%
+  % y,m,d,calendar,numerals,monthname
+  \if \ifx\warekigengo\@empty-\else#4\fi w% wareki
+    \warekigengo
+    \ifnum\c@warekiyear=\@ne 元%
+    \else \bxwy@custom@date@number#5\c@warekiyear
+    \fi
+  \else % seireki
+    \if#5-#1\bxwy@S% western
+    \else \bxwy@kansuji{#1}% kansuji/-j/-J
+    \fi
+  \fi
+  年%
+  \if#6-\bxwy@custom@date@number#5{#2}月% month by number
+  \else \bxwy@custom@date@month#6{#2}% month name
+  \fi
+  \bxwy@custom@date@number#5{#3}日}
+\def\bxwy@custom@date@number#1#2{%
+  \if#1k\bxwy@kansuji{#2}% kansuji
+  \else\if#1j\bxwy@jkansuji{#2}% kansuji-j
+  \else\if#1J\bxwy@Jkansuji{#2}% kansuji-J
+  \else % western
+    \bxwy@S \expandafter\bxwy@catch@mk\number#2\bxwy@mk \bxwy@S
+  \fi\fi\fi}
+\def\bxwy@custom@date@month#1#2{%
+  \ifnum#2=\z@\else\ifcase#2\relax
+    \or 睦月\or 如月\or 弥生\or 卯月\or 皐月\or 水無月%
+    \or 文月\or 葉月\or 長月%
+    \or \if#1O神在月\else 神無月\fi
+    \or 霜月\or 師走%
+  \fi\fi}
+
+%% \bxwy@custom@date@parse@opt{<options>}\CScont
+\def\bxwy@custom@date@parse@opt#1{%
+  \bxwy@cd@parse@opt@a#1\bxwy@mk---}
+\def\bxwy@cd@parse@opt@a{%
+  \expandafter\bxwy@cd@parse@opt@b\bxwy@burst-`>}
+\def\bxwy@cd@parse@opt@b#1{%
+  \bxwy@cond\ifx#1\bxwy@mk\fi{\bxwy@cd@parse@opt@f}{%
+    \expandafter\bxwy@cd@parse@opt@c\csname bxwy@cdpo@@#1\endcsname}}
+\def\bxwy@cd@parse@opt@c#1{%
+  \bxwy@cond\ifx#1\relax\fi{\bxwy@cd@parse@opt@a}{%
+    \bxwy@cd@parse@opt@d#1}}
+\def\bxwy@cd@parse@opt@d#1#2\bxwy@mk#3#4#5{%
+  \expandafter\bxwy@cd@parse@opt@e\bxwy@burst-`>#1#3#4#5{#2}}
+\def\bxwy@cd@parse@opt@e#1#2#3#4{%
+  \bxwy@cd@parse@opt@a#4\bxwy@mk#1#2#3}
+\def\bxwy@cd@parse@opt@f#1#2#3#4{%
+  #4{#1#2#3}}
+%
+\def\bxwy@cdpo@@w#1#2#3{w#2#3}
+\def\bxwy@cdpo@@k#1#2#3{#1k#3}
+\def\bxwy@cdpo@@j#1#2#3{#1j#3}
+\def\bxwy@cdpo@@J#1#2#3{#1J#3}
+\def\bxwy@cdpo@@o#1#2#3{#1#2o}
+\def\bxwy@cdpo@@O#1#2#3{#1#2O}
+
+%--------------------------------------- special procedure for LuaTeX
+\ifx\bxwy@new@gengo\@empty \ifnum\bxwy@engine=5
+
+% The process below tries to guess the name of the new gengo
+% from the result of os,date().
+\begingroup
+  \catcode`\~=12 \let\0\relax \let\1\relax \let\2\relax
+  \directlua{
+    if not bxwareki then bxwareki = {} end
+    local os = bxwareki.os or os
+    function bxwareki.get_new_gengo()
+      local lc_time = nil
+      local ok, ret = pcall(function()
+        assert(os.type == "unix")
+        lc_time = os.setlocale(nil, "time")
+        assert(os.setlocale("ja_JP.utf8", "time") or
+          os.setlocale("ja_JP.UTF-8", "time"))
+        local heisei = "\229\185\179\230\136\144"
+        local kanji = "[\228-\233][\128-\191][\128-\191]"
+        local gh = os.date("\037EC", 1500000000)
+        local gn = os.date("\037EC", 1600000000)
+        assert(gh == heisei and gn ~= heisei and
+          gn:match("^"..kanji..kanji.."$"))
+        return gn
+      end)
+      os.setlocale(lc_time, "time")
+      return ok and ret or ""
+    end}
+  \toks@{}
+  \directlua{pcall(function()
+    tex.toks[0] = bxwareki.get_new_gengo()
+  end)}
+  \xdef\bxwy@new@gengo{\the\toks@}
+\endgroup
+
+\fi\fi
+%--------------------------------------- all done
+\endinput
+%=======================================
+\bxwy@download
+\begingroup
+\catcode`\^^A=14 \catcode`\^^\=0 \catcode`\^^[=1 \catcode`\^^]=2
+\endlinechar=10 \catcode10=12 \catcode96=7 \let\do\@makeother
+\dospecials``\directlua``[``A
+local ok, retcode = pcall(function()
+---------------------------------------- shell availability check
+local ok = false
+if ((status and status.luatex_version) or 0) >= 68 then
+  ok = (os.execute() == 1)
+end
+if not ok then return 2 end
+---------------------------------------- preparations
+local url = 'https://raw.githubusercontent.com/zr-tex8r/BXwareki/master/bxwareki2019.def'
+local fdef = 'bxwareki2019.def'
+io.stderr:write("\n\n//////// START BXWAREKI DOWNLOAD PROCEDURE ////////\n")
+local function log(s)
+  io.stderr:write("bxwareki: ", s, "\n")
+end
+local function info(f, ...) log(f:format(...)) end
+local function finish(s, ...) info(...); return s end
+---------------------------------------- 'zrget' module
+zrget = (function(M)
+  -- parameters
+  M.max_trial = M.max_trial  or 3
+  M.interval  = M.interval   or 1 -- second
+  M.log       = M.log        or true
+
+  -- helpers
+  local lfs = require 'lfs'
+  local socket = require 'socket'
+  local tempb = '__zrget'
+  local win = (lfs.attributes('C:\\NUL', 'mode') ~= nil)
+  local function upath(pth)
+    return (win) and pth:gsub('\\', '/') or pth
+  end
+  local function npath(pth)
+    return (win) and pth:gsub('/', '\\') or pth
+  end
+  local function mpath(...)
+    return table.concat({...}, (win) and '\\' or '/')
+  end
+  local function log_print(s)
+    io.stderr:write("zrget: ", s, "\n")
+  end
+  local function log(fmt, ...)
+    if not M.log then return end
+    local l = (type(M.log) == 'function') and M.log or log_print
+    l(tostring(fmt):format(...))
+  end
+  local function file_ok(pth)
+    return ((lfs.attributes(pth, 'size') or 0) > 0)
+  end
+  local function execute(clfmt, ...)
+    local cl = clfmt:format(...)
+    if M.verbose then log("RUN: %s", cl) end
+    local ok = os.execute(cl)
+    return (ok == true) or (ok == 0)
+  end
+  local badbin = '*'
+  local function exefile(pth)
+    pth = npath(pth..(win and '.exe' or ''))
+    return (file_ok(pth) or nil) and pth
+  end
+  local function validate(vprc, pth)
+    if not file_ok(pth) then return false end
+    local h = io.open(pth, 'rb')
+    local d = h and h:read('*a')
+    if h then h:close() end
+    local r = d and (not vprc or vprc(d))
+    if not r then log("Validation failure") end
+    return r
+  end
+
+  -- TeXLive stuffs
+  local kpse
+  pcall(function()
+    kpse = require 'kpse'
+    kpse.set_program_name('luatex')
+  end)
+  local tlpkg = kpse and kpse.var_value('SELFAUTOPARENT')
+  tlpkg = tlpkg and tlpkg..'/tlpkg'
+  local tlwget = tlpkg and exefile(tlpkg..'/installer/wget/wget')
+  local tlperl = tlpkg and exefile(tlpkg..'/tlperl/bin/perl')
+
+  -- methods
+  local fcout, fcerr, ftdst =
+      tempb..'-1.out', tempb..'-2.out', tempb..'-0.bin'
+  local method_list = {
+    {
+      name = 'wget';
+      checker = 'wget --version'; check_tag = 'Wget';
+      loader = function(src)
+        return execute('wget -q --no-check-certificate "%s" -O %s 2>%s',
+            src, ftdst, fcerr)
+      end
+    },
+    {
+      name = 'curl';
+      checker = 'curl --version'; check_tag = 'curl';
+      loader = function(src)
+        return execute('curl -k -s "%s" -o %s 2>%s',
+            src, ftdst, fcerr)
+      end
+    },
+    {
+      name = 'tl-wget';
+      checker = tlwget and tlwget..' --version'; check_tag = 'Wget';
+      loader = function(src)
+        return execute('%s -q --no-check-certificate "%s" -O %s 2>%s',
+            tlwget, src, ftdst, fcerr)
+      end
+    },
+    {
+      name = 'powershell';
+      checker = 'powershell -Help'; check_tag = 'PowerShell';
+      loader = function(src)
+        return execute('powershell -Command Invoke-WebRequest '..
+            '"%s" -OutFile %s 2>%s',
+            src, ftdst, fcerr)
+      end
+    },
+--[[
+    {
+      name = 'tl-perl';
+      checker = tlperl and tlperl..' --version'; check_tag = '?Perl';
+      loader = function(src)
+        return false -- TODO: make it
+      end
+    },
+]]
+  }
+
+  -- main procedure
+  function M.download(url, dst, vprc)
+    url = tostring(url):gsub('[\1-\31 \"\'<>\\`{|}]',
+      function(s) return ('%%%02X'):format(string.byte(s)) end)
+    if file_ok(dst) then
+      log("File '%s' already exists", dst)
+      return false
+    end
+    os.remove(dst)
+    --
+    local done = false
+    for tc = 1, M.max_trial do
+      for _, mth in ipairs(method_list) do
+        repeat
+          if not mth.checker or mth.pass then break end
+          log("Try method '%s'...(%s)", mth.name, tc)
+          -- check
+          execute('%s 1>%s 2>%s', mth.checker, fcout, fcerr)
+          local hso = io.open(fcout, 'rb')
+          local p = (hso and hso:read('*a') or ''):find(mth.check_tag, 1, true)
+          hso:close()
+          if not p then
+            log("Method '%s' is not available", mth.name)
+            mth.pass = true
+            break
+          end
+          -- download
+          log("Try downloading...")
+          os.remove(ftdst)
+          if mth.loader(url) and validate(vprc, ftdst) then
+            done = true; break
+          end
+          socket.sleep(M.interval)
+          os.remove(ftdst)
+        until true
+        if done then break end
+      end
+      if done then break end
+    end
+    --
+    if done then
+      os.rename(ftdst, dst)
+      log("File '%s' is successfully downloaded", dst)
+    else
+      log("File '%s' cannot be downloaded", dst)
+    end
+    --
+    for _, f in ipairs {ftdst, fcerr, fcout} do
+      os.remove(f)
+    end
+    return done
+  end
+
+  return M
+end)({})
+---------------------------------------- make directory
+if kpse.find_file(fdef, 'tex', true) then
+  return finish(0, "File '%s' already exists.", fdef)
+end
+local phome = kpse.var_value("TEXMFHOME")
+if not (phome and lfs.isdir(phome)) then
+  return finish(1, "TEXMFHOME is invalid.")
+end
+local ppkg = assert(kpse.find_file('bxwareki.sty', 'tex', true))
+local pm = (ppkg:match('^.*(tex/latex.*)') or 'tex/latex/bxwareki/')
+    :gsub('/[^/]*$', '')
+local pddir = phome
+for t in pm:gmatch('[^/]+') do
+  pddir = pddir..'/'..t
+  lfs.mkdir(pddir)
+end
+if not lfs.isdir(pddir) then
+  return finish(1, "Cannot create directory '%s'", pddir)
+end
+---------------------------------------- download
+zrget.log = log
+info("Target file is '%s'.", fdef)
+local ok = zrget.download(url, fdef,
+  function (d) return d:match('^%x%x%x%x%x%x:%x%x%x%x:') end)
+if not ok then return 1 end
+---------------------------------------- transfer
+local pddef = pddir..'/'..fdef
+local hddef = io.open(pddef, 'wb')
+if not hddef then
+  return finish(1, 'Cannot open '%s' for output.', pddef)
+end
+local hsdef = assert(io.open(fdef, 'rb'))
+assert(hddef:write(assert(hsdef:read('*a'))))
+hsdef:close(); hddef:close()
+os.remove(fdef)
+info("Target file is copied to '%s'.", pddef)
+---------------------------------------- last check
+if not kpse.find_file(fdef, 'tex', true) then
+  return finish(1, "Target file is still not found.")
+end
+return finish(0, "Target file is installed at '%s'.", pddef)
+---------------------------------------- done
+end)
+if not ok then
+  io.stderr:write("\n\nINTERNAL ERROR:\n"..tostring(retcode).."\n")
+  retcode = 1
+end
+tex.setcount('global', 'count@', retcode)
+``]``\endgroup%
+
+\chardef\bxwy@next=\count@
+
+%% EOF

@@ -1,0 +1,78 @@
+%
+% CoDi: Commutative Diagrams for TeX
+% Copyright (c) 2015-2020 Paolo Brasolin <paolo.brasolin@gmail.com>
+% SPDX-License-Identifier: MIT
+%
+% This file is part of CoDi 1.0.1, released on 2020/06/11 under MIT license.
+%
+
+% διορθώνω • (diorthóno)
+%   1. I correct
+%   2. I mend
+%   3. I repair
+
+% Diorthono is a collection of bugfixes.
+
+% Save catcode of @ to restore it at EOF.
+\edef\kDAct{\catcode`@=\the\catcode`@\relax}
+\catcode`@=11\relax
+
+% The following code patches \pgfpathcurvebetweentime.
+% See http://tex.stackexchange.com/a/271024/82186 for reference.
+% Original fix by Mark Wibrow.
+\def\pgf@@pathcurvebetweentime#1#2#3#4#5#6{%
+  \pgfmathparse{#1}%
+  \let\pgf@time@s=\pgfmathresult%
+  \pgfmathparse{#2}%
+  \let\pgf@time@t=\pgfmathresult%
+  \ifdim\pgf@time@s pt>\pgf@time@t pt\relax%
+    \pgfmathsetmacro\pgf@time@s{1-#1}%
+    \pgfmathsetmacro\pgf@time@t{1-#2}%
+    \pgf@@@pathcurvebetweentime{#6}{#5}{#4}{#3}%
+  \else%
+    \pgf@@@pathcurvebetweentime{#3}{#4}{#5}{#6}%
+  \fi%
+}
+\def\pgf@@@pathcurvebetweentime#1#2#3#4{%
+\begingroup%
+  % Get the curve Q from curve P for time 0 to t
+  \pgfextract@process\Pa{#1}%
+  \pgfextract@process\Pb{#2}%
+  \pgfextract@process\Pc{#3}%
+  \pgfextract@process\Pd{#4}%
+  % Qa = Pa
+  \pgfextract@process\Qa{\Pa}%
+  % Qb = Pa + t*(Pb-Pa).
+  \pgfextract@process\Qb{%
+    \pgfpointadd{\Pa}{\pgfpointscale{\pgf@time@t}{\pgfpointdiff{\Pa}{\Pb}}}%
+  }%
+  % Qc = Qb + t*((Pb + t*(Pc-Pb)) - Qb)
+  \pgfextract@process\Qc{%
+    \pgfpointadd{\Qb}{\pgfpointscale{\pgf@time@t}{\pgfpointdiff{\Qb}{\pgfpointadd{\Pb}{\pgfpointscale{\pgf@time@t}{\pgfpointdiff{\Pb}{\Pc}}}}}}%
+  }%
+  % Qd = (1-t)^3*Pa + 3*t(1-t)^2*Pb + 3*t^2(1-t)*Pc + t^3*Pd.
+  \pgfextract@process\Qd{\pgfpointcurveattime{\pgf@time@t}{\Pa}{\Pb}{\Pc}{\Pd}}% 
+  %
+  % Now get the curve R from the reversed curve Q for time 0 to 1-s/t
+  \pgfmathdivide@{\pgf@time@s}{\pgf@time@t}%
+  \pgfmathadd@{-\pgfmathresult}{1.0}%
+  \let\pgf@time@s=\pgfmathresult%
+  % Rd = Qd
+  \pgfextract@process\Rd{\Qd}%
+  % Rc = Qd + s*(Qc-Qd).
+  \pgfextract@process\Rc{%
+    \pgfpointadd{\Qd}{\pgfpointscale{\pgf@time@s}{\pgfpointdiff{\Qd}{\Qc}}}%
+  }%
+  % Rb = Rc + s*((Qc + s*(Qb-Qc)) - Rc)
+  \pgfextract@process\Rb{%
+    \pgfpointadd{\Rc}{\pgfpointscale{\pgf@time@s}{\pgfpointdiff{\Rc}{\pgfpointadd{\Qc}{\pgfpointscale{\pgf@time@s}{\pgfpointdiff{\Qc}{\Qb}}}}}}%
+  }%
+  % Ra = (1-s)^3*Qd + 3*s(1-s)^2*Qc + 3*s^2(1-s)*Qb + s^3*Qa.
+  \pgfextract@process\Ra{\pgfpointcurveattime{\pgf@time@s}{\Qd}{\Qc}{\Qb}{\Qa}}% 
+  \ifpgf@ignoremoveto\else\pgfpathmoveto{\Ra}\fi%
+  \pgfpathcurveto{\Rb}{\Rc}{\Rd}%
+\endgroup%
+}
+
+% Restore catcode of @.
+\kDAct

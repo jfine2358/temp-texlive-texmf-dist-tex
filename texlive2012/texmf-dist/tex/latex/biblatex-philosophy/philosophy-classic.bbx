@@ -1,0 +1,315 @@
+% $Id: philosophy-classic.bbx,v 0.8b 2012/05/06 Valbusa$
+%	Copyright 2009-2012 Ivan Valbusa. This package is author-maintained. 
+%	Permission is granted to copy, distribute and/or modify this software under the 
+%	terms of the LaTeX Project Public License, version 1.3c 
+%	http://www.ctan.org/tex-archive/macros/latex/base/lppl.txt.
+
+
+\ProvidesFile{philosophy-classic.bbx}[philosophy-classic.bbx,v 0.8b 2012/05/06 valbusa beta$]
+
+\RequireBibliographyStyle{authoryear}
+\RequireBibliographyStyle{philosophy-standard}
+
+
+% DECLARE AND EXECUTE BIBLIOGRAPHY OPTIONS
+%*********************************************************************
+\newtoggle{bbx:square}
+\DeclareBibliographyOption{square}[true]{%
+  \settoggle{bbx:square}{#1}}  
+  
+\ExecuteBibliographyOptions{%
+uniquename	=false,
+pagetracker	=true,
+singletitle		=false,
+square			=false,
+mergedate	=basic,
+dashed=false,
+}
+
+%$$$$$$
+\newcounter{maxnamesincross}
+\newcounter{minnamesincross}
+
+
+% 	AT BEGIN SHORTHANDS
+%*****************************************
+\AtBeginShorthands{%
+\togglefalse{bbx:annotation}%
+\renewcommand{\labelnamepunct}{\addcomma\space}%
+\renewbibmacro*{publocyear}{%
+	\iflistundef{publisher}{}%
+	{\printlist{publisher}}%
+	\setunit*{\addcomma\space}%
+	\printlist{location}%
+	\setunit*{\space}%
+	\printtext{\printfield{labelyear}}%
+	\newunit}%
+\renewbibmacro*{loccolonpub}{%
+	\printlist{location}%
+	\iflistundef{publisher}%
+	{\setunit*{\addspace}}%
+	{\setunit*{\addcolon\space}}%
+	\printlist{publisher}%
+	\setunit*{\addcomma\space}%
+	\printtext{\printfield{labelyear}}%
+	\newunit}%
+\renewbibmacro*{locpubyear}{%
+	\printlist{location}%
+	\iflistundef{publisher}%
+	{\setunit*{\addspace}}%
+	{\setunit*{\addcomma\space}}%
+	\printlist{publisher}%
+	\setunit*{\addcomma\space}%
+	\printtext{\printfield{labelyear}}%
+	\newunit}%
+	\renewbibmacro*{date+extrayear}{}}
+	
+% 	AT BEGIN DOCUMENT
+%**************************************************
+\AtBeginDocument{%
+  \setcounter{maxnamesincross}{\value{maxnames}}
+  \setcounter{minnamesincross}{\value{minnames}}
+	
+  \iftoggle{bbx:square}
+	{\renewcommand{\bibopenparen}{\bibopenbracket}%
+	 \renewcommand{\bibcloseparen}{\bibclosebracket}}
+	{}}
+
+%*********************************************************************
+%			NUOVE MACRO
+%*********************************************************************
+  \renewbibmacro*{issue+date}{%
+    \ifboolexpr{
+      test {\iffieldundef{issue}}
+      and
+      test {\iffieldundef{month}}
+    }
+      {}%
+      {\ifdefstring{\bbx@volnumformat}{volnumparens}
+      {\printtext{%
+	 \printfield{issue}% \setunit*{\addspace}%
+	 \printdate
+	 }}{\printtext[parens]{%
+	 \printfield{issue}% \setunit*{\addspace}%
+	 \printdate
+	 }}}%
+    \newunit}%
+  
+% changed
+\renewbibmacro*{author}{%
+  \ifboolexpr{
+    test \ifuseauthor
+    and
+    not test {\ifnameundef{author}}
+  }%
+    {\usebibmacro{bbx:dashcheck}
+       {\bibnamedash}
+       {\usebibmacro{bbx:savehash}%
+        \printnames{author}%
+        \iffieldundef{nameaddon}{}%
+        {\setunit{\addspace}%
+        \printtext[brackets]{\printfield{nameaddon}}}%
+	\iffieldundef{authortype}
+	  {\setunit{\addspace}}
+	  {\setunit{\addcomma\space}}}%
+     \iffieldundef{authortype}
+       {}%
+       {\usebibmacro{authorstrg}%
+	\setunit{\addspace}}}%
+    {\global\undef\bbx@lasthash
+     \usebibmacro{labeltitle}%
+     \setunit*{\addspace}}%
+  \usebibmacro{date+extrayear}} 
+
+\renewbibmacro*{editor+others}{%
+  \usebibmacro{bbx:editor}{editorstrg}}
+
+\renewbibmacro*{bbx:editor}[1]{%
+  \ifboolexpr{
+    test \ifuseeditor
+    and
+    not test {\ifnameundef{editor}}
+  }%
+    {\usebibmacro{bbx:dashcheck}
+       {\bibnamedash}
+       {\printnames{editor}%
+	\setunit{\addspace}%
+	\usebibmacro{bbx:savehash}}%
+     \usebibmacro{#1}%
+     \clearname{editor}%
+     \setunit{\addspace}}%
+    {\global\undef\bbx@lasthash
+     \usebibmacro{labeltitle}%
+     \setunit*{\addspace}}%
+  \usebibmacro{date+extrayear}}
+   
+%**************************************************************
+%``Publisher, Location Year''.
+%****************************************************************
+\newbibmacro*{publocyear}{%
+	  \iflistundef{publisher}%
+	  	{}%
+		{\printlist{publisher}}
+	  \setunit*{\addcomma\space}%
+	  \printlist{location}%
+	\newunit}
+\newbibmacro*{inpublocyear}{%
+	  \iflistundef{institution}%
+	  	{}%
+		{\printlist{institution}}
+	  \setunit*{\addcomma\space}%
+	  \printlist{location}%
+	\newunit}	
+\newbibmacro*{orgpublocyear}{%
+	  \iflistundef{organization}%
+	  	{}%
+		{\printlist{organization}}
+	  \setunit*{\addcomma\space}%
+	  \printlist{location}%
+	\newunit}
+%**************************************************************
+%``Location: Publisher, Year'' 
+%****************************************************************
+\newbibmacro*{loccolonpub}{%
+	  \printlist{location}%
+	  \iflistundef{publisher}%
+	  	{\setunit*{\addspace}}
+	    	{\setunit*{\addcolon\space}}%
+	  \printlist{publisher}%
+	\newunit}
+\newbibmacro*{inloccolonpub}{%
+	  \printlist{location}%
+	  \iflistundef{institution}%
+	  	{\setunit*{\addspace}}
+	    	{\setunit*{\addcolon\space}}%
+	  \printlist{institution}%
+	\newunit}
+\newbibmacro*{orgloccolonpub}{%
+	  \printlist{location}%
+	  \iflistundef{organization}%
+	  	{\setunit*{\addspace}}
+	    	{\setunit*{\addcolon\space}}%
+	  \printlist{organization}%
+	\newunit}    
+%**************************************************************
+%``Location, Publisher, Year'' 
+%**************************************************************
+\newbibmacro*{locpubyear}{%
+	  \printlist{location}%
+	  \iflistundef{publisher}%
+	  	{\setunit*{\addspace}}
+	    	{\setunit*{\addcomma\space}}%
+	  \printlist{publisher}%
+	\newunit}
+\newbibmacro*{inlocpubyear}{%
+	  \printlist{location}%
+	  \iflistundef{institution}%
+	  	{\setunit*{\addspace}}
+	    	{\setunit*{\addcomma\space}}%
+	  \printlist{institution}%
+	\newunit}
+\newbibmacro*{orglocpubyear}{%
+	  \printlist{location}%
+	  \iflistundef{organization}%
+	  	{\setunit*{\addspace}}
+	    	{\setunit*{\addcomma\space}}%
+	  \printlist{organization}%
+	\newunit}
+
+\newbibmacro*{crossdate+extrayear}{%
+	\iffieldundef{year}%
+    	{}%
+    	{\printtext[parens]{\printdateextra}}}
+
+\DeclareCiteCommand{\bbx@crossref}
+  {}%
+  {\ifuseeditor{\ifthenelse{\value{listtotal}=2}%
+    	{\printnames[][-\value{maxnamesincross}]{labelname}}%
+    	{\printnames[][-\value{minnamesincross}]{labelname}}}%
+	{\usebibmacro{labeltitle}}
+    \setunit*{\addspace}%
+    \printtext{\usebibmacro{crossdate+extrayear}}}%
+  {}%
+  {}%
+
+%-----------------------------------------------------------------
+%	
+%								DRIVERS
+%										
+%-----------------------------------------------------------------
+
+\DeclareBibliographyDriver{incollection}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/translator+others}%
+  \setunit{\labelnamepunct}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \printlist{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{in:}%
+  \iffieldundef{crossref}%
+  	{\usebibmacro{incollection:full}}%
+	{\bbx@crossref{\thefield{crossref}}%
+%		\newunit\newblock
+%		\printfield{userd}%
+%		\newunit\newblock
+  \newunit\newblock
+    \iffieldundef{maintitle}
+    {\printfield{volume}%
+     \printfield{part}}
+    {}%
+  \newunit
+		\usebibmacro{chapter+pages}%
+  \newunit\newblock
+  \iftoggle{bbx:isbn}
+    {\printfield{isbn}}
+    {}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+	  \usebibmacro{addendum+pubstate:article-book-incoll}%
+		\newunit\newblock
+  \usebibmacro{pageref}%
+  \usebibmacro{finentry}}}
+  
+\DeclareBibliographyDriver{inbook}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/translator+others}%
+  \setunit{\labelnamepunct}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \printlist{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{in:}%
+    \iffieldundef{crossref}%
+  	{\usebibmacro{inbook:full}}%
+	{\bbx@crossref{\thefield{crossref}}%
+%		\newunit\newblock
+%		\printfield{userd}%
+%		\newunit\newblock
+  \newunit\newblock
+  \iffieldundef{maintitle}
+    {\printfield{volume}%
+     \printfield{part}}
+    {}%
+  \newunit
+		\usebibmacro{chapter+pages}%
+  \newunit\newblock
+  \iftoggle{bbx:isbn}
+    {\printfield{isbn}}
+    {}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+	  \usebibmacro{addendum+pubstate:article-book-incoll}%
+		\newunit\newblock
+  \usebibmacro{pageref}%
+  \usebibmacro{finentry}}}
+
+\endinput

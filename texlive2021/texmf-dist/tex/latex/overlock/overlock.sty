@@ -1,0 +1,114 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{overlock}
+    [2020/08/09 (Bob Tennent)  Supports Overlock fonts for all LaTeX engines.]
+
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+
+\newif\ifoverlock@otf 
+\ifxetex
+  \overlock@otftrue
+\else\ifluatex
+  \overlock@otftrue
+\else  % [pdf]LaTeX
+  \overlock@otffalse
+\fi\fi
+
+\newif\ifoverlock@default \overlock@defaultfalse
+\newif\ifoverlock@black \overlock@blackfalse
+\newif\ifoverlock@lining \overlock@liningtrue
+\newcommand*{\Ovrlck@scale}{1}
+\DeclareOptionX{scaled}{\renewcommand*{\Ovrlck@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\Ovrlck@scale}{#1}}
+
+\DeclareOptionX{lining}{\overlock@liningtrue}
+\DeclareOptionX{oldstyle}{\overlock@liningfalse}
+\DeclareOptionX{default}{\overlock@defaulttrue}
+\DeclareOptionX{sfdefault}{\overlock@defaulttrue}
+\DeclareOptionX{type1}{\overlock@otffalse}
+\DeclareOptionX{black}{\overlock@blacktrue}
+
+\ProcessOptionsX\relax
+
+\ifoverlock@otf
+  \def\overlock@boldstyle{Bold}
+  \ifoverlock@black\def\overlock@boldstyle{Black}\fi
+  \ifoverlock@lining
+    \def\overlock@figurestyle{}
+  \else
+    \def\overlock@figurestyle{OldStyle}
+  \fi
+
+\else % type1
+
+  \def\bfseries@sf{b}
+  \ifoverlock@black\def\bfseries@sf{k}\fi
+  \ifoverlock@lining
+    \def\overlock@figurestyle{LF}
+  \else
+    \def\overlock@figurestyle{OsF}
+  \fi
+
+\fi
+
+\ifoverlock@otf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes,mweights}
+\fi
+
+\ifoverlock@otf
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+        Ligatures = TeX ,
+        Scale     = \Ovrlck@scale ,
+        Extension = .otf }
+  \setsansfont
+      [ Numbers = {\overlock@figurestyle}, 
+        UprightFont    = *-Regular-OTF ,
+        ItalicFont     = *-Italic-OTF ,
+        BoldFont       = *-\overlock@boldstyle-OTF, 
+        BoldItalicFont = *-\overlock@boldstyle Italic-OTF ]
+      {Overlock}
+  % grab current family in case of subsequent change:
+  \let\overlockfamily\sfdefault  
+  \newfontfamily\overlock
+      [ Numbers = {\overlock@figurestyle}, 
+        UprightFont    = *-Regular-OTF ,
+        ItalicFont     = *-Italic-OTF ,
+        BoldFont       = *-\overlock@boldstyle-OTF, 
+        BoldItalicFont = *-\overlock@boldstyle Italic-OTF ]
+      {Overlock}
+  \newfontfamily\overlockBlack
+      [ Numbers = {\overlock@figurestyle},
+        UprightFont    = *-Black-OTF ,
+        ItalicFont     = *-BlackItalic-OTF ,
+        BoldFont       = *-Black-OTF , 
+        BoldItalicFont = *-BlackItalic-OTF ]
+      {Overlock}
+  \DeclareTextFontCommand{\oldstylenums}{\addfontfeatures{Numbers={OldStyle}}}
+  \DeclareTextFontCommand{\liningnums}{\addfontfeatures{Numbers={Lining}}}
+  \def\sffamily{\overlock}
+  \ifoverlock@default
+    \edef\familydefault{\overlockfamily}
+  \fi
+\else % type1
+  \def\overlockfamily{Ovrlck-\overlock@figurestyle}
+  \def\sfdefault{\overlockfamily}
+  \def\sffamily{\fontfamily{\overlockfamily}\selectfont}
+  \def\overlock{\fontfamily{\overlockfamily}\selectfont}
+  \def\overlockBlack{\fontfamily{\overlockfamily}\fontseries{black}\selectfont}
+  \ifoverlock@default\def\familydefault{\sfdefault}
+  \fi
+  \DeclareTextFontCommand{\oldstylenums}{\fontfamily{Ovrlck-OsF}\selectfont}
+  \DeclareTextFontCommand{\liningnums}{\fontfamily{Ovrlck-LF}\selectfont}
+
+  
+\fi
+
+
+\ifoverlock@otf
+% turn off defaults in case other fonts are selected:
+  \defaultfontfeatures{}
+\fi
+
+\endinput

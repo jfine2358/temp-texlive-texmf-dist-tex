@@ -1,0 +1,188 @@
+% schulmathematik bundle: package schulma-physik
+% Version 1.1
+% 13. März 2021
+\RequirePackage{xparse}
+\ProvidesExplPackage {schulma-physik} {2021-03-13} {1.1} {Befehle für die Schulphysik}
+
+\RequirePackage [locale=DE] {siunitx}
+\RequirePackage {tikz}
+
+\NewDocumentCommand \Massstab {m m m m}
+  {
+    \ensuremath
+      {
+        \SI {#1} {#2}
+        \; \widehat {=} \;
+        \SI {#3} {#4}
+      }
+  }
+
+\NewDocumentCommand \tSI {m m}
+  {
+    \ensuremath
+      {  
+        \group_begin:
+        \textstyle
+        \SI [ per-mode = fraction ] {#1} {#2}
+        \group_end:
+      }
+  }
+
+\NewDocumentCommand \tsi {m}
+  {
+    \ensuremath
+      {  
+        \group_begin:
+        \textstyle
+        \si [ per-mode = fraction ] {#1}
+        \group_end:
+      }
+  }
+
+\NewDocumentCommand \Beschl {m}
+  {
+    \tSI{#1}{\m\per\square\s}
+  }
+
+\NewDocumentCommand \Erdb { }
+  {
+    \tSI{9,81}{\m\per\square\s}
+  }
+
+\NewDocumentCommand \Ortsf { }
+  {
+    \tSI{9,81}{\N\per\kg}
+  }
+
+\NewDocumentCommand \Elem { }
+  {
+    \SI{1,60e-19}{\coulomb}
+  }
+
+\NewDocumentCommand \Elekm { }
+  {
+    \SI{9,11e-31}{\kg}
+  }
+
+\NewDocumentCommand \Lichtg { }
+  {
+    \SI{3,00e8}{\m\per\s}
+  }
+
+\NewDocumentCommand \Planck { }
+  {
+    \SI{6,63e-34}{\J.\s}
+  }
+
+\NewDocumentCommand \EFK { }
+  {
+    \SI{8,85e-12}{\A\s\per\V\per\m}
+  }
+
+\NewDocumentCommand \MFK {s}
+  {
+    \IfBooleanTF {#1}
+      {
+        \SI{1,26e-6}{\V\s\per\A\per\m}
+      }
+      {
+        \ensuremath { 4\,\pi\cdot\SI{e-7}{\V\s\per\A\per\m} }
+      }
+  }
+
+\ExplSyntaxOff
+
+\usetikzlibrary{circuits.ee.IEC}
+
+\pgfdeclareshape{doppelbuchse}
+  {%
+    \inheritsavedanchors[from=rectangle ee]%
+    \inheritanchor[from=rectangle ee]{center}%
+    \inheritanchor[from=rectangle ee]{north}%
+    \inheritanchor[from=rectangle ee]{south}%
+    \inheritanchor[from=rectangle ee]{east}%
+    \inheritanchor[from=rectangle ee]{west}%
+    \inheritanchor[from=rectangle ee]{north east}%
+    \inheritanchor[from=rectangle ee]{north west}%
+    \inheritanchor[from=rectangle ee]{south east}%
+    \inheritanchor[from=rectangle ee]{south west}%
+    \inheritanchor[from=rectangle ee]{input}%
+    \inheritanchor[from=rectangle ee]{output}%
+    \inheritanchorborder[from=rectangle ee]%
+    \backgroundpath{
+      \pgf@process{\pgfpointadd{\southwest}{\pgfpoint{\pgfkeysvalueof{/pgf/outer xsep}}{\pgfkeysvalueof{/pgf/outer ysep}}}}%
+      \pgf@xa=\pgf@x \pgf@ya=\pgf@y
+      \pgf@process{\pgfpointadd{\northeast}{\pgfpointscale{-1}{\pgfpoint{\pgfkeysvalueof{/pgf/outer xsep}}{\pgfkeysvalueof{/pgf/outer ysep}}}}}%
+      \pgf@xb=\pgf@x \pgf@yb=\pgf@y
+      \pgfutil@tempdima=\pgf@yb%
+      \advance\pgfutil@tempdima by -\pgf@ya%
+      \pgfutil@tempdima=0.5\pgfutil@tempdima%
+      \advance\pgf@xa by \pgfutil@tempdima%
+      \advance\pgf@xb by -\pgfutil@tempdima%
+      {\pgfpathcircle{\pgfqpoint{\pgf@xa}{0pt}}{\pgfutil@tempdima}}
+      {\pgfpathcircle{\pgfqpoint{\pgf@xb}{0pt}}{\pgfutil@tempdima}}
+    }%
+  }
+
+\tikzset
+  {
+    bulb IEC graphic/.style=
+      {
+        circuit symbol lines,
+        circuit symbol size=width 1.9 height 1.9,
+        shape=generic circle IEC,
+        /pgf/generic circle IEC/before background=
+          {
+            \pgfpathmoveto{\pgfpointpolar{-135}{1pt}}
+            \pgfpathlineto{\pgfpointpolar{45}{1pt}}
+            \pgfpathmoveto{\pgfpointpolar{-45}{1pt}}
+            \pgfpathlineto{\pgfpointpolar{135}{1pt}}
+            \pgfusepathqstroke
+          },
+        transform shape,
+      },
+    capacitor IEC graphic/.style=
+      {
+        circuit symbol lines,
+        circuit symbol size=width 0.8 height 2.4,
+        transform shape,
+        shape=capacitor IEC,
+      },
+    amperemeter graphic/.style=
+      {
+        circuit symbol open,
+        circuit symbol size=width 2 height 2,
+        transform shape,
+        shape=generic circle IEC,
+        info=center:{\sffamily A}
+      },
+    voltmeter graphic/.style=
+      {
+        circuit symbol open,
+        circuit symbol size=width 2 height 2,
+        transform shape,
+        shape=generic circle IEC,
+        info=center:{\sffamily V}
+      },
+    circuit declare symbol=messgeraet,
+    set messgeraet graphic=
+      {
+        circuit symbol open,
+        circuit symbol size=width 2 height 2,
+        transform shape,
+        shape=generic circle IEC,
+        /pgf/generic circle IEC/before background=
+          {
+            \draw[annotation arrow,->] (0.58pt,-0.58pt)--(-0.58pt,0.58pt);
+          }
+      },
+    circuit declare symbol=spannungsquelle,
+    set spannungsquelle graphic=
+      {
+        circuit symbol open,
+        circuit symbol size=width 2.4 height 0.5,
+        transform shape,
+        shape=doppelbuchse,
+        outer sep=0pt
+      },
+  }

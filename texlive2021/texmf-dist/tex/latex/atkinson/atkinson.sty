@@ -1,0 +1,129 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{atkinson}
+    [2021/02/05 (Bob Tennent)  Supports Atkinson Hyperlegible fonts for all LaTeX engines.]
+
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+
+\newif\ifatkinson@otf 
+\ifxetex
+  \atkinson@otftrue
+\else\ifluatex
+  \atkinson@otftrue
+\else  % [pdf]LaTeX
+  \atkinson@otffalse
+\fi\fi
+
+\newif\ifatkinson@tabular \atkinson@tabularfalse
+\newif\ifatkinson@default \atkinson@defaultfalse
+
+\newcommand*{\atkinsn@scale}{1}
+\DeclareOptionX{scaled}{\renewcommand*{\atkinsn@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\atkinsn@scale}{#1}}
+
+\DeclareOptionX{default}{\atkinson@defaulttrue}
+\DeclareOptionX{sfdefault}{\atkinson@defaulttrue}
+\DeclareOptionX{type1}{\atkinson@otffalse}
+\DeclareOptionX{t}{\atkinson@tabulartrue}
+\DeclareOptionX{proportional}{\atkinson@tabularfalse}
+\DeclareOptionX{p}{\atkinson@tabularfalse}
+
+
+\ExecuteOptionsX{proportional}
+\ProcessOptionsX\relax
+
+\ifatkinson@otf
+  \def\atkinson@boldstyle{Bold}
+  \def\atkinson@regstyle{Regular}
+
+\else % type1
+
+  \def\mdseries@sf{m}
+  \def\bfseries@sf{b}
+
+\fi
+
+\ifatkinson@otf
+  \ifatkinson@tabular
+    \def\atkinson@figurealign{Monospaced} 
+  \else
+    \def\atkinson@figurealign{Proportional} 
+  \fi
+\else % type1
+  \ifatkinson@tabular
+    \def\atkinson@figurealign{T}
+  \else
+    \def\atkinson@figurealign{}
+  \fi
+
+
+\fi
+
+
+\ifatkinson@otf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes,mweights}
+\fi
+
+\ifatkinson@otf
+  \def\atkinson@regular{Regular}
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+        Ligatures = TeX ,
+        Scale     = \atkinsn@scale ,
+        Extension = .otf }
+    \setsansfont
+        [ Numbers = {\atkinson@figurealign},
+          UprightFont    = *-\atkinson@regstyle-102 ,
+          ItalicFont     = *-\ifx\atkinson@regstyle\atkinson@regular Italic\else\atkinson@regstyle Italic\fi-102,
+          BoldFont       = *-\atkinson@boldstyle-102 ,
+          BoldItalicFont = *-\atkinson@boldstyle Italic-102 ,
+        ]
+        {Atkinson-Hyperlegible}
+  % grab current family in case of subsequent change:
+  \let\atkinsonfamily\sfdefault  
+  \ifatkinson@default\renewcommand*\familydefault{\atkinsonfamily}\fi
+  \newfontfamily\atkinson
+        [ Numbers = {\atkinson@figurealign},
+          UprightFont    = *-\atkinson@regstyle-102 ,
+          ItalicFont     = *-\ifx\atkinson@regstyle\atkinson@regular Italic\else\atkinson@regstyle Italic\fi-102,
+          BoldFont       = *-\atkinson@boldstyle-102 ,
+          BoldItalicFont = *-\atkinson@boldstyle Italic-102 ,
+        ]
+        {Atkinson-Hyperlegible}
+    \newfontfamily\atkinsonlf
+        [ Numbers = {Proportional},
+          UprightFont    = *-\atkinson@regstyle-102 ,
+          ItalicFont     = *-\ifx\atkinson@regstyle\atkinson@regular Italic\else\atkinson@regstyle Italic\fi-102,
+          BoldFont       = *-\atkinson@boldstyle-102 ,
+          BoldItalicFont = *-\atkinson@boldstyle Italic-102 ,
+        ]
+        {Atkinson-Hyperlegible}
+    \newfontfamily\atkinsontlf
+        [ Numbers = {Monospaced},
+          UprightFont    = *-\atkinson@regstyle-102 ,
+          ItalicFont     = *-\ifx\atkinson@regstyle\atkinson@regular Italic\else\atkinson@regstyle Italic\fi-102,
+          BoldFont       = *-\atkinson@boldstyle-102 ,
+          BoldItalicFont = *-\atkinson@boldstyle Italic-102 ,
+        ]
+        {Atkinson-Hyperlegible}
+
+\else % type1
+  \def\atkinsonfamily{atkinsn-\atkinson@figurealign LF}
+  \newcommand*\atkinson{\fontfamily{\atkinsonfamily}\selectfont}
+  \def\sfdefault{\atkinsonfamily}
+  \ifatkinson@default\edef\familydefault{\sfdefault}\edef\seriesdefault{\mdseries@sf}\fi
+  \def\atkinsontlf{\fontfamily{atkinsn-TLF}\selectfont}
+  \def\atkinsonlf{\fontfamily{atkinsn-LF}\selectfont}
+
+\fi
+
+\DeclareTextFontCommand{\atkinsonTLF}{\atkinsontlf}
+\DeclareTextFontCommand{\atkinsonLF}{\atkinsonlf}
+
+\ifatkinson@otf
+  % turn off defaults in case other fonts are selected:
+  \defaultfontfeatures{}
+\fi
+
+\endinput

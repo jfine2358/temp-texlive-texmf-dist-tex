@@ -1,0 +1,233 @@
+% Copyright (c) 2015-2019 Robert Ryszard Paciorek <rrp@opcode.eu.org>
+% 
+% MIT License
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+% Version 1.0 (2019-05-13): first public release
+
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{vtable}
+
+\RequirePackage{array,varwidth}
+\RequirePackage{dashrule,graphicx} % for I type
+\RequirePackage{xparse,etoolbox,calc,forloop,alphalph}
+
+\newlength {\vtable@RowHeight}      % current height of row (can be increase in next cells)
+\newlength {\vtable@RowInitHeight}  % init height of row (loaded from aux file)
+\newlength {\vtable@RowForceHeight} % enforced value of row height
+\newlength {\vtable@RowTmpHeight}
+\newcounter{vtable@CurrRow}         % current row number (file global value)
+\newcounter{vtable@CurrColumn}      % current column number (reset on each new row)
+\newcounter{vtable@State}           % set to 1 when finish / start new row
+\newcounter{vtable@LastRow}         % set to non zero on last row of multirow cell in \vtable@PreRow, clear in \vtable@PostRow
+\newcounter{vtable@RowIter}         % temporary counter used in \vtable@PostRow
+\newsavebox{\vtable@CellBox}
+\newsavebox{\vtable@CellVBox}
+
+\setcounter{vtable@State}{1}
+
+\newcommand{\vtable@PreRow}{%
+	\stepcounter{vtable@CurrRow}%
+	\setcounter{vtable@CurrColumn}{1}%
+	\setcounter{vtable@State}{0}%
+	\typeout{BEGIN ROW : \the\value{vtable@CurrRow}}%
+	\global\vtable@RowHeight=0pt%
+	\global\vtable@RowForceHeight=0pt%
+	\ifcsname tabRowHeight@\AlphAlph{\value{vtable@CurrRow}}\endcsname%
+		\global\vtable@RowInitHeight=\csname tabRowHeight@\AlphAlph{\value{vtable@CurrRow}}\endcsname%
+	\else%
+		\global\vtable@RowInitHeight=0pt%
+	\fi%
+}
+\newcommand{\vtable@PostRow}{
+	\typeout{ do post row stuff }
+	\ifdim\vtable@RowForceHeight=0pt\else\vtable@RowHeight=\vtable@RowForceHeight\fi%
+	\csdimgdef{tabRowHeight@\AlphAlph{\value{vtable@CurrRow}}}{\vtable@RowHeight}%
+	\immediate\write\@auxout{%
+		\string\newdimen\string\tabRowHeight@\AlphAlph{\value{vtable@CurrRow}}%
+		\string\global\string\tabRowHeight@\AlphAlph{\value{vtable@CurrRow}}=\the\vtable@RowHeight%
+	}%
+}
+
+% START TABLE CELL
+% \vtable@PreCell{max width}{min width}{hmode}{col num}{vmode}
+%   hmode = l (left) c (center) r (right) j (justify)
+%   vmode = t (top) m (middle) b (bottom)
+\DeclareDocumentCommand{\vtable@PreCell}{m m m m m}{%
+  % if starting first cell in do pre row stuff
+  \ifnumcomp{\value{vtable@State}}{=}{1}{ \vtable@PreRow }{}%
+
+  \typeout{CELL(\the\value{vtable@CurrRow},\the\value{vtable@CurrColumn}):}
+  % start "varwidth" box in "lrbox" enviroment
+  \begin{lrbox}{\vtable@CellBox}\begin{varwidth}[b]{#1}%
+  % \\ will be always \nextRow
+  \let\\\nextRow%
+  \newcommand{\nextRow}{\typeout{ finish row}\setcounter{vtable@State}{1}\tabularnewline}
+  % \lb can be used for line break
+  \let\lb\linebreak%
+  % if provide minimal width
+  \ifstrequal{#2}{}{}{%
+    % add space (with this width) in hidden row
+    \settototalheight{\vtable@RowTmpHeight}{A}\hspace*{#2}\vspace{-\vtable@RowTmpHeight}\linebreak{}%
+  }%
+  % set ragged of varwidth content and vertical space before and after varwidth
+  \ifstrequal{#3}{l}{   \raggedright \gdef\vtableCell@HPre{0} \gdef\vtableCell@HPost{1}}{%
+   \ifstrequal{#3}{c}{  \centering   \gdef\vtableCell@HPre{1} \gdef\vtableCell@HPost{1}}{%
+    \ifstrequal{#3}{r}{ \raggedleft  \gdef\vtableCell@HPre{1} \gdef\vtableCell@HPost{0}}{%
+     \ifstrequal{#3}{j}{             \gdef\vtableCell@HPre{0} \gdef\vtableCell@HPost{1}}{%
+  }}}}%
+  \gdef\vtable@CellVMode{#5}
+  %
+  % if this is multirow cell
+  \ifcsname tabMultirowFirst@\the\value{vtable@CurrColumn}\endcsname%
+    % if it's last row of multirow
+    \typeout{ in multi row mode, end at \csname tabMultirowLast@\the\value{vtable@CurrColumn}\endcsname row }
+    \ifnumcomp{\value{vtable@CurrRow}}{=}{\csname tabMultirowLast@\the\value{vtable@CurrColumn}\endcsname}{%
+      \typeout{  last row of multirow cell}
+      \setcounter{vtable@LastRow}{\csname tabMultirowLast@\the\value{vtable@CurrColumn}\endcsname}
+      % print content in current cell and forgot it
+      \csname tabMultirowText@\the\value{vtable@CurrColumn}\endcsname%
+      \csundef{tabMultirowText@\the\value{vtable@CurrColumn}}%
+    }{}%
+    \csnumgdef{vtable@ColSpan@\the\value{vtable@CurrColumn}}{\csname tabMultirowColSpan@\the\value{vtable@CurrColumn}\endcsname}%
+  \else
+    % set colspan value for tablePostCell macro
+    \csnumgdef{vtable@ColSpan@\the\value{vtable@CurrColumn}}{#4}
+  \fi%
+  \typeout{ colspan: \csname vtable@ColSpan@\the\value{vtable@CurrColumn}\endcsname }
+}
+
+% FINISH TABLE CELL
+\DeclareDocumentCommand{\vtable@PostCell}{}{%
+  \@finalstrut\@arstrutbox\end{varwidth}\end{lrbox}%
+  % get height of current cell
+  \settototalheight{\vtable@RowTmpHeight}{\usebox{\vtable@CellBox}}%
+  \dimdef{\multirowHeight}{0pt}%
+  %
+  % if it's last row of multirow
+  \ifnumcomp{\value{vtable@LastRow}}{=}{0}{}{%
+      % calculate \multirowHeight
+      \forloop{vtable@RowIter}{\csname tabMultirowFirst@\the\value{vtable@CurrColumn}\endcsname}{\value{vtable@RowIter} < \value{vtable@LastRow}}{%
+        \dimdef{\multirowHeight}{\multirowHeight + \csname tabRowHeight@\AlphAlph{\value{vtable@RowIter}}\endcsname + 5pt}% TODO
+      }%
+      % remove declare of multirow
+      \csundef{tabMultirowFirst@\the\value{vtable@CurrColumn}}%
+      \csundef{tabMultirowLast@\the\value{vtable@CurrColumn}}%
+      \csundef{tabMultirowForceHeight@\the\value{vtable@CurrColumn}}%
+      \setcounter{vtable@LastRow}{0}%
+  }%
+  %
+  % calculate max height of cell in current row
+  \setlength{\vtable@RowHeight}{\maxof{\vtable@RowHeight}{\vtable@RowTmpHeight - \multirowHeight}}%
+  % this must be global
+  \global\vtable@RowHeight=\vtable@RowHeight%
+  % calculate height of placeholders in current run
+  \typeout{   max(\the\vtable@RowHeight, \the\vtable@RowInitHeight) + \multirowHeight{} - \the\vtable@RowTmpHeight}%
+  \setlength{\vtable@RowTmpHeight}{\maxof{\vtable@RowHeight}{\vtable@RowInitHeight} + \multirowHeight - \vtable@RowTmpHeight}%
+  % if vertical centering we need 1/2 \vtable@RowTmpHeight
+  \ifdefstring{\vtable@CellVMode}{m}{\setlength{\vtable@RowTmpHeight}{0.5\vtable@RowTmpHeight}}{}%
+  %
+  % prepare vbox with (erlier prepared) varwidth and vertical placeholder
+  \begin{lrbox}{\vtable@CellVBox}\vbox{%
+    % in b and c (but not t) mode add vspce before content
+    \ifdefstring{\vtable@CellVMode}{t}{}{\vspace*{\vtable@RowTmpHeight}}\vspace*{4pt}% TODO
+    \hbox{\usebox{\vtable@CellBox}}%
+    % in t and c (but not b) mode add vspce after content, \vspace*{0pt} is important
+    \ifdefstring{\vtable@CellVMode}{b}{\vspace*{0pt}}{\vspace*{\vtable@RowTmpHeight}}\vspace*{-4pt}% TODO
+  }\end{lrbox}%
+  % if this is multirow cell, update saved height of content
+  \ifdim\multirowHeight=0pt\else \ht\vtable@CellVBox=0pt \dp\vtable@CellVBox=0pt \fi
+  %
+  % filling space on left (varwidth alignment)
+  \hspace{\stretch{\vtableCell@HPre}}%
+  % print prepared vbox
+  \usebox{\vtable@CellVBox}
+  % filling space on right (varwidth alignment)
+  \hspace{\stretch{\vtableCell@HPost}}%
+  %
+  % increase column counter
+  \addtocounter{vtable@CurrColumn}{\csname vtable@ColSpan@\the\value{vtable@CurrColumn}\endcsname}
+  % if finishing last cell in row do post row stuff
+  \ifnumcomp{\value{vtable@State}}{=}{1}{ \vtable@PostRow }{}%
+}
+
+% we need j type for using as base column in Z-type, this is placeholder
+\newcolumntype{j}{l}
+
+% Z{max width}{min width}{hmode}{col num}{vmode}{rown num}
+%   hmode = l (left) c (center) r (right) j (justify)
+%   vmode = t (top) m (middle) b (bottom)
+% use hmode as base columnt type for correct working in multicolumn
+\newcolumntype{Z}[6]{>{\vtable@PreCell{#1}{#2}{#3}{#4}{#5}}#3<{\vtable@PostCell}}
+
+
+\newcolumntype{L}[3]{Z{#1}{#2}{l}{1}{#3}{1}}
+\newcolumntype{C}[3]{Z{#1}{#2}{c}{1}{#3}{1}}
+\newcolumntype{R}[3]{Z{#1}{#2}{r}{1}{#3}{1}}
+\newcolumntype{J}[3]{Z{#1}{#2}{j}{1}{#3}{1}}
+
+% force current row height
+\newcommand{\forceRowHeight}[1]{\global\vtable@RowForceHeight=#1}
+
+% \tableFormatedCell{max width}[min width]{hmode}{vmode}
+%   hmode = l (left) c (center) r (right) j (justify)
+%   vmode = t (top) m (middle) b (bottom)
+\DeclareDocumentCommand{\tableFormatedCell}{m O{} m m}{
+  \@finalstrut\@arstrutbox\end{varwidth}\end{lrbox}%
+  \vtable@PreCell{#1}{#2}{#3}{1}{#4}%
+}
+
+% \setMultiColumn{col num}{max width}{min width}{hmode}{vmode}{left sep}{right sep}{text}
+%   hmode = l (left) c (center) r (right) j (justify)
+%   vmode = t (top) m (middle) b (bottom)
+\newcommand{\setMultiColumn}[8]{\multicolumn{#1}{#6Z{#2}{#3}{#4}{#1}{#5}{1}#7}{#8}}
+
+% \setMultiRow{col num}[minimal height]{text}
+\DeclareDocumentCommand{\setMultiRow}{m O{0pt} m O{1}}{%
+  \typeout{multi row: #1 #2 #4 in column \the\value{vtable@CurrColumn} row \the\value{vtable@CurrRow}}%
+  \csnumgdef{tabMultirowFirst@\the\value{vtable@CurrColumn}}{\value{vtable@CurrRow}}%
+  \csnumgdef{tabMultirowLast@\the\value{vtable@CurrColumn}}{\value{vtable@CurrRow} + #1 - 1}%
+  \csdimgdef{tabMultirowForceHeight@\the\value{vtable@CurrColumn}}{#2}%
+  \csnumgdef{tabMultirowColSpan@\the\value{vtable@CurrColumn}}{#4}%
+  \csnumgdef{vtable@ColSpan@\the\value{vtable@CurrColumn}}{#4}%
+  \csgdef{tabMultirowText@\the\value{vtable@CurrColumn}}{#3}%
+}
+
+% \setMultiColRow{col num}{row num}{max width}{min width}{hmode}{vmode}{left sep}{right sep}{text}
+%   hmode = l (left) c (center) r (right) j (justify)
+%   vmode = t (top) m (middle) b (bottom)
+\newcommand{\setMultiColRow}[9]{
+	\multicolumn{#1}{#7Z{#3}{#4}{#5}{#1}{#6}{#2}#8}{%
+		\ifstrequal{#9}{}{}{\setMultiRow{#2}{#9}[#1]}%
+	}
+}
+
+
+% I-type column put vertical frame line using hdashrule
+\newcolumntype{I}[3]{!{%
+  \setlength{\vtable@RowTmpHeight}{\vtable@RowInitHeight + 5pt}% TODO
+  \begin{lrbox}{\vtable@CellVBox}%
+  \rotatebox{90}{\hspace*{-4pt}#1\hdashrule{\vtable@RowTmpHeight}{#2}{#3}}% TODO
+  \end{lrbox}%
+  \ht\vtable@CellVBox=0pt%
+  \dp\vtable@CellVBox=0pt%
+  \usebox{\vtable@CellVBox}%
+}}

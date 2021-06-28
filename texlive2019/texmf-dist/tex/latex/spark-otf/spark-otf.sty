@@ -1,0 +1,135 @@
+%% $Id: spark-otf.sty 582 2017-09-25 06:27:35Z herbert $
+%%
+%% This file is distributed under the terms of the LaTeX Project Public
+%% License from CTAN archives in directory  macros/latex/base/lppl.txt.
+%% Either version 1.3 or, at your option, any later version.
+%%
+% Copyright 2017 Herbert Voss hvoss@tug.org
+%%
+\def\spark@version{0.04}
+\ProvidesPackage{spark-otf}[%
+  2017/09/26 v. \spark@version~(Herbert Voss) Supports spark OpenType for lualatex/xelatex.] 
+%
+\RequirePackage{ifxetex,ifluatex,xkeyval}
+%
+\newif\ifspark@usefilenames \spark@usefilenamesfalse
+\DeclareOptionX{usefilenames}[true]{\@nameuse{spark@usefilenames#1}}
+%
+\providecommand\spark@DefaultFeatures{}
+\DeclareOptionX{DefaultFeatures}{\def\spark@DefaultFeatures{#1}}
+
+\ProcessOptionsX\relax
+
+\ifxetex\else\ifluatex\else
+  \@latex@error{This package can only be used with "XeLaTeX" or "LuaLaTeX"!%
+      \MessageBreak "pdfLaTeX" or any other "TeX" version are _not_ possible!}%
+\fi\fi
+\RequirePackage{fontspec,xparse}
+
+\ifluatex\RequirePackage{luacode}\fi
+
+\newcommand\setSparkColor[2]{%
+  \addfontfeatures{UprightFeatures={Color=#1}}#2%
+  \addfontfeatures{UprightFeatures={Color=000000}}}
+
+\ifspark@usefilenames
+  \typeout {Using file names for the spark font}%
+%-----------------------------------------  file names ----------------------------
+  \font\sparkBarMedium="file:Spark - Bar - Medium.otf:mode=node;+calt;\spark@DefaultFeatures" 
+  \font\sparkBarNarrow="file:Spark - Bar - Narrow.otf:mode=node;+calt;\spark@DefaultFeatures" 
+  \font\sparkBarThin="file:Spark - Bar - Thin.otf:mode=node;+calt;\spark@DefaultFeatures" 
+%
+  \font\sparkDotLine="file:Spark - Dot-line - Medium.otf:mode=node;+calt;\spark@DefaultFeatures" 
+%
+  \font\sparkDotMedium="file:Spark - Dot - Medium.otf:mode=node;+calt;\spark@DefaultFeatures" 
+  \font\sparkDotSmall="file:Spark - Dot - Small.otf:mode=node;+calt;\spark@DefaultFeatures" 
+%
+\else
+  \typeout {Using symbolic names for the spark font}%
+%-----------------------------------------  symbolic names ----------------------------
+  \newfontface\sparkBarMedium{Spark-BarMedium}[RawFeature=+calt,\spark@DefaultFeatures]
+  \newfontface\sparkBarNarrow{Spark-BarNarrow}[RawFeature=+calt,\spark@DefaultFeatures]
+  \newfontface\sparkBarThin{Spark-BarThin}[RawFeature=+calt,\spark@DefaultFeatures]
+%
+  \newfontface\sparkDotLine{Spark-Dot-lineMedium}[RawFeature=+calt,\spark@DefaultFeatures]
+%
+  \newfontface\sparkDotMedium{Spark-DotMedium}[RawFeature=+calt,\spark@DefaultFeatures]
+  \newfontface\sparkDotSmall{Spark-DotSmall}[RawFeature=+calt,\spark@DefaultFeatures]
+\fi
+%
+%
+\def\Extend@List{\@ifnextchar!\Extend@List@i\Extend@List@ii}
+\def\Extend@List@i!#1,#2\@nil{%
+  \def\spark@mark@first{#1}%
+  \def\spark@values@i{#1,}%
+  \Extend@List@iii#2,!,!\@nil
+}
+\def\Extend@List@ii#1\@nil{\Extend@List@iii#1,!,!\@nil}
+%
+\def\Extend@List@iii#1,!#2,!#3\@nil{%
+  \ifx\relax#2\relax % no value with !
+    \edef\spark@values@i{\spark@values@i#1}%
+    \def\spark@mark@last{}%
+  \else
+    \edef\spark@values@i{\spark@values@i#1,#2}%
+    \def\spark@mark@last{#2}%
+  \fi
+}
+
+\def\check@list@values#1{%
+  \def\spark@values@i{}%
+  \def\spark@mark@first{}%
+  \def\spark@mark@last{}%
+  \Extend@List#1\@nil
+}
+
+%
+\ifluatex
+\begin{luacode}
+function RelativeValues(v,m)
+  local Values = {}  
+  for k,x in ipairs(v) do
+    Values[k] = x
+  end
+  table.sort(Values)
+  local MaxVal = (Values[#Values])
+  for k,x in ipairs(v) do
+    Values[k] = math.floor(x/MaxVal*m)
+  end
+  for i,k in ipairs(Values) do
+    tex.sprint(k)
+    if (i < #Values) then tex.sprint(",") end
+  end
+end
+\end{luacode}
+  \def\spark@line{Line}%       12        3  45 
+  \NewDocumentCommand\sparkBar{sO{Medium}O{}mO{}}{{%
+    \check@list@values{#4}%
+    \IfBooleanTF{#1}%
+      {\edef\spark@values@ii{\directlua{RelativeValues({\spark@values@i},99)}}}%
+      {\let\spark@values@ii\spark@values@i}%
+    \@nameuse{sparkBar#2}#3\spark@mark@first\string{\spark@values@ii\string}\spark@mark@last#5%
+  }}
+%                              12        3  45
+  \NewDocumentCommand\sparkDot{sO{Medium}O{}mO{}}{{%
+    \check@list@values{#4}%
+    \IfBooleanTF{#1}%
+      {\def\spark@arg{#2}%
+       \ifx\spark@line\spark@arg \edef\spark@values@ii{\directlua{RelativeValues({\spark@values@i},9)}}%
+       \else                     \edef\spark@values@ii{\directlua{RelativeValues({\spark@values@i},100)}}%
+       \fi}%
+      {\let\spark@values@ii\spark@values@i}%
+    \@nameuse{sparkDot#2}\spark@mark@first\string{\spark@values@ii\string}\spark@mark@last%
+  }}
+\else %% XeLaTeX%              1        2  34
+  \NewDocumentCommand\sparkBar{O{Medium}O{}mO{}}{{%
+    \check@list@values{#3}%
+    \@nameuse{sparkBar#1}\spark@mark@first\string{\spark@values@i\string}\spark@mark@last%
+  }}%                          1        2  34 
+  \NewDocumentCommand\sparkDot{O{Medium}O{}mO{}}{{%
+    \check@list@values{#3}%
+    \@nameuse{sparkDot#1}\spark@mark@first\string{\spark@values@i\string}\spark@mark@last%
+  }}
+\fi
+%%
+\endinput

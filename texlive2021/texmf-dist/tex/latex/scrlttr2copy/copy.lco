@@ -1,0 +1,89 @@
+
+%% Copyright (C) 2015-2020
+%% Rolf Niepraschk, Rolf.Niepraschk@gmx.de
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2003/12/01 or later.
+%%
+%% This work has the LPPL maintenance status "author-maintained".
+
+\ProvidesFile{copy.lco}[2020/10/22 v0.3a copy letter-class-option (RN)]
+\providecommand\IfFormatAtLeastTF{\@ifl@t@r\fmtversion}
+\IfFormatAtLeastTF{2020/10/01}{}{%
+  \PackageError{copy.lco}{%
+    LaTeX version equal to or newer \MessageBreak
+    than '2020/10/01' is required%
+  }{%
+    Renew your TeX installation.%
+  }%
+}
+
+\RequirePackage{xcolor,graphicx}
+
+\AtEndLetter{% Saving the number of total pages of each letter in a separate macro
+  \expandafter\xdef\csname CP@max@pages@\the\c@letter\endcsname{\the\c@page}%
+}
+
+\newcommand*\save@page@copies{% Saving each output page in a separate box
+  \expandafter\newsavebox\csname page@box@\the\c@letter @\the\c@page\endcsname
+  \@latex@info@no@line{Save page \the\c@page\space of  letter \the\c@letter 
+    \space to \string\page@box@\the\c@letter @\the\c@page}%
+  \global\setbox\csname page@box@\the\c@letter @\the\c@page\endcsname=
+    \copy\ShipoutBox
+}
+
+\AddToHook{shipout/before}[CP@save]{\save@page@copies}
+
+\newcommand*\LetterCopyMarker{%
+  \put(0.5\paperwidth,-0.5\paperheight){%
+    \makebox(0,0)[c]{\resizebox{\textwidth}{!}{\rotatebox{45}{%
+      \textsf{\textbf{\color{lightgray}\strut\usekomavar*{copy}}}}}}%
+  }%
+}
+
+\AddToHook{enddocument/afteraux}[CP@shipout]{%
+  \RemoveFromHook{shipout/before}[CP@save]%
+  \if@twoside\ifodd\ReadonlyShipoutCounter
+    \@latex@info@no@line{Output an empty page}%
+    \shipout\null
+  \fi\fi
+  \AddToHook{shipout/background}[CP@marker]{\LetterCopyMarker}%
+  \@tempcnta=\z@
+  \loop% iterate over all letters
+    \advance\@tempcnta\@ne
+    {%
+      \c@page=\z@
+      \edef\@tempa{\@nameuse{CP@max@pages@\the\@tempcnta}}% total pages
+      \loop% iterate over all pages of this letter
+        \advance\c@page\@ne
+        \@latex@info@no@line{Output of the copy of page \the\c@page\space 
+          of letter \the\@tempcnta}%
+        \setbox\ShipoutBox=\box\@nameuse{page@box@\the\@tempcnta @\the\c@page}%
+        \shipout\box\ShipoutBox
+      \ifnum \c@page < \@tempa
+      \repeat
+    }%
+  \ifnum \@tempcnta < \c@letter
+  \repeat
+  \RemoveFromHook{shipout/background}[CP@marker]
+  \RemoveFromHook{enddocument/afteraux}[CP@shipout]
+}
+
+\newkomavar[\copyname]{copy}
+\newcommand*\copyname{Copy}
+
+\defcaptionname{american,australian,british,canadian,%
+  english,newzealand,UKenglish,USenglish}\copyname{Copy}%
+\defcaptionname{german,ngerman,austrian,naustrian,%
+  swissgerman,nswissgerman}\copyname{Kopie}
+\defcaptionname{acadian,francais,french}\copyname{Copie}
+\defcaptionname{spanish,italian,portugese}\copyname{Copia}
+\defcaptionname{polish}\copyname{Kopia}
+\defcaptionname{russian}\copyname{Копия}
+
+\endinput

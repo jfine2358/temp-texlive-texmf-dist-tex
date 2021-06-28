@@ -1,0 +1,84 @@
+%
+% ltj-plain.sty
+%
+
+%! これは外から読まれない
+%% Avoid multiple loading.
+\csname luatexjaplainLoaded\endcsname
+\edef\ltj@plain@AtEnd{%
+\endlinechar=\the\endlinechar
+\relax}
+\endlinechar=-1 %
+\def\luatexjaplainLoaded{\endinput}
+
+\ifltj@in@latex                 %<*LaTeX>
+  \NeedsTeXFormat{LaTeX2e}
+  \PackageWarning{ltj-plain}{Don't load this package directly; load luatexja.sty instead.}
+  \ProvidesPackage{ltj-plain}[2013/06/12]
+\fi                             %</LaTeX>
+
+%%------------------
+
+\endlinechar=13
+%! ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+% LuaTeX-ja macros against plain TeX
+
+\def\ltj@stdmcfont{psft:Ryumin-Light}
+\def\ltj@stdgtfont{psft:GothicBBB-Medium}
+\newread\ltj@@cfgread
+\openin\ltj@@cfgread{luatexja.cfg}%
+\ifeof\ltj@@cfgread
+  \message{Cannot find file `luatexja.cfg'.}%
+\else
+  \closein\ltj@@cfgread
+  \input luatexja.cfg
+\fi
+\let\ltj@@cfgread\relax\advance\count16by-1\relax
+
+\jfont\tenmin=\ltj@stdmcfont:jfm=ujis at 9.62216pt
+\jfont\sevenmin=\ltj@stdmcfont:jfm=ujis at 6.73551pt
+\jfont\fivemin=\ltj@stdmcfont:jfm=ujis at 4.81108pt
+\jfont\tengt=\ltj@stdgtfont:jfm=ujis at 9.62216pt
+\jfont\sevengt=\ltj@stdgtfont:jfm=ujis at 6.73551pt
+\jfont\fivegt=\ltj@stdgtfont:jfm=ujis at 4.81108pt
+
+\let\mc=\tenmin
+\let\gt=\tengt
+\mc
+
+\directlua{
+  local s = kpse.find_file('ltj-kinsoku.lua', 'tex')
+  luatexja.stack.charprop_stack_table[0] = s and dofile(s) or {}
+}
+
+\ltjsetparameter{kanjiskip=0pt plus 0.4pt minus 0.4pt, 
+  xkanjiskip=.25\zw plus 1pt minus 1pt,
+  autospacing, autoxspacing, jacharrange={-1}, 
+  yalbaselineshift=0pt, yjabaselineshift=0pt,
+  jcharwidowpenalty=500, differentjfm=paverage
+}
+
+\ltjdefcharrange{1}{"80-"36F, "1E00-"1EFF} 
+\ltjdefcharrange{2}{"370-"4FF, "1F00-"1FFF} 
+\ltjdefcharrange{3}{%
+  "2000-"243F, "2500-"27BF, "2900-"29FF, "2B00-"2BFF}
+\ltjdefcharrange{4}{%
+   "500-"10FF, "1200-"1DFF, "2440-"245F, "27C0-"28FF, "2A00-"2AFF, 
+  "2C00-"2E7F, "4DC0-"4DFF, "A4D0-"A82F, "A840-"ABFF, "FB00-"FE0F, 
+  "FE20-"FE2F, "FE70-"FEFF, "10000-"1FFFF, "E000-"F8FF} % non-Japanese
+\ltjdefcharrange{5}{"D800-"DFFF, "E0000-"E00FF, "E01F0-"10FFFF} 
+\ltjdefcharrange{6}{%
+  "2460-"24FF, "2E80-"2EFF, "3000-"30FF, "3190-"319F, "31F0-"4DBF, 
+  "4E00-"9FFF, "F900-"FAFF, "FE10-"FE6F, "20000-"2FFFF,"E0100-"E01EF}
+\ltjdefcharrange{7}{
+  "1100-"11FF, "2F00-"2FFF, "3100-"31EF, "A000-"A4CF, "A830-"A83F, 
+  "AC00-"D7FF}
+\ltjdefcharrange{8}{"B4, "A8, "B1, "D7, "F7, "B0, "A7, "B6}
+\ltjsetparameter{jacharrange={-1, +2, +3, -4, -5, +6, +7, +8}}
+
+\directlua{for x=128,255 do luatexja.math.is_math_letters[x] = true end}
+
+%%------------------ all done
+\ltj@plain@AtEnd
+\endinput
+%% EOF

@@ -1,0 +1,123 @@
+%tkz-obj-marks.tex
+% Copyright 2020  Alain Matthes
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status “maintained”.
+% 
+% The Current Maintainer of this work is Alain Matthes.
+
+
+%  utf8 encoding
+\def\fileversion{3.07c}
+\def\filedate{2020/03/18} 
+\typeout{2020/03/18 3.07c  tkz-obj-marks.tex}
+\makeatletter
+%<-------------------------------------------------------------------------–>
+%                               Setup   Marks
+%<-------------------------------------------------------------------------–>
+%<--------------------------------------------------------------------------–>
+%                              DefSetOfPoints
+%<--------------------------------------------------------------------------–>
+\pgfkeys{/tkzSoPt/.cd,
+  prefix/.store in            =    \tkz@pref,
+  prefix                      =  tkzPt,
+  /tkzSoPt/.unknown/.code     = {\let\searchname=\pgfkeyscurrentname
+                                 \pgfkeysalso{\searchname/.try=#1,
+                                /tikz/\searchname/.retry=#1}}  
+}   
+\def\tkzDefSetOfPoints{\pgfutil@ifnextchar[{\tkz@SetOfPoints}{%
+                                         \tkz@SetOfPoints[]}}
+\def\tkz@SetOfPoints[#1]#2{%
+\begingroup 
+\pgfqkeys{/tkzSoPt}{#1} 
+    \tkz@cntmk1 %
+    \edef\tkz@@cnt{\the\tkz@cntmk}
+    \foreach \x/\y in {#2}{% 
+         \tkz@cntmk=\tkz@@cnt %
+         \tkzDefPoint(\x,\y){\tkz@pref\the\tkz@cntmk}
+         \advance\tkz@cntmk by1 % 
+         \xdef\tkz@@cnt{\the\tkz@cntmk}
+    }%
+\endgroup
+}%
+%<-------------------------------------------------------------------------–> 
+\pgfkeys{/tkzjoinmk/.cd,
+          prefix/.store in              = \tkz@pref,
+          prefix                        =  tkzPt,
+          /tkzjoinmk/.search also       = {/tikz} 
+}  
+\def\tkzJoinSetOfPoints{\pgfutil@ifnextchar[{\tkz@JoinSetOfPoints}{%
+                                             \tkz@JoinSetOfPoints[]}} 
+\def\tkz@JoinSetOfPoints[#1]{%
+\begingroup
+   \pgfqkeys{/tkzjoinmk}{#1}  
+   \pgfmathsetcount{\tkz@cntmk}{\tkz@@cnt-2}
+   \edef\tkz@@cnt{\the\tkz@cntmk} 
+   \foreach \nb in {1,...,\tkz@@cnt}{%
+   \tkz@cntmk=\nb
+   \advance\tkz@cntmk by1 
+   \draw[line cap=round,/tkzjoinmk/.cd,#1]
+         (\tkz@pref\nb) -- (\tkz@pref\the\tkz@cntmk);}
+\endgroup}   
+%<-------------------------------------------------------------------------–>
+%              ShowSetOfMark
+%<-------------------------------------------------------------------------–>
+\pgfkeys{/tkzdrawmk/.cd,
+         prefix/.store in            = \tkz@pref,
+         prefix                      = tkzPt,
+        /tkzdrawmk/.search also      = {/tikz}
+} 
+\def\tkzDrawSetOfPoints{\pgfutil@ifnextchar[{\tkz@DrawSetOfPoints}{
+                                             \tkz@DrawSetOfPoints[]}} 
+\def\tkz@DrawSetOfPoints[#1]{%
+\begingroup
+\pgfqkeys{/tkzdrawmk}{#1}  
+\pgfmathsetcount{\tkz@cntmk}{\tkz@@cnt-1}  
+\foreach \nb in {1,...,\tkz@cntmk}{\tkzDrawMark[#1](\tkz@pref\nb)}
+\endgroup} 
+%<-------------------------------------------------------------------------–>
+%               tkzmark
+%<-------------------------------------------------------------------------–>
+\def\tkzDrawMark{\pgfutil@ifnextchar[{\tkz@DrawMark}{\tkz@DrawMark[]}}   
+\def\tkz@DrawMark[#1](#2){%
+    \draw plot[mark style,#1] coordinates {(#2)};  
+}
+%<---------------------------------------------------------–>
+%<---------------------------------------------------------–>
+\def\tkzDrawMarks{\pgfutil@ifnextchar[{\tkz@DrawMarks}{\tkz@DrawMarks[]}}  
+\def\tkz@DrawMarks[#1](#2){%
+   \foreach \point in {#2}{%
+      \draw plot[mark style,#1] coordinates {(\point)};% StyleMark,
+}} 
+%<------------------------------------------------------------–>
+%                Init pour mark
+%<------------------------------------------------------------–>
+\pgfkeys{/setupmk/.cd,
+   size/.store in          =  \tkz@sum@mk@size,
+   color/.store in         =  \tkz@sum@mk@color,
+   fill/.store in          =  \tkz@sum@mk@fill, 
+   mark/.store in          =  \tkz@sum@mk@mark,
+   mark                    =  \tkz@mk@mark,
+   color                   =  \tkz@mk@color,
+   fill                    =  \tkz@mk@color!50,
+   size                    =  \tkz@mk@size
+} 
+\def\tkzSetUpMark{\pgfutil@ifnextchar[{\tkz@SetUpMark}{%
+                                       \tkz@SetUpMark[]}} 
+
+\def\tkz@SetUpMark[#1]{% 
+\pgfqkeys{/setupmk}{#1}
+\tikzset{mark style/.style={%
+  inner sep    = 0pt,
+  mark         = \tkz@sum@mk@mark,
+  mark size    = \tkz@sum@mk@size,
+  mark options = {color = \tkz@sum@mk@color, fill   = \tkz@sum@mk@fill}}}
+}%  
+\makeatother
+\endinput

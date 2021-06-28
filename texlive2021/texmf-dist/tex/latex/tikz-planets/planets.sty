@@ -1,0 +1,494 @@
+% Package tikz-planets -- illustrate celestial mechanics with TikZ
+% Version 1.0.2
+
+% Isabelle M. Santos
+% This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. 
+% To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/
+
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+
+\ProvidesPackage{planets}[2020/04/19 v1.0.2 celestial mechanics with Tikz]
+
+\RequirePackage{tikz}
+\usetikzlibrary{decorations.pathmorphing}
+
+\RequirePackage{xstring}
+
+% Colors %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{xcolor}
+\definecolor{mercury_crater_edge}{rgb}{.44, .42, .41} 
+\definecolor{mercury_crater}{rgb}{.55, .54, .54} 
+\definecolor{venus1}{rgb}{1, 1, .85} 
+\definecolor{venus2}{rgb}{1, .87, .68}
+\definecolor{venus3}{rgb}{.96, .87, .7}
+\definecolor{uranus_gray}{rgb}{.69, .77, .87}
+\definecolor{uranus_blue}{rgb}{.69, .93, .98}
+\definecolor{neptune1}{rgb}{.27, .51, .71} 
+\definecolor{neptune2}{rgb}{.25, .41, .88} 
+\definecolor{neptune3}{rgb}{.53, .85, .95} 
+\definecolor{neptune4}{rgb}{.12, .56, 1} 
+\definecolor{neptune5}{rgb}{.42, .35, .8} 
+\definecolor{neptune_white}{rgb}{94, 1, 1} 
+\definecolor{pluto1}{rgb}{.82, .77, .71}
+\definecolor{pluto2}{rgb}{.24, .18, .11}
+
+\definecolor{brownish}{rgb}{.7, .58, .42} 
+\definecolor{wheat}{rgb}{.96, .87, .7} 
+\definecolor{yellowish}{rgb}{1, 1, .88} 
+\definecolor{orangish}{rgb}{.82, .71, .55}
+\definecolor{pinkish}{rgb}{1, .85, .73} 
+\definecolor{sienna}{rgb}{.50, .26, .14}
+\definecolor{greenish}{rgb}{.8, .78, .64}
+\definecolor{whiteish}{rgb}{.98, .92, .84}
+
+% Keys %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newif\ifrotation
+\newif\ifequator
+\newif\ifaxis
+\newif\ifretrograde
+\newif\ifrings
+
+\RequirePackage{pgfkeys}
+\pgfkeys{
+	/planet/.is family, /planet,
+	surface/.estore in = \surfacename,
+	tilt/.estore in = \axialtilt,
+	phase/.estore in = \planetphase,
+	rotation/.is if = rotation,
+	equator/.is if = equator,
+	axis/.is if = axis,
+	retrograde/.is if = retrograde,
+	rings/.is if = rings,
+	ring/.estore in = \ringradius,
+	color/.estore in = \mycolor,
+	center/.code={\pgfkeyssetvalue{center}{#1}\pgfkeysgetvalue{center}{\planetcenter}},
+	centerx/.estore in = \planetcenterx,
+	centery/.estore in = \planetcentery,
+	scale/.estore in = \planetscale,
+	default/.style = {
+		surface = none,
+		tilt = 0,
+		phase = full,
+		rotation = false,
+		equator = false,
+		axis = false,
+		retrograde = false,
+		rings = false,
+		ring =,
+		color = cyan,
+		centerx = 0,
+		centery = 0,
+		scale = 1,
+	}
+}
+
+% Decorators %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\addaxis}{%
+	\draw [ultra thick] (0,2) --(0, -2);
+}
+
+\newcommand{\addequator}{%
+	% Equateur
+	\draw [dashed] (-1, 0) -- (1, 0);
+}
+
+\newcommand{\addrotation}{%
+	\ifretrograde
+		% equator arrow
+		\draw [->, very thick] (0, 0) -- (-0.4, 0);
+		
+		% axis arrow
+		\draw [->] (.3, 1.5) arc (320 : 220 : 0.4) ;
+	\else
+		% equator arrow
+		\draw [->, very thick] (0, 0) -- (0.4, 0);
+		
+		% axis arrow
+		\draw [->] (-.3, 1.5) arc (220 : 320 : 0.4) ;
+	\fi
+}
+
+\newcommand{\addsurfacephase}[1]{%
+	\IfEqCase{#1}{%
+		{new}{\fill [opacity=0.6, black] (0, 0) circle (1);}
+		{first half}{\fill [opacity=0.6, black] (90:1) arc (90:270:1) -- cycle;}
+		{last half}{\fill [opacity=0.6, black] (90:1) arc (90:-90:1) -- cycle;}
+		{first crescent}{\fill [opacity=0.6, black] (270:1) arc (135:225:-1.41) -- (90:1) arc (90:270:1) -- cycle;}
+		{last crescent}{\fill [opacity=0.6, black] (90:1) arc (90:-90:1) -- (-90:1) arc (225:135:1.41) -- cycle;}
+		{waxing gibbous}{\fill [opacity=0.6, black] (90:1) arc (90:270:1) -- (270:1) arc (225:135:1.41) -- cycle;}
+		{waning gibbous}{\fill [opacity=0.6, black] (90:1) arc (90:-90:1) -- (-90:1) arc (135:225:-1.41) -- cycle;}
+		{top half}{\fill [opacity=0.6, black] (0:1) arc (0:-180:1) -- (-180:1) -- cycle;}
+		{bottom half}{\fill [opacity=0.6, black] (0:1) arc (0:180:1) -- (180:1) -- cycle;}
+		{full}{}
+	}
+}
+
+\newcommand{\drawringpath}[1]{
+	\path[#1, even odd rule]
+	    (0, 0) circle [x radius = 1.3, y radius = .13]
+	    (0, 0) circle [x radius = 1.7, y radius = .17]
+	    (0, 0) circle [x radius = 1.75, y radius = .175]
+	    (0, 0) circle [x radius = 2.1, y radius = .21]; 
+}
+\newcommand{\addringphase}[1]{%
+	\IfEqCase{#1}{%
+		{new}{
+			\clip (-.85, -.25) -- (.85, -.25) -- (1, 0) -- (-1, 0) -- cycle;
+			\drawringpath{inner color=black, outer color=black, opacity=.6}
+		}
+		{first half}{
+			\clip (-1, -.1) -- (-1, .1) -- (-2.2, 0) -- (-2.2, 0) -- cycle;
+			\drawringpath{inner color=black, outer color=black, opacity=.6}
+		}
+		{last half}{
+			\clip (1, -.1) -- (1, .1) -- (2.2, 0) -- (2.2, 0) -- cycle;
+			\drawringpath{inner color=black, outer color=black, opacity=.6}
+		}
+		{first crescent}{
+			\clip (-1.1, 0) -- (-1.5, -.22) -- (0, -.22) -- (1, 0) -- cycle;
+			\drawringpath{inner color=black, outer color=black, opacity=.6}
+		}
+		{last crescent}{
+			\clip (1.1, 0) -- (1.5, -.22) -- (0, -.22) -- (-1, 0) -- cycle;
+			\drawringpath{inner color=black, outer color=black, opacity=.6}
+		}
+		{waxing gibbous}{
+			\clip (-1.2, 0) -- (-1.5, .22) -- (0, .22) -- (1, 0) -- cycle;
+			\drawringpath{inner color=black, outer color=black, opacity=.6}
+		}
+		{waning gibbous}{
+			\clip (1.2, 0) -- (1.5, .22) -- (0, .22) -- (-1, 0) -- cycle;
+			\drawringpath{inner color=black, outer color=black, opacity=.6}
+		}
+		{top half}{
+			%pass
+		}
+		{bottom half}{
+			\drawringpath{inner color=black, outer color=black, opacity=.6}
+		}
+		{full}{
+			%pass
+		}
+	}
+}
+\newcommand{\addrings}{%
+	\drawringpath{inner color=yellowish!90!black,outer color=yellowish!90!black}
+}
+
+\newcommand{\addthinring}[1]{%
+	
+	\def\a{#1}
+	\def\b{\a/7}
+	\def\x{ sqrt( (\a*\a-\b*\b*\a*\a) / (\a*\a-\b*\b) ) }
+	\def\y{ sqrt( 1 - (\a*\a-\b*\b*\a*\a) / (\a*\a-\b*\b) ) }
+
+	\begin{scope}
+		\clip (-{\x}, 0) -- ({\x}, 0) --  ({\x}, 1) --({{\a}}, 1) -- ({\a}, -1) -- (-{\a}, -1) -- (-{\a}, 1) -- (-{\x}, 1) -- (-{\x}, 0) -- cycle;
+		\draw[gray] (0, 0) circle ({\a} and {\b});
+	\end{scope}
+}
+
+% Surfaces %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\sunsurface}{%
+	\draw [yellow!50, ultra thick, fill=yellow!85!red] (0, 0) circle (1);
+}
+
+\newcommand{\mercurysurface}{%
+	\draw [gray!70!black, ultra thick, fill=gray] (0, 0) circle (1);
+
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.5 , 0.56 ) circle ( 0.094 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.23 , 0.31 ) circle ( 0.08 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.03 , 0.65 ) circle ( 0.06 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.17 , 0.79 ) circle ( 0.03 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.15 , 0.15 ) circle ( 0.02 );
+	
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.17 , -0.07 ) circle ( 0.09);
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.01 , -0.28 ) circle ( 0.08 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.33 , -0.42 ) circle ( 0.07 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.01 , -0.54 ) circle ( 0.06 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.63 , -0.3 ) circle ( 0.06 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.02 , -0.88 ) circle ( 0.06 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.85 , -0.05 ) circle ( 0.04 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.61 , -0.14 ) circle ( 0.03 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( 0.7 , -0.16 ) circle ( 0.01 );
+	
+	\draw [mercury_crater_edge, fill=mercury_crater] ( -0.47 , -0.41 ) circle ( 0.08 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( -0.2 , -0.87 ) circle ( 0.07 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( -0.78 , -0.17 ) circle ( 0.03 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( -0.32 , -0.29 ) circle ( 0.02 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( -0.57 , -0.66 ) circle ( 0.02 );
+	
+	\draw [mercury_crater_edge, fill=mercury_crater] ( -0.38 , 0.49 ) circle ( 0.1 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( -0.17 , 0.69 ) circle ( 0.09 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( -0.16 , 0.26 ) circle ( 0.09 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( -0.8 , 0.06 ) circle ( 0.08 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( -0.83 , 0.28 ) circle ( 0.007 );
+	\draw [mercury_crater_edge, fill=mercury_crater] ( -0.23 , 0.51 ) circle ( 0.006 );
+}
+
+\pgfdeclareverticalshading{Venus}{2cm}{
+	color(0cm)=(venus1);
+	color(0.3cm)=(venus2);
+	color(1cm)=(venus3);
+	color(1.7cm)=(venus2!90!black);
+	color(1.9cm)=(venus1)
+}
+\newcommand{\venussurface}{%
+	\draw [color=brown!40, shading=Venus, ultra thick] (0, 0) circle (1);
+}
+
+\newcommand{\earthsurface}{
+	% Globe
+	\draw [fill=cyan] (0,0) circle (1);
+	
+	% Continents
+	\draw [very thin, green, fill=green!70!black] (0.5, 0.45) circle (.3 and .2) ;
+	\draw [very thin, green, fill=green!70!black] (0.7, -.2) circle (.2 and .5) ;
+	
+	\draw [very thin, green, fill=green!70!black] (-.6, 0.4) circle (.25 and .2) ;
+	\draw [very thin, green, fill=green!70!black] (-0.6, -.2) circle (.3 and .4) ;
+	
+	% Poles
+	\fill [white] (-0.423, 0.906) arc (115 : 65 : 1) -- cycle ;
+	\fill [white] (-0.423, -0.906) arc (65 : 115 : -1) -- cycle ;
+	
+	% Edge 
+	\draw [neptune3, ultra thick] (0,0) circle (1);
+}
+
+\newcommand{\moonsurface}{%
+	% Disc
+	\draw [fill=gray!30] (0, 0) circle (1);
+	
+	% Craters
+	\draw [gray!60, ultra thick, fill=gray!55] (-.55, .2) circle (.4);
+	\draw [gray!65, ultra thick, fill=gray!60] (-.1, .65) circle (.3);
+	
+	\draw [gray!15, ultra thick, fill=gray!20] (-.2, -.5) circle (.1);
+	
+	\draw [gray!75, ultra thick, fill=gray!70] (.4, .5) circle (.15);
+	\draw [gray!75, ultra thick, fill=gray!70] (.6, .3) circle (.15);
+	
+	\draw [gray!55, ultra thick, fill=gray!50] (.2, -.2) circle (.2);
+	
+	% Small craters
+	\draw [gray, very thick, fill=gray!80] (.1, -.7) circle (.05);
+	\draw [gray, very thick, fill=gray!80] (.8, -.2) circle (.05);
+	\draw [gray, very thick, fill=gray!80] (-.3, .7) circle (.05);
+	\draw [gray, very thick, fill=gray!80] (-.1, .6) circle (.05);
+	\draw [gray, very thick, fill=gray!80] (-.2, 0) circle (.05);
+	
+	% Edge
+	\draw [gray!40, ultra thick] (0, 0) circle (1);
+}
+
+\newcommand{\marssurface}{%
+	\draw [fill=red!50!brown] (0, 0) circle (1);
+	
+	% Poles
+	\fill [white] (110:1) arc (110 : 70 : 1) -- cycle ;
+	\fill [white] (-110:1) arc (70 : 110 : -1) -- cycle ;
+	
+	% Edge
+	\draw [color=red!60!black, ultra thick] (0, 0) circle (1);
+}
+
+\newcommand{\jupitersurface}{
+	\draw[color=brown!60, fill=brown!20, ultra thick] (0, 0) circle (1);
+	
+	%Stripes
+	\clip (0, 0) circle (1);	
+	\fill [color=brown!70, decorate, decoration={snake, segment length=5, amplitude=.2, post length=0}] (-1.2, -.25) -- (1.1, -.25) -- (1.1, .25) -- (-1.2, .25) -- cycle;
+	
+	\fill [color=brown!70, decorate, decoration={snake, segment length=5, amplitude=.2, post length=0}] (130:1) -- (50:1) -- (50:2) arc (50:130:2) -- cycle;
+	\fill [color=brown!70, decorate, decoration={snake, segment length=5, amplitude=.2, post length=0}] (130:-1) -- (50:-1) -- (50:-2) arc (50:130:-2) -- cycle;
+	
+	\fill [color=brown!30, decorate, decoration={snake, segment length=5, amplitude=.2, post length=0}] (-1.2, -.03) -- (1.1, -.03) -- (1.1, .03) -- (-1.2, .03) -- cycle;
+	
+	\fill [color=brown!50, decorate, decoration={snake, segment length=5, amplitude=.2, post length=0}] (-1.2, .5) -- (1.1, .5) -- (1.1, .54) -- (-1.2, .54) -- cycle;
+	\fill [color=brown!50, decorate, decoration={snake, segment length=5, amplitude=.2, post length=0}] (-1.2, -.5) -- (1.1, -.5) -- (1.1, -.54) -- (-1.2, -.54) -- cycle;
+	
+	% Spot
+	\fill[color=red!50!brown] (-.4, -.3) circle (.18 and .14);
+}
+
+\pgfdeclareverticalshading{Jupiter}{2cm}{
+	color(0cm)=(brownish);
+	color(0.2cm)=(wheat!55!sienna);
+	color(0.4cm)=(yellowish);
+	color(0.7cm)=(orangish);
+	color(0.9cm)=(white);
+	color(1cm)=(whiteish!70!orangish);
+	color(1.1cm)=(wheat);
+	color(1.3cm)=(sienna);
+	color(1.5cm)=(pinkish);
+	color(1.6cm)=(brownish);
+	color(1.7cm)=(white);
+	color(1.9cm)=(wheat!90!black)
+}
+\newcommand{\shadedjupitersurface}{%
+	\draw [color=brown!50, shading=Jupiter, ultra thick] (0, 0) circle (1);
+	
+	% Spot
+	\draw [brownish!50!orangish, thick, fill=orange!50!red] (-0.4, -0.25) circle (.13 and .1);
+}
+
+\pgfdeclareverticalshading{Saturn}{2cm}{
+	color(0cm)=(whiteish!55!black);
+	color(0.1cm)=(greenish!50);
+	color(0.15cm)=(whiteish);
+	color(0.25cm)=(greenish);
+	color(0.3cm)=(whiteish!50!orangish);
+	color(0.6cm)=(greenish);
+	color(0.7cm)=(wheat!90!black);
+	color(0.85cm)=(wheat);
+	color(0.95cm)=(pinkish);
+	color(1cm)=(pinkish);
+	color(1.1cm)=(wheat);
+	color(1.2cm)=(wheat!90!black);
+	color(1.3cm)=(greenish);
+	color(1.5cm)=(whiteish!50!orangish);
+	color(1.7cm)=(yellowish!70!orangish);
+	color(1.9cm)=(whiteish!55!sienna)
+}
+\newcommand{\saturnsurface}{%
+	\draw [color=yellowish, shading=Saturn, ultra thick, shading angle=\axialtilt] (0, 0) circle (1);
+}
+
+\newcommand{\uranussurface}{%
+	\draw [color=uranus_gray, fill=uranus_blue, ultra thick] (0, 0) circle (1);
+}
+
+\pgfdeclareverticalshading{Neptune}{2cm}{
+	color(0cm)=(neptune1!90!black);
+	color(0.35cm)=(neptune2);
+	color(0.4cm)=(neptune_white);
+	color(0.45cm)=(neptune2);
+	color(1.2cm)=(neptune3);
+	color(1.6cm)=(neptune4);
+	color(1.9cm)=(neptune5)
+}
+\newcommand{\neptunesurface}{%
+	\draw [color=blue!40, shading=Neptune, ultra thick, shading angle=\axialtilt] (0, 0) circle (1);
+}
+
+\pgfdeclareverticalshading{Pluto}{2cm}{
+	color(0cm)=(pluto1);
+	color(.4cm)=(pluto2);
+	color(.7cm)=(pluto2);
+	color(1.2cm)=(pluto1);
+	color(1.9cm)=(pluto1)
+}
+\newcommand{\plutosurface}{%
+	\fill [shading=Pluto, shading angle=\axialtilt] (0, 0) circle (1);
+	
+	\fill [pluto1, thick,  domain=-150:100, samples=50] 
+		plot ({ .67*sin(\x) * sin(\x) * sin(\x) + .5 }, 
+			  { .65 * cos(\x) - .2 * cos(2*\x) - .1 * cos(3*\x) - .05 * cos(4*\x) - .4 } );
+	
+	\draw [color=pluto2!50, ultra thick] (0,0) circle (1);
+}
+
+\newcommand{\genericsurface}{
+	\draw [color=white!50!\mycolor, fill=\mycolor, ultra thick] (0, 0) circle (1);
+}
+
+\newcommand{\addsurface}[1]{%
+	\IfEqCase{#1}{%
+		{earth}{\earthsurface}
+		{moon}{\moonsurface}
+		{sun}{\sunsurface}
+		{mars}{\marssurface}
+		{mercury}{\mercurysurface}
+		{venus}{\venussurface}
+		{jupiter}{\jupitersurface}
+		{shadedjupiter}{\shadedjupitersurface}
+		{saturn}{\saturnsurface}
+		{uranus}{\uranussurface}
+		{neptune}{\neptunesurface}
+		{pluto}{\plutosurface}
+		{none}{\genericsurface}
+	}
+}
+
+
+% Main command %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\planet}[1][]{\begingroup%
+	\pgfkeys{/planet, default, #1}
+	
+	\pgfkeysifdefined{center}{%if
+		% pass
+	}{%else
+		\def\planetcenter{(\planetcenterx, \planetcentery)}
+	}
+	
+	\IfStrEqCase{\surfacename}{{saturn}{\ringstrue}}
+	
+	\begin{scope}[shift = \planetcenter, scale = \planetscale]
+	
+	\ifrings
+		%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+		\begin{scope}[rotate=\axialtilt]% bottom half
+			\clip (0, 0) circle (1);
+			\addsurface{\surfacename}
+		\end{scope}
+		\begin{scope}
+			\addsurfacephase{\planetphase}
+		\end{scope}
+		\begin{scope}[rotate=\axialtilt]
+			\addrings
+			\addringphase{\planetphase}
+		\end{scope}
+		\begin{scope}[rotate=\axialtilt]% top half
+			\clip (-1, 0) rectangle (1, 1);
+			\clip (0, 0) circle (1);
+			\addsurface{\surfacename}
+		\end{scope}
+		\begin{scope}
+			\clip (\axialtilt : -1.1) -- (\axialtilt : 1.1) -- (1.1, 1.1) -- (-1.1, 1.1) --  cycle;
+			\addsurfacephase{\planetphase}
+		\end{scope}
+		%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\else
+		\begin{scope}[rotate=\axialtilt]
+			\clip (0, 0) circle (1);
+			\addsurface{\surfacename}
+		\end{scope}
+		\addsurfacephase{\planetphase}
+	\fi
+	
+	\ifrotation
+		\begin{scope}[rotate=\axialtilt]
+			\addaxis
+			\addequator
+			\addrotation
+		\end{scope}
+	\fi
+	
+	\ifequator
+		\begin{scope}[rotate=\axialtilt]
+			\addequator
+		\end{scope}
+	\fi
+	
+	\ifaxis
+		\begin{scope}[rotate=\axialtilt]
+			\addaxis
+		\end{scope}
+	\fi
+	
+	\IfStrEq{\ringradius}{}{%
+        %pass
+    }{%
+    		\begin{scope}[rotate=\axialtilt]
+	        \addthinring{\ringradius}
+        \end{scope}
+    }%
+	
+	\end{scope}
+	\endgroup
+}
+

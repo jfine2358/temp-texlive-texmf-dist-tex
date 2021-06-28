@@ -1,0 +1,60 @@
+%
+% plextarydshln.sty
+% written by Hironobu Yamashita (@aminophen)
+%
+% This package is part of the plautopatch bundle.
+% https://github.com/aminophen/plautopatch
+%
+% This package is expected to be compatible with
+%   * arydshln.sty
+%     (2004/08/31 v1.71 -- 2019/02/21 v1.76)
+%   * plext.sty in platex
+%     (2001/09/26 v1.2  -- 2020/10/07 v1.2m)
+%
+
+%% package declaration
+\NeedsTeXFormat{pLaTeX2e}
+\ProvidesPackage{plextarydshln}
+  [2018/10/20 v0.4 Merge plext and arydshln]
+\RequirePackage{plext}
+\RequirePackage{plarydshln}
+
+%% handle package compatibility issues beforehand
+%  Note: The "arydshln" manual requests users to load
+%        the following packages *before* arydshln,
+%        to ensure compatibility:
+%          array, longtable, colortab, colortbl.
+%        So, hoping that users are clever enough to load
+%        them before plextarydshln, load known patches
+%        at this point when they are detected.
+\@ifpackageloaded{array}{\RequirePackage{plextarray}}{}
+\@ifpackageloaded{colortbl}{\RequirePackage{plextcolortbl}}{}
+%  Note: The following package is not necessarily loaded
+%        before arydshln; but handle the incompatibility
+%        if loaded before plextarydshln.
+\@ifpackageloaded{delarray}{\RequirePackage{plextdelarray}}{}
+
+%% patching internal code for arydshln.sty and plext.sty
+%
+\let\adl@p@array\p@array
+\def\p@array{\adl@everyvbox\everyvbox
+        \everyvbox{\adl@arrayinit \the\adl@everyvbox \everyvbox\adl@everyvbox}%
+        \ifadl@inactive \adl@inactivate \else \adl@activate \fi
+        \let\adl@noalign\noalign
+        \adl@p@array}
+\def\endarray{\adl@endarray \egroup \adl@arrayrestore \egroup
+   \@end@alignbox \csname @arrayright\endcsname}
+%
+%% done
+
+%% compatibility with colortbl.sty
+%
+\@ifpackageloaded{colortbl}{\@firstofone}{\@gobble}
+{% = colortbl.sty loaded
+\def\endarray{\adl@endarray \egroup \adl@arrayrestore \CT@end \egroup
+   \@end@alignbox \csname @arrayright\endcsname}%
+}% =
+%
+%% done
+
+\endinput

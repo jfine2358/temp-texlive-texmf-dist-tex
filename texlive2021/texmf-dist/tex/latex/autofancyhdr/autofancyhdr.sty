@@ -1,0 +1,69 @@
+\ProvidesPackage{autofancyhdr}%
+           [2019/01/18 v0.1
+                  Extensive control of page headers and footers with automatic calculate headheight]%
+\RequirePackage{fancyhdr}
+\RequirePackage{biditools}
+\def\headfootlength{}
+% Redefine \f@nch@vbox for auto height
+\def\f@nch@vbox#1#2{%
+	\setbox0\vbox{#2}%
+	\ifdim\ht0=#1\else%
+	\f@nch@warning{%
+		\string#1 (\the#1) is not equal with \the\ht0.^^J
+		Please compile again to correct this problem.%
+	}%
+	\fi%
+	\ifx#1\headheight%
+	\edef\eheadfootlength{%
+		\string\expandafter\string\def\string\csname\space
+		headleng\thepage \string\endcsname{\strip@pt\ht0}%
+	}%
+	\expandafter\g@addto@macro\expandafter\headfootlength\expandafter{%
+		\eheadfootlength^^J%
+	}%
+	\fi%
+	\box0%
+}
+\bidi@AfterOutputPageShipOut{%
+	\newdimen\newheadheight%
+	\ifcsname headleng\the\numexpr\value{page}+1\relax\endcsname%
+	\setlength{\newheadheight}{%
+		\csname headleng\the\numexpr\value{page}+1\relax\endcsname pt%
+	}%
+	\else%
+	\ifcsname headleng1\endcsname%
+	\setlength{\newheadheight}{%
+		\csname headleng1\endcsname pt%
+	}%
+	\else%
+		\setlength{\newheadheight}{0pt}%
+	\fi%
+	\fi%
+	\global\setlength{\textheight}{
+		\dimexpr\textheight+\headheight-\newheadheight\relax
+	}%
+	\global\setlength{\headheight}{\newheadheight}%
+}%
+\IfFileExists{\jobname.headfootlength}
+{
+	\input{\jobname.headfootlength}
+}
+{}
+\ifcsname headleng1\endcsname
+\global\setlength\headheight{\csname headleng1\endcsname pt}
+\else
+\global\setlength\headheight{0pt}
+\fi
+\bidi@AfterLastShipout{%
+	\if@filesw%
+	\begingroup
+	% same write register as environment `filecontents` uses
+	\chardef\reserved@c=15 %
+	\immediate\openout\reserved@c=\jobname.headfootlength\relax
+	\immediate\write\reserved@c{%
+		\headfootlength%
+	}%
+	\immediate\closeout\reserved@c
+	\endgroup
+	\fi%
+}

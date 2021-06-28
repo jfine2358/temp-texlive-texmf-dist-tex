@@ -1,0 +1,481 @@
+%%
+%% This is file `forest-index.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% forest-index.dtx 
+%% 
+%% `forest-index' is an indexing system for the documentation of package
+%% `forest', using the package itself.  (The derived `forest-index.sty' is not
+%% needed to use the package.)
+%%
+%% Copyright (c) 2012-2017 Saso Zivanovic
+%%                         (Sa\v{s}o \v{Z}ivanovi\'{c})
+%% saso.zivanovic@guest.arnes.si
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%
+%%   http://www.latex-project.org/lppl.txt
+%%
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This file is a part of package `forest'. For the list of files
+%% constituting the package see main source file of the package,
+%% `forest.dtx', or the derived `forest.sty'.
+%%
+\ProvidesPackage{forest-index}
+\RequirePackage{forest}
+\let\forestindex@LaTeX@index\index
+\DeclareDocumentCommand\indexdef{O{} t> m}{%
+  \IfBooleanTF{#2}
+    {\let\forestindex@resolvekey\forestindex@resolvekey@long}
+    {\let\forestindex@resolvekey\forestindex@resolvekey@shortorlong}%
+  \forestindex@index{definition}{#1}{#3}}
+\DeclareDocumentCommand\indexex{O{} t> m}{%
+  \IfBooleanTF{#2}
+    {\let\forestindex@resolvekey\forestindex@resolvekey@long}
+    {\let\forestindex@resolvekey\forestindex@resolvekey@shortorlong}%
+  \forestindex@index{example}{#1}{#3}}
+\DeclareDocumentCommand\indexitem{D(){} O{} t> m}{%
+  \let\forestindex@resolvekey\forestindex@resolvekey@long
+  \forestindex@index{definition}{default={#1},#2,print format+=item}{#4}}
+\DeclareDocumentCommand\indexset{O{} t> m}{%
+  \IfBooleanTF{#2}
+    {\let\forestindex@resolvekey\forestindex@resolvekey@long}
+    {\let\forestindex@resolvekey\forestindex@resolvekey@shortorlong}%
+  \forestindex@index{not print,not index,definition}{set={#1}}{#3}}
+\DeclareDocumentCommand\index{D(){} O{} t> m}{%
+  \IfBooleanTF{#3}
+    {\let\forestindex@resolvekey\forestindex@resolvekey@long}
+    {\let\forestindex@resolvekey\forestindex@resolvekey@shortorlong}%
+  \forestindex@index{#1}{#2}{#4}%
+}
+\def\forestindex@index#1#2#3{%
+  {\forcsvlist{\forestindex@forkey{#1}{#2}}{#3}}%
+}
+\def\forestindex@forkey#1#2#3{%
+  \forestindex@resolvekey{#3}%
+  %\forestset{@index/.process={__o}{#1}{#2}{\forestindex@fullkey}}
+  \edef\forest@marshal{%
+    \noexpand\forestindex@index@{%
+      {\unexpanded{#1}}%
+      {\unexpanded{#2}}%
+      {\expandonce{\forestindex@fullkey}}%
+    }%
+  }\forest@marshal
+}
+\def\forestindex@index@#1{\forestset{@index/.process={__o}#1}}
+\forestset{
+  declare boolean register=print,
+  declare boolean register=index,
+  declare boolean register=short,
+  declare toks={key}{},
+  declare toks={argument}{},
+  declare toks={index key}{},
+  declare toks={index form}{},
+  declare toks={print form}{},
+  declare keylist={index key format}{},
+  declare keylist={index format}{},
+  declare keylist={print format}{},
+  declare autowrapped toks register=result,
+  format'/.style={print format'={#1}, index format'={#1}},
+  format/.style={print format={#1}, index format={#1}},
+  format+/.style={print format+={#1}, index format+={#1}},
+  +format/.style={+print format={#1}, +index format={#1}},
+  form/.style={print form={#1},index form={#1}},
+  form+/.style={print form+={#1},index form+={#1}},
+  +form/.style={+print form={#1},+index form={#1}},
+  declare toks register=index entry type,
+  definition/.style={index entry type=definition},
+  normal/.style={index entry type=normal},
+  example/.style={index entry type=example},
+  normal,
+  declare toks={index@hypertarget}{},
+  every index begin/.style={},
+  every index end/.style={},
+  declare toks register=stage,
+  @index/.style n args={3}{
+    print, index, index entry type=normal, set'={}, short,
+    for nodewalk={
+      split={#3}{>}{create@main@entry@node, create@subentry@node},
+      if n=0{
+        content/.option=key,
+      }{
+        content/.process={OOw2} {!parent.content} {key} {##1>##2},
+      }
+    }{},
+    for root'={
+      if strequal/.process={O}{!root.name}{@unknown}{TeX=\global\forest@memoizing@ok@false}{},
+      for tree={
+        print form/.option=key,
+        index key/.option=key,
+        index form/.option=key,
+      },
+      for first leaf'={
+        on invalid={fake}{
+          every index begin,
+          #1,
+        },
+        for reverse={current and ancestors}{on invalid={fake}{@@index/\forestoption{name}/.try}},
+        if index entry type={definition}{}{%
+          on invalid={fake}{@@index/\forestoption{name}/.try},
+        },
+        on invalid={fake}{
+          #2,
+          every index end
+        },
+        if set={}{}{save@session},
+        if index entry type={definition}{save@foridx}{},
+      },
+      stage={},
+      if index={
+        index@hypertarget/.process={OS_= ? l_ w2}
+         {index key}
+         {}
+         {}{.}
+         {##2##1},
+        for descendants={
+          index@hypertarget/.process={OO S _l1= ? w2 }
+            {!parent.index@hypertarget}{index key}
+            {}
+            {##1}      % empty index key
+            {##1.##2}  % otherwise
+        },
+      }{},
+      if index={
+        begingroup,
+        stage=index,
+        for tree={
+          result/.option=index key,
+          process keylist'={index key format}{current},
+          index key/.register=result,
+        },
+        for tree={
+          result/.option=index form,
+          process keylist'={index format}{current},
+          index form/.register=result,
+        },
+        where index form={}{}{
+          if n=0{
+            temptoksb={},
+          }{
+            temptoksc={},
+            for ancestors={
+              if index form={}{}{
+                temptoksb+/.expanded={\forestregister{temptoksc}%
+                  \noexpand\protect\noexpand\hyperlinknocolor{%
+                    \forestoption{index@hypertarget}}{\forestoption{index form}}},
+                temptoksc={,\space},
+              },
+            },
+            if temptoksb={}{}{
+              +temptoksb={\protect\space\begingroup\protect\scriptsize},
+              temptoksb+={\endgroup},
+            },
+          },
+          temptoksa={},
+          result'={},
+          if n children=0{tempboola}{not tempboola},
+          where index form={}{}{
+            temptoksd/.expanded={\noexpand\protect\noexpand\hypertarget{%
+                  \forestoption{index@hypertarget}}{}},
+            result+/.expanded={%
+              \forestregister{temptoksa}%
+              \forestoption{index key}%
+              =\forestoption{index form}%
+              \forestregister{temptoksd}%
+              \forestregister{temptoksb}%
+            },
+            temptoksa={>},
+            temptoksb={},
+          },
+          result+/.expanded={|indexpagenumber\forestregister{index entry type}},
+          TeX and memoize/.expanded={\noexpand\forestindex@LaTeX@index{\forestregister{result}}},
+        },
+        endgroup
+      }{},
+      if print={
+        begingroup,
+        stage=print,
+        for tree={
+          result/.option=print form,
+          process keylist'={print format}{current},
+          print form/.register=result,
+        },
+        for first leaf'={TeX and memoize/.expanded={\forestoption{print form}}},
+        endgroup,
+      }{},
+    }
+  },
+  create@main@entry@node/.style={% #1 = subentry
+    set root={[]},
+    do dynamics, for root'={process delayed=tree},
+    root',
+    setup@entry@node={#1}
+  },
+  create@subentry@node/.style={
+    append={[]},
+    do dynamics, for root'={process delayed=tree},
+    n=1,
+    setup@entry@node={#1}
+  },
+  setup@entry@node/.style={
+    options={
+      split={#1}{=}{key,argument},
+      if n=0{
+        name'/.option=key,
+        content={#1},
+      }{
+        name'/.process={OOw2} {!parent.name} {key} {##1>##2},
+        content/.process={Ow1} {!parent.content} {##1>#1},
+      },
+    }
+  },
+}
+\forestset{
+  declare keylist register=set,
+  Autoforward register={set}{##1},
+  save@session/.style={@@index/\forestoption{name}/.global style/.register=set},
+  save@foridx/.style={
+    if strequal/.process={O}{!root.name}{@unknown}{}{
+      if set={}{}{
+        TeX and memoize/.expanded={%
+          \noexpand\immediate\noexpand\write\noexpand\forestindex@out{%
+            \noexpand\string\noexpand\indexloadsettings\noexpand\unexpanded{{\forestoption{name}}{\forestregister{set}}}%
+          }%
+        },
+      },
+    },
+    if key/.process={O}{content} {} {%
+      if short={
+        TeX and memoize/.expanded={%
+          \noexpand\immediate\noexpand\write\noexpand\forestindex@out{%
+            \noexpand\string\noexpand\indexdefineshortkey\noexpand\unexpanded{{\forestoption{key}}{\forestoption{content}}}%
+          }%
+        }%
+      }{}
+    }
+  }
+}
+\def\indexloadsettings#1#2{%
+  \pgfkeysifdefined{/forest/@@index/#1/.@cmd}{%
+    \forestindex@loadsettings@warning{#1}%
+  }{}%
+  % #s in #2 are doubled; the following \def removes one layer of doubling
+  \def\forest@temp{#2}%
+  \forestset{@@index/#1/.global style/.expand once=\forest@temp}%
+}
+\def\forestindex@loadsettings@warning#1{%
+  \PackageWarning{forest-index}{Forest index key "#1" was configured more than once!
+    I'm using the last configuration.}%
+}
+\def\indexdefineshortkey#1#2{%
+  \def\forestindex@temp@short{#1}%
+  \def\forestindex@temp@long{#2}%
+  \ifx\forestindex@temp@short\forestindex@temp@long
+  \else
+    \ifcsdef{index@long@#1}{%
+      \global\cslet{index@long@#1}\relax
+      \csgappto{index@alllong@#1}{,#2}%
+    }{%
+      \global\csgdef{index@long@#1}{#2}%
+      \global\csgdef{index@alllong@#1}{#2}%
+    }%
+  \fi
+}
+\def\forestindex@resolvekey@long#1{\def\forestindex@fullkey{#1}}
+\def\forestindex@resolvekey@shortorlong#1{%
+  \pgfutil@in@>{#1}%
+  \ifpgfutil@in@
+    \expandafter\def\expandafter\forestindex@fullkey
+  \else
+    \expandafter\forestindex@resolvekey@short
+  \fi
+  {#1}%
+}
+\def\forestindex@resolvekey@short#1{%
+  \forestset{split={#1}{=}{index@resolveshortkey@key,index@resolveshortkey@arg}}%
+}
+\forestset{
+  index@resolveshortkey@key/.code={%
+    \ifcsvoid{index@long@#1}{%
+      \forestindex@resolveshortkey@warning{#1}%
+      \def\forestindex@fullkey{@unknown>#1}%
+    }{%
+      \letcs\forestindex@fullkey{index@long@#1}%
+    }%
+  },
+  index@resolveshortkey@arg/.code={%
+    \appto\forestindex@fullkey{=#1}%
+  },
+}
+\def\forestindex@resolveshortkey@warning#1{%
+  \PackageWarning{forest-index}{Cannot resolve short forest index key "#1".
+    These are the definitions I found (from the previous run):
+    "\csuse{index@alllong@#1}"}%
+}
+\forestset{
+  normal color/.initial=blue,
+  definition color/.initial=red,
+  example color/.initial=darkgreen,
+  print in color/.style={if stage={print}{result/.expanded=\noexpand\protect\noexpand\textcolor{%
+        \pgfkeysvalueof{/forest/#1 color}}{\unexpanded{##1}}}{}},
+  print in color/.default=\forestregister{index entry type},
+  hyper/.style={
+    if stage={index}{}{
+      if index entry type={definition}{
+        result/.expanded={\noexpand\hypertarget{\forestoption{name}}%
+          {\noexpand\hyperlink{\forestoption{index@hypertarget}}{\forestregister{result}}}}
+      }{
+        result/.expanded=\noexpand\hyperlink{\forestoption{name}}{\forestregister{result}}
+      }
+    }
+  },
+}
+\ifdef\hyperpage{%
+  \newcommand\indexpagenumbernormal[1]{{%
+      \hypersetup{linkcolor=\pgfkeysvalueof{/forest/normal color}}\hyperpage{#1}}}
+  \newcommand\indexpagenumberdefinition[1]{{%
+      \hypersetup{linkcolor=\pgfkeysvalueof{/forest/definition color}}\hyperpage{#1}}}
+  \newcommand\indexpagenumberexample[1]{{%
+      \hypersetup{linkcolor=\pgfkeysvalueof{/forest/example color}}\hyperpage{#1}}}
+}{
+  \newcommand\indexpagenumbernormal[1]{%
+    \textcolor{\pgfkeysvalueof{/forest/normal color}}{#1}}
+  \newcommand\indexpagenumberdefinition[1]{%
+    \textcolor{\pgfkeysvalueof{/forest/definition color}}{#1}}
+  \newcommand\indexpagenumberexample[1]{%
+    \textcolor{\pgfkeysvalueof{/forest/example color}}{#1}}
+}
+\providecommand\hyperlink[2]{#2}
+\providecommand\hypertarget[2]{#2}
+\providecommand\hypersetup[1]{}
+\newcommand\hyperlinknocolor[2]{{\hypersetup{linkcolor=black}\hyperlink{#1}{#2}}}
+\forestset{
+  declare toks register=default,
+  default={},
+  item/.style={
+    result/.process= {_RORw4}
+      {} {default} {!parent.print form} {result}
+      {\item[,##2,##3]{##4}},
+  },
+}
+\pgfkeys{/handlers/.global style/.code=\pgfkeys{\pgfkeyscurrentpath/.global code=\pgfkeysalso{#1}}}
+\pgfkeysdef{/handlers/.global code}{\pgfkeysglobaldef{\pgfkeyscurrentpath}{#1}}
+\long\def\pgfkeysglobaldef#1#2{%
+  \long\def\pgfkeys@temp##1\pgfeov{#2}%
+  \pgfkeysgloballet{#1/.@cmd}{\pgfkeys@temp}%
+  \pgfkeysglobalsetvalue{#1/.@body}{#2}%
+}
+\def\pgfkeysgloballet#1#2{%
+  \expandafter\global\expandafter\let\csname pgfk@#1\endcsname#2%
+}
+\long\def\pgfkeysglobalsetvalue#1#2{%
+  \pgfkeys@temptoks{#2}\expandafter\xdef\csname pgfk@#1\endcsname{\the\pgfkeys@temptoks}%
+}
+\forestset{
+  % unlike pgfmath function strequal, |if strequal| does not expand the compared args!
+  if strequal/.code n args={4}{\ifstrequal{#1}{#2}{\pgfkeysalso{#3}}{\pgfkeysalso{#4}}},
+}
+\forestset{
+  begingroup/.code={\begingroup},
+  endgroup/.code={\endgroup},
+}
+\newtoks\forest@memo@key
+\newtoks\forest@memo
+\newif\ifforest@memoizing@now@
+\newif\ifforest@memoizing@ok@
+\newif\ifforest@execandmemoize@
+\def\forest@memoize#1{% #1 = \cs
+  \cslet{forest@memo@orig@\string#1}#1%
+  \def#1##1{%
+    \ifforest@memoizing@now@
+      \forest@globalsaveandrestoreifcs{forest@execandmemoize@}{%
+        \global\forest@execandmemoize@false
+        \csname forest@memo@orig@\string#1\endcsname{##1}%
+      }%
+    \else
+      \expandafter\global\expandafter\forest@memo@key\expandafter{\detokenize{forest@memo@#1{##1}}}%
+      \ifcsname\the\forest@memo@key\endcsname
+        \@escapeifif{\csname\the\forest@memo@key\endcsname}%
+      \else
+        \@escapeifif{%
+          \global\forest@memo{}%
+          \global\forest@memoizing@ok@true
+          \global\forest@memoizing@now@true
+          \global\forest@execandmemoize@true
+          \csname forest@memo@orig@\string#1\endcsname{##1}%
+          \global\forest@execandmemoize@false
+          \global\forest@memoizing@now@false
+          \ifforest@memoizing@ok@
+            \csxdef{\the\forest@memo@key}{\the\forest@memo}%
+            \immediate\write\forest@memo@out{%
+              \noexpand\forest@memo@load{\the\forest@memo@key}{\the\forest@memo}%
+            }%
+          \fi
+        }%
+      \fi
+    \fi
+  }%
+}
+\def\forest@memo@load#1#2{%
+  \def\forest@temp@key{#1}%
+  \def\forest@temp@value{#2}%
+  \csxdef{\detokenize\expandafter{\forest@temp@key}}{\expandonce\forest@temp@value}%
+  \immediate\write\forest@memo@out{%
+    \noexpand\forest@memo@load{\detokenize\expandafter{\forest@temp@key}}{\detokenize\expandafter{\forest@temp@value}}%
+  }%
+}
+\forestset{
+  TeX and memoize/.code={\forest@execandmemoize{#1}},
+}
+\def\forest@execandmemoize#1{%
+  \ifforest@execandmemoize@
+    \let\forest@memo@next\forest@execandmemoize@
+  \else
+    \let\forest@memo@next\@gobble
+  \fi
+  \forest@memo@next{#1}%
+  #1%
+}
+\def\forest@execandmemoize@#1{%
+  \gapptotoks\forest@memo{#1}%
+}
+\def\forest@memo@filename{\jobname.memo}
+\newwrite\forest@memo@out
+\immediate\openout\forest@memo@out=\forest@memo@filename.tmp
+\IfFileExists{\forest@memo@filename}{%
+  \input\forest@memo@filename\relax
+}{}%
+\AtEndDocument{%
+  \immediate\closeout\forest@memo@out
+  \forest@file@copy{\forest@memo@filename.tmp}{\forest@memo@filename}%
+}
+\forest@memoize\forestindex@index@
+\index(not print,not index)[%
+    set={
+      index key=unknown,
+      form={\textbf{unknown!!}},
+      for first={format={result/.expanded=\noexpand\textbf{\forestregister{result}??}}}
+    },
+  ]>{@unknown}
+\def\forestindex@filename{\jobname.foridx}
+\IfFileExists{\forestindex@filename}{%
+  \input\forestindex@filename\relax
+}{}%
+\newwrite\forestindex@out
+\immediate\openout\forestindex@out=\forestindex@filename.tmp
+\AtEndDocument{%
+  \immediate\closeout\forestindex@out
+  \forest@file@copy{\forestindex@filename.tmp}{\forestindex@filename}%
+}
+\endinput
+%%
+%% End of file `forest-index.sty'.

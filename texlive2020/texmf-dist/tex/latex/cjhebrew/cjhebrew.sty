@@ -1,0 +1,75 @@
+% This file is part of the cjhebrew package
+%
+% cjhebrew is subject to the LaTeX Project Public License (LPPL).
+% A copy of the LPPL can be found in lppl.txt.
+% For the most recent version of this license have a look at
+%
+%    http://www.latex-project.org/lppl.txt
+%
+% Contains code provided by Axel Kielhorn (from lfgwluabidi.sty)
+
+\ProvidesPackage{cjhebrew}
+                    [2017/03/06 v. 0.2a cjhebrew Hebrew Typesetting System]
+\RequirePackage{ifluatex}
+
+\DeclareFontFamily{U}{cjheb}{}
+
+\DeclareFontShape{U}{cjheb}{m}{n}{%
+                     <-7>sfixed*[7]cjhblsm%
+                     <7-11>cjhblsm%
+                     <11->cjhbltx%
+                     }%
+                     {}
+
+\newcommand{\cjhebfamily}{\fontencoding{U}\fontfamily{cjheb}\selectfont}
+
+\DeclareTextFontCommand{\textcjheb}{\cjhebfamily}
+
+\chardef\endofword=33
+\chardef\zeronojoin=124
+\chardef\dottedcircle=203
+
+\ifluatex
+   \RequirePackage{luabidi}
+   
+   % The following lines patch luabidi.sty.  As soon as luabidi.sty
+   % itself is patched, these lines can and should be removed.
+   \def\setRTLmain{\pagedir TRT \bodydir TRT \pardir TRT \textdir TRT}
+   \def\setRTL{\@RTLtrue\pardir TRT \textdir TRT}
+   \let\setRL=\setRTL
+   \def\setLTR{\@RTLfalse\pardir TLT \textdir TLT}
+   \let\setLR=\setLTR
+   \let\unsetRTL=\setLTR
+   \let\unsetLTR=\setRTL
+   \def\RTL{\@RTLtrue\trivlist \pardir TRT \textdir TRT\item\relax}
+   \def\LTR{\trivlist \pardir TLT \textdir TLT\item\relax}
+   \def\Footnote#1{%
+     \begingroup
+     \footnotemark
+     \renewcommand{\thefootnote}{\@arabic\c@footnote}%
+     \pardir TLT \textdir TLT\footnotetext{#1}%
+     \endgroup
+   }
+
+   \newcommand{\cjRL}[1]{\RLE{\textcjheb{#1\endofword}}}
+   \newcommand{\cjLR}[1]{\LRE{\textcjheb{\endofword#1}}}
+   \newenvironment{cjhebrew}{\parindent=0pt\cjhebfamily\setRTL}{\unsetRTL}
+\else
+   \@ifundefined{eTeXrevision}%
+   {%
+     \PackageWarningNoLine{cjhebrew}{\MessageBreak
+       Hebrew text will be typeset from left to right!\MessageBreak
+       You really should use e-TeX}
+     \newcommand{\cjRL}[1]{\bgroup\textcjheb{#1\endofword}\egroup}
+     \newcommand{\cjLR}[1]{\bgroup\endofword#1\egroup}
+     \newenvironment{cjhebrew}{\cjhebfamily}{}
+   }%
+   {%
+     \TeXXeTstate=1
+     \newcommand{\cjRL}[1]{\bgroup\beginR\textcjheb{#1\endofword}\endR\egroup}
+     \newcommand{\cjLR}[1]{\bgroup\beginL\endofword#1\endL\egroup}
+     \newenvironment{cjhebrew}{\parindent=0pt\cjhebfamily\everypar{\beginR}}{}
+   }
+\fi
+
+\def\<#1>{\cjRL{#1}}

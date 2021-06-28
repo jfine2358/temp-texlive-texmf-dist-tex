@@ -1,0 +1,136 @@
+%
+% CoDi: Commutative Diagrams for TeX
+% Copyright (c) 2015-2020 Paolo Brasolin <paolo.brasolin@gmail.com>
+% SPDX-License-Identifier: MIT
+%
+% This file is part of CoDi 1.0.1, released on 2020/06/11 under MIT license.
+%
+
+% καθαρίζω • (katharízo)
+%   1. clean, wash
+%   2. peel, descale
+%   3. (slang) kill
+
+% Katharizo is a detokenization/sanitation mechanism.
+% It produces "safe" strings from tokens.
+
+% ,-- input          input hook
+% `-> expander ---.  performs expansion according to
+% ,---[expand]----'    macro expansion configuration
+% `-> expanded ---.  pre-sanitation hook
+% ,-- sanitizer <-'  performs detokenization and sanitation according to
+% `---[replace]---.    character replacement configuration
+% ,-- sanitized <-'  pre-output hook
+% `-> output         output hook
+
+%==[ input stage ]==============================================================
+
+\pgfqkeys{/katharizo/input}{
+  .forward to=/katharizo/expander
+}
+
+%==[ expansion stage ]==========================================================
+
+\pgfqkeys{/katharizo/expand}{.is choice,
+  once/.style={/katharizo/expander/.style={/katharizo/expanded/.expand once={##1}}},
+  full/.style={/katharizo/expander/.style={/katharizo/expanded/.expanded={##1}}},
+  none/.style={/katharizo/expander/.style={/katharizo/expanded={##1}}},
+  none % default is no expansion
+}
+
+\pgfqkeys{/katharizo/expanded}{
+  .forward to=/katharizo/sanitizer
+}
+
+%==[ sanitation stage ]=========================================================
+
+\pgfqkeys{/katharizo}{
+  replace charcode/.code args={#1 with #2}{%
+    % TODO: would a \string be of any use? or at least a stringification?
+    \pgfkeys{/katharizo/replacements/characters/#1/.initial={#2}}%
+  },
+  remove charcode/.style={/katharizo/replace charcode={{#1} with {}}},
+  remove charcodes/.style args={#1}{%
+    /katharizo/remove charcodes loop={#1 \kD},
+  },
+  remove charcodes loop/.code args={#1 #2\kD}{%
+    % \message{|||#1|#2|||}
+    \ifx\relax#1\else\pgfkeys{/katharizo/remove charcode={#1}}\fi
+    \ifx\relax#2\else\pgfkeys{/katharizo/remove charcodes loop={#2\kD}}\fi
+  },
+  replace character/.code args={#1 with #2}{%
+    \edef\kDFoo{\number`#1}% TODO: can I inline this?
+    % TODO: would a \string be of any use? or at least a stringification?
+    \pgfkeys{/katharizo/replacements/characters/\kDFoo/.initial={#2}}%
+  },
+  remove character/.style={/katharizo/replace character={{#1} with {}}},
+  remove characters/.code args={#1#2}{%
+    \ifx\relax#1\else\pgfkeys{/katharizo/remove character={#1}}\fi
+    \ifx\relax#2\else\pgfkeys{/katharizo/remove characters={#2}}\fi
+  },
+  remove characters={(),.:},
+  remove charcode=92,% \ backslash
+}
+
+\pgfqkeys{/katharizo}{
+  sanitizer/.code={
+    % TODO: token replacement routine? Would that be useful?
+    \kDKatharizoStringify#1\kD
+    \expandafter\kDKatharizoSanitize\the\kDKatharizoStringified\kD
+    \pgfkeysalso{/katharizo/sanitized/.expanded=\the\kDKatharizoSanitized}
+    % \message{^^J:::\the\kDKatharizoSanitized:::^^J}
+  }
+}
+
+\pgfqkeys{/katharizo/sanitized}{
+  .forward to=/katharizo/output
+}
+
+%==[ output stage ]=============================================================
+
+% NOTE: this must be defined/hooked before calling input
+\pgfqkeys{/katharizo/output}{
+  .code={}
+}
+
+\newtoks\kDKatharizoStringified
+
+\def\kDKatharizoStringify#1\kD{
+  \def\kDFoo{#1}
+  \edef\kDFoo{\meaning\kDFoo}
+  \def\kDAct##1:->##2\kD{##2}
+  \edef\kDFoo{\expandafter\kDAct\kDFoo\kD}
+  \kDKatharizoStringified\expandafter{\kDFoo}
+}
+
+\newtoks\kDKatharizoSanitized
+
+\def\kDKatharizoSanitize#1\kD{
+  \pgfkeysifdefined{/katharizo/replacements/characters/32}%
+    {\edef\kDKatharizoSSpace{\pgfkeysvalueof{/katharizo/replacements/characters/32}}}%
+    {\edef\kDKatharizoSSpace{\space}}%
+  \def\kDKatharizoSAppendSpace
+    {\edef\kDAct{\noexpand\kDKatharizoSanitized={\the\kDKatharizoSanitized\kDKatharizoSSpace}}\kDAct}
+  \kDKatharizoSanitized={}
+  \kDKatharizoSString#1 \kD}% NOTE: the whitespace is a mandatory string terminator
+
+\def\kDKatharizoSString#1 #2\kD{%
+  \ifx\relax#1\else                       % if string head word is not empty
+    \kDKatharizoSWord#1\kD                % parse string head word
+    \if#2\space\else                      % if string tail is not the space terminator
+      \ifx\relax#2\else                   %   if string tail is not empty
+        \kDKatharizoSAppendSpace\fi\fi\fi %     append space substitute to output
+  \ifx\relax#2\else                       % if string tail is not empty
+    \kDKatharizoSString#2\kD\fi}          %   recurse on string tail
+
+\def\kDKatharizoSWord#1#2\kD{%
+  \kDKatharizoSCharacter#1\kD   % parse word head character
+  \ifx\relax#2\else             % if word tail is not empty
+    \kDKatharizoSWord#2\kD\fi}  %   recurse on word tail
+
+\def\kDKatharizoSCharacter#1\kD{%
+  \pgfkeysifdefined{/katharizo/replacements/characters/\number`#1}%
+    {\edef\kDFoo{\pgfkeysvalueof{/katharizo/replacements/characters/\number`#1}}}%
+    {\edef\kDFoo{#1}}%
+  \edef\kDAct{\noexpand\kDKatharizoSanitized={\the\kDKatharizoSanitized\kDFoo}}%
+  \kDAct}

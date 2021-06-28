@@ -1,0 +1,243 @@
+%D \module
+%D   [       file=pragma,
+%D        version=2009.07.18,
+%D          title=\CONTEXT\ Letter Extension,
+%D       subtitle=Pragma Style,
+%D         author=Wolfgang Schuster,
+%D           date=\currentdate,
+%D      copyright=Wolfgang Schuster,
+%D          email=schuster.wolfgang@googlemail.com,
+%D        license=Public Domain]
+
+\unprotect
+
+\useletterstyle    [pragma] % predefined layout
+\useletterextension[pragma] % example text
+
+\setvariables
+  [letter:head]
+  [graphic=]
+
+\setupletterstyle
+  [\v!option]
+  [\c!backgroundimage=\getvariable{letter:head}{graphic}]
+
+\setvariables
+  [letter:style]
+  [opening=formal,
+   closing=informal]
+
+\setvariables
+  [letter:data]
+  [content={\getbuffer[texletter]}]
+
+\startsetups[letter:address]
+  \def\\{\endgraf}\getvariable{letter:data}{address}
+\stopsetups
+
+\def\SomeTableEntry#1%
+  {\doifsomething{\getvariable{letter:data}{#1}}
+      {\doiftext{\labeltext{letter:table:#1}}
+         {\NC\labeltext{letter:table:#1}\EQ\getvariable{letter:data}{#1}\NC\NR}}}
+
+\startsetups[letter:reference:table]
+
+  \setuptabulate[\c!before=,\c!after=] \blank[synchronize]
+
+  \starttabulate[|l|p|]
+    \SomeTableEntry {concerns}
+    \SomeTableEntry {date}
+    \SomeTableEntry {subject}
+    \SomeTableEntry {reference}
+  \stoptabulate
+
+\stopsetups
+
+\setvariables
+  [letter:address]
+  [line=3,
+   hoffset=0pt,
+   width=25em,
+   noflines=10]
+
+\setvariables
+  [letter:reference]
+  [line=1,
+   noflines-min=2,
+   noflines-max=5,
+   noflines=\getvariable{letter:reference}{noflines-max}]
+
+\startsetups[letter:before]
+
+  % I overload the predefined value for the address layer
+
+  \setupletterstyle
+    [\v!address]
+    [\v!layer]
+    [\c!line=\getvariable{letter:address}{line},
+     \c!hoffset=\dimexpr\backspace-\linewidth+\getvariable{letter:address}{hoffset}\relax,
+     \c!height=\getvariable{letter:address}{noflines}\lineheight]
+
+  \setupletterstyle
+    [\v!address]
+    [\v!frame]
+    [\c!width=\getvariable{letter:address}{width}]
+
+  \page
+
+  \setupletterstyle
+    [\v!reference]
+    [\c!line=\getvariable{letter:reference}{line},
+     \c!height=\getvariable{letter:reference}{noflines}\lineheight]
+
+  \doifelsenothing{\getvariable{letter:data}{concerns}
+                   \getvariable{letter:data}{subject}}
+    {\setupletterstyle[\v!reference][\c!height=\getvariable{letter:reference}{noflines-min}\lineheight]}
+    {\setupletterstyle[\v!reference][\c!height=\getvariable{letter:reference}{noflines-max}\lineheight]}
+
+\stopsetups
+
+\setupletterstyle
+  [\v!option]
+  [\c!before={\setups[letter:before]}]
+
+\startsetups[letter:reference]
+
+  \doifsomething{\getvariable{letter:data}{concerns}
+                 \getvariable{letter:data}{subject}}
+    {\setups[letter:reference:table]\blank}
+
+  \doifsomething{\getvariable{letter:data}{residence}}
+    {\noindent
+     \hbox\!!to\hsize
+       {\hss
+        \getvariable{letter:data}{residence},\space
+        \getvariable{letter:data}{date}}}
+
+\stopsetups
+
+\startsetups[letter:optimize]
+
+\stopsetups
+
+\startsetups[letter:opening:unknown]
+  \labeltext{letter:opening:unknown}
+\stopsetups
+
+\startsetups[letter:opening:informal]
+
+  \doifelsenothing{\getvariable{letter:data}{informalname}}
+    {\labeltext{letter:opening:unknown}}
+    {\labeltext{letter:opening:informal}\space
+     \getvariable{letter:data}{informalname}},
+
+\stopsetups
+
+\startsetups[letter:opening:formal]
+
+  \doifelsenothing{\getvariable{letter:data}{formalname}}
+    {\labeltext{letter:opening:unknown}}
+    {\labeltext{letter:opening:formal}\space
+     \doifsomething{\getvariable{letter:data}{prefix}}
+       {\getvariable{letter:data}{prefix}\space}
+     \getvariable{letter:data}{formalname}},
+
+\stopsetups
+
+\startsetups[letter:opening]
+  \setups[letter:opening:\getvariable{letter:style}{opening}]
+\stopsetups
+
+\def\startlettercontent
+  {\dostartbuffer[texletter][startlettercontent][stoplettercontent]}
+
+\startsetups[letter:content]
+  \getvariable{letter:data}{content}
+\stopsetups
+
+\startsetups[letter:closing:informal]
+
+  \blank
+
+  \doifelsenothing{\getvariable{letter:data}{greeting}}
+    {\noindent\labeltext{letter:greeting:informal}}
+    {\noindent\getvariable{letter:data}{greeting}},
+
+  \blank
+
+  \noindent\getvariable{letter:data}{author}
+
+\stopsetups
+
+\startsetups[letter:closing:formal]
+
+  \blank
+
+  \doifelsenothing{\getvariable{letter:data}{greeting}}
+    {\noindent\labeltext{letter:greeting:formal}}
+    {\noindent\getvariable{letter:data}{greeting}},
+
+  \blank
+
+  \noindent\getvariable{letter:data}{author}
+
+\stopsetups
+
+\startsetups[letter:closing]
+  \setups[letter:closing:\getvariable{letter:style}{closing}]
+\stopsetups
+
+\startsetups[letter:appendices]
+  \getvariable{letter:data}{appendices}
+\stopsetups
+
+%D Labels
+
+\setuplabeltext
+  [nl]
+  [letter:appendices=bijlage(n) : ,
+   letter:subject=het onderwerp,
+   letter:opening:formal=Geachte,
+   letter:opening:informal=Beste,
+   letter:opening:unknown=LS,
+   letter:name:unknown=lezer,
+   letter:greeting:informal=Een vriendelijke groet,
+   letter:greeting:formal=Hoogachtend]
+
+\setuplabeltext
+  [en]
+  [letter:appendices=appendices : ,
+   letter:subject=the topic,
+   letter:opening:formal=Dear,
+   letter:opening:informal=Dear,
+   letter:opening:unknown=LS,
+   letter:name:unknown=reader,
+   letter:greeting:informal=Regards,
+   letter:greeting:formal=Sincerely yours]
+
+\setuplabeltext
+  [de]
+  [letter:appendices=Anlagen : ,
+   letter:subject=das Kennzeichen,
+   letter:opening:formal=Sehr Geehrte,
+   letter:opening:informal=Hallo,
+   letter:opening:unknown=LS,
+   letter:name:unknown=Leser,
+   letter:greeting:informal=Mit freundlichen Gr\uumlaut\ssharp en,
+   letter:greeting:formal=Hochachtungsvoll]
+
+\setuplabeltext
+  [nl]
+  [letter:table:concerns=betreft,
+   letter:table:date=datum,
+   letter:table:subject=kenmerk,
+   letter:table:reference=referentie]
+
+\setuplabeltext
+  [en]
+  [letter:table:concerns=concerns,
+   letter:table:date=date,
+   letter:table:subject=subject,
+   letter:table:reference=reference]
+
+\protect \endinput

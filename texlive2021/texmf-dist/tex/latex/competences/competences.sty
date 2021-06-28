@@ -1,0 +1,329 @@
+%%
+%% This is file `competences.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% competences.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (C) 2016 by Christophe Bares <christopheATbares.fr>
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.3 of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3 or later is part of all distributions of LaTeX version
+%% 2005/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[2005/12/01]
+\ProvidesPackage{competences}
+    [2016/10/27 v1.0]
+
+\newcommand{\dummyMacro}{}
+
+\newenvironment{dummyEnv}{%
+}{%
+}
+
+\RequirePackage[%
+color=blue!20,%
+]{todonotes}
+\reversemarginpar
+
+\RequirePackage{datatool}
+\RequirePackage{etoolbox}
+\RequirePackage{longtable}
+
+\def\total{0}
+\def\gtotal{0}
+
+\newcommand{\getCurrentSectionNumber}{%
+  \ifnum\c@enumi=0 %
+    \ifnum\c@section=0 %
+      \thechapter
+    \else
+      \ifnum\c@subsection=0 %
+        \thesection
+      \else
+        \ifnum\c@subsubsection=0 %
+          \thesubsection
+        \else
+          \thesubsubsection
+        \fi
+      \fi
+    \fi
+  \else
+    \ifnum\c@enumii=0 %
+       \theenumi
+     \else
+       \theenumii
+     \fi
+   \fi
+}
+
+\newcommand{\getCurrentpartiedocument}{%
+  \thesection
+}
+
+\DTLgnewdb{CS}
+\DTLgnewdb{QUEST}
+\DTLgnewdb{PARTIE}
+\DTLgnewdb{PF}
+\DTLaddcolumn{QUEST}{compsec}%
+\DTLaddcolumn{QUEST}{partie}%
+
+\newcommand{\ifcompexists}[3]{%
+  \DTLgetrowforkey{\competences@tmpcs}{CS}{cs}{#1}%
+  \ifdefempty{\competences@tmpcs}{#3}{#2}%
+}
+
+\newcommand{\ifquestexists}[3]{%
+  \DTLgetrowforkey{\competences@tmpq}{QUEST}{compsec}{#1}%
+  \ifdefempty{\competences@tmpq}{#3}{#2}%
+}
+
+\newcommand{\ifpartexists}[3]{%
+  \DTLgetrowforkey{\competences@tmpp}{PARTIE}{partie}{#1}%
+  \ifdefempty{\competences@tmpp}{#3}{#2}%
+}
+
+\newcommand{\addcompetence}[2][1]{%
+  \todo[noline]{#2}
+
+  \ifcompexists{#2}{%
+    }
+    {\DTLnewrow{CS}%
+    \DTLnewdbentry{CS}{cs}{#2}%
+    \DTLaddcolumn{QUEST}{#2}%
+    }
+  \def\quest{\getCurrentSectionNumber}
+  \def\partie{\getCurrentpartiedocument}
+
+  \ifpartexists{\partie}{}{
+    \DTLnewrow{PARTIE}%
+    \dtlexpandnewvalue
+    \DTLnewdbentry{PARTIE}{partie}{\partie}%
+    \dtlnoexpandnewvalue
+    }
+
+  \ifquestexists{\quest}{%
+    \DTLnewdbentry{QUEST}{#2}{#1}%
+  }{%
+    \DTLforeach*{CS}{\cs=cs}{
+      \DTLaddcolumn{QUEST}{\cs}%
+    }%
+
+    \DTLnewrow{QUEST}%
+    \dtlexpandnewvalue
+    \DTLnewdbentry{QUEST}{compsec}{\quest}%
+    \DTLnewdbentry{QUEST}{partie}{\partie}%
+    \dtlnoexpandnewvalue
+    \DTLnewdbentry{QUEST}{#2}{#1}%
+  }
+}
+
+\newcommand{\addGlobalCompetence}[2][1]{%
+  \ifcompexists{#2}{%
+  }{%
+    \DTLnewrow{CS}%
+    \DTLnewdbentry{CS}{cs}{#2}%
+    \DTLaddcolumn{QUEST}{#2}%
+  }
+
+  \def\quest{-}
+  \def\partie{Global}
+
+  \ifpartexists{\partie}{%
+  }{%
+    \DTLnewrow{PARTIE}%
+    \dtlexpandnewvalue
+    \DTLnewdbentry{PARTIE}{partie}{\partie}%
+    \dtlnoexpandnewvalue
+    }
+
+  \ifquestexists{\quest}{%
+    \DTLnewdbentry{QUEST}{#2}{#1}%
+  }{%
+    \DTLforeach*{CS}{\cs=cs}{
+      \DTLaddcolumn{QUEST}{\cs}%
+    }%
+
+    \DTLnewrow{QUEST}%
+    \dtlexpandnewvalue
+    \DTLnewdbentry{QUEST}{compsec}{\quest}%
+    \DTLnewdbentry{QUEST}{partie}{\partie}%
+    \dtlnoexpandnewvalue
+    \DTLnewdbentry{QUEST}{#2}{#1}%
+  }
+}
+
+\newcommand{\tableaucompetences}{%
+Ce sujet aborde \DTLrowcount{CS}\ compétences: \DTLforeach*{CS}{\compname=cs}{\compname\DTLiflastrow{.}{, }}
+  \bigskip
+
+  \begin{longtable}{l|c|*{\DTLrowcount{CS}}{|c}||c}
+  Question &Partie& \DTLforeach*{CS}{\cs=cs}{\cs &} points\\\hline
+  \DTLforeach*{QUEST}{\compsec=compsec,\partie=partie}{
+       \DTLforeachkeyinrow{\point}
+{\DTLifstringeq{\point}{NULL}{}{
+  \point%
+  \DTLifstringeq{\dtlkey}{compsec}{}{%
+    \DTLifstringeq{\dtlkey}{partie}{}{%
+      \DTLgadd{\total}{\point}{\total}%
+      }%
+    }%
+  } & %
+}
+   \total
+   \DTLgadd{\gtotal}{\total}{\gtotal}
+   \DTLgadd{\total}{0}{0}
+   \DTLiflastrow{\\\hline}{\\}%
+  }%
+  Total &-&\DTLforeach*{CS}{\cs=cs}{\DTLsumforkeys{QUEST}{\cs}{\total} \total&} \gtotal\\\hline
+  & & \DTLforeach*{CS}{\cs=cs}{\cs &}
+  \end{longtable}
+
+%% For debugging
+
+}
+\def\cstotal{0}%
+\newcommand{\sumcspartie}[2]{%
+    \DTLgadd{\cstotal}{0}{0}%
+    \DTLforeach*[\DTLiseq{\part}{#1}]{QUEST}{\comp=#2,\part=partie}{%
+      \DTLifnull{\comp}{}{\DTLgadd{\cstotal}{\cstotal}{\comp}}%
+    }%
+}
+
+\newcommand{\tableaupartie}[1]{%
+\def\ptotal{0}
+\def\pctotal{0}
+\def\gptotal{0}
+Bilan Partie #1
+  \begin{longtable}{l|c|*{\DTLrowcount{CS}}{|c}||c}%
+  Question &Partie& \DTLforeach*{CS}{\cs=cs}{\cs &} points\\\hline
+  \DTLforeach*[\DTLiseq{\partie}{#1}]{QUEST}{\compsec=compsec,\partie=partie}{%
+    \DTLforeachkeyinrow{\point}%
+      {\DTLifstringeq{\point}{NULL}{}{%
+\point%
+\DTLifstringeq{\dtlkey}{compsec}{}{%
+  \DTLifstringeq{\dtlkey}{partie}{}{%
+    \DTLgadd{\ptotal}{\point}{\ptotal}%
+     }%
+   }%
+}&%
+      }%
+    \ptotal%
+    \DTLgadd{\gptotal}{\ptotal}{\gptotal}%
+    \DTLgadd{\ptotal}{0}{0}%
+    \\\hline%
+  }%
+  Total &-&\DTLforeach*{CS}{\cs=cs}{%
+    \sumcspartie{#1}{\cs}%
+    \cstotal
+    &
+    }%
+    \gptotal\\\hline
+  Total \% &-&\DTLforeach*{CS}{\cs=cs}{%
+    \sumcspartie{#1}{\cs}
+    \DTLdiv{\pctotal}{\cstotal}{\gptotal}%
+    \DTLmul{\pctotal}{100}{\pctotal}%
+    \DTLround{\pctotal}{\pctotal}{1}%
+    \pctotal \%&%
+    }%
+    100.0\%\\\hline
+  & & \DTLforeach*{CS}{\cs=cs}{\cs &}
+  \end{longtable}
+
+%% For debugging
+}
+
+\def\pftotal{0}
+\newcommand{\sumpfpartie}[2]{%
+  \DTLgadd{\pftotal}{0}{0}%
+  \DTLforeach*[\DTLisinlist{\partiein}{#1}]{QUEST}{\compsec=compsec,\partiein=partie}{%
+    \DTLforeachkeyinrow{\point}{%
+      \DTLifstringeq{\point}{NULL}{}{%
+\DTLifstringeq{\dtlkey}{compsec}{}{%
+  \DTLifstringeq{\dtlkey}{partie}{}{%
+    \DTLifStartsWith{\dtlkey}{#2}{%
+\DTLgadd{\pftotal}{\pftotal}{\point}%
+    }{}%
+  }%
+}%
+      }%
+    }%
+  }%
+}%
+
+\newcommand{\tableauprefix}[1]{%
+\begin{center}
+\begin{tabular}{|c|*{\DTLrowcount{PF}}{|c}||c|}\hline%
+  Partie & \DTLforeach*{PF}{\pf=pf}{\pf &} Total\\\hline
+  \DTLforeach*[\DTLisinlist{\partie}{#1}]{PARTIE}{\partie=partie}{%
+    \partie &
+    \DTLgadd{\gptotal}{0}{0}%
+    \DTLforeach*{PF}{\pf=pf}{%
+      \sumpfpartie{\partie}{\pf}%
+      \pftotal
+      \DTLgadd{\gptotal}{\pftotal}{\gptotal}%
+      \DTLgadd{\pftotal}{0}{0}%
+      &
+    }%
+    \gptotal\\
+    &
+    \DTLforeach*{PF}{\pf=pf}{%
+      \sumpfpartie{\partie}{\pf}%
+      \DTLdiv{\pctotal}{\pftotal}{\gptotal}%
+      \DTLmul{\pctotal}{100}{\pctotal}%
+      \DTLround{\pctotal}{\pctotal}{1}%
+      \pctotal \%%
+      \DTLgadd{\pftotal}{0}{0}%
+      &
+    }%
+    \\\hline
+  }%
+  Total &
+  \DTLgadd{\gptotal}{0}{0}%
+    \DTLforeach*{PF}{\pf=pf}{%
+      \sumpfpartie{#1}{\pf}%
+      \pftotal
+      \DTLgadd{\gptotal}{\pftotal}{\gptotal}%
+      \DTLgadd{\pftotal}{0}{0}%
+      &
+    }%
+    \gptotal\\
+    &%
+    \DTLforeach*{PF}{\pf=pf}{%
+      \sumpfpartie{#1}{\pf}%
+      \DTLdiv{\pctotal}{\pftotal}{\gptotal}%
+      \DTLmul{\pctotal}{100}{\pctotal}%
+      \DTLround{\pctotal}{\pctotal}{1}%
+      \pctotal \%%
+      \DTLgadd{\pftotal}{0}{0}%
+      &
+    }%
+    100\%\\\hline
+\end{tabular}
+\end{center}
+}%
+
+\newcommand{\declarecompetence}[1]{%
+   \DTLnewrow{CS}%
+   \DTLnewdbentry{CS}{cs}{#1}%
+}
+
+\newcommand{\declareprefix}[1]{%
+   \DTLnewrow{PF}%
+   \DTLnewdbentry{PF}{pf}{#1}%
+}
+
+
+
+\endinput
+%%
+%% End of file `competences.sty'.

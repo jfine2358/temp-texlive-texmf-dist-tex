@@ -1,0 +1,60 @@
+%D \module
+%D   [       file=mlib-pps,
+%D        version=2008.03.25,
+%D          title=\METAPOST\ Integrated Graphics,
+%D       subtitle=Basics,
+%D         author=Hans Hagen,
+%D           date=\currentdate,
+%D      copyright=PRAGMA]
+%C
+%C This module is part of the \CONTEXT\ macro||package and is
+%C therefore copyrighted by \PRAGMA. See mreadme.pdf for
+%C details.
+
+\unprotect
+
+\registerctxluafile{mlib-pps}{1.001}
+
+%D Todo: catch nested graphics like external figures with dummies.
+
+% \newtoks\everyMPLIBtext % not yet used
+
+% \appendtoks
+%     \let\handleuseMPgraphic     \thirdofthreearguments
+%     \let\handlereusableMPgraphic\thirdofthreearguments
+% \to \everyMPLIBtext
+
+% this will move !
+
+% Instead of preallocated boxes we now use a table of lists so that we
+% have no limitation. Typically an example of a next version solution
+% due to \LUATEX\ evolving.
+
+\newbox \MPtextbox
+\newtoks\everyMPLIBsettext
+
+\def\MPLIBfigure#1#2%
+  {\setbox\scratchbox\hbox{\externalfigure[#1][\c!mask=#2]}%
+   \ctxlua{metapost.edefsxsy(\number\wd\scratchbox,\number\ht\scratchbox,0)}%
+   \vbox to \zeropoint{\vss\hbox to \zeropoint{\scale[\c!sx=\sx,\c!sy=\sy]{\box\scratchbox}\hss}}}
+
+\def\MPLIBsettext#1% #2%
+  {\dowithnextbox{\ctxlua{metapost.settext(\number\nextbox,#1)}}\hbox}
+
+\def\MPLIBgettextscaled#1#2#3%  why a copy .. can be used more often
+  {\ctxlua{metapost.gettext(\number\MPtextbox,#1)}% we need the colorhack or else the color backend does not sync
+   \vbox to \zeropoint{\vss\hbox to \zeropoint{\scale[\c!sx=#2,\c!sy=#3]{\raise\dp\MPtextbox\box\MPtextbox}\forcecolorhack\hss}}}
+
+\def\MPLIBgraphictext#1%
+  {\startTEXpage[\c!scale=10000]#1\stopTEXpage}
+
+\def\MPLIBpositionwhd#1#2#3#4#5%
+  {\dosavepositionwhd{#1}{0}{#2sp}{#3sp}{#4sp}{#5sp}{0sp}}
+
+\def\MPLIBextrapass#1%
+  {\ctxlua{metapost.graphic_extra_pass(#1)}}
+
+\def\MPLIBresettexts
+  {\ctxlua{metapost.resettextexts()}}
+
+\protect \endinput

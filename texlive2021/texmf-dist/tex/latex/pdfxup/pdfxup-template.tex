@@ -1,0 +1,278 @@
+\expandafter\ifx\csname pdfxupfile\endcsname\relax
+\PackageError{pdfxup}{This file should not be compiled alone}
+             {File pdfxup-template.pdf is not meant to be compiled alone.
+               \MessageBreak
+             It should only be used via the 'pdfxup' script.}
+\fi
+
+\documentclass{minimal}
+  \usepackage[margin=0pt,\pdfxupoutputpaper paper]{geometry}
+  \ifnum\pdfxupoutputlandscape=1\relax\geometry{landscape}\fi
+  \usepackage{graphicx}
+  \IfFileExists{grffile.sty}{\usepackage{grffile}}{}
+
+  \topskip=0pt
+  \parindent=0pt
+  
+  \makeatletter
+
+  %% define functions for parsing comma-separated lists of ranges of pages
+  \newcounter{result}%
+  \newif\iffound
+  \def\@parserange#1-#2-#3\@end#4\@end{%
+    \setcounter{result}{#4}%
+    \ifnum\value{result}=1\relax
+      \foundtrue
+      \setcounter{result}{#1}%
+    \else
+      \addtocounter{result}{-1}%
+      \ifx\relax#3\relax%% means that range contains no -
+      \else
+        \addtocounter{result}{#1}%
+        \ifnum#2<\value{result}\relax
+          \addtocounter{result}{-#2}%
+        \else
+          \foundtrue
+        \fi
+      \fi
+    \fi}
+  \def\parserange#1#2{\expandafter\@parserange#2-SINGLE-\@end#1\@end}
+  \def\@parsecsl#1,#2\@end#3\@end{%
+    \parserange{#3}{#1}%
+    \iffound\else
+    \ifx\relax#2\relax\else\@parsecsl#2\@end\value{result}\@end\fi\fi}
+   %% \nthvalue#1#2 looks for #1-th value in list of intervals #2
+  \def\nthvalue#1#2{\foundfalse\expandafter\@parsecsl#2,\@end#1\@end}
+   %%
+
+
+  %% perform various computations:
+  %% - width and height of image (\hresult and \vresult)
+  %% - width and height of frame containing image (\hboxsize and \vboxsize)
+  \newcounter{lastpage}
+  \newcounter{outpage}
+  \setcounter{outpage}{\pdfxupnbpages}
+  \addtocounter{outpage}{-1}
+  \divide\c@outpage by \pdfxupnbhoriz
+  \divide\c@outpage by \pdfxupnbvert
+  \ifbooklet
+    \divide\c@outpage by 2
+  \fi
+  \stepcounter{outpage}
+  \ifbooklet
+    \multiply\c@outpage by 2
+  \fi
+  \setcounter{lastpage}{\value{outpage}}
+  \multiply\c@lastpage by \pdfxupnbhoriz
+  \multiply\c@lastpage by \pdfxupnbvert
+  \makeatother
+  %
+  \newlength\outputvmargin
+  \newlength\outputhmargin
+  \setlength\outputvmargin{\pdfxupvmargin}
+  \setlength\outputhmargin{\pdfxuphmargin}
+  \newlength\innervmargin
+  \newlength\innerhmargin
+  \setlength\innervmargin{\pdfxupinnervmargin}
+  \setlength\innerhmargin{\pdfxupinnerhmargin}
+  \newlength\outputindivvmargin
+  \newlength\outputindivhmargin
+  \setlength\outputindivvmargin{\pdfxupintermvspace}
+  \setlength\outputindivhmargin{\pdfxupintermhspace}
+  %
+  \fboxsep=0pt%
+  \setlength\fboxrule{\pdfxupframewidth}
+  \newlength\hresult
+  \newlength\vresult
+  \newlength\vboxsize
+  \newlength\hboxsize  
+  \hresult=\paperwidth
+  \advance\hresult by -\pdfxupnbhoriz\fboxrule
+  \advance\hresult by -\pdfxupnbhoriz\fboxrule
+  \advance\hresult by -\pdfxupnbhoriz\innerhmargin
+  \advance\hresult by -\pdfxupnbhoriz\innerhmargin
+  \vresult=\paperheight 
+  \advance\vresult by -\pdfxupnbvert\fboxrule
+  \advance\vresult by -\pdfxupnbvert\fboxrule
+  \advance\vresult by -\pdfxupnbvert\innerhmargin
+  \advance\vresult by -\pdfxupnbvert\innerhmargin
+  %
+  \advance\hresult by -2\outputhmargin
+  \advance\vresult by -2\outputvmargin
+  %
+  \advance\hresult by -\pdfxupnbhoriz \outputindivhmargin
+  \advance\vresult by -\pdfxupnbvert \outputindivvmargin
+  \advance\hresult by \outputindivhmargin
+  \advance\vresult by \outputindivvmargin
+  %
+  \divide\hresult by \pdfxupnbhoriz
+  \divide\vresult by \pdfxupnbvert
+
+  \vboxsize=\vresult
+  \advance\vboxsize by 2\fboxrule
+  \advance\vboxsize by 2\innervmargin
+  \hboxsize=\hresult
+  \advance\hboxsize by 2\fboxrule
+  \advance\hboxsize by 2\innerhmargin
+
+
+  %% compute actual scale by which PDF is shrunk (or extended)
+  \ifnum\pdfxupemptybb=0\relax
+  \newcounter{origx}
+  \setcounter{origx}{\pdfxupw}
+  \addtocounter{origx}{-\pdfxupx}
+  \newcounter{origy}
+  \setcounter{origy}{\pdfxuph}
+  \addtocounter{origy}{-\pdfxupy}
+  \newlength\finalx
+  \newlength\finaly
+  \finalx=\hresult
+  \finaly=\vresult
+  \divide\finalx by \value{origx}
+  \divide\finaly by \value{origy}
+  \newwrite\scale
+  \immediate\openout\scale=\pdfxupfilename.scl
+  \ifdim\finalx>\finaly
+    \multiply\finaly by 100
+    \immediate\write\scale{\the\finaly}
+  \else
+    \multiply\finalx by 100
+    \immediate\write\scale{\the\finalx}
+  \fi
+  \immediate\closeout\scale
+  \fi
+
+
+  %% start document
+  \begin{document}
+  %\tracingoutput=1
+  %\tracingpages=1
+  %\tracingparagraphs=1
+  \makeatletter
+  \newcounter{curroutpage}
+  \setcounter{curroutpage}{1}
+  \addtocounter{curroutpage}{-1}
+  \newcounter{currpage}
+  \newcounter{currcol}
+  \newcounter{currline}
+  \newcounter{realout}
+  \newcounter{wmout}
+  \newcounter{wmoutaux}
+  \@whilenum \value{outpage}>\value{curroutpage} \do%
+    {\stepcounter{curroutpage}%
+    \setcounter{currpage}{\value{curroutpage}}%
+    \advance\c@currpage by -1%
+    \multiply\c@currpage by \pdfxupnbhoriz%
+    \multiply\c@currpage by \pdfxupnbvert%
+    \hrule \@height\z@%
+    \setcounter{currline}{0}%
+    \vskip \outputvmargin%
+    \@whilenum\value{currline}<\pdfxupnbvert \do%
+      {\hrule \@height\z@\vskip \outputindivvmargin%
+        \ifnum\value{currline}>0\vskip \outputindivvmargin\fi%
+        \global\stepcounter{currline}%
+        \setcounter{currcol}{0}%
+        \hskip \outputhmargin%
+        \@whilenum\value{currcol}<\pdfxupnbhoriz \do%
+          {\ifnum\value{currcol}>0\hskip\outputindivhmargin\fi%
+            \global\stepcounter{currcol}%
+            \global\stepcounter{currpage}%
+            \ifnum\value{currpage}>\value{lastpage}\else
+	      %% computing page number corresponding to \currline and \currcol
+              \setcounter{realout}{\value{currpage}}%
+              \def\ang{0}%
+              \ifbooklet
+               \iflongedge
+                %% long edge:
+                %% 1->n, 2->1, 3->n-1 (rotated), 4->2(rotated)...
+                \ifodd\value{realout}%           -> 1 or 3
+                  \addtocounter{realout}{-1}%
+                  \divide\c@realout by 2\relax
+                  \ifodd\value{realout}%         -> 3
+                    \def\ang{180}%
+                  \else%                         -> 1
+                  \fi
+                  \setcounter{realout}{-\value{realout}}%
+                  \addtocounter{realout}{\value{outpage}}%
+                  \addtocounter{realout}{\value{outpage}}%
+                \else%                           -> 2 or 4
+                  \divide\c@realout by 2\relax
+                  \ifodd\value{realout}%         -> 2
+                  \else%                         -> 4
+                    \def\ang{180}%
+                  \fi
+                \fi
+               \else 
+                %% short edge:
+                %% 1->n, 2->1, 3->2, 4->n-1, 5->n-2, 6->3, 7->4, 8->n-3
+                \ifodd\value{realout}%           -> 1 or 3
+                  \addtocounter{realout}{-1}%
+                  \divide\c@realout by 2\relax
+                  \ifodd\value{realout}%         -> 3
+                    \stepcounter{realout}
+                  \else%                         -> 1
+                    \setcounter{realout}{-\value{realout}}%
+                    \addtocounter{realout}{\value{outpage}}%
+                    \addtocounter{realout}{\value{outpage}}%
+                  \fi
+                \else%                           -> 2 or 4
+                  \divide\c@realout by 2\relax
+                  \ifodd\value{realout}%         -> 2
+                  \else%                         -> 4
+                    \setcounter{realout}{-\value{realout}}%
+                    \stepcounter{realout}
+                    \addtocounter{realout}{\value{outpage}}%
+                    \addtocounter{realout}{\value{outpage}}%
+                  \fi
+                \fi
+               \fi %% \iflongedge...\else
+              \fi %% \ifbooklet
+              \ifnum\value{realout}>\pdfxupnbpages\relax
+	        %% if page above nb of pages, output blank page
+                %\hskip\hresult\hskip2\fboxrule
+		\hskip\hboxsize
+              \else
+                %% otherwise compute corresponding page to display
+	        %% first keep realout for watermarking...
+	        \setcounter{wmoutaux}{\value{realout}}%
+	        \setcounter{wmout}{\value{realout}}%
+                \nthvalue{\value{realout}}{\pdfxuppagelist}%
+                \iffound\setcounter{realout}{\value{result}}%
+                \else %% hmmm... problem
+                \message{I'm messed up counting pages...}%
+                \fi
+                %% compute watermarking page and display
+	        \ifx\pdfxupwatermark\@empty\else
+	  	  \ifnum\pdfxupnbwp<\value{wmoutaux}\relax
+		    \addtocounter{wmoutaux}{-\pdfxupnbwp}%
+		    \addtocounter{wmoutaux}{-1}%
+		    \divide\c@wmoutaux by \pdfxupwperiod\relax
+                    \stepcounter{wmoutaux}%
+		    \multiply\c@wmoutaux by \pdfxupwperiod\relax
+		    \addtocounter{wmout}{-\value{wmoutaux}}%
+		  \fi
+		  \vbox to \vboxsize{\vfill
+	          \hbox to \hboxsize{\hfill
+		    \includegraphics[keepaspectratio,%
+		    height=\vresult,width=\hresult,angle=\ang,%
+                    page=\value{wmout}\pdfxupclipopt]{\pdfxupwatermark}\hfill}\vfill}%
+		    \hskip-\hboxsize\relax
+		\fi
+                %% display current page at correct size
+                \edef\pdfxupinclgr{\includegraphics[\pdfxupbbox,%
+                    keepaspectratio,height=\vresult,width=\hresult,angle=\ang,%
+                    page=\value{realout}\pdfxupclipopt]{\pdfxupfile}}%
+	        \pdfxupwidefbox{\vbox to \vboxsize{\vfill
+		\hbox to \hboxsize{\hfill
+                \pdfxuptightfbox{\hskip\innerhmargin\relax
+		    \sbox{0}{\pdfxupinclgr}%
+		    \ht0=\dimexpr\ht0 + \innervmargin\relax
+                    \dp0=\dimexpr\dp0 + \innervmargin\relax
+		    \usebox{0}\hskip\innerhmargin\relax}%
+                    \hfill}\vfill}}%
+              \fi
+            \fi}}%
+        \clearpage%
+  }%
+  \makeatother%
+  \end{document}

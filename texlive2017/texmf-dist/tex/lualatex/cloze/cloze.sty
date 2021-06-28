@@ -1,0 +1,159 @@
+%%
+%% This is file `cloze.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% cloze.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (C) 2015-2016 by Josef Friedrich <josef@friedrich.rocks>
+%% ----------------------------------------------------------------------
+%% This work may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.3c of this license
+%% or (at your option) any later version. The latest version of this
+%% license is in:
+%% 
+%%   http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2008/05/05 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{cloze}
+    [2016/06/23 v1.2 Package to typeset cloze worksheets or cloze tests]
+\RequirePackage{fontspec,luatexbase-mcb,kvoptions,xcolor}
+\directlua{
+  cloze = require('cloze')
+}
+\def\cloze@set@to@global{%
+ \directlua{cloze.set_is_global(true)}%
+}
+\def\cloze@set@to@local{%
+  \directlua{
+    cloze.unset_local_options()
+    cloze.set_is_global(false)
+  }%
+}
+\def\cloze@set@option[#1]#2{%
+  \directlua{cloze.set_option('#1', '#2')}%
+}
+\def\cloze@color#1{\csname\string\color@#1\endcsname}
+\def\cloze@set@local@options#1{%
+  \cloze@set@to@local%
+  \kvsetkeys{CLZ}{#1}%
+}
+\def\cloze@start@marker#1{%
+  \strut\directlua{
+    cloze.register('#1')
+    cloze.marker('#1', 'start')
+  }%
+}
+\def\cloze@stop@marker#1{%
+  \strut\directlua{
+    cloze.marker('#1', 'stop')
+  }%
+}
+\def\cloze@margin#1{%
+  \directlua{cloze.margin()}%
+  #1%
+  \directlua{cloze.margin()}%
+}
+\cloze@set@to@global
+\SetupKeyvalOptions{
+  family=CLZ,
+  prefix=CLZ@
+}
+\DeclareStringOption{align}
+\define@key{CLZ}{align}[]{\cloze@set@option[align]{#1}}
+\DeclareStringOption{distance}
+\define@key{CLZ}{distance}[]{\cloze@set@option[distance]{#1}}
+\DeclareVoidOption{hide}{%
+  \cloze@set@option[hide]{true}%
+  \cloze@set@option[show]{false}%
+}
+\DeclareStringOption{linecolor}
+\define@key{CLZ}{linecolor}[]{%
+  \cloze@set@option[linecolor]{\cloze@color{#1}}%
+}
+\DeclareStringOption{margin}
+\define@key{CLZ}{margin}[]{\cloze@set@option[margin]{#1}}
+\DeclareVoidOption{show}{%
+  \cloze@set@option[show]{true}%
+  \cloze@set@option[hide]{false}%
+}
+\DeclareStringOption{textcolor}
+\define@key{CLZ}{textcolor}[]{%
+  \cloze@set@option[textcolor]{\cloze@color{#1}}%
+}
+\DeclareStringOption{thickness}
+\define@key{CLZ}{thickness}[]{\cloze@set@option[thickness]{#1}}
+\DeclareStringOption{width}
+\define@key{CLZ}{width}[]{\cloze@set@option[width]{#1}}
+\ProcessKeyvalOptions{CLZ}
+\newcommand{\clozeset}[1]{%
+  \cloze@set@to@global%
+  \kvsetkeys{CLZ}{#1}%
+}
+\newcommand{\clozereset}{%
+  \directlua{cloze.reset()}
+}
+\newcommand{\clozeshow}{%
+  \clozeset{show}
+}
+\newcommand{\clozehide}{%
+  \clozeset{hide}
+}
+\newcommand{\clozefont}{\itshape}
+\newcommand{\clozesetfont}[1]{%
+  \renewcommand{\clozefont}[1]{%
+    #1%
+  }%
+}
+\newcommand{\cloze}[2][]{%
+  \cloze@set@local@options{#1}%
+  \cloze@start@marker{basic}%
+  {%
+    \clozefont\relax%
+    \cloze@margin{#2}%
+  }%
+  \cloze@stop@marker{basic}%
+}
+\newcommand{\clozefix}[2][]{%
+  \cloze@set@local@options{#1}%
+  \cloze@start@marker{fix}%
+  {%
+    \clozefont\relax%
+    \cloze@margin{#2}%
+  }%
+  \cloze@stop@marker{fix}%
+}
+\newenvironment{clozepar}[1][]%
+{%
+  \par%
+  \cloze@set@local@options{#1}%
+  \cloze@start@marker{par}%
+  \clozefont\relax%
+}%
+{%
+  \cloze@stop@marker{par}%
+  \par%
+  \directlua{cloze.unregister('par')}%
+}
+\newcommand{\clozefil}[2][]{%
+  \cloze[#1]{#2}\clozelinefil[#1]%
+}
+\newcommand{\clozeline}[1][]{%
+  \cloze@set@local@options{#1}%
+  \directlua{cloze.line()}%
+}
+\newcommand{\clozelinefil}[1][]{%
+  \cloze@set@local@options{#1}%
+  \strut%
+  \directlua{cloze.linefil()}%
+  \strut%
+}
+\endinput
+%%
+%% End of file `cloze.sty'.

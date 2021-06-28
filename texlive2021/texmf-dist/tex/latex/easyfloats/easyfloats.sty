@@ -1,0 +1,1463 @@
+%%
+%% This is file `easyfloats.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% easyfloats.dtx  (with options: `package')
+%% 
+%% Copyright 2020 E. Z\"ollner
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% Additionally to the rights granted by the LaTeX Project Public License
+%% you have permission to freely distribute unmodified copies
+%% of the files easyfloats.sty and doc/easyfloats.pdf without other files of this work.
+%% The other files of this work can be found at:
+%% https://gitlab.com/erzo/latex-easyfloats
+%% 
+%% This work has the LPPL maintenance status `maintained'.
+%% 
+%% The Current Maintainer of this work is E. Z\"ollner.
+%% 
+%% This work consists of the files listed in easyfloats-file-list.txt.
+
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{easyfloats}[2020/12/20 v1.0.0]
+
+
+\newif\ifesf@loadgraphics
+\newif\ifesf@loadgraphbox
+\newif\ifesf@loadlongtable
+\newif\ifesf@loadarray
+\newif\ifesf@loadbooktabs
+\newif\ifesf@warnstandardfloats
+\esf@warnstandardfloatstrue
+
+\DeclareOption{graphicx}{%
+\esf@loadgraphicstrue
+\esf@loadgraphboxfalse
+}
+\DeclareOption{graphbox}{%
+\esf@loadgraphicstrue
+\esf@loadgraphboxtrue
+}
+\DeclareOption{nographic}{%
+\esf@loadgraphicsfalse
+\esf@loadgraphboxfalse
+}
+
+\DeclareOption{longtable}{%
+\esf@loadlongtabletrue
+}
+\DeclareOption{nolongtable}{%
+\esf@loadlongtablefalse
+}
+
+\DeclareOption{booktabs}{%
+\esf@loadbooktabstrue
+}
+\DeclareOption{nobooktabs}{%
+\esf@loadbooktabsfalse
+}
+
+\DeclareOption{array}{%
+\esf@loadarraytrue
+}
+\DeclareOption{noarray}{%
+\esf@loadarrayfalse
+}
+
+\DeclareOption{allowstandardfloats}{%
+\esf@warnstandardfloatsfalse
+}
+
+
+\ExecuteOptions{graphicx, array, booktabs}
+
+\ProcessOptions\relax
+
+
+\RequirePackage{etoolbox}
+\RequirePackage{pgfkeys}
+
+\RequirePackage{float}
+
+\RequirePackage{caption}
+
+\RequirePackage{environ}
+
+\RequirePackage{subcaption}
+
+\ifesf@loadgraphics
+\ifesf@loadgraphbox
+\RequirePackage{graphbox}
+\else
+\RequirePackage{graphicx}
+\fi
+\fi
+
+\ifesf@loadlongtable
+\RequirePackage{longtable}
+\fi
+
+\ifesf@loadarray
+\RequirePackage{array}
+\fi
+
+\ifesf@loadbooktabs
+\RequirePackage{booktabs}
+\fi
+
+
+\newif\ifobject@directkeys
+\object@directkeystrue
+
+\newif\if@inobject
+\newif\if@firstsubobject
+\newif\if@containssubobjects
+
+\floatstyle{plaintop}
+\restylefloat{table}
+\floatstyle{plain}
+\restylefloat{figure}
+
+
+\newif\ifobject@isgraphic
+
+\newcommand{\object@hook}{}
+\newcommand{\subobject@hook}{}
+\newcommand{\object@graphic@hook}{}
+
+\newrobustcmd{\AtBeginObject}[1]{\appto\object@hook{#1}}
+\newrobustcmd{\AtBeginSubobject}[1]{\appto\subobject@hook{#1}}
+\newrobustcmd{\AtBeginGraphicObject}[1]{\appto\object@graphic@hook{#1}}
+
+
+\newcommand{\esf@ifpgfkeyhasvalue}[1]{% #1: key, #2: executed if #1 is set, #3: executed if #1 has not been set
+\pgfkeysgetvalue{#1}{\esf@tmp@value}%
+\ifx \pgfkeysnovalue@text \esf@tmp@value
+\expandafter \@secondoftwo
+\else
+\expandafter \@firstoftwo
+\fi
+}
+
+\newcommand{\esf@ifpgfkeyexists}[3]{%
+\pgfkeysifdefined{#1}
+{#2}
+{\pgfkeysifdefined{#1/.@cmd}{#2}{#3}}%
+}
+\newcommand{\esf@ifpgfkeyrequiresvalue}[3]{% #1: key, #2: then block, #3: else block
+\pgfkeysifdefined{#1/.@def}{%
+\pgfkeysgetvalue{#1/.@def}{\esf@tmp@value}%
+\ifx \esf@tmp@value \pgfkeysvaluerequired
+#2%
+\else
+#3%
+\fi
+}{%
+#3%
+}%
+}
+
+\newcommand{\esf@ifkeyvalkeyexists}[4]{% #1: family, #2: key, #3: then block, #4: else block
+\ifcsundef{KV@#1@#2}{#4}{#3}%
+}
+\newcommand{\esf@ifkeyvalkeyrequiresvalue}[2]{% #1: family, #2: key, #3: then block, #4: else block
+\ifcsundef{KV@#1@#2@default}%
+}
+
+\newcommand{\esf@pgfkeyscopyvalue}[2]{% #1: key to be set, #2 key to take the value from
+\pgfkeysgetvalue{#2}{\esf@tmp@value}%
+\pgfkeyslet{#1}{\esf@tmp@value}%
+}
+\newcommand{\esf@pgfkeysvalueappend}[2]{% #1: key to be set, #2 value to be appended
+\pgfkeysgetvalue{#1}{\esf@tmp@value}%
+\appto\esf@tmp@value{#2}%
+\pgfkeyslet{#1}{\esf@tmp@value}%
+}
+
+\pgfqkeys{/handlers}{%
+.esf@recommended/.code={%
+\esf@ifpgfkeyhasvalue{\pgfkeyscurrentpath}{%
+}{%
+\edef\esf@tmp@path{\pgfkeyscurrentpath}%
+\PackageWarning{easyfloats}{Recommended key '\strippath\esf@tmp@path' not given. #1\ifx\pgfkeysnovalue#1\@empty\else. \fi This warning occured}%
+}%
+},
+.esf@mandatory/.code={%
+\esf@ifpgfkeyhasvalue{\pgfkeyscurrentpath}{%
+}{%
+\edef\esf@tmp@path{\pgfkeyscurrentpath}%
+\PackageError{easyfloats}{Mandatory key '\strippath\esf@tmp@path' not given\ifx\pgfkeysnovalue#1\@empty\else. \fi #1}{}%
+}%
+},
+.esf@exec on unknown/.code={% #1: control sequence taking two args: key and value
+\pgfkeysalso{\pgfkeyscurrentpath/.unknown/.code=% ##1: value
+#1{\pgfkeyscurrentname}{##1}%
+}%
+},
+.esf@also from/.code={% #1: expandable control sequence containing options
+\pgfkeysalsofrom{#1}%
+},
+.show boolean/.code={%
+\begingroup
+\renewcommand\pgfkeys@handle@boolean[2]{% ##1: if name, ##2: value
+\expandafter \show \csname if##1\endcsname
+}%
+\edef\esf@tmp@path{\pgfkeyscurrentpath}%
+\pgfkeysalso{\esf@tmp@path}%
+\endgroup
+},
+.show boolean/.value forbidden,
+}
+
+\newcommand{\AppendToOptionsList}[3]{% #1: macro to append to, #2: key, #3: value
+\ifdefvoid#1%
+{}%
+{\appto#1{, }}%
+\eappto#1{#2}%
+\ifx \pgfkeysnovalue #3\relax
+\else
+\appto#1{={#3}}%
+\fi
+}
+
+\newcommand{\strippath}[1]{%
+\expandafter\strippath@do#1/\pgfeov
+}
+\def\strippath@do#1/#2\pgfeov{%
+\if\relax\detokenize{#2}\relax
+#1%
+\else
+\strippath@do#2\pgfeov
+\fi
+}
+
+
+\newcommand{\IfEnvironmentExistsOrIsEmpty}[1]{% #1: environment name, #2: then block, #3: else block
+\ifstrempty{#1}{%
+\let\IfEnvironmentExistsOrIsEmpty@do=\@firstoftwo
+}{\IfEnvironmentExists{#1}{%
+\let\IfEnvironmentExistsOrIsEmpty@do=\@firstoftwo
+}{%
+\let\IfEnvironmentExistsOrIsEmpty@do=\@secondoftwo
+}}%
+\IfEnvironmentExistsOrIsEmpty@do
+}
+
+\newcommand{\IfEnvironmentExists}[3]{% #1: environment name, #2: then block, #3: else block
+\ifcsmacro{#1}{%
+#2%
+}{%
+#3%
+}%
+}
+
+\newcommand{\PatchUnderscore}[1]{% #1: macro
+\patchcmd{#1}
+{_}{\textunderscore}
+{\PatchUnderscore#1}{}%
+}
+
+
+\newif\ifobject@warnotherenv
+\newif\ifobject@warnnolabel
+\newif\ifobject@warnnocaption
+\newif\ifobject@showenv
+
+
+\newrobustcmd{\objectset}{% #1: options
+\@ifnextchar [%]
+\objectset@appendtostyles
+\objectset@direct
+}
+
+\newcommand{\objectset@direct}{% #1: options
+\pgfqkeys{/object}%
+}
+
+\newcommand{\GobbleLeadingSpaceIn}[1]{\edef#1{\expandafter\@firstofone#1}}
+
+\def\objectset@appendtostyles[#1]#2{% #1: style #2: options
+\pgfkeyssetvalue{/object.check/env}{}%
+\pgfqkeys{/object.check}{%
+.esf@exec on unknown=\AppendOptionToObjectStyleGroups{#1},
+#2%
+}%
+}
+
+
+\newcommand{\CheckObjectOption}[2]{% #1: key, #2: value, #3: executed if valid
+\let\CheckObjectOption@handleArg=\@gobble
+\esf@ifpgfkeyexists{/object/#1}{%
+\esf@ifpgfkeyrequiresvalue{/object/#1}{%
+\ifx \pgfkeysnovalue #2\relax
+\PackageError{easyfloats}{The key '#1' requires a value. I am going to ignore this key}{}%
+\else
+\let\CheckObjectOption@handleArg=\@firstofone
+\fi
+}{%
+\let\CheckObjectOption@handleArg=\@firstofone
+}%
+}{\CheckObjectGraphicOption{#1}{#2}{%
+\let\CheckObjectOption@handleArg=\@firstofone
+}{\CheckObjectEnvArgs{#1}{#2}{%
+\let\CheckObjectOption@handleArg=\@firstofone
+}{%
+\PackageError{easyfloats}{I do not know the key '#1' and I am going to ignore it. Perhaps you misspelled it}{}%
+}}}%
+\CheckObjectOption@handleArg
+}
+
+
+\pgfqkeys{/object}{%
+type/.initial,
+type/.value required,
+type/.code=\@ifundefined{fps@#1}
+{\PackageError{easyfloats}{Invalid value for key 'type': '#1'. I am going to ignore this option}{}}
+{\pgfkeyssetvalue{/object/type}{#1}},
+float style/.initial=,
+float style/.value required,
+caption/.initial,
+caption/.value required,
+caption/.prefix code={%
+\esf@ifpgfkeyhasvalue{/object/caption}{%
+\PackageWarning{easyfloats}{Overwriting existing value for caption with "#1"}%
+}{%
+}%
+},
+label/.initial,
+label/.value required,
+label/.prefix code={%
+\esf@ifpgfkeyhasvalue{/object/label}{%
+\PackageWarning{easyfloats}{Overwriting existing value for label with "#1"}%
+}{%
+}%
+},
+placement/.initial=,
+placement/.value required,
+list caption/.initial,
+list caption/.value required,
+details/.initial=,
+details/.value required,
+details sep/.initial=.\space,
+details sep/.value required,
+add label/.initial,
+add label/.value required,
+align/.initial=\centering,
+align/.value required,
+exec/.initial=,
+exec/.value required,
+exec +/.code=\esf@pgfkeysvalueappend{/object/exec}{#1},
+exec +/.value required,
+exec+/.forward to=/object/exec +,
+exec+/.value required,
+env/.code=\IfEnvironmentExistsOrIsEmpty{#1}
+{\pgfkeyssetvalue{/object/env}{#1}}%
+{\PackageError{easyfloats}{Environment #1 which you passed to the key 'env' does not exist}{}},
+env/.value required,
+env=,
+sub/.forward to=/object/contains subobjects,
+contains subobjects/.is if = @containssubobjects,
+first head/.initial,
+first head/.value required,
+head/.initial=,
+head/.value required,
+foot/.initial=,
+foot/.value required,
+last foot/.initial,
+last foot/.value required,
+table head style/.code=\pgfkeysdef{/object/table head}{\pgfqkeys{/object}{#1}},
+table head style/.value required,
+table head style={%
+first head =
+\toprule
+#1 \\
+\midrule,
+head =
+#1 \\
+\midrule,
+foot =
+\midrule
+\ifx\object@tableBreakText\@empty
+\else
+\multicolumn{\the\LT@cols}{r@\relax}{\object@tableBreakText}%
+\fi,
+last foot =
+\bottomrule,
+},
+table break text/.code=\def\object@tableBreakText{#1},
+table break text/.value required,
+table break text = (to be continued),
+warn no caption/.is if=object@warnnocaption,
+warn no caption=true,
+warn no label/.is if=object@warnnolabel,
+warn no label=true,
+warn other env/.is if=object@warnotherenv,
+warn other env=false,
+show env args/.is if=object@showenv,
+show env args=false,
+subobject linewidth/.forward to=/subobject/linewidth,
+subobject linewidth/.value required,
+subobject env/.forward to=/subobject/env,
+subobject env/.value required,
+subcaptionbox/.forward to=/subobject/subcaptionbox,
+subcaptionbox/.value forbidden,
+subpage/.forward to=/subobject/subpage,
+subpage/.value forbidden,
+subcaptionbox inner pos/.forward to=/subobject/subcaptionbox inner pos,
+subcaptionbox inner pos/.value required,
+subpage inner pos/.forward to=/subobject/subpage inner pos,
+subpage inner pos/.value required,
+subpage height/.forward to=/subobject/subpage height,
+subpage height/.value required,
+subpage outer pos/.forward to=/subobject/subpage outer pos,
+subpage outer pos/.value required,
+subpage align/.forward to=/subobject/subpage align,
+subpage align/.value required,
+subobject sep/.forward to=/subobject/sep,
+subobject sep/.value required,
+subobject hor/.forward to=/subobject/hor,
+subobject hor sep/.forward to=/subobject/hor sep,
+subobject hor sep/.value required,
+subobject hor sep+/.forward to=/subobject/hor sep+,
+subobject hor sep+/.value required,
+subobject hor sep +/.forward to=/subobject/hor sep +,
+subobject hor sep +/.value required,
+subobject ver/.forward to=/subobject/ver,
+subobject ver sep/.forward to=/subobject/ver sep,
+subobject ver sep/.value required,
+subobject ver sep+/.forward to=/subobject/ver sep+,
+subobject ver sep+/.value required,
+subobject ver sep +/.forward to=/subobject/ver sep +,
+subobject ver sep +/.value required,
+subobject exec/.forward to=/subobject/exec,
+subobject exec/.value required,
+subobject exec+/.forward to=/subobject/exec+,
+subobject exec+/.value required,
+subobject exec +/.forward to=/subobject/exec +,
+subobject exec +/.value required,
+subobject warn no caption/.forward to=/subobject/warn no caption,
+subobject warn no label/.forward to=/subobject/warn no label,
+.unknown/.code={%
+\ObjectProcessKeyPattern{\pgfkeyscurrentname}{#1}{%
+\pgfkeysgetvalue{/object/.really unknown/.@cmd}{\esf@tmp@err}%
+\esf@tmp@err#1\pgfeov
+}%
+},
+.unknown/.code/.code={%
+\pgfkeysdef{/object/.really unknown}{#1}%
+},
+.really unknown/.code={%
+\edef\do{\noexpand\pgfkeys{/errors/unknown key={\pgfkeyscurrentkey}{\unexpanded{#1}}}}%
+\do
+},
+}
+
+\pgfqkeys{/object.check}{%
+env/.initial=,
+env/.code={%
+\ifx \pgfkeysnovalue #1\relax
+\PackageError{easyfloats}{The key 'env' requires a value. I am going to ignore this key}{}%
+\else
+\IfEnvironmentExistsOrIsEmpty{#1}{%
+\pgfkeyssetvalue{/object.check/env}{#1}%
+\pgfkeys@split@path
+\pgfkeysvalueof{\pgfkeyscurrentpath/.unknown/.@cmd}#1\pgfeov
+}{%
+\PackageError{easyfloats}{Environment #1 which you passed to the key 'env' does not exist}{}%
+}%
+\fi
+},
+type/.code={%
+\pgfkeyssetvalue{/object.check/type}{#1}%
+\pgfkeys@split@path
+\@firstofone{\pgfkeysvalueof{\pgfkeyscurrentpath/.unknown/.@cmd}#1\pgfeov}%
+},
+}
+
+
+\newcommand{\ObjectProcessKeyPattern}[2]{% #1: key, #2: value, #3: else
+\expandafter\ObjectProcessKeyPattern@expandedkey\expandafter{#1}{#2}%
+}
+
+\newcommand{\ObjectProcessKeyPattern@expandedkey}[2]{% #1: key, #2: value, #3: else
+\ObjectProcessGraphicOption@expandedkey{#1}{#2}{%
+\@gobble
+}{%
+\ObjectProcessArgs@expandedkey{#1}{#2}\relax
+}%
+}
+
+
+\ifesf@loadgraphics
+
+\newcommand{\CheckObjectGraphicOption}[2]{% #1: key, #2: value
+\begingroup
+\let\ObjectCheckGraphicOption@aftergroup=\@gobbletwo
+\renewcommand{\AppendToOptionsList}[3]{%
+\let\ObjectCheckGraphicOption@aftergroup=\@firstoftwo
+}%
+\ObjectProcessGraphicOption{#1}{#2}{%
+\let\ObjectCheckGraphicOption@aftergroup=\@secondoftwo
+}%
+\expandafter
+\endgroup
+\ObjectCheckGraphicOption@aftergroup
+}
+
+\newcommand{\ObjectProcessGraphicOption}[2]{% #1: key, #2: value
+\expandafter\ObjectProcessGraphicOption@expandedkey\expandafter{#1}{#2}\relax
+}
+\newcommand{\ObjectProcessGraphicOption@expandedkey}[2]{% #1: key, #2: value
+\ObjectProcessGraphicOption@checkoption#1graphic \pgfeov{#2}%
+}
+\long\def\ObjectProcessGraphicOption@checkoption#1graphic #2\pgfeov#3{% #1: empty if graphic option, #2: key, #3: value
+\def\esf@tmp@arg{#1}%
+\ifx \esf@tmp@arg \@empty
+\edef\esf@opgoco@key{\StripGraphicSpace#2\pgfeov}%
+\CheckGraphicobjectOption{\esf@opgoco@key}{#3}{%
+\AppendGraphicobjectOption{\esf@opgoco@key}{#3}%
+}%
+\expandafter \@firstoftwo
+\else
+\expandafter \@secondoftwo
+\fi
+}
+
+\def\StripGraphicSpace#1graphic \pgfeov{#1}
+
+\else %\ifesf@loadgraphics
+
+\newcommand{\CheckObjectGraphicOption}[2]{% #1: key, #2: value
+\@secondoftwo
+}
+
+\newcommand{\ObjectProcessGraphicOption@expandedkey}[2]{% #1: key, #2: value
+\@secondoftwo
+}
+
+\fi %\ifesf@loadgraphics
+
+
+\newcommand{\@object@envkey}{/object/env}
+\newcommand{\CheckObjectEnvArgs}[2]{% #1: key, #2: value
+\begingroup
+\edef\ObjectCheckArgs@key{#1}%
+\let\ObjectCheckArgs@aftergroup=\@gobbletwo
+\pgfkeysgetvalue{/object.check/env}{\esf@tmp@env}%
+\pgfkeys{\@object@envkey/.expand once=\esf@tmp@env}%
+\renewcommand{\ObjectDefineEnvargs}[2]{% ##1: env name, ##2: arguments
+\let\ObjectCheckArgs@aftergroup=\@firstoftwo
+}%
+\ObjectProcessArgs{\ObjectCheckArgs@key}{#2}{%
+\let\ObjectCheckArgs@aftergroup=\@secondoftwo
+}%
+\expandafter
+\endgroup
+\ObjectCheckArgs@aftergroup
+}
+
+\newcommand{\ObjectProcessArgs}[2]{% #1: key, #2: value, #3: else
+\expandafter\ObjectProcessArgs@expandedkey\expandafter{#1}{#2}\relax
+}
+
+\newcommand{\ObjectProcessArgs@expandedkey}[2]{% #1: key, #2: value, #3: then, #4: else
+\IfEndsOnSpacePlus{#1}{%
+\let\ObjectProcessArgs@csdef=\csappto
+\expandafter\ObjectProcessArgs@checkArgs\expandafter{\StripSpacePlus#1\pgfeov}{#2}%
+}{\IfEndsOnPlus{#1}{%
+\let\ObjectProcessArgs@csdef=\csappto
+\expandafter\ObjectProcessArgs@checkArgs\expandafter{\StripPlus#1\pgfeov}{#2}%
+}{%
+\let\ObjectProcessArgs@csdef=\csdef
+\ObjectProcessArgs@checkArgs{#1}{#2}%
+}}%
+}
+
+\newrobustcmd{\IfEndsOn}[2]{% #1: end character, #2: text
+\def\IfEndsOn@do##1#1##2\pgfeov{%
+\ifstrequal{##2}{}{%
+\let\do=\@secondoftwo
+}{\ifstrequal{##2}{#1}{%
+\let\do=\@firstoftwo
+}{%
+\def\do{\IfEndsOn@do##2\pgfeov}%
+}}%
+\do
+}%
+\IfEndsOn@do#2#1\pgfeov
+}
+\newcommand{\IfEndsOnPlus}{\IfEndsOn+}
+\newcommand{\IfEndsOnSpacePlus}{\IfEndsOn{ +}}
+
+\def\StripSpacePlus#1 +\pgfeov{#1}
+\def\StripPlus#1+\pgfeov{#1}
+
+\newcommand{\ObjectProcessArgs@checkArgs}[2]{% #1: key, #2: value, #3: then, #4: else
+\ObjectProcessArgs@do#1 args\pgfeov{#2}%
+}
+\long\def\ObjectProcessArgs@do#1 arg#2\pgfeov#3{% #1: env name, #2: test value, #3: arguments, #4: then, #5: else
+\let\ObjectProcessArgs@do@after=\@firstoftwo
+\ifstrequal{#2}{ args}{%
+\ObjectDefineEnvargsCheckName{#1}{{#3}}%
+}{\ifstrequal{#2}{s args}{%
+\ObjectDefineEnvargsCheckName{#1}{#3}%
+}{\ifstrequal{#2}{s}{%
+\ifstrequal{#1}{arg}{%
+\ObjectDefineEnvargsAuto{{#3}}%
+}{\ifstrequal{#1}{args}{%
+\ObjectDefineEnvargsAuto{#3}%
+}{%
+\let\ObjectProcessArgs@do@after=\@secondoftwo
+}}%
+}{%
+\let\ObjectProcessArgs@do@after=\@secondoftwo
+}}}%
+\ObjectProcessArgs@do@after
+}
+\newcommand{\ObjectDefineEnvargsCheckName}[2]{% #1: env name, #2: arguments
+\ifobject@directkeys
+\pgfkeysgetvalue{\@object@envkey}{\esf@tmp@env}%
+\ifdefvoid{\esf@tmp@env}{%
+}{\ifdefstring{\esf@tmp@env}{#1}{%
+}{%
+\ifobject@warnotherenv
+\PackageWarning{easyfloats}{Defining 'arg(s)' for #1 but 'env=\esf@tmp@env'}%
+\fi
+}}%
+\fi
+\IfEnvironmentExists{#1}
+{\ObjectDefineEnvargs{#1}{#2}}
+{\PackageError{easyfloats}{Environment #1 for which you set 'arg(s)' does not exist}{}}%
+}
+\newcommand{\ObjectDefineEnvargsAuto}[1]{% #1: arguments
+\pgfkeysgetvalue{\@object@envkey}{\esf@tmp@env}%
+\ifx \esf@tmp@env \@empty
+\PackageError{easyfloats}{'env' for 'arg(s)' is not defined}{}%
+\else
+\ObjectDefineEnvargs{\esf@tmp@env}{#1}%
+\fi
+}
+\newcommand{\ObjectDefineEnvargs}[2]{% #1: env name, #2: arguments
+\ObjectProcessArgs@csdef{object@#1 env@args}{#2}%
+}
+
+\newcommand{\ObjectAppendEnvargs}[1]{% #1: macro
+\ifcsname object@\pgfkeysvalueof{\@object@envkey} env@args\endcsname
+\eappto#1{\csexpandonce{object@\pgfkeysvalueof{\@object@envkey} env@args}}%
+\fi
+}
+
+
+\newcommand{\object@head}{}
+\newcommand{\object@foot}{}
+\newcommand{\object@restorestandardfloats}{}
+
+\newcommand{\object@label}[1]{%
+\pgfkeys{/object/label={#1}}%
+}%
+\newcommand{\object@caption}[2][\pgfkeysnovalue]{%
+\pgfkeys{/object/caption={#2}}%
+\ifx \pgfkeysnovalue #1\relax
+\pgfkeys{/object/list caption={#2}}%
+\else
+\pgfkeys{/object/list caption={#1}}%
+\fi
+}
+\newcommand{\object@longtable@label}[1]{%
+\ObjectDefineEnvargs{longtable}{\label{#1}}%
+}%
+\newcommand{\object@longtable@caption}[2][\pgfkeysnovalue]{%
+\ifx \pgfkeysnovalue #1\relax
+\ObjectDefineEnvargs{longtable}{\caption{#2}}%
+\else
+\ObjectDefineEnvargs{longtable}{\caption[#1]{#2}}%
+\fi
+\def\object@longtable@caption@sep{\ObjectDefineEnvargs{longtable}{\\}}%
+}
+
+\newenvironment{object}[1]{% #1: options
+\if@inobject
+\PackageError{easyfloats}{object environment may not be nested}{Did you mean to use the subobject environment instead?}%
+\fi
+\@inobjecttrue
+\object@restorestandardfloats
+\object@hook
+\ifobject@isgraphic
+\object@graphic@hook
+\global\object@isgraphicfalse
+\fi
+\pgfqkeys{/object}{%
+#1,
+type/.esf@mandatory=It should be the name of a floating environment like figure or table,
+float style/.esf@mandatory={It should be one of plain, plaintop, ruled or boxed. See float package},
+env/.esf@mandatory=It should be the name of an environment like tabular or empty,
+}%
+\if@containssubobjects
+\pgfkeysgetvalue{/object/env}{\esf@tmp@env}%
+\ifx \esf@tmp@env \@empty
+\else
+\pgfkeys{/subobject/env/.expand once=\esf@tmp@env}%
+\pgfkeyssetvalue{/object/env}{}%
+\fi
+\fi
+\pgfkeysgetvalue{/object/env}{\esf@tmp@env}%
+\ifdefstring\esf@tmp@env{longtable}{%
+\object@longtable@prepare
+}{%
+\esf@ifpgfkeyhasvalue{/object/first head}{%
+\pgfkeysgetvalue{/object/first head}{\object@head}%
+}{%
+\pgfkeysgetvalue{/object/head}{\object@head}%
+}%
+\esf@ifpgfkeyhasvalue{/object/last foot}{%
+\pgfkeysgetvalue{/object/last foot}{\object@foot}%
+}{%
+\pgfkeysgetvalue{/object/foot}{\object@foot}%
+}%
+}%
+\pgfkeysgetvalue{/object/type}{\esf@tmp@type}%
+\ifx\esf@tmp@type\@empty
+\let\object@floatenv@begin=\relax
+\let\object@floatenv@end=\relax
+\else
+\pgfkeysgetvalue{/object/float style}{\esf@tmp@floatstyle}%
+\ifx \esf@tmp@floatstyle \@empty
+\else
+\floatstyle{\esf@tmp@floatstyle}%
+\restylefloat{\esf@tmp@type}%
+\fi
+\edef\object@floatenv@begin{\expandonce{\csname\esf@tmp@type\endcsname}}%
+\edef\object@floatenv@end{\expandonce{\csname end\esf@tmp@type\endcsname}}%
+\pgfkeysgetvalue{/object/placement}{\esf@tmp@placement}%
+\ifx \esf@tmp@placement \@empty
+\else
+\eappto\object@floatenv@begin{[\esf@tmp@placement]}%
+\fi
+\fi
+\pgfkeysgetvalue{/object/details}{\object@details}%
+\ifx \object@details \@empty
+\else
+\preto\object@details{\pgfkeysvalueof{/object/details sep}}%
+\fi
+\pgfkeysgetvalue{/object/env}{\esf@tmp@env}%
+\ifx \esf@tmp@env \@empty
+\def\object@innerenv@begin{\object@head\ignorespaces}%
+\def\object@innerenv@end{\unskip\object@foot}%
+\else
+\edef\object@innerenv@begin{\expandonce{\csname\esf@tmp@env\endcsname}}%
+\edef\object@innerenv@end{\expandonce{\csname end\esf@tmp@env\endcsname}}%
+\ObjectAppendEnvargs{\object@innerenv@begin}%
+\eappto\object@innerenv@begin{\expandonce{\object@head}}%
+\epreto\object@innerenv@end{\expandonce{\object@foot}}%
+\let\object@lookahead@begin=\object@innerenv@begin
+\ifobject@showenv
+\show\object@innerenv@begin
+\fi
+\let\object@innerenv@begin=\object@lookahead
+\fi
+\global \@firstsubobjecttrue
+\object@floatenv@begin
+\let\esf@original@label=\label
+\let\esf@original@caption=\caption
+\let\label=\object@label
+\let\caption=\object@caption
+\pgfkeysvalueof{/object/exec}%
+\pgfkeysvalueof{/object/align}%
+\object@innerenv@begin
+}{%
+\object@innerenv@end
+\if@containssubobjects
+\if@firstsubobject
+\PackageWarning{easyfloats}{'contains subobjects' is true but the object does not contain any subobjects.}%
+\fi
+\fi
+\let\label=\esf@original@label
+\let\caption=\esf@original@caption
+\object@processCaptionAndLabel
+\object@floatenv@end
+}
+
+\newcommand{\object@processCaptionAndLabel}{%
+\esf@ifpgfkeyhasvalue{/object/caption}{%
+\esf@ifpgfkeyhasvalue{/object/list caption}%
+{\pgfkeysgetvalue{/object/list caption}{\esf@tmp@caption@short}}%
+{\pgfkeysgetvalue{/object/caption}{\esf@tmp@caption@short}}%
+\caption[\esf@tmp@caption@short]{\pgfkeysvalueof{/object/caption}\object@details}%
+}{%
+\ifobject@warnnocaption
+\PackageWarning{easyfloats}{%
+No caption given.
+This object will not show up in the list of figures/tables/whatsoever.
+If captions for subfigures are given they will be placed incorrectly in the list of figures.
+If you are using hyperref links to this figure may turn out wrong.
+This warning occured%
+}%
+\fi
+\phantomcaption
+}%
+\esf@ifpgfkeyhasvalue{/object/label}{%
+\label{\pgfkeysvalueof{/object/label}}%
+}{%
+\ifobject@warnnolabel
+\PackageWarning{easyfloats}{%
+No label given.
+Without a label you cannot reference this object.
+This warning occured%
+}%
+\fi
+}%
+\esf@ifpgfkeyhasvalue{/object/add label}%
+{\label{\pgfkeysvalueof{/object/add label}}}%
+{}%
+}
+
+\newcommand{\object@longtable@prepare}{%
+\pgfkeyssetvalue{/object/type}{}%
+\pgfkeyssetvalue{/object/align}{}%
+\let\object@label=\label
+\let\object@caption=\caption
+\let\ObjectProcessArgs@csdef=\csappto
+\let\esf@original@label=\label
+\let\esf@original@caption=\caption
+\let\label=\object@longtable@label
+\let\caption=\object@longtable@caption
+\let\object@longtable@caption@sep=\relax
+\let\phantomcaption=\relax
+\object@processCaptionAndLabel
+\let\object@processCaptionAndLabel=\relax
+\object@longtable@caption@sep
+\let\label=\esf@original@label
+\let\caption=\esf@original@caption
+\esf@ifpgfkeyhasvalue{/object/first head}{%
+\ObjectDefineEnvargs{longtable}{\pgfkeysvalueof{/object/first head}}%
+}{%
+\ObjectDefineEnvargs{longtable}{\pgfkeysvalueof{/object/head}}%
+}%
+\ObjectDefineEnvargs{longtable}{%
+\endfirsthead
+\pgfkeysvalueof{/object/head}%
+\endhead
+\pgfkeysvalueof{/object/foot}%
+\endfoot
+}%
+\esf@ifpgfkeyhasvalue{/object/last foot}{%
+\ObjectDefineEnvargs{longtable}{\pgfkeysvalueof{/object/last foot}}%
+}{%
+\ObjectDefineEnvargs{longtable}{\pgfkeysvalueof{/object/foot}}%
+}%
+\ObjectDefineEnvargs{longtable}{%
+\endlastfoot
+}%
+}
+
+
+\newcommand{\object@lookahead@nosubobject}{%
+\object@lookahead@begin
+}
+\newcommand{\object@lookahead@beforesubobject}{%
+\PackageWarning{easyfloats}{It seems you have forgotten to specify 'contains subobjects'. I am using the value of 'env' for the subobjects instead of for \@currenvir.}%
+\pgfkeysgetvalue{/object/env}{\esf@tmp@env}%
+\pgfkeys{/subobject/env/.expand once=\esf@tmp@env}%
+\pgfkeyssetvalue{/object/env}{}%
+\let\object@innerenv@end=\unskip
+}
+
+\newcommand{\object@lookahead}{%
+\futurelet \next \object@lookahead@checknext
+}
+\newcommand{\object@lookahead@checknext}{%
+\ifx \next \@implicitspace
+\let\object@lookahead@gobble=\@gobblespace
+\let\object@lookahead@do=\object@lookahead
+\else\ifx \next \par
+\let\object@lookahead@gobble=\@gobble
+\let\object@lookahead@do=\object@lookahead
+\else\ifx \next \begin
+\let\object@lookahead@gobble=\@empty
+\let\object@lookahead@do=\object@lookahead@checkbegin
+\else\ifx \next \includegraphicsubobject
+\let\object@lookahead@gobble=\@empty
+\let\object@lookahead@do=\object@lookahead@beforesubobject
+\else
+\let\object@lookahead@gobble=\@empty
+\let\object@lookahead@do=\object@lookahead@nosubobject
+\fi \fi \fi \fi
+\expandafter \object@lookahead@do \object@lookahead@gobble
+}
+\newcommand{\object@lookahead@checkbegin}[2]{% #1: \begin, #2: environment name
+\ifstrequal{#2}{subobject}
+\object@lookahead@beforesubobject
+\object@lookahead@nosubobject
+#1{#2}%
+}
+
+\@firstofone{\let\@implicitspace= }
+\@firstofone{\def\@gobblespace} {}
+
+
+\newcommand{\IfObjectStyleExists}[1]{% #1: style name or group name, #2: then block, #3: else block
+\ifcsmacro{object@style@#1}%
+}
+\newcommand{\IfObjectStyleNotGroup}[1]{% #1: style name, #2: then block, #3: else block
+\IfObjectStyleExists{#1}
+{\edef\esf@tmp@do{\ifcsstring{object@stylegroup@#1}{{#1}}}\esf@tmp@do}%
+\@secondoftwo
+}
+
+\newcommand{\objectstyle@init}[1]{% #1: style name or group name
+\expandafter \newcommand \csname object@style@#1\endcsname{/utils/exec=\object@directkeysfalse}%
+\expandafter \newcommand \csname object@stylegroup@#1\endcsname{}%
+}
+
+\newrobustcmd{\AddObjectStyleToGroup}[2]{% #1: group name, #2: style name
+\IfObjectStyleExists{#1}{%
+\IfObjectStyleNotGroup{#2}{%
+\AddObjectStyleToGroup@do{#1}{#2}%
+}{%
+\PackageError{easyfloats}{Undefined object style: #2}{In this case you cannot use a style group instead of a group.}%
+}}{%
+\PackageError{easyfloats}{Undefined object style group: #1}{}%
+}%
+}
+\newrobustcmd{\AddObjectStyleToGroup@do}[2]{% #1: group name, #2: style name
+\expandafter\eappto\csname object@stylegroup@#1\endcsname{{#2}}%
+}
+\newrobustcmd{\ShowObjectStylesInGroup}[1]{%
+\expandafter\show\csname object@stylegroup@#1\endcsname
+}
+
+\newcommand{\AppendOptionToObjectStyleGroups}[3]{% #1: list of style groups, #2: key, #3: value
+\CheckObjectOption{#2}{#3}{%
+\@for\esf@aotosg@group:=#1\do{%
+\GobbleLeadingSpaceIn\esf@aotosg@group
+\AppendOptionToObjectStyleGroup\esf@aotosg@group{#2}{#3}%
+}%
+}%
+}
+\newcommand{\AppendOptionToObjectStyleGroup}[3]{% #1: style group, #2: key, #3: value
+\IfObjectStyleExists{#1}{%
+\expandafter \let \expandafter \esf@tmp@listofstyles \csname object@stylegroup@#1\endcsname
+\def\esf@tmp@loop{\@tfor\esf@aotosg@style:=}%
+\expandafter\esf@tmp@loop\esf@tmp@listofstyles \do {%
+\AppendOptionToObjectStyle\esf@aotosg@style{#2}{#3}%
+}%
+}{%
+\PackageError{easyfloats}{Undefined object style: '#1'}{}%
+}%
+}
+\newcommand{\AppendOptionToObjectStyle}[3]{% #1: style, #2: key, #3: value
+\expandafter\AppendToOptionsList\csname object@style@#1\endcsname{#2}{#3}%
+}
+\newrobustcmd{\ShowObjectStyleOptions}[1]{%
+\IfObjectStyleNotGroup{#1}
+{\expandafter\show\csname object@style@#1\endcsname}%
+{\PackageError{easyfloats}{Undefined object style: '#1'}{}}%
+}
+
+
+\newrobustcmd{\NewObjectStyleGroup}[2]{% #1: group name, #2: list of style names
+\IfObjectStyleExists{#1}{%
+\PackageError{easyfloats}{Style or style group with the name '#1' exists already}{}%
+}{%
+\objectstyle@init{#1}%
+\@for\esf@nosg@style:=#2\do{%
+\GobbleLeadingSpaceIn\esf@nosg@style
+\AddObjectStyleToGroup{#1}{\esf@nosg@style}%
+}%
+}%
+}
+
+
+\newrobustcmd{\NewObjectStyle}[2]{% #1: name, #2: options
+\IfObjectStyleExists{#1}{%
+\PackageError{easyfloats}{Style or style group with the name '#1' exists already}{}%
+}{%
+\objectstyle@init{#1}%
+\AddObjectStyleToGroup@do{#1}{#1}%
+\pgfkeyssetvalue{/object.check/type}{\pgfkeysnovalue}%
+\objectset[#1]{#2}%
+\esf@ifpgfkeyhasvalue{/object.check/type}{%
+\edef\@do{\noexpand\DeprecateStandardFloatObject{\pgfkeysvalueof{/object.check/type}}{#1object}}%
+\@do
+}{%
+\PackageError{easyfloats}{Missing required key 'type'}%
+}%
+\AddObjectStyleToGroup{all}{#1}%
+\newenvironment{#1object}[1]{% #1: options
+\object{%
+.esf@also from/.expand once=\csname object@style@#1\endcsname,
+/utils/exec=\object@directkeystrue,
+##1,
+}%
+}{%
+\endobject
+}%
+\pgfkeysgetvalue{/object.check/type}{\NewObjectStyle@type}%
+\edef\@do{\noexpand\AfterPreamble{%
+\noexpand\IfEnvironmentExists{sub\NewObjectStyle@type}{%
+\noexpand\PackageInfo{easyfloats}{environment 'sub\NewObjectStyle@type' exists already}%
+}{\NewObjectStyle@IfCaptionNewEnough{%
+\noexpand\PackageInfo{easyfloats}{declaring new caption subtype 'sub\NewObjectStyle@type'}%
+\noexpand\DeclareCaptionSubType{\NewObjectStyle@type}%
+}{%
+\noexpand\PackageWarning{easyfloats}{The caption package is too old for me to define the subtype automatically. Please insert `\string\AtBeginDocument{\string\DeclareCaptionSubType{\NewObjectStyle@type}}' before loading this package}%
+}%
+}%
+}}\@do
+}%
+}
+
+\@ifpackagelater{caption}{2020/08/30}
+{\let\NewObjectStyle@IfCaptionNewEnough=\@firstoftwo}
+{\let\NewObjectStyle@IfCaptionNewEnough=\@secondoftwo}
+
+\newcommand{\DeprecateStandardFloatObject}[2]{% #1: float environment, #2: alternative object environment
+\ifesf@warnstandardfloats
+\ifcsmacro{esf@#1@alternatives}{%
+\expandafter \appto \csname esf@#1@alternatives\endcsname{ or #2}%
+}{%
+\AtBeginDocument{%
+\csletcs{esf@original#1}{#1}%
+\expandafter \preto\csname#1\endcsname{\PackageWarning{easyfloats}{In order to profit from the advantages of the easyfloats package please use \csname esf@#1@alternatives\endcsname\space instead}}%
+}%
+\expandafter \def \csname esf@#1@alternatives\endcsname{#2}%
+\ifesf@loadgraphics
+\ifstrequal{#1}{table}{%
+}{%
+\expandafter \appto \csname esf@#1@alternatives\endcsname{ or \string\includegraphicobject}%
+}%
+\fi
+\eappto\object@restorestandardfloats{\let\expandonce{\csname #1\endcsname}=\expandonce{\csname esf@original#1\endcsname}}%
+}%
+\fi
+}
+
+
+\NewObjectStyleGroup{all}{}
+
+\NewObjectStyle{table}{type=table}
+\NewObjectStyle{figure}{type=figure}
+
+
+\newif\ifgraphicobject@autocaption
+\newif\ifgraphicobject@autolabel
+\newif\ifgraphicobject@autocaption@strippath
+\newif\ifgraphicobject@autolabel@strippath
+\newif\ifgraphicobject@warnenv
+\newif\ifgraphicobject@noenv
+
+\ifesf@loadgraphics
+
+\newcommand\object@graphic@env{figureobject}
+\newcommand\object@graphic@path{/object}
+\newcommand\object@graphic@options{}
+
+\newrobustcmd{\graphicobjectstyle}[1]{%
+\IfObjectStyleNotGroup{#1}{%
+\def\object@graphic@env{#1object}%
+}{%
+\PackageError{easyfloats}{Undefined object style: '#1'}{}%
+}%
+}
+
+\newcommand{\CheckGraphicobjectOption}[2]{% #1: key, #2: value, #3: executed if valid
+\let\CheckGraphicobjectOption@handleArg=\@gobble
+\esf@ifpgfkeyexists{/graphicobject/#1}{%
+\esf@ifpgfkeyrequiresvalue{/graphicobject/#1}{%
+\ifx \pgfkeysnovalue #2\relax
+\PackageError{easyfloats}{The key '#1' requires a value. I am going to ignore this key}{}%
+\else
+\let\CheckGraphicobjectOption@handleArg=\@firstofone
+\fi
+}{%
+\let\CheckGraphicobjectOption@handleArg=\@firstofone
+}%
+}{\esf@ifkeyvalkeyexists{Gin}{#1}{%
+\esf@ifkeyvalkeyrequiresvalue{Gin}{#1}{%
+\ifx \pgfkeysnovalue #2\relax
+\PackageError{easyfloats}{The key '#1' requires a value. I am going to ignore this key}{}%
+\else
+\let\CheckGraphicobjectOption@handleArg=\@firstofone
+\fi
+}{%
+\let\CheckGraphicobjectOption@handleArg=\@firstofone
+}%
+}{%
+\PackageError{easyfloats}{'#1' is not a valid graphic option key}
+{If you intended to use a graphbox option please make sure that you loaded this package with the option 'graphbox'.}%
+}}%
+\CheckGraphicobjectOption@handleArg
+}
+
+\newcommand{\AppendGraphicobjectOption}[2]{% #1: key, #2: value
+\AppendToOptionsList{\object@graphic@options}{#1}{#2}%
+}
+\newcommand{\includegraphicobject@SetGraphicobjectOption}[2]{% #1: key, #2: value
+\pgfkeysalso{#1={#2}}%
+}
+
+\pgfqkeys{/graphicobject}{%
+auto caption/.is if=graphicobject@autocaption,
+auto caption=true,
+auto label/.is if=graphicobject@autolabel,
+auto label=true,
+auto caption strip path/.is if=graphicobject@autocaption@strippath,
+auto caption strip path=false,
+auto label strip path/.is if=graphicobject@autolabel@strippath,
+auto label strip path=false,
+warn env/.is if=graphicobject@warnenv,
+warn env=true,
+no env/.is if=graphicobject@noenv,
+no env=true,
+}
+
+\newrobustcmd{\includegraphicobject}{% [#1: graphicstyle], [#2: options], #3: graphic filename without extension
+\let\includegraphicobject@after=\@empty
+\@ifnextchar [%
+\includegraphicobject@firstarg
+\includegraphicobject@parseoptions
+}
+\def\includegraphicobject@firstarg[#1]{%
+\begingroup
+\@ifnextchar [%
+{%
+\begingroup
+\let\includegraphicobject@after=\endgroup
+\graphicobjectstyle{#1}%
+\includegraphicobject@parseoptions
+}%
+{%
+\includegraphicobject@parseoptions[#1]%
+}%
+}
+
+\newcommand{\includegraphicobject@parseoptions}{% [#1: options], #2: graphic filename without extension
+\@ifnextchar [
+{\expandafter\includegraphicobject@do\expandafter{\object@graphic@env}}
+{\expandafter\includegraphicobject@do\expandafter{\object@graphic@env}[]}%
+}
+\def\includegraphicobject@do#1[#2]#3{% #1: environment name, #2: options, #3: graphic filename without extension
+\global\object@isgraphictrue
+\begin{#1}{%
+/utils/exec=\def\object@graphic@options@tmp{}%
+\let\AppendGraphicobjectOption\includegraphicobject@SetGraphicobjectOption,
+.unknown/.code={%
+\esf@ifkeyvalkeyexists{Gin}{\pgfkeyscurrentname}{%
+\AppendToOptionsList{\object@graphic@options@tmp}{\pgfkeyscurrentname}{##1}%
+}{%
+\let\pgfkeys@searchalso@name=\pgfkeyscurrentname
+\pgfkeysalso{%
+/graphicobject/\pgfkeys@searchalso@name={##1},
+}%
+}%
+},
+.esf@also from=\object@graphic@options,
+#2,
+/utils/exec=
+\ifgraphicobject@autocaption
+\esf@ifpgfkeyhasvalue{\object@graphic@path/caption}{%
+}{%
+\def\graphicobject@caption{#3}%
+\PatchUnderscore\graphicobject@caption
+\ifgraphicobject@autocaption@strippath
+\protected@edef\graphicobject@caption{\strippath\graphicobject@caption}%
+\fi
+\pgfkeyslet{\object@graphic@path/caption}{\graphicobject@caption}%
+}%
+\fi
+\ifgraphicobject@autolabel
+\esf@ifpgfkeyhasvalue{\object@graphic@path/label}{%
+}{%
+\def\graphicobject@label{#3}%
+\ifgraphicobject@autolabel@strippath
+\protected@edef\graphicobject@label{\strippath\graphicobject@label}%
+\fi
+\pgfkeyslet{\object@graphic@path/label}{\graphicobject@label}%
+}%
+\fi
+\ifgraphicobject@warnenv
+\pgfkeysalso{env/.get=\esf@tmp@env}%
+\ifx \esf@tmp@env \@empty
+\else
+\ifdefstring{\object@graphic@env}{subobject}
+{\edef\esf@tmp@name{\string\includegraphicsubobject}}
+{\edef\esf@tmp@name{\string\includegraphicobject}}%
+\ifgraphicobject@noenv
+\PackageWarning{easyfloats}{I am ignoring 'env=\esf@tmp@env' in \esf@tmp@name}%
+\else
+\PackageWarning{easyfloats}{'env=\esf@tmp@env' in \esf@tmp@name. Is that intended?}%
+\fi
+\fi
+\fi
+\ifgraphicobject@noenv
+\pgfkeysalso{env=}%
+\fi
+,
+}
+\expandafter\includegraphics\expandafter[\object@graphic@options@tmp]{#3}%
+\end{#1}%
+\includegraphicobject@after
+}
+
+\newrobustcmd{\includegraphicsubobject}{%
+\begingroup
+\def\object@graphic@env{subobject}%
+\def\object@graphic@path{/subobject}%
+\def\includegraphicobject@after{\endgroup\ignorespaces}%
+\includegraphicobject@parseoptions
+}
+
+\fi %\ifesf@loadgraphics
+
+
+\newif\ifsubobject@warnnolabel
+\newif\ifsubobject@warnnocaption
+
+\pgfqkeys{/subobject}{%
+label/.initial,
+label/.value required,
+caption/.initial,
+caption/.value required,
+list caption/.initial,
+list caption/.value required,
+details/.initial=,
+details/.value required,
+details sep/.initial=.\space,
+details sep/.value required,
+exec/.initial=,
+exec/.value required,
+exec +/.code=\esf@pgfkeysvalueappend{/subobject/exec}{#1},
+exec +/.value required,
+exec+/.forward to=/subobject/exec +,
+exec+/.value required,
+linewidth/.initial=.5\linewidth,
+linewidth/.value required,
+subcaptionbox/.code=
+\let\subobject@begin\subobject@subcaptionbox
+\let\subobject@end\endsubobject@subcaptionbox,
+subcaptionbox/.value forbidden,
+subpage/.code=
+\let\subobject@begin\subobject@subpage
+\let\subobject@end\endsubobject@subpage,
+subpage/.value forbidden,
+subcaptionbox inner pos/.initial=,
+subcaptionbox inner pos/.value required,
+subpage outer pos/.initial=auto,
+subpage outer pos/.value required,
+subpage height/.initial=,
+subpage height/.value required=,
+subpage inner pos/.initial=,
+subpage inner pos/.value required,
+subpage align/.initial=\centering,
+subpage align/.value required,
+sep/.initial=,
+sep/.value required,
+hor/.code=
+\esf@pgfkeyscopyvalue{/subobject/sep}{/subobject/hor sep}%
+\esf@pgfkeysvalueappend{/subobject/sep}{#1},
+hor/.default=,
+hor sep/.initial=,
+hor sep/.value required,
+hor sep+/.forward to=/subobject/hor sep +,
+hor sep+/.value required,
+hor sep +/.code=\esf@pgfkeysvalueappend{/subobject/hor sep}{#1},
+hor sep +/.value required,
+ver/.code=
+\esf@pgfkeyscopyvalue{/subobject/sep}{/subobject/ver sep}%
+\esf@pgfkeysvalueappend{/subobject/sep}{#1},
+ver/.default=,
+ver sep/.initial=\par\bigskip,
+ver sep/.value required,
+ver sep+/.forward to=/subobject/ver sep +,
+ver sep+/.value required,
+ver sep +/.code=\esf@pgfkeysvalueappend{/subobject/ver sep}{#1},
+ver sep +/.value required,
+warn no caption/.is if=subobject@warnnocaption,
+warn no caption=true,
+warn no label/.is if=subobject@warnnolabel,
+warn no label=false,
+warn other env/.forward to=/object/warn other env,
+show env args/.forward to=/object/show env args,
+env/.code=\IfEnvironmentExistsOrIsEmpty{#1}{%
+\ifstrequal{#1}{longtable}{%
+\PackageError{easyfloats}{You cannot use 'env=longtable' in a subobject}
+{Either use 'env=tabular' instead or combine the subobjects into one longtable.}%
+\pgfkeyssetvalue{/subobject/env}{tabular}%
+}{%
+\pgfkeyssetvalue{/subobject/env}{#1}%
+}%
+}{%
+\PackageError{easyfloats}{Environment #1 which you passed to the key 'env' does not exist}{}%
+},
+env/.value required,
+env=,
+.unknown/.code={%
+\ObjectProcessKeyPattern{\pgfkeyscurrentname}{#1}{%
+\pgfkeysgetvalue{/subobject/.really unknown/.@cmd}{\esf@tmp@err}%
+\esf@tmp@err#1\pgfeov
+}%
+},
+.unknown/.code/.code={%
+\pgfkeysdef{/subobject/.really unknown}{#1}%
+},
+.really unknown/.code={%
+\edef\do{\noexpand\pgfkeys{/errors/unknown key={\pgfkeyscurrentkey}{\unexpanded{#1}}}}%
+\do
+},
+}%
+
+\newenvironment{subobject}[1]{% #1: options
+\if@inobject
+\else
+\PackageError{easyfloats}{subobject environment may not be used outside of an object}{Did you mean to use the object environment instead?}%
+\fi
+\subobject@hook
+\ifobject@isgraphic
+\object@graphic@hook
+\global\object@isgraphicfalse
+\fi
+\let\label=\esf@original@label
+\let\caption=\esf@original@caption
+\renewcommand\@object@envkey{/subobject/env}%
+\pgfqkeys{/subobject}{#1}%
+\ifsubobject@warnnocaption
+\pgfkeys{/subobject/caption/.esf@recommended}%
+\fi
+\ifsubobject@warnnolabel
+\pgfkeys{/subobject/label/.esf@recommended}%
+\fi
+\esf@ifpgfkeyhasvalue{/subobject/list caption}%
+{\pgfkeys{/subobject/list caption/.get=\subobject@caption@short}}%
+{\pgfkeys{/subobject/caption/.get=\subobject@caption@short}}%
+\pgfkeysgetvalue{/subobject/linewidth}{\subobject@linewidth}%
+\pgfkeysgetvalue{/subobject/details}{\subobject@details}%
+\ifx \subobject@details \@empty
+\else
+\preto\subobject@details{\pgfkeysvalueof{/subobject/details sep}}%
+\fi
+\pgfkeysgetvalue{/subobject/env}{\esf@tmp@env}%
+\ifx \esf@tmp@env \@empty
+\def\subobject@innerenv@begin{\ignorespaces}%
+\def\subobject@innerenv@end{\unskip}%
+\else
+\edef\subobject@innerenv@begin{\expandonce{\csname\esf@tmp@env\endcsname}}%
+\edef\subobject@innerenv@end{\expandonce{\csname end\esf@tmp@env\endcsname}}%
+\ObjectAppendEnvargs{\subobject@innerenv@begin}%
+\ifobject@showenv
+\show\subobject@innerenv@begin
+\fi
+\fi
+\if@firstsubobject
+\else
+\pgfkeysvalueof{/subobject/sep}%
+\fi
+\subobject@begin
+}{%
+\subobject@end
+\global \@firstsubobjectfalse
+}
+
+\NewEnviron{subobject@subcaptionbox}{%
+\def\subobject@box{%
+\subcaptionbox[% list caption
+\subobject@caption@short
+]{% caption
+\pgfkeysvalueof{/subobject/caption}%
+\subobject@details
+\esf@ifpgfkeyhasvalue{/subobject/label}
+{\label{\pgfkeysvalueof{/subobject/label}}}
+{}%
+}%
+}%
+\ifdefvoid\subobject@linewidth{%
+}{%
+\appto\subobject@box{[\subobject@linewidth]}%
+\pgfkeysgetvalue{/subobject/subcaptionbox inner pos}{\subobject@innerpos}%
+\ifx \subobject@innerpos \@empty
+\else
+\eappto\subobject@box{[\subobject@innerpos]}%
+\fi
+}%
+\subobject@box{% content
+\begingroup
+\renewcommand{\label}[1]{\PackageError{easyfloats}{\string\label\space is not allowed in subobject. Please use the 'label' option instead}{}}%
+\renewcommand{\caption}[2][]{\PackageError{easyfloats}{\string\caption\space is not allowed in subobject. Please use the 'caption' option instead}{}}%
+\pgfkeysvalueof{/subobject/exec}%
+\subobject@innerenv@begin
+\BODY
+\subobject@innerenv@end
+\endgroup
+}%
+}
+
+\newenvironment{subobject@subpage}{%
+\ifx \subobject@linewidth \@empty
+\PackageError{easyfloats}{'linewidth' may not be empty when using the 'subpage' backend}{}%
+\fi
+\edef\subobject@subpage@envname{sub\pgfkeysvalueof{/object/type}}%
+\def\subobject@subpage@begin{\csname\subobject@subpage@envname\endcsname}%
+\def\subobject@subpage@end{\csname end\subobject@subpage@envname\endcsname}%
+\pgfkeysgetvalue{/subobject/subpage outer pos}{\subobject@outerpos}%
+\ifx \subobject@outerpos \@empty
+\appto\subobject@subpage@begin{[c]}%
+\else \ifdefstring \subobject@outerpos {auto}{%
+\caption@iftop
+{\eappto\subobject@subpage@begin{[t]}}%
+{\eappto\subobject@subpage@begin{[b]}}%
+}{\ifdefstring \subobject@outerpos {Auto}{%
+\caption@iftop
+{\eappto\subobject@subpage@begin{[T]}}%
+{\eappto\subobject@subpage@begin{[B]}}%
+}{%
+\eappto\subobject@subpage@begin{[\subobject@outerpos]}%
+}}\fi
+\pgfkeysgetvalue{/subobject/subpage height}{\subobject@height}%
+\ifx \subobject@height \@empty
+\else
+\appto\subobject@subpage@begin{[\subobject@height]}%
+\pgfkeysgetvalue{/subobject/subpage inner pos}{\subobject@innerpos}%
+\ifx \subobject@innerpos \@empty
+\else
+\eappto\subobject@subpage@begin{[\subobject@innerpos]}%
+\fi
+\fi
+\subobject@subpage@begin{\subobject@linewidth}%
+\pgfkeysvalueof{/subobject/subpage align}%
+\caption@iftop{\subobject@subpage@captionAndLabel}{}%
+\begingroup
+\renewcommand{\label}[1]{\PackageError{easyfloats}{\string\label\space is not allowed in subobject. Please use the 'label' option instead}{}}%
+\renewcommand{\caption}[2][]{\PackageError{easyfloats}{\string\caption\space is not allowed in subobject. Please use the 'caption' option instead}{}}%
+\pgfkeysvalueof{/subobject/exec}%
+\subobject@innerenv@begin
+}{%
+\subobject@innerenv@end
+\endgroup
+\caption@iftop{}{\subobject@subpage@captionAndLabel}%
+\subobject@subpage@end
+\ignorespacesafterend
+}
+\newcommand{\subobject@subpage@captionAndLabel}{%
+\esf@ifpgfkeyhasvalue{/subobject/caption}{%
+\caption[\subobject@caption@short]{\pgfkeysvalueof{/subobject/caption}\subobject@details}%
+}{%
+\phantomcaption
+}%
+\esf@ifpgfkeyhasvalue{/subobject/label}%
+{\label{\pgfkeysvalueof{/subobject/label}}}%
+{}%
+}
+
+\pgfqkeys{/subobject}{subpage}
+\endinput
+%%
+%% End of file `easyfloats.sty'.

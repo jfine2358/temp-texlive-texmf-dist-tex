@@ -1,0 +1,167 @@
+%%
+%% This is file `phfparen.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% phfparen.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (C) 2016 by Philippe Faist <philippe.faist@bluewin.ch>
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.3 of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3 or later is part of all distributions of LaTeX version
+%% 2005/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[2005/12/01]
+\ProvidesPackage{phfparen}
+    [2016/08/15 v1.0 phfparen package]
+\RequirePackage{etoolbox}
+\RequirePackage{kvoptions}
+\RequirePackage{xparse}
+\RequirePackage{amsmath}
+\RequirePackage{mathtools}
+\def\paren{%
+  \@ifnextchar\bgroup\paren@impl@bgroup\paren@impl@nobgroup%
+}
+\def\paren@impl@bgroup{%
+  \csname paren@impl@\paren@registered@default @go\endcsname%
+}
+\def\paren@impl@nobgroup#1{%
+  \ifcsdef{paren@registered@delims@\string#1}{%
+    \paren@impl@nomod{#1}%
+  }{%
+    \paren@impl@mod{#1}%
+  }%
+}
+\def\paren@impl@nomod#1{%
+  \letcs\paren@tmp@delimname{paren@registered@delims@\string#1}%
+  \csname paren@impl@\paren@tmp@delimname\endcsname{}#1%
+  %
+}
+\def\paren@impl@mod#1{%
+  \def\paren@tmp@modtoken{#1}%
+  \@ifnextchar\bgroup\paren@impl@modBgroup\paren@impl@modNobgroup%
+}
+\def\paren@impl@modBgroup{%
+  \paren@util@parseModifs\paren@tmp@modifsForMathtools\paren@tmp@modtoken%
+  \letcs\paren@tmp@gocmd{paren@impl@\paren@registered@default @go}%
+  \expandafter\paren@tmp@gocmd\paren@tmp@modifsForMathtools%
+}
+\def\paren@impl@modNobgroup#1{%
+  \ifcsdef{paren@registered@delims@\string#1}{%
+    \letcs\paren@tmp@delimname{paren@registered@delims@\string#1}%
+    \letcs\paren@tmp@delimcmd{paren@impl@\paren@tmp@delimname}%
+    \edef\paren@tmp@modtokenarg{{\expandonce\paren@tmp@modtoken}}%
+    \expandafter\paren@tmp@delimcmd\paren@tmp@modtokenarg#1%
+  }{%
+    \PackageError{phfqit}{Unknown delimiter: (or can't parse args?)
+      {\expandafter\string\paren@tmp@modtoken}{\string#1}}{Your call
+      to \string\paren couldn't be parsed, presumably because I didn't
+      recognize your delimiter, or because there's a bug in this
+      package.}%
+    \paren@tmp@modtoken#1%
+  }%
+}
+\def\paren@util@parseModifs#1#2{%
+  \expandafter\ifstrequal\expandafter{#2}{*}{%
+    \def#1{*}%
+  }%
+  {% (else:)
+    \expandafter\ifblank\expandafter{#2}{%
+      \def#1{}%
+    }{%
+      \edef#1{[\expandonce{#2}]}%
+    }%
+  }%
+}
+\def\paren@xparsefix@storeparenarg#1{%
+  \def\paren@tmp@contents{#1}%
+}
+\@ifpackagelater{xparse}{2015/11/04}{
+  \RequirePackage{xstring}%
+  \def\paren@xparsefix@storeparenarg#1{%
+    \fullexpandarg\StrLen{\expandafter\string\paren@impl@tmp@delimtoken}%
+        [\paren@tmp@delimstrlen]%
+    \ifnum\paren@tmp@delimstrlen=1\relax%
+      \def\paren@tmp@contents{#1}%
+    \else%
+      \def\paren@tmp@delimstrlen@{\numexpr\paren@tmp@delimstrlen-1\relax}%
+      \noexpandarg\StrGobbleLeft{#1}{\the\paren@tmp@delimstrlen@}%
+          [\paren@tmp@contents]%
+    \fi%
+  }%
+}{%
+}
+\newcommand\parenRegister[5]{%
+  \expandafter\DeclarePairedDelimiterX\csname paren@impl@#1@go\endcsname[1]{#4}{#5}{{##1}}
+  \csdef{paren@impl@#1}##1{%
+    \gdef\paren@impl@tmp@modifs{##1}%
+    \csname paren@impl@#1@parsedelim\endcsname%
+  }
+  \expandafter\DeclareDocumentCommand\csname paren@impl@#1@parsedelim\endcsname{r#2#3}{%
+    \letcs\paren@impl@tmp@gocmd{paren@impl@#1@go}%
+%%\message{********MESSAGE*********}%
+%%\message{**********\detokenize\expandafter{\paren@impl@tmp@modifs}**********}%
+%%\message{**********\detokenize{##1}***********}%
+    \paren@util@parseModifs\paren@impl@tmp@modifsForMathtools\paren@impl@tmp@modifs%
+%%\show\paren@impl@tmp@modifsForMathtools%
+    \def\paren@impl@tmp@delimtoken{#2}%
+    \paren@xparsefix@storeparenarg{##1}%
+%%\show\paren@impl@tmp@modifsForMathtools
+%%\show\paren@tmp@contents
+  \expandafter\paren@impl@tmp@gocmd\paren@impl@tmp@modifsForMathtools{\paren@tmp@contents}%
+}
+  \csdef{paren@registered@delims@\string#2}{#1}
+}
+\newcommand\parenRegisterSimpleBraces[1]{%
+  \def\paren@registered@default{#1}%
+}
+\newcommand\parenRegisterDefaults{
+  \parenRegister{parens}{(}{)}{(}{)}
+  \parenRegister{brackets}{[}{]}{[}{]}
+  \parenRegister{angbrackets}{<}{>}{\langle}{\rangle}
+  \parenRegister{braces}{\{}{\}}{\{}{\}}
+  \parenRegisterSimpleBraces{braces}
+}
+\def\parenMakeBacktickActiveParen{%
+\mathcode`\`="8000\relax%
+  \begingroup%
+  \lccode`\~=`\`%
+  \lowercase{\endgroup\def~}{\paren}%
+}
+\def\parenMakeNormalBacktick{\mathcode`\`="0060\relax}
+\def\backtick{\begingroup\parenMakeNormalBacktick`\endgroup}
+\SetupKeyvalOptions{
+  family=phfparen,
+  prefix=phfparen@opt@
+}
+\DeclareBoolOption[true]{backtick}
+\DeclareComplementaryOption{nobacktick}{backtick}
+\DeclareVoidOption{backtickon}{%
+  \phfparen@opt@backticktrue
+  \PackageWarning{phfparen}{Option 'backtickon' is deprecated.  It still works,
+      but please consider using 'backtick=true|false' instead.}%
+}
+\DeclareBoolOption[true]{registerdefaults}
+\DeclareComplementaryOption{noregisterdefaults}{registerdefaults}
+\DeclareDefaultOption{%
+  \@unknownoptionerror
+}
+\ProcessKeyvalOptions*
+\ifphfparen@opt@backtick
+  \parenMakeBacktickActiveParen
+\fi
+\ifphfparen@opt@registerdefaults
+  \parenRegisterDefaults
+\fi
+\endinput
+%%
+%% End of file `phfparen.sty'.

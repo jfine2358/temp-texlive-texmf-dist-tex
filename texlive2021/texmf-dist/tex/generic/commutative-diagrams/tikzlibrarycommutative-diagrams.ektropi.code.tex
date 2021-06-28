@@ -1,0 +1,66 @@
+%
+% CoDi: Commutative Diagrams for TeX
+% Copyright (c) 2015-2020 Paolo Brasolin <paolo.brasolin@gmail.com>
+% SPDX-License-Identifier: MIT
+%
+% This file is part of CoDi 1.0.1, released on 2020/06/11 under MIT license.
+%
+
+% εκτροπή • (ektropí)
+%   1. diversion
+%   2. deflection
+%   3. aberration
+
+% Ektropi is a mechanism to hijack the /tikz/.unknown handler.
+% It allows the addition of maximum priority paths in the key finding algorithm.
+% The diversions are globally scoped, cumulative and removable.
+
+\usetikzlibrary{commutative-diagrams.koinos}
+
+\kDStoreCatcodeOf @
+\catcode`@=11
+
+%==[ handler restoring procedure ]==============================================
+
+% The default handler's code is backed up as a token list at load time.
+% NOTE: this has strong implications on loading order!
+
+\newtoks\kDEktropiDefaultToksBackup
+
+\expandafter\expandafter
+\expandafter\kDEktropiDefaultToksBackup
+\expandafter\expandafter
+\expandafter{\csname pgfk@/tikz/.unknown/.@body\endcsname}
+
+\def\kDEktropiRestore{
+  % Restore handler body.
+  \def\kDAct{\pgfkeyssetvalue{/tikz/.unknown/.@body}}
+  \expandafter\kDAct\expandafter{\the\kDEktropiDefaultToksBackup}
+  % Restore handler macro.
+  % NOTE: #s are doubled since we're inside \kDAct helper.
+  \def\kDAct{\long\def\kDAct####1\pgfeov}
+  \expandafter\kDAct\expandafter{\the\kDEktropiDefaultToksBackup}
+  \pgfkeyslet{/tikz/.unknown/.@cmd}\kDAct
+}
+
+% This key is the user interface. Self explanatory.
+\pgfkeys{/ektropi/restore/.code={\kDEktropiRestore}}
+
+%==[ handler hacking procedure ]================================================
+
+% This key is the user interface. It wraps the /tikz/.unknown handler code
+% with a conditional that executes it only if the unknown key retrieval
+% fails inside the path passed to /ektropi/add.
+\pgfkeys{/ektropi/add/.style={
+  /tikz/.unknown/.add code=
+    {
+      \let\tikz@key\pgfkeyscurrentname
+      \pgfkeys{#1/\tikz@key/.try={##1}}
+      \ifpgfkeyssuccess\else
+    }{
+      \fi
+    }
+  }
+}
+
+\kDRestoreCatcodeOf @

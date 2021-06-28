@@ -1,0 +1,521 @@
+if not modules then modules = { } end modules ['syst-lua'] = {
+    version   = 1.001,
+    comment   = "companion to syst-lua.mkiv",
+    author    = "Hans Hagen, PRAGMA-ADE, Hasselt NL",
+    copyright = "PRAGMA ADE / ConTeXt Development Team",
+    license   = "see context related readme files"
+}
+
+local load, type, tonumber = load, type, tonumber
+local find, gsub = string.find, string.gsub
+local concat = table.concat
+local utfchar = utf.char
+local S, C, P, lpegmatch, lpegtsplitat = lpeg.S, lpeg.C, lpeg.P, lpeg.match, lpeg.tsplitat
+
+local xmath                    = xmath    or math
+local xcomplex                 = xcomplex or { }
+
+local scan_next                = token.scan_next or token.get_next
+local scan_cmdchr              = token.scan_cmdchr_expanded
+local scan_token               = token.scan_token
+
+local get_csname               = token.get_csname
+----- get_macro                = token.get_macro
+----- put_next                 = token.put_next
+
+local cmd                      = tokens.commands
+local letter_code              = cmd.letter
+local other_char_code          = cmd.other_char
+local spacer_code              = cmd.spacer
+local other_char_code          = cmd.other_char
+local relax_code               = cmd.relax
+local register_int_code        = cmd.register_int
+local internal_int_code        = cmd.internal_int
+local register_dimen_code      = cmd.register_dimen
+local internal_dimen_code      = cmd.internal_dimen
+local register_glue_code       = cmd.register_glue
+local internal_glue_code       = cmd.internal_glue
+local register_toks_code       = cmd.register_toks
+local internal_toks_code       = cmd.internal_toks
+local char_given_code          = cmd.char_given
+local math_given_code          = cmd.math_given
+local xmath_given_code         = cmd.xmath_given
+local some_item_code           = cmd.some_item
+
+local getdimen                 = tex.getdimen
+local getglue                  = tex.getglue
+local getcount                 = tex.getcount
+local gettoks                  = tex.gettoks
+local gettex                   = tex.get
+
+local context                  = context
+commands                       = commands or { }
+local commands                 = commands
+local context                  = context
+local implement                = interfaces.implement
+local dimenfactors             = number.dimenfactors
+
+local ctx_protected_cs         = context.protected.cs -- more efficient
+local ctx_firstoftwoarguments  = context.firstoftwoarguments
+local ctx_secondoftwoarguments = context.secondoftwoarguments
+local ctx_firstofoneargument   = context.firstofoneargument
+local ctx_gobbleoneargument    = context.gobbleoneargument
+
+implement { -- will be overloaded later
+    name      = "writestatus",
+    arguments = "2 arguments",
+    actions   = logs.status,
+}
+
+function commands.doifelse(b)
+    if b then
+        ctx_firstoftwoarguments()
+    else
+        ctx_secondoftwoarguments()
+    end
+end
+
+function commands.doifelsesomething(b)
+    if b and b ~= "" then
+        ctx_firstoftwoarguments()
+    else
+        ctx_secondoftwoarguments()
+    end
+end
+
+function commands.doif(b)
+    if b then
+        ctx_firstofoneargument()
+    else
+        ctx_gobbleoneargument()
+    end
+end
+
+function commands.doifsomething(b)
+    if b and b ~= "" then
+        ctx_firstofoneargument()
+    else
+        ctx_gobbleoneargument()
+    end
+end
+
+function commands.doifnot(b)
+    if b then
+        ctx_gobbleoneargument()
+    else
+        ctx_firstofoneargument()
+    end
+end
+
+function commands.doifnotthing(b)
+    if b and b ~= "" then
+        ctx_gobbleoneargument()
+    else
+        ctx_firstofoneargument()
+    end
+end
+
+commands.testcase = commands.doifelse -- obsolete
+
+function commands.boolcase(b)
+    context(b and 1 or 0)
+end
+
+function commands.doifelsespaces(str)
+    if find(str,"^ +$") then
+        ctx_firstoftwoarguments()
+    else
+        ctx_secondoftwoarguments()
+    end
+end
+
+local pattern = lpeg.patterns.validdimen
+
+function commands.doifelsedimenstring(str)
+    if lpegmatch(pattern,str) then
+        ctx_firstoftwoarguments()
+    else
+        ctx_secondoftwoarguments()
+    end
+end
+
+local p_first = C((1-P(",")-P(-1))^0)
+
+implement {
+    name      = "firstinset",
+    arguments = "string",
+    actions   = function(str) context(lpegmatch(p_first,str or "")) end,
+    public    = true,
+}
+
+implement {
+    name      = "ntimes",
+    arguments = { "string", "integer" },
+    actions   = { string.rep, context }
+}
+
+implement {
+    name      = "execute",
+    arguments = "string",
+    actions   = os.execute -- wrapped in sandbox
+}
+
+implement {
+    name      = "doifelsesame",
+    arguments = "2 strings",
+    actions   = function(a,b)
+        if a == b then
+            ctx_firstoftwoarguments()
+        else
+            ctx_secondoftwoarguments()
+        end
+    end
+}
+
+implement {
+    name      = "doifsame",
+    arguments = "2 strings",
+    actions   = function(a,b)
+        if a == b then
+            ctx_firstofoneargument()
+        else
+            ctx_gobbleoneargument()
+        end
+    end
+}
+
+implement {
+    name      = "doifnotsame",
+    arguments = "2 strings",
+    actions   = function(a,b)
+        if a == b then
+            ctx_gobbleoneargument()
+        else
+            ctx_firstofoneargument()
+        end
+    end
+}
+
+-- This is a bit of a joke as I never really needed floating point expressions (okay,
+-- maybe only with scaling because there one can get numbers that are too large for
+-- dimensions to deal with). Of course one can write a parser in \TEX\ speak but then
+-- one also needs to implement a bunch of functions. It doesn't pay of so we just
+-- stick to the next gimmick. It looks inefficient but performance is actually quite
+-- efficient.
+
+do
+
+    local result = { "return " }
+    local word   = { }
+    local r      = 1
+    local w      = 0
+
+    local report = logs.reporter("system","expression")
+
+    local function unexpected(c)
+        report("unexpected token %a",c)
+    end
+
+    local function unexpected(c)
+        report("unexpected token %a",c)
+    end
+
+    local function expression()
+        local w = 0
+        local r = 1
+        while true do
+        local n, i = scan_cmdchr()
+            if n == letter_code then
+                w = w + 1 ; word[w] = utfchar(i)
+            else
+                if w > 0 then
+                    -- we could use a metatable for all math, complex and factors
+                    local s = concat(word,"",1,w)
+                    local d = dimenfactors[s]
+                    if d then
+                        r = r + 1 ; result[r] = "*"
+                        r = r + 1 ; result[r] = 1/d
+                    else
+                        if xmath[s] then
+                            r = r + 1 ; result[r] = "xmath."
+                        elseif xcomplex[s] then
+                            r = r + 1 ; result[r] = "xcomplex."
+                        end
+                        r = r + 1 ; result[r] = s
+                    end
+                    w = 0
+                end
+                if     n == other_char_code then
+                    r = r + 1 ; result[r] = utfchar(i)
+                elseif n == spacer_code then
+                -- r = r + 1 ; result[r] = " "
+                elseif n == relax_code then
+                    break
+                elseif n == register_int_code or n == internal_int_code then
+                    r = r + 1 ; result[r] = getcount(i)
+                elseif n == register_dimen_code or n == internal_dimen_code then
+                    r = r + 1 ; result[r] = getdimen(i)
+                elseif n == register_glue_code or n == n == register_dimen_code_glue_code then
+                    r = r + 1 ; result[r] = getglue(i)
+                elseif n == register_toks_code or n == n == register_dimen_code_toks_code then
+                    r = r + 1 ; result[r] = gettoks(i)
+                elseif n == char_given_code or n == math_given_code or n == xmath_given_code then
+                    r = r + 1 ; result[r] = i
+                elseif n == some_item_code then
+                    local n = get_csname(t)
+                    if n then
+                        local s = gettex(n)
+                        if s then
+                            r = r + 1 ; result[r] = s
+                        else
+                            unexpected(c)
+                        end
+                    else
+                        unexpected(c)
+                    end
+             -- elseif n == call_code then
+             --     local n = get_csname(t)
+             --     if n then
+             --         local s = get_macro(n)
+             --         if s then
+             --             r = r + 1 ; result[r] = s
+             --         else
+             --             unexpected(c)
+             --         end
+             --     else
+             --         unexpected(c)
+             --     end
+             -- elseif n == the_code or n == convert_code or n == lua_expandable_call_code then
+             --     put_next(t)
+             --     scan_token() -- expands
+                else
+                    unexpected(c)
+                end
+            end
+        end
+        local code = concat(result,"",1,r)
+        local func = load(code)
+        if type(func) == "function" then
+            context(func())
+        else
+            report("invalid lua %a",code)
+        end
+    end
+
+    implement {
+        public  = true,
+        name    = "expression",
+        actions = expression,
+    }
+
+end
+
+do
+
+    -- This is some 20% slower than native but we only provide this for compatibility
+    -- reasons so we don't care that much about it. Eventually we can drop the built-in
+    -- method.
+
+    local channels = { }
+    local lastdone = { }
+
+    local findbinfile = resolvers.findbinfile
+    local loadbinfile = resolvers.loadbinfile
+    local opentexfile = resolvers.opentexfile
+
+    local scaninteger = tokens.scanners.integer
+    local scankeyword = tokens.scanners.keyword
+    local scanstring  = tokens.scanners.string
+    local scancsname  = tokens.scanners.csname
+
+    local setmacro    = tokens.setters.macro
+    local rlncatcodes = tex.rlncatcodes
+    local texgetcount = tex.getcount
+
+    local bytes       = string.bytes
+    local getcatcode  = tex.getcatcode
+
+    local char, concat = string.char, table.concat
+
+    -- This uses the normal bin lookup method that we also use for other files,
+    -- and in principle there is no limit on the amount of files other than the
+    -- operating system imposes.
+
+    local t = { }
+    local l = 0
+
+    implement {
+        name      = "openin",
+        public    = true,
+        usage     = "value",
+        actions   = function()
+            local n = scaninteger()
+                      scankeyword("=")
+            local s = scanstring(true)
+            local c = channels[n]
+            if c then
+                c:close()
+            end
+            local f = findbinfile(s,"tex")
+            if f then
+                channels[n] = opentexfile(f)
+                lastdone[n] = false
+            else
+                channels[n] = false
+                lastdone[n] = true
+            end
+        end,
+    }
+
+    implement {
+        name      = "closein",
+        public    = true,
+        usage     = "value",
+        actions   = function()
+            local n = scaninteger()
+            local c = channels[n]
+            if c then
+                c:close()
+            end
+            channels[n] = false
+            t = { }
+        end,
+    }
+
+    -- This is not the fastest routine but hardly used, occasionally for line by line
+    -- input in e.g. tikz which is not that fast anyway so I'll deal with it when it
+    -- really is a bottleneck.
+
+    local readerror = function(what,n)
+        tex.error(string.formatters["too many %s brace tokens in read from channel %i"](what,n))
+    end
+
+    interfaces.implement {
+        name      = "read",
+        public    = true,
+        usage     = "value",
+        actions   = function(prefix)
+            local n = scaninteger()
+            local c = channels[n]
+            if scankeyword("line") and c then
+                c:gotoline(scaninteger())
+            end
+            scankeyword("to")
+            local m = scancsname(true)
+            local g = 0
+            local s
+            l = 0
+            if c then
+                while true do
+                    local s = c and c:reader()
+                    if s then
+                        l = l + 1
+                        s = gsub(s," *$","")
+                        t[l] = s
+                        for c in bytes(s) do
+                            local cc = getcatcode(c)
+                            if cc == 1 then
+                                g = g + 1
+                            elseif cc == 2 then
+                                g = g - 1
+                            end
+                        end
+                        if g <= 0 then
+                            break
+                        end
+                    else
+                        break
+                    end
+                end
+                if g > 0 then
+                    readerror("left",n)
+                    s = ""
+                elseif g < 0 then
+                    readerror("right",n)
+                    s = ""
+                elseif l == 0 then
+                    if c:endoffile() then
+                        lastdone[n] = true
+                        s = "\\par"
+                    else
+                        s = ""
+                    end
+                    channels[n] = false
+                else
+                    local e = texgetcount("endlinechar") -- we can have tex.endline if needed
+                    if e < 0 or e > 127 then
+                        e = ""
+                    else
+                        e = " "
+                        l = l + 1
+                        t[l] = ""
+                    end
+                    s = concat(t, e, 1, l)
+                end
+            else
+                s = ""
+            end
+            setmacro(m, s, prefix) -- checks for frozen
+        end,
+    }
+
+    -- This is an etex extension. All characters become catcode 12 but a space gets code
+    -- 10. The etex manual specifies a lineending of catcode 12 too. Should we strip spaces
+    -- at the end? A bit weird command that we never use anyway.
+
+    implement {
+        name      = "readline",
+        public    = true,
+        usage     = "value",
+        actions   = function(prefix)
+            local n = scaninteger()
+            local c = channels[n]
+            if scankeyword("line") and c then
+                c:gotoline(scaninteger())
+            end
+            scankeyword("to")
+            local m = scancsname(true)
+            local s = c and c:reader()
+            if s then
+                local e = texgetcount("endlinechar") -- we can have tex.endline if needed
+                if e > 0 then -- forget about 0
+                    s = s .. char(e)
+                end
+            else
+                channels[n] = false
+                s = ""
+            end
+            setmacro(rlncatcodes, m, s, prefix) -- checks for frozen
+        end,
+    }
+
+    -- This one uses the special lua condition option which is kind of experimental
+    -- but seems to work fine.
+
+    local boolean_value = tokens.values.boolean
+
+    implement {
+        name      = "ifeof",
+        public    = true,
+        usage     = "condition",
+        actions   = function()
+            local n = scaninteger()
+            return boolean_value, not channels[n]
+        end,
+    }
+
+    -- This one doesn't belong here and it might become a real primitive if we need it
+    -- frequently. So, for the moment we keep it in this file.
+
+    local getnest = tex.getnest
+
+    implement {
+        name      = "ifmvl",
+        public    = true,
+        usage     = "condition",
+        actions   = function()
+            return boolean_value, getnest("ptr") == 0
+        end,
+    }
+
+end

@@ -1,0 +1,221 @@
+%%
+%% This is file `gridset.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% gridset.dtx  (with options: `package')
+%% 
+%% IMPORTANT NOTE:
+%% 
+%% This is a generated file and you are not allowed to distribute it
+%% without the source ot the work.  See below about more informations
+%% about the files the work consists of.
+%% 
+%% Copyright (C) 2008-2020 Markus Kohm
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%% http://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status "maintained".
+%%
+%% The author and current maintainer of this work is
+%% Markus Kohm <komascript@gmx.info>.
+%%
+%% This work consists of the files gridset.dtx and README.md.
+%%
+%% Important Recommendation:
+%% The LPPL requires that distributions of the Work contain all the files of
+%% the Work (see ``Important Recommendations'' at lppl.txt).
+%%
+\ProvidesPackage{gridset}
+                 [2020-02-12 v0.3 grid - a.k.a. in-register - setting]
+\newcommand*{\gridset@luaorpdf}[1]{%
+  \expandafter\newcommand\csname gridset@#1\endcsname{}%
+  \ifcsname pdf#1\endcsname
+    \expandafter\let\csname gridset@#1\expandafter\endcsname
+    \csname pdf#1\endcsname
+  \else
+    \ifcsname #1\endcsname
+      \expandafter\let\csname gridset@#1\expandafter\endcsname
+      \csname #1\endcsname
+    \else
+      \PackageError{gridset}{%
+        neither \expandafter\string\csname #1\endcsname\space
+        nor \xpandafter\string\csname pdf#1\endcsname\space
+        defined%
+      }{This package needs either PDFTeX or LuaTeX or XeTeX.}%
+    \fi
+  \fi
+}
+\gridset@luaorpdf{pageheight}
+\gridset@luaorpdf{pagewidth}
+\gridset@luaorpdf{savepos}
+\gridset@luaorpdf{lastxpos}
+\gridset@luaorpdf{lastypos}
+\newcommand*{\gridbase}{}
+\newcommand*{\gridinterval}{}
+\AtBeginDocument{%
+  \ifdim\gridset@pageheight=\z@
+    \gridset@pageheight=\paperheight
+  \fi
+  \ifdim\gridset@pagewidth=\z@
+    \gridset@pagewidth=\paperwidth
+  \fi
+  \begingroup
+    \@tempdima=\dimexpr \gridset@pageheight - \topmargin - 1in
+                      - \headheight - \headsep
+                      - \topskip \relax
+    \@tempcnta=\@tempdima
+    \xdef\gridbase{\the\@tempcnta}%
+    \@tempcnta=\baselineskip
+    \xdef\gridinterval{\the\@tempcnta}%
+  \endgroup
+}
+\newcommand*{\SavePos}[1]{%
+  \begingroup
+    \gridset@savepos
+    \protected@write\@auxout{}{%
+      \protect\newpos{#1}{\the\count\z@}{\gridbase}{\gridinterval}{%
+        \noexpand\number\gridset@lastxpos
+      }{%
+        \noexpand\number\gridset@lastypos
+      }%
+    }%
+  \endgroup
+}
+\ifx\savepos\gridset@savepos
+  \PackageInfo{gridset}{LuaTeX detected.\MessageBreak
+    Note, gridset command is \string\SavePos\MessageBreak
+    but not \string\savepos, which is\MessageBreak
+    a LuaTeX primitive
+  }%
+\else
+  \PackageInfo{gridset}{\string\savepos\space defined as an alias of
+    \string\SavePos}%
+  \newcommand*{\savepos}{\SavePos}%
+\fi
+\newcommand*{\newpos}[6]{%
+  \grid@unique@test{#1}{#2}%
+  \expandafter\global\@namedef{pos@#1@page}{#2}%
+  \expandafter\global\@namedef{pos@#1@base}{#3}%
+  \expandafter\global\@namedef{pos@#1@interval}{#4}%
+  \expandafter\global\@namedef{pos@#1@x}{#5}%
+  \expandafter\global\@namedef{pos@#1@y}{#6}%
+  \begingroup
+    \@tempcnta=\numexpr \@nameuse{pos@#1@base} - \@nameuse{pos@#1@y}\relax
+    \@tempcnta=\numexpr \@tempcnta + \@nameuse{pos@#1@interval} - 1\relax
+    \divide\@tempcnta by\@nameuse{pos@#1@interval}\relax
+    \expandafter\xdef\csname pos@#1@line\endcsname{\the\@tempcnta}%
+    \@tempcnta=\numexpr \@tempcnta * \@nameuse{pos@#1@interval}\relax
+    \expandafter\xdef\csname pos@#1@offset\endcsname{\the\@tempcnta}%
+    \@tempcnta=\numexpr \@nameuse{pos@#1@y}
+                      - ( \@nameuse{pos@#1@base} - \@tempcnta )\relax
+    \expandafter\let\expandafter\@tempa\csname pos@#1@vskip\endcsname%
+    \expandafter\xdef\csname pos@#1@vskip\endcsname{\the\@tempcnta}%
+    \expandafter\ifx\csname pos@#1@vskip\endcsname\@tempa\else
+      \grid@ReRunMessage
+    \fi
+  \endgroup
+}
+\newcommand*{\grid@unique@test}[2]{%
+  \expandafter\ifx\csname pos@#1@page\endcsname\relax\else
+    \PackageError{gridset}{position `#1' is not unique.\@gobble}{%
+      You have used the position name `#1' you are using on page
+      `#2'\MessageBreak
+      already on page `\csname pos@#1@page\endcsname'.\MessageBreak
+      You should stop processing, remove the aux-files and correct the
+      names.\MessageBreak
+      If you'd continue, this will result in grid position
+      failures,\MessageBreak
+      that won't be reported!}%
+  \fi
+}
+\AtBeginDocument{%
+  \global\let\grid@unique@test\@gobble
+}
+\newcommand*\grid@ReRunMessage{}
+\AtBeginDocument{%
+  \renewcommand*\grid@ReRunMessage{%
+    \PackageWarningNoLine{gridset}{Grid position labels may have
+      changed.\MessageBreak
+      Rerun to get grid positions right}%
+    \global\let\grid@ReRunMessage\relax
+  }%
+}
+\newcounter{gridcnt}
+\newcommand*{\vskipnextgrid}{%
+  \begingroup
+    \stepcounter{gridcnt}\edef\@tempa{vp!\thegridcnt}%
+    \ifvmode
+      \leavevmode\SavePos{\@tempa}%
+      \expandafter\ifx\csname pos@\@tempa @vskip\endcsname\relax
+      \else
+        \expandafter\ifnum \csname pos@\@tempa @vskip\endcsname =\z@\else
+          \PackageInfo{gridset}{%
+            vmode \string\vskip\csname pos@\@tempa @vskip\endcsname sp%
+          }%
+          \vskip -\parskip\vskip -\baselineskip
+          \expandafter\vskip\csname pos@\@tempa @vskip\endcsname sp\relax
+        \fi
+      \fi
+    \else
+      \parskip=\z@
+      \SavePos{vp!\thegridcnt}%
+      \expandafter\ifx\csname pos@\@tempa @vskip\endcsname\relax
+      \else
+        \expandafter\ifnum \csname pos@\@tempa @vskip\endcsname =\z@\else
+          \PackageInfo{gridset}{%
+            hmode \string\vskip\csname pos@\@tempa @vskip\endcsname sp%
+          }%
+          \vskip \dimexpr -\baselineskip
+                          + \csname pos@\@tempa @vskip\endcsname sp\relax
+          \leavevmode
+          \if@twoside
+            \expandafter\ifodd\csname pos@\@tempa @page\endcsname\relax
+              \hskip \dimexpr -1in - \oddsidemargin - \parindent
+                            \if@twocolumn\if@firstcolumn\else
+                              - \columnwidth - \columnsep
+                            \fi\fi
+                              + \csname pos@\@tempa @x\endcsname sp\relax
+            \else
+              \hskip \dimexpr -1in - \evensidemargin - \parindent
+                            \if@twocolumn\if@firstcolumn\else
+                              - \columnwidth - \columnsep
+                            \fi\fi
+                              + \csname pos@\@tempa @x\endcsname sp\relax
+            \fi
+          \else
+            \hskip \dimexpr -1in - \oddsidemargin - \parindent
+                            \if@twocolumn\if@firstcolumn\else
+                              - \columnwidth - \columnsep
+                            \fi\fi
+                            + \csname pos@\@tempa @x\endcsname sp\relax
+          \fi
+        \fi
+      \fi
+    \fi
+  \endgroup
+}
+\newcommand*{\thegridinfo}[1]{%
+  page=\@nameuse{pos@#1@page},
+  base=\@nameuse{pos@#1@base},
+  interval=\@nameuse{pos@#1@interval},
+  x=\@nameuse{pos@#1@x},
+  y=\@nameuse{pos@#1@y}%
+}
+\newcommand*{\theposinfo}[1]{%
+  y=\@nameuse{pos@#1@y},
+  gridline=\@nameuse{pos@#1@line},
+  gridoffset=\@nameuse{pos@#1@offset},
+  movedown=\@nameuse{pos@#1@vskip}%
+}
+\newcommand*{\theypos}[1]{\@nameuse{pos@#1@y}}
+\endinput
+%%
+%% End of file `gridset.sty'.

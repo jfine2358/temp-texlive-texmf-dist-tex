@@ -1,0 +1,121 @@
+%%
+%% This is file `sctkzsym-base.sty', part of scsnowman package.
+%% Maintained on GitHub:
+%% https://github.com/aminophen/scsnowman
+%%
+%% Copyright (c) 2015-2017 Hironobu Yamashita
+%%   Email   :  h.y.acetaminophen[a t]gmail.com
+%%   GitHub  :  https://github.com/aminophen
+%%   Blog    :  http://acetaminophen.hatenablog.com/
+%%   Twitter :  @aminophen
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{sctkzsym-base}[2017/01/22 v1.1 Base for emoji variants using TikZ]
+\RequirePackage{tikz}
+\RequirePackage{keyval}
+%
+% prepare for options
+\newif\ifsctkzsym@document
+\newif\ifsctkzsym@qed
+\newif\ifsctkzsym@item
+%
+% options
+\DeclareOption{documentX}{\sctkzsym@documenttrue}
+\DeclareOption{nodocumentX}{\sctkzsym@documentfalse}
+\DeclareOption{qedX}{\sctkzsym@qedtrue}
+\DeclareOption{noqedX}{\sctkzsym@qedfalse}
+\DeclareOption{itemX}{\sctkzsym@itemtrue}
+\DeclareOption{noitemX}{\sctkzsym@itemfalse}
+\ExecuteOptions{documentX,qedX,itemX}
+\ProcessOptions\relax
+%
+% save QED symbol before change (joke)
+\ifsctkzsym@qed
+  \RequirePackage{amsthm}
+  \ifx\sctkzsym@saved@qedsymbol\@undefined
+    \let\sctkzsym@saved@qedsymbol\qedsymbol
+  \fi
+  \newcommand{\makeqedother}{%
+    \let\qedsymbol\sctkzsym@saved@qedsymbol
+  }
+\fi
+%
+% save item label before change (joke)
+\ifsctkzsym@item
+  \let\sctkzsym@saved@labelitemi\labelitemi
+  \let\sctkzsym@saved@labelitemii\labelitemii
+  \let\sctkzsym@saved@labelitemiii\labelitemiii
+  \let\sctkzsym@saved@labelitemiv\labelitemiv
+  \newcommand{\makeitemother}{%
+    \let\labelitemi\sctkzsym@saved@labelitemi
+    \let\labelitemii\sctkzsym@saved@labelitemii
+    \let\labelitemiii\sctkzsym@saved@labelitemiii
+    \let\labelitemiv\sctkzsym@saved@labelitemiv
+  }
+\fi
+%
+% key definitions
+\newcommand{\sctkzsym@define@key@withbool}[2]{%
+  \define@key{sctkzsym@#1}{#2}[true]{\expandafter\def\csname sctkzsym@#1@#2\endcsname{##1}}%
+  \expandafter\newif\csname ifsctkzsym@#1@#2\endcsname
+}
+\newcommand{\sctkzsym@define@key@wodefault}[2]{%
+  \define@key{sctkzsym@#1}{#2}{\expandafter\def\csname sctkzsym@#1@#2\endcsname{##1}}%
+}
+%
+% key handling
+\def\sctkzsym@true{true}   % for strcmp
+\def\sctkzsym@false{false} % for strcmp
+\newcommand{\sctkzsym@hndl@key@withbool}[2]{%
+  \expandafter\ifx\csname sctkzsym@#1@#2\endcsname\sctkzsym@false\relax
+    \csname sctkzsym@#1@#2false\endcsname % <key>=false
+  \else
+    \csname sctkzsym@#1@#2true\endcsname  % <key>=true/<color>
+    \expandafter\ifx\csname sctkzsym@#1@#2\endcsname\sctkzsym@true\relax
+      % <key>=true; <default-color>
+      \expandafter\def\csname sctkzsym@#1@#2\endcsname{\sctkzsym@defaultcolor}%
+    \fi
+  \fi
+}
+\newcommand{\sctkzsym@hndl@key@onlybool}[2]{%
+  \expandafter\ifx\csname sctkzsym@#1@#2\endcsname\sctkzsym@false\relax
+    \csname sctkzsym@#1@#2false\endcsname % <key>=false
+  \else
+    \expandafter\ifx\csname sctkzsym@#1@#2\endcsname\sctkzsym@true\relax
+      \csname sctkzsym@#1@#2true\endcsname  % <key>=true
+    \else
+      \PackageError{sc#1}{Only true/false allowed for key `#2'}\@ehc
+      \csname sctkzsym@#1@#2false\endcsname % <key>=false
+    \fi
+  \fi
+}
+\newcommand{\sctkzsym@hndl@key@wodefault}[5]{%
+  \def\@tempa{#3}%
+  \expandafter\ifx\csname sctkzsym@#1@#2\endcsname\@tempa\relax
+    \csname sctkzsym@#1@#2@c\endcsname\@ne
+  \else
+    \def\@tempa{#4}%
+    \expandafter\ifx\csname sctkzsym@#1@#2\endcsname\@tempa\relax
+      \csname sctkzsym@#1@#2@c\endcsname\tw@
+    \else
+      \def\@tempa{#5}%
+      \expandafter\ifx\csname sctkzsym@#1@#2\endcsname\@tempa\relax
+        \csname sctkzsym@#1@#2@c\endcsname\thr@@
+      \else
+        \PackageError{sc#1}{Unsupported value `\csname sctkzsym@#1@#2\endcsname' for #2}\@ehc
+        \csname sctkzsym@#1@#2@c\endcsname\z@
+      \fi
+    \fi
+  \fi
+}
+%
+% setup for tikzpicture
+\newlength{\sctkzsym@coord@baseline}
+\newlength{\sctkzsym@coord@scl}
+\newcommand*{\set@sctkzsym@coord@scl}[1]{\pgfmathsetlength{\sctkzsym@coord@scl}{#1pt}}
+\newcommand{\sctkzsym@defaultcolor}{black}
+\newcommand{\sctkzsym@defaultanticolor}{white}
+%
+\endinput
+%%
+%% End of file `sctkzsym-base.sty'.

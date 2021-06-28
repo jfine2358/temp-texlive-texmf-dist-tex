@@ -1,0 +1,442 @@
+% --------------------------------------------------------------------------
+% the SUBSTANCES package
+% 
+%   A Chemical Database
+% 
+% --------------------------------------------------------------------------
+% Clemens Niederberger
+% Web:    https://bitbucket.org/cgnieder/substances/
+% E-Mail: contact@mychemistry.eu
+% --------------------------------------------------------------------------
+% Copyright 2012 Clemens Niederberger
+% 
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+% 
+% This work has the LPPL maintenance status `maintained'.
+% 
+% The Current Maintainer of this work is Clemens Niederberger.
+% --------------------------------------------------------------------------
+% The substances package consists of the files
+%  - substances.sty, substances-default.def, substances-examples.sub,
+%    substances_en.tex, substances_en.pdf, README
+% --------------------------------------------------------------------------
+% If you have any ideas, questions, suggestions or bugs to report, please
+% feel free to contact me.
+% --------------------------------------------------------------------------
+\RequirePackage{ expl3 , xparse , l3keys2e , xtemplate , chemmacros }
+\ProvidesExplPackage
+  {substances}
+  {2012/07/22}
+  {0.1}
+  {A Chemical Database}
+
+% ----------------------------------------------------------------------------
+% variables:
+\prop_new:N  \l_substances_properties_pre_prop
+\prop_new:N  \l_substances_properties_post_prop
+
+\seq_new:N   \l_substances_required_seq
+\seq_new:N   \l_substances_chemicals_seq
+
+\clist_new:N \l_substances_chemicals_clist
+
+\bool_new:N  \l_substances_strict_bool
+\bool_new:N  \l_substances_index_entry_bool
+\bool_new:N  \l_substances_imakeidx_bool
+\bool_new:N  \l_substances_multind_bool
+\bool_new:N  \l_substances_splitidx_bool
+
+\tl_new:N    \l_substances_style_tl
+\tl_set:Nn   \l_substances_style_tl { default }
+
+\AtBeginDocument
+  {
+    \@ifpackageloaded { imakeidx }
+      { \bool_set_true:N \l_substances_imakeidx_bool } {}
+    \@ifpackageloaded { splitidx }
+      { \bool_set_true:N \l_substances_splitidx_bool } {}
+    \@ifpackageloaded { multind }
+      { \bool_set_true:N \l_substances_multind_bool } {}
+  }
+
+% ----------------------------------------------------------------------------
+% messages:
+\cs_new:Npn \substances_msg:nnn #1#2#3
+  {
+    \bool_if:NTF \l_substances_strict_bool
+      { \msg_error:nnxx { substances } { #1 } { #2 } { #3 } }
+      { \msg_warning:nnxx { substances } { #1 } { #2 } { #3 } }
+  }
+
+\msg_new:nnnn { substances } { property-missing }
+  { Property~`#2'~not~defined~for~substance~`#1'~\msg_line_context:. }
+  {
+    You~called~property~`#2'~for~substance~`#1'.~It~seems~though~that~you~
+    haven't~defined~it,~yet.
+  }
+
+\msg_new:nnnn { substances } { field-missing }
+  { Property~`#2'~is~not~defined~\msg_line_context:. }
+  {
+    You~called~property~`#2'~for~substance~`#1'.~This~property~has~not~been~
+    declared,~though.~Perhaps~you've~mispelled?
+  }
+
+\msg_new:nnnn { substances } { dadabase-missing }
+  { I~can't~find~the~database~file~`#1'~\msg_line_context:. }
+  {
+    You~requested~the~database~file~`#1',~but~apparently~it~is~missing.~Maybe~
+    you've~mispelled?
+  }
+
+\msg_new:nnnn { substances } { required-field }
+  { The~field~`#1'~is~missing~for~substance~`#2'~\msg_line_context:. }
+  {
+    You~declared~the~the~substance~`#2'~but~forgot~to~add~the~required~
+    property~`#1'.
+  }
+
+\msg_new:nnnn { substances } { style-missing }
+  { I~can't~find~the~file~`substances_#1.def'. }
+  {
+    You~specified~the~style~`#1'~which~means~you~want~me~to~load~the~file~
+    `substances_#1.def'~but~I~can't~find~it.~Perhaps~you've~mispelled?~
+    Anyway~I'm~loading~the~`default'~style~instead.
+  }
+
+% ----------------------------------------------------------------------------
+% options
+\keys_define:nn { substances / options }
+  {
+    strict   .bool_set:N = \l_substances_strict_bool ,
+    draft    .code:n     = \bool_set_true:N \l_substances_strict_bool ,
+    final    .code:n     = \bool_set_false:N \l_substances_strict_bool ,
+    index    .bool_set:N = \l_substances_index_entry_bool ,
+    style    .tl_set:N   = \l_substances_style_tl
+  }
+
+\ProcessKeysOptions { substances / options }
+
+% ----------------------------------------------------------------------------
+% define new property fields:
+\cs_new:Npn \substances_define_property_field:nnnn #1#2#3#4
+  {
+    \IfBooleanT { #1 }
+      { \seq_put_right:Nn \l_substances_required_seq { #2 } }
+    \prop_if_exist:cF { l_substances_#2_prop }
+     { \prop_new:c { l_substances_#2_prop } }
+    \IfNoValueTF { #3 }
+      { \prop_put:Nnn \l_substances_properties_pre_prop { #2 } { } }
+      {
+        \tl_if_blank:nTF { #3 }
+          { \prop_put:Nnn \l_substances_properties_pre_prop { #2 } { } }
+          { \prop_put:Nnn \l_substances_properties_pre_prop { #2 } { #3 } }
+      }
+    \IfNoValueTF { #4 }
+      { \prop_put:Nnn \l_substances_properties_post_prop { #2 } { } }
+      { \prop_put:Nnn \l_substances_properties_post_prop { #2 } { #4 } }
+  }
+
+\NewDocumentCommand \DeclareSubstanceProperty { smoo }
+  { \substances_define_property_field:nnnn { #1 } { #2 } { #3 } { #4 } }
+\@onlypreamble\DeclareSubstanceProperty
+
+% ----------------------------------------------------------------------------
+% declare new substance entry:
+\cs_new:Npn \substances_declare_substance:nn #1#2
+  {
+    \seq_put_right:Nn \l_substances_chemicals_seq { #1 }
+    \clist_put_right:Nn \l_substances_chemicals_clist { #1 }
+    \prop_map_inline:Nn \l_substances_properties_pre_prop
+      {
+        \tl_set:Nn \l_tmpa_tl { ##2 }
+        \prop_get:NnN \l_substances_properties_post_prop { ##1 } \l_tmpb_tl
+        \substances_add_property:nnVV { #1 } { ##1 } \l_tmpa_tl \l_tmpb_tl
+      }
+    \keys_set:nn { substances / #1 } { #2 }
+    \seq_map_inline:Nn \l_substances_required_seq
+      {
+        \group_begin:
+          \bool_set_true:N \l_substances_strict_bool
+          \prop_if_in:cnF { l_substances_##1_prop } { #1 }
+            { \substances_msg:nnn { required-field } { ##1 } { #1 } }
+        \group_end:
+      }
+    \prop_if_in:NnTF \l_substances_sort_prop { #1 }
+      {
+        \substances_remove_braces:xN
+          { \prop_get:Nn \l_substances_sort_prop { #1 } } \l_tmpa_tl
+      }
+      {
+        \prop_get:NnN \l_substances_properties_pre_prop { name } \l_tmpa_tl
+        \substances_remove_str_x:VnnN
+          \l_tmpa_tl
+          { #1 }
+          { name }
+          \l_tmpa_tl
+      }
+    \prop_put:NnV \l_substances_sort_prop { #1 } \l_tmpa_tl
+    \prop_if_in:NnT \l_substances_alt_prop { #1 }
+      {
+        \prop_if_in:NnTF \l_substances_altsort_prop { #1 }
+          {
+            \substances_remove_braces:xN
+              { \prop_get:Nn \l_substances_altsort_prop { #1 } } \l_tmpa_tl
+          }
+          {
+            \prop_get:NnN \l_substances_properties_pre_prop { alt } \l_tmpa_tl
+            \substances_remove_str_x:VnnN
+              \l_tmpa_tl
+              { #1 }
+              { alt }
+              \l_tmpa_tl
+          }
+        \prop_put:NnV \l_substances_altsort_prop { #1 } \l_tmpa_tl
+      }
+    \bool_new:c { g_substances_#1_alt_index_entry_bool }
+  }
+
+\cs_new:Npn \substances_add_property:nnnn #1#2#3#4
+  {
+    \keys_define:nn { substances / #1 }
+      {
+        #2 .code:n = \prop_put:cnn
+          { l_substances_#2_prop } { #1 } { #3{##1}#4 }
+      }
+  }
+\cs_generate_variant:Nn \substances_add_property:nnnn { nnVV }
+
+\NewDocumentCommand \DeclareSubstance { mm }
+  { \substances_declare_substance:nn { #1 } { #2 } }
+\@onlypreamble\DeclareSubstance
+
+% ----------------------------------------------------------------------------
+% recover values:
+\cs_new:Npn \substances_get_property:nn #1#2
+  {
+    \IfSubstanceFieldTF { #2 }
+      {
+        \IfSubstancePropertyTF { #1 } { #2 }
+          { \prop_get:cn { l_substances_#2_prop } { #1 } }
+          { {??} \substances_msg:nnn { property-missing } { #1 } { #2 } }
+      }
+      { {??} \substances_msg:nnn { field-missing } { #1 } { #2 } }
+  }
+
+% ----------------------------------------------------------------------------
+% some commands for creating user macros or whatever:
+\NewDocumentCommand \GetSubstanceProperty { mm }
+  { \substances_get_property:nn { #1 } { #2 } }
+
+\DeclareExpandableDocumentCommand \RetrieveSubstanceProperty { mm }
+  { \substances_get_property:nn { #1 } { #2 } }
+
+\DeclareExpandableDocumentCommand \IfSubstanceFieldTF { mmm }
+  { \cs_if_exist:cTF { l_substances_#1_prop } { #2 } { #3 } }
+
+\DeclareExpandableDocumentCommand \IfSubstanceFieldT { mm }
+  { \cs_if_exist:cT { l_substances_#1_prop } { #2 } }
+
+\DeclareExpandableDocumentCommand \IfSubstanceFieldF { mm }
+  { \cs_if_exist:cF { l_substances_#1_prop } { #2 } }
+
+\DeclareExpandableDocumentCommand \IfSubstanceExistTF { mmm }
+  { \seq_if_in:NnTF \l_substances_chemicals_seq { #1 } { #2 } { #3 } }
+
+\DeclareExpandableDocumentCommand \IfSubstanceExistT { mm }
+  { \seq_if_in:NnT \l_substances_chemicals_seq { #1 } { #2 } }
+
+\DeclareExpandableDocumentCommand \IfSubstanceExistF { mm }
+  { \seq_if_in:NnF \l_substances_chemicals_seq { #1 } { #2 } }
+
+\DeclareExpandableDocumentCommand \IfSubstancePropertyTF { mmmm }
+  {
+    \cs_if_exist:cTF { l_substances_#2_prop }
+      { \prop_if_in:cnTF { l_substances_#2_prop } { #1 } { #3 } { #4 } }
+      { #4 }
+  }
+
+\DeclareExpandableDocumentCommand \IfSubstancePropertyT { mmm }
+  {
+    \cs_if_exist:cT { l_substances_#2_prop }
+      { \prop_if_in:cnT { l_substances_#2_prop } { #1 } { #3 } }
+  }
+
+\DeclareExpandableDocumentCommand \IfSubstancePropertyF { mmm }
+  { 
+    \cs_if_exist:cTF { l_substances_#2_prop }
+      { \prop_if_in:cnF { l_substances_#2_prop } { #1 } { #3 } }
+      { #3 }
+  }
+
+\DeclareExpandableDocumentCommand \ForAllSubstancesDo {}
+  { \seq_map_inline:Nn \l_substances_chemicals_seq }
+
+\AtBeginDocument
+  {
+    \tl_new:N \AllSubstancesSequence
+    \seq_map_inline:Nn \l_substances_chemicals_seq
+      { \tl_put_right:Nn \AllSubstancesSequence { {#1} } }
+    \cs_new_eq:NN \AllSubstancesClist \l_substances_chemicals_clist
+  }
+
+% ----------------------------------------------------------------------------
+% user command:
+\NewDocumentCommand \chem { soomo }
+  {
+    \IfNoValueF { #2 } { #2 }
+    \IfNoValueTF { #5 }
+      {
+        \IfBooleanTF { #1 }
+          {
+            \IfSubstancePropertyTF { #4 } { alt }
+              { \RetrieveSubstanceProperty { #4 } { alt } }
+              { \RetrieveSubstanceProperty { #4 } { name } }
+          }
+          { \RetrieveSubstanceProperty { #4 } { name } }
+      }
+      { \substances_get_property:nn { #4 } { #5 } }
+    \IfNoValueF { #3 } { #3 }
+    \bool_if:NT \l_substances_index_entry_bool
+      { \substances_index_entry:n { #4 } }
+  }
+
+% ----------------------------------------------------------------------------
+% index command to add an entry to the chemicals list if the option
+% `index=true' is used:
+\cs_new:Npn \substances_index:nn #1#2
+  {
+    \bool_if:NTF \l_substances_imakeidx_bool
+      { \index [ #1 ] { #2 } }
+      {
+        \bool_if:NTF \l_substances_splitidx_bool
+          { \sindex [ #1 ] { #2 } }
+          {
+            \bool_if:NTF \l_substances_multind_bool
+              { \index { #1 } { #2 } }
+              { \index { #2 } }
+          }
+      }
+  }
+\cs_generate_variant:Nn \substances_index:nn { no,nx }
+
+\cs_new:Npn \substances_index_entry:n #1
+  { \UseInstance { substances-index } { default } { #1 } }
+
+\cs_new:Npn \substances_remove_braces:xN #1#2
+  { \exp_last_unbraced:NNx \tl_set:Nn #2 { #1 } }
+\cs_generate_variant:Nn \exp_last_unbraced:NNo { NNx }
+
+\cs_new:Npn \substances_remove_str_x:nnnN #1#2#3#4
+  {
+    \tl_set:Nx #4
+      { \prop_get:cn { l_substances_#3_prop } { #2 } }
+    \tl_remove_all:Nn #4 { #1 }
+    \substances_remove_braces:xN { #4 } #4
+  }
+\cs_generate_variant:Nn \substances_remove_str_x:nnnN { V }
+
+% let's use xtemplate's features for possible customization later:
+\DeclareObjectType { substances-index } { 1 }
+
+\DeclareTemplateInterface { substances-index } { standard } { 1 }
+  {
+    alternative-entry : boolean = true ,
+    alternative-name  : boolean = true
+  }
+
+\DeclareTemplateCode { substances-index } { standard } { 1 }
+  {
+    alternative-entry = \l_substances_index_alternative_entry_bool ,
+    alternative-name  = \l_substances_index_alternative_name_bool ,
+  }
+  {
+    \AssignTemplateKeys
+    \bool_if:nTF
+      {
+        \l_substances_index_alternative_name_bool &&
+        \prop_if_in_p:Nn \l_substances_alt_prop { #1 }
+      }
+      {
+        \substances_index:nx { \c_job_name_tl -chem }
+          {
+            \SubstanceIndexNameAltEntry
+              { \prop_get:Nn \l_substances_sort_prop { #1 } }
+              { \GetSubstanceProperty { #1 } { name } }
+              { \GetSubstanceProperty { #1 } { alt } }
+          }
+      }
+      {
+        \substances_index:nx { \c_job_name_tl -chem }
+          {
+            \SubstanceIndexNameEntry
+              { \prop_get:Nn \l_substances_sort_prop { #1 } }
+              { \GetSubstanceProperty { #1 } { name } }
+          }
+      }
+    \bool_if:nT
+      {
+        \l_substances_index_alternative_entry_bool &&
+        \l_substances_index_alternative_name_bool &&
+        \prop_if_in_p:Nn \l_substances_alt_prop { #1 }
+      }
+      {
+        \bool_if:cF { g_substances_#1_alt_index_entry_bool }
+          {
+            \substances_index:nx { \c_job_name_tl -chem }
+              {
+                \SubstanceIndexAltEntry
+                  { \prop_get:Nn \l_substances_altsort_prop { #1 } }
+                  { \GetSubstanceProperty { #1 } { name } }
+                  { \GetSubstanceProperty { #1 } { alt } }
+              }
+            \bool_gset_true:c { g_substances_#1_alt_index_entry_bool }
+          }
+      }
+  }
+
+\DeclareInstance { substances-index } { default } { standard } { }
+
+\cs_new:Npn \SubstanceIndexNameEntry #1#2 { #1@#2 }
+\cs_new:Npn \SubstanceIndexNameAltEntry #1#2#3 { #1@#2~(#3) }
+\cs_new:Npn \SubstanceIndexAltEntry #1#2#3 { #1@#3|see{#2} }
+% ----------------------------------------------------------------------------
+% define some default fields:
+
+\cs_new_nopar:Npn \@CAS #1-#2-#3 { \iupac{#1\-#2\-#3} }
+\NewDocumentCommand \CAS { m } { \@CAS #1 }
+
+\DeclareSubstanceProperty* { name } [\iupac]
+\DeclareSubstanceProperty  { sort }
+\DeclareSubstanceProperty  { alt }  [\iupac]
+\DeclareSubstanceProperty  { altsort }
+\DeclareSubstanceProperty  { CAS }  [\CAS]
+\DeclareSubstanceProperty  { PubChem }
+
+% ----------------------------------------------------------------------------
+% load style file
+\file_if_exist:nTF { substances- \l_substances_style_tl .def }
+  { \file_input:n { substances- \l_substances_style_tl .def } }
+  {
+    \substances_msg:nnn { style-missing } { \l_substances_style_tl } { }
+    \file_input:n { substances-default.def }
+  }
+
+\NewDocumentCommand \LoadSubstances { m }
+  {
+    \file_if_exist:nTF { #1.sub }
+      { \file_input:n { #1.sub } }
+      { \substances_msg:nnn { database-missing } { #1.sub } { } }
+  }
+\@onlypreamble\LoadSubstances
+
+\tex_endinput:D
+
+% HISTORY:
+2012/07/22 v0.1 - first release to CTAN

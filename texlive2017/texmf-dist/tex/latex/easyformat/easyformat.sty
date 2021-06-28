@@ -1,0 +1,230 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                         %
+%  easyformat  Easily add boldface, italics and smallcaps in LaTeX.       %
+%  Copyright (C) 2017  Evert Provoost <evert.provoost@gmail.com>          %
+%                                                                         %
+%  This program is free software: you can redistribute it and/or modify   %
+%  it under the terms of the GNU General Public License as published by   %
+%  the Free Software Foundation, either version 3 of the License, or      %
+%  (at your option) any later version.                                    %
+%                                                                         %
+%  This program is distributed in the hope that it will be useful,        %
+%  but WITHOUT ANY WARRANTY; without even the implied warranty of         %
+%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          %
+%  GNU General Public License for more details.                           %
+%                                                                         %
+%  You should have received a copy of the GNU General Public License      %
+%  along with this program.  If not, see <http://www.gnu.org/licenses/>.  %
+%                                                                         %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% NOTE TO FUTURE: Italics correction works because of \maybe@ic.
+%                  this macro might disappear in LaTeX3...
+%
+%                  If the 'New Font Selection Scheme' would change,
+%                  stuff WILL break...
+
+
+%% TODO: Rewrite to use expl3 so it'll be easier to switch to LaTeX3.
+
+
+%% Administration...
+\NeedsTeXFormat{LaTeX2e} % Why no date? We'll leave that to the imports.
+\ProvidesPackage{easyformat}
+	[2017/04/17 v1.2.0 Easily add boldface, italics and smallcaps.]
+
+
+%% Import this handy package
+\RequirePackage{ltxcmds}[2011/04/18]
+
+
+%% Public macros
+% Add macros to switch the syntax on or off.
+\newcommand*{\setundact}{
+	\catcode`\_=\active
+}
+
+\newcommand*{\setundsub}{
+	\catcode`\_=8
+}
+
+\newcommand*{\setciract}{
+	\catcode`\^=\active
+}
+
+\newcommand*{\setcirsup}{
+	\catcode`\^=7
+}
+
+\newcommand*{\enableeasyformat}{
+	\setundact
+	\setciract
+}
+
+\newcommand*{\disableeasyformat}{
+	\setundsub
+	\setcirsup
+}
+
+% Add macros which change the fontshape, fontseries and fontfamily.
+\newcommand*{\setffamily}[1]{%
+	\fontfamily{#1}%
+	\selectfont%
+}
+
+\newcommand*{\setfshape}[1]{%
+	\fontshape{#1}%
+	\selectfont%
+}
+
+\newcommand*{\setfseries}[1]{%
+	\fontseries{#1}%
+	\selectfont%
+}
+
+% Add some macros which do small parts of what \normalfont does.
+% Were needed in v1.1.0 but let's keep them because they are useful :)
+\newcommand*{\nrfamily}{%
+	\setffamily{\familydefault}%
+}
+
+\newcommand*{\nrshape}{%
+	\setfshape{\shapedefault}%
+}
+
+\newcommand*{\nrseries}{%
+	\setfseries{\seriesdefault}%
+}
+
+% Add a macro LaTeX should have...
+\newcommand*{\cir}{\string^\relax}
+
+
+%% CONSTANTS
+% Yes I could use \sb and \sp but those are dependencies...
+\let\EFOR@subscript=_
+\let\EFOR@superscript=^
+
+% To test what style we're currently in.
+\def\EFOR@it{it}
+\def\EFOR@sc{sc}
+\def\EFOR@bf{bx}
+
+% Remember the style before changing to italics/boldface/smallcaps.
+\edef\EFOR@prev@shape@it{\shapedefault}   % Used by italics.
+\edef\EFOR@prev@shape@sc{\shapedefault}   % Used by smallcaps.
+\edef\EFOR@prev@series@bf{\seriesdefault} % Used by boldface.
+
+
+%% UTILS
+% So we can remove an unnecessary undescore when starting/stopping bold.
+\newcommand*{\EFOR@util@removeChar}[1]{}
+
+% Do the first when in mathmode, the second if not.
+\newcommand*{\EFOR@util@ifmmode}{%
+	\ifmmode
+		\expandafter\@firstoftwo
+	\else
+		\expandafter\@secondoftwo
+	\fi
+}
+
+% Do the first when equal, the second if not (first or second of
+% what comes _after_ \EFOR@util@ifx{...}{...} that is).
+\newcommand*{\EFOR@util@ifx}[2]{%
+	\ifx#1#2\relax
+		\expandafter\@firstoftwo
+	\else
+		\expandafter\@secondoftwo
+	\fi
+}
+
+
+%% Formating handling
+% Switch italics on or off.
+\newcommand*{\EFOR@handle@italics}{%
+	\EFOR@util@ifx{\f@shape}{\EFOR@it}
+	{%
+		\setfshape{\EFOR@prev@shape@it}%
+		\edef\EFOR@prev@shape@it{\shapedefault}%
+		% \maybe@ic adds italics correction if needed.
+		% (might stop working in LaTeX3?)
+		\maybe@ic%
+	}{%
+		\edef\EFOR@prev@shape@it{\f@shape}%
+		\itshape%
+	}%
+}
+
+% Switch smallcaps on or off.
+\newcommand*{\EFOR@handle@smallcaps}{%
+	\EFOR@util@ifx{\f@shape}{\EFOR@sc}
+	{%
+		\setfshape{\EFOR@prev@shape@sc}%
+		\edef\EFOR@prev@shape@sc{\shapedefault}%
+	}{%
+		\edef\EFOR@prev@shape@sc{\f@shape}%
+		\scshape%
+	}%
+}
+
+% Switch boldface on or off.
+\newcommand*{\EFOR@handle@boldface}{%
+	\EFOR@util@ifx{\f@series}{\EFOR@bf}
+	{%
+		\setfseries{\EFOR@prev@series@bf}%
+		\edef\EFOR@prev@series@bf{\seriesdefault}%
+	}{%
+		\edef\EFOR@prev@series@bf{\f@series}%
+		\bfseries%
+	}%
+}
+
+
+%% Activate the systems!
+% Prepare the syntax in the preamble.
+\enableeasyformat
+
+% Now finally add the new syntax in the document part.
+\AtBeginDocument{
+	% Just to be sure
+	\enableeasyformat
+	
+	% This is where the magic happens (also differentiates between
+	% the text and math mode.)
+	% It is \protected because it should work in eg. \section{}
+	\protected\def_{\EFOR@util@ifmmode
+		{\EFOR@subscript}
+		{\ltx@ifnextchar@nospace_
+			% \EFOR@util@removeChar removes the second underscore.
+			{\EFOR@handle@boldface\EFOR@util@removeChar}
+			{\EFOR@handle@italics}%
+		}%
+	}
+
+	\protected\def^{\EFOR@util@ifmmode
+		{\EFOR@superscript}
+		{\EFOR@handle@smallcaps}%
+	}
+}
+
+% Cleanup
+\AtEndDocument{
+	% Why no \def_\undefined and \def^\undefined?
+	% Because if we use this syntax in eg. \section{},
+	% the macro should still work in the .aux file...
+	\disableeasyformat
+}
+
+
+%% DONE!
+\endinput
+
+
+%% IMPLEMENTATION DETAILS:
+%% Why not \textit/bf/sc\bgroup and \egroup?
+%      Well actualy that was the original solution. Hwoever this
+%      doesn't differentiate between ending itallics or ending
+%      boldface. The current solution does and this makes the syntax
+%      more predictable and generally more useful.

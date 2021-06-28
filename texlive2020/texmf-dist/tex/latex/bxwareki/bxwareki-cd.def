@@ -1,0 +1,126 @@
+%%
+%% This is file 'bxwareki-cd.def'.
+%%
+%% Copyright (c) 2018,2019 Takayuki YATO (aka. "ZR")
+%%   GitHub:   https://github.com/zr-tex8r
+%%   Twitter:  @zr_tex8r
+%%
+%% This package is distributed under the MIT License.
+%%
+
+% Note: This file must be encoded in UTF-8.
+
+%% file declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesFile{bxwareki-cd.def}[2019/06/01 v0.6]
+
+\ifbxwy@epTeXinputencoding@ok
+  \epTeXinputencoding utf8
+\fi
+
+%--------------------------------------- helpers
+
+%% \bxwy@burst-`>...
+\let\bxwy@burst\romannumeral
+
+%% \bxwy@cond\ifXXX...\fi{<true>}{<false>}
+\@gobbletwo\if\if \def\bxwy@cond#1\fi{%
+  #1\expandafter\@firstoftwo \else \expandafter\@secondoftwo \fi}
+
+%% \bxwy@catch@mk...\bxwy@mk
+\def\bxwy@catch@mk#1\bxwy@mk{#1}
+
+%--------------------------------------- kanji numerals
+
+%% \bxwy@Jkansuji{<number>}
+% The kansuji-by-reading with use of ten-composites (廿, 卅).
+% NB. Only valid in range 0..99; otherwise fallback to \bxwy@jkansuji.
+\def\bxwy@Jkansuji#1{%
+  \expandafter\bxwy@Jkansuji@a\number#1\bxwy@mk}
+\def\bxwy@Jkansuji@a#1\bxwy@mk{%
+  \ifnum#1<\bxwy@jk@x
+    \bxwy@jkansuji@a#1\bxwy@mk
+  \else\ifnum#1<\bxwy@jk@c
+    \bxwy@Jkansuji@b#1%
+  \else
+    \bxwy@jkansuji@a#1\bxwy@mk
+  \fi\fi}
+\def\bxwy@Jkansuji@b#1#2{%
+  \ifcase#1\relax \or 十\or 廿\or 卅%
+  \else \csname bxwy@jcd/#1\endcsname 十%
+  \fi
+  \ifnum#2>\z@ \csname bxwy@jcd/#2\endcsname \fi}
+
+%--------------------------------------- custom date format
+
+%% \warekicustomdate{<options>}
+% Renders the date in the form specified by the options.
+% [calendar] def. seireki; w = wareki;
+% [numerals] def. western numerals; k = kansuji; j = kansuji-by-reading;
+%   J = kansuji-by-reading, with ten-composites (廿, 卅);
+% [month names] def. by numbers; o = 異名 (old month names);
+%   O = Izumo-style 異名 (use 神在月 instead of 神無月);
+\def\warekicustomdate#1{%
+  \bxwy@custom@date@parse@opt{#1}\bxwy@custom@date@a}
+\def\bxwy@custom@date@a#1{%
+  \expandafter\bxwy@custom@date@b\bxwy@date#1}
+\def\bxwy@custom@date@b#1#2#3#4#5#6{%
+  % y,m,d,calendar,numerals,monthname
+  \if \ifx\warekigengo\@empty-\else#4\fi w% wareki
+    \warekigengo
+    \ifnum\c@warekiyear=\@ne 元%
+    \else \bxwy@custom@date@number#5\c@warekiyear
+    \fi
+  \else % seireki
+    \if#5-#1\bxwy@S% western
+    \else \bxwy@kansuji{#1}% kansuji/-j/-J
+    \fi
+  \fi
+  年%
+  \if#6-\bxwy@custom@date@number#5{#2}月% month by number
+  \else \bxwy@custom@date@month#6{#2}% month name
+  \fi
+  \bxwy@custom@date@number#5{#3}日}
+\def\bxwy@custom@date@number#1#2{%
+  \if#1k\bxwy@kansuji{#2}% kansuji
+  \else\if#1j\bxwy@jkansuji{#2}% kansuji-j
+  \else\if#1J\bxwy@Jkansuji{#2}% kansuji-J
+  \else % western
+    \bxwy@S \expandafter\bxwy@catch@mk\number#2\bxwy@mk \bxwy@S
+  \fi\fi\fi}
+\def\bxwy@custom@date@month#1#2{%
+  \ifnum#2=\z@\else\ifcase#2\relax
+    \or 睦月\or 如月\or 弥生\or 卯月\or 皐月\or 水無月%
+    \or 文月\or 葉月\or 長月%
+    \or \if#1O神在月\else 神無月\fi
+    \or 霜月\or 師走%
+  \fi\fi}
+
+%% \bxwy@custom@date@parse@opt{<options>}\CScont
+\def\bxwy@custom@date@parse@opt#1{%
+  \bxwy@cd@parse@opt@a#1\bxwy@mk---}
+\def\bxwy@cd@parse@opt@a{%
+  \expandafter\bxwy@cd@parse@opt@b\bxwy@burst-`>}
+\def\bxwy@cd@parse@opt@b#1{%
+  \bxwy@cond\ifx#1\bxwy@mk\fi{\bxwy@cd@parse@opt@f}{%
+    \expandafter\bxwy@cd@parse@opt@c\csname bxwy@cdpo@@#1\endcsname}}
+\def\bxwy@cd@parse@opt@c#1{%
+  \bxwy@cond\ifx#1\relax\fi{\bxwy@cd@parse@opt@a}{%
+    \bxwy@cd@parse@opt@d#1}}
+\def\bxwy@cd@parse@opt@d#1#2\bxwy@mk#3#4#5{%
+  \expandafter\bxwy@cd@parse@opt@e\bxwy@burst-`>#1#3#4#5{#2}}
+\def\bxwy@cd@parse@opt@e#1#2#3#4{%
+  \bxwy@cd@parse@opt@a#4\bxwy@mk#1#2#3}
+\def\bxwy@cd@parse@opt@f#1#2#3#4{%
+  #4{#1#2#3}}
+%
+\def\bxwy@cdpo@@w#1#2#3{w#2#3}
+\def\bxwy@cdpo@@k#1#2#3{#1k#3}
+\def\bxwy@cdpo@@j#1#2#3{#1j#3}
+\def\bxwy@cdpo@@J#1#2#3{#1J#3}
+\def\bxwy@cdpo@@o#1#2#3{#1#2o}
+\def\bxwy@cdpo@@O#1#2#3{#1#2O}
+
+%--------------------------------------- all done
+\endinput
+%% EOF

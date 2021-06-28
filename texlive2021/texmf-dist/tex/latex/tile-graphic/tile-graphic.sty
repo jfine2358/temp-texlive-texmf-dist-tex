@@ -1,0 +1,356 @@
+%%
+%% This is file `tile-graphic.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% tile-graphic.dtx  (with options: `copyright,package')
+%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% tile-graphic.sty package,                             %%
+%% Copyright (C) 2020                                    %%
+%%   dpstory@uakron.edu                                  %%
+%%   dpstory@acrotex.net                                 %%
+%%                                                       %%
+%% This program can redistributed and/or modified under  %%
+%% the terms of the LaTeX Project Public License         %%
+%% Distributed from CTAN archives in directory           %%
+%% macros/latex/base/lppl.txt; either version 1.2 of the %%
+%% License, or (at your option) any later version.       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\NeedsTeXFormat{LaTeX2e}[1997/12/01]
+\ProvidesPackage{tile-graphic}
+ [2020/05/27 v1.0.1 Tile a graphic (dps)]
+
+\RequirePackage{xkeyval}
+\newif\if@wrttofiles\@wrttofilesfalse
+\DeclareOptionX{wrttofiles}{\@wrttofilestrue}
+\DeclareOptionX{!wrttofiles}{\@wrttofilesfalse}
+\newif\if@packagefiles \@packagefilestrue
+\DeclareOptionX{packagefiles}{\@packagefilestrue}
+\DeclareOptionX{!packagefiles}{\@packagefilesfalse}
+\define@choicekey*+{tile-graphic.sty}{pdfcreator}[\val\nr]%
+  {pdflatex,lualatex,xelatex,ps2pdf,distiller}{%
+  \edef\tg@case{\nr}%
+  \ifcase\nr\relax
+    \def\tg@pdfcreator@app{pdflatex}\or
+    \def\tg@pdfcreator@app{lualatex}\or
+    \def\tg@pdfcreator@app{xelatex}\or
+    \def\tg@pdfcreator@app{ps2pdf}\or
+    \def\tg@pdfcreator@app{acrodist}\fi
+}{\PackageWarning{tile-graphics}%
+  {Bad choice for pdfcreator, permissible values\MessageBreak
+  are pdflatex, lualatex, xelatex, ps2pdf, and\MessageBreak
+  distiller.\MessageBreak Using the default pdflatex}}
+\def\tg@pdfcreator@app{pdflatex}\def\tg@case{0}
+\ProcessOptionsX\relax
+\edef\tg@restoreCats{%
+  \catcode`\noexpand\"=\the\catcode`\"\relax
+  \catcode`\noexpand\,=\the\catcode`\,\relax
+  \catcode`\noexpand\_=\the\catcode`\_\relax
+}
+\@makeother\"\@makeother\,\@makeother\_
+\RequirePackage{shellesc}
+\RequirePackage{web}
+\RequirePackage{graphicx}
+\RequirePackage{multido}
+\newif\if@wrtorpkg \@wrtorpkgfalse
+\if@wrttofiles
+  \@wrtorpkgtrue
+\else
+  \if@packagefiles
+    \@wrtorpkgtrue
+  \fi
+\fi
+\newif\iftg@direct \tg@directtrue
+\newif\iftgfolder  \tgfolderfalse
+\ifnum\tg@case>\tw@\relax\tg@directfalse\fi
+\newif\ifpassthruTG \passthruTGtrue
+\newdimen\tg@dima
+\newdimen\tg@dimb
+\newbox\tg@box
+\newcount\tg@Cnt
+\def\tg@rmslash#1/{\def\tgInFolder{#1}}%
+\let\tgInFolder\@empty
+\def\sysdel#1{\def\tg@sysdel{#1\space}}
+\sysdel{del}
+\def\syscopy#1{\def\tg@syscopy{#1\space}}
+\syscopy{copy}
+\def\sysmove#1{\def\tg@sysmove{#1\space}}
+\sysmove{move}
+\def\pkgappArgs#1{\def\pkg@ppArgs##1{#1}}
+\pkgappArgs{#1}
+\def\tileappArgs#1{\def\tile@ppArgs##1{#1}}
+\tileappArgs{#1}
+\def\latexappArgs#1{\def\latex@ppArgs##1{#1}}
+\latexappArgs{#1}
+\def\dvipsappArgs#1{\def\dvips@ppArgs##1{#1}}
+\dvipsappArgs{#1}
+\providecommand{\definePath}[1]{\def\ef@ctrlName{#1}%
+    \hyper@normalise\ef@definePath}
+\def\ef@definePath#1{\expandafter\xdef\ef@ctrlName{#1}}
+\def\fullPathToSource{\definePath{\tg@fullPathToSource}}
+\let\tg@fullPathToSource\@empty
+\def\afterTileCreationHook#1{\def\@fterTileCreationHook{#1}}
+\let\@fterTileCreationHook\relax
+\def\afterPkgCreationHook#1{\def\@fterPkgCreationHook{#1}}
+\let\@fterPkgCreationHook\relax
+\newcommand{\packagesuffix}{package}
+\newcommand{\setTileParams}[4][]{%
+  \tg@dima #3\p@\relax
+  \ifdim\tg@dima < \p@
+    \PackageWarning{tile-graphic}
+      {Number of columns must be positive,\MessageBreak
+       setting number of columns to 2}\tg@dima\tw@\p@\fi
+  \edef\nCols{\strip@pt\tg@dima}%
+  \tg@Cnt\nCols\relax
+  \edef\n@Cols{\the\tg@Cnt}\edef\nCols{\the\tg@Cnt}%
+  \tg@dima #2\p@\relax
+  \ifdim\tg@dima < \p@
+    \PackageWarning{tile-graphic}
+      {Number of rows must be positive,\MessageBreak
+       setting number of rows to 2}\tg@dima\tw@\p@\fi
+  \edef\nRows{\strip@pt\tg@dima}%
+  \tg@Cnt\nRows\relax
+  \edef\n@Rows{\the\tg@Cnt}\edef\nRows{\the\tg@Cnt}%
+  \multiply\tg@Cnt \nCols\relax
+  \edef\nFilesCreated{\the\tg@Cnt}%
+  \def\pathToPic{#4}%
+  \filename@parse{#4}%
+  \edef\tg@dir{\filename@area}%
+  \ifx\tg@dir\@empty\tgfolderfalse\else
+    \expandafter\tg@rmslash\tg@dir
+    \tgfoldertrue
+  \fi
+  \edef\tg@base{\filename@base}%
+  \edef\tgBaseName{\filename@base}%
+  \edef\tg@ext{\filename@ext}%
+  \setbox\tg@box\hbox{\includegraphics[draft,#1]{#4}}%
+  \setlength\tg@dima{\the\wd\tg@box}%
+  \tg@dima=.99626\tg@dima
+  \divide\tg@dima \nCols
+  \edef\bpWdtile{\strip@pt\tg@dima}%
+  \setlength\tg@dima{\the\ht\tg@box}%
+  \tg@dima=.99626\tg@dima
+  \divide\tg@dima \nRows
+  \edef\bpHttile{\strip@pt\tg@dima}%
+  \setbox\tg@box\box\voidb@x
+  \tg@dima=\bpHttile pt \relax
+  \edef\tg@HT{\the\tg@dima}
+  \tg@dima=\bpWdtile pt \relax
+  \edef\tg@WD{\the\tg@dima}
+  \ifpassthruTG
+    \web@MargScrDimOpts{.25in}{.25in}{24pt}{.25in}{5in}{6in}
+  \else
+    \web@MargScrDimOpts{0pt}{0pt}{0pt}{0pt}{\tg@HT}{\tg@WD}
+  \fi
+  \@tempcnta\n@Rows\relax
+  \advance\@tempcnta\@ne
+  \edef\n@Rows{\the\@tempcnta}
+  \@tempcnta\z@
+  \tg@dima0pt
+  \tg@dimb=\tg@HT\relax
+  \@whilenum \@tempcnta < \n@Rows \do {%
+    \advance\@tempcnta\@ne
+    \csarg\edef{y\the\@tempcnta}{\strip@pt\tg@dima}
+    \advance\tg@dima \tg@dimb
+  }
+  \@tempcnta\n@Cols\relax
+  \advance\@tempcnta\@ne
+  \edef\n@Cols{\the\@tempcnta}
+  \@tempcnta\z@
+  \tg@dima0pt
+  \tg@dimb=\tg@WD\relax
+  \@whilenum \@tempcnta < \n@Cols \do {%
+    \advance\@tempcnta\@ne
+    \csarg\edef{x\the\@tempcnta}{\strip@pt\tg@dima}
+    \advance\tg@dima \tg@dimb
+  }
+  \if@wrtorpkg\expandafter
+    \tg@wrtthefiledoc\fi
+}
+\def\tg@wrtthefiledoc{\newwrite\wrttiledoc
+  \long\def\IWTD##1{\immediate\write\wrttiledoc{##1}}
+  \immediate\openout \wrttiledoc tile-template.tex
+  \IWTD{%
+    \string\RequirePackage{tmp}^^J%
+    \string\documentclass{article}^^J%
+    \string\usepackage{web}^^J%
+    \string\usepackage{graphicx}^^J%
+    \string\let\string\WriteBookmarks\string\relax^^J%
+    \string\margins{0pt}{0pt}{0pt}{0pt}^^J%
+    \string\screensize{\tg@HT}{\tg@WD}^^J%
+    \string\parindent0pt\string\parskip0pt^^J%
+    \string\begin{document}^^J%
+    \string\tgInputContent^^J%
+    \string\end{document}}%
+  \immediate\closeout \wrttiledoc
+}
+\def\tg@wrttmppkg#1#2{\def\CommentCutFile{tmp.sty}%
+  \immediate\openout\CommentStream \CommentCutFile
+    \immediate\write\CommentStream{\string
+      \def\string\tgInputContent{\string
+      \InputIfFileExists{#1_#2.cut}%
+      {}{\string\null}}}%
+  \immediate\closeout\CommentStream
+}
+\InputIfFileExists{package-data.cut}{}{}%
+\def\tg@msgi{%
+    \textbf{Tile Graphic Report}\medskip\par
+    \textbf{Options:}
+    \begin{itemize}
+    \if@wrttofiles
+      \item The \texttt{wrttofiles} option  taken,
+        {\nFilesCreated} files written ({\nRows}~rows, {\nCols}~cols):
+        \begin{quote}
+        \texttt{\tg@base\_01.pdf}, \texttt{\tg@base\_02.pdf}, \dots.
+        \end{quote}
+        \ifx\tg@dir\@empty Files saved to source file folder. \else
+        Files saved to the \texttt{\tgInFolder} folder.\fi
+    \else
+      \item The \texttt{!wrttofiles} option taken, no files written.
+    \fi
+    \if@packagefiles
+    \item The \texttt{packagefiles} option taken,
+      package file saved as \texttt{\tg@base\_\packagesuffix.pdf}.
+      The package contains {\nFilesCreated} pages of tiled graphics.
+      \ifx\tg@dir\@empty
+        The package file saved to source file folder.
+      \else
+        The package file saved to the \texttt{\tgInFolder} folder.
+      \fi
+    \else
+    \item The \texttt{!packagefiles} option taken,
+      no package file created.
+    \fi
+    \end{itemize}
+    \if@wrtorpkg\else
+      Try using the \texttt{wrttofiles} and/or
+      \texttt{packagefiles} option(s) to obtain a nontrivial result.
+    \fi
+}
+\def\tileTheGraphic{\begingroup\let\@nu\@nameuse
+  \if@packagefiles\else\global\passthruTGfalse\expandafter
+    \tg@msgi % provide content
+  \fi
+  \ifpassthruTG
+    \tg@msgi % provide content
+  \else
+    \global\let\tg@IndxToks\@empty
+    \if@wrtorpkg\expandafter\tg@domultido\fi
+  \fi
+  \endgroup
+  \xdef\nFilesCreated{\the\tg@Cnt}%
+  \edef\x{\if@wrtorpkg\noexpand\compileTileFiles\fi}\x
+}
+\def\tg@domultido{%
+    \tg@Cnt\z@
+    \multido{\iR=\nRows+-1}{\nRows}{%
+      \multido{\iC=1+1}{\nCols}{%
+        \global\advance\tg@Cnt\@ne
+        \ifnum\tg@Cnt<10\relax
+          \edef\x{0\the\tg@Cnt}\else
+          \edef\x{\the\tg@Cnt}\fi
+          \edef\y{\noexpand\g@addto@macro\noexpand
+            \tg@IndxToks{{\x}}}\y
+          \@tempcntb\iC
+          \advance\@tempcntb\@ne
+          \edef\oX{\the\@tempcntb}%
+          \@tempcntb\iR
+          \advance\@tempcntb\@ne
+          \edef\oY{\the\@tempcntb}%
+          \wrtTileCuts
+          \edef\z{\noexpand\parbox{\tg@WD}{\noexpand
+            \includegraphics[width=\tg@WD,%
+              viewport=\@nu{x\iC} \@nu{y\iR} \@nu{x\oX} \@nu{y\oY},%
+              clip]{\pathToPic}}}\if@packagefiles\expandafter
+              \z\expandafter\newpage\fi
+      }% inner multido
+    }% outer multido
+}
+\def\wrtTileCuts{%
+  \def\CommentCutFile{\tg@base_\x.cut}%
+  \immediate\openout\CommentStream=\CommentCutFile
+  \immediate\write\CommentStream{\string
+    \parbox{\tg@WD}{\string
+    \includegraphics[width=\tg@WD,%
+    viewport=\@nu{x\iC} \@nu{y\iR} \@nu{x\oX} \@nu{y\oY},%
+    clip]{\pathToPic}}}\immediate\closeout\CommentStream
+}
+\def\compileTileFiles{%
+  \ifpassthruTG
+    \if@packagefiles
+      \def\CommentCutFile{package-data.cut}%
+      \immediate\openout\CommentStream \CommentCutFile
+        \immediate\write\CommentStream{\string\passthruTGfalse}%
+      \immediate\closeout\CommentStream
+      \ShellEscape{\tg@syscopy \jobname.tex
+        \tg@base_\packagesuffix.tex}%
+      \iftg@direct
+        \ShellEscape{\pkg@ppArgs{\tg@pdfcreator@app} --shell-escape
+          \tg@base_\packagesuffix.tex}%
+      \else
+        \ShellEscape{\latex@ppArgs{latex} --shell-escape
+          \tg@base_\packagesuffix.tex}%
+        \ShellEscape{\dvips@ppArgs{dvips} \tg@base_\packagesuffix.dvi}%
+        \ifnum\tg@case=\thr@@
+          \ShellEscape{\pkg@ppArgs{\tg@pdfcreator@app}
+          \tg@base_\packagesuffix.ps}%
+        \else
+          \ShellEscape{\pkg@ppArgs{\tg@pdfcreator@app} /N /Q
+          "\tg@fullPathToSource/\tg@base_\packagesuffix.ps"}%
+        \fi
+        \ShellEscape{\tg@sysdel \tg@base_\packagesuffix.dvi
+          \tg@base_\packagesuffix.ps}%
+      \fi
+      \@fterPkgCreationHook
+      \ShellEscape{\tg@sysdel \tg@base_\packagesuffix.tex
+        \tg@base_\packagesuffix.log \tg@base_\packagesuffix.aux}%
+      \iftgfolder
+        \ShellEscape{\tg@sysmove
+          \tg@base_\packagesuffix.pdf \tgInFolder}\fi
+    \fi
+  \else
+    \if@wrttofiles
+      \edef\@tforexp{\noexpand
+        \@tfor\noexpand\Indx:=\tg@IndxToks}%
+      \@tforexp \do {%
+        \edef\tgTileBaseIndx{\tg@base_\Indx}%
+        \edef\x{\noexpand\tg@wrttmppkg{\tg@base}{\Indx}}\x
+        \iftg@direct
+          \ShellEscape{\tile@ppArgs{\tg@pdfcreator@app}
+            tile-template.tex}%
+        \else
+          \ShellEscape{\latex@ppArgs{latex} --shell-escape
+            tile-template.tex}%
+          \ShellEscape{\dvips@ppArgs{dvips} tile-template.dvi}%
+          \ifnum\tg@case=\thr@@
+            \ShellEscape{\pkg@ppArgs{\tg@pdfcreator@app}
+              tile-template.ps}%
+          \else
+            \ShellEscape{\pkg@ppArgs{\tg@pdfcreator@app} /N /Q
+            "\tg@fullPathToSource/tile-template.ps"}%
+          \fi
+          \ShellEscape{\tg@sysdel tile-template.dvi
+            tile-template.ps}%
+        \fi
+        \@fterTileCreationHook
+        \ShellEscape{\tg@syscopy tile-template.pdf
+          \tgTileBaseIndx.pdf}%
+        \ShellEscape{\tg@syscopy tile-template.pdf
+          \tgTileBaseIndx.pdf}%
+      }% do
+      \iftgfolder
+        \ShellEscape{\tg@sysmove \tg@base_*.pdf \tgInFolder}\fi
+    \fi
+  \fi
+  \ShellEscape{\tg@sysdel \tg@base_*.cut package-data.cut}%
+  \ShellEscape{\tg@sysdel tmp.sty tile-template.*}%
+}
+\let\WriteBookmarks\relax
+\InputIfFileExists{tg.cfg}{}{}
+\tg@restoreCats
+\parindent0pt
+\endinput
+%%
+%% End of file `tile-graphic.sty'.

@@ -1,0 +1,332 @@
+\NeedsTeXFormat{LaTeX2e}[1994/12/01] %% \newcommand* etc. 
+\ProvidesPackage{texlinks}[2011/02/10 v0.3 TeX-related links (UL)] 
+%% copyright (C) 2011 Uwe Lueck, 
+%% http://www.contact-ednotes.sty.de.vu 
+%% -- author-maintained in the sense of LPPL below.
+%%
+%% This file can be redistributed and/or modified under 
+%% the terms of the LaTeX Project Public License; either 
+%% version 1.3c of the License, or any later version.
+%% The latest version of this license is in
+%%     http://www.latex-project.org/lppl.txt
+%% We did our best to help you, but there is NO WARRANTY. 
+%%
+%% Please report bugs, problems, and suggestions via 
+%% 
+%%   http://www.contact-ednotes.sty.de.vu 
+%%
+%% == Outline ==
+%% All the link macros of 'texlinks' are based on a macro 
+%% |\httpref|. For use of 'texlinks' with 'blog.sty', 
+%% the latter provides a definition of `\httpref' 
+%% suitable for HTML, where a choice of opening a new 
+%% tab or window---or not---is relevant.
+%%
+%% For use with 'hyperref' (or ...?), 'texlinks' may 
+%% provide a definition of `\httpref' based on `\href'.
+%% The decision to do so or not may happen at 
+%% `\begin{document}'. 'blog.sty' generates HTML without 
+%% using the `{document}' environment, so we might assume 
+%% that when `\begin{document}' is found, we are running
+%% 'hyperref', or just \emph{something} that provides a 
+%% useful `\href'. We might then execute a definition of 
+%% `\httpref' in terms of `\href'. Well, not sure ...
+%% 
+%% Moreover, a PDF file with links may be \emph{printed}, 
+%% and klicking the links on the paper may fail. 
+%% URLs in main text, on the other hand, sometimes are 
+%% troublesome. I consider it a good idea to present 
+%% links with their URL as the displayed text in \emph{footnotes}
+%% (or endnotes). It may even be useful with HTML to present 
+%% the URLs displayed in some 
+%% 2011/01/27:
+%% ``appendix."---This idea has been resumed in v0.2 only, 
+%% |\urlfoot|.
+%% %
+%% % I tend to introduce something for this ... and there might be a 
+%% % package option forcing `\httpref' to use this style. 
+%% % Well, better \emph{not today} ... [2011/01/24, TODO]
+%%
+%% == Package Options       ==
+%% Somebody may want to suppress a definition of `\httpref'
+%% at `\begin{document}' ... [2011/01/24, TODO]
+%% %% 2011/02/10:
+%% 
+%% v0.3: Package option |[blog]| suppresses \emph{any} 
+%% `\AtBeginDocument' actions---fine for use with 'blog.sty'. 
+\DeclareOption{blog}{\let\AtBeginDocument\@gobble}
+%% This option may be improved, and another option may be 
+%% useful for different purposes than running 'blog.sty'.
+\ProcessOptions
+%%
+%% == Providing &\httpref   ==
+%% \kern-\baselineskip
+%% \[|\httpref{<host-path[#frag]>}{<text>}|\]
+%% should display <text> 
+%% as a link to `http://<host-path[#frag]>'.
+%% \
+%% In case `\begin{document}' is found with a definition of 
+%% `\href' present, we provide a definition of `\httpref'
+%% in terms of `\href' there:
+\AtBeginDocument{%
+    \@ifundefined{href}{%
+%         \PackageError ... TODO!? 2011/01/24
+      }{\newcommand*{\httpref}[1]{\href{http://#1}}}}
+%%
+%% == Variants of &\httpref ==
+%% |\NormalHTTPref| may be used as an alias for `\httpref' 
+%% in situations where the latter has been redefined:   %% v0.2
+\AtBeginDocument{%% TODO: options, guarded \let (mine, HO)
+    \@ifdefinable\NormalHTTPref{\let\NormalHTTPref\httpref}} 
+%% |\ithttpref{<url>}{<text>}| displays <text> in italics:
+\newcommand*{\ithttpref}[2]{\NormalHTTPref{#1}{\textit{#2}}}
+%% With |\urlhttpref{<url>}|, that URL is displayed:
+\newcommand*{\urlhttpref}[1]{%
+    \NormalHTTPref{#1}{\urlfmt{\httpprefix#1}}} 
+%% |\httpprefix| is an idea that was missing in 'blog.sty' up to v0.3. 
+%% It may be used to determine generally whether a display of an 
+%% URL should include `http://'. I choose as default what was default 
+%% in 'blog.sty' 
+%% (i.e., ``don't include"):                        %% add. 2011/01/27
+\@ifdefinable\httpprefix{\let\httpprefix\@empty}    %% TODO cf. above
+%% `\let\httpprefix\relax' would be bad for 'blog.sty' 
+%% (would display `\relax'), 
+%% while it would be somewhat more efficient.%%%---%%%
+%%
+%% Now you may customize `\httpprefix' by 
+%% \[`\renewcommand{\httpprefix}{http://}'\]
+%% %% v0.2:
+%% ---or by `\let\httpprefix'|\theHTTPprefix|:
+\newcommand*{\theHTTPprefix}{http://}
+%% |\urlfmt{<url>}| is chosen as `\texttt' here and may be 
+%% customized, e.g., with the 'breakurl' package.
+\@ifdefinable\urlfmt{\let\urlfmt\texttt}
+%% In 'blog.sty' (as of 2010/05/26), there was a command 
+%% `\urlref' instead of `\urlhttpref'. It did not provide `\urlfmt'.
+%%
+%% |\foothttpurlref{<url>}| just is like
+%% `\footnote{\urlhttpref{<url>}}':
+\newcommand*{\foothttpurlref}[1]{\footnote{\urlhttpref{#1}}}
+%% |\urlfoot{<short>}{<id>}|
+%% redefines `\httpref' so that you can use all the shorthand 
+%% macros based on `\httpref' to get the according URL 
+%% display (as provided by `\urlhttpref')
+%% in a footnote without the need to include the 
+%% entire URL in your source code. `\urlfoot' is available 
+%% with <short> and <id>
+%% when a shorthand |\<short>{<id>}{<text>}| has been defined
+%% where `\<short>' is the macro name and <id> is the target 
+%% identifier (usually part of the URL generated from <id>)
+%% according to the syntax declaration of `\<short>'. 
+\newcommand*{\urlfoot}[2]{{%
+    \let\httpref\foothttpurlref 
+    \let\httpprefix\theHTTPprefix   %% TODO customizable!?
+    \csname #1\endcsname{#2}{}}}
+%% \strong{Example:} 
+%% \[`\CtanPkgRef{morehype}{MoreHype}'
+%%   \mbox{\quad and\quad } `\ctanpkgref{morehype}'\] 
+%% are provided below for linking to
+%% `http://ctan.org/pkg/morehype'.
+%% \begin{itemize}
+%%   \item Try `CtanPkgRef' \emph{here}: 
+%% \CtanPkgRef{morehype}{MoreHype},\\ 
+%% for the \emph{footnote} try
+%% `\urlfoot{CtanPkgRef}{morehype}';%%%
+%%  \urlfoot{CtanPkgRef}{morehype}
+%%   \item try `ctanpkgref' \emph{here}: \ctanpkgref{morehype},\\ 
+%% for the \emph{footnote} try 
+%% `\urlfoot{ctanpkgref}{morehype}'.%%%
+%%  \urlfoot{ctanpkgref}{morehype}
+%% \end{itemize}
+%% The lonely \qtd{\pkgnamefmt{morehype}} demonstrates that 
+%% it doesn't work with `ctanpkgref' because 
+%% `\ctanpkgref' doesn't have separate arguments for 
+%% <id> and <text>, it actually doubles <id>. 
+%% A local `\let\ctanpkgref\CtanPkgRef' could help, 
+%% but right now I prefer waiting for a better idea. 
+%% [TODO] %% 2011/01/27
+%%
+%% v0.3: Now that using `\urlfoot' and `ctanpkgref' together 
+%% is so clumsy, while I use it quite often,    %% 2011/02/10
+%% we get |\urlpkgfoot{<package-id>}|, abbreviating 
+%% `\urlfoot{CtanPkgRef}{<package-id>}':
+\newcommand* {\urlpkgfoot} {\urlfoot{CtanPkgRef}}
+%%
+%% == Wikipedia    ==
+%% |\Wikideref{<lemma>}| refers to article <lemma> in the German 
+%% Wikipedia. (The next considerations apply to English 
+%%  etc. as well!) With umlauts etc., 
+%% |\wikideref{<wiki-id>}{<lemma>}| may be needed.
+%% For this form, sometimes using \qtd{&_} seemed to be needed.
+%% In 'blog.sty', there was `\catcode`\_=12'. 
+%% This was no problem there, as the underscore was not needed 
+%% for math there. (For some time I thought of making it `\active'
+%%  for a shorthand for \xmltagcode{sub} elements ...)
+%% But I could not find out whether it was needed or avoidable. 
+%% I leave this matter open here (for 'hyperref') ...
+%% [2011/01/24, TODO, maybe solved there] 
+\newcommand*{\wikideref}[1]{\httpref{de.wikipedia.org/wiki/#1}}
+\newcommand*{\Wikideref}[1]{\wikideref{#1}{#1}}
+%% Anyway, |\underscorechar| seems to be useful in our macro 
+%% definitions. The name is inspired by \LaTeX's 
+%% `\@backslashchar' and `\@percentchar': 
+\newcommand \underscorechar {}
+{\@makeother\_ \gdef\underscorechar{_}}
+%% \strong{Note:} It would be natural to replace `\Wikideref'
+%% by equipping `\wikideref' with an optional argument---with 
+%% \LaTeX. With 'blog.sty' however, where this code is now 
+%% taken from, optional arguments didn't work. 
+%% Later we might indeed in a similar manner to dealing 
+%% with 'hyperref' at `\begin{document}' introduce optional 
+%% arguments for the case of typesetting.---Analogues apply
+%% in the sequel again. [2011/01/24, TODO]
+%% 
+%% |\itwikideref| is an italic variant of `\wikideref':
+\newcommand*{\itwikideref}[2]{\wikideref{#1}{\textit{#2}}}
+%% |\wikienref{<wiki-id>}{<lemma>}| refers to the English Wikipedia:
+\newcommand*{\wikienref}[1]{\httpref{en.wikipedia.org/wiki/#1}}
+%% By analogy to `\Wikideref', 
+%% |\Wikienref{<lemma>}| saves you from repeating <lemma>:
+%% %% abbreviates `\wikienref{<lemma>}{<lemma>}':
+\newcommand*{\Wikienref}[1]{\wikienref{#1}{#1}}
+%% Quite often, programs share their names with movies,
+%% biological species, etc., 
+%% then disambiguation is required. Usually, the movie is irrelevant 
+%% and we don't want to display the disambiguation.
+%% The following macros save you from typing the underscore 
+%% (didn't spaces suffice sometimes?)   %% TODO 2011/01/24
+%% and the round parantheses. 
+%% |\wikiendisambref{<term>}{<suffix>}{<text>}| 
+%% links to 
+%% \[`http://en.wikipedia.org/wiki/<term>_(<suffix>)'\]
+%% while displaying <text> as link text only:
+\newcommand*{\wikiendisambref}[2]{%
+    \wikienref{#1\underscorechar (#2)}}
+%% |\Wikiendisambref{<term>}{<suffix>}| 
+%% does the same when <text> is the same as <term>:
+\newcommand*{\Wikiendisambref}[2]{%
+    \wikienref{#1\underscorechar (#2)}{#1}}
+%% Italic variant |\itwikienref| of `\wikienref'
+%% ('blog.sty' had `\emwikienref' instead):
+\newcommand*{\itwikienref}[2]{\wikienref{#1}{\textit{#2}}} 
+%% |\urluml{<ascii-char>}| as of 2010/05/25 
+%% (not sure if it ever worked or was actually needed): 
+\newcommand*{\urluml}[1]{\csname urluml:#1\endcsname}
+\@namedef{urluml:a}{\#C3\#A4}
+\@namedef{urluml:o}{\#C3\#B6}
+\@namedef{urluml:u}{\#C3\#BC}
+\@namedef{urluml:s}{\#C3\#9F}           %% 2010/08/09
+%% For \strong{anchors}, \qtd{&#} can be used with 'blog.sty'---and 
+%% even with 'hyperref'.
+%% \par\smallskip\noindent
+%% \strong{Example:}\quad
+%% `\wikienref{TeX#History}{\TeX}'
+%%  \ for \
+%%  \wikienref{TeX#History}{\TeX}.
+%% 
+%% == \TeX-related ==               %% 2010/08/24
+%% === CTAN ===
+%% |\bytopicref{<anchor>}{<text>}| 
+%% makes <text> a link to <anchor> of J\"urgen Fenn's 
+%% Topical Index of the \TeX\ Catalogue. You find the <anchor> 
+%% by clicking at the respective TOC entry on top of the page 
+%% and then read the URL from the browser's navigation display.
+\newcommand*{\bytopicref}[1]{% 
+    \httpref{mirror.ctan.org/help/Catalogue/bytopic.html\##1}}
+%% (Example:\quad `\bytopicref{html}{HTML}' \ for \ \bytopicref{html}{HTML}.)
+%%
+%% % `\newcommand*{\ctanref}[1]{\httpref{ctan.org/#1}}' 
+%% % once was replaced in 'blog.sty' by what will now be 
+%% |\tugctanref{<path>}{<text>}|
+%% makes <text> a link 
+%% to a \TeX~Archive directory or file <path>:
+\newcommand*{\tugctanref}[1]{% 
+  \httpref{tug.ctan.org/tex-archive/#1}} 
+%% %% corr. 2010/11/23:
+%% $|\ctanpkgref{<pkg-name>}|$ 
+%% makes <text> a link to the CTAN package info page for 
+%% the package <pkg-name>. $|\CtanPkgRef{<name>}{<Name>}|$
+%% is a variant for the cases where authors have a special idea
+%% <Name> using some capital letters when they describe their packages
+%% (ASCII versions of ``Logos" such as `BibTeX') 
+%% while the identifier <name> doesn't allow capital letters.
+%% %% 2011/01/24:
+%% Also, <Name> may be a package from a \emph{bundle} <name> 
+%% where <name> has a description page while <Name> 
+%% doesn't have its \emph{own} description page 
+%% (such as \CtanPkgRef{nicetext}{fifinddo}).
+\newcommand*{\CtanPkgRef}[2]{%
+    \httpref{ctan.org/pkg/#1}{\pkgnamefmt{#2}}}
+\newcommand*{\ctanpkgref}[1]{\CtanPkgRef{#1}{#1}}
+%% Instead of |\pkgnamefmt{<pack-name>}|, 
+%% 'blog.sty' had `\prg{<pack-name>}', without a proper 
+%% implementation. For typesetting, choosing `\pkgnamefmt' 
+%% as `\textsf' seems to conform to common practice today. 
+%% The following code may later be suppressed at some package options, 
+%% as with the choice for `\httpref':   %% TODO 2011/01/24
+\@ifdefinable\pkgnamefmt {\let\pkgnamefmt\@firstofone}
+\AtBeginDocument         {\let\pkgnamefmt\textsf}
+%%
+%% === TUG ===
+%% |\tugref{<path>}{<text>}| makes <text> a link
+%% to <path> on domain `tug.org':
+\newcommand*{\tugref}[1]{\httpref{tug.org/#1}}
+%% ==== texhax ====
+%% |\texhaxref{<id>}{<text>}| makes <text> a link 
+%% to the TUG web page displaying 
+%% a texhax posting. You find <id> by searching 
+%% `tug.org/pipermail/texhax/' and then reading the URL.
+%% |\THref{<id>}| saves you from choosing <text> 
+%% and uses `texhax' instead. 
+\newcommand*{\texhaxref}[1]{\tugref{pipermail/texhax/#1}}
+\newcommand*{\THref}[1]{\texhaxref{#1}{texhax}}
+%% (It was `\prg{texhax}' in 'blog.sty', to have something 
+%%  logo-like, without a good idea how to implement it.)
+%% 
+%% |\texhaxpref{<id-code>}{<text>}| is a variant 
+%% of `\texhaxref' where in place of <id> 
+%% you only type the third and fourth digit of the 
+%% year, then a `-', then the (arabic) number of 
+%% the month, then another `-', and then actual 
+%% internal identifier 
+%% (a number of six digits preceding `.html' of the URL). 
+%% I made this macro because I prefer typing to copying 
+%% from the URL. 
+\newcommand*{\texhaxpref}[1]{%      %% 2010/09/07
+    \texhaxref{20\@texhax@parse#1/.html}}
+\def\@texhax@parse#1-#2-#3/{%
+    #1-%
+    \ifcase #2\or
+        January\or February\or March\or    April\or
+            May\or June\or     July\or     August\or
+      September\or October\or  November\or December% 2010/12/23
+    \fi
+    /#3}
+%% TODO: `\texhaxPref#1' searches list of offsets 
+%%       to determine year/month from id
+%% 
+%% ==== Other ====
+%% |\tugbartref{<filename-base>}{<text>}| makes <text> 
+%% a link to the TUGboat article `<filename-base>.pdf':
+\newcommand*{\tugbartref}[1]{\tugref{TUGboat/Articles/#1.pdf}}
+%% |\TUGIref{<anchor>}{<text>}| makes text a link to an <anchor> 
+%% on the TUG web page entitled \qtd{TeX Resources on the Web}
+%% (e.g., \TUGIref{web}{\qtd{Web Projects}}):
+\newcommand*{\TUGIref}[1]{\tugref{interest.html\##1}}
+%%
+%% === UK FAQ ===
+%% |\ukfaqref{<label>}{<text>}| makes <text> a link to 
+%% the UK~\TeX~FAQ page with ``label"~= <label>:
+\newcommand*{\ukfaqref}[1]{\httpref{%
+    www.tex.ac.uk/cgi-bin/texfaq2html?label=#1}}
+%%
+%% == Leaving      ==               %% 2011/01/24
+\endinput
+%%
+%% == VERSION HISTORY ==
+v0.1    2011/01/24  new file, code from blog.sty v0.3
+v0.2    2011/01/27  \urlfoot, \NormalHTTPref, \foothttpurlref,
+                    "outline" adjusted; 
+                    more consistent use of \newcommand and 
+                    \@ifdefinable (TODO: guarded \let)
+v0.3    2011/02/10  [blog]; \urlpkgfoot

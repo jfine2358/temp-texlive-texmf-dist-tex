@@ -1,0 +1,799 @@
+%D \module
+%D   [       file=strc-mat,
+%D        version=2008.10.20,
+%D          title=\CONTEXT\ Structure Macros,
+%D       subtitle=Math Numbering,
+%D         author=Hans Hagen,
+%D           date=\currentdate,
+%D      copyright={PRAGMA ADE \& \CONTEXT\ Development Team}]
+%C
+%C This module is part of the \CONTEXT\ macro||package and is
+%C therefore copyrighted by \PRAGMA. See mreadme.pdf for
+%C details.
+
+\writestatus{loading}{ConTeXt Structure Macros / Math Numbering}
+
+\registerctxluafile{strc-mat}{1.001}
+
+% -- we have potential for captions
+% -- this module will use the commandhandler
+% -- key/value pairs will be added (I have no time now)
+
+\unprotect
+
+\setupformulas
+  [%\c!way=,
+   %\c!blockway=,
+   %\c!sectionnumber=,
+   %\c!conversion=\v!numbers,
+   %\c!numberstyle=,
+   %\c!numbercolor=,
+   %\c!numbercommand=,
+   %\c!margin=,
+   %\c!align=,
+   %\c!separator=,
+   %\c!grid=,
+   \c!location=\v!right,
+   \c!left=(,
+   \c!right=),
+   \c!expansion=\v!yes, % maybe automatically
+   \c!spacebefore=\v!big,
+   \c!spaceafter=\formulaparameter\c!spacebefore,
+   \c!leftmargin=\!!zeropoint,
+   \c!rightmargin=\!!zeropoint,
+   \c!indentnext=\v!no,
+   \c!alternative=\s!default,
+   \c!strut=\v!no,
+   \c!distance=1em]
+
+\setupsubformulas % subformulas could be last in chain
+  [\c!indentnext=\formulaparameter\c!indentnext]
+
+\definecounter
+  [\v!formula]
+
+\defineconversionset
+  [\v!formula]
+  [numbers,characters]
+
+\strc_counter_preset_using_parameter\setupformulas\sharedcounterparameter
+
+\appendtoks
+    \strc_counter_setup_using_parameter\v!formula\formulaparameter
+    \strc_counters_check_setup\v!formula % yes or no
+\to \everysetupformula
+
+\setupformulas
+  [\c!numberconversionset=\v!formula] % why forgotten
+
+\appendtoks
+    \normalexpanded{\definelist[\currentformula]}% is expansion needed?
+    \setuevalue{\e!start\currentformula\v!formula}{\dostartformula{\currentformula}}%
+    \setuevalue{\e!stop \currentformula\v!formula}{\dostopformula}%
+\to \everydefineformula
+
+\definelist[\v!formula]
+
+\setuvalue{\e!start\v!formula}{\dostartformula{}}
+\setuvalue{\e!stop \v!formula}{\dostopformula}
+
+\let\dostartformula\relax % defined later
+\let\dostopformula \relax % defined later
+
+\unexpanded\def\defineformulaalternative         % this might change ... start and stop can become keys
+  {\dotripleargument\dodefineformulaalternative} % to the general define .. s!startcommand
+
+\def\dodefineformulaalternative[#1][#2][#3]%
+  {\setvalue{\e!start#1\v!formula}{#2}%
+   \setvalue{\e!stop #1\v!formula}{#3}}
+
+% sp = single line paragraph  sd = single line display
+% mp = multi  line paragraph  md = multy  line display
+
+\defineformulaalternative[\s!default][\startdisplaymath][\stopdisplaymath]
+\defineformulaalternative[\s!single] [\startdisplaymath][\stopdisplaymath]
+\defineformulaalternative[\s!multi]  [\startdisplaymath][\stopdisplaymath]
+
+\defineformula
+  [sp]
+  [\c!spacebefore=\v!none,
+   \c!spaceafter=\v!none,
+   \c!indentnext=\v!no,
+   \c!alternative=\s!single]
+
+\defineformula
+  [sd]
+  [\c!spacebefore=\v!none,
+   \c!spaceafter=\v!none,
+   \c!indentnext=\v!yes,
+   \c!alternative=\s!single]
+
+\defineformula
+  [mp]
+  [\c!indentnext=\v!no,
+   \c!alternative=\s!multi]
+
+\defineformula
+  [md]
+  [\c!indentnext=\v!yes,
+   \c!alternative=\s!multi]
+
+\newtoks\everyresetformulas
+
+\appendtoks
+    \let\currentformula\empty % to be checked:
+\to \everyresetformulas
+
+% implementation
+
+\def\storecurrentformulanumber#1#2#3#4#5% ref, todo:str, \sync % todo: title etc (like float)
+  {\settrue\handleformulanumber
+   \strc_counters_register_component
+     {formula}%
+     \setupcurrentformula \formulaparameter \detokenizedformulaparameter
+     \relax \relax \relax
+     [\c!name=\v!formula,\s!counter=\v!formula,%
+      \s!hascaption=\v!yes,\s!hastitle=\v!yes,\s!hasnumber=\v!yes,%\s!haslevel=#6,%
+      \c!reference=#1,\c!title=\namedformulaentry,\c!bookmark=]%
+     [#2]%
+   \glet\namedformulaentry\empty % \relax
+   \globallet#3\m_strc_counters_last_registered_index
+   \globallet#4\m_strc_counters_last_registered_synchronize
+   \globallet#5\m_strc_counters_last_registered_attribute}
+
+% modes: 0=unset, 1=forced, 2=none, 3=reference
+
+\newconstant\placeformulanumbermode
+\newconstant\formulasnumbermode
+\newconstant\subformulasnumbermode
+\newconstant\nestedformulanumbermode
+
+\appendtoks
+    \placeformulanumbermode \zerocount
+    \formulasnumbermode     \zerocount
+    \subformulasnumbermode  \zerocount
+    \nestedformulanumbermode\zerocount
+\to \everyresetformulas
+
+\newconditional\handleformulanumber
+\newconditional\incrementformulanumber
+
+\newconditional\insideplaceformula
+\newconditional\insideplacesubformula
+\newconditional\insideformulas
+\newconditional\insidesubformulas
+
+\appendtoks
+    \global\setfalse\insideplaceformula
+    \global\setfalse\insideplacesubformula
+\to \everyresetformulas
+
+\def\handleplaceformulanumbering % place formula
+  {\settrue\handleformulanumber
+   \docheckformulareference\placeformulanumbermode\currentplaceformulareference
+   \glet\doplaceformulanumber \doplaceformulanumberindeed
+   \glet\donestedformulanumber\donestedformulanumberindeed}
+
+\def\handleformulasnumbering % formulas
+  {\docheckformulareference\formulasnumbermode\currentformulareference}
+
+\def\handlesubformulasnumbering % sub formulas
+  {\docheckformulareference\subformulasnumbermode\currentsubformulasreference
+   \strc_counters_increment\v!formula
+   \storecurrentformulanumber
+     \currentsubformulasreference
+     \empty
+     \currentsubformulasnumber
+     \currentsubformulassynchronize
+     \currentsubformulasattribute
+  }
+
+\let\dotraceformulareferencestate\relax
+\let\doshowformulareferencestate \relax
+
+% \def\dotraceformulareferencestate
+%   {\rlap{\hbox{\quad\tt\txx[%
+%       \number\placeformulanumbermode,%
+%       \number\formulasnumbermode,%
+%       \number\subformulasnumbermode,%
+%       \number\nestedformulanumbermode
+%    ]}}}
+
+% \def\doshowformulareferencestate
+%   {\writestatus{\v!formula}%
+%      {place:      \number\placeformulanumbermode,\space
+%       formula:    \number\formulasnumbermode,\space
+%       subformula: \number\subformulasnumbermode,\space
+%       nested:     \number\nestedformulanumbermode]}}
+
+\unexpanded\def\placecurrentformulanumber
+  {\rm % nodig ?
+   \doif{\formulaparameter\c!location}\v!right{\hskip\formulaparameter\c!distance}%
+   \formulaparameter\c!numbercommand
+     {\useformulastyleandcolor\c!numberstyle\c!numbercolor
+      \strut
+      \formulaparameter\c!left
+      \namedtaggedlabeltexts
+        \t!formulalabel \v!formula
+        \t!formulanumber\v!formula
+        {\ignorespaces\doplacecurrentformulanumber\removeunwantedspaces}%
+      \formulaparameter\c!right}%
+   \doif{\formulaparameter\c!location}\v!left{\hskip\formulaparameter\c!distance}}
+
+\def\doplacecurrentformulanumber
+  {\dohandlecurrentformulareferences
+   \labeltexts\currentformula{\convertedcounter[\v!formula][]}}
+
+% \def\theboxdestinationattribute#1{\iflocation\ifx#1\relax\else\ifx#1\empty\else attr      \destinationattribute#1\fi\fi\fi}
+% \def\thedestinationattribute   #1{\iflocation\ifx#1\relax\else\ifx#1\empty\else \attribute\destinationattribute#1\fi\fi\fi}
+
+\def\theformuladestinationattribute#1%
+  {\iflocation\ifx#1\relax\else\ifx#1\empty\else
+     \attribute\destinationattribute#1%
+     \glet#1\relax
+   \fi\fi\fi}
+
+\let\currentplaceformulaattribute\relax
+\let\currentformulaattribute     \relax
+\let\currentsubformulaattribute  \relax
+\let\currentformulasattribute    \relax
+
+\let\currentplaceformulanumber\relax
+\let\currentformulanumber     \relax
+\let\currentsubformulanumber  \relax
+\let\currentformulasnumber    \relax
+
+\let\currentformulasreference     \empty
+\let\currentformulareference      \empty
+\let\currentsubformulareference   \empty
+\let\currentnestedformulareference\empty
+
+\appendtoks
+    \glet\currentformulasreference     \empty
+    \glet\currentformulareference      \empty
+    \glet\currentsubformulareference   \empty
+    \glet\currentnestedformulareference\empty
+\to \everyresetformulas
+
+\let\currentformulassuffix     \empty
+\let\currentformulasuffix      \empty
+\let\currentsubformulasuffix   \empty
+\let\currentnestedformulasuffix\empty
+
+\appendtoks
+    \glet\currentformulassuffix     \empty
+    \glet\currentformulasuffix      \empty
+    \glet\currentsubformulasuffix   \empty
+    \glet\currentnestedformulasuffix\empty
+\to \everyresetformulas
+
+\let\currentplaceformulasynchronize\relax
+\let\currentformulasynchronize     \relax
+\let\currentsubformulasynchronize  \relax
+\let\currentformulassynchronize    \relax
+
+\appendtoks
+    \glet\currentplaceformulasynchronize \relax
+    \glet\currentformulassynchronize     \relax
+    \glet\currentsubformulassynchronize  \relax
+    \glet\currentnestedformulasynchronize\relax
+\to \everyresetformulas
+
+% currently we do the number, some day we will do the (sub) formula
+
+\def\dohandlecurrentformulareferences
+  {\doshowformulareferencestate
+   \ifnum\placeformulanumbermode=\plusthree
+     \storecurrentformulanumber
+       \currentplaceformulareference
+       \empty
+       \currentplaceformulanumber
+       \currentplaceformulasynchronize
+       \currentplaceformulaattribute
+     \currentplaceformulasynchronize
+     \glet\currentplaceformulasynchronize\relax
+     \theformuladestinationattribute\currentplaceformulaattribute
+   \fi
+   \ifnum\formulasnumbermode=\plusthree
+     \storecurrentformulanumber
+       \currentformulasreference
+       \empty
+       \currentformulasnumber
+       \currentformulassynchronize
+       \currentformulasattribute
+     \currentformulassynchronize
+     \glet\currentformulassynchronize\relax
+     \theformuladestinationattribute\currentformulasattribute
+   \fi
+   \ifnum\subformulasnumbermode=\plusthree
+     \currentsubformulassynchronize
+     \glet\currentsubformulassynchronize\relax
+   \fi
+   \ifnum\nestedformulanumbermode=\plusthree
+     \storecurrentformulanumber
+       \currentnestedformulareference
+       \empty
+       \currentnestedformulanumber
+       \currentnestedformulasynchronize
+       \currentnestedformulaattribute
+     \currentnestedformulasynchronize
+     \glet\currentnestedformulasynchronize\relax
+     \theformuladestinationattribute\currentnestedformulaattribute
+   \fi}
+
+% needs checking ... too many:
+
+\def\dohandleformulanumbering
+  {\strc_counters_increment\v!formula
+   \doiftext\currentplaceformulasuffix{\strc_counters_setown_sub\v!formula\plustwo\currentplaceformulasuffix}%
+   \placecurrentformulanumber}
+
+\def\dohandlesubformulanumbering
+  {\doiftextelse\currentsubformulasuffix
+     {\strc_counters_setown_sub\v!formula\plustwo\currentsubformulasuffix}
+     {\strc_counters_increment_sub\v!formula\plustwo}%
+    \placecurrentformulanumber}
+
+\def\dododoformulanumber
+  {\ifconditional\handleformulanumber
+     \hbox\bgroup
+       % main counter
+       \ifconditional\insidesubformulas
+         % nothing
+       \else
+         \ifcase\formulasnumbermode
+           \ifcase\placeformulanumbermode
+             \dohandleformulanumbering
+           \or
+             \dohandleformulanumbering
+           \or
+             % nothing
+           \or
+             \dohandleformulanumbering
+           \fi
+         \or
+           \dohandleformulanumbering
+         \or
+           % nothing
+         \or
+           \dohandleformulanumbering
+         \fi
+       \fi
+       % subcounter
+       \ifconditional\insidesubformulas
+         \ifcase\subformulasnumbermode
+           % nothing
+         \or
+           \dohandlesubformulanumbering
+         \or
+           % nothing
+         \or
+           \dohandlesubformulanumbering
+         \fi
+       \fi
+      \dotraceformulareferencestate
+     \egroup
+   \fi}
+
+\installstructurelistprocessor\v!formula % to be checked ...
+  {\let\currentlistentrynumber    \structurelistgenericnumber
+   \let\currentlistentrytitle     \structurelistgenerictitle
+   \let\currentlistentrypagenumber\structurelistpagenumber
+   \strc_lists_apply_renderingsetup}
+
+\newif\ifinformula
+
+%D We need a hook into the plain math alignment macros
+%D
+%D \starttyping
+%D \displaylines
+%D \eqalignno
+%D \eqalignno
+%D \stoptyping
+%D
+%D Otherwise we get a missing \type {$$} error reported.
+
+\def\resetdisplaymatheq
+  {\let\normalleqno\gobbleoneargument \let\leqno\gobbleoneargument
+   \let\normalreqno\gobbleoneargument \let\eqno \gobbleoneargument
+   \let\doplaceformulanumber\empty}
+
+%D \macros
+%D   {startsubformulas}
+
+% \placeformula
+% \startsubformulas[Maxwell]
+%     \startformulas
+%      \startformula \startalign
+%        \NC \nabla\cdot\bf E  \NC = \frac{\rho}{\varepsilon_0} \NR[Maxwell 1]
+%        \NC \nabla\times\bf E \NC = - \frac{\partial\bf B}{\partial t} \NR[Maxwell II]
+%        \stopalign \stopformula
+%        \startformula \startalign
+%          \NC \nabla\cdot \bf B \NC = 0 \NR[Maxwell III]
+%          \NC \nabla\times\bf B \NC = \mu_0{\bf j}+\varepsilon_0\mu_0\frac{\partial\bf E}{\partial t} \NR[Maxwell IV]
+%        \stopalign \stopformula
+%    \stopformulas
+% \stopsubformulas
+%
+% Maxwell : \in [Maxwell] and II : \in [Maxwell II]
+
+%D Tricky stuff:
+
+\newdimen\lastlinewidth
+
+\abovedisplayskip      \zeropoint
+\abovedisplayshortskip \zeropoint % evt. 0pt minus 3pt
+\belowdisplayskip      \zeropoint
+\belowdisplayshortskip \zeropoint % evt. 0pt minus 3pt
+
+\predisplaypenalty     \zerocount
+\postdisplaypenalty    \zerocount % -5000 gaat mis, zie penalty bij \paragraaf
+
+% we don't use the skip's
+
+\def\forgetdisplayskips % to do
+  {\abovedisplayskip     \zeropoint
+   \belowdisplayskip     \zeropoint
+   \abovedisplayshortskip\zeropoint
+   \belowdisplayshortskip\zeropoint}
+
+\def\predisplaysizethreshhold{2em} % was 3em
+
+\def\leftdisplayskip    {\leftskip}
+\def\rightdisplayskip   {\rightskip}
+\def\leftdisplaymargin  {\formulaparameter\c!leftmargin}
+\def\rightdisplaymargin {\formulaparameter\c!rightmargin}
+
+\def\beforedisplayspace
+  {\doifnot{\formulaparameter\c!spacebefore}\v!none{\blank[\formulaparameter\c!spacebefore]}}
+
+\def\afterdisplayspace
+  {\doifnot{\formulaparameter\c!spaceafter }\v!none{\blank[\formulaparameter\c!spaceafter ]}}
+
+\def\setdisplaydimensions
+  {\displayindent\leftdisplayskip
+   \advance\displayindent\leftdisplaymargin
+   \displaywidth\hsize
+  %\setlocalhsize
+  %\displaywidth\localhsize
+   \ifdim\hangindent>\zeropoint
+     \advance\displayindent\hangindent
+   \else
+     \advance\displaywidth\hangindent
+   \fi
+   \advance\displaywidth\dimexpr-\displayindent-\rightdisplayskip-\rightdisplaymargin\relax
+   \hsize\displaywidth} % new, else overfull in itemize
+
+\unexpanded\def\dostartformula#1%
+  {\dodoubleempty\dodostartformula[#1]}
+
+\newskip\formulaparskip
+\newskip\formulastrutht
+\newskip\formulastrutdp
+
+%D \startbuffer
+%D \startformula[9pt] x = 1 \stopformula
+%D \startformula[7pt] x = 1 \stopformula
+%D \stopbuffer
+%D
+%D \typebuffer \getbuffer
+
+\def\dodostartformula[#1][#2]% setting leftskip adaption is slow !
+  {\bgroup % HERE
+   \def\currentformula{#1}%
+   \dostarttagged\t!formula\currentformula
+   \the\everybeforedisplayformula
+   \formulaparskip\parskip
+   \formulastrutdp\strutdepth
+   \formulastrutht\strutheight
+   \doifsomething{#2}{\switchtoformulabodyfont[#2]}%
+   \parskip\formulaparskip
+   % may look better in itemizations
+   \doif{\formulaparameter\c!option}\v!middle
+     {\def\leftdisplayskip{\zeropoint}%
+      \def\rightdisplayskip{\zeropoint}}%
+   % this was an experiment
+   \doifsomething{\formulaparameter\c!margin}% so we test first
+     {\dosetleftskipadaption{\formulaparameter\c!margin}%
+      \edef\leftdisplaymargin{\the\leftskipadaption}}% overloaded
+   \long\def\dostartformula##1{\bgroup\dostarttagged\t!subformula\def\dostopformula{\dostoptagged\egroup}}%
+   \freezedimenmacro\leftdisplayskip
+   \freezedimenmacro\rightdisplayskip
+   \freezedimenmacro\leftdisplaymargin
+   \freezedimenmacro\rightdisplaymargin
+   \freezedimenmacro\predisplaysizethreshhold
+   \forgetdisplayskips
+   \getvalue{\e!start\formulaparameter\c!alternative\v!formula}}
+
+% tagging of formulanumbers is not ok (we get two display maths blobs)
+
+\unexpanded\def\dostopformula
+  {\dostarttagged\t!formulacaption\empty
+   \doplaceformulanumber
+   \dostoptagged
+   \dostarttagged\t!formulacontent\empty
+   \getvalue{\e!stop\formulaparameter\c!alternative\v!formula}%
+   \dostoptagged
+   \dostoptagged
+   \nonoindentation
+   \useindentnextparameter\formulaparameter
+   \egroup
+   \hangafter\minusone   % added for side floats
+   \hangindent\zeropoint % added for side floats
+   \setfalse\handleformulanumber
+   \the\everyresetformulas
+   \dorechecknextindentation} % here ?
+
+% experiment:
+
+\appendtoks
+   \edef\currentformulagrid{\formulaparameter\c!grid}%
+   \ifx\currentformulagrid\empty \else
+     \spac_grids_snap_value_auto\currentformulagrid
+   \fi
+\to \everybeforedisplayformula
+
+\def\switchtoformulabodyfont{\switchtobodyfont}
+
+\setuvalue{\v!formula}{\dosingleempty\doformula}
+
+\def\doformula[#1]#2% todo: tagged
+  {\begingroup
+   \doifsomething{#1}{\switchtoformulabodyfont[#1]}%
+   % not : \def\doformula[##1]##2{\mathematics{##2}}%
+   \mathematics{#2}%
+   \endgroup}
+
+%D \starttyping
+%D % test \par       % no preceding hlist
+%D % $$x$$           % preceding hlist
+%D % \noindent $$x$$ % no preceding hlist
+%D \startformula x \stopformula % now has \noindent (in mkii we messed with baselineskip)
+%D \stoptyping
+
+\unexpanded\def\startdisplaymath
+  {\bgroup
+   \par
+   \informulatrue
+   \beforedisplayspace
+   \par
+   \ifvmode
+      \prevdepth-\maxdimen % texbook pagina 79-80
+   \fi
+   \noindent % else funny hlist with funny baselineskip
+   $$% \Ustartdisplaymath
+   \setdisplaydimensions
+  %\setpredisplaysize
+   \startinnermath}
+
+\unexpanded\def\stopdisplaymath
+  {\stopinnermath
+   $$% \Ustopdisplaymath
+   \par
+   \afterdisplayspace
+   \par
+   \egroup}
+
+% already defined
+%
+% \let\startinnermath\empty
+% \let\stopinnermath \empty
+
+% \defineformulaalternative[multi][\begindmath][\enddmath]
+%
+% \fakewords{20}{40}\epar
+% \placeformula {a} $$              \fakespacingformula $$
+% \fakewords{20}{40}\epar
+% \placeformula {b} \startformule   \fakespacingformula \stopformule
+% \placeformula {b} \startformule   \fakespacingformula \stopformule
+% \fakewords{20}{40}\epar
+% \placeformula {c} \startmdformule \fakespacingformula \stopmdformule
+% \placeformula {c} \startmdformule \fakespacingformula \stopmdformule
+% \fakewords{20}{40}\epar
+% \placeformula {d} \startmpformule \fakespacingformula \stopmpformule
+% \placeformula {d} \startmpformule \fakespacingformula \stopmpformule
+% \fakewords{20}{40}\epar
+% \placeformula {e} \startsdformule \fakespacingformula \stopsdformule
+% \placeformula {e} \startsdformule \fakespacingformula \stopsdformule
+% \fakewords{20}{40}\epar
+% \placeformula {f} \startspformule \fakespacingformula \stopspformule
+% \placeformula {f} \startspformule \fakespacingformula \stopspformule
+% \fakewords{20}{40}
+
+\unexpanded\def\startsubformulas
+  {\dosingleempty\dostartsubformulas}
+
+\def\dostartsubformulas[#1]%
+  {\edef\currentsubformulasreference{#1}%
+   \global\settrue\insidesubformulas
+   \handlesubformulasnumbering}
+
+\unexpanded\def\stopsubformulas
+  {\nonoindentation
+   \useindentnextparameter\subformulaparameter
+   \the\everyresetformulas % to be checked
+   \global\setfalse\insidesubformulas
+   \dorechecknextindentation} % here ?
+
+%D Named subformulas (to be redone)
+
+\unexpanded\def\startnamedsubformulas
+  {\dosingleempty\dostartnamedsubformulas}
+
+\def\dostartnamedsubformulas[#1]#2%
+  {\setformulalistentry{#2}%
+   \startsubformulas[#1]}
+
+\unexpanded\def\stopnamedsubformulas
+  {\stopsubformulas}
+
+%D Experimental goodie:
+%D
+%D \startbuffer
+%D \placelist[formula][criterium=text] \blank[2*big]
+%D \placenamedformula[one]{first}  \startformula a = 1 \stopformula \endgraf
+%D \placeformula                   \startformula a = 2 \stopformula \endgraf
+%D \placenamedformula     {second} \startformula a = 3 \stopformula \endgraf
+%D \stopbuffer
+%D
+%D \typebuffer \getbuffer
+
+\unexpanded\def\startformulas
+  {\dosingleempty\dostartformulas}
+
+\def\dostartformulas[#1]#2\stopformulas % new / to be internationalized
+  {\bgroup
+   \dostarttagged\t!formulaset\empty
+   \global\settrue\insideformulas
+   \edef\currentformulasreference{#1}%
+   \handleformulasnumbering
+   \let\currentformula\empty
+   \forgetdisplayskips
+   \startdisplaymath
+   \setlocalhsize
+   \long\unexpanded\def\startformula##1\stopformula
+     {\advance\scratchcounter\plusone}%
+   \scratchcounter\zerocount
+   #2% preroll
+   \ifcase\scratchcounter\else
+     \divide \hsize \scratchcounter
+   \fi
+   \hbox to \localhsize \bgroup
+     \hss
+     \def\normalstartformula{\vskip-\strutdepth\Ustartdisplaymath}% i hate this
+     \def\normalstopformula {\Ustopdisplaymath}%
+     \unexpanded\def\startformula      {\Ustartmath\vcenter\bgroup\normalstartformula}%
+     \unexpanded\def\stopformula       {\normalstopformula\egroup\Ustopmath\hss}%
+     #2%
+     \egroup
+   \stopdisplaymath
+   \global\setfalse\insideformulas
+   \dostoptagged
+   \egroup
+   \the\everyresetformulas
+   \hangafter\minusone    % added for side floats
+   \hangindent\zeropoint} % added for side floats
+
+% place
+
+\def\inhibitformulanumberflag{-}
+\def\forceformulanumberflag  {+}
+
+\def\docheckformulareference#1#2%
+  {#1\unless\ifx\namedformulaentry\empty % \relax % new 29/8/2010
+     \plusthree
+   \else\ifx#2\empty
+     \zerocount
+   \else\ifx#2\forceformulanumberflag
+     \plusone
+   \else\ifx#2\inhibitformulanumberflag
+     \plustwo
+   \else
+     \plusthree
+   \fi\fi\fi\fi}
+
+\unexpanded\def\formulanumber{\doformulanumber} % for the moment
+
+\def\doformulanumber
+  {\dosingleempty\dodoformulanumber}
+
+\def\dodoformulanumber[#1]%
+  {\def\currentformulareference{#1}%
+   \dosinglegroupempty\dododoformulanumber}
+
+\def\redoformulanumber#1%
+  {\def\currentformulasuffix{#1}%
+   \dododoformulanumber}
+
+\unexpanded\def\placeformula
+  {\global\settrue\insideplaceformula
+   \settrue\incrementformulanumber
+   \dosingleempty\doplaceformula}
+
+\unexpanded\def\placesubformula
+  {\global\settrue\insideplacesubformula
+   \setfalse\incrementformulanumber
+   \dosingleempty\doplaceformula}
+
+\def\doplaceformula[#1]%
+  {\def\currentplaceformulareference{#1}%
+   \let\currentplaceformulasuffix\empty
+   \doifnextbgroupelse\moreplaceformula\redoplaceformula} % [ref]{}
+
+\def\moreplaceformula#1%
+  {\def\currentplaceformulasuffix{#1}%
+   \redoplaceformula}
+
+\def\redoplaceformula
+  {\doifnextcharelse$\dispplaceformula\dodoplaceformula} % [ref]$$ [ref]\start
+
+\def\dodoplaceformula
+  {\handleplaceformulanumbering}
+
+\def\dispplaceformula$$#1$$%
+  {\handleplaceformulanumbering
+   \dostartformula{}#1\dostopformula}
+
+\let\startplaceformula\placeformula
+\let\stopplaceformula \relax
+
+% to be checked
+
+\let\doplaceformulanumber \relax
+\let\donestedformulanumber\gobbletwoarguments
+
+\def\donestedformulanumberindeed#1#2%
+  {\def\currentnestedformulareference{#1}%
+   \def\currentnestedformulasuffix{#2}%
+   \glet\doplaceformulanumber\relax
+   \docheckformulareference\nestedformulanumbermode\currentnestedformulareference
+   \ifcase\nestedformulanumbermode
+     % nothing
+   \or
+     \doformulanumber
+   \or
+     % nothing
+   \or
+     \doformulanumber
+   \fi}
+
+\def\doplaceformulanumberindeed
+  {\glet\doplaceformulanumber\relax
+   \doifelse{\formulaparameter\c!location}\v!left
+     {\normalleqno{\dododoformulanumber}}
+     {\normalreqno{\dododoformulanumber}}}
+
+% todo
+
+\unexpanded\def\placenamedformula
+  {\dosingleempty\doplacenamedformula}
+
+\def\doplacenamedformula[#1]#2%
+  {\iffirstargument
+     \def\next{\placeformula[#1]}%
+   \else
+     \let\next\placeformula
+   \fi
+   \setformulalistentry{#2}%
+   \next}
+
+\let\namedformulaentry\empty % \relax % this will become a key/value so that we can do bookmarks
+
+\unexpanded\def\setformulalistentry#1%
+  {\gdef\namedformulaentry{#1}}
+
+\protect \endinput
+
+% \abovedisplayshortskip0pt \belowdisplayshortskip0pt \abovedisplayskip0pt \belowdisplayskip0pt \forgetall
+%
+% test       \par                      $$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx$$ \par test \par
+% test       \par                      $$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx$$ \par test \par
+% test plus  \par \prevdepth \maxdimen $$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx$$ \par test \par
+% test minus \par \prevdepth-\maxdimen $$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx$$ \par test \par
+%
+% \parskip\baselineskip
+%
+% test       \par                      $$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx$$ \par test \par
+% test       \par                      $$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx$$ \par test \par
+% test plus  \par \prevdepth \maxdimen $$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx$$ \par test \par
+% test minus \par \prevdepth-\maxdimen $$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx$$ \par test \par

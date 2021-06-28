@@ -1,0 +1,160 @@
+\ProvidesFile{ext-authoryear-common.bbx}
+  [2018/03/28 v0.2 common files for extended biblatex
+   authoryear bibliography styles (MW)]
+
+\RequireBibliographyStyle{ext-dashed-common}
+
+\DeclareFieldFormat{biblabeldate}{\mkbibparens{#1}}
+\DeclareFieldFormat{biblistlabeldate}{\mkbibparens{#1}}
+
+% merge date/issue with date label
+\def\bbx@opt@mergedate@maximum{%
+  \renewbibmacro*{date+extradate}{%
+    \iffieldundef{labelyear}
+      {}
+      {\printtext[\blx@delimcontext labeldate]{%
+         \iflabeldateisdate
+           {\printfield{issue}%
+            \setunit*{\addspace}%
+            \printdateextra}
+           {\printlabeldateextra}}}}%
+  \renewbibmacro*{date}{%
+    \iflabeldateisdate
+      {}
+      {\printdate}}%
+  \renewbibmacro*{issue+date}{%
+    \iflabeldateisdate
+      {}
+      {\printtext[issuedate]{%
+         \printfield{issue}%
+         \setunit*{\addspace}%
+         \printdate}}}}
+
+% merge date with date label
+\def\bbx@opt@mergedate@compact{%
+  \renewbibmacro*{date+extradate}{%
+    \iffieldundef{labelyear}
+      {}
+      {\printtext[\blx@delimcontext labeldate]{%
+         \iflabeldateisdate
+           {\printdateextra}
+           {\printlabeldateextra}}}}%
+  \renewbibmacro*{date}{%
+    \iflabeldateisdate
+      {}
+      {\printdate}}%
+  \renewbibmacro*{issue+date}{%
+    \ifboolexpr{not test {\iffieldundef{issue}}
+                or not test {\iflabeldateisdate}}
+      {\printtext[issuedate]{%
+         \printfield{issue}%
+         \setunit*{\addspace}%
+         \iflabeldateisdate
+           {}
+           {\printdate}}}
+      {}%
+    \newunit}}
+
+% merge year-only date with date label
+\def\bbx@opt@mergedate@basic{%
+  \renewbibmacro*{date+extradate}{%
+    \iffieldundef{labelyear}
+      {}
+      {\printtext[\blx@delimcontext labeldate]{\printlabeldateextra}}}%
+  \renewbibmacro*{date}{%
+    \ifboolexpr{
+      test {\iflabeldateisdate}
+      and
+      not test {\ifdateshavedifferentprecision{label}{}}
+    }
+      {}
+      {\printdate}}%
+  \renewbibmacro*{issue+date}{%
+    \ifboolexpr{
+      test {\iflabeldateisdate}
+      and
+      not test {\ifdateshavedifferentprecision{label}{}}
+      and
+      test {\iffieldundef{issue}}
+    }
+      {}
+      {\printtext[issuedate]{%
+         \printfield{issue}%
+         \setunit*{\addspace}%
+         \printdate}}%
+    \newunit}}
+
+% merge year-only date with year-only date label
+\def\bbx@opt@mergedate@minimum{%
+  \renewbibmacro*{date+extradate}{%
+    \iffieldundef{labelyear}
+      {}
+      {\printtext[\blx@delimcontext labeldate]{\printlabeldateextra}}}%
+  \renewbibmacro*{date}{%
+    \ifboolexpr{
+      test {\iflabeldateisdate}
+      and
+      not test {\ifdateshavedifferentprecision{label}{}}
+      and
+      test {\iffieldundef{extradate}}
+    }
+      {}
+      {\printdate}}%
+  \renewbibmacro*{issue+date}{%
+    \ifboolexpr{
+      test {\iflabeldateisdate}
+      and
+      not test {\ifdateshavedifferentprecision{label}{}}
+      and
+      test {\iffieldundef{extradate}}
+      and
+      test {\iffieldundef{issue}}
+    }
+      {}
+      {\printtext[issuedate]{%
+         \printfield{issue}%
+         \setunit*{\addspace}%
+         \printdate}}%
+    \newunit}}
+
+% don't merge date/issue with date label
+\def\bbx@opt@mergedate@false{%
+  \renewbibmacro*{date+extradate}{%
+    \iffieldundef{labelyear}
+      {}
+      {\printtext[\blx@delimcontext labeldate]{\printlabeldateextra}}}%
+  \renewbibmacro*{date}{\printdate}%
+  \renewbibmacro*{issue+date}{%
+    \printtext[issuedate]{%
+      \printfield{issue}%
+      \setunit*{\addspace}%
+      \usebibmacro{date}}%
+    \newunit}}
+
+\defbibenvironment{bibliography}
+  {\list
+     {\ifcsequal{extblx@introcite}{extblx@opt@introcite@label}
+        {\usebibmacro{introcite:typeset}}
+        {}}
+     {\ifcsequal{extblx@introcite}{extblx@opt@introcite@label}
+        {\setlength{\labelwidth}{\introcitewidth}%
+         \setlength{\leftmargin}{\labelwidth}%
+         \setlength{\labelsep}{\introcitesep}%
+         \addtolength{\leftmargin}{\labelsep}%
+         \renewcommand*{\makelabel}[1]{##1\hss}}
+        {\setlength{\leftmargin}{\bibhang}%
+         \setlength{\itemindent}{-\leftmargin}}%
+      \setlength{\itemsep}{\bibitemsep}%
+      \setlength{\parsep}{\bibparsep}}}
+  {\endlist}
+  {\item
+   \ifcsequal{extblx@introcite}{extblx@opt@introcite@label}
+     {\usebibmacro{introcite:break}}
+     {}}
+
+% We need to execute some options that were already executed
+% by the standard styles again, because we changed the
+% underlying definitions.
+\ExecuteBibliographyOptions{mergedate=compact, dashed=true}%
+
+\endinput

@@ -1,0 +1,275 @@
+% Licence    : Released under the LaTeX Project Public License v1.3c
+% or later, see http://www.latex-project.org/lppl.txtf
+\newcommand{\EquaDeuxComposition}[5][]{%type ax+b=d ou b=cx+d$
+  \useKVdefault[ClesEquation]%
+  \setKV[ClesEquation]{#1}%
+  \ifx\bla#2\bla%On échange en faisant attention à ne pas boucler : c doit être non vide
+    \EquaDeuxComposition[#1]{#4}{#5}{#2}{#3}
+  \else%cas ax+b=d
+    \xintifboolexpr{#2=0}{%
+      \xintifboolexpr{#3=#5}{%b=d
+        L'équation $\num{#3}=\num{#5}$ a une infinité de solutions.}%
+      {%b<>d
+        L'équation $\num{#3}=\num{#5}$ n'a aucune solution.%
+      }%
+    }{%ELSE
+      \xintifboolexpr{#3=0}{%ax+b=d
+        \EquaBase[#1]{#2}{}{}{#5}%
+      }{%ax+b=d$ Ici
+        \ifboolKV[ClesEquation]{Decomposition}{\colorlet{Ccompo}{\useKV[ClesEquation]{CouleurCompo}}}{}
+        \begin{align*}
+          \tikzmark{A-\theNbequa}\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Ccompo}{\num{#5}}\tikzmark{E-\theNbequa}\\
+          \xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Ccompo}{\num{\fpeval{#5-#3}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}}\\
+          \tikzmark{C-\theNbequa}\xdef\Coeffa{#2}\xdef\Coeffb{\fpeval{#5-#3}}\xintifboolexpr{\Coeffa=1}{}{\num{\Coeffa}}\useKV[ClesEquation]{Lettre}&=\num{\Coeffb}\tikzmark{G-\theNbequa}%\\
+          \xintifboolexpr{\Coeffa=1}{}{\\}
+          \ifboolKV[ClesEquation]{Fleches}{%
+          \leftcomment{A-\theNbequa}{C-\theNbequa}{A-\theNbequa}{$\xintifboolexpr{#3>0}{-\num{#3}}{+\num{\fpeval{0-#3}}}$}%
+          \rightcomment{E-\theNbequa}{G-\theNbequa}{E-\theNbequa}{$\xintifboolexpr{#3>0}{-\num{#3}}{+\num{\fpeval{0-#3}}}$}%
+          }{}
+          \xintifboolexpr{\Coeffa=1}{% 
+          }{%\ifnum\cmtd>1
+          \tikzmark{D-\theNbequa}\useKV[ClesEquation]{Lettre}&=\frac{\num{\Coeffb}}{\num{\Coeffa}}\tikzmark{H-\theNbequa}%\\
+          \ifboolKV[ClesEquation]{Fleches}{%
+          \leftcomment{C-\theNbequa}{D-\theNbequa}{A-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+          \rightcomment{G-\theNbequa}{H-\theNbequa}{E-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+          }{%ICI ?
+          \ifboolKV[ClesEquation]{FlecheDiv}{%
+          \leftcomment{C-\theNbequa}{D-\theNbequa}{A-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+          \rightcomment{G-\theNbequa}{H-\theNbequa}{E-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+          }{}
+          }
+          }
+          \ifboolKV[ClesEquation]{Entier}{%
+          \SSimpliTest{\Coeffb}{\Coeffa}%
+          \ifboolKV[ClesEquation]{Simplification}{%
+          \ifthenelse{\boolean{Simplification}}{\\\useKV[ClesEquation]{Lettre}&=\SSimplifie{\Coeffb}{\Coeffa}}{}%\\
+          }{}
+          }{}
+          \ifboolKV[ClesEquation]{Fleches}{\stepcounter{Nbequa}}{\ifboolKV[ClesEquation]{FlecheDiv}{\stepcounter{Nbequa}}{}}
+        \end{align*}
+        \ifboolKV[ClesEquation]{Solution}{L'équation $\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}=\num{#5}$ a une unique solution : \opdiv*{\Coeffb}{\Coeffa}{solution}{resteequa}\opcmp{resteequa}{0}$\ifboolKV[ClesEquation]{LettreSol}{\useKV[ClesEquation]{Lettre}=}{}\displaystyle\ifopeq\opexport{solution}{\solution}\num{\solution}\else\ifboolKV[ClesEquation]{Entier}{\SSimplifie{\Coeffb}{\Coeffa}}{\frac{\num{\Coeffb}}{\num{\Coeffa}}}\fi$.
+        }{}
+      }
+    }
+  \fi
+}
+
+\newcommand{\EquaTroisComposition}[5][]{%ax+b=cx ou ax=cx+d
+  \useKVdefault[ClesEquation]%
+  \setKV[ClesEquation]{#1}%
+  \ifx\bla#3\bla%on inverse en faisant attention à la boucle #3<->#5
+  \ifx\bla#5\bla%
+  %% paramètre oublié
+  \else
+  \EquaTroisComposition[#1]{#4}{#5}{#2}{}%
+  \fi
+  \else
+  \xintifboolexpr{#2=0}{%b=cx
+    \EquaBase[#1]{#4}{}{}{#3}
+  }{%
+    \xintifboolexpr{#4=0}{%ax+b=0
+      \EquaDeuxComposition[#1]{#2}{#3}{}{0}
+    }{%ax+b=cx
+      \xintifboolexpr{#2=#4}{%
+        \xintifboolexpr{#3=0}{%ax=ax
+          L'équation $\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}$ a une infinité de solutions.}%
+        {%ax+b=ax
+          L'équation $\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}$ n'a aucune solution.%
+        }%
+      }{%% Cas délicat
+        \xintifboolexpr{#2>#4}{%ax+b=cx avec a>c
+          \ifboolKV[ClesEquation]{Decomposition}{\colorlet{Ccompo}{\useKV[ClesEquation]{CouleurCompo}}}{}
+          \begin{align*}
+            \tikzmark{A-\theNbequa}\mathcolor{Ccompo}{\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}\tikzmark{E-\theNbequa}\\
+            \mathcolor{Ccompo}{\num{\fpeval{#2-#4}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#4>0}{+\num{#4}\useKV[ClesEquation]{Lettre}}{-\num{\fpeval{0-#4}}\useKV[ClesEquation]{Lettre}}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}\\
+            \tikzmark{B-\theNbequa}\xdef\Coeffa{\fpeval{#2-#4}}\xintifboolexpr{\Coeffa=1}{}{\num{\Coeffa}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Ccompo}{0}\tikzmark{F-\theNbequa}\\
+            \xintifboolexpr{\Coeffa=1}{}{\num{\Coeffa}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Ccompo}{\num{\fpeval{0-#3}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}}\tikzmark{F-\theNbequa}\\
+            \tikzmark{C-\theNbequa}\xdef\Coeffb{\fpeval{0-#3}}\xintifboolexpr{\Coeffa=1}{}{\num{\Coeffa}}\useKV[ClesEquation]{Lettre}&=\num{\Coeffb}\tikzmark{G-\theNbequa}%\\
+            \xintifboolexpr{\Coeffa=1}{}{\\}
+            \ifboolKV[ClesEquation]{Fleches}{%
+            \leftcomment{A-\theNbequa}{B-\theNbequa}{A-\theNbequa}{$\xintifboolexpr{#4>0}{-\num{#4}}{+\num{\fpeval{0-#4}}}\useKV[ClesEquation]{Lettre}$}
+            \rightcomment{E-\theNbequa}{F-\theNbequa}{E-\theNbequa}{$\xintifboolexpr{#4>0}{-\num{#4}}{+\num{\fpeval{0-#4}}}\useKV[ClesEquation]{Lettre}$}
+            \leftcomment{B-\theNbequa}{C-\theNbequa}{A-\theNbequa}{$\xintifboolexpr{#3>0}{-\num{#3}}{+\num{\fpeval{0-#3}}}$}%
+            \rightcomment{F-\theNbequa}{G-\theNbequa}{E-\theNbequa}{$\xintifboolexpr{#3>0}{-\num{#3}}{+\num{\fpeval{0-#3}}}$}%
+            }{}
+            \xintifboolexpr{\Coeffa=1}{}{%\ifnum\cmtd>1
+            \tikzmark{D-\theNbequa}\useKV[ClesEquation]{Lettre}&=\frac{\num{\Coeffb}}{\num{\Coeffa}}\tikzmark{H-\theNbequa}%\\
+            \ifboolKV[ClesEquation]{Fleches}{%
+            \leftcomment{C-\theNbequa}{D-\theNbequa}{A-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+            \rightcomment{G-\theNbequa}{H-\theNbequa}{E-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%            
+            }{
+            \ifboolKV[ClesEquation]{FlecheDiv}{%
+            \leftcomment{C-\theNbequa}{D-\theNbequa}{A-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+            \rightcomment{G-\theNbequa}{H-\theNbequa}{E-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%                 
+            }{}
+            }
+            \ifboolKV[ClesEquation]{Entier}{%
+            \SSimpliTest{\Coeffb}{\Coeffa}%
+            \ifboolKV[ClesEquation]{Simplification}{%
+            \ifthenelse{\boolean{Simplification}}{\\\useKV[ClesEquation]{Lettre}&=\SSimplifie{\Coeffb}{\Coeffa}}{}%\\
+            }{}
+            }{}
+            }
+            \ifboolKV[ClesEquation]{Fleches}{\stepcounter{Nbequa}}{\ifboolKV[ClesEquation]{FlecheDiv}{\stepcounter{Nbequa}}{}}
+          \end{align*}
+          \ifboolKV[ClesEquation]{Solution}{L'équation $\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}$ a une unique solution : \opdiv*{\Coeffb}{\Coeffa}{solution}{resteequa}\opcmp{resteequa}{0}$\ifboolKV[ClesEquation]{LettreSol}{\useKV[ClesEquation]{Lettre}=}{}\displaystyle\ifopeq\opexport{solution}{\solution}\num{\solution}\else\ifboolKV[ClesEquation]{Entier}{\SSimplifie{\Coeffb}{\Coeffa}}{\frac{\num{\Coeffb}}{\num{\Coeffa}}}\fi$.}{}
+        }{%ax+b=cx+d avec a<c              % Autre cas délicat
+          \ifboolKV[ClesEquation]{Decomposition}{\colorlet{Ccompo}{\useKV[ClesEquation]{CouleurCompo}}}{}
+          \begin{align*}%
+            \tikzmark{A-\theNbequa}\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Ccompo}{\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}}\tikzmark{E-\theNbequa}\\
+            \xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Ccompo}{\num{\fpeval{#4-#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#2>0}{+\num{#2}\useKV[ClesEquation]{Lettre}}{-\num{\fpeval{0-#2}}\useKV[ClesEquation]{Lettre}}}\\
+            \tikzmark{B-\theNbequa}\xdef\Coeffb{#3}\xdef\Coeffa{\fpeval{#4-#2}}\xintifboolexpr{#3>0}{\num{#3}}{-\num{\fpeval{0-#3}}}&=\xintifboolexpr{\Coeffa=1}{}{\num{\Coeffa}}\useKV[ClesEquation]{Lettre}\tikzmark{F-\theNbequa}
+                                                                                                                                      \xintifboolexpr{\Coeffa=1}{}{\\}
+            \ifboolKV[ClesEquation]{Fleches}{%
+            \leftcomment{A-\theNbequa}{B-\theNbequa}{A-\theNbequa}{$\xintifboolexpr{#2>0}{-\num{#2}}{+\num{\fpeval{0-#2}}}\useKV[ClesEquation]{Lettre}$}
+            \rightcomment{E-\theNbequa}{F-\theNbequa}{E-\theNbequa}{$\xintifboolexpr{#2>0}{-\num{#2}}{+\num{\fpeval{0-#2}}}\useKV[ClesEquation]{Lettre}$}
+            }{}
+            \xintifboolexpr{\Coeffa=1}{}{%\ifnum\cmtd>1
+            \tikzmark{D-\theNbequa}\frac{\num{\Coeffb}}{\num{\Coeffa}}&=\useKV[ClesEquation]{Lettre}\tikzmark{H-\theNbequa}%\\
+            \ifboolKV[ClesEquation]{Fleches}{%
+            \leftcomment{B-\theNbequa}{D-\theNbequa}{A-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+            \rightcomment{F-\theNbequa}{H-\theNbequa}{E-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%            
+            }{
+            \ifboolKV[ClesEquation]{FlecheDiv}{%
+            \leftcomment{B-\theNbequa}{D-\theNbequa}{A-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+            \rightcomment{F-\theNbequa}{H-\theNbequa}{E-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%                 
+            }{}
+            }
+            \ifboolKV[ClesEquation]{Entier}{%
+            \SSimpliTest{\Coeffb}{\Coeffa}%
+            \ifboolKV[ClesEquation]{Simplification}{%
+            \ifthenelse{\boolean{Simplification}}{\\\SSimplifie{\Coeffb}{\Coeffa}&=\useKV[ClesEquation]{Lettre}}{}%\\
+            }{}
+            }{}
+            }
+            \ifboolKV[ClesEquation]{Fleches}{\stepcounter{Nbequa}}{\ifboolKV[ClesEquation]{FlecheDiv}{\stepcounter{Nbequa}}{}}
+          \end{align*}
+          \ifboolKV[ClesEquation]{Solution}{L'équation $\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}$ a une unique solution : \opdiv*{\Coeffb}{\Coeffa}{solution}{resteequa}\opcmp{resteequa}{0}$\ifboolKV[ClesEquation]{LettreSol}{\useKV[ClesEquation]{Lettre}=}{}\displaystyle\ifopeq\opexport{solution}{\solution}\num{\solution}\else\ifboolKV[ClesEquation]{Entier}{\SSimplifie{\Coeffb}{\Coeffa}}{\frac{\num{\Coeffb}}{\num{\Coeffa}}}\fi$.}{}%
+        }%
+      }%
+    }%
+  }%
+  \fi
+}%
+
+
+\newcommand{\ResolEquationComposition}[5][]{%
+  \useKVdefault[ClesEquation]%
+  \setKV[ClesEquation]{#1}%
+  \xintifboolexpr{#2=0}{%
+    \xintifboolexpr{#4=0}{%
+      \xintifboolexpr{#3=#5}{%b=d
+        L'équation $\num{#3}=\num{#5}$ a une infinité de solutions.}%
+      {%b<>d
+        L'équation $\num{#3}=\num{#5}$ n'a aucune solution.%
+      }%
+    }%
+    {%0x+b=cx+d$
+      \EquaDeuxComposition[#1]{#4}{#5}{#2}{#3}%
+    }%
+  }{%
+    \xintifboolexpr{#4=0}{%ax+b=0x+d
+      \EquaDeuxComposition[#1]{#2}{#3}{}{#5}%
+    }
+    {%ax+b=cx+d$
+      \xintifboolexpr{#3=0}{%
+        \xintifboolexpr{#5=0}{%ax=cx
+          \EquaTroisComposition[#1]{#2}{0}{#4}{}%
+        }%
+        {%ax=cx+d
+          \EquaTroisComposition[#1]{#4}{#5}{#2}{}%
+        }%
+      }%
+      {\xintifboolexpr{#5=0}{%ax+b=cx
+          \EquaTroisComposition[#1]{#2}{#3}{#4}{}%
+        }%
+        {%ax+b=cx+d -- ici
+          \xintifboolexpr{#2=#4}{%
+            \xintifboolexpr{#3=#5}{%b=d
+              L'équation $\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}$ a une infinité de solutions.}%
+            {%b<>d
+              L'équation $\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}$ n'a aucune solution.%
+            }%
+          }{
+            %% Cas délicat
+            \xintifboolexpr{#2>#4}{%ax+b=cx+d avec a>c
+              \ifboolKV[ClesEquation]{Decomposition}{\colorlet{Ccompo}{\useKV[ClesEquation]{CouleurCompo}}}{}
+              \begin{align*}
+                \tikzmark{A-\theNbequa}\mathcolor{Ccompo}{\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\tikzmark{E-\theNbequa}\\
+                \mathcolor{Ccompo}{\num{\fpeval{#2-#4}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#4>0}{+\num{#4}\useKV[ClesEquation]{Lettre}}{-\num{\fpeval{0-#4}}\useKV[ClesEquation]{Lettre}}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\\
+                \tikzmark{B-\theNbequa}\xdef\Coeffa{\fpeval{#2-#4}}\xintifboolexpr{\Coeffa=1}{}{\num{\Coeffa}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Ccompo}{\num{#5}}\tikzmark{F-\theNbequa}\\
+                \xintifboolexpr{\Coeffa=1}{}{\num{\Coeffa}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Ccompo}{\num{\fpeval{#5-#3}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}}\\
+                \tikzmark{C-\theNbequa}\xdef\Coeffb{\fpeval{#5-#3}}\xintifboolexpr{\Coeffa=1}{}{\num{\Coeffa}}\useKV[ClesEquation]{Lettre}&=\num{\Coeffb}\tikzmark{G-\theNbequa}%\\
+                \xintifboolexpr{\Coeffa=1}{}{\\}
+                \ifboolKV[ClesEquation]{Fleches}{%
+                \leftcomment{A-\theNbequa}{B-\theNbequa}{A-\theNbequa}{$\xintifboolexpr{#4>0}{-\num{#4}}{+\num{\fpeval{0-#4}}}\useKV[ClesEquation]{Lettre}$}
+                \rightcomment{E-\theNbequa}{F-\theNbequa}{E-\theNbequa}{$\xintifboolexpr{#4>0}{-\num{#4}}{+\num{\fpeval{0-#4}}}\useKV[ClesEquation]{Lettre}$}
+                \leftcomment{B-\theNbequa}{C-\theNbequa}{A-\theNbequa}{$\xintifboolexpr{#3>0}{-\num{#3}}{+\num{\fpeval{0-#3}}}$}%
+                \rightcomment{F-\theNbequa}{G-\theNbequa}{E-\theNbequa}{$\xintifboolexpr{#3>0}{-\num{#3}}{+\num{\fpeval{0-#3}}}$}%
+                }{}
+                \xintifboolexpr{\Coeffa=1}{}{%\ifnum\cmtd>1
+                \tikzmark{D-\theNbequa}\useKV[ClesEquation]{Lettre}&=\frac{\num{\Coeffb}}{\num{\Coeffa}}\tikzmark{H-\theNbequa}%\\
+                \ifboolKV[ClesEquation]{Fleches}{%
+                \leftcomment{C-\theNbequa}{D-\theNbequa}{A-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+                \rightcomment{G-\theNbequa}{H-\theNbequa}{E-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%            
+                }{
+                \ifboolKV[ClesEquation]{FlecheDiv}{%
+                \leftcomment{C-\theNbequa}{D-\theNbequa}{A-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+                \rightcomment{G-\theNbequa}{H-\theNbequa}{E-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%                 
+                }{}
+                }
+                \ifboolKV[ClesEquation]{Entier}{%
+                \SSimpliTest{\Coeffb}{\Coeffa}%
+                \ifboolKV[ClesEquation]{Simplification}{%
+                \ifthenelse{\boolean{Simplification}}{\\\useKV[ClesEquation]{Lettre}&=\SSimplifie{\Coeffb}{\Coeffa}}{}%\\
+                }{}
+                }{}
+                }
+                \ifboolKV[ClesEquation]{Fleches}{\stepcounter{Nbequa}}{\ifboolKV[ClesEquation]{FlecheDiv}{\stepcounter{Nbequa}}{}}
+              \end{align*}
+              \ifboolKV[ClesEquation]{Solution}{L'équation $\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}$ a une unique solution : \opdiv*{\Coeffb}{\Coeffa}{solution}{resteequa}\opcmp{resteequa}{0}$\ifboolKV[ClesEquation]{LettreSol}{\useKV[ClesEquation]{Lettre}=}{}\displaystyle\ifopeq\opexport{solution}{\solution}\num{\solution}\else\ifboolKV[ClesEquation]{Entier}{\SSimplifie{\Coeffb}{\Coeffa}}{\frac{\num{\Coeffb}}{\num{\Coeffa}}}\fi$.%
+              }{}
+            }{%ax+b=cx+d avec a<c              % Autre cas délicat
+              \ifboolKV[ClesEquation]{Decomposition}{\colorlet{Ccompo}{\useKV[ClesEquation]{CouleurCompo}}}{}%
+              \begin{align*}%
+                \tikzmark{A-\theNbequa}\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Ccompo}{\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\tikzmark{E-\theNbequa}\\
+                \xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Ccompo}{\num{\fpeval{#4-#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#2>0}{+\num{#2}\useKV[ClesEquation]{Lettre}}{-\num{\fpeval{0-#2}}\useKV[ClesEquation]{Lettre}}}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\\
+                \tikzmark{B-\theNbequa}\xdef\Coeffa{\fpeval{#4-#2}}\xintifboolexpr{#3>0}{\num{#3}}{-\num{\fpeval{0-#3}}}&=\xintifboolexpr{\Coeffa=1}{}{\num{\Coeffa}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\tikzmark{F-\theNbequa}\\
+                \mathcolor{Ccompo}{\num{\fpeval{#3-#5}}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}}&=\xintifboolexpr{\Coeffa=1}{}{\num{\Coeffa}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\\
+                \tikzmark{C-\theNbequa}\xdef\Coeffb{\fpeval{#3-#5}}\num{\Coeffb}&=\xintifboolexpr{\Coeffa=1}{}{\num{\Coeffa}}\useKV[ClesEquation]{Lettre}\tikzmark{G-\theNbequa}%\\
+                \xintifboolexpr{\Coeffa=1}{}{\\}
+                \ifboolKV[ClesEquation]{Fleches}{%
+                \leftcomment{A-\theNbequa}{B-\theNbequa}{A-\theNbequa}{$\xintifboolexpr{#2>0}{-\num{#2}}{+\num{\fpeval{0-#2}}}\useKV[ClesEquation]{Lettre}$}
+                \rightcomment{E-\theNbequa}{F-\theNbequa}{E-\theNbequa}{$\xintifboolexpr{#2>0}{-\num{#2}}{+\num{\fpeval{0-#2}}}\useKV[ClesEquation]{Lettre}$}
+                \leftcomment{B-\theNbequa}{C-\theNbequa}{A-\theNbequa}{$\xintifboolexpr{#5>0}{-\num{#5}}{+\num{\fpeval{0-#5}}}$}%
+                \rightcomment{F-\theNbequa}{G-\theNbequa}{E-\theNbequa}{$\xintifboolexpr{#5>0}{-\num{#5}}{+\num{\fpeval{0-#5}}}$}%
+                }{}
+                \xintifboolexpr{\Coeffa=1}{}{%\ifnum\cmtd>1
+                \tikzmark{D-\theNbequa}\frac{\num{\Coeffb}}{\num{\Coeffa}}&=\useKV[ClesEquation]{Lettre}\tikzmark{H-\theNbequa}%\\
+                \ifboolKV[ClesEquation]{Fleches}{%
+                \leftcomment{C-\theNbequa}{D-\theNbequa}{A-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+                \rightcomment{G-\theNbequa}{H-\theNbequa}{E-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%            
+                }{
+                \ifboolKV[ClesEquation]{FlecheDiv}{%
+                \leftcomment{C-\theNbequa}{D-\theNbequa}{A-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%
+                \rightcomment{G-\theNbequa}{H-\theNbequa}{E-\theNbequa}{$\div\xintifboolexpr{\Coeffa<0}{(\num{\Coeffa})}{\num{\Coeffa}}$}%                 
+                }{}
+                }
+                \ifboolKV[ClesEquation]{Entier}{%
+                \SSimpliTest{\Coeffb}{\Coeffa}%
+                \ifboolKV[ClesEquation]{Simplification}{%
+                \ifthenelse{\boolean{Simplification}}{\\\SSimplifie{\Coeffb}{\Coeffa}&=\useKV[ClesEquation]{Lettre}}{}%\\
+                }{}
+                }{}
+                }
+                \ifboolKV[ClesEquation]{Fleches}{\stepcounter{Nbequa}}{\ifboolKV[ClesEquation]{FlecheDiv}{\stepcounter{Nbequa}}{}}
+              \end{align*}
+              \ifboolKV[ClesEquation]{Solution}{L'équation $\xintifboolexpr{#2=1}{}{\num{#2}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}=\xintifboolexpr{#4=1}{}{\num{#4}}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}$ a une unique solution : \opdiv*{\Coeffb}{\Coeffa}{solution}{resteequa}\opcmp{resteequa}{0}$\ifboolKV[ClesEquation]{LettreSol}{\useKV[ClesEquation]{Lettre}=}{}\displaystyle\ifopeq\opexport{solution}{\solution}\num{\solution}\else\ifboolKV[ClesEquation]{Entier}{\SSimplifie{\Coeffb}{\Coeffa}}{\frac{\num{\Coeffb}}{\num{\Coeffa}}}\fi$.%
+              }{}%
+            }%
+          }%
+        }%
+      }%
+    }%
+  }%
+}%

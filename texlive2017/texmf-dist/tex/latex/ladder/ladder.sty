@@ -1,0 +1,127 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%          LADDER           %%
+%%      Aurélien CADIOU      %%
+%% contact@aureliencadiou.fr %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Licence : MIT licence
+%% Repository : https://github.com/AurelienC/tex-ladder
+
+\NeedsTeXFormat{LaTeX2e}[1999/01/01]
+\ProvidesPackage{ladder}[2017/05/17]
+
+
+% Packages required
+\RequirePackage{tikz}
+\RequirePackage{ifthen}
+\RequirePackage{calc}
+
+
+\newcounter{nextY}%
+\newcounter{nextYPar}%
+\newcounter{nextX}%
+\newcounter{currentY}%
+\newcounter{currentX}%
+\newcounter{tempCurrentY}%
+\newcounter{startPar}%
+\newcounter{stopPar}%
+\newcounter{memCurrentX}%
+\newcounter{memCurrentY}%
+
+
+%%% NEW LINE %%%
+\newcommand{\ladderLine}[0]{
+	% Updating variables
+	\setcounter{currentX}{0}
+	\setcounter{nextX}{0}
+	\setcounter{currentY}{\value{nextY}}
+}
+
+
+%%% TEXT %%%
+\newcommand{\ladderText}[3][]{
+	\draw[text centered](\value{currentX}+1,\value{currentY}+1) node {\textbf{#2}};
+	\draw[text centered](\value{currentX}+1,\value{currentY}+0.5) node {\textit{#3}};
+	\draw[text centered](\value{currentX}+1,\value{currentY}) node {\texttt{\LARGE{#1}}};
+}
+
+
+%%% NO CONTACT %%%
+\newcommand{\ladderNO}[3][]{
+	% Updating variables
+	\setcounter{currentX}{\value{nextX}}
+	\setcounter{tempCurrentY}{\value{currentY}-2}
+	\ifthenelse{\value{nextY}>\value{tempCurrentY}}{\setcounter{nextY}{\value{tempCurrentY}}}{}
+	\ifthenelse{\value{nextYPar}>\value{tempCurrentY}}{\setcounter{nextYPar}{\value{tempCurrentY}}}{}
+	\addtocounter{nextX}{2}
+
+	% Drawing
+	\draw(\value{currentX}+0.75,\value{currentY}+0.25) -- (\value{currentX}+0.75,\value{currentY}-0.25); % First bar of NO contact
+	\draw(\value{currentX}+1.25,\value{currentY}+0.25) -- (\value{currentX}+1.25,\value{currentY}-0.25); % Second bar of NO contact
+	\draw(\value{currentX},\value{currentY}) -- (\value{currentX}+0.75,\value{currentY}); % Connection
+	\draw(\value{currentX}+1.25,\value{currentY}) -- (\value{nextX},\value{currentY}); % Connection
+	\ladderText[#1]{#2}{#3}
+}
+
+
+%%% NC CONTACT %%%
+\newcommand{\ladderNC}[3][]{
+	% Updating variables
+	\setcounter{currentX}{\value{nextX}}
+	\setcounter{tempCurrentY}{\value{currentY}-2}
+	\ifthenelse{\value{nextY}>\value{tempCurrentY}}{\setcounter{nextY}{\value{tempCurrentY}}}{}
+	\ifthenelse{\value{nextYPar}>\value{tempCurrentY}}{\setcounter{nextYPar}{\value{tempCurrentY}}}{}
+	\addtocounter{nextX}{2}
+
+	% Drawing
+	\draw(\value{currentX}+0.75,\value{currentY}+0.25) -- (\value{currentX}+0.75,\value{currentY}-0.25) -- (\value{currentX}+1.25,\value{currentY}+0.25) -- (\value{currentX}+1.25,\value{currentY}-0.25); % NC contact
+	\draw(\value{currentX},\value{currentY}) -- (\value{currentX}+0.75,\value{currentY}); % Connection
+	\draw(\value{currentX}+1.25,\value{currentY}) -- (\value{nextX},\value{currentY}); % Connection
+	\ladderText[#1]{#2}{#3}
+}
+
+
+%%% COILS %%%
+\newcommand{\ladderC}[3][]{
+	% Updating variables
+	\setcounter{currentX}{\value{nextX}}
+	\setcounter{tempCurrentY}{\value{currentY}-2}
+	\ifthenelse{\value{nextY}>\value{tempCurrentY}}{\setcounter{nextY}{\value{tempCurrentY}}}{}
+	\ifthenelse{\value{nextYPar}>\value{tempCurrentY}}{\setcounter{nextYPar}{\value{tempCurrentY}}}{}
+	\addtocounter{nextX}{2}
+
+	% Drawing
+	\draw (\value{currentX}+1,\value{currentY}) circle (0.3);
+	\draw(\value{currentX},\value{currentY}) -- (\value{currentX}+0.7,\value{currentY}); % Connection
+	\draw(\value{currentX}+1.3,\value{currentY}) -- (\value{nextX},\value{currentY}); % Connection
+	\ladderText[#1]{#2}{#3}
+}
+
+
+
+%%% START OF PARALLEL SECTION %%%
+\newcommand{\startParallel}[0]{
+	\setcounter{startPar}{\value{nextX}} % Store the X of beginning
+}
+
+
+
+%%% DEBUT PARALLELE %%%
+\newcommand{\setParallel}[0]{
+  \setcounter{stopPar}{\value{nextX}}%
+  \draw(\value{startPar},\value{currentY}) -- (\value{startPar},\value{nextYPar}); % Vertical bar
+  \setcounter{memCurrentX}{\value{nextX}}%
+  \setcounter{memCurrentY}{\value{currentY}}%
+  \setcounter{nextX}{\value{startPar}}%
+  \setcounter{currentY}{\value{nextYPar}}%
+}
+
+
+%%% END OF PARALLEL SECTION %%%
+\newcommand{\unsetParallel}[0]{
+  % Parallel section is more larger than "normal" section test
+  \ifthenelse{\value{nextX}>\value{memCurrentX}}{}{\draw(\value{nextX},\value{currentY}) -- (\value{stopPar},\value{currentY}) -- (\value{stopPar},\value{memCurrentY});}
+  \ifthenelse{\value{nextX}>\value{memCurrentX}}{\draw (\value{nextX},\value{currentY}) -- (\value{nextX},\value{memCurrentY}) -- (\value{memCurrentX},\value{memCurrentY});}{\setcounter{nextX}{\value{memCurrentX}}}
+  \setcounter{currentY}{\value{memCurrentY}}
+  \setcounter{nextYPar}{0}
+}

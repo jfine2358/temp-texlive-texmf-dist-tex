@@ -1,0 +1,186 @@
+%%
+%% This is file `bidihl.sty'.
+%% 
+%%   ___________________________________________
+%%   Copyright © 2015  Vafa Khalighi <persian-tex@tug.org>
+%% 
+%%   It may be distributed and/or modified under the LaTeX Project Public License,
+%%   version 1.3c or higher (your choice). The latest version of
+%%   this license is at: http://www.latex-project.org/lppl.txt
+%% 
+%%   This work is “author-maintained” (as per LPPL maintenance status)
+%%   by Vafa Khalighi.
+%% 
+%% 
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bidihl}[2015/07/07 v0.1c Experimental bidi-aware text highlighting]
+
+%% Load color package and define highlighting color
+
+\RequirePackage{color}
+\definecolor{bidihlcolor}{rgb}{1,1,0} % yellow
+
+%% Register Declaration
+
+\newdimen\bidihl@line@thickness \bidihl@line@thickness.4pt
+
+\newdimen\bidihl@pixel \bidihl@pixel0.1pt
+
+\newdimen\bidihl@height \newdimen\bidihl@depth
+
+\newcount\bidihl@spacefactor
+
+\newif\ifbidihl@nospace
+
+%% User Interface and Initialization
+
+\def\bidihl{\bidihl@highlight{\dp\strutbox}{\ht\strutbox}}
+
+
+\def\bidihl@line#1#2#3#4{\begingroup \let\\\bidihlnewline
+        \ifdim#1<\z@ \bidihl@height#3\relax
+        \else \bidihl@height#2\relax \fi
+        \bidihl@depth-\bidihl@height
+        \ifdim\bidihl@height<\z@ \advance\bidihl@depth\bidihl@line@thickness
+        \else                 \advance\bidihl@height\bidihl@line@thickness \fi
+        \bidihl@nospacetrue
+        \ifvmode\leavevmode\fi \bidihl@spacefactor\spacefactor
+        \def\@tempa{#4 }\edef\@tempb{\noexpand\@nil\space}%
+        \expandafter\expandafter\expandafter\bidihl@wordloop
+                \expandafter\@tempa\@tempb
+        \endgroup \bidihl@aftergroup}
+        
+        
+\def\bidihl@highlight#1#2#3{\begingroup \let\\\bidihlnewline
+        \bidihl@depth#1\relax
+        \bidihl@height#2\relax
+        \bidihl@nospacetrue
+        \ifvmode\leavevmode\fi \bidihl@spacefactor\spacefactor
+        \def\@tempa{#3 }\edef\@tempb{\noexpand\@nil\space}%
+        \expandafter\expandafter\expandafter\bidihl@wordloop
+                \expandafter\@tempa\@tempb
+        \endgroup \bidihl@aftergroup}
+       
+       
+%% Processing Word Elements 
+        
+\def\bidihl@wordloop{\bidihl@ifbgroup\bidihl@wordblock\bidihl@iwordloop}
+\def\bidihl@ifbgroup#1#2{\let\@tempa#1\let\@tempb#2\futurelet\@tempc\bidihl@ifnc}
+\def\bidihl@ifnc{\ifx\@tempc\bgroup \let\next\@tempa \else\let\next\@tempb \fi
+        \next}
+\def\bidihl@wordblock#1{\bidihl@spaceskip
+        \def\bidihl@theword{#1}\bidihl@putword \bidihl@nospacetrue
+        \bidihl@wordloop}
+\def\bidihl@iwordloop#1 {\def\@tempa{#1}\ifx\@tempa\@nnil \let\next\bidihl@end
+        \else\ifx\@tempa\empty \else
+                \bidihl@spaceskip
+                \def\bidihl@theword{}\bidihl@charloop#1\@nil\fi
+        \bidihl@nospacefalse \let\next\bidihl@wordloop \fi
+        \next}        
+        
+\def\bidihl@charloop{\bidihl@ifbgroup\bidihl@charblock\bidihl@icharloop}
+\def\bidihl@charblock#1{\bidihl@putword
+        \def\bidihl@theword{#1}\bidihl@putword
+        \bidihl@charloop}
+\def\bidihl@icharloop#1{\def\@tempa{#1}%
+        \ifx\@tempa\@nnil \bidihl@putword \let\next\relax
+        \else\ifx\bidihlspace#1\relax \bidihl@putword \let\next\bidihl@space
+        \else\ifx\bidihlnewline#1\relax \bidihl@putword \let\next\bidihl@newline
+        \else\edef\bidihl@theword{\bidihl@theword#1}%
+                \let\next\bidihl@charloop \fi\fi\fi \next}
+\def\bidihlspace{\PackageError{bidihl}%
+        {\string\bidihlspace\space cannot be used here.}%
+        {\string\bidihlspace\space can be used only in the argument of
+                \string\bidihl.}}
+\def\bidihlnewline{\PackageError{bidihl}%
+        {\string\bidihlnewline\space cannot be used here.}%
+        {\string\bidihlnewline\space can be used only in the argument of
+                \string\bidihl.}}        
+
+%% Interword Spacing
+
+\def\bidihl@spaceskip{\ifbidihl@nospace\else
+        \ifdim\spaceskip=\z@
+            \@tempdima\fontdimen3\font\relax
+                \multiply\@tempdima\bidihl@spacefactor \divide\@tempdima\@m
+            \@tempdimb\fontdimen4\font\relax \multiply\@tempdimb\@m
+                \divide\@tempdimb\bidihl@spacefactor
+            \@tempskipa\fontdimen2\font plus\@tempdima minus\@tempdimb\relax
+        \else
+            \edef\@tempa{\the\spaceskip\space @ @ @ @ }%
+            \expandafter\bidihl@setspaceskip\@tempa\@nil
+        \fi
+        \ifnum\bidihl@spacefactor<2000\else
+                \ifdim\xspaceskip=\z@ \advance\@tempskipa\fontdimen7\font
+                \else \@tempskipa\xspaceskip
+        \fi\fi
+        \bidihl@skip\@tempskipa \fi}
+\def\bidihl@setspaceskip#1 #2 #3 #4 #5 #6\@nil{\@tempdima\z@ \@tempdimb\z@
+        \def\@tempa{#2}\def\@tempb{#3}%
+        \ifx\@tempa\bidihl@plus \@tempdima#3\def\@tempa{#4}\def\@tempb{#5}\fi
+        \ifx\@tempa\bidihl@minus \@tempdimb\@tempb\relax\fi
+        \multiply\@tempdima\bidihl@specefactor \divide\@tempdima\@m
+        \multiply\@tempdimb\@m \divide\bidihl@spacefactor
+        \@tempskipa#1 plus\@tempdima minus\@tempdimb\relax}
+\def\@tempa#1 #2 #3 #4 #5\@nil{\def\bidihl@plus{#2}\def\bidihl@minus{#4}}
+\@tempskipa1pt plus 2pt minus 3pt
+\expandafter\@tempa\the\@tempskipa\@nil
+
+
+
+%% Draw highlight text
+
+\def\bidihl@putword{\setbox\@tempboxa\hbox{\bidihl@theword
+                \global\bidihl@spacefactor\spacefactor}%
+        \@tempdima\wd\@tempboxa
+        \if@RTL%
+          \box\@tempboxa
+          {\color{bidihlcolor}\llap{\vrule\@height\bidihl@height\@depth\bidihl@depth\@width\@tempdima}}%
+        \else
+        {\color{bidihlcolor}\rlap{\vrule\@height\bidihl@height\@depth\bidihl@depth\@width\@tempdima}}%
+        \box\@tempboxa
+        \fi
+        \def\bidihl@theword{}}
+\def\bidihl@skip#1{%
+       \if@RTL%
+          \leaders\hb@xt@\bidihl@pixel{\hss{\color{bidihlcolor}\vrule\@height\bidihl@height\@depth\bidihl@depth}\hss}%
+          \hskip#1\relax%
+        \else%
+          {\color{bidihlcolor}\leaders\hrule\@height\bidihl@height\@depth\bidihl@depth\hskip#1\relax}%
+        \fi}
+
+
+
+%% Explicit Spacing and Line Breaking
+
+\def\bidihl@space{\@ifstar\bidihl@sspace\bidihl@ispace}
+\def\bidihl@sspace#1{\vrule width\z@\nobreak\bidihl@skip{#1}\bidihl@charloop}
+\def\bidihl@ispace#1{\@tempskipa#1\relax
+        \@ifstar{\@tempswafalse\bidihl@iispace}{\@tempswatrue\bidihl@iispace}}
+\def\bidihl@iispace{\@ifnextchar[%]
+                              {\bidihl@penalty}%
+                              {\bidihl@skip\@tempskipa \bidihl@charloop}}
+\def\bidihl@penalty[#1]{\@tempcnta#1\relax
+        \if@tempswa
+                \ifnum\@tempcnta<\z@ \@tempcnta-\@tempcnta \fi
+                \ifcase\@tempcnta \or
+                        \@tempcnta\@lowpenalty \or
+                        \@tempcnta\@medpenalty \or
+                        \@tempcnta\@highpenalty \else
+                        \@tempcnta\@M \fi
+                \ifnum#1<\z@ \@tempcnta-\@tempcnta \fi \fi
+        \penalty\@tempcnta \bidihl@skip\@tempskipa \bidihl@charloop}
+
+\def\bidihl@newline{\@ifstar{\bidihl@skip{0pt plus1fil}\break \bidihl@charloop}%
+                                          {\hfil \break \bidihl@charloop}}
+
+
+
+
+
+%% Finalization
+
+\def\bidihl@end{\xdef\bidihl@aftergroup{\spacefactor\number\bidihl@spacefactor\relax}}
+\endinput
+%%
+%% End of file `bidihl.sty'.

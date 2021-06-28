@@ -1,0 +1,101 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{universalis}
+    [2014/05/04 (Bob Tennent)  Supports Universalis fonts for all LaTeX engines.]
+
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+
+\newif\ifunivrs@otf 
+\ifxetex
+  \univrs@otftrue
+\else\ifluatex
+  \univrs@otftrue
+\else  % [pdf]LaTeX
+  \univrs@otffalse
+\fi\fi
+
+\newif\ifunivrs@default \univrs@defaultfalse
+\newif\ifunivrs@condensed \univrs@condensedfalse
+
+\newcommand*{\UniversalisADFStd@scale}{1}
+\DeclareOptionX{scaled}{\renewcommand*{\UniversalisADFStd@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\UniversalisADFStd@scale}{#1}}
+
+\DeclareOptionX{sfdefault}{\univrs@defaulttrue}
+\DeclareOptionX{type1}{\univrs@otffalse}
+\DeclareOptionX{condensed}{\univrs@condensedtrue}
+
+\ProcessOptionsX\relax
+
+\ifunivrs@otf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes,mweights}
+\fi
+
+
+\ifunivrs@otf
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+        Ligatures = TeX ,
+        Scale     = \UniversalisADFStd@scale ,
+        Extension = .otf }
+  \ifunivrs@condensed
+    \setsansfont
+        [ UprightFont    = *-Cond ,
+          ItalicFont     = *-CondItalic ,
+          BoldFont       = *-BoldCond , 
+          BoldItalicFont = *-BoldCondIt ]
+        {UniversalisADFStd}
+  \else
+    \setsansfont
+        [ UprightFont    = *-Regular ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-Bold , 
+          BoldItalicFont = *-BoldItalic ]
+        {UniversalisADFStd}
+  \fi
+  % grab current family in case of subsequent change:
+  \let\univrsfamily\sfdefault  
+  \ifunivrs@default\renewcommand*\familydefault{\univrsfamily}\fi
+  \newfontfamily\univrs
+        [ UprightFont    = *-Regular ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-Bold , 
+          BoldItalicFont = *-BoldItalic ]
+      {UniversalisADFStd}
+  \newfontfamily\univrscondensed
+        [ UprightFont    = *-Cond ,
+          ItalicFont     = *-CondItalic ,
+          BoldFont       = *-BoldCond , 
+          BoldItalicFont = *-BoldCondIt ]
+      {UniversalisADFStd}
+\else % type1
+  \ifunivrs@condensed
+    \def\mdseries@sf{c}
+    \def\bfseries@sf{bc}
+  \else
+    \def\mdseries@sf{m}
+    \def\bfseries@sf{b}
+  \fi
+  \def\univrsfamily{UniversalisADFStd-LF}
+  \newcommand*\univrs{%
+     \fontfamily{\univrsfamily}\fontseries{m}\selectfont
+     \def\mdseries@sf{m}\def\bfseries@sf{b}
+  }
+  \newcommand*\univrscondensed{%
+     \fontfamily{\univrsfamily}\fontseries{c}\selectfont
+     \def\mdseries@sf{c}\def\bfseries@sf{bc}
+  }
+  \def\sfdefault{\univrsfamily}
+  \ifunivrs@default
+     \edef\familydefault{\univrsfamily}
+     \edef\seriesdefault{\mdseries@sf}
+  \fi
+\fi
+
+\ifunivrs@otf
+% turn off defaults in case other fonts are selected:
+  \defaultfontfeatures{}
+\fi
+
+\endinput

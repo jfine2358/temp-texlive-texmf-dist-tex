@@ -1,0 +1,663 @@
+%%
+%% This is file `binarytree.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% binarytree.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (C) 2016 by Aleksandrina Nikolova
+%% <aayla.secura.1138@gmail.comaayla.secura.1138@gmail.com>
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either
+%% version 1.3 of this license or (at your option) any later
+%% version. The latest version of this license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3 or later is part of all distributions of
+%% LaTeX version 2005/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+\ProvidesPackage{binarytree}
+  [2016/07/25 v1.01 Binary trees using TikZ]
+\RequirePackage{tikz}
+\newdimen\BT@bbox@r@width
+\newdimen\BT@bbox@l@width
+\newdimen\BT@bbox@height
+\newdimen\BT@bbox@depth
+\newdimen\BT@bbox@current@x
+\newdimen\BT@root@width
+\newdimen\BT@root@height
+\newdimen\BT@max@final@width
+\newdimen\BT@max@final@height
+\newdimen\BT@l@final@width
+\newdimen\BT@l@final@height
+\newdimen\BT@r@final@width
+\newdimen\BT@r@final@height
+\newdimen\BT@bbox@padding@top
+\newdimen\BT@bbox@padding@bottom
+\newdimen\BT@bbox@padding@left
+\newdimen\BT@bbox@padding@right
+\newdimen\BT@sibling@distance
+\newdimen\BT@level@distance
+\newdimen\BT@label@distance
+\newif\ifBT@root@edge
+\newif\ifBT@draw@missing
+\newif\ifBT@label@every@edge
+\newif\ifBT@math@labels
+\newif\ifBT@continue@at@end
+\newif\ifBT@continue@after@turn
+\newif\ifBT@default@color@after@turn
+\newif\ifBT@sibling@distance@scales
+\newif\ifBT@level@distance@scales
+\newif\ifBT@framed
+\newif\ifBT@separate
+\newif\ifBT@external
+\newif\ifBT@auto@file@name
+\def\BT@key@is@tikz@or@error#1#2{%
+  \tikzset{binary tree/.append code={%
+      \pgfkeys{/tikz/#1/.try=#2,%
+        /pgf/#1/.lastretry=#2}}}}
+\def\BT@key@is@tikz@external@or@error#1#2{%
+  \tikzset{binary tree/externalize/.append code={%
+      \pgfkeys{/tikz/external/#1=#2}}}}
+\pgfkeys{/BT/.cd,%
+  .unknown/.code={%
+    \expandafter\BT@key@is@tikz@or@error\expandafter{%
+      \pgfkeyscurrentname}{#1}},%
+  external/.unknown/.code={%
+    \expandafter\BT@key@is@tikz@external@or@error\expandafter{%
+      \pgfkeyscurrentname}{#1}}}
+\def\@btreeset#1#2{%
+  \pgfkeyssavekeyfilterstateto{\BT@restore@pgf@key@filter}%
+  \pgfkeys{/pgf/key filters/not/.install key filter={%
+      /pgf/key filters/and={/pgf/key filters/active families}{%
+        /pgf/key filters/defined}},%
+    /BT/local option outside of scope/.install key filter handler}%
+  \pgfqkeysactivatesinglefamilyandfilteroptions{/BT/local options}{#1}{#2}%
+  \BT@restore@pgf@key@filter}
+\def\btreeset{\@btreeset{/BT}}
+\def\btreesetexternal{\@btreeset{/BT/external}}
+\pgfkeys{/BT/.cd,%
+  local options/.is family,%
+  local option outside of scope/.code={%
+    \PackageError{binarytree}{'\pgfkeyscurrentkey' only allowed %
+      locally\MessageBreak for each \string\BinaryTree}{}}}
+\def\BT@set@max@l@or@r@bbox@size#1{%
+  \BT@bbox@current@x=\z@\relax%
+  \@tempcnta=\BT@root@depth\relax%
+  \loop%
+    \ifnum\@tempcnta < \numexpr\BT@max@depth\relax%
+    \advance\@tempcnta\@ne\relax%
+    \BT@check@if@new@level\@tempcnta%
+    \csname BT@#1@xshift\endcsname\@tempcnta%
+    \csname BT@update@bbox@#1@width\endcsname%
+  \repeat}%
+\def\BT@bbox@scale@labels{%
+  \pgfmathparse{\BT@root@height / \BT@yscale}%
+  \BT@root@height\pgfmathresult pt\relax%
+  \pgfmathparse{\BT@root@width / \BT@xscale}%
+  \BT@root@width\pgfmathresult pt\relax%
+  \pgfmathparse{\BT@max@final@height / \BT@yscale}%
+  \BT@max@final@height\pgfmathresult pt\relax%
+  \pgfmathparse{\BT@max@final@width / \BT@xscale}%
+  \BT@max@final@width\pgfmathresult pt\relax%
+  \pgfmathparse{\BT@l@final@width / \BT@xscale}%
+  \BT@l@final@width\pgfmathresult pt\relax%
+  \pgfmathparse{\BT@r@final@width / \BT@xscale}%
+  \BT@r@final@width\pgfmathresult pt\relax}%
+\def\BT@bbox@scale@padding{%
+  \pgfmathparse{\BT@bbox@padding@top / \BT@yscale}%
+  \BT@bbox@padding@top\pgfmathresult pt\relax%
+  \pgfmathparse{\BT@bbox@padding@bottom / \BT@yscale}%
+  \BT@bbox@padding@bottom\pgfmathresult pt\relax%
+  \pgfmathparse{\BT@bbox@padding@left / \BT@yscale}%
+  \BT@bbox@padding@left\pgfmathresult pt\relax%
+  \pgfmathparse{\BT@bbox@padding@right / \BT@yscale}%
+  \BT@bbox@padding@right\pgfmathresult pt\relax}
+\def\BT@bbox@add@labels{%
+  \BT@bbox@scale@labels%
+  \pgfmathparse{\BT@label@distance / \BT@yscale}%
+  \ifdim\BT@root@height > \z@\relax%
+    \advance\BT@bbox@depth\dimexpr\BT@root@height%
+    + \pgfmathresult pt\relax\fi%
+  \ifdim\BT@max@final@height > \z@\relax%
+    \advance\BT@bbox@height\dimexpr\BT@max@final@height%
+    + \pgfmathresult pt\relax\fi%
+  \advance\BT@bbox@l@width\dimexpr\BT@l@final@width / 2\relax%
+  \advance\BT@bbox@r@width\dimexpr\BT@r@final@width / 2\relax%
+  \BT@set@dim@to@greater\BT@bbox@l@width{\BT@root@width / 2}%
+  \BT@set@dim@to@greater\BT@bbox@r@width{\BT@root@width / 2}}
+\def\BT@bbox@add@padding{%
+  \BT@bbox@scale@padding%
+  \advance\BT@bbox@height\dimexpr\BT@bbox@padding@top\relax%
+  \advance\BT@bbox@depth\dimexpr\BT@bbox@padding@bottom\relax%
+  \advance\BT@bbox@l@width\dimexpr\BT@bbox@padding@left\relax%
+  \advance\BT@bbox@r@width\dimexpr\BT@bbox@padding@right\relax}
+\pgfkeys{/BT/.cd,%
+  grow/.is choice,%
+  grow/up/.code={\def\BT@adjust@bbox@sides{%
+      \BT@bbox@add@labels%
+      \BT@bbox@add@padding}%
+    \def\BT@grow@direction{up}%
+    \pgfkeys{/BT/.cd,%
+      /tikz/binary tree/.append style={grow=up},
+      root label anchor=below,
+      left label anchor=north east,
+      right label anchor=north west,
+      final label anchor=above}},%
+  grow/down/.code={\def\BT@adjust@bbox@sides{%
+      \BT@bbox@add@labels
+      \BT@swap@dims\BT@bbox@depth\BT@bbox@height%
+      \BT@bbox@add@padding}%
+    \def\BT@grow@direction{down}%
+    \pgfkeys{/BT/.cd,%
+      /tikz/binary tree/.append style={grow'=down},
+      root label anchor=above,
+      left label anchor=south east,
+      right label anchor=south west,
+      final label anchor=below}},%
+  grow/left/.code={\def\BT@adjust@bbox@sides{%
+      \BT@swap@hooks\BT@xscale\BT@yscale%
+      \BT@swap@dims\BT@root@width\BT@root@height%
+      \BT@swap@dims\BT@max@final@width\BT@max@final@height%
+      \BT@swap@dims\BT@l@final@width\BT@l@final@height%
+      \BT@swap@dims\BT@r@final@width\BT@r@final@height%
+      \BT@bbox@add@labels%
+      \@tempdima\BT@bbox@depth\relax%
+      \BT@bbox@depth\BT@bbox@l@width\relax%
+      \BT@bbox@l@width\BT@bbox@height\relax%
+      \BT@bbox@height\BT@bbox@r@width\relax%
+      \BT@bbox@r@width\@tempdima\relax%
+      \BT@bbox@add@padding}%
+    \def\BT@grow@direction{left}%
+    \pgfkeys{/BT/.cd,%
+      /tikz/binary tree/.append style={grow=left},
+      root label anchor=right,
+      left label anchor=north west,
+      right label anchor=south west,
+      final label anchor=left}},%
+  grow/right/.code={\def\BT@adjust@bbox@sides{%
+      \BT@swap@hooks\BT@xscale\BT@yscale%
+      \BT@swap@dims\BT@root@width\BT@root@height%
+      \BT@swap@dims\BT@max@final@width\BT@max@final@height%
+      \BT@swap@dims\BT@l@final@width\BT@l@final@height%
+      \BT@swap@dims\BT@r@final@width\BT@r@final@height%
+      \BT@bbox@add@labels%
+      \BT@swap@dims\BT@bbox@depth\BT@bbox@l@width%
+      \BT@swap@dims\BT@bbox@height\BT@bbox@r@width%
+      \BT@bbox@add@padding}%
+    \def\BT@grow@direction{right}%
+    \pgfkeys{/BT/.cd,%
+      /tikz/binary tree/.append style={grow'=right},
+      root label anchor=left,
+      left label anchor=north east,
+      right label anchor=south east,
+      final label anchor=right}},%
+  root label anchor/.initial=,%
+  left label anchor/.initial=,%
+  right label anchor/.initial=,%
+  final label anchor/.initial=,%
+  root edge/.is if={BT@root@edge},%
+  root edge/.append code={%
+    \ifBT@root@edge%
+      \def\BT@effective@level##1{%
+        \ifnum\numexpr##1\relax < \numexpr 3\relax\expandafter\@firstoftwo%
+        \else\expandafter\@secondoftwo\fi{1}{(##1-1)}}%
+    \else\def\BT@effective@level##1{##1}\fi},%
+  draw missing/.is if={BT@draw@missing},%
+  draw missing/.append code={%
+    \ifBT@draw@missing%
+      \def\BT@set@min@bbox@size{\BT@set@max@l@or@r@bbox@size{l}%
+        \BT@set@max@l@or@r@bbox@size{r}%
+        \let\BT@l@xshift\@gobble%
+        \let\BT@r@xshift\@gobble%
+        \let\BT@update@bbox@l@width\relax%
+        \let\BT@update@bbox@r@width\relax}%
+      \tikzset{binary tree/default/.style={binary tree/empty={BT@default}}}%
+    \else\let\BT@set@min@bbox@size\relax%
+      \tikzset{binary tree/default/.style={missing}}\fi},%
+  label on every edge/.is if={BT@label@every@edge},%
+  math labels/.is if={BT@math@labels},%
+  math labels/.append code={%
+    \ifBT@math@labels\def\BT@wrap@label##1{\(##1\)}%
+    \else\def\BT@wrap@label##1{##1}\fi},%
+  continue at path end/.is if={BT@continue@at@end},%
+  continue after turn/.is if={BT@continue@after@turn},%
+  default color/.code={\colorlet{BT@default}{#1}},%
+  default color/.value required,%
+  default color after turn/.is if={BT@default@color@after@turn},%
+  xscale/.store in=\BT@xscale,%
+  xscale/.append style={/tikz/binary tree/.append style={xscale=#1}},%
+  xscale/.value required,%
+  yscale/.store in=\BT@yscale,%
+  yscale/.append style={/tikz/binary tree/.append style={yscale=#1}},%
+  yscale/.value required,%
+  scale/.forward to=/BT/xscale,%
+  scale/.forward to=/BT/yscale,%
+  label distance/.code={\BT@label@distance=\dimexpr#1\relax},%
+  label distance/.value required,%
+  sibling distance/.code={\BT@sibling@distance=\dimexpr#1\relax},%
+  sibling distance/.value required,%
+  level distance/.code={\BT@level@distance=\dimexpr#1\relax},%
+  level distance/.value required,%
+  sibling distance scales/.is if={BT@sibling@distance@scales},%
+  sibling distance scales/.append code={%
+    \ifBT@sibling@distance@scales%
+      \def\BT@current@sibling@distance##1{%
+        \BT@sibling@distance/(\BT@effective@level{##1})}%
+    \else\def\BT@current@sibling@distance##1{\BT@sibling@distance}\fi},%
+  level distance scales/.is if={BT@level@distance@scales},%
+  level distance scales/.append code={%
+    \ifBT@level@distance@scales%
+      \def\BT@current@level@distance##1{%
+        \BT@level@distance/(\BT@effective@level{##1})}%
+    \else\def\BT@current@level@distance##1{\BT@level@distance}\fi},%
+  top padding/.code={\BT@bbox@padding@top=#1\relax},%
+  top padding/.value required,%
+  bottom padding/.code={\BT@bbox@padding@bottom=#1\relax},%
+  bottom padding/.value required,%
+  left padding/.code={\BT@bbox@padding@left=#1\relax},%
+  left padding/.value required,%
+  right padding/.code={\BT@bbox@padding@right=#1\relax},%
+  right padding/.value required,%
+  framed/.is if={BT@framed},%
+  defaults/.style={/BT/.cd,%
+    default color=black,%
+    default color after turn=true,%
+    grow=up,%
+    root edge=false,%
+    draw missing=false,
+    label on every edge=false,%
+    math labels=false,%
+    continue at path end=true,%
+    continue after turn=true,%
+    scale=1,%
+    sibling distance=40mm,%
+    level distance=20mm,%
+    sibling distance scales=true,%
+    level distance scales=true,%
+    label distance=10pt,%
+    top padding=3pt,%
+    bottom padding=3pt,%
+    left padding=3pt,%
+    right padding=3pt,%
+    framed=false},%
+  defaults/.value forbidden,%
+  separate/.is if={BT@separate},%
+  separate/.append code={%
+    \ifBT@separate\else\pgfkeys{/BT/external=false}\fi},%
+  external/.is if={BT@external},%
+  external/.append code={%
+    \ifBT@external\pgfkeys{/BT/separate=true}\fi}}
+\pgfkeys{/BT/external/.cd,%
+  use automatic file name/.is if={BT@auto@file@name},%
+  file name/.style={/tikz/binary tree/externalize/.append code={%
+      \tikzsetnextfilename{#1}}},%
+  file name/.belongs to family=/BT/local options,%
+  file name/.value required}
+\tikzset{binary tree/.style={%
+    level/.style={level distance=\BT@current@level@distance{##1},%
+      sibling distance=\BT@current@sibling@distance{##1}},%
+    parent anchor=center,child anchor=center,%
+    label distance=\BT@label@distance,every node/.style={outer sep=0pt,%
+      inner sep=0pt}},%
+  binary tree/externalize/.code={%
+    \tikzexternalenable\tikzsetfigurename{binary-tree_}}}
+\pgfqkeys{/BT}{%
+  defaults,%
+  separate=false,%
+  external=false,%
+  external/use automatic file name=false}
+\def\BT@edge@label#1#2#3#4#5{%
+  [style=edge from parent, color=#3]%
+    (\tikzparentnode\tikzparentanchor) --%
+      node[anchor=#2,inner sep=\BT@label@distance/2] {#1}%
+        (\tikzchildnode\tikzchildanchor)}
+\def\BT@edge@no@label#1#2#3{%
+  [style=edge from parent, color=#1]%
+    (\tikzparentnode\tikzparentanchor) --%
+      (\tikzchildnode\tikzchildanchor)}
+\tikzset{binary tree/.cd,%
+  root/.style n args={3}{%
+    label={[text=#3]#2:#1},binary tree/empty={#3}},%
+  root/.value required,%
+  child/.style n args={3}{%
+    edge from parent macro=\BT@edge@label{#1}{#2}{#3},%
+    every child node/.style={}},%
+  child/.value required,%
+  final child/.style n args={3}{%
+    edge from parent macro=\BT@edge@no@label{#3},%
+    every child node/.style={label={[text=#3]#2:#1}}},%
+  final child/.value required,%
+  empty/.style={%
+    edge from parent macro=\BT@edge@no@label{#1},%
+    every child node/.style={}},%
+  empty/.value required}
+\def\BT@message#1{\pgfinterruptpicture #1\par\endpgfinterruptpicture}
+\def\BT@message#1{}
+\def\BT@gobble@till@nil#1\@nil{}
+\def\BT@endgroup@let#1#2{%
+  \expandafter\endgroup\expandafter\def\expandafter#1\expandafter{#2}}
+\def\BT@app@to@hook#1#2{\expandafter\def\expandafter#1\expandafter{#1#2}}
+\def\BT@eapp@to@hook#1#2{\edef#1{\unexpanded\expandafter{#1}#2}}
+\def\BT@if#1{\csname if#1\endcsname\expandafter\@firstoftwo%
+  \else\expandafter\@secondoftwo\fi}
+\def\BT@if@blank#1{\BT@if@blank@i#1\@nil}
+\def\BT@if@blank@i#1{\ifx\@nil#1\expandafter\@firstoftwo%
+  \else\expandafter\expandafter\expandafter\@secondoftwo\expandafter%
+    \BT@gobble@till@nil\fi}
+\def\BT@strip@prefix#1#2{%
+  \begingroup%
+  \def\@@suffix#1##1\@nil{##1}%
+  \edef#2{\unexpanded\expandafter\expandafter\expandafter{%
+      \expandafter\@@suffix#2\@nil}}%
+  \BT@endgroup@let#2#2}
+\def\BT@set@to@dim#1#2#3{%
+  \begingroup%
+  \setbox0\hbox{#3}%
+  \expandafter\endgroup\expandafter#2\the#10\relax}
+\def\BT@set@to@width{\BT@set@to@dim\wd}
+\def\BT@set@to@height{\BT@set@to@dim\ht}
+\def\BT@set@to@depth{\BT@set@to@dim\dp}
+\def\BT@set@to@total@height#1#2{%
+  \BT@set@to@height#1{#2}%
+  \begingroup%
+  \BT@set@to@depth#1{#2}%
+  \expandafter\endgroup\expandafter\advance\expandafter#1\the#1\relax}
+\def\BT@swap@hooks#1#2{%
+  \expandafter\let\expandafter#1\expandafter#2%
+    \expandafter\def\expandafter#2\expandafter{#1}}
+\def\BT@swap@dims#1#2{%
+  \expandafter#1\expandafter\the#2\expandafter\relax%
+    \expandafter#2\the#1\relax}
+\def\BT@set@dim@to@greater#1#2{%
+  #1\dimexpr\ifdim\dimexpr#1\relax < \dimexpr#2\relax#2\else#1\fi\relax}
+\def\BT@set@dim@to@smaller#1#2{%
+  #1\dimexpr\ifdim\dimexpr#1\relax < \dimexpr#2\relax#1\else#2\fi\relax}
+\def\BT@extract@rgb@color@specs#1#2{%
+  \begingroup%
+  \extractcolorspecs{#1}{\tmp@mod}{\tmp@col}%
+  \convertcolorspec{\tmp@mod}{\tmp@col}{rgb}{\tmp@col}%
+  \BT@endgroup@let#2\tmp@col}
+\def\BT@at@to@dash#1{\BT@at@to@dash@i#1\@nil}
+\def\BT@at@to@dash@i @#1{\ifx\@nil#1\else-#1\expandafter\BT@at@to@dash@i\fi}
+\def\BT@anchor@or@default#1#2{%
+  \BT@if@blank{#1}{\pgfkeysvalueof{/BT/#2 label anchor}}{#1}}
+\def\BT@color@or@default#1{\BT@if@blank{#1}{BT@default}{#1}}
+\def\BT@if@child@is@outer#1{\BT@if@child@is@outer@i#1\@nil}
+\def\BT@if@child@is@outer@i @#1@#2{%
+  \ifx#1#2\expandafter\BT@if@child@is@outer@i\expandafter @\expandafter#2%
+  \else\expandafter\BT@if@child@is@outer@ii\expandafter#2\fi}
+\def\BT@if@child@is@outer@ii#1{%
+  \ifx\@nil#1\expandafter\@firstoftwo%
+  \else\expandafter\expandafter\expandafter\@secondoftwo%
+    \expandafter\BT@gobble@till@nil\fi}
+\def\BT@check@if@new@level#1{%
+  \ifcsname level \the\numexpr#1\relax exists\endcsname\else%
+    \BT@new@level{#1}%
+    \csname level \the\numexpr#1\relax exists\expandafter\endcsname\fi}
+\def\BT@new@level#1{%
+  \BT@message{adding new level: \the\numexpr#1\relax}%
+  \pgfmathparse{\BT@current@level@distance{#1}}%
+  \advance\BT@bbox@height\pgfmathresult pt\relax%
+  \BT@message{added \pgfmathresult pt to bounding box height}}
+\def\BT@l@xshift{\BT@xshift-}
+\def\BT@r@xshift{\BT@xshift+}
+\def\BT@xshift#1#2{%
+  \pgfmathparse{\BT@current@sibling@distance{#2} / 2}%
+  \advance\BT@bbox@current@x #1\pgfmathresult pt\relax%
+  \BT@message{current x coordinate is \the\BT@bbox@current@x}}
+\def\BT@update@bbox@l@width{%
+  \@tempdima=-\BT@bbox@current@x\relax%
+  \BT@set@dim@to@greater\BT@bbox@l@width\@tempdima}
+\def\BT@update@bbox@r@width{%
+  \BT@set@dim@to@greater\BT@bbox@r@width\BT@bbox@current@x}
+\def\BT@save@final@child@size#1#2#3{%
+  \BT@set@to@width\@tempdima{%
+    \pgfinterruptpicture#3\endpgfinterruptpicture}%
+  \BT@set@to@total@height\@tempdimb{%
+    \pgfinterruptpicture#3\endpgfinterruptpicture}%
+  \BT@set@dim@to@greater\BT@max@final@width\@tempdima%
+  \BT@set@dim@to@greater\BT@max@final@height\@tempdimb%
+  \BT@if@child@is@outer{#2}{%
+    \csname BT@#1@final@width\endcsname\@tempdima\relax%
+    \csname BT@#1@final@height\endcsname\@tempdimb\relax}{}}
+\def\BT@process@next@path#1,{%
+  \ifx\@nil#1\relax\expandafter\@firstoftwo%
+  \else\expandafter\@secondoftwo\fi{}{%
+    \BT@file@name@new@path%
+    \BT@bbox@current@x=\z@\relax%
+    \def\BT@current@child{@}%
+    \def\BT@current@side{}%
+    \def\BT@current@level{\BT@root@depth}%
+    \BT@if@blank{#1}{}{\BT@process@next@subpath#1!\@nil!}%
+    \BT@process@next@path}}
+\def\BT@process@next@subpath#1!{%
+  \ifx\@nil#1\relax\expandafter\@firstoftwo%
+  \else\expandafter\@secondoftwo\fi{%
+    \BT@if{BT@continue@at@end}{%
+      \BT@message{continuing last path, starting at \BT@current@child}%
+      \BT@set@subpath@style c::::\@nil}{}}{%
+    \BT@if@blank{#1}{}{%
+      \BT@set@subpath@style#1::::\@nil}%
+    \BT@process@next@subpath}}
+\def\BT@set@subpath@style#1:#2:#3:#4:#5\@nil{%
+  \BT@message{setting style (#2, #3, #4) for subpath #1,
+    starting at \BT@current@child}%
+  \BT@file@name@append@style{#1}{#2}{#3}{#4}%
+  \edef\tmp@hook{\noexpand\BT@set@next@style{\BT@current@child}{%
+      \BT@current@level}\unexpanded{{#2}}{#3}{#4}{\BT@current@side}%
+    \BT@if@blank{#1}{{}}{#1}s}%
+  \tmp@hook\@nil}%
+\def\BT@set@next@style#1#2#3#4#5#6#7{%
+  \BT@message{previous: #1, went: #6, going #7, depth:
+    \the\numexpr#2\relax/\BT@max@depth}%
+  \ifnum\numexpr#2\relax = \numexpr\BT@max@depth\relax%
+    \expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi%
+    {\BT@terminate@path@style{#1}{#2}{#6}}%
+    {\ifcsname BT@go@#6@#7\endcsname%
+      \expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi%
+      {\csname BT@go@#6@#7\endcsname{#1}{#2}{#3}{#4}{#5}}%
+      {\PackageError{binarytree}{Invalid path: only l, r, c or s allowed}{}}}}
+\def\BT@terminate@path@style#1#2#3{%
+  \edef\BT@current@child{#1}%
+  \edef\BT@current@level{\the\numexpr#2\relax}%
+  \def\BT@current@side{#3}%
+  \BT@gobble@till@nil}
+\def\BT@go@@c{%
+  \BT@terminate@path@style{@}{\BT@root@depth}{}}
+\def\BT@go@l@c{\BT@continue{l}}
+\def\BT@go@r@c{\BT@continue{r}}
+\let\BT@go@@s\BT@go@@c
+\def\BT@go@l@s#1#2{\BT@terminate@path@style{#1}{#2}{l}}
+\def\BT@go@r@s#1#2{\BT@terminate@path@style{#1}{#2}{r}}
+\def\BT@go@@#1#2#3#4#5{%
+  \BT@set@root@style{#3}{#4}{#5}%
+  \BT@if{BT@label@every@edge}{%
+    \BT@set@next@style{@}{\BT@root@depth}{#3}{#4}{#5}{}}{%
+    \BT@set@next@style{@}{\BT@root@depth}{}{#4}{}{}}}
+\def\BT@go@@l{\BT@go@l@or@r{l}}
+\def\BT@go@@r{\BT@go@l@or@r{r}}
+\let\BT@go@l@l\BT@go@@l
+\let\BT@go@r@r\BT@go@@r
+\def\BT@go@l@{\BT@stay@here{l}}
+\def\BT@go@r@{\BT@stay@here{r}}
+\def\BT@go@r@l{\BT@turn{r}{l}}
+\def\BT@go@l@r{\BT@turn{l}{r}}
+\def\BT@continue#1#2#3#4#5#6{%
+  \BT@if{BT@label@every@edge}{%
+    \BT@set@next@style{#2}{#3}{#4}{#5}{#6}#1#1c}{%
+    \BT@set@next@style{#2}{#3}{}{#5}{}#1#1c}}
+\def\BT@turn#1#2#3#4#5#6#7{%
+  \BT@if{BT@continue@after@turn}{%
+    \@tempdimb=\BT@bbox@current@x\relax%
+    \BT@if{BT@default@color@after@turn}{%
+      \BT@set@next@style{#3}{#4}{}{}{#7}#1c\@nil}{%
+      \BT@set@next@style{#3}{#4}{}{#6}{#7}#1c\@nil}%
+    \BT@bbox@current@x=\@tempdimb\relax}{}%
+  \BT@go@l@or@r{#2}{#3}{#4}{#5}{#6}{#7}}
+\def\BT@stay@here#1#2#3#4#5#6{%
+  \BT@set@child@style{#1}{#2}{#3}{#4}{#5}{#6}%
+  \BT@if{BT@label@every@edge}{%
+    \BT@set@next@style{#2}{#3}{#4}{#5}{#6}#1}{%
+    \BT@set@next@style{#2}{#3}{}{#5}{}#1}}
+\def\BT@go@l@or@r#1#2#3#4#5#6{%
+  \BT@set@child@style{#1}{#2#1@}{#3+1}{#4}{#5}{#6}%
+  \BT@if{BT@label@every@edge}{%
+    \BT@set@next@style{#2#1@}{#3+1}{#4}{#5}{#6}#1}{%
+    \BT@set@next@style{#2#1@}{#3+1}{}{#5}{}#1}}
+\def\BT@set@root@style#1#2#3{%
+  \BT@set@to@width\BT@root@width{\pgfinterruptpicture%
+    \BT@wrap@label{#1}\endpgfinterruptpicture}%
+  \BT@set@to@total@height\BT@root@height{\pgfinterruptpicture%
+    \BT@wrap@label{#1}\endpgfinterruptpicture}%
+  \BT@set@root@style@i{@}{\BT@wrap@label{#1}}{\BT@color@or@default{#2}}{#3}}
+\def\BT@set@child@style#1#2#3#4#5#6{%
+  \BT@check@if@new@level{#3}%
+  \csname BT@#1@xshift\endcsname{#3}%
+  \csname BT@update@bbox@#1@width\endcsname%
+  \BT@if@blank{#4}{\BT@if@blank{#5}{%
+      \BT@set@default@if@missing{#2}}{%
+      \BT@set@empty@style{#2}{\BT@color@or@default{#5}}}}{%
+    \ifnum\numexpr#3\relax = \numexpr\BT@max@depth\relax%
+      \BT@set@final@style{#1}{#2}{#3}{#4}{#5}{#6}%
+    \else\BT@set@inter@style{#1}{#2}{#3}{#4}{#5}{#6}\fi}}
+\def\BT@set@inter@style#1#2#3#4#5#6{%
+  \csname BT@set@inter@style@#1\endcsname{#2}{%
+    \BT@wrap@label{#4}}{\BT@color@or@default{#5}}{#6}}
+\def\BT@set@final@style#1#2#3#4#5#6{%
+  \BT@save@final@child@size{#1}{#2}{\BT@wrap@label{#4}}%
+  \BT@set@final@style@i{#2}{%
+    \BT@wrap@label{#4}}{\BT@color@or@default{#5}}{#6}}
+\def\BT@set@root@style@i#1#2#3#4{%
+  \BT@message{setting style (#2, #3,
+    \BT@anchor@or@default{#4}{root}) for root}%
+  \ifcsname#1 styled\endcsname\else\csname#1 styled\expandafter\endcsname\fi%
+  \tikzset{binary tree/#1/.style={binary tree/root={#2}{%
+        \BT@anchor@or@default{#4}{root}}{#3}}}}
+\def\BT@set@inter@style@l#1#2#3#4{%
+  \BT@message{setting style (#2, #3,
+    \BT@anchor@or@default{#4}{left}) for left child #1}%
+  \ifcsname#1 styled\endcsname\else\csname#1 styled\expandafter\endcsname\fi%
+  \tikzset{binary tree/#1/.style={binary tree/child={#2}{%
+        \BT@anchor@or@default{#4}{left}}{#3}}}}
+\def\BT@set@inter@style@r#1#2#3#4{%
+  \BT@message{setting style (#2, #3,
+    \BT@anchor@or@default{#4}{right}) for right child #1}%
+  \ifcsname#1 styled\endcsname\else\csname#1 styled\expandafter\endcsname\fi%
+  \tikzset{binary tree/#1/.style={binary tree/child={#2}{%
+        \BT@anchor@or@default{#4}{right}}{#3}}}}
+\def\BT@set@final@style@i#1#2#3#4{%
+  \BT@message{setting style (#2, #3,
+    \BT@anchor@or@default{#4}{final}) for final child #1}%
+  \ifcsname#1 styled\endcsname\else\csname#1 styled\expandafter\endcsname\fi%
+  \tikzset{binary tree/#1/.style={binary tree/final child={#2}{%
+        \BT@anchor@or@default{#4}{final}}{#3}}}}
+\def\BT@set@empty@style#1#2{%
+  \BT@message{setting empty style (#2) for child #1}%
+  \ifcsname#1 styled\endcsname\else\csname#1 styled\expandafter\endcsname\fi%
+  \tikzset{binary tree/#1/.style={binary tree/empty={#2}}}}
+\def\BT@set@default@if@missing#1{%
+  \BT@message{setting default style for child #1}%
+  \ifcsname#1 styled\endcsname\else%
+    \tikzset{binary tree/#1/.style={binary tree/empty={BT@default}}}%
+    \csname#1 styled\expandafter\endcsname\fi}
+\def\BT@file@name@init{%
+  \BT@extract@rgb@color@specs{BT@default}{\@@tmp}%
+  \edef\BT@file@name{%
+    btree-\the\numexpr\BT@max@depth\relax% prefix and depth
+    _\BT@grow@direction%                   grow direction
+    \ifBT@root@edge _edge\fi%              root edge?
+    _\@@tmp%                               default color
+    _\number\BT@level@distance%            level distance in sp
+    \ifBT@level@distance@scales%
+      -scaled\fi%                          level distance scales
+    _\number\BT@sibling@distance%          sibling distance in sp
+    \ifBT@sibling@distance@scales%
+      -scaled\fi%                          sibling distance scales
+    _\number\BT@label@distance%            label distance in sp
+    _\BT@xscale%                           x-scale
+    _\BT@yscale}}%                         y-scale
+\def\BT@file@name@new@path{\BT@eapp@to@hook\BT@file@name{_}}
+\def\BT@file@name@append@style#1#2#3#4{%
+  \BT@if@blank{#3}{\def\@@tmp{}}{%
+    \BT@extract@rgb@color@specs{#3}{\@@tmp}}%
+  \BT@eapp@to@hook\BT@file@name{%
+    -#1%                                        subpath
+    -\BT@if@blank{#2}{}{%                       label
+       \ifBT@math@labels MATH\else#2\fi}%
+    -#4%                                        anchor
+    -\@@tmp}}%                                  color
+\def\BT@file@name@set{%
+  \ifBT@auto@file@name%
+    \if\relax\detokenize\expandafter{\tikzexternal@nextfile}\relax%
+      \expandafter\tikzsetnextfilename\expandafter{\BT@file@name}\fi\fi}
+\def\BT@draw@tree@children#1#2{%
+  \ifnum\numexpr#2\relax = \numexpr\BT@max@depth\relax\else%
+    child[\ifcsname#1r@ styled\endcsname binary tree/#1r@\else%
+      binary tree/default\fi] {node (btree\BT@at@to@dash{#1r@}) {}% right
+        \BT@draw@tree@children{#1r@}{#2+1} }%
+    child[\ifcsname#1l@ styled\endcsname binary tree/#1l@\else%
+      binary tree/default\fi] {node (btree\BT@at@to@dash{#1l@}) {}% left
+        \BT@draw@tree@children{#1l@}{#2+1} }\fi}
+\def\BT@draw@tree{%
+  \ifBT@root@edge%
+    \advance\BT@bbox@height\BT@level@distance\relax%
+    \BT@adjust@bbox@sides%
+    \edef\BT@tree{%
+      \noexpand\node[\ifcsname @ styled\endcsname binary tree/@\fi] (btree-root) {}%
+      child[\ifcsname @ styled\endcsname binary tree/@\fi] {%
+        node {} \BT@draw@tree@children{@}{\BT@root@depth}}}%
+    \clip (-\BT@bbox@l@width,-\BT@bbox@depth)%
+      rectangle (\BT@bbox@r@width,\BT@bbox@height);%
+    \ifBT@framed\draw (current bounding box.south west)%
+      rectangle (current bounding box.north east);\fi%
+    \BT@tree;%
+  \else\BT@adjust@bbox@sides%
+    \edef\BT@tree{%
+      \noexpand\node[\ifcsname @ styled\endcsname binary tree/@\fi] (btree-root) {}%
+      \BT@draw@tree@children{@}{\BT@root@depth}}%
+    \clip (-\BT@bbox@l@width,-\BT@bbox@depth)%
+      rectangle (\BT@bbox@r@width,\BT@bbox@height);%
+    \ifBT@framed\draw (current bounding box.south west)%
+      rectangle (current bounding box.north east);\fi%
+    \BT@tree;%
+  \fi}
+\def\BinaryTree{\@ifnextchar[\@BinaryTree{\@BinaryTree[]}}
+\def\@BinaryTree[#1]#2#3{%
+  \begingroup%
+  \BT@bbox@r@width=\z@\relax%
+  \BT@bbox@l@width=\z@\relax%
+  \BT@bbox@height=\z@\relax%
+  \BT@bbox@depth=\z@\relax%
+  \BT@root@width=\z@\relax%
+  \BT@root@height=\z@\relax%
+  \BT@max@final@width=\z@\relax%
+  \BT@max@final@height=\z@\relax%
+  \BT@l@final@width=\z@\relax%
+  \BT@l@final@height=\z@\relax%
+  \BT@r@final@width=\z@\relax%
+  \BT@r@final@height=\z@\relax%
+  \pgfqkeys{/BT}{#1}%
+  \ifBT@root@edge\def\BT@max@depth{#3+1}\def\BT@root@depth{1}%
+  \else\def\BT@max@depth{#3}\def\BT@root@depth{0}\fi%
+  \BT@set@min@bbox@size%
+  \BT@file@name@init%
+  \BT@process@next@path#2,\@nil,%
+  \ifBT@separate\ifBT@external%
+    \tikzset{binary tree/externalize}\BT@file@name@set\fi%
+    \begin{tikzpicture}[binary tree]%
+      \BT@draw@tree%
+    \end{tikzpicture}%
+  \else\begin{scope}[binary tree]%
+      \BT@draw@tree%
+    \end{scope}\fi%
+  \endgroup}
+\endinput
+%%
+%% End of file `binarytree.sty'.

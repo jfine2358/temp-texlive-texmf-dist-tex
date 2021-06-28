@@ -1,0 +1,272 @@
+%%
+%% This is file `phffullpagefigure.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% phffullpagefigure.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (C) 2016 by Philippe Faist <philippe.faist@bluewin.ch>
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.3 of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3 or later is part of all distributions of LaTeX version
+%% 2005/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[2005/12/01]
+\ProvidesPackage{phffullpagefigure}
+    [2016/08/15 v1.0 phffullpagefigure package]
+\RequirePackage{etoolbox}
+\RequirePackage{ifoddpage}
+\RequirePackage{afterpage}
+\RequirePackage{placeins}
+\newcounter{phffpf@internal@pending}
+\setcounter{phffpf@internal@pending}{0}
+\def\phffpfFloatBarrier{\FloatBarrier}
+\newenvironment{fullpagefigure}[1][b]{%
+  \addtocounter{phffpf@internal@pending}{1}%
+  \phffpfFloatBarrier%
+  %[YYY]% -- debugging [where is a space being inserted?]
+  \xdef\phffpf@val@pageside{\phffpf@side@}%
+  \gdef\phffpf@val@captionopt{}%
+  \gdef\phffpf@val@caption{}%
+  \gdef\phffpf@val@label{}%
+  \gdef\phffpf@val@placement{#1}%
+  \gdef\phffpf@val@capmaxheight{\paperheight}%
+  \gdef\phffpf@val@figcontents{}%
+  \if@twoside%
+    \xdef\phffpf@val@pageside{\phffpf@side@odd}%
+  \else\fi%
+  \begingroup%
+  \let\figcontents\phffpf@impl@figcontents%
+  \let\figpageside\phffpf@impl@figpageside%
+  \let\caption\phffpf@impl@caption%
+  \let\label\phffpf@impl@label%
+  \let\figplacement\phffpf@impl@placement%
+  \let\figcapmaxheight\phffpf@impl@capmaxheight%
+  \phffpf@provide@figpdf%
+  \ignorespacesafterend%
+  \ignorespaces%
+}
+{%
+  \ifhmode\unskip\fi%
+  \endgroup%
+  \phffpf@takecareofplacingfigure%
+  \phfpf@useignorespacesandallpars%
+}
+\def\phfpf@useignorespacesandallpars#1\ignorespaces\fi{%
+  #1\fi\phffpf@ignorespacesandallpars}
+\def\phffpf@ignorespacesandallpars{%
+  \begingroup%
+  \catcode`\^^M=10\relax%
+  \catcode`\^^J=10\relax%
+  \@ifnextchar\par%
+    {\endgroup\expandafter\phffpf@ignorespacesandallpars\@gobble}%
+    {\endgroup}%
+}
+\def\fullpagefigurecaptionfmt#1{%
+  \figurename\nobreakspace\thefigure\nobreakspace%
+  (\csname fullpagefigurecaptionfmt@paren@#1\endcsname)%
+}
+\def\fullpagefigurecaptionfmt@paren@O{on facing page} % for odd page figures
+\def\fullpagefigurecaptionfmt@paren@E{on next page}   % for even page figures
+\def\fullpagefigurecaptionfmt@paren@x{on next page}   % for next-page figures
+\newtoks\phffpf@tmp@toks
+\long\def\phffpf@impl@figcontents#1{%
+  \phffpf@tmp@toks={#1}%
+  \xdef\phffpf@val@figcontents{\the\phffpf@tmp@toks}%
+  \ignorespaces%
+}
+\def\phffpf@side@odd{O}
+\def\phffpf@side@even{E}
+\def\phffpf@side@{x}
+\def\phffpf@impl@figpageside#1{%
+  \ifcsname phffpf@side@#1\endcsname%
+    \xdef\phffpf@val@pageside{\csname phffpf@side@#1\endcsname}%
+  \else%
+    \PacakgeError{phffullpagefigure}{Unknown page side designation:
+      '#1'. Please use 'odd', 'even', or '' for no preference.}%
+  \fi%
+  \ignorespaces%
+}
+\def\phffpf@NOARG{}
+\def\phffpf@test@NOARG{\phffpf@NOARG}
+\newcommand\phffpf@impl@caption[2][\phffpf@NOARG]{%
+  \gdef\phffpf@val@captionopt{#1}%
+  \gdef\phffpf@val@caption{#2}%
+  \ignorespaces%
+}
+\def\phffpf@impl@label#1{%
+  \gdef\phffpf@val@label{#1}%
+  \ignorespaces%
+}
+\def\phffpf@impl@placement#1{%
+  \gdef\phffpf@val@placement{#1}%
+  \ignorespaces%
+}
+\def\phffpf@impl@capmaxheight#1{%
+  \gdef\phffpf@val@capmaxheight{#1}%
+  \ignorespaces%
+}
+\def\phffpf@place@pending@figs@code{\phffpf@place@pending@figs@code@start}
+\def\phffpf@place@pending@figs@code@start{%
+  \gdef\phffpf@place@pending@figs@code{\phffpf@place@pending@figs@code@start}}
+\gdef\phffpf@impl@figcode#1{%
+  \expandafter\ifblank\expandafter{\csname #1@placement\endcsname}{%
+    \edef\phffpf@tmp@figplacementarg{}%
+  }{%
+    \edef\phffpf@tmp@figplacementarg{[\csname #1@placement\endcsname]}%
+  }
+  \expandafter\figure\phffpf@tmp@figplacementarg%
+  \centering%
+  \begingroup%
+  \def\fnum@figure{\fullpagefigurecaptionfmt{\csname #1@pageside\endcsname}}%
+  \expandafter\afterpage\expandafter{\csname #1@figcontents\endcsname}%
+  \expandafter\ifx\csname #1@captionopt\endcsname\phffpf@test@NOARG%
+    \expandafter\caption\expandafter{\csname #1@caption\endcsname}%
+  \else%
+    \def\phffpf@tmp@captioncmdopt{%
+      \expandafter\caption\expandafter[\csname #1@captionopt\endcsname]}%
+    \expandafter\phffpf@tmp@captioncmdopt\expandafter{\csname #1@caption\endcsname}%
+  \fi%
+  \expandafter\notblank\expandafter{\csname #1@label\endcsname}{%
+    \expandafter\label\expandafter{\csname #1@label\endcsname}%
+  }{%
+  }
+  \endgroup%
+  \endfigure%
+  \addtocounter{phffpf@internal@pending}{-1}%
+  \afterpage{%
+    \phffpf@flag@forcenextmaybequeuetoplacefiguretrue%
+    \phffpf@place@pending@figs@code%
+  }%
+}
+\def\phffpf@takecareofplacingfigure{%
+  \edef\phffpf@tmp@fixallfieldvalues{%
+    \noexpand\gdef\noexpand\phffpf@val@pageside{\expandonce\phffpf@val@pageside}%
+    \noexpand\gdef\noexpand\phffpf@val@captionopt{\expandonce\phffpf@val@captionopt}%
+    \noexpand\gdef\noexpand\phffpf@val@caption{\expandonce\phffpf@val@caption}%
+    \noexpand\gdef\noexpand\phffpf@val@label{\expandonce\phffpf@val@label}%
+    \noexpand\gdef\noexpand\phffpf@val@placement{\expandonce\phffpf@val@placement}%
+    \noexpand\gdef\noexpand\phffpf@val@capmaxheight{\expandonce\phffpf@val@capmaxheight}%
+    \noexpand\gdef\noexpand\phffpf@val@figcontents{\expandonce\phffpf@val@figcontents}%
+  }%
+  \edef\phffpf@tmp@figcodetwoargs{%
+    {\expandonce\phffpf@tmp@fixallfieldvalues}%
+    {\noexpand\phffpf@impl@figcode{phffpf@val}}%
+  }%
+  \expandafter\phffpf@maybequeuefigurecode\phffpf@tmp@figcodetwoargs%
+}
+\long\def\phffpf@maybequeuefigurecode#1#2{%
+  \ifphffpf@flag@forcenextmaybequeuetoplacefigure%
+    \phffpf@flag@forcenextmaybequeuetoplacefigurefalse
+    \phffpf@doplacefigure{#1}{#2}%
+    %
+  \else
+    \ifnum\value{phffpf@internal@pending}>1\relax%
+      \xdef\phffpf@place@pending@figs@code{%
+          \expandonce\phffpf@place@pending@figs@code%
+          \unexpanded{\phffpf@maybequeuefigurecode{#1}{#2}}%
+        }%
+        %\show\phffpf@place@pending@figs@code
+        %[figure queued:  \texttt{\detokenize{#1}}]%  -- DEBUGGING
+    \else%
+      \phffpf@doplacefigure{#1}{#2}%
+      %[figure placed: \texttt{\detokenize{#1}}]  -- DEBUGGING
+    \fi%
+  \fi%
+}
+\newif\ifphffpf@flag@forcenextmaybequeuetoplacefigure
+\phffpf@flag@forcenextmaybequeuetoplacefigurefalse
+\long\def\phffpf@doplacefigure#1#2{%
+  #1%
+  \ifx\phffpf@val@pageside\phffpf@side@%
+    \let\phffpf@tmp@doplace\@firstofone%
+  \else%
+    \ifx\phffpf@val@pageside\phffpf@side@odd%
+      %[CHECK DONE HERE/WANT ODD] % -- for debugging
+      \checkoddpage\ifoddpage%
+      %[IS ODD] % -- for debugging
+        \let\phffpf@tmp@doplace\phffpf@placecode@onotherparity%
+      \else%
+        %[IS NOT ODD] % -- for debugging
+        \let\phffpf@tmp@doplace\phffpf@placecode@onsameparity%
+      \fi%
+    \else%
+      %[CHECK DONE HERE/WANT EVEN] % -- for debugging
+      \checkoddpage\ifoddpage%
+        %[IS ODD] % -- for debugging
+        \let\phffpf@tmp@doplace\phffpf@placecode@onsameparity%
+      \else%
+        %[IS NOT ODD] % -- for debugging
+        \let\phffpf@tmp@doplace\phffpf@placecode@onotherparity%
+      \fi%
+    \fi%
+  \fi%
+  \leavevmode\hbox{}%
+  \phffpf@tmp@doplace{#1#2}%
+}
+\newdimen\phffpf@tmp@spaceleft
+\newdimen\phffpf@tmp@compareto
+\long\def\phffpf@placecode@onsameparity#1{%
+  \def\@tmpa{p}%
+  \ifx\phffpf@val@placement\@tmpa%
+    \afterpage{\vspace*{0pt}\afterpage{#1\clearpage}}%
+  \else%
+    %[PLACING FIG CODE ON SAME PARITY]% -- debugging
+    \phffpf@tmp@spaceleft=\textheight\relax%
+    \phffpf@tmp@compareto=\phffpf@val@capmaxheight\relax%
+    \advance\phffpf@tmp@spaceleft by -\pagetotal%
+    %[DIM LEFT: \the\phffpf@tmp@spaceleft]%
+    \ifdim\phffpf@tmp@spaceleft>\phffpf@tmp@compareto%
+      %[ENOUGH DIM LEFT.] % -- debugging
+      #1%\phffpf@tmp@figcode%
+    \else%
+      %[*NOT ENOUGH* DIM LEFT.] % -- debugging
+      \afterpage{\vspace*{0pt}\afterpage{#1}}%
+    \fi%
+  \fi%
+}
+\def\phffpf@placecode@onotherparity#1{%
+  %[PLACING FIG CODE ON OTHER PARITY]% -- debugging
+  \def\@tmpa{p}%
+  \ifx\phffpf@val@placement\@tmpa%
+    \afterpage{#1\clearpage}%
+  \else%
+    \afterpage{#1}%
+  \fi%
+}
+\newcommand\FlushAllFullPageFigures[1][\phffpf@clearpage]{%
+  \ifnumcomp{\value{phffpf@internal@pending}}{>}{0}{%
+    \clearpage%
+    %[page cleared.]% DEBUG
+    \FlushAllFullPageFigures[#1]% recurse again.
+  }{%
+    #1%
+  }%
+}
+\def\phffpf@clearpage{\if@twoside\cleardoublepage\else\clearpage\fi}
+\def\phffpf@provide@figpdf{}
+\newcommand\phffpf@impl@figpdf[2][]{%
+  \figcontents{\includepdf[#1]{#2}}%
+}
+\def\phffpf@do@pdfpages{%
+  \RequirePackage{pdfpages}%
+  \def\phffpf@provide@figpdf{\let\figpdf\phffpf@impl@figpdf}%
+}
+\DeclareOption{nopdfpages}{\def\phffpf@do@pdfpages{}}
+\DeclareOption*{%
+  \@unknownoptionerror%
+}
+\ProcessOptions\relax
+\phffpf@do@pdfpages
+\endinput
+%%
+%% End of file `phffullpagefigure.sty'.

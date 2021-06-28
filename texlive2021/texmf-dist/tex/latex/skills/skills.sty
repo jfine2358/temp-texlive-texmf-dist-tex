@@ -1,0 +1,325 @@
+% skills.sty
+%
+% A LaTeX2e package for preparing proficiency tests.
+
+%% skills.sty
+%% Copyright (c) 2020 Pierre-Amiel Giraud
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2003/12/01 or later.
+%
+% This work has the LPPL maintenance status "maintained".
+% 
+% This work consists of the files skills.sty and skillsdoc.tex.
+
+
+% The user's guide for skills.sty is in the file skillsdoc.tex.
+
+
+%%% Pierre-Amiel Giraud
+%%% History & Geography teacher
+%%% Chambery Middle School
+%%% 33140 Villenave d'Ornon
+%%% pierre-amiel.giraud@ac-bordeaux.fr
+
+% The newest version of this package should always be available
+% from its git repository: https://framagit.org/pagiraud/skills
+
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+\ProvidesPackage{skills}[2020/10/21 Easing the making of proficiency tests]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Different defaults if exam class is used %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\@ifclassloaded{exam}{%
+	\newcommand{\skillcounter}{question}%
+	\newcommand{\putglobalskills}{}
+	%New question function : \skillquestion
+	\usepackage{xparse}
+	\NewDocumentCommand \skillquestion {o o}
+	{
+		\IfNoValueTF{#2}
+		{\IfNoValueTF{#1}
+			{\question}
+			{\question \skills{#1}}
+		}
+		{\question[#2] \skills{#1}}
+	}
+	\NewDocumentEnvironment{skillquestions}{o}
+	{
+		\IfNoValueTF{#1}
+			{\begin{questions}}
+			{\ifthenelse{\equal{before}{\putglobalskills}}
+				{\begin{questions}
+					\globalskills{#1}
+				}
+				{\begin{questions}}
+			}
+	}
+	{
+		\IfNoValueTF{#1}
+			{\end{questions}}
+			{
+				\ifthenelse{\equal{before}{\putglobalskills}}
+				{\end{questions}}
+				{\globalskills{#1}
+				\end{questions}}
+			}
+	}
+}{%
+	\newcommand{\skillcounter}{section}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Build upon the package glossaries functionalities %
+% to ease skills evaluation.						%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Allowing to change the default counter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{iftex}
+\RequirePackage{kvoptions}
+
+\SetupKeyvalOptions{
+	family=SkillsOpt,
+	prefix=SkillsOpt@
+}
+
+\DeclareStringOption[]{counter}
+\ProcessKeyvalOptions*
+
+\ifx\SkillsOpt@counter\@empty
+\else
+	\renewcommand*{\skillcounter}{\SkillsOpt@counter}
+\fi
+
+% Allowing to avoid the making of the glossary
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newif\if@makenoidxglossaries \@makenoidxglossariesfalse
+\DeclareOption{makenoidxglossaries}{\@makenoidxglossariestrue}
+\DeclareOption{donotmakenoidxglossaries}{\@makenoidxglossariesfalse}
+\DeclareOption*{}%Ne pas charger une option inconnue
+\ExecuteOptions{makenoidxglossaries}
+
+\ProcessOptions\relax
+
+%\PassOptionsToPackage{counter=\skillcounter}{glossaries}
+\RequirePackage{glossaries}
+
+\newglossary*{skills}{}[\skillcounter]
+
+\if@makenoidxglossaries
+	% Make the glossaries with standard compilation
+	\makenoidxglossaries
+\fi
+
+\usepackage{tabularx}
+%\renewcommand{\tabularxcolumn}[1]{>m{#1}}
+% Definiton of the skill table (basically, a glossary style)
+% \renewglossarystyle{skillstable}{def} can be used to custom it.
+\newglossarystyle{skillstable}{%
+	\renewenvironment{theglossary}%
+	{%\begin{center}
+			\renewcommand{\arraystretch}{1.5}
+			%\begin{tabular}{|rp{.58\linewidth}|>{\centering\arraybackslash}p{.12\linewidth}|>{\centering\arraybackslash}p{.1\linewidth}|}}%
+			\tabularx{\linewidth}{|rX|>{\centering\arraybackslash}p{.15\linewidth}|c|}}
+			{\endtabularx
+	}%
+	\renewcommand*{\glossaryheader}{\hline%
+		\multicolumn{2}{|c|}{\descriptionname} & \pagelistname & \skilllevelname \tabularnewline\hline}%
+	\renewcommand{\glossentry}[2]{%
+		\glsentryitem{##1}\glstarget{##1}{\glossentryname{##1}} &
+		\glossentrydesc{##1}\glspostdescription\space & ##2 &\tabularnewline\hline
+	}%
+%	\renewcommand{\subglossentry}[3]{%
+%		&
+%		\glssubentryitem{##2}%
+%		\glstarget{##2}{\strut}\glossentrydesc{##2}\glspostdescription\space &
+%		##3 & \tabularnewline
+%	}%
+\renewcommand*{\glsgroupskip}{}%
+}
+
+% So that no space is left to display a glossary title
+\renewcommand{\glossarysection}[2][]{}
+
+% Print the skills table
+\newcommand{\skillstable}[1][use]{
+	\printnoidxglossary[type=skills, style=skillstable, sort=#1]}
+
+% Code to define a new skill as a new glossary entry
+\newcommand{\skilldef}[3]{\newglossaryentry{#1}{type=skills, name=#2,description={#3}}}
+
+% Code to use a defined skill as a glossary reference
+\newcommand{\skill}[1]{\gls{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Configuring the way skills are displayed along the evaluation %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Define the skills enclosement in the question
+\newcommand{\defaultskillsopening}{(}
+\newcommand{\defaultskillsclosing}{)}
+
+\newcommand{\skillsopening}{\defaultskillsopening}
+\newcommand{\skillsclosing}{\defaultskillsclosing}
+
+% A function to ease skills enclosement modification by users
+\newcommand{\skillsenclosement}[2]{
+	\renewcommand{\skillsopening}{#1}
+	\renewcommand{\skillsclosing}{#2}
+}
+
+% The separator betwenn skills in the question
+\newcommand{\skillssep}{ }
+
+% Putting it all together
+\newcommand{\multiskills}[1]{%
+	\def\nextitem{\def\nextitem{\skillssep}}%
+	\skillsopening
+	\@for \el:=#1\do{\nextitem\skill{\el}}%
+	\skillsclosing
+}
+
+% Shortcuts for the three possibilities offered for points in the exam class
+\newcommand{\bracketedskills}{\skillsenclosement{[}{]}}
+\newcommand{\nobracketedskills}{\defaultskillsenclosement}
+
+
+% Two more shortcut for displaying only skills, without any decoration
+\newcommand{\onlyskills}{\skillsenclosement{}{}}
+\newcommand{\defaultskillsenclosement}{\skillsenclosement{\defaultskillsopening}{\defaultskillsclosing}}
+\newcommand{\notonlyskills}{\defaultskillsenclosement}
+
+\usepackage{etoolbox}
+\usepackage{marginnote}
+
+\newcommand{\skills}[1]{\multiskills{#1}}
+
+\newtoggle{SkillsInMargin}
+\newtoggle{SkillsInLeftMargin}
+\newtoggle{BoxedSkills}
+
+\renewcommand*{\raggedleftmarginnote}{\raggedright}
+\renewcommand*{\raggedrightmarginnote}{\raggedleft}
+\newcommand{\skillsinmarginvadjust}[1]{\renewcommand{\marginnotevadjust}{#1}}
+
+\newcommand{\PrintingSkillsConfiguration}{
+	\iftoggle{SkillsInMargin}
+	{% If skills are to be printed in the margin
+		\iftoggle{SkillsInLeftMargin}
+		{%If skills are to be printed in the left margin
+			\reversemarginpar
+			\iftoggle{BoxedSkills}
+			{ %If skills are to be printed in a box in the left margin
+				\renewcommand{\skills}[1]{\marginnote[\fbox{\parbox{\marginparwidth}{\multiskills{##1}}}]{}}
+			}
+			{ %If skills are to be printed without a box in the left margin
+				\renewcommand{\skills}[1]{\marginnote[\multiskills{##1}]{}}
+			}
+		}
+		{ %Else : if skills are to be printed in the right margin
+			\normalmarginpar
+			\iftoggle{BoxedSkills}
+			{% If skills are to be printed in a box in the right margin
+				\renewcommand{\skills}[1]{\marginnote{\fbox{\parbox{\marginparwidth}{\multiskills{##1}}}}}
+			}
+			{% If skills are to be printed without a box in the right margin
+				\renewcommand{\skills}[1]{\marginnote{\multiskills{##1}}}
+			}
+		}
+	} % Endif
+	{% Else : skills are to be printed inline
+		\iftoggle{BoxedSkills}
+		{% If skills are to be printed inline in a box
+			\renewcommand{\skills}[1]{\fbox{\multiskills{##1}}}
+		}
+		{%If skills are to be printed inline without a box (default)
+			\renewcommand{\skills}[1]{\multiskills{##1}}
+		}
+	}
+}
+
+\newcommand{\skillsinrightmargin}{
+	\toggletrue{SkillsInMargin}
+	\togglefalse{SkillsInLeftMargin}
+	\PrintingSkillsConfiguration
+}
+
+\newcommand{\skillsinleftmargin}{
+	\toggletrue{SkillsInMargin}
+	\toggletrue{SkillsInLeftMargin}
+	\PrintingSkillsConfiguration
+}
+
+\newcommand{\skillsinmargin}{\skillsinleftmargin}
+
+\newcommand{\noskillsinmargin}{
+	\togglefalse{SkillsInMargin}
+	\PrintingSkillsConfiguration
+}
+
+\newcommand{\noskillsinrightmargin}{\noskillsinmargin}
+
+\newcommand{\boxedskills}{
+	\toggletrue{BoxedSkills}
+	\onlyskills
+	\skillsinmarginvadjust{-\baselineskip}
+	\PrintingSkillsConfiguration
+}
+
+\newcommand{\noboxedskills}{
+	\togglefalse{BoxedSkills}
+	\defaultskillsenclosement
+	\skillsinmarginvadjust{0pt}
+	\PrintingSkillsConfiguration
+}
+
+% The case of global skills
+\newcommand*{\glsgobblenumber}[1]{}
+% \renewcommand*{\glsgobblenumber}[1]{#1}% uncomment for testing
+
+\newcommand*{\globalskill}[2][]{%
+	\glsdoifexists{#2}%
+	{%
+		%     \def\@glsnumberformat{glsnumberformat}% DELETED
+		\def\@glsnumberformat{glsgobblenumber}% NEW
+		\edef\@gls@counter{\csname glo@#2@counter\endcsname}%
+		\setkeys{glossadd}{#1}%
+		\@gls@saveentrycounter
+		\@do@wrglossary{#2}%
+	}%
+}
+
+\newcommand{\globalskills}[1]{%
+	\@for \el:=#1\do{\globalskill{\el}}%
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Localization. Work on it is needed %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% English (no localization)
+\renewcommand{\descriptionname}{Skill}
+\renewcommand{\pagelistname}{Questions}
+\newcommand{\skilllevelname}{Proficiency}
+
+% French
+\newcommand{\FrenchLocalization}{
+	\addto\captionsfrench{
+		\renewcommand{\pagelistname}{Questions}
+		\renewcommand{\descriptionname}{Compétence}
+		\renewcommand{\skilllevelname}{Maîtrise}
+	}
+}
+
+\@ifpackageloaded{polyglossia}{\FrenchLocalization}{}
+\@ifpackageloaded{babel}{\FrenchLocalization}{}
+
+\endinput

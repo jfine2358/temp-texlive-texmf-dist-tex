@@ -1,0 +1,84 @@
+%%
+%% This is file `multilang-tags.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% multilang.dtx  (with options: `pkgtags')
+%% 
+%% Copyright (C) 2016-2018 by Richard Grewe <r-g+tex@posteo.net>
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.2 of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.2 or later is part of all distributions of LaTeX version
+%% 1999/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{multilang-tags}[2018/11/02 v0.9b Filtering of multilingual macros by tags]
+
+
+
+
+\newcommand\SetTagFilter[2][accept]{%
+  \kcvml@parsepolicy{kcvml@@tagfilter}{#1}{#2}}
+\newcommand\kcvml@@tagfilter{}
+\newcommand\DefineTagFilter[3]{%
+  \kcvml@parsepolicy{kcvml@filter@@#1}{#2}{#3}}
+\newcommand\UseTagFilter[1]{%
+  \letcs\kcvml@@tagfilter{kcvml@filter@@#1}}
+\newcommand\kcvml@parsepolicy[3]{%
+  \bgroup
+  \def\kcvml@@tmptagfilter{}%
+  \pgfqkeys{kcvml/tagfilter}{#3,default/#2}%
+  \edef\do{\egroup
+    \unexpanded{\csdef{#1}}{\expandonce{\kcvml@@tmptagfilter}}}%
+  \do}
+\pgfqkeys{kcvml/tagfilter}{%
+  accept/.code={\kcvml@appendrule{#1}{\boolfalse}{\booltrue}},
+  deny/.code  ={\kcvml@appendrule{#1}{\booltrue}{\boolfalse}},
+  default/accept/.code n args={0}{\appto\kcvml@@tmptagfilter{%
+    \kcvml@applydefault{\boolfalse}}},
+  default/deny/.code n args={0}{\appto\kcvml@@tmptagfilter{%
+    \kcvml@applydefault{\booltrue}}},
+}
+\newcommand\kcvml@appendrule[3]{%
+  \bgroup
+  \def\kcvml@@ruletags{}%
+  \forcsvlist{\listadd{\kcvml@@ruletags}}{#1}%
+  \expandafter\egroup
+  \expandafter\listadd\expandafter\kcvml@@tmptagfilter\expandafter{%
+    \expandafter\kcvml@applyrule\expandafter{\kcvml@@ruletags}{#2}{#3}}}
+\appto\multilang@hook@processargs{%
+  \ifbool{multilang@@disablable}%
+    {\eappto{\multilang@@keys}{%
+      \noexpand\pgfqkeys{\multilang@@cekey}{%
+        tags/.code={\noexpand\kcvml@applyfilter{##1}}}}}
+    {}}
+\newcommand\kcvml@applyfilter[1]{%
+  \ifbool{multilang@cmd@@disabled}{}{%
+  \boolfalse{kcvml@@match}%
+  \def\do##1{%
+    ##1{#1}%
+    \ifbool{kcvml@@match}{\listbreak}{}}%
+  \dolistloop{\kcvml@@tagfilter}}}
+\newbool{kcvml@@match}
+\newcommand\kcvml@applyrule[4]{%
+  \forcsvlist{\kcvml@applyrule@i{#1}{#2}{#3}}{#4}}
+\newcommand\kcvml@applyrule@i[4]{%
+  \if !\@car#4\@nil
+    \expandafter\kcvml@applyrule@ii\expandafter{\@cdr#4\@nil}{#1}{#3}%
+  \else
+    \kcvml@applyrule@ii{#4}{#1}{#2}\fi}
+\newcommand\kcvml@applyrule@ii[3]{%
+  \ifinlist{#1}{\empty #2}%
+    {#3{multilang@cmd@@disabled}\booltrue{kcvml@@match}}{}}
+\newcommand\kcvml@applydefault[2]{%
+  #1{multilang@cmd@@disabled}}
+\endinput
+%%
+%% End of file `multilang-tags.sty'.

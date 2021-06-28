@@ -1,0 +1,1187 @@
+%%
+%% This is file `keyfloat.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% keyfloat.dtx  (with options: `package')
+%% This is a generated file.
+%% Copyright 2016 Brian Dunn
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{keyfloat}
+    [2019/03/21 v2.00 Key/value interface for floats and subfloats.]
+
+
+
+
+\@ifpackageloaded{tocdata}{
+    \@ifpackagelater{tocdata}{2019/03/21}{}{
+        \PackageError{keyfloat}
+        {%
+            The tocdata package is out of date.\MessageBreak
+            Update to tocdata v2.02 2019/03/21 or later\MessageBreak
+            to use use this version of keyfloat%
+        }
+        {%
+            Please update the tocdata package.  It's worth it!%
+        }
+    }
+}{}
+\newcommand*{\KFLT@@prohibitpackage}[2]{%
+\@ifpackageloaded{#1}
+{
+    \PackageError{keyfloat}
+    {%
+        The keyfloat package conflicts with the #1\MessageBreak
+        package. Remove #1 to use keyfloat.\MessageBreak
+        Alternative(s):\MessageBreak
+        \space\space#2%
+    }
+    {%
+        Keyfloat uses the caption, subcaption, newfloat, and wrapfig packages.%
+    }
+}{}
+}
+\newcommand*{\KFLT@prohibitpackage}[2]{
+    \KFLT@@prohibitpackage{#1}{#2}
+    \AtBeginDocument{\KFLT@@prohibitpackage{#1}{#2}}
+}
+\KFLT@prohibitpackage{floatrow}{caption and subcaption}
+\KFLT@prohibitpackage{subfig}{subcaption}
+\KFLT@prohibitpackage{subfigure}{subcaption}
+\KFLT@prohibitpackage{subfloat}{subcaption}
+\KFLT@prohibitpackage{float}{newfloat}
+\KFLT@prohibitpackage{floatflt}{wrapfig}
+\RequirePackage{etoolbox}[2011/01/03]%
+\RequirePackage{xparse}
+\RequirePackage{xkeyval}
+\RequirePackage{graphicx}
+\RequirePackage{caption}[2010/10/31]% v3.2 to support \phantomcaption
+\RequirePackage{subcaption}
+\RequirePackage{calc}
+\RequirePackage{rotating}
+\RequirePackage{placeins}
+\RequirePackage{wrapfig}
+
+\PassOptionsToPackage{expand}{gettitlestring}
+
+
+
+
+\ProvideDocumentEnvironment{tablehere}{}
+  {\bigbreak\noindent\minipage{\linewidth}\def\@captype{table}}
+  {\endminipage\bigbreak}
+
+\ProvideDocumentEnvironment{figurehere}{}
+  {\bigbreak\noindent\minipage{\linewidth}\def\@captype{figure}}
+  {\endminipage\bigbreak}
+
+
+
+\newcounter{KFLT@numcols}
+
+\newcounter{KFLT@thiscol}
+
+\newlength{\KFLT@rowboxwidth}
+
+
+\newboolean{KFLT@cont}
+\define@key{KFLT@keys}{cont}[true]{\setboolean{KFLT@cont}{#1}}
+\newcommand{\KFLT@c}{}
+\newboolean{KFLT@cstar}
+\define@key{KFLT@keys}{c}{%
+    \renewcommand{\KFLT@c}{#1}\setboolean{KFLT@cstar}{false}%
+}
+\define@key{KFLT@keys}{cstar}{%
+    \renewcommand{\KFLT@c}{#1}\setboolean{KFLT@cstar}{true}%
+}
+\define@key{KFLT@keys}{sc}{%
+    \renewcommand{\KFLT@sc}{#1}%
+    \setboolean{KFLT@scgiven}{true}%
+}
+\newcommand{\KFLT@sc}{}
+\newboolean{KFLT@scgiven}
+\newcommand*{\KFLT@type}{}
+\define@key{KFLT@keys}{l}{\renewcommand{\KFLT@l}{#1}}
+\newcommand*{\KFLT@l}{}
+\define@key{KFLT@keys}{ap}{\renewcommand{\KFLT@ap}{#1}}
+\newcommand*{\KFLT@ap}{}
+\define@key{KFLT@keys}{af}{\renewcommand{\KFLT@af}{#1}}
+\newcommand*{\KFLT@af}{}
+\define@key{KFLT@keys}{al}{\renewcommand{\KFLT@al}{#1}}
+\newcommand*{\KFLT@al}{}
+\define@key{KFLT@keys}{as}{\renewcommand{\KFLT@as}{#1}}
+\newcommand*{\KFLT@as}{}
+\define@key{KFLT@keys}{aup}{\renewcommand{\KFLT@aup}{#1}}
+\newcommand*{\KFLT@aup}{}
+\define@key{KFLT@keys}{auf}{\renewcommand{\KFLT@auf}{#1}}
+\newcommand*{\KFLT@auf}{}
+\define@key{KFLT@keys}{aul}{\renewcommand{\KFLT@aul}{#1}}
+\newcommand*{\KFLT@aul}{}
+\define@key{KFLT@keys}{aus}{\renewcommand{\KFLT@aus}{#1}}
+\newcommand*{\KFLT@aus}{}
+\newcommand*{\KFLT@textalign}{}
+\newcommand{\KFLT@t}{}
+\providecommand{\tdartisttextjustify}{}
+\providecommand{\tdartisttextcenter}{}
+\providecommand{\tdartisttextleft}{}
+\providecommand{\tdartisttextright}{}
+\providecommand{\tdauthortextjustify}{}
+\providecommand{\tdauthortextcenter}{}
+\providecommand{\tdauthortextleft}{}
+\providecommand{\tdauthortextright}{}
+\providecommand{\tdartistjustify}{}
+\providecommand{\tdartistcenter}{}
+\providecommand{\tdartistleft}{}
+\providecommand{\tdartistright}{}
+\providecommand{\tdauthorjustify}{}
+\providecommand{\tdauthorcenter}{}
+\providecommand{\tdauthorleft}{}
+\providecommand{\tdauthorright}{}
+\define@key{KFLT@keys}{t}{%
+    \renewcommand{\KFLT@t}{#1}%
+    \renewcommand{\KFLT@textalign}{}%
+}
+\define@key{KFLT@keys}{tc}{%
+    \renewcommand{\KFLT@t}{#1}%
+    \renewcommand{\KFLT@textalign}{\centering}%
+}
+\define@key{KFLT@keys}{tr}{%
+    \renewcommand{\KFLT@t}{#1}%
+    \renewcommand{\KFLT@textalign}{\raggedleft}%
+}
+\define@key{KFLT@keys}{tl}{%
+    \renewcommand{\KFLT@t}{#1}%
+    \renewcommand{\KFLT@textalign}{\raggedright}%
+}
+\define@key{KFLT@keys}{lw}{%
+    \renewcommand{\KFLT@lw}{#1}%
+    \setlength{\KFLT@w}{0pt}%
+}
+\newcommand*{\KFLT@lw}{}
+\define@key{KFLT@keys}{w}{%
+    \setlength{\KFLT@w}{#1}%
+    \renewcommand{\KFLT@lw}{}%
+}
+\newlength{\KFLT@w}
+\define@key{KFLT@keys}{h}{\setlength{\KFLT@h}{#1}}
+\newlength{\KFLT@h}
+\define@key{KFLT@keys}{s}{\renewcommand{\KFLT@s}{#1}}
+\newcommand*{\KFLT@s}{1}
+\define@key{KFLT@keys}{r}{\renewcommand{\KFLT@r}{#1}}
+\newcommand*{\KFLT@r}{0}
+\define@key{KFLT@keys}{f}[true]{\setboolean{KFLT@f}{#1}}
+\newboolean{KFLT@f}
+
+\define@key{KFLT@keys}{ft}[true]{\setboolean{KFLT@ft}{#1}}
+\newboolean{KFLT@ft}
+
+\define@key{KFLT@keys}{stretch}{\renewcommand{\KFLT@stretch}{#1}}
+\newcommand*{\KFLT@stretch}{1}
+
+\define@key{KFLT@keys}{mo}{\setlength{\KFLT@mo}{#1}}
+\newlength{\KFLT@mo}
+
+\define@key{KFLT@keys}{wp}{\renewcommand{\KFLT@wp}{#1}}
+\newcommand{\KFLT@wp}{O}
+
+\define@key{KFLT@keys}{va}{\renewcommand{\KFLT@va}{#1}}
+\newcommand{\KFLT@va}{c}
+
+
+\newcounter{KFLT@keyfloatdepth}
+\setcounter{KFLT@keyfloatdepth}{0}
+
+\newboolean{KFLT@inkeysubfloats}
+\setboolean{KFLT@inkeysubfloats}{false}
+
+
+\newboolean{KFLT@subgrpcont}{}
+\define@key{KFLT@subgrpkeys}{cont}[true]{%
+    \setboolean{KFLT@subgrpcont}{#1}%
+}
+
+\newcommand{\KFLT@subgrpc}{}
+
+\newboolean{KFLT@subgrpcstar}
+\define@key{KFLT@subgrpkeys}{c}{%
+    \renewcommand{\KFLT@subgrpc}{#1}\setboolean{KFLT@subgrpcstar}{false}%
+}
+\define@key{KFLT@subgrpkeys}{cstar}{%
+    \renewcommand{\KFLT@subgrpc}{#1}\setboolean{KFLT@subgrpcstar}{true}%
+}
+\define@key{KFLT@subgrpkeys}{sc}{%
+    \renewcommand{\KFLT@subgrpsc}{#1}%
+    \setboolean{KFLT@subgrpscgiven}{true}%
+}
+
+\newcommand{\KFLT@subgrpsc}{}
+
+\newboolean{KFLT@subgrpscgiven}
+
+\newcommand*{\KFLT@subgrptype}{}
+
+\define@key{KFLT@subgrpkeys}{l}{\renewcommand{\KFLT@subgrpl}{#1}}
+\newcommand*{\KFLT@subgrpl}{}
+\newcommand*{\KFLT@subgrptextalign}{}
+\newcommand{\KFLT@subgrpt}{}
+\define@key{KFLT@subgrpkeys}{t}{%
+    \renewcommand{\KFLT@subgrpt}{#1}%
+    \renewcommand{\KFLT@subgrptextalign}{}%
+}
+\define@key{KFLT@subgrpkeys}{tc}{%
+    \renewcommand{\KFLT@subgrpt}{#1}%
+    \renewcommand{\KFLT@subgrptextalign}{\centering}%
+}
+\define@key{KFLT@subgrpkeys}{tl}{%
+    \renewcommand{\KFLT@subgrpt}{#1}%
+    \renewcommand{\KFLT@subgrptextalign}{\raggedright}%
+}
+\define@key{KFLT@subgrpkeys}{tr}{%
+    \renewcommand{\KFLT@subgrpt}{#1}%
+    \renewcommand{\KFLT@subgrptextalign}{\raggedleft}%
+}
+\define@key{KFLT@subgrpkeys}{ap}{\renewcommand{\KFLT@subgrpap}{#1}}
+\newcommand*{\KFLT@subgrpap}{}
+\define@key{KFLT@subgrpkeys}{af}{\renewcommand{\KFLT@subgrpaf}{#1}}
+\newcommand*{\KFLT@subgrpaf}{}
+\define@key{KFLT@subgrpkeys}{al}{\renewcommand{\KFLT@subgrpal}{#1}}
+\newcommand*{\KFLT@subgrpal}{}
+\define@key{KFLT@subgrpkeys}{as}{\renewcommand{\KFLT@subgrpas}{#1}}
+\newcommand*{\KFLT@subgrpas}{}
+
+\define@key{KFLT@subgrpkeys}{aup}{\renewcommand{\KFLT@subgrpaup}{#1}}
+\newcommand*{\KFLT@subgrpaup}{}
+\define@key{KFLT@subgrpkeys}{auf}{\renewcommand{\KFLT@subgrpauf}{#1}}
+\newcommand*{\KFLT@subgrpauf}{}
+\define@key{KFLT@subgrpkeys}{aul}{\renewcommand{\KFLT@subgrpaul}{#1}}
+\newcommand*{\KFLT@subgrpaul}{}
+\define@key{KFLT@subgrpkeys}{aus}{\renewcommand{\KFLT@subgrpaus}{#1}}
+\newcommand*{\KFLT@subgrpaus}{}
+
+
+\newlength{\KFLT@imagewidth}
+
+\newlength{\KFLT@boxwidth}
+\newcommand*{\KFLT@findwidths}{%
+    \ifbool{KFLT@ft}% tight frame?
+        {\setlength{\KFLT@boxwidth}{\linewidth - 2\KFLTtightframewidth}}%
+        {% not tight frame
+            \ifbool{KFLT@f}% loose frame?
+                {\setlength{\KFLT@boxwidth}{\linewidth - 2\KFLTlooseframewidth}}%
+                {\setlength{\KFLT@boxwidth}{\linewidth}}% no frame
+        }% not tight frame
+    \ifdimgreater{\KFLT@w}{0pt}%
+        {\setlength{\KFLT@imagewidth}{\KFLT@w}}%
+        {% width not given
+            \ifcsempty{\KFLT@lw}%
+                {\setlength{\KFLT@imagewidth}{\KFLT@boxwidth}}%
+                {\setlength{\KFLT@imagewidth}{\KFLT@lw\KFLT@boxwidth}}%
+        }% width not given
+}
+\newcommand{\KFLTtightframe}[1]{%
+    \setlength{\fboxsep}{0pt}%
+    \setlength{\fboxrule}{.4pt}%
+    \fbox{#1}%
+}
+
+\newlength{\KFLTtightframewidth}
+\setlength{\KFLTtightframewidth}{.4pt}
+\newcommand{\KFLTlooseframe}[1]{%
+    \setlength{\fboxsep}{3pt}%
+    \setlength{\fboxrule}{.4pt}%
+    \fbox{#1}%
+}
+\newlength{\KFLTlooseframewidth}
+\setlength{\KFLTlooseframewidth}{3.4pt}
+\newcommand{\KFLT@frame}[1]
+{%
+    \ifbool{KFLT@ft}%
+        {\KFLTtightframe{#1}}%
+        {% not tightframe
+            \ifbool{KFLT@f}%
+                {\KFLTlooseframe{#1}}%
+                {#1}% no frame
+        }% not looseframe
+}
+\newcommand{\KFLT@findenvboxwidth}{%
+    \settowidth{\KFLTimageboxwidth}{\usebox{\KFLT@envbox}}%
+    \ifbool{KFLT@ft}%
+        {\addtolength{\KFLTimageboxwidth}{2\KFLTtightframewidth}}%
+        {% not tightframe
+            \ifbool{KFLT@f}%
+                {\addtolength{\KFLTimageboxwidth}{2\KFLTlooseframewidth}}%
+                {}% no frame
+        }% not looseframe
+}
+\NewDocumentCommand{\KFLT@onefigureimage}{m}%
+{%
+    \begin{lrbox}{\KFLT@envbox}%
+    \ifdefempty{\KFLT@lw}%
+    {% not linewidth
+        \ifdimgreater{\KFLT@w}{0pt}%
+        {% width is given
+            \ifdimgreater{\KFLT@h}{0pt}%
+            {% w and h
+                \includegraphics%
+                [scale=\KFLT@s,%
+                width=\KFLT@imagewidth,height=\KFLT@h]{#1}%
+            }% w and h
+            {% only w
+                \includegraphics%
+                [scale=\KFLT@s,width=\KFLT@imagewidth]{#1}%
+            }% only w
+        }% width is given
+        {% width is not given
+            \ifdimgreater{\KFLT@h}{0pt}%
+                {\includegraphics[scale=\KFLT@s,height=\KFLT@h]{#1}}%
+                {\includegraphics[scale=\KFLT@s]{#1}}%
+        }% width is not given
+    }% not linewidth
+    {% linewidth given
+        \includegraphics[scale=\KFLT@s,width=\KFLT@imagewidth]{#1}%
+    }%
+    \end{lrbox}%
+    \unskip%
+    \KFLT@findenvboxwidth%
+    \begin{turn}{\KFLT@r}%
+    \KFLT@frame{\usebox{\KFLT@envbox}}%
+    \unskip%
+    \end{turn}%
+}
+
+\NewDocumentCommand{\KFLT@dosimplecaption}{m m m}
+{%
+    \unskip%
+    \IfBooleanTF{#1}% star?
+        {\IfValueTF{#2}{\caption*[#2]{#3}}{\caption*{#3}}}%
+        {\IfValueTF{#2}{\caption[#2]{#3}}{\caption{#3}}}%
+}
+\@ifpackageloaded{tocdata}
+{% tocdata loaded
+\newcommand*{\KFLT@@docaption}[6]{%
+\addvspace{\smallskipamount}%
+\ifcsempty{KFLT@#6t}{%
+    \IfBooleanTF{#3}%
+    {%
+        \csuse{caption#1}*[#4]{#5}%
+            []%
+            [\csuse{KFLT@#6a#2p}]%
+            {\csuse{KFLT@#6a#2f}}%
+            {\csuse{KFLT@#6a#2l}}%
+            [\csuse{KFLT@#6a#2s}]%
+    }{%
+        \csuse{caption#1}[#4]{#5}%
+            []%
+            [\csuse{KFLT@#6a#2p}]%
+            {\csuse{KFLT@#6a#2f}}%
+            {\csuse{KFLT@#6a#2l}}%
+            [\csuse{KFLT@#6a#2s}]%
+    }%
+}{%
+    \ifcsstring{KFLT@#6textalign}{}{\csuse{td#1textjustify}}{}%
+    \ifcsstring{KFLT@#6textalign}{\centering}{\csuse{td#1textcenter}}{}%
+    \ifcsstring{KFLT@#6textalign}{\raggedleft}{\csuse{td#1textright}}{}%
+    \ifcsstring{KFLT@#6textalign}{\raggedright}{\csuse{td#1textleft}}{}%
+    \IfBooleanTF{#3}%
+    {%
+        \csuse{caption#1}*[#4]{#5}%
+            [\csuse{KFLT@#6t}]%
+            [\csuse{KFLT@#6a#2p}]%
+            {\csuse{KFLT@#6a#2f}}%
+            {\csuse{KFLT@#6a#2l}}%
+            [\csuse{KFLT@#6a#2s}]%
+    }{%
+        \csuse{caption#1}[#4]{#5}%
+            [\csuse{KFLT@#6t}]%
+            [\csuse{KFLT@#6a#2p}]%
+            {\csuse{KFLT@#6a#2f}}%
+            {\csuse{KFLT@#6a#2l}}%
+            [\csuse{KFLT@#6a#2s}]%
+    }%
+}%
+}
+\NewDocumentCommand{\KFLT@docaption}{s o m m}
+{%
+    \ifcsempty{KFLT@#4al}%
+    {% figure w/o artist
+        \ifcsempty{KFLT@#4aul}%
+        {% figure w/o artist or author
+            \KFLT@dosimplecaption{#1}{#2}{#3}%
+        }% figure w/o artist or author
+        {% figure w/ author
+            \KFLT@@docaption{author}{u}{#1}{#2}{#3}{#4}%
+        }% figure w/ author
+    }% figure w/o artist
+    {% figure with an artist
+        \KFLT@@docaption{artist}{}{#1}{#2}{#3}{#4}%
+    }% figure with an artist
+}% KFLT@tocdata
+}% tocdata loaded
+{% no tocdata
+\NewDocumentCommand{\KFLT@docaption}{s o m m}
+{%
+    \KFLT@dosimplecaption{#1}{#2}{#3}%
+    \ifcsempty{KFLT@#4al}%
+    {%
+        \ifcsempty{KFLT@#4aul}%
+        {}%
+        {% yes author
+            \ifcsempty{KFLT@#4auf}%
+                {\index{\csuse{KFLT@#4aul}}}%
+                {\index{\csuse{KFLT@#4aul}, \csuse{KFLT@#4auf}}}%
+        }% yes author
+    }% no artist
+    {% yes artist
+        \ifcsempty{KFLT@#4af}%
+            {\index{\csuse{KFLT@#4al}}}%
+            {\index{\csuse{KFLT@#4al}, \csuse{KFLT@#4af}}}%
+    }% yes artist
+}% KFLT@docaption
+}% no tocdata
+
+\newcommand{\KFLT@caption}[1]{%
+    \ifbool{KFLT@#1cstar}% starred caption?
+    {%starred caption
+        \ifcsempty{KFLT@#1c}% cstar={}?
+        {}%
+        {% non-empty starred caption
+            \ifcsempty{KFLT@#1sc}%
+            {}%
+            {% non-empty cstar and sc:
+                \edef\KFLT@listtype{\csuse{KFLT@#1type}}%
+                \addcontentsline{\csuse{ext@\KFLT@listtype}}%
+                    {\csuse{KFLT@#1type}}{\KFLT@sc}%
+            }% non-empty cstar and sc
+            \KFLT@docaption*{\csuse{KFLT@#1c}}{#1}%
+        }%
+    }% starred caption
+    {% unstarred caption
+        \ifcsempty{KFLT@#1sc}%
+        {% no short cap
+            \KFLT@docaption{\csuse{KFLT@#1c}}{#1}%
+        }% no short cap
+        {% short cap
+            \KFLT@docaption[\csuse{KFLT@#1sc}]%
+            {\csuse{KFLT@#1c}}{#1}%
+        }% short cap
+        \ifcsempty{KFLT@#1l}%
+        {}%
+        {\label{\csuse{KFLT@#1l}}}%
+    }% unstarred caption
+}
+
+
+\newcommand*{\KFLT@defaults}{%
+    \setboolean{KFLT@cont}{false}%
+    \renewcommand{\KFLT@c}{}%
+    \setboolean{KFLT@cstar}{false}%
+    \renewcommand{\KFLT@sc}{}%
+    \setboolean{KFLT@scgiven}{false}%
+    \renewcommand{\KFLT@type}{figure}%
+    \renewcommand{\KFLT@l}{}%
+    \renewcommand{\KFLT@ap}{}%
+    \renewcommand{\KFLT@af}{}%
+    \renewcommand{\KFLT@al}{}%
+    \renewcommand{\KFLT@as}{}%
+    \renewcommand{\KFLT@aup}{}%
+    \renewcommand{\KFLT@auf}{}%
+    \renewcommand{\KFLT@aul}{}%
+    \renewcommand{\KFLT@aus}{}%
+    \renewcommand{\KFLT@t}{}%
+    \renewcommand{\KFLT@textalign}{}%
+    \renewcommand{\KFLT@lw}{}%
+    \setlength{\KFLT@w}{0pt}%
+    \setlength{\KFLT@h}{0pt}%
+    \renewcommand{\KFLT@s}{1}%
+    \renewcommand{\KFLT@r}{0}%
+    \setboolean{KFLT@f}{false}%
+    \setboolean{KFLT@ft}{false}%
+    \renewcommand{\KFLT@stretch}{1}%
+    \setlength{\KFLT@mo}{-1.2ex}%
+    \renewcommand{\KFLT@wp}{O}%
+    \renewcommand{\KFLT@va}{c}%
+}
+
+
+\newcommand*{\KFLT@maybestartfloatrow}{%
+    \KFLT@maybeendfloatrow%
+    \defcounter{KFLT@thiscol}{\value{KFLT@thiscol}+1}%
+}
+
+\newcommand*{\KFLT@maybeendfloatrow}{%
+    \ifnumless{\value{KFLT@thiscol}}{\value{KFLT@numcols}}%
+    {}% thiscol < numcols
+    {% >=
+        \par%
+        \addvspace{.75\floatsep}%
+        \defcounter{KFLT@thiscol}{0}%
+    }%
+}%
+
+
+\newcommand{\KFLT@trackrows}%
+{%
+    \ifboolexpr{%
+        test {\ifnumgreater{\value{KFLT@keyfloatdepth}}{0}} or%
+        bool{KFLT@inkeysubfloats}%
+    }%
+    {% nested
+        \KFLT@maybestartfloatrow%
+        \ifnumgreater{\value{KFLT@thiscol}}{1}%
+            {\hfill}%
+            {}%
+    }% nested
+    {}% not nested
+}
+
+\newcommand{\KFLT@addtext}[1]
+{%
+    \ifcsempty{KFLT@#1t}%
+    {}% no text
+    {% text to add
+        {% local
+        \addvspace{\smallskipamount}%
+        \begin{minipage}{\linewidth}%
+        \csuse{KFLT@#1textalign}%
+        \footnotesize%
+        \setlength{\parskip}{1.5ex}%
+        \setlength{\parindent}{0em}%
+        \csuse{KFLT@#1t}%
+        \end{minipage}%
+        \par\addvspace{2ex}%
+        }% local
+    }% text to add
+}
+\newcommand{\KFLT@optionalname}[1]
+{%
+    \ifblank{#1}%
+        {}%
+        {#1~}%
+}
+\@ifpackageloaded{tocdata}
+{% tocdata loaded
+\newcommand{\KFLT@addartisttext}[1]
+{%
+    \ifcsempty{KFLT@#1al}% artist last name
+        {%
+            \ifcsempty{KFLT@#1aul}% author last name
+                {\KFLT@addtext{#1}}
+                {}%
+        }%
+        {}% fig w/ artist: text will be added by \captionartist in \KFLT@caption
+}% KFLT@addartisttext
+}% tocdata loaded
+{% tocdata not loaded
+
+\newcommand*{\KFLT@@addartisttext}[3]{%
+        \addvspace{\medskipamount}%
+    \begin{minipage}{\linewidth}%
+    #3%
+    \footnotesize\textsc{%
+        \KFLT@optionalname{\csuse{KFLT@#1a#2p}}%
+        \KFLT@optionalname{\csuse{KFLT@#1a#2f}}%
+        \csuse{KFLT@#1a#2l}%
+        \csuse{KFLT@#1a#2s}%
+    }%
+    \end{minipage}%
+    \par\addvspace{2ex}%
+}
+
+\newcommand{\KFLT@addartisttext}[1]
+{%
+    \ifcsempty{KFLT@#1al}%
+    {% artist last name not given
+        \ifcsempty{KFLT@#1aul}%
+        {}% author last name not given
+        {% author last name given
+            \KFLT@@addartisttext{#1}{u}{\raggedleft}%
+        }% author last name given
+    }% artist last name not given
+    {% artist last name given
+        \KFLT@@addartisttext{#1}{}{\centering}%
+    }%
+    \KFLT@addtext{#1}%
+}% KFLT@addartisttext
+}% tocdata not loaded
+
+\newlength{\KFLTimageboxwidth}
+
+\newsavebox{\KFLT@envbox}
+
+\NewDocumentEnvironment{KFLT@boxinner}{}
+{% keyboxinner
+    \begin{lrbox}{\KFLT@envbox}%
+    \turn{\KFLT@r}%
+    \minipage{\KFLT@imagewidth}%
+    \setlength{\parskip}{2ex}%
+    \renewcommand{\arraystretch}{\KFLT@stretch}%
+}% keyboxinner
+{% endkeyboxinner
+    \endminipage%
+    \endturn%
+    \end{lrbox}%
+    \KFLT@frame{\usebox{\KFLT@envbox}}%
+    \par%
+}% endkeyboxinner
+
+\NewDocumentCommand{\KFLT@boxkeys}{+m m}
+{%
+    \KFLT@defaults%
+    \renewcommand{\KFLT@type}{#2}%
+    \setkeys{KFLT@keys}{#1}%
+}
+
+\newcommand*{\KFLT@LWR@hook@boxouter}{}%
+
+\newenvironment*{KFLT@LWR@hook@boxouter@minipage}[2][]
+    {\minipage[#1]{#2}}
+    {\endminipage}
+
+\NewDocumentEnvironment{KFLT@boxouter}{m m}
+{% boxouter
+    \ifbool{KFLT@inkeysubfloats}%
+    {\csuse{sub\KFLT@type}{\KFLT@rowboxwidth}}% subfloat
+    {% not subfloat:
+        \ifnumgreater{\value{KFLT@keyfloatdepth}}{0}%
+        {% keyfloats
+            \ifbool{KFLT@keywrap}%
+                {\KFLT@LWR@hook@boxouter@minipage[t]{\KFLT@rowboxwidth}}%
+                {\minipage[\KFLT@va]{\KFLT@rowboxwidth}}%
+            \captionsetup*{type=\KFLT@type}%
+        }% keyfloats
+        {% not keyfloats
+            \KFLT@LWR@hook@boxouter%
+            \ifbool{KFLT@keywrap}%
+            {%
+                \par\addvspace{\baselineskip}%
+                \noindent%
+                \KFLT@LWR@hook@boxouter@minipage[t]{\linewidth}%
+                \captionsetup{type=\KFLT@type}%
+            }%
+            {% not a keywrap
+                \ifstrequal{#2}{W}%
+                {% [W]
+                    \KFLT@findwidths%
+                    \wrapfloat{\KFLT@type}{\KFLT@wp}%
+                    {\KFLT@imagewidth+2\KFLTlooseframewidth}%
+                    \renewcommand{\KFLT@lw}{}%
+                    \renewcommand{\KFLT@w}{\KFLT@imagewidth}%
+                }% [W]
+                {% not [W]
+                    \ifstrequal{#2}{M}%
+                    {% [M]
+                        \KFLT@marginfloat[\KFLT@mo]{\KFLT@type}%
+                        \captionsetup{type=\KFLT@type}%
+                    }% [M]
+                    {% not [M}
+                        \ifstrequal{#2}{H}%
+                        {% [H]
+                            \par\addvspace{\baselineskip}%
+                            \noindent\minipage[\KFLT@va]{\linewidth}%
+                            \captionsetup{type=\KFLT@type}%
+                        }% [H]
+                        {% not [H]
+                            \IfBooleanTF{#1}%
+                                {\csuse{\KFLT@type*}[#2]}%
+                                {\csuse{\KFLT@type}[#2]}%
+                        }% not [H]
+                    }% not [M]
+                }% not [W]
+            }% not keywrap
+        }% not keyfloats
+    }% not subfloat
+    \ifbool{KFLT@cont}{\ContinuedFloat}{}%
+    \KFLT@findwidths%
+    \caption@iftop{\KFLT@caption{}}{}%
+    \center\unskip%
+}% boxouter
+{% endboxouter
+    \endcenter\unskip%
+    \addvspace{\smallskipamount}%
+    \KFLT@addartisttext{}%
+    \caption@iftop{}{\KFLT@caption{}}%
+    \ifbool{KFLT@inkeysubfloats}%
+    {%
+        \csuse{endsub\KFLT@type}%
+    }% subfloat
+    {% not subfloat
+        \ifnumgreater{\value{KFLT@keyfloatdepth}}{0}% keyfloats?
+        {%
+            \endminipage%
+        }% keyfloats
+        {% not keyfloats
+            \ifbool{KFLT@keywrap}{%
+                \endKFLT@LWR@hook@boxouter@minipage%
+                \par\addvspace{\baselineskip}%
+            }%
+            {% not keywrap
+                \ifstrequal{#2}{W}%
+                {% [W]
+                    \endwrapfloat%
+                }% [W]
+                {% not[W]
+                    \ifstrequal{#2}{M}%
+                    {% [M]
+                        \endKFLT@marginfloat%
+                    }% [M]
+                    {% not [M]
+                        \ifstrequal{#2}{H}%
+                        {%
+                            \endminipage% [H]
+                            \par\addvspace{\baselineskip}%
+                        }%
+                        {% not [H]
+                            \IfBooleanTF{#1}% starred float?
+                                {\csuse{end\KFLT@type*}}%
+                                {\csuse{end\KFLT@type}}%
+                        }% not [H]
+                    }% not [M]
+                }% not [W]
+            }% not keywrap
+        }% not keyfloats
+    }% not subfloat
+}% endkeyboxouter
+
+\newcommand*{\KFLT@@ignorespaces}[1]{%
+    \ifboolexpr{%
+        test {\ifnumgreater{\value{KFLT@keyfloatdepth}}{0}} or%
+        bool{KFLT@inkeysubfloats}%
+    }{}{\csuse{#1}}%
+}
+
+\newcommand*{\KFLT@ignorespaces}{%
+    \KFLT@@ignorespaces{ignorespaces}%
+}
+
+\newcommand*{\KFLT@envignorespaces}{%
+    \KFLT@@ignorespaces{ignorespacesafterend}%
+}
+
+\NewDocumentCommand{\KFLT@keyflt}{m m m +m +m}
+{%
+    \ifcsdef{l@#3}{}{%
+        \PackageError{keyfloat}%
+        {%
+            \protect\keyflt: Invalid float type.\MessageBreak%
+            \protect\keyflt*[loc]{type}{keys/values}{contents}\MessageBreak%
+            Also, \protect\keyflt\space is not an environment
+        }%
+        {%
+            Check argument order and float type.
+        }%
+    }%
+    \KFLT@ignorespaces%
+    \KFLT@trackrows%
+    \KFLT@boxkeys{#4}{#3}%
+    \begingroup%
+    \KFLT@boxouter{#1}{#2}%
+    #5%
+    \endKFLT@boxouter%
+    \endgroup%
+    \KFLT@ignorespaces%
+}
+
+
+\NewDocumentCommand{\keyflt}{s O{tbp} m +m +m}
+{%
+    \KFLT@keyflt{#1}{#2}{#3}{#4}{%
+        \KFLT@boxinner%
+        \centering%
+        #5%
+        \endKFLT@boxinner%
+    }%
+}
+
+\def\endkeyflt{%
+    \PackageError{keyfloat}
+    {%
+        \protect\end{keyflt}:\MessageBreak
+        \protect\keyflt\space is a macro, not an environment.\MessageBreak
+        Perhaps you want the keyfloat environment instead%
+    }
+    {%
+        Use \protect\begin{keyfloat} ... \protect\end{keyfloat}.
+    }
+}
+
+
+\newcommand{\KFLT@keyfloatstart}[4]{%
+    \KFLT@envignorespaces%
+    \KFLT@boxkeys{#4}{#3}%
+    \KFLT@boxouter{#1}{#2}%
+    \KFLT@boxinner%
+}
+
+\newcommand{\KFLT@keyfloatend}{%
+    \endKFLT@boxinner%
+    \endKFLT@boxouter%
+    \KFLT@envignorespaces%
+}
+
+\NewDocumentEnvironment{keyfloat}{s O{tbp} m +m}
+{%
+    \KFLT@keyfloatstart{#1}{#2}{#3}{#4}%
+}%
+{%
+    \KFLT@keyfloatend%
+}
+
+\BeforeBeginEnvironment{keyfloat}{%
+    \KFLT@trackrows%
+}
+
+
+\NewDocumentEnvironment{keyfigure}{s O{tbp} +m}
+{%
+    \KFLT@keyfloatstart{#1}{#2}{figure}{#3}%
+}%
+{%
+    \KFLT@keyfloatend%
+}
+
+\BeforeBeginEnvironment{keyfigure}{%
+    \KFLT@trackrows%
+}
+
+
+\NewDocumentCommand{\keyfig}{s O{tbp} +m m}
+{%
+    \KFLT@keyflt{#1}{#2}{figure}{#3}{%
+        \KFLT@onefigureimage{#4}%
+    }%
+}
+
+
+\NewDocumentCommand{\keyfigbox}{s O{tbp} +m +m}
+{%
+    \KFLT@ignorespaces%
+    \KFLT@trackrows%
+    \KFLT@boxkeys{#3}{figure}%
+    \begingroup%
+    \KFLT@boxouter{#1}{#2}%
+    \KFLT@boxinner%
+    #4%
+    \endKFLT@boxinner%
+    \endKFLT@boxouter%
+    \endgroup%
+    \KFLT@ignorespaces%
+}
+
+
+\NewDocumentCommand{\keyparbox}{s O{tbp} +m +m}
+{%
+    \KFLT@ignorespaces%
+    \KFLT@trackrows%
+    \KFLT@boxkeys{#3}{figure}%
+    \renewcommand{\KFLT@c}{}%
+    \setboolean{KFLT@cstar}{true}%
+    \begingroup%
+    \KFLT@boxouter{#1}{#2}%
+    \KFLT@boxinner%
+    #4%
+    \endKFLT@boxinner%
+    \endKFLT@boxouter%
+    \endgroup%
+    \KFLT@ignorespaces%
+}
+
+
+\NewDocumentCommand{\keytab}{s O{tbp} +m +m}
+{%
+    \IfBooleanTF{#1}{%
+        \keyflt*[#2]{table}{#3}{#4}%
+    }{%
+        \keyflt[#2]{table}{#3}{#4}%
+    }%
+}
+
+
+\NewDocumentEnvironment{keytable}{s O{tbp} +m}
+{%
+    \KFLT@keyfloatstart{#1}{#2}{table}{#3}%
+}%
+{%
+    \KFLT@keyfloatend%
+}
+
+\BeforeBeginEnvironment{keytable}{%
+    \KFLT@trackrows%
+}
+
+
+\newcommand*{\KFLT@nonest}{%
+    \ifboolexpr{%
+        test {\ifnumgreater{\value{KFLT@keyfloatdepth}}{0}} or
+        bool {KFLT@inkeysubfloats}%
+    }%
+    {%
+        \PackageError{keyfloat}%
+        {%
+            Cannot nest keysubfigs or keysubtabs.\MessageBreak%
+            (Not in outer par mode.)%
+        }%
+        {%
+            The subcaption package do not support nested environments,\MessageBreak
+            so the keyfloat package cannot place a\MessageBreak
+            keysubfigs or keysubtabs environment inside another,\MessageBreak
+            or inside a keyfloats.%
+        }%
+    }%
+    {}%
+}
+
+\newcommand*{\KFLT@LWR@hook@keyfloats}{}%
+
+\newenvironment*{KFLT@LWR@hook@keyfloatsminipage}[1]
+    {\noindent\minipage{#1}}
+    {\endminipage}%
+
+\NewDocumentEnvironment{keyfloats}{s O{tbp} m}
+{%
+    \KFLT@envignorespaces%
+    \KFLT@LWR@hook@keyfloats%
+    \addtocounter{KFLT@keyfloatdepth}{1}%
+    \ifboolexpr{%
+        test {\ifstrequal{#2}{H}} or
+        test {\ifnumgreater{\value{KFLT@keyfloatdepth}}{1}} or
+        bool {KFLT@inkeysubfloats} or
+        bool {KFLT@keywrap}%
+    }%
+    {% [H] or nested
+        \ifboolexpr{%
+            test {\ifnumgreater{\value{KFLT@keyfloatdepth}}{1}} or
+            bool {KFLT@inkeysubfloats}
+        }%
+        {%
+            \KFLT@LWR@hook@keyfloatsminipage{\KFLT@rowboxwidth}%
+        }%
+        {%
+            \bigbreak%
+            \KFLT@LWR@hook@keyfloatsminipage{\linewidth}%
+        }%
+        \ifbool{KFLT@inkeysubfloats}%
+            {}%
+            {\captionsetup*{type=figure}}%
+    }% [H] or nested
+    {% figure
+        \IfBooleanTF{#1}% starred figure, two-col figure in a two-col format
+            {\begin{figure*}[#2]}%
+            {\begin{figure}[#2]}%
+    }% figure
+    \ifboolexpr{%
+        test {\ifnumgreater{\value{KFLT@keyfloatdepth}}{1}} or
+        bool {KFLT@inkeysubfloats}
+    }%
+        {\setlength{\KFLT@rowboxwidth}{.9\KFLT@rowboxwidth/\real{#3}}}%
+        {\setlength{\KFLT@rowboxwidth}{.9\linewidth/\real{#3}}}%
+    \centering%
+    \defcounter{KFLT@numcols}{#3}%
+    \defcounter{KFLT@thiscol}{0}%
+}% starting keyfloats environment
+{% ending keyfloats environment
+    \ifboolexpr{%
+        test {\ifstrequal{#2}{H}} or
+        test {\ifnumgreater{\value{KFLT@keyfloatdepth}}{1}} or
+        bool {KFLT@inkeysubfloats} or
+        bool {KFLT@keywrap}
+    }%
+    {% was [H], etc.
+        \endKFLT@LWR@hook@keyfloatsminipage%
+        \ifboolexpr{
+            test {\ifnumgreater{\value{KFLT@keyfloatdepth}}{0}} or
+            bool {KFLT@keywrap}
+        }%
+        {}{%
+            \bigbreak%
+        }%
+    }% was [H], etc.
+    {% not [H], etc.
+        \IfBooleanTF{#1}% starred figure?
+            {\end{figure*}}{\end{figure}}%
+    }% not [H], etc.
+    \addtocounter{KFLT@keyfloatdepth}{-1}%
+    \KFLT@envignorespaces%
+}
+
+\BeforeBeginEnvironment{keyfloats}{%
+    \KFLT@trackrows%
+}
+
+
+\newcommand*{\KFLT@subgrpdefaults}{%
+    \setboolean{KFLT@subgrpcont}{false}%
+    \renewcommand{\KFLT@subgrpc}{}%
+    \setboolean{KFLT@subgrpcstar}{false}%
+    \renewcommand{\KFLT@subgrpsc}{}%
+    \setboolean{KFLT@subgrpscgiven}{false}%
+    \renewcommand{\KFLT@subgrptype}{figure}%
+    \renewcommand{\KFLT@subgrpl}{}%
+    \renewcommand{\KFLT@subgrpap}{}%
+    \renewcommand{\KFLT@subgrpaf}{}%
+    \renewcommand{\KFLT@subgrpal}{}%
+    \renewcommand{\KFLT@subgrpas}{}%
+    \renewcommand{\KFLT@subgrpaup}{}%
+    \renewcommand{\KFLT@subgrpauf}{}%
+    \renewcommand{\KFLT@subgrpaul}{}%
+    \renewcommand{\KFLT@subgrpaus}{}%
+    \renewcommand{\KFLT@subgrpt}{}%
+    \renewcommand{\KFLT@subgrptextalign}{}%
+}
+
+\NewDocumentCommand{\KFLT@subfloats}{m m m +m}
+{%
+    \KFLT@envignorespaces%
+    \setkeys{KFLT@subgrpkeys}{#4}%
+    \setboolean{KFLT@inkeysubfloats}{true}%
+    \IfBooleanTF{#1}%
+        {\setlength{\KFLT@rowboxwidth}{.9\textwidth/\real{#3}}}%
+        {\setlength{\KFLT@rowboxwidth}{.9\linewidth/\real{#3}}}%
+    \ifboolexpr{%
+        test {\ifstrequal{#2}{H}} or
+        bool {KFLT@keywrap}
+    }%
+    {%
+        \bigbreak\noindent\begin{minipage}{\linewidth}%
+    }%
+    {%
+        \IfBooleanTF{#1}%
+            {\begin{\KFLT@subgrptype*}[#2]}%
+            {\begin{\KFLT@subgrptype}[#2]}%
+    }%
+    \captionsetup*{type=\KFLT@subgrptype}%
+    \ifbool{KFLT@subgrpcont}%
+        {\ContinuedFloat}%
+        {}%
+    \center\unskip%
+    \caption@iftop{\KFLT@caption{subgrp}}{}%
+    \defcounter{KFLT@numcols}{#3}%
+    \defcounter{KFLT@thiscol}{0}%
+    \begingroup%
+}
+
+\newcommand*{\KFLT@endsubfloats}[2]{%
+    \endgroup%
+    \unskip%
+    \endcenter%
+    \par\addvspace{\bigskipamount}%
+    \KFLT@addartisttext{subgrp}%
+    \caption@iftop{}{\KFLT@caption{subgrp}}%
+    \ifboolexpr{%
+        test {\ifstrequal{#2}{H}} or
+        bool{KFLT@keywrap}
+    }%
+        {\end{minipage}\bigbreak}% was [H]
+        {% not [H]:
+            \IfBooleanTF{#1}% starred?
+                {\end{\KFLT@subgrptype*}}%
+                {\end{\KFLT@subgrptype}}%
+        }% not [H]
+    \setboolean{KFLT@inkeysubfloats}{false}%
+    \KFLT@envignorespaces%
+}
+
+\newcommand*{\KFLT@LWR@hook@keysubfloats}{}
+
+\NewDocumentEnvironment{KFLT@keysubfloats}{m m m m +m}
+{%
+    \KFLT@nonest%
+    \KFLT@LWR@hook@keysubfloats%
+    \KFLT@subgrpdefaults%
+    \renewcommand{\KFLT@subgrptype}{#3}%
+    \KFLT@subfloats{#1}{#2}{#4}{#5}%
+}% the start of the environment
+{%
+    \KFLT@endsubfloats{#1}{#2}%
+}
+
+\NewDocumentEnvironment{keysubfloats}{s O{tbp} m m +m}
+{%
+    \KFLT@keysubfloats{#1}{#2}{#3}{#4}{#5}%
+}{%
+    \endKFLT@keysubfloats%
+}
+
+\NewDocumentEnvironment{keysubfigs}{s O{tbp} m +m}
+{%
+    \KFLT@keysubfloats{#1}{#2}{figure}{#3}{#4}%
+}{%
+    \endKFLT@keysubfloats%
+}
+
+\NewDocumentEnvironment{keysubtabs}{s O{tbp} m +m}
+{%
+    \KFLT@keysubfloats{#1}{#2}{table}{#3}{#4}%
+}{%
+    \endKFLT@keysubfloats%
+}
+\newsavebox{\KFLT@marginfloatbox}
+
+\NewDocumentEnvironment{KFLT@marginfloat}{O{-1.2ex} m}
+{% start
+    \FloatBarrier% keep floats in order
+    \KFLT@envignorespaces%
+    \begin{lrbox}{\KFLT@marginfloatbox}%
+    \begin{minipage}{\marginparwidth}%
+    \captionsetup{type=#2}%
+    \hbox{}\vspace*{#1}%
+    \noindent%
+}% start
+{% end
+    \end{minipage}%
+    \end{lrbox}%
+    \marginpar{\usebox{\KFLT@marginfloatbox}}%
+    \KFLT@envignorespaces%
+}% end
+\ProvideDocumentEnvironment{marginfigure}{O{-1.2ex}}
+  {\begin{KFLT@marginfloat}[#1]{figure}}
+  {\end{KFLT@marginfloat}}
+\ProvideDocumentEnvironment{margintable}{O{-1.2ex}}
+  {\begin{KFLT@marginfloat}[#1]{table}}
+  {\end{KFLT@marginfloat}}
+\newboolean{KFLT@keywrap}
+\boolfalse{KFLT@keywrap}
+\newlength{\KFLT@keywrapwidth}
+\newlength{\KFLT@keywrapparskip}
+\newlength{\KFLT@keywrapparindent}
+\DeclareDocumentEnvironment{keywrap}{m +m}
+{%
+    \par%
+    \setlength{\KFLT@keywrapwidth}{\linewidth}%
+    \addtolength{\KFLT@keywrapwidth}{-#1}%
+    \addtolength{\KFLT@keywrapwidth}{-2em}%
+    \minipage[t]{\KFLT@keywrapwidth}%
+    %
+    \setlength{\parskip}{\KFLT@keywrapparskip}%
+    \setlength{\parindent}{\KFLT@keywrapparindent}%
+    \booltrue{KFLT@keywrap}%
+}
+{%
+    \par%
+    \endminipage%
+    \hfill%
+    \begin{minipage}[t]{#1}%
+    \booltrue{KFLT@keywrap}%
+    #2%
+    \par%
+    \unskip\vspace{\smallskipamount}%
+    \end{minipage}%
+    \par%
+}
+
+\BeforeBeginEnvironment{keywrap}{%
+    \setlength{\KFLT@keywrapparskip}{\parskip}%
+    \setlength{\KFLT@keywrapparindent}{\parindent}%
+}
+\endinput
+%%
+%% End of file `keyfloat.sty'.

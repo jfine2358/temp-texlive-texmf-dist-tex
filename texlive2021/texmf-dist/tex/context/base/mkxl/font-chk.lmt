@@ -1,0 +1,452 @@
+if not modules then modules = { } end modules ['font-chk'] = {
+    version   = 1.001,
+    comment   = "companion to font-ini.mkiv",
+    author    = "Hans Hagen, PRAGMA-ADE, Hasselt NL",
+    copyright = "PRAGMA ADE / ConTeXt Development Team",
+    license   = "see context related readme files"
+}
+
+-- This is kind of old but it makes no real sense to upgrade it to for instance
+-- using delayed type 3 fonts in order to be lean and mean and cut'n'paste
+-- compliant. When this kicks one needs to fix the choice of fonts anyway! So,
+-- instead we just keep the method we use but slightly adapted to the backend
+-- of lmtx.
+
+local next = next
+local floor = math.floor
+
+local context              = context
+
+local formatters           = string.formatters
+local bpfactor             = number.dimenfactors.bp
+local fastcopy             = table.fastcopy
+local sortedkeys           = table.sortedkeys
+local sortedhash           = table.sortedhash
+
+local report               = logs.reporter("fonts")
+local report_checking      = logs.reporter("fonts","checking")
+
+local allocate             = utilities.storage.allocate
+
+local fonts                = fonts
+
+fonts.checkers             = fonts.checkers or { }
+local checkers             = fonts.checkers
+
+local fonthashes           = fonts.hashes
+local fontdata             = fonthashes.identifiers
+local fontcharacters       = fonthashes.characters
+
+local currentfont          = font.current
+local addcharacters        = font.addcharacters
+
+local helpers              = fonts.helpers
+
+local addprivate           = helpers.addprivate
+local hasprivate           = helpers.hasprivate
+local getprivateslot       = helpers.getprivateslot
+local getprivatecharornode = helpers.getprivatecharornode
+
+local otffeatures          = fonts.constructors.features.otf
+local afmfeatures          = fonts.constructors.features.afm
+
+local registerotffeature   = otffeatures.register
+local registerafmfeature   = afmfeatures.register
+
+local is_character         = characters.is_character
+local chardata             = characters.data
+
+local tasks                = nodes.tasks
+local enableaction         = tasks.enableaction
+local disableaction        = tasks.disableaction
+
+local implement            = interfaces.implement
+
+local glyph_code           = nodes.nodecodes.glyph
+
+local hpack_node           = node.hpack
+
+local nuts                 = nodes.nuts
+local tonut                = nuts.tonut
+
+local isglyph              = nuts.isglyph
+local setchar              = nuts.setchar
+
+local nextglyph            = nuts.traversers.glyph
+
+local remove_node          = nuts.remove
+local insert_node_after    = nuts.insert_after
+local insert_node_before   = nuts.insert_before
+local copy_node            = nuts.copy
+
+local actions = false
+
+-- to tfmdata.properties ?
+
+local function onetimemessage(font,char,message) -- char == false returns table
+    local tfmdata = fontdata[font]
+    local shared  = tfmdata.shared
+    if not shared then
+        shared = { }
+        tfmdata.shared = shared
+    end
+    local messages = shared.messages
+    if not messages then
+        messages = { }
+        shared.messages = messages
+    end
+    local category = messages[message]
+    if not category then
+        category = { }
+        messages[message] = category
+    end
+    if char == false then
+        return sortedkeys(category), category
+    end
+    local cc = category[char]
+    if not cc then
+        report_checking("char %C in font %a with id %a: %s",char,tfmdata.properties.fullname,font,message)
+        category[char] = 1
+    else
+        category[char] = cc + 1
+    end
+end
+
+fonts.loggers.onetimemessage = onetimemessage
+
+local fakes = {
+    MissingLowercase   = { width  = .45, height = .55, depth  =  .20 },
+    MissingUppercase   = { width  = .65, height = .70, depth  =  .25 },
+    MissingMark        = { width  = .15, height = .70, depth  = -.50 },
+    MissingPunctuation = { width  = .15, height = .55, depth  =  .20 },
+    MissingUnknown     = { width  = .45, height = .20, depth  = 0    },
+}
+
+local mapping = allocate {
+    lu = { "MissingUppercase",    "darkred"     },
+    ll = { "MissingLowercase",    "darkred"     },
+    lt = { "MissingUppercase",    "darkred"     },
+    lm = { "MissingLowercase",    "darkred"     },
+    lo = { "MissingLowercase",    "darkred"     },
+    mn = { "MissingMark",         "darkgreen"   },
+    mc = { "MissingMark",         "darkgreen"   },
+    me = { "MissingMark",         "darkgreen"   },
+    nd = { "MissingLowercase",    "darkblue"    },
+    nl = { "MissingLowercase",    "darkblue"    },
+    no = { "MissingLowercase",    "darkblue"    },
+    pc = { "MissingPunctuation",  "darkcyan"    },
+    pd = { "MissingPunctuation",  "darkcyan"    },
+    ps = { "MissingPunctuation",  "darkcyan"    },
+    pe = { "MissingPunctuation",  "darkcyan"    },
+    pi = { "MissingPunctuation",  "darkcyan"    },
+    pf = { "MissingPunctuation",  "darkcyan"    },
+    po = { "MissingPunctuation",  "darkcyan"    },
+    sm = { "MissingLowercase",    "darkmagenta" },
+    sc = { "MissingLowercase",    "darkyellow"  },
+    sk = { "MissingLowercase",    "darkyellow"  },
+    so = { "MissingLowercase",    "darkyellow"  },
+}
+
+table.setmetatableindex(mapping, { "MissingUnknown", "darkgray" })
+
+checkers.mapping = mapping
+
+-- We provide access by (private) name for tracing purposes. We also need to make
+-- sure the dimensions are known at the lua and tex end. For previous variants see
+-- the mkiv files or older lmtx files. I decided to just drop the old stuff here.
+
+function checkers.placeholder(font,char)
+    local category = chardata[char].category or "lu" -- todo: unknown
+    local fakedata = mapping[category]
+    local tfmdata  = fontdata[font]
+    local units    = tfmdata.parameters.units or 1000
+    local slant    = (tfmdata.parameters.slant or 0)/65536
+    local scale    = units/1000
+    local rawdata  = tfmdata.shared and tfmdata.shared.rawdata
+    local weight   = (rawdata and rawdata.metadata and rawdata.metadata.pfmweight or 400)/400
+    local specification = {
+        code      = "MissingGlyph",
+        scale     = scale,
+        slant     = slant,
+        weight    = weight,
+        namespace = font,
+        shapes    = { { shape = fakedata[1], color = fakedata[2] } },
+    }
+    fonts.helpers.setmetaglyphs("missing", font, char, specification)
+end
+
+function checkers.missing(head)
+    local lastfont       = nil
+    local characters     = nil
+    local found          = nil
+    local addplaceholder = checkers.placeholder -- so we can overload
+    if actions.replace or actions.decompose then
+        for n, char, font in nextglyph, head do
+            if font ~= lastfont then
+                lastfont   = font
+                characters = fontcharacters[font]
+            end
+            if font > 0 and not characters[char] and is_character[chardata[char].category or "unknown"] then
+                if actions.decompose then
+                    local c = chardata[char]
+                    if c then
+                        local s = c.specials
+                        if s and s[1] == "char" then
+                            local l = #s
+                            if l > 2 then
+                                -- check first
+                                local okay = true
+                                for i=2,l do
+                                    if not characters[s[i]] then
+                                        okay = false
+                                        break
+                                    end
+                                end
+                                if okay then
+                                    -- we work backward
+                                    local o = n -- we're not supposed to change n (lua 5.4+)
+                                    onetimemessage(font,char,"missing (decomposed)")
+                                    setchar(n,s[l])
+                                    for i=l-1,2,-1 do
+                                        head, o = insert_node_before(head,o,copy_node(n))
+                                        setchar(o,s[i])
+                                    end
+                                    goto DONE
+                                end
+                            end
+                        end
+                    end
+                end
+                if actions.replace then
+                    onetimemessage(font,char,"missing (replaced)")
+                    local f, c = addplaceholder(font,char)
+                    if f and c then
+                        setchar(n, c, f)
+                    end
+                    goto DONE
+                end
+                if actions.remove then
+                    onetimemessage(font,char,"missing (deleted)")
+                    if not found then
+                        found = { n }
+                    else
+                        found[#found+1] = n
+                    end
+                    goto DONE
+                end
+                onetimemessage(font,char,"missing (checked)")
+              ::DONE::
+            end
+        end
+    end
+    if found then
+        for i=1,#found do
+            head = remove_node(head,found[i],true)
+        end
+    end
+    return head
+end
+
+local relevant = {
+    "missing (decomposed)",
+    "missing (replaced)",
+    "missing (deleted)",
+    "missing (checked)",
+    "missing",
+}
+
+local function getmissing(id)
+    if id then
+        local list = getmissing(currentfont())
+        if list then
+            local _, list = next(getmissing(currentfont()))
+            return list
+        else
+            return { }
+        end
+    else
+        local t = { }
+        for id, d in next, fontdata do
+            local shared   = d.shared
+            local messages = shared and shared.messages
+            if messages then
+                local filename = d.properties.filename
+                if not filename then
+                    filename = tostring(d)
+                end
+                local tf = t[filename] or { }
+                for i=1,#relevant do
+                    local tm = messages[relevant[i]]
+                    if tm then
+                        for k, v in next, tm do
+                            tf[k] = (tf[k] or 0) + v
+                        end
+                    end
+                end
+                if next(tf) then
+                    t[filename] = tf
+                end
+            end
+        end
+        local l = { }
+        for k, v in next, t do
+            l[k] = sortedkeys(v)
+        end
+        return l, t
+    end
+end
+
+checkers.getmissing = getmissing
+
+do
+
+    local reported = true
+
+    callback.register("glyph_not_found",function(font,char)
+        if font > 0 then
+            if char > 0 then
+                onetimemessage(font,char,"missing")
+            else
+                -- we have a special case
+            end
+        elseif not reported then
+            report("nullfont is used, maybe no bodyfont is defined")
+            reported = true
+        end
+    end)
+
+    local loaded = false
+
+    trackers.register("fonts.missing", function(v)
+        if v then
+            enableaction("processors","fonts.checkers.missing")
+            if v == true then
+                actions = { check = true }
+            else
+                actions = utilities.parsers.settings_to_set(v)
+                if not loaded and actions.replace then
+                    metapost.simple("simplefun",'loadfile("mp-miss.mpxl");')
+                    loaded = true
+                end
+            end
+        else
+            disableaction("processors","fonts.checkers.missing")
+            actions = false
+        end
+    end)
+
+    logs.registerfinalactions(function()
+        local collected, details = getmissing()
+        if next(collected) then
+            for filename, list in sortedhash(details) do
+                logs.startfilelogging(report,"missing characters",filename)
+                for u, v in sortedhash(list) do
+                    report("%4i  %U  %c  %s",v,u,u,chardata[u].description)
+                end
+                logs.stopfilelogging()
+            end
+            if logs.loggingerrors() then
+                for filename, list in sortedhash(details) do
+                    logs.starterrorlogging(report,"missing characters",filename)
+                    for u, v in sortedhash(list) do
+                        report("%4i  %U  %c  %s",v,u,u,chardata[u].description)
+                    end
+                    logs.stoperrorlogging()
+                end
+            end
+        end
+    end)
+
+end
+
+-- for the moment here
+
+local function expandglyph(characters,index,done)
+    done = done or { }
+    if not done[index] then
+        local data = characters[index]
+        if data then
+            done[index] = true
+            local d = fastcopy(data)
+            local n = d.next
+            if n then
+                d.next = expandglyph(characters,n,done)
+            end
+            local h = d.horiz_variants
+            if h then
+                for i=1,#h do
+                    h[i].glyph = expandglyph(characters,h[i].glyph,done)
+                end
+            end
+            local v = d.vert_variants
+            if v then
+                for i=1,#v do
+                    v[i].glyph = expandglyph(characters,v[i].glyph,done)
+                end
+            end
+            return d
+        end
+    end
+end
+
+helpers.expandglyph = expandglyph
+
+-- should not be needed as we add .notdef in the engine
+
+local dummyzero = {
+ -- width    = 0,
+ -- height   = 0,
+ -- depth    = 0,
+    commands = { { "special", "" } },
+}
+
+local function adddummysymbols(tfmdata)
+    local characters = tfmdata.characters
+    if not characters[0] then
+        characters[0] = dummyzero
+    end
+ -- if not characters[1] then
+ --     characters[1] = dummyzero -- test only
+ -- end
+end
+
+local dummies_specification = {
+    name        = "dummies",
+    description = "dummy symbols",
+    default     = true,
+    manipulators = {
+        base = adddummysymbols,
+        node = adddummysymbols,
+    }
+}
+
+registerotffeature(dummies_specification)
+registerafmfeature(dummies_specification)
+
+--
+
+local function addvisualspace(tfmdata)
+    local spacechar = tfmdata.characters[32]
+    if spacechar and not spacechar.commands then
+        local w = spacechar.width
+        local h = tfmdata.parameters.xheight
+        local c = {
+            width    = w,
+            commands = { { "rule", h, w } }
+        }
+        local u = addprivate(tfmdata, "visualspace", c)
+    end
+end
+
+local visualspace_specification = {
+    name        = "visualspace",
+    description = "visual space",
+    default     = true,
+    manipulators = {
+        base = addvisualspace,
+        node = addvisualspace,
+    }
+}
+
+registerotffeature(visualspace_specification)
+registerafmfeature(visualspace_specification)

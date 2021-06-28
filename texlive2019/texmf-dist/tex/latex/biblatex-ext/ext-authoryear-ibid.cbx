@@ -1,0 +1,173 @@
+\ProvidesFile{ext-authoryear-ibid.cbx}
+  [2019/04/04 v0.7a extended biblatex authoryear-ibid
+   citation style (MW)]
+
+\blx@inputonce{ext-biblatex-aux.def}{auxiliary code for ext-biblatex}
+  {}{}{}{}
+
+\RequireCitationStyle{authoryear-ibid}
+
+\DeclareOuterCiteDelims{parencite}{\bibopenparen}{\bibcloseparen}
+
+\DeclareInnerCiteDelims{textcite}{\bibopenparen}{\bibcloseparen}
+
+\DeclareFieldFormat{extblx@innercitedelims}{%
+  \csuse{mkinner\blx@delimcontext delims}{#1}}
+\DeclareFieldFormat{extblx@innerparencitedelims}{%
+  \csuse{mkinner\blx@delimcontext delims}{#1}}
+\DeclareFieldFormat{extblx@innertextcitedelims}{#1}
+\DeclareFieldFormat{extblx@innerfootcitedelims}{%
+  \csuse{mkinner\blx@delimcontext delims}{#1}}
+
+\DeclareFieldFormat{citelabeldate}{#1}
+\DeclareFieldFormat{parencitelabeldate}{#1}
+\DeclareFieldFormat{textcitelabeldate}{#1}
+\DeclareFieldFormat{footcitelabeldate}{#1}
+
+\renewbibmacro*{cite:labeldate+extradate}{%
+  \iffieldundef{labelyear}
+    {}
+    {\printtext[extblx@inner\blx@delimcontext delims]{%
+       \printtext[bibhyperref]{%
+         \printtext[\blx@delimcontext labeldate]{%
+           \printlabeldateextra}}}}}
+
+\renewbibmacro*{textcite}{%
+  \global\boolfalse{cbx:loccit}%
+  \ifnameundef{labelname}
+    {\iffieldundef{shorthand}
+       {\usebibmacro{cite:label}%
+        \setunit{%
+          \global\booltrue{cbx:parens}%
+          \printdelim{nonameyeardelim}%
+          \csuse{extblx@citedelim@\blx@delimcontext @inner@open}}%
+        \ifnumequal{\value{citecount}}{1}
+          {\usebibmacro{prenote}}
+          {}%
+        \usebibmacro{cite:labeldate+extradate}}
+       {\usebibmacro{cite:shorthand}}}
+    {\printnames{labelname}%
+     \setunit{%
+       \global\booltrue{cbx:parens}%
+       \printdelim{nameyeardelim}%
+       \csuse{extblx@citedelim@\blx@delimcontext @inner@open}}%
+     \ifnumequal{\value{citecount}}{1}
+       {\usebibmacro{prenote}}
+       {}%
+     \iffieldundef{shorthand}
+       {\ifthenelse{\ifciteibid\AND\NOT\iffirstonpage}
+          {\usebibmacro{cite:ibid}}
+          {\iffieldundef{labelyear}
+             {\usebibmacro{cite:label}}
+             {\usebibmacro{cite:labeldate+extradate}}}}
+       {\usebibmacro{cite:shorthand}}}}
+
+\renewbibmacro*{textcite:postnote}{%
+  \ifthenelse{\iffieldundef{postnote}\OR\boolean{cbx:loccit}}
+    {\ifbool{cbx:parens}
+       {\csuse{extblx@citedelim@\blx@delimcontext @inner@close}}
+       {}}
+    {\ifbool{cbx:parens}
+       {\postnotedelim}
+       {\extpostnotedelim
+        \csuse{extblx@citedelim@\blx@delimcontext @inner@open}}%
+     \printfield{postnote}%
+     \csuse{extblx@citedelim@\blx@delimcontext @inner@close}}}
+
+\DeclareCiteCommand{\cite}[\mkoutercitedelims]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+\DeclareCiteCommand*{\cite}[\mkoutercitedelims]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{citeyear}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+\DeclareCiteCommand{\parencite}[\mkouterparencitedelims]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+\DeclareCiteCommand*{\parencite}[\mkouterparencitedelims]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{citeyear}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+\DeclareCiteCommand{\footcite}[\mkextblxfootcite]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+\DeclareCiteCommand{\footcitetext}[\mkextblxfootcitetext]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+% smartcite's delimcontext needs special attention
+% (see ext-biblatex-aux.def)
+\DeclareCiteCommand{\smartcite}[\mksmartcite]
+  {\delimcontext{\extblx@thisdelimcontext}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+\DeclareCiteCommand{\textcite}[\mkoutertextcitedelims]
+  {\boolfalse{cbx:parens}}
+  {\usebibmacro{citeindex}%
+   \iffirstcitekey
+     {\setcounter{textcitetotal}{1}}
+     {\stepcounter{textcitetotal}%
+      \textcitedelim}%
+   \usebibmacro{textcite}}
+  {\ifbool{cbx:parens}
+     {\csuse{extblx@citedelim@\blx@delimcontext @inner@close}%
+      \global\boolfalse{cbx:parens}}
+     {}}
+  {\usebibmacro{textcite:postnote}}
+
+\DeclareMultiCiteCommand{\cites}[\mkoutercitedelims]
+  {\cite}{\multicitedelim}
+\DeclareMultiCiteCommand{\parencites}[\mkouterparencitedelims]
+  {\parencite}{\multicitedelim}
+\DeclareMultiCiteCommand{\footcites}[\mkextblxfootcite]
+  {\footcite}{\multicitedelim}
+\DeclareMultiCiteCommand{\footcitetexts}[\mkextblxfootcitetext]
+  {\footcitetext}{\multicitedelim}
+\DeclareMultiCiteCommand{\smartcites}[\mksmartcite]
+  {\smartcite}{\multicitedelim}
+\DeclareMultiCiteCommand{\textcites}[\mkoutertextcitedelims]
+  {\textcite}{}
+
+\DeclareFieldFormat{bbx@introcitelabeldate}{#1}
+\DeclareFieldFormat{extblx@innerbbx@introcitedelims}{%
+  \csuse{mkinner\blx@delimcontext delims}{#1}}
+
+\endinput
+%
+% This file is part of the biblatex-ext bundle.
+% biblatex-ext is released under the LaTeX Project Public License v1.3c
+% or later.
+%
+% A complete list of files included in that package can be found in
+% README.md or - failing that - in ext-standard.bbx.
+%
+% Official releases of this package are on CTAN
+%   https://www.ctan.org/pkg/biblatex-ext
+% development takes place on GitHub
+%   https://github.com/moewew/biblatex-ext
+%

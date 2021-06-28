@@ -1,0 +1,98 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ClearSans}
+    [2014/03/16 (Bob Tennent)  Supports Clear-Sans fonts for all LaTeX engines.]
+
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+
+\newif\ifclear@ttf 
+\ifxetex
+  \clear@ttftrue
+\else\ifluatex
+  \clear@ttftrue
+\else  % [pdf]LaTeX
+  \clear@ttffalse
+\fi\fi
+
+\newif\ifclear@default \clear@defaultfalse
+\newif\ifclear@medium  \clear@mediumfalse
+
+\newcommand*{\ClearSans@scale}{1}
+\DeclareOptionX{scaled}{\renewcommand*{\ClearSans@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\ClearSans@scale}{#1}}
+
+\DeclareOptionX{sfdefault}{\clear@defaulttrue}
+\DeclareOptionX{type1}{\clear@ttffalse}
+\DeclareOptionX{medium}{\clear@mediumtrue}
+\DeclareOptionX{regular}{\clear@mediumfalse}
+
+\ProcessOptionsX\relax
+
+\ifclear@ttf
+  \def\clear@boldstyle{Bold}
+  \ifclear@medium\def\clear@boldstyle{Medium}\fi
+
+\else % type1
+
+  \def\bfseries@sf{b}
+  \def\mdseries@sf{m}
+  \ifclear@medium\def\bfseries@sf{mb}\fi
+\fi
+
+\ifclear@ttf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes,mweights}
+\fi
+
+\ifclear@ttf
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+        Ligatures = TeX ,
+        Scale     = \ClearSans@scale ,
+        Extension = .ttf }
+  \setsansfont
+      [ UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-\clear@boldstyle , 
+        BoldItalicFont = *-\clear@boldstyle Italic ]
+      {ClearSans}
+  % grab current family in case of subsequent change:
+  \let\clearfamily\sfdefault  
+  \ifclear@default\renewcommand*\familydefault{\clearfamily}\fi
+  \newfontfamily\clear
+      [ UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-\clear@boldstyle , 
+        BoldItalicFont = *-\clear@boldstyle Italic 
+      ]
+      {ClearSans}
+  \newfontfamily\clearlight
+      [ UprightFont    = *-Light ,
+        BoldFont       = *-\clear@boldstyle , 
+        BoldItalicFont = *-\clear@boldstyle Italic ,
+      ]
+      {ClearSans}
+  \newfontfamily\clearthin
+      [ UprightFont    = *-Thin ,
+        BoldFont       = *-\clear@boldstyle , 
+        BoldItalicFont = *-\clear@boldstyle Italic 
+      ]
+      {ClearSans}
+\else % type1
+  \def\clearfamily{ClearSans-LF}
+  \newcommand*\clear{\fontfamily{\clearfamily}\selectfont}
+  \def\sfdefault{\clearfamily}
+  \ifclear@default\edef\familydefault{\sfdefault}\edef\seriesdefault{\mdseries@sf}\fi
+  \newcommand*\clearlight{\fontfamily{ClearSansLight-LF}\selectfont}
+  \newcommand*\clearthin{\fontfamily{ClearSansThin-LF}\selectfont}
+\fi
+
+\DeclareTextFontCommand{\textsfl}{\clearlight}
+\DeclareTextFontCommand{\textsft}{\clearthin}
+
+\ifclear@ttf
+% turn off defaults in case other fonts are selected:
+  \defaultfontfeatures{}
+\fi
+
+\endinput

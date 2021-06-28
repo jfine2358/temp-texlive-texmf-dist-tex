@@ -1,0 +1,160 @@
+% Copyright 2010 -- 2012 by tobig <tobias.goerlach@uni-hohneheim.de>
+% https://bitbucket.org/tobig/hohenheimbeamertheme/overview
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/licenses/LICENSE for more details.
+
+\NeedsTeXFormat{LaTeX2e}
+ \ProvidesPackage{hobete}[2012/3/15 Beamer Theme for University of Hohenheim]
+ \newcommand{\hoversion}{0003}
+\RequirePackage{tikz}
+\RequirePackage{etextools}
+\RequirePackage{xkeyval}
+
+\typeout{ ________________________________________________}
+   \typeout{| This is the Hohenheim Beamer Theme \hoversion.}
+  \typeout{| Please remark this is not a official Theme}
+    \typeout{| The University of Hohenheim will give NO support at all}
+   \typeout{| If using the Logos, please make sure that you have the permission to do so!}
+   \typeout{| }
+\typeout{|________________________________________________}
+
+
+
+% Lets hack some stuff
+
+\def\insertmylogo{}
+\def\mylogo#1{ \def\insertmylogo{#1} }
+
+% Now creating the Sectionpage as i want it to be
+% Starting off with the Option key 
+\define@boolkey+[tg]{test}{plain}[false]{
+\iftg@test@plain
+\begin{frame}[plain]\begin{beamercolorbox}[wd=\textwidth,ht=4ex,dp=1ex,center,rounded=true,shadow=true]{titlelike}\huge \insertsection \end{beamercolorbox}\end{frame}
+\else
+\frame{\begin{beamercolorbox}[wd=\textwidth,ht=4ex,dp=1ex,center,rounded=true,shadow=true]{titlelike}\huge \insertsection \end{beamercolorbox}}
+\fi
+}{value not allowed}
+
+\renewcommand{\sectionpage}[1][plain=false]{
+\presetkeys[tg]{test}{plain=false}{}
+ \setkeys[tg]{test}{#1}
+}
+
+
+
+
+%Here comes the Framelist
+%
+\newcommand{\printframelist}{ }
+\newcommand{\@savefrml}{ }
+\newcommand{\frameliston}{%
+\let\oldframetitle\frametitle
+\newcommand{\tgframelistfronthook}{$\cdot$}
+\newcommand{\tgframelistbackhook}{\\ }
+\newcommand\myaddto[1]{%
+  \write\@auxout{\noexpand\@writefile{frml}{\noexpand ##1}}}
+  \renewcommand{\printframelist}{\@starttoc{frml}}
+\renewcommand{\frametitle}[1]{\oldframetitle{##1}%
+\xifstrequal{##1}{\@savefrml}{}{
+\myaddto{ \noexpand%
+\tgframelistfronthook ##1 \noexpand\tgframelistbackhook}%
+}
+\global\def\@savefrml{##1}%
+}
+}
+
+
+
+
+
+
+
+%------------------
+% The Fancy Title stuff: 
+% First defining the print user code
+\newcommand{\HohenheimLogoKlein}[1]{%
+\def\inserthohenheimlogoklein{#1} }
+
+\newcommand{\HohenheimLogoLang}[1]{%
+\def\inserthohenheimlogolang{#1}
+}
+
+% Now defining the respective Functions for the titlepage
+% (They also could be defined in the Decision Tree below, but this is better to read)
+% First if only the small logo exists
+\newcommand{\inserthotpwolang}[1]{\frame[plain]{
+       \begin{tikzpicture}[remember picture,overlay] 
+       \node [scale=1.7,fill opacity=.2,text opacity=.07] at (current page.south west) {\includegraphics{\inserthohenheimlogoklein} }; 
+       %\node [scale=0.9,fill opacity=.2,text opacity=.8] at (7,0) {\includegraphics{\inserthohenheimlogolang} }; 
+        \end{tikzpicture} 
+        \maketitle
+        \begin{center}%
+	#1%
+	 \end{center}
+        }
+}
+% if no short logo
+\newcommand{\inserthotpwokurz}[1]{\frame[plain]{
+   \begin{tikzpicture}[remember picture,overlay] 
+    % \node [scale=1.7,fill opacity=.2,text opacity=.07] at (current page.south west) {\includegraphics{logoklein.eps} }; 
+	\node [scale=0.9,fill opacity=.2,text opacity=.8, xshift=1.2cm, yshift=-1.5cm] at (current page.north) {\includegraphics{\inserthohenheimlogolang} };  
+    \end{tikzpicture}\\[1cm]
+    \maketitle
+\begin{center}%
+	#1%
+	 \end{center}
+    }
+}
+%if both are defined
+\newcommand{\inserthotp}[1]{\frame[plain]{
+	\begin{tikzpicture}[remember picture,overlay] 
+	\node [scale=1.7,fill opacity=.2,text opacity=.07] at (current page.south west) {\includegraphics{\inserthohenheimlogoklein} }; 
+	\node [scale=0.9,fill opacity=.2,text opacity=.8, xshift=1.2cm, yshift=-1.5cm] at (current page.north) {\includegraphics{\inserthohenheimlogolang} }; 
+	\end{tikzpicture}\\[1cm]
+	 \maketitle%
+	%  \vskip0pt plus 1filll
+	\begin{center}%
+	#1%
+	 \end{center}
+	 }
+}
+
+
+  \newcommand{\HohenheimFancyTitle}[1]{\frame[plain]{ \maketitle } } %Fall Back
+\AtBeginDocument{
+\ifx \inserthohenheimlogoklein\undefined
+\typeout{ __Hohenheim Beamer Theme says: __________________}
+ \typeout{| \string\HohenhemLogoKlein\space a is not defined  please specify... dropping one Picture}%
+   
+  \ifx \inserthohenheimlogolang\undefined
+  \typeout{| \string\HohenhemLogoLang\space is not defined  please specify... dropping fancy Title... inserting boring one} %
+  \typeout{|________________________________________________}%
+   \else
+     \typeout{| seems that \string\HohenhemLogoLang\space exists... Lets see what we can do with it}
+     \typeout{|________________________________________________}
+   \renewcommand{\HohenheimFancyTitle}[1]{\expandafter\inserthotpwokurz{#1}%
+    }
+    \fi
+\else
+      \ifx \inserthohenheimlogolang\undefined
+           \typeout{| \string\HohenhemLogoLang\space is not defined... i ll try my best} %
+           \typeout{|________________________________________________}
+       \renewcommand{\HohenheimFancyTitle}{1}{\expandafter\inserthotpwolang{#1}%
+        }
+         \else
+      
+	\renewcommand{\HohenheimFancyTitle}[1]{\inserthotp{#1}	 }
+  	\fi     
+   \fi
+}
+
+
+\usetheme{hohenheim}
+
+
+ 

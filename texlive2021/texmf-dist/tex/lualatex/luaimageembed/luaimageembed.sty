@@ -1,0 +1,85 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{luaimageembed}[2017/08/12 luaimageembed alpha version 0.1]
+
+% Copyright Christian C. Sachs, MIT licensed
+
+\RequirePackage{luacode}
+
+% no options so far
+
+\begin{luacode*}
+
+image_counter = 0
+image_list = {}
+image_tmpdir = nil
+
+function add_image(data)
+    if image_tmpdir == nil then
+        image_tmpdir = os.tmpdir()
+    end
+    
+    local ltn12 = require("ltn12")
+    local mime = require("mime")
+
+    local file_name = image_tmpdir .. "/" .. "image" .. image_counter
+    image_counter = image_counter + 1
+
+    ltn12.pump.all(
+        ltn12.source.string(data),
+        ltn12.sink.chain(
+            mime.decode("base64"),
+            ltn12.sink.file(io.open(file_name, "a"))
+        )
+    )
+
+    local file = io.open(file_name, "rb")
+
+    local magic = file:read(2)
+    file:close()
+    
+    local new_extension = "error"
+    
+    if magic == "\x89\x50" then
+        new_extension = "png"
+    elseif magic == "\xff\xd8" then
+        new_extension = "jpg"
+    elseif magic == "\x97\x4a" then
+        new_extension = "jb2"
+    elseif magic == "\x25\x50" then
+        new_extension = "pdf"
+    else
+        error("Unsupported image data passed")
+    end
+    
+    local old_file_name = file_name
+    local file_name =  file_name .. "." .. new_extension
+    texio.write_nl('term', "magic=" .. magic)
+    texio.write_nl('term', "output_filename=" .. file_name)
+    
+    os.rename(old_file_name, file_name)
+    
+    table.insert(image_list, 1, file_name)
+    
+    return file_name
+ 
+end
+
+function cleanup_images()
+    for i = 1, #image_list do
+        os.remove(image_list[i])
+    end
+    
+    if image_tmpdir ~= nil then
+        lfs.rmdir(image_tmpdir)
+    end
+end
+
+luatexbase.add_to_callback("finish_pdffile", cleanup_images, "Removes temporary images and folder again")
+
+\end{luacode*}
+
+\newcommand{\includegraphicsembedded}[2][]{\includegraphics[#1]{\directlua{tex.print(add_image([[#2]]))}}}
+\newcommand{\pgfdeclareimageembedded}[3][]{\pgfdeclareimage[#1]{#2}{\directlua{tex.print(add_image([[#3]]))}}}
+\newcommand{\pgfimageembedded}[2][]{\pgfimage[#1]{\directlua{tex.print(add_image([[#2]]))}}}
+
+\endinput

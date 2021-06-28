@@ -1,0 +1,320 @@
+%D \module
+%D   [       file=t-resume,
+%D        version=2009.10.10,
+%D          title=\CONTEXT\ User Module,
+%D       subtitle=Resumes,
+%D         author=Wolfgang Schuster,
+%D           date=\currentdate,
+%D      copyright=Wolfgang Schuster,
+%D          email=schuster.wolfgang@googlemail.com,
+%D        license=Public Domain]
+
+\writestatus{loading}{Context User Module / Framework for Resumes}
+
+\unprotect
+
+\usemodule[correspondence]
+
+\def\????rd{@@@@rd} % ResumeData
+\def\????rs{@@@@rs} % ResumeStyle
+
+\startmodule[resume]
+
+\setupmodule
+  [\c!style=,
+   \c!extension=,
+   \c!interface=default]
+
+\ifdefined\registercorrespondencefile \registercorrespondencefile{t-resume.tex} \fi
+
+%D \macros
+%D   {setupresumestyle}
+
+\setvalue{\v!resume:\????rs:\v!firstpage }{\v!layout}
+\setvalue{\v!resume:\????rs:\v!secondpage}{\v!layout}
+
+\definecorrespondencesetup[\v!resume\v!style][\v!resume][\????rs]
+
+%D \macros
+%D   {setupresume}
+
+\definecorrespondencevalue[\v!resume][\????rd]
+
+%D \macros
+%D   {doifresumevalue,doifelseresumevalue,doifresumestylevalue,doifelseresumestylevalue,
+%D    defineresumeelement,resetresumeelement,copyresumeelement,resumeelement}
+
+\def\doifresumevalue         {\doifcorrespondencevalue         \????rd}
+\def\doifelseresumevalue     {\doifelsecorrespondencevalue     \????rd}
+\def\doifresumestylevalue    {\doifcorrespondencestylevalue    \????rs}
+\def\doifelseresumestylevalue{\doifelsecorrespondencestylevalue\????rs}
+
+\def\defineresumeelement{\definecorrespondenceelement[\v!resume]}
+\def\resetresumeelement {\resetcorrespondenceelement [\v!resume]}
+\def\copyresumeelement  {\copycorrespondenceelement  [\v!resume]}
+\def\resumeelement      {\correspondenceelement      [\v!resume]}
+
+%D \macros
+%D   {useresumeextension,useresumestyle,useresumeinterface}
+
+\definefileconstant {resumestyle}     {nrs}
+\definefileconstant {resumeextension} {nre}
+\definefileconstant {resumeinterface} {nri}
+
+\definecorrespondencefile[\v!resume][\v!interface][\f!resumeinterface]
+\definecorrespondencefile[\v!resume][\v!extension][\f!resumeextension]
+\definecorrespondencefile[\v!resume][\v!style    ][\f!resumestyle    ]
+
+%D \macros
+%D   {resumestylevalue,resumevalue}
+
+\def\resumestylevalue{\correspondencestylevalue\????rs}
+\def\resumevalue     {\correspondencevalue     \????rd}
+
+\let\resume!list!layers      \empty
+\let\resume!list!sections    \empty
+\let\resume!list!descriptions\empty
+
+\def\resume!list!marking
+  {\v!topmark,\v!botmark,\v!cutmark,\v!usermark}
+
+\def\resume!list!header
+  {\v!head,\v!nexthead}
+
+\def\resume!list!footer
+  {\v!foot,\v!nextfoot}
+
+\definecorrespondencelayer      [\v!resume][\????rs]
+\definecorrespondencesection    [\v!resume][\????rs]
+\definecorrespondencedescription[\v!resume][\????rs]
+
+%D \subject{Placement of the content}
+%D 
+%D Enable the layouts for the first and second page.
+
+\startsetups[\v!resume:\v!layout]
+
+  \setuplayout[\v!resume\v!firstpage]
+
+  \appendtoks\setuplayout[\v!resume\v!secondpage]\to\everyaftershipout
+
+\stopsetups
+
+%D Header
+
+\dodefineresumelayer[\v!header]
+
+\startsetups[\v!resume:\v!place:\v!head]
+
+  \doif\@@@@rsoptionhead    \v!yes{\dosetresumelayer[\v!head    ]} % First page
+  \doif\@@@@rsoptionnexthead\v!yes{\dosetresumelayer[\v!nexthead]} % Following pages
+
+\stopsetups
+
+%D Footer
+
+\dodefineresumelayer[\v!footer]
+
+\startsetups[\v!resume:\v!place:\v!foot]
+
+  \doif\@@@@rsoptionfoot    \v!yes{\dosetresumelayer[\v!foot    ]} % First page
+  \doif\@@@@rsoptionnextfoot\v!yes{\dosetresumelayer[\v!nextfoot]} % Following pages
+
+\stopsetups
+
+%D Free layers to position logos etc.
+
+\dodefineresumelayer[\v!resumemain]
+
+\startsetups[\v!resume:\v!place:\v!resumemain]
+
+  \dosetresumelayer[\v!resumemain]
+
+\stopsetups
+
+\dodefineresumelayer[\v!resumenext]
+
+\startsetups[\v!resume:\v!place:\v!resumenext]
+
+  \dosetresumelayer[\v!resumenext]
+
+\stopsetups
+
+%D Title
+
+\dodefineresumesection[\v!title]
+
+\startsetups[\v!resume:\v!place:\v!title]
+
+  \dosetresumesection[\v!title]
+
+\stopsetups
+
+%D Resume content
+
+\dodefineresumesection[\v!content]
+
+\startsetups[\v!resume:\v!place:\v!content]
+
+  \begingroup
+
+  \doifresumestylevalue\v!option\c!indenting{\setupindenting[\@@@@rsoptionindenting]}
+
+  \dosetresumesection[\v!content]
+
+  \endgroup
+
+\stopsetups
+
+%D Appendices
+
+\dodefineresumesection[\v!appendices]
+
+\startsetups[\v!resume:\v!place:\v!appendices]
+
+  \dosetresumesection[\v!appendices]
+
+\stopsetups
+
+%D Fold- and cutmarks, you enable and disable all of them independant
+%D from any other or disable all marks with just one command.
+
+\dodefineresumelayer[\v!foldmark]
+
+\startsetups[\v!resume:\v!place:\v!foldmark]
+
+  \doif\@@@@rsoptiontopmark \v!yes{\dosetresumelayer[\v!topmark ]} % Upper foldmark
+  \doif\@@@@rsoptionbotmark \v!yes{\dosetresumelayer[\v!botmark ]} % Lower foldmark
+  \doif\@@@@rsoptioncutmark \v!yes{\dosetresumelayer[\v!cutmark ]} % Cutmark
+  \doif\@@@@rsoptionusermark\v!yes{\dosetresumelayer[\v!usermark]} % Free mark, you could use it to place your own symbols
+
+\stopsetups
+
+%D Background graphic
+
+\defineoverlay
+  [\v!resume:\c!backgroundimage]
+  [\doifsomething\@@@@rsoptionbackgroundimage
+     {\overlayfigure{\@@@@rsoptionbackgroundimage}}]
+
+\defineoverlay
+  [\v!resume:\c!background]
+  [\@@@@rsoptionbackground]
+
+\def\resume!list!backgrounds
+  {\v!resume:\c!backgroundimage,\v!resume:\c!background,%
+   \v!resume:\v!resumenext,\v!resume:\v!resumemain,
+   \v!resume:\v!head,\v!resume:\v!foot,\v!resume:\v!nexthead,%
+   \v!resume:\v!nextfoot,\v!resume:\v!topmark,\v!resume:\v!botmark,%
+   \v!resume:\v!cutmark,\v!resume:\v!usermark}
+
+%D Settings at the begin of every resume.
+
+\startsetups[\v!resume:\v!initialize]
+
+  \@@@@rsoptionbefore
+
+  \begingroup
+
+  \page[\@@@@rsoptionpage]
+
+  \setupcorrespagenumber[\v!reset]
+
+  \setuppagenumbering
+    [\c!alternative=\@@@@rsoptionalternative,
+     \c!location=] % use the header and footer option instead
+
+  \setupheader[\c!state=\v!stop] % no header or footer lines from ConTeXt,
+  \setupfooter[\c!state=\v!stop] % both elements are placed with layers
+
+  \setupbackgrounds
+    [\v!paper]
+    [\c!background=\v!color,
+     \c!backgroundcolor=\@@@@rsoptionbackgroundcolor]
+
+  \setupbackgrounds
+    [\v!page]
+    [\c!setups={\v!resume:\v!place:\v!head,\v!resume:\v!place:\v!foot,\v!resume:\v!layer},
+     \c!background=\resume!list!backgrounds]
+
+  \doifresumestylevalue\v!option\c!bodyfont  {\setupbodyfont  [\@@@@rsoptionbodyfont  ]}
+  \doifresumestylevalue\v!option\c!whitespace{\setupwhitespace[\@@@@rsoptionwhitespace]}
+
+\stopsetups
+
+%D Settings at the end of every resume.
+
+\startsetups[\v!resume:\v!finish]
+
+  \page[\@@@@rsoptionpage]
+
+  \setuplayout[\v!reset]
+
+  \resetcorrespagenumber
+
+  \endgroup
+
+  \@@@@rsoptionafter
+
+\stopsetups
+
+%D Place the resume.
+
+\startsetups[\v!resume:\v!place]
+
+  \directsetup{\v!resume:\v!initialize} % Settings at the begin
+  \directsetup{\v!resume:\v!optimize  } % Interface dependend
+  \directsetup{\v!resume:\v!layout    } % Page layout
+  \directsetup{\v!resume:\v!sequence  } % Place content
+  \directsetup{\v!resume:\v!finish    } % Settings at the end
+
+\stopsetups
+
+\startsetups[\v!resume:\v!layer]
+
+  \doif\@@@@rsoptionmarking   \v!yes{\directsetup{\v!resume:\v!place:\v!foldmark  }}
+  \doif\@@@@rsoptionresumemain\v!yes{\directsetup{\v!resume:\v!place:\v!resumemain}}
+  \doif\@@@@rsoptionresumenext\v!yes{\directsetup{\v!resume:\v!place:\v!resumenext}}
+
+\stopsetups
+
+%D Place the resume content.
+
+\let\resume!order!sections\resume!list!sections
+
+\def\doflushresumesection#1%
+  {\doif{\resumestylevalue\v!option{#1}}\v!yes{\directsetup{\v!resume:\v!place:#1}}}
+
+\startsetups[\v!resume:\v!sequence]
+
+  \processcommacommand[\resume!list!sections]\doflushresumesection
+
+\stopsetups
+
+%D \subject{Default values}
+
+\setupresumestyle
+  [\v!option]
+  [\c!marking=\v!yes,
+   \c!usermark=\v!no,
+   \c!indenting=,
+   \c!whitespace=,
+   \c!background=,
+   \c!backgroundcolor=\v!white,
+   \c!backgroundimage=,
+   \c!before=,
+   \c!after=,
+   \c!page=\v!yes,
+   \c!pagenumber=\plusone,
+   \c!bodyfont=,
+   \c!alternative=\v!singlesided]
+
+%D Default style
+
+\useresumeinterface[\currentmoduleparameter\c!interface]
+\useresumestyle    [\currentmoduleparameter\c!style    ]
+\useresumeextension[\currentmoduleparameter\c!extension]
+
+\stopmodule
+
+\protect \endinput

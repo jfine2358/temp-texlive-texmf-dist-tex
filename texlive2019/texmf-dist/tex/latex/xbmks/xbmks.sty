@@ -1,0 +1,224 @@
+%%
+%% This is file `xbmks.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% xbmks.dtx  (with options: `copyright,package')
+%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% xbmks.sty package,                                    %%
+%% Copyright (C) 2016--2018                              %%
+%%   dpstory@uakron.edu                                  %%
+%%                                                       %%
+%% This program can redistributed and/or modified under  %%
+%% the terms of the LaTeX Project Public License         %%
+%% Distributed from CTAN archives in directory           %%
+%% macros/latex/base/lppl.txt; either version 1.2 of the %%
+%% License, or (at your option) any later version.       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\NeedsTeXFormat{LaTeX2e}[1997/12/01]
+\ProvidesPackage{xbmks}
+ [2018/07/04 v2.0.2 xbmks: Cross-document bookmarks (dps)]
+\RequirePackage{xkeyval}
+\RequirePackage{ifpdf}[2006/02/20]
+\RequirePackage{ifxetex}[2006/08/21]
+\def\xbmk@driver{xbmks-pdfmark.def}
+\DeclareOptionX{dvipsone}{\def\xbmk@driver{xbmks-pdfmark.def}}
+\DeclareOptionX{dvips}{\def\xbmk@driver{xbmks-pdfmark.def}}
+\DeclareOptionX{pdftex}{\def\xbmk@driver{xbmks-pdftex.def}}
+\DeclareOptionX{luatex}{\def\xbmk@driver{xbmks-pdftex.def}}
+\DeclareOptionX{xetex}{\def\xbmk@driver{xbmks-xetex.def}}
+\ifpdf\ExecuteOptionsX{pdftex}\else
+\ifxetex\ExecuteOptionsX{xetex}\else
+  \let\ExecuteOptions@SAVE\ExecuteOptions
+  \let\ExecuteOptions\ExecuteOptionsX
+  \InputIfFileExists{web.cfg}{}
+  {\@ifundefined{l@tex@@@@driver}{\ExecuteOptionsX{dvips}}
+      {\ExecuteOptionsX{dvipsone}}}%
+  \let\ExecuteOptions\ExecuteOptions@SAVE
+\fi\fi
+\ProcessOptionsX
+\RequirePackage{hyperref}
+\define@key{xbmksetup}{docbundle}[]{\def\x@bmks@docs{#1}}
+\let\x@bmks@docs\@empty
+\define@key{xbmksetup}{colors}[]{\def\x@bmks@colors{#1}}
+\let\x@bmks@colors\@empty
+\define@key{xbmksetup}{styles}[]{\def\x@bmks@styles{#1}}
+\let\x@bmks@styles\@empty
+\define@key{xbmk@colors}{int}[]{%
+  \HyColor@BookmarkColor{#1}{\xbmks@intC}{xbmks}{int}%
+  \ifx\xbmks@intC\@empty\else
+  \edef\xbmks@intC{/C[\xbmks@intC]}\fi
+}
+\let\xbmks@intC\@empty
+\define@key{xbmk@colors}{ext}[]{%
+  \HyColor@BookmarkColor{#1}{\xbmks@extC}{xbmks}{ext}%
+  \ifx\xbmks@extC\@empty\else
+  \edef\xbmks@extC{/C[\xbmks@extC]}\fi
+}
+\let\xbmks@extC\@empty
+\let\xbmks@Yes=y \let\xbmks@No=n
+\define@boolkey{xbmk@styles}{intbf}[true]{}
+\define@boolkey{xbmk@styles}{extbf}[true]{}
+\define@boolkey{xbmk@styles}{intit}[true]{}
+\define@boolkey{xbmk@styles}{extit}[true]{}
+\newcommand{\xbmksetup}[1]{\setkeys{xbmksetup}{docbundle,#1}%
+  \ifx\x@bmks@docs\@empty
+    \PackageInfo{xbmks}{The docbundle key of \string\xbmksetup\space
+    is empty,\MessageBreak
+    I will give it a value of `\jobname',\MessageBreak
+    in hopes this is your intention}%
+    \gdef\xbmk@cnt{1}%
+    \def\xbmks@next{\write@xbmks@cfg{docbundle={\jobname},#1}}\else
+    \def\xbmks@next{\write@xbmks@cfg{#1}}\fi\xbmks@next
+}
+\def\write@xbmks@cfg#1{%
+  \newwrite\xbmks@setup \immediate\openout \xbmks@setup xbmks.cfg
+  \set@display@protect
+  \immediate\write\xbmks@setup{\protect\xbmksetupi{#1}}%
+  \set@typeset@protect
+  \immediate\closeout\xbmks@setup
+}
+\newcommand{\xbmksetupi}[1]{%
+  \setkeys{xbmksetup}{#1}%
+  \edef\x{\noexpand\x@docbundle{\x@bmks@docs}}\x
+  \edef\x{\noexpand
+    \setkeys{xbmk@colors}{\x@bmks@colors}}\x
+  \edef\x{\noexpand
+    \setkeys{xbmk@styles}{\x@bmks@styles}}\x
+  \let\xbmk@intF\@empty
+  \ifKV@xbmk@styles@intit
+    \ifKV@xbmk@styles@intbf
+      \def\xbmk@intF{/F 3}\else
+      \def\xbmk@intF{/F 1}\fi
+  \else
+    \ifKV@xbmk@styles@intbf
+      \def\xbmk@intF{/F 2}\fi
+  \fi
+  \let\xbmk@extF\@empty
+  \ifKV@xbmk@styles@extit
+    \ifKV@xbmk@styles@extbf
+      \def\xbmk@extF{/F 3}\else
+      \def\xbmk@extF{/F 1}\fi
+  \else
+    \ifKV@xbmk@styles@extbf
+      \def\xbmk@extF{/F 2}\fi
+  \fi
+}
+\def\xbmkcsarg#1#2{\expandafter#1\csname#2\endcsname}
+\xdef\xbmk@cnt{0}
+\newcommand{\x@docbundle}[1]{\bgroup
+  \def\thisDoc{\jobname}\count\z@=0 %
+  \edef\@tmpexp{\noexpand\@for\noexpand\@arg:=#1}%
+  \@tmpexp\do{\advance\count\z@ by 1\relax
+    \edef\x{\noexpand\xbmk@recordDoc{\@arg}}\x
+    \edef\x{\noexpand\xbmk@docID{\@arg}}\x
+  }%
+  \xdef\xbmk@cnt{\the\count\z@}\egroup
+}
+\newcommand{\xbmk@recordDoc}[1]{%
+  \xbmkcsarg\xdef{xbmk@doc\the\count\z@}{#1}}
+\newcommand{\xbmk@docID}[1]{%
+  \xbmkcsarg\xdef{x#1}{x\the\count\z@}}
+\xbmkcsarg\xdef{x\jobname}{x0}
+\define@key{xbmkskeys}{action}{\def\x@bmks@action{#1}}
+\let\x@bmks@action\@empty
+\define@key{xbmkskeys}{color}[]{%
+  \HyColor@BookmarkColor{#1}{\x@bmks@C}{xbmks}{color}%
+  \ifx\x@bmks@C\@empty\else
+  \edef\x@bmks@C{/C[\x@bmks@C]}\fi
+}
+\let\x@bmks@C\@empty
+\define@key{xbmkskeys}{style}[]{%
+  \edef\x{\noexpand\setkeys{xbmks@style}{#1}}\x
+  \let\x@bmks@F\@empty
+  \ifKV@xbmks@style@it
+    \ifKV@xbmks@style@bf
+      \def\x@bmks@F{/F 3}\else
+      \def\x@bmks@F{/F 1}\fi
+  \else
+    \ifKV@xbmks@style@bf
+      \def\x@bmks@F{/F 2}\fi
+  \fi
+}
+\let\x@bmks@F\@empty
+\define@boolkey{xbmks@style}{bf}[true]{}
+\define@boolkey{xbmks@style}{it}[true]{}
+\def\x@rollCFIntoActionBmrk#1{%
+  \xbmkcsarg\ifx{X_#1}\relax
+    \let\x@bmks@C\@empty\let\x@bmks@F\@empty\fi
+  \ifx\xbmk@J\xbmk@filename
+    \ifx\x@bmks@C\@empty\let\thisCol\xbmks@intC\else
+      \let\thisCol\x@bmks@C\fi
+    \ifx\x@bmks@F\@empty\let\thisF\xbmk@intF\else
+      \let\thisF\x@bmks@F\fi
+  \else
+    \ifx\x@bmks@C\@empty\let\thisCol\xbmks@extC\else
+      \let\thisCol\x@bmks@C\fi
+    \ifx\x@bmks@F\@empty\let\thisF\xbmk@extF\else
+      \let\thisF\x@bmks@F\fi
+  \fi
+  \global\let\x@bmks@C\@empty\global\let\x@bmks@F\@empty
+}
+\newcommand\pdfbookmarkx[2][0]{%
+  \@ifnextchar[%]
+    {\pdfbookmarkx@i{#1}{#2}}
+    {\pdfbookmarkx@i{#1}{#2}[]}}
+\def\pdfbookmarkx@i#1#2[#3]#4{% level, title, action, name
+  \def\x@rgiii{#3}\ifx\x@rgiii\@empty
+    \Hy@writebookmark{}{#2}{#4.#1}{#1}{toc}%
+    \hyper@anchorstart{#4.#1}\hyper@anchorend
+  \else
+  \protected@write\@outlinefile{}{%
+    \string\nextAction% assign doc ID
+      {\@nameuse{x\jobname}#4.#1}{#3}}%
+  \Hy@writebookmark{}{#2}{\@nameuse{x\jobname}#4.#1}{#1}{toc}%
+  \fi
+}
+\newcommand{\currentpdfbookmarkx}[1]{%
+  \@ifnextchar[%]
+    {\currentpdfbookmarkx@i{#1}}
+    {\currentpdfbookmarkx@i{#1}[]}}
+\def\currentpdfbookmarkx@i#1[#2]#3{%
+  \pdfbookmarkx[\Hy@currentbookmarklevel]{#1}[{#2}]{#3}}
+\newcommand{\subpdfbookmarkx}[1]{%
+  \@ifnextchar[%]
+    {\subpdfbookmarkx@i{#1}}
+    {\subpdfbookmarkx@i{#1}[]}}
+\def\subpdfbookmarkx@i#1[#2]#3{%
+  \@tempcnta\Hy@currentbookmarklevel
+  \Hy@StepCount\@tempcnta
+  \expandafter
+  \pdfbookmarkx\expandafter[\the\@tempcnta]{#1}[{#2}]{#3}}
+\newcommand{\belowpdfbookmarkx}[1]{%
+  \@ifnextchar[%]
+    {\belowpdfbookmarkx@i{#1}}
+    {\belowpdfbookmarkx@i{#1}[]}}
+\def\belowpdfbookmarkx@i#1[#2]#3{%
+  \@tempcnta\Hy@currentbookmarklevel
+  \Hy@StepCount\@tempcnta
+  \expandafter
+  \pdfbookmarkx\expandafter[\the\@tempcnta]{#1}[{#2}]{#3}%
+  \advance\@tempcnta by -1 %
+  \xdef\Hy@currentbookmarklevel{\the\@tempcnta}}
+\def\nextAction@i#1#2{\@ifundefined{X_#1}{%
+    \setkeys{xbmkskeys}{#2}%
+    \xbmkcsarg\xdef{X_#1}{\x@bmks@action}%
+    }{\global\xbmkcsarg\let{X_#1}\relax
+    \PackageWarning{xbmks}
+    {The anchor name `#1' is already defined,\MessageBreak
+    change this name, the bookmark will be created\MessageBreak
+    but it will have no associated action}}}
+\def\x@outWarningMsg{\PackageWarningNoLine{xbmks}{%
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\MessageBreak
+@@ Outline files were not input, compile again @@\MessageBreak
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@}}%
+\InputIfFileExists{xbmks.cfg}{}{}
+\@ifpackageloaded{bookmark}{\PackageWarningNoLine{xbmks}{The
+  bookmark package is not supported;\MessageBreak
+  this package does nothing, as a result}}
+{\InputIfFileExists{\xbmk@driver}{}{}}
+\endinput
+%%
+%% End of file `xbmks.sty'.

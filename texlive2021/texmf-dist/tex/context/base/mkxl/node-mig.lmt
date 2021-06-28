@@ -1,0 +1,134 @@
+if not modules then modules = { } end modules ['node-mig'] = {
+    version   = 1.001,
+    comment   = "companion to node-mig.mkiv",
+    author    = "Hans Hagen, PRAGMA-ADE, Hasselt NL",
+    copyright = "PRAGMA ADE / ConTeXt Development Team",
+    license   = "see context related readme files"
+}
+
+-- todo: insert_after
+
+local format = string.format
+
+local trace_migrations = false trackers.register("nodes.migrations", function(v) trace_migrations = v end)
+
+local report_nodes     = logs.reporter("nodes","migrations")
+
+local attributes       = attributes
+local nodes            = nodes
+
+local nuts             = nodes.nuts
+local tonut            = nuts.tonut
+
+local getnext          = nuts.getnext
+local getid            = nuts.getid
+local getlist          = nuts.getlist
+local getpost          = nuts.getpost
+local getprop          = nuts.getprop
+
+local setprop          = nuts.setprop
+local setlink          = nuts.setlink
+local setlist          = nuts.setlist
+local setpost          = nuts.setpost
+
+local count            = nuts.count
+local migrate          = nuts.migrate
+
+local nodecodes        = nodes.nodecodes
+local hlist_code       = nodecodes.hlist
+local vlist_code       = nodecodes.vlist
+local insert_code      = nodecodes.ins
+local mark_code        = nodecodes.mark
+
+local a_migrated       = attributes.private("migrated")
+
+local migrate_inserts  = false
+local migrate_marks    = false
+local t_inserts        = 0
+local t_marks          = 0
+local t_sweeps         = 0
+
+local trialtypesetting = context.trialtypesetting
+
+function nodes.handlers.migrate(head,where)
+    if head and not trialtypesetting() and where == "alignment" then
+        if trace_migrations then
+            report_nodes("migration sweep %a",where)
+        end
+        local current = head
+        while current do
+            local id = getid(current)
+            if (id == vlist_code or id == hlist_code or id == insert_code) and not getprop(current,"migrated") then
+                setprop(current,"migrated",true)
+                local list = getlist(current)
+                if list then
+                    t_sweeps = t_sweeps + 1
+                    local h, first, last = migrate(list,migrate_inserts,migrate_marks)
+                    if first then
+                        if trace_migrations then
+                            local ni = count(insert_code,first)
+                            local nm = count(mark_code,first)
+                            t_inserts = t_inserts + ni
+                            t_marks   = t_marks   + nm
+                            report_nodes("sweep %a, container %a, %s inserts and %s marks migrated outwards during %a",
+                                t_sweeps,nodecodes[id],ni,nm,where)
+
+                        end
+                        local p, t = getpost(current)
+                        if p then
+                            setlink(t,first)
+                        else
+                            setpost(current,first)
+                        end
+                    end
+                end
+            end
+            current = getnext(current)
+        end
+    end
+    return head
+end
+
+statistics.register("node migrations", function()
+    if trace_migrations and t_sweeps > 0 then
+        return format("%s sweeps, %s inserts moved, %s marks moved",t_sweeps,t_inserts,t_marks)
+    end
+end)
+
+-- Since we started with mkiv we had it as experiment but it is about time
+-- to have a more formal interface .. it's still optional due to possible
+-- side effects.
+
+local enableaction  = nodes.tasks.enableaction
+local disableaction = nodes.tasks.disableaction
+local texsetcount   = tex.setcount
+
+local migrations = { }
+nodes.migrations = migrations
+local enabled    = false
+
+local function check()
+    if migrate_marks or migrate_inserts then
+        if not enabled then
+            enableaction("mvlbuilders", "nodes.handlers.migrate")
+            enabled = true
+            texsetcount("automigrationmode",3)
+        end
+    else
+        if enabled then
+            disableaction("mvlbuilders", "nodes.handlers.migrate")
+            enabled = false
+            texsetcount("automigrationmode",0)
+        end
+    end
+end
+
+function migrations.setmarks(v)
+    migrate_marks = v
+    check()
+end
+
+function migrations.setinserts(v)
+    migrate_inserts = v
+    check()
+end

@@ -1,0 +1,150 @@
+%%
+%% This is file `sctkzsym-base.sty', part of scsnowman package.
+%% Maintained on GitHub:
+%% https://github.com/aminophen/scsnowman
+%%
+%% Copyright (c) 2015-2018 Hironobu Yamashita
+%%   Email   :  h.y.acetaminophen[a t]gmail.com
+%%   GitHub  :  https://github.com/aminophen
+%%   Blog    :  http://acetaminophen.hatenablog.com/
+%%   Twitter :  @aminophen
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{sctkzsym-base}[2018/01/15 v1.2c Base for emoji variants using TikZ]
+\RequirePackage{tikz}
+\RequirePackage{keyval}
+%
+\ifx\kanjiskip\@undefined\else
+  \IfFileExists{pxeveryshi.sty}{\RequirePackage{pxeveryshi}}{}
+\fi
+%
+% prepare for options
+\newif\ifsctkzsym@document
+\newif\ifsctkzsym@qed
+\newif\ifsctkzsym@item
+%
+% options
+\DeclareOption{documentX}{\sctkzsym@documenttrue}
+\DeclareOption{nodocumentX}{\sctkzsym@documentfalse}
+\DeclareOption{qedX}{\sctkzsym@qedtrue}
+\DeclareOption{noqedX}{\sctkzsym@qedfalse}
+\DeclareOption{itemX}{\sctkzsym@itemtrue}
+\DeclareOption{noitemX}{\sctkzsym@itemfalse}
+\ExecuteOptions{documentX,qedX,itemX}
+\ProcessOptions\relax
+%
+% save QED symbol before change (joke)
+\ifsctkzsym@qed
+  \def\sctkzsym@saving@qedsymbol{%
+    \ifx\qedsymbol\@undefined\else
+      \let\sctkzsym@saved@qedsymbol\qedsymbol
+    \fi
+  }
+  % if `amsthm' is already loaded, save it now
+  \sctkzsym@saving@qedsymbol
+  % otherwise, saving is delayed till \begin{document}
+  % (hope \makeqed... is not already executed...)
+  \ifx\sctkzsym@saved@qedsymbol\@undefined
+    \AtBeginDocument{\sctkzsym@saving@qedsymbol}
+  \fi
+  \newcommand{\makeqedother}{%
+    \let\qedsymbol\sctkzsym@saved@qedsymbol
+  }
+\fi
+%
+% save item label before change (joke)
+\ifsctkzsym@item
+  \let\sctkzsym@saved@labelitemi\labelitemi
+  \let\sctkzsym@saved@labelitemii\labelitemii
+  \let\sctkzsym@saved@labelitemiii\labelitemiii
+  \let\sctkzsym@saved@labelitemiv\labelitemiv
+  \newcommand{\makeitemother}{%
+    \let\labelitemi\sctkzsym@saved@labelitemi
+    \let\labelitemii\sctkzsym@saved@labelitemii
+    \let\labelitemiii\sctkzsym@saved@labelitemiii
+    \let\labelitemiv\sctkzsym@saved@labelitemiv
+  }
+\fi
+%
+% key definitions
+%  * any value; if none, 'true' is assumed
+\newcommand{\sctkzsym@define@key@withbool}[2]{%
+  \define@key{sctkzsym@#1}{#2}[true]{\expandafter\def\csname sctkzsym@#1@#2\endcsname{##1}}%
+  \expandafter\newif\csname ifsctkzsym@#1@#2\endcsname
+}
+%  * any value; if none, an error will be raised
+\newcommand{\sctkzsym@define@key@wodefault}[2]{%
+  \define@key{sctkzsym@#1}{#2}{\expandafter\def\csname sctkzsym@#1@#2\endcsname{##1}}%
+}
+%  * one from arg #3; arg #3 should be comma-separated list of candidates
+\newcommand{\sctkzsym@define@key@withword}[3]{%
+  \define@key{sctkzsym@#1}{#2}{\expandafter\def\csname sctkzsym@#1@#2\endcsname{##1}}%
+  % register known values (used in key handling)
+  \sctkzsym@hndlcnt\z@
+  \edef\@tempa{\zap@space#3 \@empty}%
+  \@for\@tempa:=\@tempa\do{%
+    \advance\sctkzsym@hndlcnt\@ne
+    \expandafter\let\csname sctkzsym@#1@#2@\romannumeral\sctkzsym@hndlcnt\endcsname\@tempa}%
+}
+% other known values (used in key handling)
+\def\sctkzsym@true{true}   % for bool strcmp
+\def\sctkzsym@false{false} % for bool strcmp
+%
+% key handling
+\newcount\sctkzsym@hndlcnt % for withword loop
+\let\sctkzsym@status\relax % for withword status
+\newcommand{\sctkzsym@hndl@key@withbool}[2]{%
+  \expandafter\ifx\csname sctkzsym@#1@#2\endcsname\sctkzsym@false\relax
+    \csname sctkzsym@#1@#2false\endcsname % <key>=false
+  \else
+    \csname sctkzsym@#1@#2true\endcsname  % <key>=true/<color>
+    \expandafter\ifx\csname sctkzsym@#1@#2\endcsname\sctkzsym@true\relax
+      % <key>=true; <default-color>
+      \expandafter\def\csname sctkzsym@#1@#2\endcsname{\sctkzsym@defaultcolor}%
+    \fi
+  \fi
+}
+\newcommand{\sctkzsym@hndl@key@onlybool}[2]{%
+  \expandafter\ifx\csname sctkzsym@#1@#2\endcsname\sctkzsym@false\relax
+    \csname sctkzsym@#1@#2false\endcsname % <key>=false
+  \else
+    \expandafter\ifx\csname sctkzsym@#1@#2\endcsname\sctkzsym@true\relax
+      \csname sctkzsym@#1@#2true\endcsname  % <key>=true
+    \else
+      \PackageError{sc#1}{Only true/false allowed for key `#2'}\@ehc
+      \csname sctkzsym@#1@#2false\endcsname % <key>=false
+    \fi
+  \fi
+}
+\newcommand{\sctkzsym@hndl@key@withword}[2]{%
+  % initialize
+  \@tempcnta\@ne
+  \let\sctkzsym@status\relax
+  % check through the registered candidate values
+  \loop\expandafter\ifx\csname sctkzsym@#1@#2@\romannumeral\@tempcnta\endcsname\relax\else
+    \ifx\sctkzsym@status\relax
+      \expandafter\ifx\csname sctkzsym@#1@#2\expandafter\endcsname
+        \csname sctkzsym@#1@#2@\romannumeral\@tempcnta\endcsname\relax
+          \def\sctkzsym@status{0}%
+      \fi
+    \fi
+    \advance\@tempcnta\@ne
+  \repeat
+  % if the status is still not zero, user-specified value is invalid; throw an error
+  \ifx\sctkzsym@status\relax
+    \PackageError{sc#1}{Unsupported value `\csname sctkzsym@#1@#2\endcsname' for #2}\@ehc
+  \fi
+}
+%
+% setup for tikzpicture
+\newlength{\sctkzsym@coord@baseline}
+\newlength{\sctkzsym@coord@scl}
+\newcommand*{\set@sctkzsym@coord@scl}[1]{\pgfmathsetlength{\sctkzsym@coord@scl}{#1\p@}}
+\newcommand{\sctkzsym@beginyokobox}{\ifx\tate\@undefined\else\leavevmode\hbox\bgroup\yoko\fi}
+\newcommand{\sctkzsym@endyokobox}{\ifx\tate\@undefined\else\egroup\fi}
+\newcommand{\sctkzsym@defaultcolor}{}
+\newcommand{\sctkzsym@defaultanticolor}{white}
+%
+\endinput
+%%
+%% End of file `sctkzsym-base.sty'.

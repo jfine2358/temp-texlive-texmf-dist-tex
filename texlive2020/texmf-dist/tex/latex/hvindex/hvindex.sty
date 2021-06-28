@@ -1,0 +1,123 @@
+% $Id: deIndex.sty 737 2009-10-12 08:59:10Z herbert $
+%%
+%% IMPORTANT NOTICE:
+%%
+%% This is file `hvindex.sty',
+%%
+%% Herbert Voss <herbert@dante.de>
+%% October 01, 2009-
+%%
+%% This program can be redistributed and/or modified under the terms
+%% of the LaTeX Project Public License Distributed from CTAN archives
+%% in directory macros/latex/base/lppl.txt.
+%%
+%% DESCRIPTION:
+%%   `hvindex' offers macros for simplifing indexing of words
+%%
+\NeedsTeXFormat{LaTeX2e}
+\def\fileversion{0.04}
+\def\filedate{2017/12/12}
+\message{`hvindex' v\fileversion, \filedate\space (hv)}
+%
+\ProvidesPackage{hvindex}[\filedate~Index macros (hv)]
+%
+\RequirePackage{xkeyval}
+\newif\ifhv@makeidx\hv@makeidxfalse
+\DeclareOptionX{makeidx}{\hv@makeidxtrue}
+\newcommand*\hv@index@quote{>}
+\DeclareOptionX{quote}{\renewcommand*\hv@index@quote{#1}}
+
+
+\ProcessOptionsX\relax
+
+\ifhv@makeidx
+  \RequirePackage{makeidx}
+  \makeindex
+\fi
+%
+\let\IndexNIL\@nil
+\def\hvIDXfontDefault#1{#1}
+\let\hvIDXfont\hvIDXfontDefault
+%
+\makeatother
+\def\Index#1{\expandafter\IndexXi#1!!!\IndexNIL}
+\def\IndexXi#1!#2!#3!#4\IndexNIL{%
+  \ifx\relax#3\relax% 			% 	no 3rd argument
+    \ifx\relax#2\relax%			% 	no 2nd argument
+      \IndexXXi#1@@==%\IndexNIL%		% 	scan #1 for @
+    \else\IndexXXii#1!#2@@\IndexNIL\fi%	% 	scan #2 for @
+  \else\IndexXXiii#1!\noexpand#2!#3@@\IndexNIL% scan #3 for @
+  \fi}
+\def\IndexXXi#1@#2@#3\IndexNIL{%
+  \ifx\relax#2\relax% 				no @ in last arg
+    \ifx\hvIDXfont\hvIDXfontDefault
+    \index{#1}#1%
+    \else\index{#1@\hvIDXfont{#1}}\hvIDXfont{#1}\fi%#1
+  \else\index{#1@#2}#2\fi}%		% #1@#2
+%
+\def\IndexXXii#1!#2@#3@#4\IndexNIL{%
+  \ifx\relax#3\relax 		% 		no @ in last arg
+    \ifx\hvIDXfont\hvIDXfontDefault\index{#2}#2%
+    \else\index{#1!#2@\hvIDXfont{#2}}\hvIDXfont{#2}\fi%
+  \else\index{#1!\protect#2@#3}#3\fi}
+%
+\def\IndexXXiii#1!#2!#3@#4@#5\IndexNIL{%
+  \ifx\relax#4\relax 		% 		no @ in last arg
+    \ifx\hvIDXfont\hvIDXfontDefault\index{#3}#3%
+    \else\index{#1!#2!#3@\hvIDXfont{#3}}\hvIDXfont{#3}\fi%
+  \else\index{#1!#2!\protect#3@#4}#4\fi}
+%
+\def\sfIndex#1{\let\hvIDXfont\textsf\Index{#1}\let\hvIDXfont\hvIDXfontDefault}
+\def\ttIndex#1{\let\hvIDXfont\texttt\Index{#1}\let\hvIDXfont\hvIDXfontDefault}
+\def\scIndex#1{\let\hvIDXfont\textsc\Index{#1}\let\hvIDXfont\hvIDXfontDefault}
+\def\itIndex#1{\let\hvIDXfont\textit\Index{#1}\let\hvIDXfont\hvIDXfontDefault}
+\def\bfIndex#1{\let\hvIDXfont\textbf\Index{#1}\let\hvIDXfont\hvIDXfontDefault}
+%
+\makeatletter
+\def\sIndex#1{\expandafter\sIndex@i#1\@nil}
+\def\sIndex@i#1|#2\@nil{\index{#1|see{#2}}#1}
+\def\saIndex#1{\expandafter\saIndex@i#1\@nil}
+\def\saIndex@i#1|#2\@nil{\index{#1|seealso{#2}}#1}
+%
+\iffalse
+\begingroup
+  \lccode`0=`\{
+  \lccode`1=`\}
+\lowercase{%
+  \endgroup
+  \newcommand\hvBraceLeft{0}%
+  \newcommand\hvBraceRight{1}%
+}
+\def\iBraceL{%
+  \begingroup
+    \edef\x{\endgroup
+      \noexpand\index{\string"\string{@\string\textbraceleft}%
+    }\x}
+\def\iBraceR{%
+  \begingroup
+    \edef\x{\endgroup
+      \noexpand\index{\string"\string{@\string\textbraceleft}%
+    }\x}
+%\begingroup
+%  \edef\x{\endgroup
+%    \noexpand\index{\string"\string{@\string\textbraceleft}%
+%  }%
+%\x
+\else
+%\newcommand*{\hv@braceIndex}[1]{\index{#1}}
+%\newcommand*\iBraceL{\hv@braceIndex{"\hvBraceLeft @\string\textbraceleft}}
+%\newcommand*\iBraceR{\hv@braceIndex{"\hvBraceRight @\string\textbraceright}}
+%\newcommand*\IBraceL{\hv@braceIndex{"\hvBraceLeft @\textbraceleft}\{}
+%\newcommand*\IBraceR{\hv@braceIndex{"\hvBraceRight @\textbraceright}\}}
+\def\iBraceL{\index{\char123}}
+\def\iBraceR{\index{\char125}}
+\def\iVert{\index{\char124}}
+
+\fi
+\newcommand*\IBraceL{\iBraceL\textbraceleft}
+\newcommand*\IBraceR{\iBraceR\textbraceright}
+\newcommand*\IVert{\iVert|}
+
+
+
+\endinput

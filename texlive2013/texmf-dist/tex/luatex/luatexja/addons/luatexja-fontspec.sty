@@ -1,0 +1,227 @@
+%
+% luatexja-fontspec.sty
+%
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{luatexja-fontspec}[2013/05/14 fontspec support of LuaTeX-ja]
+
+\RequirePackage{fontspec,luatexja}
+\ExplSyntaxOn
+
+%%%%%%%% Messages
+\cs_new:Npn \ltj_fontspec_warning:n   { \msg_warning:nn   {ltj-fontspec} }
+
+\msg_new:nnn {ltj-fontspec} {addjfontfeatures-ignored}
+{
+  \string\addjfontfeature (s)~ ignored;\\
+  it~ cannot~ be~ used~ with~ a~ font~ that~ wasn't~ selected~ by~ luatexja-fontspec.
+}
+
+\cs_generate_variant:Nn \prg_new_conditional:Nnn {Nnx}
+
+%%%%%%%% For compatibility with old fontspec.
+\prg_new_conditional:Nnx \ltj_fontspec_if_liiikeys: {TF,F} {
+  \@ifpackagelater {fontspec} {2011/09/13}
+  { \exp_not:N \prg_return_true: }  % fontspec >= 2.2 (l3keys)
+  { \exp_not:N \prg_return_false: } % fontspec <  2.2 (xkeyval)
+}
+
+%%%%%%%% \g_ltj_fontspec_scale_fp
+%% Default scale value for jfont.
+\group_begin:
+\fontsize{10}{10}\selectfont
+\fp_gset:Nn \g_ltj_fontspec_scale_fp {\zw / 10}
+\group_end:
+
+%%%%%%%% Internal control sequences
+%% Each CS is ltj_fontspec version that corresponds to original CS of fontspec.
+\cs_new:Nn \ltj_fontspec_define_option:nn {
+  \ltj_fontspec_if_liiikeys:TF {
+    \keys_define:nn {fontspec} { #1 .code:n = {#2}}
+  } {
+    \define@key[zf]{options}{#1}{#2}
+  }
+}
+
+\cs_new:Nn \ltj_fontspec_define_preparse_external:nn {
+  \ltj_fontspec_if_liiikeys:TF {
+    \keys_define:nn {fontspec-preparse-external} { #1 .code:n = {#2}}
+  } {
+    \define@key[zf]{preparse-external}{#1}{#2}
+  }
+}
+
+\cs_new:Nn \ltj_fontspec_select:nn {
+  \group_begin:
+  \ltj_fontspec_define_option:nn {CID} {
+    \fontspec_update_fontid:n  {+cid=##1}
+    \fontspec_update_featstr:n {cid=##1}
+  }
+  \ltj_fontspec_define_option:nn {JFM} {
+    \fontspec_update_fontid:n  {+jfm=##1}
+    \fontspec_update_featstr:n {jfm=##1}
+  }
+  \ltj_fontspec_define_option:nn {JFM-var} {
+    \fontspec_update_fontid:n  {+jfmvar=##1}
+    \fontspec_update_featstr:n {jfmvar=##1}
+  }
+  \ltj_fontspec_define_preparse_external:nn {NoEmbed} {
+    \cs_set:Nn \fontspec_namewrap:n {psft:####1}
+  }
+  %% Omit the warning message
+  %% "OpenType feature 'Kerning=Off' (-kern) not available ..."
+  \ltj_fontspec_define_option:nn {Kerning/Off} {
+    \fontspec_update_fontid:n  {-kern}
+    \fontspec_update_featstr:n {-kern}
+  }
+  \ltj_fontspec_if_liiikeys:TF {
+    \tl_set:Nn \g_fontspec_encoding_tl {JY3}
+  } {
+    \tl_set:Nn \zf@enc {JY3}
+  }
+  \tl_set:Nx \g_fontspec_default_fontopts_tl
+             {JFM=ujis,Scale=\fp_use:N \g_ltj_fontspec_scale_fp,Kerning=Off,\g_ltj_fontspec_default_fontopts_tl}
+  \cs_set_eq:NN \DeclareFontFamily \DeclareKanjiFamily
+  \fontspec_select:nn{#1}{#2}
+  \group_end:
+  \ltj_fontspec_if_liiikeys:F {
+    \tl_set_eq:NN \l_fontspec_family_tl \zf@family
+  }
+}
+
+\cs_new:Nn \ltj_fontspec_set_family:Nnn {
+  \ltj_fontspec_select:nn{#2}{#3}
+  \tl_set_eq:NN #1 \l_fontspec_family_tl
+}
+
+%%%%%%%% User commands
+\DeclareDocumentCommand \jfontspec { O{} m } {
+  \ltj_fontspec_set_family:Nnn \k@family {#1}{#2}
+  \selectfont
+  \ignorespaces
+}
+
+\DeclareDocumentCommand \setmainjfont { O{} m } {
+  \ltj_fontspec_set_family:Nnn \mcdefault {#1}{#2}
+  \DeclareSymbolFont{mincho}{JY3}{\l_fontspec_family_tl}{m}{n}
+  \SetSymbolFont{mincho}{bold}{JY3}{\l_fontspec_family_tl}{bx}{n}
+  \normalfont
+}
+
+\DeclareDocumentCommand \setsansjfont { O{} m } {
+  \ltj_fontspec_set_family:Nnn \gtdefault {#1}{#2}
+  \DeclareMathAlphabet{\mathgt}{JY3}{\l_fontspec_family_tl}{m}{n}
+  \normalfont
+}
+
+\DeclareDocumentCommand \newjfontfamily { m O{} m } {
+  \ltj_fontspec_select:nn{#2}{#3}
+  \use:x {
+    \exp_not:N \DeclareRobustCommand \exp_not:N #1 {
+      \exp_not:N \kanjifamily {\l_fontspec_family_tl} \exp_not:N \selectfont
+    }
+  }
+}
+
+\DeclareDocumentCommand \newjfontface { m O{} m } {
+  \newjfontfamily #1 [ BoldFont={},ItalicFont={},SmallCapsFont={},#2 ] {#3}
+}
+
+\DeclareDocumentCommand \defaultjfontfeatures {m} {
+  \tl_set:Nn \g_ltj_fontspec_default_fontopts_tl {#1,}
+}
+
+\tl_clear:N \g_ltj_fontspec_default_fontopts_tl
+
+\DeclareDocumentCommand \addjfontfeatures {m} {
+  \ifcsname zf@family@fontdef\k@family\endcsname
+    \group_begin:
+      \tl_clear:N \g_ltj_fontspec_default_fontopts_tl
+      \use:x {
+        \exp_not:N\ltj_fontspec_select:nn
+          {\csname zf@family@options\k@family\endcsname,#1}
+          {\csname zf@family@fontname\k@family\endcsname}
+      }
+    \group_end:
+    \fontfamily\l_fontspec_family_tl\selectfont
+  \else
+    \ltj_fontspec_warning:n {addjfontfeatures-ignored}
+  \fi
+  \ignorespaces
+}
+
+\cs_set_eq:NN \addjfontfeature \addjfontfeatures
+
+\ExplSyntaxOff
+%%%%%%%% Now we completely ignore kanjifont definition file.
+
+\DeclareRobustCommand\fontfamily[1]{%
+  \@notkfamfalse\@notffamfalse\edef\tmp@item{{#1}}%
+  \ifcsname \k@encoding+#1\endcsname % if \k@encoding+#1 is already defined
+    \edef\k@family{#1}%
+  \else
+    \def\@temp##1+{\lowercase{\def\@@temp{##1#1.fd}}}\expandafter\@temp\k@encoding+%
+    \@notkfamtrue
+  \fi
+  \ifcsname \f@encoding+#1\endcsname
+    \edef\f@family{#1}%
+  \else % search font definition file...
+     \ifcsname ffam@list@\f@encoding\endcsname\else
+       \expandafter\gdef\csname ffam@list@\f@encoding\endcsname{}%
+       \expandafter\gdef\csname notffam@list@\f@encoding\endcsname{}%
+     \fi
+     \edef\@templist{\@nameuse{ffam@list@\f@encoding}}%
+     \expandafter\expandafter\expandafter\inlist@\expandafter\tmp@item\expandafter{\@templist}%
+     \ifin@\edef\f@family{#1}\else
+       \edef\@templist{\@nameuse{notffam@list@\f@encoding}}%
+       \expandafter\expandafter\expandafter\inlist@\expandafter\tmp@item\expandafter{\@templist}%
+       \ifin@\@notffamtrue\else
+         \def\@temp##1+{\lowercase{\def\@@temp{##1#1.fd}}}\expandafter\@temp\f@encoding+%
+         \message{(I search font definition file. \@@temp)}%
+         \IfFileExists{\@@temp}{\@tempswztrue}{\@tempswzfalse}%
+         \if@tempswz
+           \expandafter\xdef\csname ffam@list@\f@encoding\endcsname
+             {\@nameuse{ffam@list@\f@encoding}\fam@elt<#1>}\edef\f@family{#1}%
+         \else
+           \expandafter\xdef\csname notffam@list@\f@encoding\endcsname
+             {\@nameuse{notffam@list@\f@encoding}\fam@elt<#1>}\@notffamtrue%
+         \fi
+       \fi
+     \fi
+  \fi
+  \if@notkfam\if@notffam
+      {\ifcsname D@\k@encoding\endcsname\@nameuse{D@\k@encoding}\fi
+        \xdef\@@temp{\default@family}}\edef\k@family{\@@temp}%
+      {\ifcsname D@\f@encoding\endcsname\@nameuse{D@\f@encoding}\fi
+        \xdef\@@temp{\default@family}}\edef\f@family{\@@temp}%
+  \fi\fi
+}
+
+% We must redefine \try@load@fontshape to ignore kanjifont definitions at all.
+\def\try@load@fontshape{%
+   \expandafter
+   \ifx\csname \f@encoding+\f@family\endcsname\relax
+       \edef\tmp@item{{\directlua{%
+         tex.print(luatexbase.catcodetables["latex-package"], '\f@encoding')}%
+       }}% \f@encoding の展開結果の catcode は 12 であるため，これで補正．
+       \expandafter\expandafter\expandafter
+       \inlist@\expandafter\tmp@item\expandafter{\kenc@list}%
+\ifin@ % Japanese font: we don't search fd.
+    \@font@warning{We don't search kanjifont definition
+      \MessageBreak for \f@encoding/\f@family}%
+\else % Alphabetic font
+    \@font@info{Try loading font information for
+                   \f@encoding+\f@family}%
+    \global\expandafter\let
+       \csname\f@encoding+\f@family\endcsname\@empty
+     \nfss@catcodes
+     \let\nfss@catcodes\relax
+     \edef\reserved@a{%
+       \lowercase{%
+         \noexpand\InputIfFileExists{\f@encoding\f@family.fd}}}%
+     \reserved@a\relax
+          {\@input@{\f@encoding\f@family.fd}}%
+\fi
+   \fi}
+
+\endinput

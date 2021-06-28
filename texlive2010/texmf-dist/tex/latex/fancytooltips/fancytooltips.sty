@@ -1,0 +1,483 @@
+%%
+%% This is file `fancytooltips.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% fancytooltips.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (C) 2007 by Robert Marik <marik@mendelu.cz>
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.2 of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.2 or later is part of all distributions of LaTeX version
+%% 1999/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{fancytooltips}
+    [2010/04/10 v1.6 fancytooltips.dtx  file]
+\RequirePackage{everyshi}
+\RequirePackage{graphicx}
+\RequirePackage{xkeyval}
+\RequirePackage{eso-pic}
+
+\newif\ifcreatetips\createtipsfalse
+\DeclareOptionX{createtips}{\createtipstrue}
+
+\newif\ifTooltip@usepdftex\Tooltip@usepdftextrue
+\DeclareOptionX{dvips}{\Tooltip@usepdftexfalse}
+
+\newif\ifextratext\extratexttrue
+\DeclareOptionX{noextratext}{\extratextfalse}
+
+\newif\ifmovetips\movetipsfalse
+\DeclareOptionX{movetips}{\movetipstrue}
+
+\newif\ifmouseover\mouseoverfalse
+\DeclareOptionX{mouseover}{\mouseovertrue}
+
+\newif\if@fancytooltips@inactive\@fancytooltips@inactivefalse
+\DeclareOptionX{inactive}{\@fancytooltips@inactivetrue}
+
+\newif\if@fancytooltips@active\@fancytooltips@activefalse
+\DeclareOptionX{active}{\@fancytooltips@activetrue}
+
+\DeclareOptionX{filename}{\xdef\TooltipFilename{#1}}
+\DeclareOptionX{pages}{\xdef\TooltipPages{#1}}
+
+\def\fancytooltipsdebugmsg{}
+\DeclareOptionX{debug}{\def \fancytooltipsdebugmsg
+{
+if (this.getField("ikona") == null)
+  {app.alert("No buttons for placing tootlips are available. Contact the author. The file may  need more compilations.");}
+  else
+  {app.alert("Buttons for placing tooltips are available. Congratulations! Hope everything will work.");}
+if (this.getField("animtiph") == null)
+  {app.alert("No hidden buttons containing tooltips available. The interactive features will not work. \n\n If you created the file by dvips, run the command ImportTooltips() in the Javascript console (Ctrl+J, write the command followed by semicolon and Ctrl+Enter).");}
+  else
+  {app.alert("Hidden buttons containing tooltips are available. Congratulations! Hope everything will work.");}
+}}
+
+\ProcessOptionsX
+
+\newdimen\buttontipwidth
+\newdimen\buttontipheight
+\newdimen\fancy@a
+\newdimen\fancy@b
+
+\if@fancytooltips@active\@fancytooltips@inactivefalse\fi
+
+\if@fancytooltips@inactive
+\newcommand{\tooltip}{\@ifstar\tooltip@Star\tooltip@NoStar}%
+\newcommand{\tooltip@Star}[2]{#1}%
+\newcommand{\tooltip@NoStar}[2]{#1}%
+
+\newcommand{\tooltipanim}{\@ifstar\tooltipanim@Star\tooltipanim@NoStar}%
+\newcommand{\tooltipanim@Star}[2]{#1}%
+\newcommand{\tooltipanim@NoStar}[2]{#1}%
+\def\keytip#1{}%
+\def\FancyHook{}%
+\def\TooltipPage#1#2{}%
+\let\TooltipExtratext\relax
+\let\TooltipRefmark\relax
+\PackageWarning{fancytooltips}{Fancytooltips inactive}%
+\expandafter\endinput\fi
+
+\newcount\fancycheckcount\fancycheckcount=0
+\def\fancy@second#1#2#3#4{#2}
+
+\def\FancyHook{
+\global\let\oldref\ref
+\gdef\ref##1{\oldref{##1}\global\advance\fancycheckcount by 1\relax
+\edef\templabel{fancyanchorref:\the\fancycheckcount}%
+\expandafter\label\expandafter{\templabel}%
+\expandafter\ifx \csname FancyToolTip@##1\endcsname\relax \else\hbox to 0 pt{%
+\expandafter\ifx \csname r@##1\endcsname \relax\else
+\edef\temp{\csname r@##1\endcsname}%
+\expandafter\edef\expandafter\fan@tempa\expandafter{\expandafter\fancy@second\temp}%
+\fi
+\expandafter\ifx \csname r@fancyanchorref:\the\fancycheckcount\endcsname \relax\else
+\edef\fan@ttemp{r@fancyanchorref:\the\fancycheckcount}%
+\expandafter\let\expandafter\fan@temp@w\csname \fan@ttemp\endcsname
+\edef\fan@temp@ww{\expandafter\fancy@second\fan@temp@w}%
+\fi
+\ifx\fan@temp@ww\undefined\else
+\fi
+\ifx\fan@tempa\fan@temp@ww\else\smash{%
+  \let\TooltipExtratext\relax\tooltip{\strut\TooltipRefmark}{##1}}%
+\fi
+\hss}%
+\fi}
+\ifTooltip@usepdftex
+\def\TooltipRefmark{\hbox {\raisebox{0.4em}{\includegraphics[width=0.7em]%
+        {fancytipmark.pdf}}}}%
+\else
+\def\TooltipRefmark{\hbox {\raisebox{0.4em}{\includegraphics[width=0.7em]%
+        {fancytipmark.eps}}}}%
+\fi%\ifTooltip@usepdftex
+}
+
+\ifcreatetips
+\newwrite\tipfile
+\immediate\openout\tipfile \jobname.tips
+\def\keytip#1{\write\tipfile{\string\tooltipname{#1}{\arabic{page}}}}
+\expandafter\endinput\fi
+
+\ifx\TooltipFilename\undefined
+\PackageWarning{fancytooltips}{** The filename with tooltips is not given. **}
+\fi
+
+\ifTooltip@usepdftex
+\RequirePackage[pdftex]{eforms}
+\def\TooltipExtratext{\hbox{\raisebox{0.4em}{\includegraphics[width=0.7em]%
+        {fancytipmark.pdf}}}}
+\else
+\RequirePackage[dvips]{eforms}
+\def\TooltipExtratext{\hbox{\raisebox{0.4em}{\includegraphics[width=0.7em]%
+        {fancytipmark.eps}}}}
+\fi%\ifTooltip@usepdftex
+\ifextratext\else\let\TooltipExtratext\relax\fi
+
+\AtBeginDocument{
+\global\buttontipwidth=\paperwidth
+\global\buttontipheight=\paperheight
+}
+
+\ifTooltip@usepdftex
+\def\frametip@{%
+  \pdfstartlink user{%
+    /Subtype /Widget
+    /F 6
+    /T (ikona.\thepage)
+    /FT /Btn
+    /Ff 65536
+    /H /N
+    /BS << /W 1 /S /S >>
+    /MK << /TP 1 /IF <</A[1.0 1.0]/SW /B>>  >>
+  }%
+  \vbox to \buttontipheight {\vss\hbox to \buttontipwidth{\hss}}\pdfendlink}
+\else
+\def\everyeqIcon#1{\def\every@eqIcon{#1}}
+\def\every@eqIcon{}
+\newcommand\eqIconFTT[4][]
+{%
+  \push@@Button{#1}{#2}{#3}{#4}{}{\eq@setButtonProps\eq@Button@driver}%
+  {\eqIconDefaults\every@ButtonField\every@eqIcon}%
+}
+\def\eqIconDefaults
+{%
+  \rawPDF{}\S{}\mkIns{/TP 1 /IF<</A[1.0 1.0]/SW/B>>}\R{0}
+  \CA{}\RC{}\AC{}\BC{}\BG{}\H{B}
+  \textColor{0 g}\Ff{\FfReadOnly}
+}
+\def\frametip@{\eqIconFTT[\BC{}\BG{}\F{\FHidden}]%
+  {ikona.\thepage}{\paperwidth}{\paperheight}}%
+\fi%\ifTooltip@usepdftex
+
+\def\frametip{%
+  \expandafter\ifx \csname TooltipPage\thepage\endcsname\relax
+  \else
+  \setbox0=\hbox{\frametip@}%
+  \hbox{\raise \dp0 \box0}
+  \fi}%
+\AddToShipoutPicture{\hbox to 0 pt{\frametip\hss}}
+\definecolor{tooltipcolor}{rgb}{0,0,1}
+
+\newcount\tooltip@count
+\newtoks\tooltip@toks
+\newtoks\tooltip@pagetoks
+\tooltip@pagetoks={\thepage}
+\def\tooltippage{}
+
+\def\TooltipPage#1#2{%
+\expandafter\gdef\csname TooltipPage#2\endcsname{#2}%
+\expandafter\gdef\csname Tooltipcount2page#1\endcsname{#2}%
+}
+
+\def\fancy@JS#1{\JS{var DirtyBeforeTooltip=this.dirty; #1
+  this.dirty=DirtyBeforeTooltip;}}
+
+\newcommand{\tooltip}{\@ifstar
+                     \tooltip@Star%
+                     \tooltip@NoStar%
+}
+
+\newcommand{\tooltip@Star}[2]{{\color{tooltipcolor}#1}%
+  {\let\SaveTooltipExtratext\TooltipExtratext
+   \let\TooltipExtratext\relax
+   \hbox to 0 pt{\tooltip@NoStar{\strut\SaveTooltipExtratext}{#2}\hss}}}
+
+\newcommand{\tooltip@NoStar}[2]{%
+  \global\advance\tooltip@count by 1%
+  \edef\act{\write\@auxout{\noexpand\string\noexpand\TooltipPage{\the\tooltip@count}{\the\tooltip@pagetoks}}}\act
+  \edef\tooltippage{\csname Tooltipcount2page\the\tooltip@count \endcsname}%
+  \checkTipNumber{#2}\edef\TipNumber{\FindTipNumber{#2}}%
+  \def\tempfancytooltips{}%
+  \ifmovetips\edef\tempfancytooltips{nastav(\TipNumber,\tooltippage);}\fi
+  \leavevmode
+  \setbox0=\hbox{{\color{tooltipcolor}{#1}}}\hbox to 0 pt{\copy0\smash{\TooltipExtratext}\hss}%
+  \fancy@a=\ht0
+  \advance\fancy@a by \dp 0
+  \fancy@b=0.5\fancy@a
+  \advance\fancy@b by -\dp0
+  \advance\fancy@b by -2bp
+  \lower-\fancy@b\vtop{\hbox{%
+  \pushButton[\BC{}\BG{}\S{}\AA{\AAMouseExit{\fancy@JS{CloseTooltips();}}%
+  \ifmouseover
+  \AAMouseEnter{\fancy@JS{this.getField("ikona."+(\tooltippage)).hidden=false;
+      try {app.clearInterval(animace);}catch (e) {}
+      \tempfancytooltips
+      zobraz(\TipNumber,\tooltippage);
+    }}
+  \fi}
+  \A{\fancy@JS{this.getField("ikona."+(\tooltippage)).hidden=false;
+      try {app.clearInterval(animace);}catch (e) {}
+      \tempfancytooltips
+      zobraz(\TipNumber,\tooltippage);
+    }}]
+  {TooltipField}{\wd0}{\fancy@a}}}}
+
+\def\delayinterval{200}
+
+\newcommand{\tooltipanim}{\@ifstar
+                     \tooltipanim@Star%
+                     \tooltipanim@NoStar%
+}
+
+\newcommand{\tooltipanim@Star}[3]{{\color{tooltipcolor}#1}%
+  {\let\SaveTooltipExtratext\TooltipExtratext
+   \let\TooltipExtratext\relax
+   \hbox to 0 pt{\tooltipanim@NoStar{\strut\SaveTooltipExtratext}{#2}{#3}\hss}}}
+
+\newcommand{\tooltipanim@NoStar}[3]{%
+  \global\advance\tooltip@count by 1%
+  \edef\act{\write\@auxout{\noexpand\string\noexpand\TooltipPage{\the\tooltip@count}{\the\tooltip@pagetoks}}}\act
+  \edef\tooltippage{\csname Tooltipcount2page\the\tooltip@count \endcsname}%
+  \checkTipNumber{#2}\edef\TipNumberA{\FindTipNumber{#2}}%
+  \checkTipNumber{#3}\edef\TipNumberB{\FindTipNumber{#3}}%
+  \leavevmode
+  \setbox0=\hbox{{\color{tooltipcolor}{#1}}}\hbox to 0 pt{\copy0\smash{\TooltipExtratext}\hss}%
+  \def\tempfancytooltips{}%
+  \ifmovetips\edef\tempfancytooltips{nastav(\TipNumberA,\tooltippage);}\fi
+  \fancy@a=\ht0
+  \advance\fancy@a by \dp 0
+  \fancy@b=0.5\fancy@a
+  \advance\fancy@b by -\dp0
+  \advance\fancy@b by -2bp
+  \lower-\fancy@b\vtop{\hbox{%
+  \pushButton[\BC{}\BG{}\S{}\AA{\AAMouseExit{\fancy@JS{CloseTooltips();}}
+  \ifmouseover
+  \AAMouseEnter{\fancy@JS{
+      try {app.clearInterval(animace);}catch (e) {}
+      var cislo=\TipNumberA;
+      \tempfancytooltips
+      function animuj()
+      {
+        var DirtyBeforeTooltipanim=this.dirty;
+        if (cislo<\TipNumberB) cislo=cislo+1;
+        this.getField('ikona.'+(\tooltippage)).buttonSetIcon(this.getField("animtiph."+cislo).buttonGetIcon());
+        this.dirty=DirtyBeforeTooltipanim;
+      };
+      this.getField('ikona.'+(\tooltippage)).buttonSetIcon(this.getField("animtiph."+\TipNumberA).buttonGetIcon());
+      this.getField("ikona."+(\tooltippage)).hidden=false;
+      animace=app.setInterval('animuj();', \delayinterval);
+    }}
+  \fi}
+  \A{\fancy@JS{
+      try {app.clearInterval(animace);}catch (e) {}
+      var cislo=\TipNumberA;
+      \tempfancytooltips
+      function animuj()
+      {
+        var DirtyBeforeTooltipanim=this.dirty;
+        if (cislo<\TipNumberB) cislo=cislo+1;
+        this.getField('ikona.'+(\tooltippage)).buttonSetIcon(this.getField("animtiph."+cislo).buttonGetIcon());
+        this.dirty=DirtyBeforeTooltipanim;
+      };
+      this.getField('ikona.'+(\tooltippage)).buttonSetIcon(this.getField("animtiph."+\TipNumberA).buttonGetIcon());
+      this.getField("ikona."+(\tooltippage)).hidden=false;
+      animace=app.setInterval('animuj();', \delayinterval);
+    }}
+  ]{TooltipField}{\wd0}{\fancy@a}}}}
+\ifTooltip@usepdftex
+\def\TooltipPageopencloseJS{  \global\pdfpageattr{%
+    /AA << /O << /S /JavaScript /JS (
+    var DirtyBeforeCloseTooltip=this.dirty; CloseTooltips(); this.dirty=DirtyBeforeCloseTooltip;) >>  >>}%
+}
+\pdfximage{\TooltipFilename.pdf}%
+\edef\TooltipPages{\the\pdflastximagepages}%
+\else
+\def\TooltipPageopencloseJS{
+\literalps@out{%
+     [ {ThisPage} << /AA <<
+    /O << /S /JavaScript /JS (var DirtyBeforeCloseTooltip=this.dirty; CloseTooltips(); this.dirty=DirtyBeforeCloseTooltip;) >>
+    >> >> /PUT pdfmark}}
+\OpenAction{/S /JavaScript /JS (var DirtyBeforeCloseTooltip=this.dirty; CloseTooltips(); this.dirty=DirtyBeforeCloseTooltip;)}
+\fi%\ifTooltip@usepdftex
+\EveryShipout{\TooltipPageopencloseJS}%
+
+\ifTooltip@usepdftex
+\begin{insDLJS}[fancyTooltipsLoaded]{Tooltipsdljs}{DLJS for Tooltips}
+  \fancytooltipsdebugmsg
+
+  var animace;
+  var fancyTooltipsLoaded = true;
+
+  function CloseTooltips()
+  {
+    try {this.getField("ikona").hidden=true;}catch (e) {}
+    try {app.clearInterval(animace);}catch (e) {}
+  }
+
+  function nastav(cislo,strana)
+  {
+    var f=this.getField("ikona."+(strana));
+    var g=this.getField("animtiph."+cislo);
+    var sourf=f.rect;
+    var sourg=g.rect;
+    if ((mouseX+sourg[2]-sourg[0])<sourf[2])
+    var percX=100*(mouseX-sourf[0])/((sourf[2]-sourf[0])-(sourg[2]-sourg[0]));
+    else
+    var percX=100*(mouseX-sourf[0]-(sourg[2]-sourg[0]))/((sourf[2]-sourf[0])-(sourg[2]-sourg[0]));
+    var percY=100*(mouseY-sourf[3])/((sourf[1]-sourf[3])-(sourg[1]-sourg[3]));
+    if (percX>100) percX=100;
+    if (percY>100) percY=100;
+    if (percX<0) percX=0;
+    if (percY<0) percY=0;
+    f.buttonAlignX=percX;
+    f.buttonAlignY=percY;
+  }
+
+  function zobraz(cislo,strana)
+  {
+    var f=this.getField("ikona."+(strana));
+    var g=this.getField("animtiph."+cislo);
+    f.hidden=false;
+    f.buttonSetIcon(g.buttonGetIcon());
+  }
+
+  this.dirty=false;
+  app.focusRect = false;
+\end{insDLJS}
+\else
+\begin{insDLJS}[fancyTooltipsLoaded]{Tooltipsdljs}{DLJS for Tooltips}
+  var animace;
+  var fancyTooltipsLoaded = true;
+
+  \fancytooltipsdebugmsg
+
+  function CloseTooltips()
+  {
+    try {this.getField("ikona").hidden=true;}catch (e) {}
+    try {app.clearInterval(animace);}catch (e) {}
+  }
+
+  function ImportTooltips()
+  {
+    console.println("importing pictures");
+    for (var i=1;i<=\TooltipPages;i++)
+    {
+      this.insertPages(this.numPages-1,"\TooltipFilename.pdf",(i-1),(i-1));
+      var rozm=this.getPageBox("Crop",this.numPages-1);
+      this.deletePages(this.numPages-1);
+      var p=this.addField("animtiph."+i,"button",0,rozm);
+      p.buttonPosition=position.iconOnly;
+      p.hidden=true;
+      this.getField("animtiph."+i).buttonImportIcon("\TooltipFilename.pdf",(i-1));
+    }
+    console.println("Imported \TooltipPages pictures, save the PDF file.");
+    return(1);
+  }
+
+  function nastav(cislo,strana)
+  {
+    var f=this.getField("ikona."+(strana));
+    var g=this.getField("animtiph."+cislo);
+    var sourf=f.rect;
+    var sourg=g.rect;
+    if ((mouseX+sourg[2]-sourg[0])<sourf[2])
+    var percX=100*(mouseX-sourf[0])/((sourf[2]-sourf[0])-(sourg[2]-sourg[0]));
+    else
+    var percX=100*(mouseX-sourf[0]-(sourg[2]-sourg[0]))/((sourf[2]-sourf[0])-(sourg[2]-sourg[0]));
+    var percY=100*(mouseY-sourf[3])/((sourf[1]-sourf[3])-(sourg[1]-sourg[3]));
+    if (percX>100) percX=100;
+    if (percY>100) percY=100;
+    if (percX<0) percX=0;
+    if (percY<0) percY=0;
+    f.buttonAlignX=percX;
+    f.buttonAlignY=percY;
+  }
+
+  function zobraz(cislo,strana)
+  {
+    var f=this.getField("ikona."+(strana));
+    var g=this.getField("animtiph."+cislo);
+    f.hidden=false;
+    f.buttonSetIcon(g.buttonGetIcon());
+  }
+
+  this.dirty=false;
+  app.focusRect = false;
+\end{insDLJS}
+\fi
+\newcount\tooltip@count
+\ifTooltip@usepdftex
+\newcommand*{\TooltipHidden}{%
+  \count@=0
+  \@whilenum\count@<\TooltipPages \do{%
+    \tooltip@count=\count@
+    \advance \tooltip@count by 1%
+    \bgroup
+    \immediate\pdfximage
+    page \the\tooltip@count{\TooltipFilename.pdf}%
+    \mbox{\leavevmode
+      \vbox to 0 pt{\vss\hbox to 0 pt{\pdfstartlink user{%
+        /Subtype /Widget
+        /F 6
+        /T (animtiph.\the\tooltip@count)
+        /FT /Btn
+        /Ff 65536
+        /H /N
+        /BS << /W 1 /S /S >>
+        /MK <<
+        /TP 1
+        /I \the\pdflastximage\space 0 R
+        /IF << /SW /A >>
+        >>
+      }%
+      \phantom{\pdfrefximage \pdflastximage}%
+      \pdfendlink\hss}}}%
+    \egroup
+    \advance\count@\@ne}%
+}
+\AddToShipoutPicture*{\hbox to 0 pt{\TooltipHidden}}
+\else
+\let\TooltipHidden\relax
+\fi
+\AtBeginDocument{\IfFileExists{\TooltipFilename.tips}%
+  {\input{\TooltipFilename.tips}
+  \PackageInfo{fancytooltips}{Inputting \TooltipFilename.tips.}}%
+  {\PackageWarning{fancytooltips}{No file \TooltipFilename.tips!
+      Your keywords for tooltips will not work!}}}
+
+\def\tooltipname#1#2{\expandafter\xdef\csname FancyToolTip@#1\endcsname{#2}}
+
+\def\FindTipNumber#1{\expandafter\ifx \csname FancyToolTip@#1\endcsname\relax
+  #1\else\csname FancyToolTip@#1\endcsname\fi}
+
+\def\checkTipNumber#1{\expandafter\ifx
+  \csname FancyToolTip@#1\endcsname\relax \PackageWarning{fancytooltips}{No
+    framenumber is assigned to keyword #1. I assume that #1 is the
+    number of the frame.}%
+  \fi}
+
+\endinput
+%%
+%% End of file `fancytooltips.sty'.

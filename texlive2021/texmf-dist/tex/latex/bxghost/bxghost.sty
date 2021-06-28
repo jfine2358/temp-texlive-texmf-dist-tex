@@ -1,0 +1,112 @@
+%%
+%% This is file 'bxghost.sty'.
+%%
+%% Copyright 2019 Takuto ASAKURA (wtsnjp)
+%%   GitHub:   https://github.com/wtsnjp
+%%   Twitter:  @wtsnjp
+%%
+%% This package is distributed under the MIT License.
+%%
+
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bxghost}[2020/01/31 v0.3.0]
+
+%% preparations
+\def\bxqgg@pkgname{bxghost}
+\def\bxqgg@warn{\PackageWarningNoLine\bxqgg@pkgname}
+
+%--------------------------------------- general
+
+%% \bxqgg@engine : engine type
+\def\bxqgg@next#1#2{%
+  \edef\bxqgg@tmpa{\string#1}\edef\bxqgg@tmpb{\meaning#1}%
+  \ifx\bxqgg@tmpa\bxqgg@tmpb #2\fi}
+\chardef\bxqgg@engine=0 % other TeX
+\bxqgg@next\kanjiskip    {\chardef\bxqgg@engine=1 }% (u)pTeX (or ApTeX)
+\bxqgg@next\luatexversion{\chardef\bxqgg@engine=2 }% LuaTeX
+\bxqgg@next\XeTeXversion {\chardef\bxqgg@engine=3 }% XeTeX
+
+%--------------------------------------- not supported engine
+
+\ifnum\bxqgg@engine=\z@
+  \bxqgg@warn{This engine is not supported, sorry}
+  \expandafter\endinput
+\fi
+
+%--------------------------------------- the verb option
+
+\newif\ifbxqgg@verb \bxqgg@verbfalse
+\DeclareOption{verb}{\bxqgg@verbtrue}
+\ProcessOptions\relax
+
+%--------------------------------------- eghostguarded
+
+% use an arbitrary font available in T1 encoding
+\font\bxqgg@TI=ec-lmr10 at 1.23456pt
+\chardef\bxqgg@cwm=23 % compwordmark (in T1)
+
+% allow xkanjiskip around
+% Note: for XeTeX, xeCJK will handle nicely. We have nothing to do :)
+\ifcase\bxqgg@engine
+\or  % pTeX
+  \xspcode\bxqgg@cwm=3\relax
+\or  % LuaTeX
+  \ltjsetparameter{alxspmode={\bxqgg@cwm,3}}
+\fi
+
+%%<*> \eghostguarded{<text>}
+\newcommand*\eghostguarded{%
+  \ifmmode \expandafter\@firstofone
+  \else \expandafter\bxqgg@eghostguarded@a
+  \fi
+}
+\def\bxqgg@eghostguarded@a#1{%
+  \bxqgg@eghost #1\bxqgg@eghost}
+\def\bxqgg@eghost{\bgroup
+  \bxqgg@TI\bxqgg@cwm\egroup}
+
+% patch \verb
+\ifbxqgg@verb
+  \edef\verb{\noexpand\bxqgg@eghost\unexpanded\expandafter{\verb}}
+  \edef\verb@egroup{%
+    \unexpanded\expandafter{\verb@egroup}\noexpand\bxqgg@eghost}
+\fi
+
+%--------------------------------------- jghostguarded
+
+%% \bxqgg@fwsp: a zenkaku space (U+3000)
+\begingroup
+  \ifnum\bxqgg@engine=\@ne  % pTeX
+    \kansujichar\@ne=\jis"2121\relax
+    \xdef\bxqgg@fwsp{\kansuji\@ne}
+  \else  % others
+    \lccode`\Z="3000\relax
+    \lowercase{\xdef\bxqgg@fwsp{Z}}
+  \fi
+\endgroup
+
+%% \bxqgg@kern@m@ne@zw: a negative zenkaku width kern
+\ifnum\bxqgg@engine=\@ne
+  % pTeX knows the unit `zw'
+  \def\bxqgg@kern@m@ne@zw{\kern-1zw\relax}
+\else
+  % for other engines, we use \zw instead
+  \def\bxqgg@kern@m@ne@zw{\kern-1\zw\relax}
+\fi
+
+%%<*> \jghostguarded{<text>}
+\newcommand*\jghostguarded{%
+  \ifmmode \expandafter\@firstofone
+  \else \expandafter\bxqgg@jghostguarded@a
+  \fi
+}
+\edef\bxqgg@jghostguarded@a#1{%
+  \bxqgg@fwsp\bxqgg@kern@m@ne@zw
+  #1%
+  \bxqgg@kern@m@ne@zw\bxqgg@fwsp
+}
+
+%--------------------------------------- all done
+\endinput
+%% EOF

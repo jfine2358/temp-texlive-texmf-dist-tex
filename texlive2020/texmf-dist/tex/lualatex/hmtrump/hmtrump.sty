@@ -1,0 +1,258 @@
+%
+% This is `hmtrump.sty'
+%
+% Author: Hitomi-san (a.k.a. Carele Smith)
+%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{hmtrump}[2019-08-06 v1.2a]
+\RequirePackage{tikz,xcolor,fontspec}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 定義本体
+
+%: 色の宣言
+\definecolor{hartsuit}{cmyk}{.14,.94,.22,.27}
+\definecolor{diasuit}{cmyk}{.11,.57,.97,.31}
+\definecolor{clubsuit}{cmyk}{.70,.5,.99,.18}
+\definecolor{spadesuit}{cmyk}{.98,.80,.5,.15}
+
+\definecolor{cardback}{gray}{.95}
+\definecolor{cardborder}{gray}{.2}
+\definecolor{cardtext}{gray}{0}
+
+% \hmtc@strut => 支柱\rule[-0.65em]{0pt}{1.85em}
+% \newcommand{\hmtc@strut}{\rule[-0.65em]{0pt}{1.85em}}
+\newcommand{\hmtc@strut}{\relax}
+
+%: 日本語している時対策
+\ifx\ltjdefcharrange\@undefined\relax\else
+	\ltjdefcharrange{24}{
+		"2660-"2667,%各スート
+		"E000-"E005,%ブランク、（合成用ブランク→不使用）、数字10-13
+		"EDDB-"EDE3,%ジョーカーマーク
+		"2160-"216B,%ローマ数字1-12
+		"E5BC-"E5BE,%ローマ数字12-21
+		"1F0A0-"1F0FF%Unicodeトランプ
+	}
+	\ltjsetparameter{jacharrange={-24}}
+\fi
+
+%: \hmtcfont => フォント変更
+\newcommand{\hmtc@trump@font}{NKD04_Playing_Cards_Index}
+\newfontfamily\hmtcfont{\hmtc@trump@font}
+
+%%: \trump{ランク}{スート}
+\tikzset{hmtcscale/.style={scale=0.9}} % 倍率
+\tikzset{hmtrump/.style={hmtcscale,draw=cardborder,fill=cardback,outer sep=0pt,rounded corners}}
+	% hmtrump スタイルを定義し直す（\tikzset を使って上書きする）ことで、カードのスタイルを変更可能。
+
+\newcommand{\trump}[2]{\hmtc@strut\hmtc@trump@{\hmtc@rank@{#1}}{#2}}
+
+\newcommand{\hmtc@rank@}[1]{\ifx#1T{\char"E002}\else#1\fi} % 10
+
+\newcommand{\hmtc@trump@}[2]{%
+	\ifx#2H{%
+		\tikz[baseline=(T.base)]
+		\node[hmtrump,text=hartsuit]
+		(T)at(0,0){\hmtcfont{#1\char"2665}};%
+	}%
+	\else\ifx#2D{%
+		\tikz[baseline=(T.base)]
+		\node[hmtrump,text=diasuit]
+		(T)at(0,0){\hmtcfont{#1\char"2666}};%
+	}%
+	\else\ifx#2C{%
+		\tikz[baseline=(T.base)]
+		\node[hmtrump,text=clubsuit]
+		(T)at(0,0){\hmtcfont{#1\char"2663}};%
+	}%
+	\else\ifx#2S{%
+		\tikz[baseline=(T.base)]
+		\node[hmtrump,text=spadesuit]
+		(T)at(0,0){\hmtcfont{#1\char"2660}};%
+	}%
+	\else{%
+		\tikz[baseline=(T.base)]
+		\node[hmtrump]
+		(T)at(0,0){\hmtcfont{#1}};%
+	}%
+	\fi\fi\fi\fi%
+}
+
+%%: \trumpx{ランク}
+\newcommand{\trumpx}[1]{\hmtc@strut\hmtc@trump@{\hmtc@rank@{#1}}{x}}
+
+
+%: \hm[S,H,D,C] => それぞれのスートを出力
+\newcommand{\hmH}{\textcolor{hartsuit}{\hmtcfont\char"2665}}
+\newcommand{\hmD}{\textcolor{diasuit}{\hmtcfont\char"2666}}
+\newcommand{\hmC}{\textcolor{clubsuit}{\hmtcfont\char"2663}}
+\newcommand{\hmS}{\textcolor{spadesuit}{\hmtcfont\char"2660}}
+
+%: \joker など=> ジョーカー
+\newcommand{\BLACKJOKER}{\trumpx{\char"F5BC}}
+\newcommand{\WHITEJOKER}{\trumpx{\char"F5BD}}
+\newcommand{\REDJOKER}{\trumpx{\char"F5BE}}
+\newcommand{\JOKER}{\BLACKJOKER}
+
+\newcommand{\blackjoker}{\hmtc@joker@base{\char"F5BC}}
+\newcommand{\whitejoker}{\hmtc@joker@base{\char"F5BD}}
+\newcommand{\redjoker}{\hmtc@joker@base{\char"F5BE}}
+\newcommand{\joker}{\blackjoker}
+
+\newcommand{\hmtc@joker@base}[1]{\hmtc@strut{\hmtcfont%
+	\tikz[baseline=(T.base)]\node[hmtrump](T)at(0,0){
+		\parbox{1em}{
+			\fontsize{0.3em}{0}\rule{0pt}{0pt}\hfil\selectfont JOKER\hfil\rule{0pt}{0pt}\\
+			\fontsize{2.33em}{0}\selectfont\rule{0pt}{0pt}\hfil#1\hfil\rule{0pt}{0pt}%
+		}
+	};%
+}}
+
+
+%: \trumpblank => 枠
+\newcommand{\trumpblank}[1]{%
+	\rule[-0.65em]{0pt}{1.85em}\tikz[baseline=(T.base)]\node[hmtrump](T)at(0,0){#1};%
+}
+
+%: \romanindex => ローマ数字
+\newcounter{hmtc@roman}
+\newcommand{\romanindex}[1]{%
+	\ifnum#1=0\relax%
+		O%
+	\else\ifnum#1<13\relax%
+		\setcounter{hmtc@roman}{"215F}%
+		\addtocounter{hmtc@roman}{#1}%
+		{\hmtcfont\char\value{hmtc@roman}}%
+	\else\ifnum#1>12\relax%
+		\setcounter{hmtc@roman}{"EDCE}%
+		\addtocounter{hmtc@roman}{#1}%
+		{\hmtcfont\char\value{hmtc@roman}}%
+	\fi\fi\fi%
+}
+
+%: \tarottrump => タロットの切札
+\newcommand{\tarottrump}[1]{\trumpx{\romanindex{#1}}}
+
+%: \unitrump => ユニコードのトランプ領域
+%%: カードの名前をマクロに被覆
+% 通常のトランプ
+\def\hmtc@uni@s@ace{AS}     \def\hmtc@uni@h@ace{AH}     \def\hmtc@uni@d@ace{AD}     \def\hmtc@uni@c@ace{AC}
+\def\hmtc@uni@s@two{2S}     \def\hmtc@uni@h@two{2H}     \def\hmtc@uni@d@two{2D}     \def\hmtc@uni@c@two{2C}
+\def\hmtc@uni@s@three{3S}   \def\hmtc@uni@h@three{3H}   \def\hmtc@uni@d@three{3D}   \def\hmtc@uni@c@three{3C}
+\def\hmtc@uni@s@four{4S}    \def\hmtc@uni@h@four{4H}    \def\hmtc@uni@d@four{4D}    \def\hmtc@uni@c@four{4C}
+\def\hmtc@uni@s@five{5S}    \def\hmtc@uni@h@five{5H}    \def\hmtc@uni@d@five{5D}    \def\hmtc@uni@c@five{5C}
+\def\hmtc@uni@s@six{6S}     \def\hmtc@uni@h@six{6H}     \def\hmtc@uni@d@six{6D}     \def\hmtc@uni@c@six{6C}
+\def\hmtc@uni@s@seven{7S}   \def\hmtc@uni@h@seven{7H}   \def\hmtc@uni@d@seven{7D}   \def\hmtc@uni@c@seven{7C}
+\def\hmtc@uni@s@eight{8S}   \def\hmtc@uni@h@eight{8H}   \def\hmtc@uni@d@eight{8D}   \def\hmtc@uni@c@eight{8C}
+\def\hmtc@uni@s@nine{9S}    \def\hmtc@uni@h@nine{9H}    \def\hmtc@uni@d@nine{9D}    \def\hmtc@uni@c@nine{9C}
+\def\hmtc@uni@s@ten{TS}     \def\hmtc@uni@h@ten{TH}     \def\hmtc@uni@d@ten{TD}     \def\hmtc@uni@c@ten{TC}
+\def\hmtc@uni@s@jack{JS}    \def\hmtc@uni@h@jack{JH}    \def\hmtc@uni@d@jack{JD}    \def\hmtc@uni@c@jack{JC}
+\def\hmtc@uni@s@cavallo{CS} \def\hmtc@uni@h@cavallo{CH} \def\hmtc@uni@d@cavallo{CD} \def\hmtc@uni@c@cavallo{CC}
+\def\hmtc@uni@s@queen{QS}   \def\hmtc@uni@h@queen{QH}   \def\hmtc@uni@d@queen{QD}   \def\hmtc@uni@c@queen{QC}
+\def\hmtc@uni@s@king{KS}    \def\hmtc@uni@h@king{KH}    \def\hmtc@uni@d@king{KD}    \def\hmtc@uni@c@king{KC}
+% ジョーカー
+\def\hmtc@uni@joker@a{joker}    \def\hmtc@joker@b{joker1}   \def\hmtc@joker@c{joker2}
+% 裏
+\def\hmtc@uni@back{back}
+% タロット
+\def\hmtc@uni@tarot@zero{0}        \def\hmtc@uni@tarot@one{1}         \def\hmtc@uni@tarot@two{2}
+\def\hmtc@uni@tarot@three{3}       \def\hmtc@uni@tarot@four{4}        \def\hmtc@uni@tarot@five{5}
+\def\hmtc@uni@tarot@six{6}         \def\hmtc@uni@tarot@seven{7}       \def\hmtc@uni@tarot@eight{8}
+\def\hmtc@uni@tarot@nine{9}        \def\hmtc@uni@tarot@ten{10}        \def\hmtc@uni@tarot@eleven{11}
+\def\hmtc@uni@tarot@twelve{12}      \def\hmtc@uni@tarot@thirteen{13}   \def\hmtc@uni@tarot@fourteen{14}
+\def\hmtc@uni@tarot@fifteen{15}    \def\hmtc@uni@tarot@sixteen{16}    \def\hmtc@uni@tarot@seventeen{17}
+\def\hmtc@uni@tarot@eighteen{18}   \def\hmtc@uni@tarot@nineteen{19}   \def\hmtc@uni@tarot@twenty{20}
+\def\hmtc@uni@tarot@twentyone{21}
+%%: 定義本体
+\newcommand{\unitrump}[1]{{\hmtcfont%
+	\def\hmtc@unitrump@arg{#1}%
+	% スペード
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@ace\relax\char"1F0A1\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@two\relax\char"1F0A2\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@three\relax\char"1F0A3\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@four\relax\char"1F0A4\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@five\relax\char"1F0A5\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@six\relax\char"1F0A6\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@seven\relax\char"1F0A7\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@eight\relax\char"1F0A8\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@nine\relax\char"1F0A9\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@ten\relax\char"1F0AA\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@jack\relax\char"1F0AB\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@cavallo\relax\char"1F0AC\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@queen\relax\char"1F0AD\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@s@king\relax\char"1F0AE\fi%
+	% ハート
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@ace\relax\char"1F0B1\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@two\relax\char"1F0B2\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@three\relax\char"1F0B3\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@four\relax\char"1F0B4\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@five\relax\char"1F0B5\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@six\relax\char"1F0B6\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@seven\relax\char"1F0B7\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@eight\relax\char"1F0B8\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@nine\relax\char"1F0B9\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@ten\relax\char"1F0BA\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@jack\relax\char"1F0BB\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@cavallo\relax\char"1F0BC\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@queen\relax\char"1F0BD\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@h@king\relax\char"1F0BE\fi%
+	% ダイヤ
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@ace\relax\char"1F0C1\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@two\relax\char"1F0C2\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@three\relax\char"1F0C3\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@four\relax\char"1F0C4\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@five\relax\char"1F0C5\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@six\relax\char"1F0C6\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@seven\relax\char"1F0C7\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@eight\relax\char"1F0C8\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@nine\relax\char"1F0C9\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@ten\relax\char"1F0CA\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@jack\relax\char"1F0CB\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@cavallo\relax\char"1F0CC\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@queen\relax\char"1F0CD\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@d@king\relax\char"1F0CE\fi%
+	% クラブ
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@ace\relax\char"1F0D1\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@two\relax\char"1F0D2\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@three\relax\char"1F0D3\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@four\relax\char"1F0D4\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@five\relax\char"1F0D5\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@six\relax\char"1F0D6\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@seven\relax\char"1F0D7\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@eight\relax\char"1F0D8\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@nine\relax\char"1F0D9\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@ten\relax\char"1F0DA\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@jack\relax\char"1F0DB\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@cavallo\relax\char"1F0DC\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@queen\relax\char"1F0DD\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@c@king\relax\char"1F0DE\fi%
+	% ジョーカー
+	\ifx\hmtc@unitrump@arg\hmtc@uni@joker@a\relax\char"1F0BF\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@joker@b\relax\char"1F0CF\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@joker@c\relax\char"1F0DF\fi%
+	% 裏
+	\ifx\hmtc@unitrump@arg\hmtc@uni@back\relax\char"1F0A0\fi%
+	% タロット
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@zero\relax\char"1F0E0\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@one\relax\char"1F0E1\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@two\relax\char"1F0E2\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@three\relax\char"1F0E3\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@four\relax\char"1F0E4\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@five\relax\char"1F0E5\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@six\relax\char"1F0E6\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@seven\relax\char"1F0E7\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@eight\relax\char"1F0E8\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@nine\relax\char"1F0E9\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@ten\relax\char"1F0EA\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@eleven\relax\char"1F0EB\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@twelve\relax\char"1F0EC\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@thirteen\relax\char"1F0ED\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@fourteen\relax\char"1F0EE\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@fifteen\relax\char"1F0EF\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@sixteen\relax\char"1F0F0\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@seventeen\relax\char"1F0F1\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@eighteen\relax\char"1F0F2\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@nineteen\relax\char"1F0F3\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@twenty\relax\char"1F0F4\fi%
+	\ifx\hmtc@unitrump@arg\hmtc@uni@tarot@twentyone\relax\char"1F0F5\fi%
+}}

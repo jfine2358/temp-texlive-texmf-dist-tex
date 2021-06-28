@@ -1,0 +1,623 @@
+%%
+%% This is file `tagpdf-struct-code.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% tagpdf-struct.dtx  (with options: `struct')
+%% 
+%% Copyright (C) 2019 Ulrike Fischer
+%% 
+%% It may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License (LPPL), either version 1.3c of
+%% this license or (at your option) any later version.  The latest
+%% version of this license is in the file:
+%% 
+%%    https://www.latex-project.org/lppl.txt
+%% 
+%% This file is part of the "tagpdf bundle" (The Work in LPPL)
+%% and all files in that bundle must be distributed together.
+%% 
+%% File: tagpdf-struct.dtx
+\ProvidesExplPackage {tagpdf-struct-code} {2021/02/23} {0.80}
+ {part of tagpdf - code related to storing structure}
+
+
+\newcounter  { g__tag_struct_abs_int }
+\int_gzero:N \c@g__tag_struct_abs_int
+
+
+
+\__tag_seq_new:N  \g__tag_struct_objR_seq
+
+\seq_new:N    \g__tag_struct_stack_seq
+\seq_gpush:Nn \g__tag_struct_stack_seq {0}
+
+\tl_new:N     \l__tag_struct_stack_parent_tmp_tl
+\tl_new:N     \g__tag_struct_stack_current_tl
+
+
+
+\seq_const_from_clist:Nn \c__tag_struct_StructTreeRoot_entries_seq
+  {%p. 857/858
+    Type,              % always /StructTreeRoot
+    K,                 % kid, dictionary or array of dictionaries
+    IDTree,            % currently unused
+    ParentTree,        % required,obj ref to the parent tree
+    ParentTreeNextKey, %optional
+    RoleMap,
+    ClassMap
+  }
+
+\seq_const_from_clist:Nn \c__tag_struct_StructElem_entries_seq
+  {%p 858 f
+    Type,              %always /StructElem
+    S,                 %tag/type
+    P,                 %parent
+    ID,                %optional
+    Ref,               %optional, pdf 2.0 Use?
+    Pg,                %obj num of starting page, optional
+    K,                 %kids
+    A,                 %attributes, probably unused
+    C,                 %class ""
+    %R,
+    T,                 %title, value in () or <>
+    Lang,              %language
+    Alt,               % value in () or <>
+    E,                 %abreviation
+    ActualText,
+    AF,                 %pdf 2.0, array of dict, associated files
+    NS,                 %pdf 2.0, dict, namespace
+    PhoneticAlphabet,   %pdf 2.0
+    Phoneme             %pdf 2.0
+  }
+
+
+\cs_new:Nn \__tag_struct_output_prop_aux:nn %#1 num, #2 key
+  {
+    \prop_if_in:cnT
+      { g__tag_struct_#1_prop }
+      { #2 }
+      {
+        \c_space_tl/#2~ \prop_item:cn{ g__tag_struct_#1_prop } { #2 }
+      }
+  }
+
+\cs_new:Nn \__tag_new_output_prop_handler:n
+  {
+    \cs_new:cn { __tag_struct_output_prop_#1:n }
+      {
+        \__tag_struct_output_prop_aux:nn {#1}{##1}
+      }
+  }
+
+\__tag_prop_new:c { g__tag_struct_0_prop }
+\__tag_new_output_prop_handler:n {0}
+\tl_gset:Nn \g__tag_struct_stack_current_tl {0}
+
+\__tag_seq_new:c  { g__tag_struct_kids_0_seq }
+
+
+\__tag_prop_gput:cno
+  { g__tag_struct_0_prop }
+  { objref}
+  { \pdf_object_ref:n { c__tag_struct_0_obj } }
+
+\__tag_prop_gput:cno
+  { g__tag_struct_0_prop }
+  { Type }
+  { /StructTreeRoot }
+
+\__tag_prop_gput:cnx
+  { g__tag_struct_0_prop }
+  { ParentTree }
+  { \pdf_object_ref:n { c__tag_tree_parenttree_obj } }
+
+\__tag_prop_gput:cnx
+  { g__tag_struct_0_prop }
+  { RoleMap }
+  { \pdf_object_ref:n { c__tag_tree_rolemap_obj } }
+
+\__tag_prop_gput:cno
+  { g__tag_struct_0_prop }
+  { entries }
+  { StructTreeRoot }
+
+\__tag_prop_gput:cno
+  { g__tag_struct_0_prop }
+  { num }
+  { 0 }
+
+
+\cs_new:Nn \__tag_struct_kid_mc_gput_right:nn %#1 structure num, #2 MCID absnum%
+  {
+    %\__tag_store_pdfpageref:Nn \l_tmpa_tl { \__tag_ref_value:enn{mcid-#2}{tagabspage}{1} }
+    \__tag_seq_gput_right:cx
+      { g__tag_struct_kids_#1_seq }
+      {
+        <<
+        /Type \c_space_tl /MCR \c_space_tl
+        /Pg %\c_space_tl \l_tmpa_tl \c_space_tl 0 \c_space_tl R \c_space_tl
+          \c_space_tl
+          \pdf_pageobject_ref:n { \__tag_ref_value:enn{mcid-#2}{tagabspage}{1} }
+        /MCID \c_space_tl \__tag_ref_value:enn{mcid-#2}{tagmcid}{1}
+        >>
+      }
+  }
+
+\cs_new:Nn\__tag_struct_kid_struct_gput_right:nn %#1 num of parent struct, #2 kid struct
+  {
+    \__tag_seq_gput_right:cx
+      { g__tag_struct_kids_#1_seq }
+      {
+        \prop_item:cn
+          { g__tag_struct_#2_prop }
+          { objref }
+      }
+ }
+
+\cs_new:Nn\__tag_struct_kid_link_gput_right:nn %#1 num of parent struct, #2 obj reference
+  {
+    \pdf_object_unnamed_write:nx
+      { dict }
+      {
+        /Type \c_space_tl /OBJR \c_space_tl
+        /Obj~#2
+      }
+    \__tag_seq_gput_right:cx
+      { g__tag_struct_kids_#1_seq }
+      {
+        \pdf_object_ref_last:
+      }
+  }
+
+\cs_generate_variant:Nn\__tag_struct_kid_link_gput_right:nn { nx }
+
+\cs_new:Nn\__tag_struct_exchange_kid_command:N %N= seq
+  {
+    \seq_gpop_left:NN #1 \l_tmpa_tl
+    \regex_replace_once:nnN
+      { \c{\__tag_mc_insert_mcid_kids:n} }
+      { \c{\__tag_mc_insert_mcid_single_kids:n} }
+      \l_tmpa_tl
+   \seq_gput_left:NV #1 \l_tmpa_tl
+  }
+
+\cs_generate_variant:Nn\__tag_struct_exchange_kid_command:N { c }
+
+\cs_new:Nn \__tag_struct_fill_kid_key:n %#1 is the struct num
+  {
+    \int_case:nnF
+      {
+        \seq_count:c
+          {
+            g__tag_struct_kids_\prop_item:cn{ g__tag_struct_#1_prop }{num}_seq
+          }
+      }
+      {
+        { 0 }
+         { } %no kids, do nothing
+        { 1 } % 1 kid, insert
+         {
+           % in this case we need a special command in
+           %luamode to get the array right. See issue #13
+           \bool_if:NT\g__tag_mode_lua_bool
+             {
+               \__tag_struct_exchange_kid_command:c
+                 {g__tag_struct_kids_\prop_item:cn{ g__tag_struct_#1_prop }{num}_seq}
+             }
+           \__tag_prop_gput:cnx { g__tag_struct_#1_prop } {K}
+             {
+               \seq_item:cn
+                 {
+                   g__tag_struct_kids_\prop_item:cn{ g__tag_struct_#1_prop }{num}_seq
+                 }
+                 {1}
+             }
+         } %
+      }
+      { %many kids, use an array
+        \__tag_prop_gput:cnx { g__tag_struct_#1_prop } {K}
+          {
+            [
+              \seq_use:cn
+                {
+                  g__tag_struct_kids_\prop_item:cn{ g__tag_struct_#1_prop }{num}_seq
+                }
+                {
+                  \c_space_tl
+                }
+            ]
+          }
+      }
+  }
+
+
+\tl_new:N \l__tag_struct_dict_content_tl
+
+\cs_new:Nn \__tag_struct_get_dict_content:n
+  {
+    %\tl_set:Nn \l__tag_struct_dict_content_tl {<<}
+    \tl_clear:N \l__tag_struct_dict_content_tl
+    \seq_map_inline:cn
+      {
+        c__tag_struct_\prop_item:cn{ g__tag_struct_#1_prop }{entries}_entries_seq
+      }
+      {
+        \tl_put_right:Nx
+          \l__tag_struct_dict_content_tl
+          {
+             \prop_if_in:cnT
+               { g__tag_struct_#1_prop }
+               { ##1 }
+               {
+                 \c_space_tl/##1~\prop_item:cn{ g__tag_struct_#1_prop } { ##1 }
+               }
+          }
+      }
+    %\tl_put_right:Nn \l__tag_struct_dict_content_tl { >> }
+  }
+
+\cs_new:Nn \__tag_struct_write_obj:n
+  {
+    \prop_if_in:cnTF
+      { g__tag_struct_#1_prop }
+      { objref }
+      {
+        \__tag_struct_fill_kid_key:n { #1 }
+        %\prop_show:c { g__tag_struct_#1_prop }
+        \__tag_struct_get_dict_content:n { #1 }
+        \exp_args:Nx
+          \pdf_object_write:nx
+            { c__tag_struct_#1_obj }
+            {
+              \l__tag_struct_dict_content_tl
+            }
+      }
+      {
+        \msg_error:nnn { tag } { struct-no-objnum } { #1}
+      }
+  }
+
+\keys_define:nn { __tag / struct }
+  {
+    label .tl_set:N      = \l__tag_struct_key_label_tl,
+    stash .bool_set:N    = \l__tag_struct_elem_stash_bool,
+    tag   .code:n        = % S property
+      {%%????????? \pdfescapename??
+        \tl_set:Nx \l__tag_tmpa_tl { #1 }
+        \bool_if:NT \g__tag_check_tags_bool
+          {
+            \__tag_check_structure_tag:N \l__tag_tmpa_tl
+          }
+       \__tag_prop_gput:cnx
+         { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+         { S }
+         { /\exp_not:V\l__tag_tmpa_tl }
+      },
+    title .code:n        = % T property
+      {
+        \str_set_convert:Nnon
+          \l__tag_tmpa_str
+          { #1 }
+          { default }
+          { utf16/hex }
+        \__tag_prop_gput:cnx
+          { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+          { T }
+          { <\l__tag_tmpa_str> }
+      },
+    title-o .code:n        = % T property
+      {
+        \str_set_convert:Nnon
+          \l__tag_tmpa_str
+          { #1 }
+          { default }
+          { utf16/hex }
+        \__tag_prop_gput:cnx
+          { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+          { T }
+          { <\l__tag_tmpa_str> }
+      },
+    alttext .code:n      = % Alt property
+      {
+        \str_set_convert:Nnon
+          \l__tag_tmpa_str
+          { #1 }
+          { default }
+          { utf16/hex }
+        \__tag_prop_gput:cnx
+          { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+          { Alt }
+          { <\l__tag_tmpa_str> }
+      },
+    alttext-o .code:n      = % Alt property
+      {
+        \str_set_convert:Noon
+          \l__tag_tmpa_str
+          { #1 }
+          { default }
+          { utf16/hex }
+        \__tag_prop_gput:cnx
+          { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+          { Alt }
+          { <\l__tag_tmpa_str> }
+      },
+    actualtext .code:n  = % ActualText property
+      {
+        \str_set_convert:Nnon
+          \l__tag_tmpa_str
+          { #1 }
+          { default }
+          { utf16/hex }
+        \__tag_prop_gput:cnx
+          { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+          { ActualText }
+          { <\l__tag_tmpa_str>}
+      },
+    actualtext-o .code:n  = % ActualText property
+      {
+        \str_set_convert:Noon
+          \l__tag_tmpa_str
+          { #1 }
+          { default }
+          { utf16/hex }
+        \__tag_prop_gput:cnx
+          { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+          { ActualText }
+          { <\l__tag_tmpa_str>}
+      },
+    lang .code:n        = % Lang property
+      {
+        \__tag_prop_gput:cnx
+          { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+          { Lang }
+          { (#1) }
+      },
+    ref .code:n        = % Lang property
+      {
+        \tl_clear:N\l__tag_tmpa_tl
+        \clist_map_inline:nn {#1}
+          {
+            \tl_put_right:Nx \l__tag_tmpa_tl
+              {~\ref_value:nn{tagpdfstruct-##1}{tagstructobj} }
+          }
+        \__tag_prop_gput:cnx
+          { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+          { Ref }
+          { [\l__tag_tmpa_tl] }
+      },
+    E .code:n        = % E property
+      {
+        \str_set_convert:Nnon
+          \l__tag_tmpa_str
+          { #1 }
+          { default }
+          { utf16/hex }
+        \__tag_prop_gput:cnx
+          { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+          { E }
+          { <\l__tag_tmpa_str> }
+      },
+  }
+
+\keys_define:nn { __tag / struct }
+ {
+    AF .code:n        = % T property
+      {
+        \pdf_object_if_exist:nTF {#1}
+          {
+            \__tag_prop_gput:cnx
+             { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+             { AF }
+             { \pdf_object_ref:n {#1} }
+          }
+          {
+
+          }
+      },
+   ,AFinline .code:n =
+     {
+       \group_begin:
+       \exp_args:Ne
+       \pdf_object_if_exist:nF {__tag/fileobj\int_use:N\c@g__tag_struct_abs_int}
+        {
+          \pdffile_embed_stream:nxx
+            {#1}
+            {tag-AFfile\int_use:N\c@g__tag_struct_abs_int.txt}
+            {__tag/fileobj\int_use:N\c@g__tag_struct_abs_int}
+        }
+       \__tag_prop_gput:cnx
+         { g__tag_struct_\int_use:N\c@g__tag_struct_abs_int _prop }
+         { AF }
+         { \pdf_object_ref:e {__tag/fileobj\int_use:N\c@g__tag_struct_abs_int } }
+       \group_end:
+     }
+   ,AFinline-o .code:n =
+     {
+       \group_begin:
+       \exp_args:Ne
+       \pdf_object_if_exist:nF {__tag/fileobj\int_use:N\c@g__tag_struct_abs_int}
+        {
+          \pdffile_embed_stream:oxx
+            {#1}
+            {tag-AFfile\int_use:N\c@g__tag_struct_abs_int.txt}
+            {__tag/fileobj\int_use:N\c@g__tag_struct_abs_int}
+        }
+       \__tag_prop_gput:cnx
+         { g__tag_struct_\int_use:N\c@g__tag_struct_abs_int _prop }
+         { AF }
+         { \pdf_object_ref:e {__tag/fileobj\int_use:N\c@g__tag_struct_abs_int } }
+       \group_end:
+     }
+ }
+
+\cs_new_protected:Nn \tag_struct_begin:n
+  {
+    \group_begin:
+    \int_gincr:N \c@g__tag_struct_abs_int
+    \__tag_prop_new:c  { g__tag_struct_\int_eval:n { \c@g__tag_struct_abs_int }_prop }
+    \__tag_new_output_prop_handler:n {\int_eval:n { \c@g__tag_struct_abs_int }}
+    \__tag_seq_new:c  { g__tag_struct_kids_\int_eval:n { \c@g__tag_struct_abs_int }_seq}
+    %\__tag_pdfreserveobjnum:N \l_tmpa_tl
+    \exp_args:Ne
+      \pdf_object_new:nn
+        { c__tag_struct_\int_eval:n { \c@g__tag_struct_abs_int }_obj }
+        { dict }
+    \__tag_prop_gput:cnx
+      { g__tag_struct_\int_eval:n { \c@g__tag_struct_abs_int }_prop }
+      { objref}
+      {
+        \exp_args:Ne
+          \pdf_object_ref:n
+            {c__tag_struct_\int_eval:n { \c@g__tag_struct_abs_int }_obj}
+      }
+    \__tag_prop_gput:cnx
+      { g__tag_struct_\int_eval:n { \c@g__tag_struct_abs_int }_prop }
+      { num}
+      { \int_eval:n { \c@g__tag_struct_abs_int } }
+    \__tag_prop_gput:cno
+      { g__tag_struct_\int_eval:n { \c@g__tag_struct_abs_int }_prop }
+      { Type }
+      { /StructElem }
+    \__tag_prop_gput:cno
+      { g__tag_struct_\int_eval:n { \c@g__tag_struct_abs_int }_prop }
+      { entries }
+      { StructElem }
+    \keys_set:nn { __tag / struct} { #1 }
+    \__tag_check_structure_has_tag:n { \int_eval:n {\c@g__tag_struct_abs_int} }
+    \tl_if_empty:NF
+      \l__tag_struct_key_label_tl
+      {
+        \__tag_ref_label:en{tagpdfstruct-\l__tag_struct_key_label_tl}{struct}
+      }
+    %get the potential parent from the stack:
+    \seq_get:NNF
+      \g__tag_struct_stack_seq
+      \l__tag_struct_stack_parent_tmp_tl
+      {
+        \msg_error:nn { tag } { struct-faulty-nesting }
+      }
+    \seq_gpush:NV \g__tag_struct_stack_seq        \c@g__tag_struct_abs_int
+    \tl_gset:NV   \g__tag_struct_stack_current_tl \c@g__tag_struct_abs_int
+    %\seq_show:N   \g__tag_struct_stack_seq
+    \bool_if:NF
+      \l__tag_struct_elem_stash_bool
+      {%set the  parent
+        \__tag_prop_gput:cnx
+          { g__tag_struct_\int_eval:n {\c@g__tag_struct_abs_int}_prop }
+          { P }
+          {
+            \prop_item:cn
+              { g__tag_struct_\l__tag_struct_stack_parent_tmp_tl _prop}
+              { objref }
+          }
+        %record this structure as kid:
+        %\tl_show:N \g__tag_struct_stack_current_tl
+        %\tl_show:N \l__tag_struct_stack_parent_tmp_tl
+        \__tag_struct_kid_struct_gput_right:nn
+          { \l__tag_struct_stack_parent_tmp_tl }
+          { \g__tag_struct_stack_current_tl }
+        %\prop_show:c { g__tag_struct_\g__tag_struct_stack_current_tl _prop }
+        %\seq_show:c {g__tag_struct_kids_\l__tag_struct_stack_parent_tmp_tl _seq}
+      }
+    %\prop_show:c { g__tag_struct_\g__tag_struct_stack_current_tl _prop }
+    %\seq_show:c {g__tag_struct_kids_\l__tag_struct_stack_parent_tmp_tl _seq}
+    \group_end:
+  }
+
+\cs_set_eq:NN  \uftag_struct_begin:n \tag_struct_begin:n
+
+\cs_new_protected:Nn \tag_struct_end:
+  { %take the current structure num from the stack:
+    %the objects are written later, lua mode hasn't all needed info yet
+    %\seq_show:N \g__tag_struct_stack_seq
+    \seq_gpop:NNTF \g__tag_struct_stack_seq \l_tmpa_tl
+      {
+        \int_compare:nNnT {\l__tag_loglevel_int} > { 0 }
+          {
+            \__tag_check_info_closing_struct:o { \g__tag_struct_stack_current_tl }
+          }
+      }
+      { \__tag_check_no_open_struck: }
+    % get the previous one, shouldn't be empty as the root should be there
+    \seq_get:NNTF \g__tag_struct_stack_seq \l_tmpa_tl
+      {
+        \tl_gset:NV   \g__tag_struct_stack_current_tl \l_tmpa_tl
+      }
+      {
+        \__tag_check_no_open_struck:
+      }
+  }
+
+\cs_set_eq:NN  \uftag_struct_end: \tag_struct_end:
+
+\cs_new_protected:Nn \tag_struct_use:n %#1 is the label
+  {
+    \prop_if_exist:cTF
+      { g__tag_struct_\__tag_ref_value:enn{tagpdfstruct-#1}{tagstruct}{unknown}_prop } %??????????
+      {
+        \__tag_check_struct_used:n {#1}
+        %add the label structure as kid to the current structure (can be the root)
+        \__tag_struct_kid_struct_gput_right:nn
+          { \g__tag_struct_stack_current_tl }
+          { \__tag_ref_value:enn{tagpdfstruct-#1}{tagstruct}{0} }
+        %add the current structure to the labeled one as parents
+        \__tag_prop_gput:cnx
+          { g__tag_struct_\__tag_ref_value:enn{tagpdfstruct-#1}{tagstruct}{0}_prop }
+          { P }
+          {
+            \prop_item:cn
+              { g__tag_struct_\g__tag_struct_stack_current_tl _prop}
+              { objref }
+          }
+      }
+      {
+        \msg_warning:nnn{ tag }{struct-label-unknown}{#1}
+      }
+  }
+
+\cs_set_eq:NN  \uftag_struct_use:n \tag_struct_use:n
+
+%%%% Code to tag links
+%%%% this works for url, see exp-link.pdf.
+%%%% it must be checked for other links
+
+\cs_new_protected:Nn \__tag_struct_finish_link:
+  {
+    \bool_if:NT \g__tag_active_struct_bool
+      {
+        %get the number of the parent link structure:
+        \seq_get:NNF
+          \g__tag_struct_stack_seq
+          \l__tag_struct_stack_parent_tmp_tl
+          {
+            \msg_error:nn { tag } { struct-faulty-nesting }
+          }
+        %put the obj number of link annot in the kid entry:
+        \__tag_struct_kid_link_gput_right:nx
+          {
+            \l__tag_struct_stack_parent_tmp_tl
+          }
+          {
+            \pdfannot_link_ref_last:
+          }
+        % add the parent obj number to the parent tree:
+        \__tag_parenttree_add_objr:nn
+          {
+            \int_use:N\c@g__tag_parenttree_obj_int
+          }
+          {
+            \prop_item:cn
+              { g__tag_struct_\l__tag_struct_stack_parent_tmp_tl _prop }
+              { objref }
+          }
+        % increase the int:
+        \stepcounter{ g__tag_parenttree_obj_int }
+      }
+  }
+
+
+%% 
+%%
+%% End of file `tagpdf-struct-code.sty'.

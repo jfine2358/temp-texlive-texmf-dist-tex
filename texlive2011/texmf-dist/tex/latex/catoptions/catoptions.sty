@@ -1,0 +1,3643 @@
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
+%   This is 'catoptions' package (Version 0.2b, March 2011)               %
+%                                                                         %
+%   The catoptions package changes LaTeX package loading internals        %
+%   so that all subsequently loaded packages can rely on having           %
+%   normal catcodes in effect. The package also contains some useful      %
+%   facilities unconnected with catcodes. In particular, it contains      %
+%   options processing facilities that have the familiar and simple       %
+%   syntax of LaTeX's legacy options parsing mechanism, but with          %
+%   improved robustness in terms of option value default, preservation    %
+%   of braces in option values, and parsing of expandable package         %
+%   and class option values. Also, it contains some API.                  %
+%                                                                         %
+%   The catcode facilities of the package are an extension of the         %
+%   'pcatcode' package by Michael J. Downes and David M. Jones.           %
+%                                                                         %
+%   This package and accompanying files may be distributed and/or         %
+%   modified under the conditions of the LaTeX Project Public License,    %
+%   either version 1.3 of this license or any later version.              %
+%                                                                         %
+%   The LPPL maintenance status of this software is 'author-maintained'.  %
+%                                                                         %
+%   Copyright (c) 2010-2011 Ahmed Musa (a.musa@rocketmail.com).           %
+%                                                                         %
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
+
+\begingroup
+\chardef\%\catcode37\catcode37 14\relax\expandafter\iffalse\string\
+\fi\let\e\endlinechar\chardef\E\e\e13\chardef\n\catcode\e\catcode\e5%
+\chardef\s\catcode32 \catcode32\string=10
+\chardef\=\catcode61 \catcode61\string=12
+\chardef\l=\catcode123 \catcode123=1
+\chardef\r=\catcode125 \catcode125=2
+\chardef\[=\catcode91 \catcode91=12
+\chardef\]=\catcode93 \catcode93=12
+\chardef\^=\catcode94 \catcode94=7
+\chardef\.=\catcode46 \catcode46=12
+\chardef\/=\catcode47 \catcode47=12
+\chardef\~=\catcode126 \catcode126=13
+\chardef\&=\catcode38 \catcode38=4
+\chardef\$=\catcode36 \catcode36=3
+\chardef\_=\catcode95 \catcode95=8
+\chardef\+=\catcode43 \catcode43=12
+\chardef\!=\catcode33 \catcode33=12
+\chardef\'=\catcode39 \catcode39=12
+\chardef\(=\catcode40 \catcode40=12
+\chardef\)=\catcode41 \catcode41=12
+\chardef\*=\catcode42 \catcode42=12
+\chardef\,=\catcode44 \catcode44=12
+\chardef\-=\catcode45 \catcode45=12
+\chardef\:=\catcode58 \catcode58=12
+\chardef\<=\catcode60 \catcode60=12
+\chardef\>=\catcode62 \catcode62=12
+\chardef\`=\catcode96 \catcode96=12
+\edef\x{%
+  \endgroup
+  \def\noexpand\cptrestorecatcodes{%
+    \endlinechar=\number\E \catcode\number\e=\number\n
+    \catcode32=\number\s \catcode123=\number\l
+    \catcode125=\number\r \catcode37=\number\%
+    \catcode61=\number\= \catcode91=\number\[
+    \catcode93=\number\] \catcode94=\number\^
+    \catcode46=\number\. \catcode47=\number\/
+    \catcode126=\number\~ \catcode38=\number\&
+    \catcode36=\number\$ \catcode95=\number\_
+    \catcode43=\number\+ \catcode33=\number\!
+    \catcode39=\number\' \catcode40=\number\(
+    \catcode41=\number\) \catcode42=\number\*
+    \catcode44=\number\, \catcode45=\number\-
+    \catcode58=\number\: \catcode60=\number\<
+    \catcode62=\number\> \catcode96=\number\`
+  }%
+}
+\x
+\catcode37 14\relax\expandafter\iffalse\string\
+\fi\endlinechar13\catcode13 5%
+\catcode61\string=12
+\catcode32=10
+\catcode123=1
+\catcode125=2
+\catcode91=12
+\catcode93=12
+\catcode46=12
+\catcode47=12
+\catcode94=7
+\catcode126=13
+\m@ne=-1\z@=0pt\p@=1pt
+\newcount\cpt@mone\cpt@mone\m@ne
+\chardef\cpt@xii=12
+\chardef\active=13
+\chardef\cpt@xcii=92
+\NeedsTeXFormat{LaTeX2e}[1995/12/01]
+\ProvidesPackage{catoptions}
+  [2011/03/10 v0.2b Securing catcodes and parsing options (AM)]
+\ifcase%
+  \ifx\eTeXversion\cpt@undefined\z@\else
+    \ifnum\eTeXversion<\tw@\z@\else\@ne\fi\fi
+  \PackageError{catoptions}{eTeX not loaded or old version}%
+    {This package requires eTeX version 2 or later.}%
+  \expandafter\endinput
+\fi
+\def\cptloggingall{\loggingall\tracingifs\@ne}
+\def\cptnormalcatcodes{%
+  \endlinechar13
+  \catcode33=12\catcode34=12\catcode35=6\catcode36=3\catcode37=14
+  \catcode38=4\catcode39=12\catcode40=12\catcode41=12\catcode42=12
+  \catcode43=12\catcode44=12\catcode45=12\catcode46=12\catcode47=12
+  \catcode58=12\catcode59=12\catcode60=12\catcode61=12\catcode62=12
+  \catcode63=12\catcode91=12\catcode92=0\catcode93=12\catcode94=7
+  \catcode95=8\catcode96=12\catcode123=1\catcode124=12\catcode125=2
+  \catcode126=13\catcode32=10\catcode13=5\catcode9=10\catcode10=12
+}
+\begingroup
+\let\s\string
+\escapechar\m@ne
+\xdef\cpt@otherchars{%
+  \s\!\s\"\s\#\s\$\s\%\s\&\s\'\s\(\s\)\s\*\s+\s\,\s\-\s\.\s\/\s\:%
+  \s\;\s\<\s\=\s\>\s\?\s\[\s\\\s\]\s\^\s\_\s\`\s\{\s\|\s\}\s\~%
+}
+\endgroup
+
+\newcommand*\BeginOverlookWhiteSpace{%
+  \pushnumber\overlook@nr
+  \ifnum\overlook@nr>\@ne
+    \cpt@err{There is an unclosed
+      \string\BeginOverlookWhiteSpace}\@ehc
+  \fi
+  \chardef\cpt@spacecatcode=\number\catcode`\ %
+  \chardef\cpt@tabcatcode=\number\catcode`\^^I
+  \chardef\cpt@endlinechar=\number\endlinechar
+  \catcode`\ =9\relax
+  \catcode`\^^I=9\relax
+  \endlinechar\m@ne
+}
+\newcommand*\EndOverlookWhiteSpace{%
+  \popnumber\overlook@nr
+  \catcode`\ =\cpt@spacecatcode
+  \catcode`\^^I=\cpt@tabcatcode
+  \endlinechar\cpt@endlinechar
+}
+\def\cpt@catcodestack{}
+\def\cptpushcatcodes{%
+  \begingroup
+  \def\x##1{%
+    \ifx##1\@nnil\else
+      \catcode\number`##1=\the\catcode`##1\relax
+      \expandafter\x
+    \fi
+  }%
+  \xdef\cpt@catcodestack{%
+    \expandafter\x\cpt@otherchars\ \
+    \^^I\^^J\@nnil{\cpt@catcodestack}%
+  }%
+  \endgroup
+}
+\cptpushcatcodes
+\cptnormalcatcodes
+\def\cptpopcatcodes{%
+  \begingroup
+  \def\x##1##{\endgroup##1\xdef\cpt@catcodestack}%
+  \expandafter\x\cpt@catcodestack
+}
+\@ifdefinable\currentcatcodesubset\relax
+\newcommand*\GetCurrentCatcodeSubset{%
+  \begingroup
+  \def\x##1{%
+    \ifx##1\@nnil\else
+      \@space(\string##1\@firstofone{:\number\catcode`##1})%
+      \expandafter\x
+    \fi
+  }%
+  \edef\x{%
+    \def\noexpand\currentcatcodesubset{%
+      \x\^^I\^^J\^^L\^^M\ \!\"\#\$\%\&%
+      \'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\}\|\~\@nnil
+    }%
+  }%
+  \expandafter\endgroup\x
+}
+\newcommand*\setup@safe@actives@edef{%
+  \begingroup
+  \endlinechar\m@ne
+  \def\siso@do##1{\catcode`##1\string=\active}%
+  \simpleexpandarg\siso@@loop\cpt@otherchars
+  \gdef\safe@actives@edef##1##2{%
+    \begingroup
+    \def\siso@do####1{%
+      \ifnum\catcode`####1\string=\active\edef####1{\string####1}\fi
+    }%
+    \simpleexpandarg\siso@@loop\cpt@otherchars
+    \cptpassexpanded{%
+      \endgroup\edef\noexpand##1{\noexpand\unexpanded{##2}}%
+    }%
+  }
+  \endgroup
+}
+\newcommand*\declarefutureletset[2][fl@]{%
+  \xdef\cpt@fletprefix{\xp@despace{#1}}%
+  \cptexpandargonce{\cpt@filtermergelists[,]\cpt@fletprefixes}%
+    \cpt@fletprefix\nofilter
+  \ifblankTF{#2}{%
+    \def\neededfutureletchars{}%
+  }{%
+    \def\neededfutureletchars{#2}%
+    \cpt@sttrue\cpt@csvnormalize[,]\neededfutureletchars
+    \oifstrcmpFT\neededfutureletchars{all}{}{%
+      \def\neededfutureletchars{}%
+      \def\cpt@tempa##1\@##2\@{%
+        \ifx##1\end\else
+          \cptgaddtolist\neededfutureletchars{##1}%
+          \expandafter\cpt@tempa
+        \fi
+      }%
+      \expandafter\cpt@tempa\cpt@futureletchars\end\@\@
+    }%
+  }%
+  \globalize\neededfutureletchars
+  \globalize\cpt@fletprefixes
+}
+\begingroup
+\cptrestorecatcodes
+\begingroup
+\catcode`\3="3 \catcode`\4="4 \catcode`\7="7 \catcode`\8="8
+\catcode`\A="A \catcode`\B="B \catcode`\C="C \catcode`\D="D
+\gdef\cpt@flet@a#1#2{%
+  \begingroup
+  \edef\cpt@tempa{\noexpandcsn{\cpt@fletprefix#1}}%
+  \edef\cpt@tempb{\noexpandcsn{if\cpt@fletprefix#1}}%
+  \if@sp@inlistTF,\cpt@tempa\cptfutureletmacros{}{%
+    \xdef\cptfutureletmacros{%
+      \ifcsnullTF\cptfutureletmacros{}%
+        {\expandcsonce\cptfutureletmacros,}%
+      \expandcsonce\cpt@tempa,\expandcsonce\cpt@tempb
+    }%
+  }%
+  \def\siso@do##1{\lccode`##1=`#2}%
+  \siso@@loop{034678BCD}%
+  \ifnum\catcode`#2=\active
+    \def\do##1{\noexpand\do\noexpand##1\noexpand}%
+    \lowercase{%
+      \xdef\cpt@activecharacters{%
+        \cpt@activecharacters
+        \do#2D%
+      }%
+    }%
+  \fi
+  \xdef\cpt@tempa{%
+    \let\noexpand\cpt@tempa\noexpand\cpt@undefined
+    \cptglet\expandcsonce\cpt@tempa= %
+  }%
+  \aftergroup\cpt@tempa
+  \lowercase{%
+    \expandafter\endgroup
+    \ifcase\numexpr\catcode`#2\relax
+      0\or \bgroup\or \egroup\or 3\or 4\or 5\or 6\or 7\or
+      8\or 9\or \@sptoken\or B\or C\else D\fi
+  }%
+}
+\endgroup
+\gdef\cpt@futureletchars{%
+  space\@\ \@ exclam\@\!\@ dblquote\@\"\@ hash\@\#\@ dollar\@\$\@
+  ampersand\@\&\@ rquote\@\'\@ lparen\@\(\@ rparen\@\)\@ star\@\*\@
+  plus\@\+\@ comma\@\,\@ hyphen\@\-\@ period\@\.\@ slash\@\/\@
+  colon\@\:\@ semicolon\@\;\@ less\@\<\@ equal\@\=\@ greater\@\>\@
+  question\@\?\@ lbracket\@\[\@ rbracket\@\]\@ hat\@\^\@
+  underscore\@\_\@ lquote\@\`\@ lbrace\@\{\@ vert\@\|\@ rbrace\@\}\@
+  tilde\@\~\@ bslash\@\\\@
+}
+\gdef\cptfutureletsetup{%
+  \gdef\cpt@activecharacters{}%
+  \gdef\cptfutureletmacros{}%
+  \def\cpt@flet@b##1\@##2\@{%
+    \ifxTF##1\end{}{%
+      \if@sp@inlistFT,{##1}\neededfutureletchars{}{%
+        \cpt@flet@a{##1}{##2}%
+      }%
+      \cpt@flet@b
+    }%
+  }%
+  \def\comma@do##1{%
+    \gundefcsn{##1\curropt}%
+    \gundefcsn{if##1\curropt}%
+  }%
+  \def\cpt@fletundef##1\@##2\@{%
+    \ifxTF##1\end{}{%
+      \def\curropt{##1}%
+      \simpleexpandarg\comma@@loop\cpt@fletprefixes
+      \cpt@fletundef
+    }%
+  }%
+  \def\cpt@fletdef##1\@##2\@{%
+    \ifxTF##1\end{}{%
+      \if@sp@inlistFT,{##1}\neededfutureletchars{}{%
+        \csn@xdef{if\cpt@fletprefix##1}####1{%
+          \noexpand\usecsn{@\noexpand\ifx
+            \noexpandcsn{\cpt@fletprefix##1}%
+            ####1\unexpanded{\@empty first\else second\fi oftwo}%
+          }%
+        }%
+      }%
+      \cpt@fletdef
+    }%
+  }%
+  \expandafter\cpt@fletundef\cpt@futureletchars\end\@\@
+  \expandafter\cpt@fletdef\cpt@futureletchars\end\@\@
+  \expandafter\cpt@flet@b\cpt@futureletchars\end\@\@
+}
+\AtBeginDocument{\cptrestorecatcodes}
+\gdef\futureletresetactives{%
+  \begingroup
+  \defpass\cpt@tempa##1{\endgroup
+    \def\do####1####2{\let####1=##1####2}%
+  }{ }%
+  \cpt@activecharacters
+  \let\do\relax
+}
+\endgroup
+
+\newcommand*\ifcptcond[1]{%
+  \def\ifcptcond##1\fi##2##3{%
+    \romannumeral
+    ##1#1\expandafter\@firstoftwo\else
+    \expandafter\@secondoftwo\fi{0 ##2}{0 ##3}%
+  }%
+}
+\ifcptcond{ }
+% \shell-def'ed macros don't have to be 'definable':
+\@ifdefinable\shelldef{\protected\def\shelldef{\protected\def}}
+\@ifdefinable\shelledef{\shelldef\shelledef{\protected\edef}}
+% \shell-let macros must be 'definable':
+\newcommand*\shelllet{}
+\shelldef\shelllet#1#2{%
+  \ifcptcond\ifx\\#2\\\fi
+  {\@latex@error{Empty token for \string\shelllet}\@ehc}%
+  {\ifcptcond\expandafter\ifx\expandafter\\\@gobble#2\\\fi}
+  {\ifcptdefinable#1{\shelllet@a#1{#2}}}%
+  {\@latex@error{Multiple tokens '\detokenize{#2}'}\@ehc}%
+}
+\newcommand*\shelllet@a[2]{%
+  \aftercsname\newletcs{rsv@@\cptremovescape#1}{#2}%
+  \shelledef#1{\cptmakecs{rsv@@\cptremovescape#1}}%
+}
+\newcommand*\UseNormalCatcodes{}
+\shelldef\UseNormalCatcodes{%
+  \ifcsnullTF\@currname{%
+    \cpt@warn{\noexpand\UseNormalCatcodes issued in
+      document: ignored}%
+  }{%
+    \let\UseNormalCatcodes\relax
+    \cptpushcatcodes
+    \cptnormalcatcodes
+    \AfterEndOfStyleFile{%
+      \cptpopcatcodes
+      \let\UseNormalCatcodes\rsv@UseNormalCatcodes
+    }%
+  }%
+}
+\newcommand*\rsv@UseNormalCatcodes{}
+\global\let\rsv@UseNormalCatcodes\UseNormalCatcodes
+
+\newcommand*\newcomment{%
+  \begingroup
+  \def\comment@envir{newcomment}%
+  \def\do##1{\catcode`##1=12\relax}%
+  \dospecials
+  \endlinechar`\^^M\catcode`\^^M=12\relax
+  \cpt@commentloop
+}
+\newcommand*\cpt@commentend{%
+  \ifx\@currenvir\comment@envir
+    \let\endnewcomment\relax
+    \def\next{\endgroup\end{newcomment}}%
+  \else
+    \let\next\endgroup
+  \fi
+  \next
+}
+\begingroup
+\catcode`\^^M=12 %
+\endlinechar\m@ne%
+\gdef\cpt@commentloop#1^^M{%
+  \def\comment@stuff{#1}%
+  \ifx\comment@stuff\endnewcomment
+    \let\next\cpt@commentend
+  \else
+    \ifx\comment@stuff\end@newcomment
+      \let\next\cpt@commentend
+    \else
+      \ifx\comment@stuff\end@comment
+        \def\next{\@latex@error
+          {Bad end for \string\newcomment}\@ehc}%
+      \else
+        \let\next\cpt@commentloop
+      \fi
+    \fi
+  \fi
+  \next
+}
+\endgroup
+%\traceon
+\begingroup
+\catcode`\{=12
+\catcode`\}=12
+\catcode`\!=0
+\catcode`\[=1
+\catcode`\]=2
+\catcode`\\=12
+!gdef!end@newcomm@nt[\endnewcomment]
+!gdef!end@newcomment[\end{newcomment}]
+!gdef!end@comment[\end{comment}]
+!endgroup
+
+\newcommand\cptswap[2]{#2#1}
+\newcommand\cptswapfirstbraced[2]{#2{#1}}
+\newcommand\cptswapsecondbraced[2]{{#2}#1}
+\cptswap{ }{\let\@sptoken= }
+\def\@space{ }
+\newcommand\usecsn[1]{\csname#1\endcsname}% long
+\newcommand\gusecsn[1]{\global\csname#1\endcsname}
+\newcommand\cptuse[1]{\ifcsndefFT{#1}{}{\usecsn{#1}}}
+\newcommand\uselivecs[1]{%
+  \ifdefTF{#1}{#1}{%
+    \cpt@err{Command 'string#1' undefined}\@ehc
+  }%
+}
+\newcommand\uselivecsn[1]{%
+  \ifcsndefTF{#1}{%
+    \usecsn{#1}%
+  }{%
+    \let\relax\relax
+    \cpt@err{Command '\@backslashchar#1' undefined}\@ehc
+  }%
+}
+\long\def\@gobblethree#1#2#3{}
+\long\def\@firstofthree#1#2#3{#1}
+\long\def\@secondofthree#1#2#3{#2}
+\long\def\@thirdofthree#1#2#3{#3}
+\let\@iden\@firstofone
+\newcommand\cptalloftwo[2]{#1#2}
+\newcommand*\newsentinel[1]{%
+  \@ifdefinable{#1}{\protected\edef#1{\string#1}}%
+}
+\newcommand*\ifsentinelTF[2]{%
+  \begingroup
+  \def#2{#2}%
+  \expandafter\endgroup
+  \ifx#1#2\expandafter\@firstoftwo\else
+    \expandafter\@secondoftwo\fi
+}
+\newcommand*\ifsentinelFT[2]{%
+  \ifsentinelTF{#1}{#2}\@secondoftwo\@firstoftwo
+}
+\newsentinel\cpt@nil
+\long\def\cpt@car#1#2\car@nil{#1}
+\long\def\cpt@cdr#1#2\cdr@nil{#2}
+\long\def\remove@to@nnil#1\@nnil{}
+\long\def\catch@to@nnil#1\@nnil{#1}
+\long\def\remove@to@dot#1.{}
+\long\def\catch@to@dot#1.{#1}
+\newcommand*\remove@to@sentinel[2]{%
+  \begingroup
+  \defpass\cpt@tempa##1#1#2{%
+    \endgroup\remainder@do{##1}%
+  }%
+}
+\newcommand*\cptthreexp{\expandafter\expandafter\expandafter}
+\newcommand*\cptsevenxp{\expandafter\expandafter\expandafter
+  \expandafter\expandafter\expandafter\expandafter}
+\shelldef\cptlocalxp#1{\begingroup\cptthreexp\endgroup#1}
+\shelldef\cptlocalxpxp{\cptlocalxp\expandafter}
+\newcommand*\cptzapspaces[1]{%
+  \def\cptzapspaces##1{%
+    \romannumeral0\cpt@zapspaces.\@space##1#1\zap@nil
+  }%
+}
+\cptzapspaces{ }
+\long\def\cpt@zapspaces#1 #2\zap@nil{%
+  \usecsn{@\ifx\\#2\\first\else second\fi oftwo}%
+  {\remove@to@dot#1}{%
+    \expandafter\cpt@zapspaces\expandafter
+    .\remove@to@dot#1#2\zap@nil
+  }%
+}
+\newcommand*\cptdotimes[1]{%
+  \ifblankTF{#1}{%
+    \if@boolTF{cpt@useempty}{\cpt@dotimes{m}}\@gobble
+  }{%
+    \expandafter\cpt@dotimes\expandafter
+      {\romannumeral\number#1000}%
+  }%
+}
+\newcommand*\cpt@dotimes[2]{%
+  \ifnullTF{#1}{}{%
+    #2\relax
+    \expandafter\ifnullTF\expandafter{\@gobble#1}{}{%
+      \expandafter\cpt@dotimes\expandafter{\@gobble#1}{#2}%
+    }%
+  }%
+}
+\newcommand*\cptexpandtimes[1]{%
+  \expandafter\cpt@expandtimes\expandafter
+    {\romannumeral\number#1000}%
+}
+\newcommand*\cpt@expandtimes[2]{%
+  \ifnullTF{#1}{%
+    \unexpanded{#2}%
+  }{%
+    \expandafter\ifnullTF\expandafter{\@gobble#1}{%
+      \unexpanded\expandafter{#2}%
+    }{%
+      \expandafter\cptswapfirstbraced\expandafter{#2}%
+      {\expandafter\cpt@expandtimes\expandafter{\@gobble#1}}%
+    }%
+  }%
+}
+\newcommand*\normal@reverse[1]{\cpt@normalreverse{}#1\@nnil}
+\long\def\cpt@normalreverse#1#2{%
+  \ifxTF#2\@nnil{%
+    \if@boolTF{@test}\@iden\unexpanded{#1}%
+  }{%
+    \cpt@normalreverse{#2#1}%
+  }%
+}
+\newcommand*\robust@reverse[1]{\cpt@robustreverse{}.#1\@nnil}
+\long\def\cpt@robustreverse#1#2\@nnil{%
+  \cpt@r@bustreverse{#1}%
+    {\simpleexpandarg\ifbracedTF{\@gobble#2}}#2\@nnil
+}
+\long\def\cpt@r@bustreverse#1#2.#3{%
+  \ifxTF#3\@nnil{%
+    \if@boolTF{@test}\@iden\unexpanded{#1}%
+  }{%
+    #2{\cpt@robustreverse{{#3}#1}}{\cpt@robustreverse{#3#1}}.%
+  }%
+}
+\newcommand*\ifpdfstrcmpTF[2]{%
+  \usecsn{@\ifnum\pdfstrcmp{\detokenize{#1}}%
+  {\detokenize{#2}}=\z@ first\else second\fi oftwo}%
+}
+\@ifdefinable\kernel@for{\let\kernel@for\@for}
+\newcommand*\IfCommandsDefinable[1]{%
+  \@testopt{\cpt@ifcmdsdefinable#1}{}%
+}
+\def\cpt@ifcmdsdefinable#1[#2]{%
+  \kernel@for\cpt@tempa:=\noexpand#1\do{%
+    \edef\cpt@tempa{%
+      \unexpanded\expandafter{%
+      \ifnum0=0\expandafter\noexpand\cpt@tempa}\fi
+    }%
+    \expandafter\@ifdefinable\cpt@tempa{#2}%
+  }%
+}
+\IfCommandsDefinable{\normal@despace,\robust@despace,\xp@despace,
+  \despace@cs,\despacecontent,\robdespacecontent,\despacecsvlist,
+  \robdespacecsvlist,\newvariables}[\relax]
+\def\cpt@tempa#1{%
+  \shelldef\normal@despace##1##2{%
+    \edef##2{%
+      \unexpanded\expandafter{\romannumeral-`\q
+      \cpt@normaldespace.##1\despace@nil#1\despace@nil}%
+    }%
+  }%
+  \def\cpt@normaldespace##1#1\despace@nil{%
+    \cpt@norm@ldespace##1\despace@nil
+  }%
+  \def\cpt@norm@ldespace##1\despace@nil##2{%
+    \expandafter\noexpand\@gobble##1%
+  }%
+  \def\xp@despace##1{%
+    \cpt@xpdespace.##1\despace@nil#1\despace@nil
+  }%
+  \def\cpt@xpdespace##1#1\despace@nil{%
+    \cpt@xpd@space##1\despace@nil
+  }%
+  \def\cpt@xpd@space##1\despace@nil##2{%
+    \unexpanded\expandafter{%
+    \ifnum0=0\expandafter\noexpand\@gobble##1}\fi
+  }%
+}
+\cpt@tempa{ }
+\shelldef\robust@despace#1#2{%
+  \edef#2{\unexpanded{#1}}%
+  \let\despace@tempa#2%
+  \normal@despace{#1}#2%
+  \ifxTF#2\despace@tempa{%
+    \undefcs\despace@tempa
+  }{%
+    \expandafter\robust@despace\expandafter{#2}#2%
+  }%
+}
+\shelldef\despace@cs{\cpt@testst\cpt@despacecs}
+\def\cpt@despacecs#1{%
+  \usecsn{\ifcpt@st rob\fi despacecontent}{#1}%
+}
+\shelldef\despacecontent#1{%
+  \expandafter\normal@despace\expandafter{#1}#1%
+}
+\shelldef\robdespacecontent#1{%
+  \expandafter\robust@despace\expandafter{#1}#1%
+}
+\shelldef\despacecsvlist{%
+  \chardef\despace@type\z@
+  \cpt@testopt\cpt@despacecsvlist{,}%
+}
+\shelldef\robdespacecsvlist{%
+  \chardef\despace@type\@ne
+  \cpt@testopt\cpt@despacecsvlist{,}%
+}
+\def\cpt@despacecsvlist[#1]#2{%
+  \begingroup
+  \let\cpt@resb\@empty
+  \UseEmptyEntry
+  \ifnum\despace@type=\z@\let\do\normal@despace\else
+    \let\do\robust@despace\fi
+  \def\csv@do##1{%
+    \do{##1}\cpt@resa
+    \cptaddtolist*[#1]\cpt@resb\cpt@resa
+  }%
+  \csv@@loop*[#1]#2%
+  \let#2\cpt@resb
+  \exitgroupdef#2%
+  \undefcs\despace@type
+}
+\outer\shelldef\newvariables#1{\@testopt{\cpt@newvariables{#1}}{}}
+\def\cpt@newvariables#1[#2]#3{%
+  \@testopt{\cpt@newv@riables{#1}{#2}{#3}}{}%
+}
+\def\cpt@newv@riables#1#2#3[#4]{%
+  \def\cpt@resa##1{%
+    \ifx\noindent#4\noindent
+      \def\cpt@tempc{##1}\else\def\cpt@tempc{#4}\fi
+  }%
+  \edef\cpt@tempb{\ifpdfstrcmpTF{#1}{if}{if}{}}%
+  \kernel@for\cpt@tempa:=\noexpand#3\do{%
+    \edef\cpt@tempa{%
+      \expandafter\xp@despace\expandafter{\cpt@tempa}%
+    }%
+    \usecsn{@\ifcsname\cpt@tempb#2\cpt@tempa\endcsname
+      first\else second\fi oftwo}%
+    {%
+      \edef\reserved@a{\cpt@tempb#2\cpt@tempa}%
+      \@notdefinable
+    }{%
+      \ifpdfstrcmpTF{#1}{togsw}{%
+        \v@true
+        \ifcsndefTF{cpt@togsw@#2\cpt@tempa}{%
+          \cpt@err{Toggle switch '#2\cpt@tempa' already defined}\@ehc
+        }{%
+          \cpt@gettogswstate{#4}%
+          \letcsntocs{cpt@togsw@#2\cpt@tempa}\cpt@togswstate
+        }%
+      }{%
+        \v@false
+        \csname new#1\expandafter\endcsname\csname
+          \cpt@tempb#2\cpt@tempa\endcsname
+      }%
+      \ifpdfstrcmpTF{#1}{if}{%
+        \cpt@resa{false}%
+        \csname#2\cpt@tempa\cpt@tempc\endcsname
+      }{%
+        \ifpdfstrcmpTF{#1}{toks}{%
+          \cpt@resa{}%
+          \csname#2\cpt@tempa\endcsname\expandafter{\cpt@tempc}%
+        }{%
+          \ifpdfstrcmpTF{#1}{box}{%
+            \cpt@resa\z@
+            \setbox\csname#2\cpt@tempa\endcsname\newboxtype
+              to\cpt@tempc{\newboxcontent}%
+          }{%
+            \ifpdfstrcmpTF{#1}{count}{%
+              \cpt@resa\z@
+              \csname#2\cpt@tempa\endcsname\cpt@tempc\relax
+            }{%
+              \ifpdfstrcmpTF{#1}{dimen}{%
+                \cpt@resa\z@
+                \csname#2\cpt@tempa\endcsname\cpt@tempc\relax
+              }{%
+                \ifv@\else
+                  \cpt@err{Unknown variable type '#1'}\@ehc
+                \fi
+              }%
+            }%
+          }%
+        }%
+      }%
+    }%
+  }%
+}
+\IfCommandsDefinable{\newboxtype,\newboxcontent}\relax
+\let\newboxtype\hbox
+\def\newboxcontent{}
+\newvariables{if}[cpt@]{st,pl,pm,verbose,usepox,optfd,
+  igopt,inpox,olddx,in,check,breakloop,choicefd,useempty,
+  normalize,despace,robdespace,twincall,bibool}[false]
+\newvariables{count}[cpt@]{depth,optdepth,grouplevel,grouptype}[\z@]
+\@ifdefinable\cptbreakloop{\let\cptbreakloop\cpt@breaklooptrue}
+\newcommand*\UseEmptyEntry{\global\cpt@useemptytrue}
+\newcommand*\DiscardEmptyEntry{\global\cpt@useemptyfalse}
+\newcommand*\UseRobustDespace{\global\cpt@robdespacetrue}
+\newcommand*\UseNormalDespace{\global\cpt@robdespacefalse}
+\newcommand*\MsgBrk{\MessageBreak}
+\newcommand*\cptgetcatcode[1]{%
+  \number
+  \ifcat\noexpand#1\bgroup1\else
+  \ifcat\noexpand#1\egroup2\else
+  \ifcat\noexpand#1$3\else %$
+  \ifcat\noexpand#1&4\else
+  \ifcat\noexpand#1##6\else
+  \ifcat\noexpand#1^7\else
+  \ifcat\noexpand#1_8\else
+  \ifcat\noexpand#1\@sptoken10\else
+  \ifcat\noexpand#1a11\else
+  \ifcat\noexpand#1!12\else
+  \ifcat\noexpand#1\noexpand~13\else
+  -1\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi
+}
+\newcommand\cptremovescape[1]{%
+  \ifx\noboundary#1\noboundary
+    \expandafter\@gobble\else\expandafter\@iden\fi
+  {\expandafter\@gobble\string#1}%
+}
+\newcommand\cptgobblescape[1]{%
+  \ifx\noboundary#1\noboundary
+    \expandafter\@gobble\else\expandafter\@iden\fi
+  {\ifnum\escapechar>\@cclv\else
+    \ifnum\escapechar<\z@\else
+      \expandafter\expandafter
+      \csname @gobble\ifnum\escapechar=\@xxxii @space\fi
+      \cptthreexp\endcsname
+    \fi
+  \fi
+  \string#1}%
+}
+\newcommand\ifnullTF[1]{%
+  \usecsn{@\ifnum\pdfstrcmp{}{\detokenize{#1}}%
+    =\z@ first\else second\fi oftwo}%
+}
+\newcommand\ifnullFT[1]{\ifnullTF{#1}\@secondoftwo\@firstoftwo}
+\newcommand\oifnullTF[1]{\expandafter\ifnullTF\expandafter{#1}}
+\newcommand\oifnullFT[1]{\expandafter\ifnullFT\expandafter{#1}}
+\newcommand\xifnullTF[1]{\cptexpandarg\ifnullTF{#1}}
+\newcommand\xifnullFT[1]{\cptexpandarg\ifnullFT{#1}}
+\@ifdefinable\iftoksnullTF\relax
+\def\iftoksnullTF#1#{%
+  \expandafter\ifnullTF\expandafter{\the#1}%
+}
+\newcommand\ifblankTF[1]{%
+  \usecsn{@\ifnum\pdfstrcmp{}{\detokenize\expandafter
+  {\@gobble#1.}}=\z@ first\else second\fi oftwo}%
+}
+\newcommand\ifblankFT[1]{\ifblankTF{#1}\@secondoftwo\@firstoftwo}
+\newcommand\oifblankTF[1]{\expandafter\ifblankTF\expandafter{#1}}
+\newcommand\oifblankFT[1]{\expandafter\ifblankFT\expandafter{#1}}
+\newcommand\xifblankTF[1]{\cptexpandarg\ifblankTF{#1}}
+\newcommand\xifblankFT[1]{\cptexpandarg\ifblankFT{#1}}
+\newcommand*\ifdefTF[1]{%
+  \usecsn{@\ifx\\#1\\second\else first\fi oftwo}%
+  {\usecsn{@\ifx#1\cpt@undefined second\else
+    \ifx#1\relax second\else first\fi\fi oftwo}}%
+  \@secondoftwo
+}
+\newcommand*\ifdefFT[1]{\ifdefTF{#1}\@secondoftwo\@firstoftwo}
+\newcommand*\oifdefTF[1]{\expandafter\ifdefTF\expandafter{#1}}
+\newcommand*\oifdefFT[1]{\expandafter\ifdefFT\expandafter{#1}}
+\newcommand*\xifdefTF[1]{\cptexpandarg\ifdefTF{#1}}
+\newcommand*\xifdefFT[1]{\cptexpandarg\ifdefFT{#1}}
+\newcommand*\ifcsndefTF[1]{%
+  \ifcsname#1\endcsname
+    \expandafter\@firstofone
+  \else
+    \cptthreexp\@secondoftwo\expandafter\@gobble
+  \fi
+  {\aftercsname\ifdefTF{#1}}%
+}
+\newcommand*\ifcsndefFT[1]{\ifcsndefTF{#1}\@secondoftwo\@firstoftwo}
+\newcommand*\oifcsndefTF[1]{\expandafter\ifcsndefTF\expandafter{#1}}
+\newcommand*\oifcsndefFT[1]{\expandafter\ifcsndefFT\expandafter{#1}}
+\newcommand*\xifcsndefTF[1]{\cptexpandarg\ifcsndefTF{#1}}
+\newcommand*\xifcsndefFT[1]{\cptexpandarg\ifcsndefFT{#1}}
+\newcommand*\ifcptdefinable[2]{%
+  \edef\reserved@a{\cptgobblescape#1}%
+  \ifdefTF{#1}\@notdefinable{%
+    \ifcsndefTF{end\reserved@a}\@notdefinable{#2}%
+  }%
+}
+\newcommand*\newletcs[2]{\ifcptdefinable{#1}{\let#1=#2}}
+\newcommand*\newgletcs[2]{\ifcptdefinable{#1}{\global\let#1=#2}}
+\newcommand*\cptglet{\global\let}
+\newcommand\cpt@def@[3]{%
+  \ifcptdefinable#3{%
+    \ifnullTF{#2}{}\protected
+    \cptthreexp\l@ngrel@x\usecsn{#1def}#3%
+  }%
+}
+\ifcptdefinable\robust@def\relax
+\shelldef\robust@def{\@star@or@long{\cpt@def@{}{p}}}
+\robust@def*\new@def{\@star@or@long{\cpt@def@{}{}}}
+\robust@def*\new@gdef{\@star@or@long{\cpt@def@{g}{}}}
+\robust@def*\robust@gdef{\@star@or@long{\cpt@def@{g}{p}}}
+\robust@def*\new@edef{\@star@or@long{\cpt@def@{e}{}}}
+\robust@def*\robust@edef{\@star@or@long{\cpt@def@{e}{p}}}
+\robust@def*\new@xdef{\@star@or@long{\cpt@def@{x}{}}}
+\robust@def*\robust@xdef{\@star@or@long{\cpt@def@{x}{p}}}
+\robust@def*\renew@def{\@star@or@long{\cpt@redef@{}}}
+\robust@def*\robust@redef{\@star@or@long{\cpt@redef@{p}}}
+\new@def*\cpt@redef@#1#2{%
+  \ifdefFT#2{}{%
+    \ifcpt@verbose
+      \@latex@info{Command '\string#2' redefined}%
+    \fi
+  }%
+  \ifstrcmpTF{#1}{p}\protected\relax\l@ngrel@x\def#2%
+}
+\robust@def*\maybe@def#1{\cpt@teststpm{\cpt@maybe@def{#1}}}
+\robust@def*\cpt@maybe@def#1{%
+  \if@boolTF{cpt@st}\@firstoftwo{%
+    \if@boolTF{cpt@pm}\@firstoftwo\@secondoftwo
+  }\@gobble{\new@def#1}%
+}
+\robust@def*\fulllet{\@testtrue\cpt@fulllet}
+\robust@def*\fullnewlet{\@testfalse\cpt@fulllet}
+\robust@def*\cpt@fulllet#1#2{%
+  \normal@despace{#1}\cpt@tempa
+  \normal@despace{#2}\cpt@tempb
+  \cpt@fullleterr\cpt@tempa\cpt@tempb
+  \if@test
+    \cptthreexp\let\expandafter\cpt@tempa\cpt@tempb
+  \else
+    \cptthreexp\newletcs\expandafter\cpt@tempa\cpt@tempb
+  \fi
+  \oifdefFT\cpt@tempb{}{%
+    \ifcsndefTF{\expandafter\string\cpt@tempb}{%
+      \letcsntocsn{\expandafter\string\cpt@tempa}
+        {\expandafter\string\cpt@tempb}%
+    }{%
+      \ifcsndefFT{\expandafter\cptgobblescape\cpt@tempb\@space}{}{%
+        \letcsntocsn{\expandafter\cptgobblescape\cpt@tempa\@space}
+          {\expandafter\cptgobblescape\cpt@tempb\@space}%
+        \ifcsndefFT{\expandafter\string\cpt@tempb\@space}{}{%
+          \letcsntocsn{\expandafter\string\cpt@tempa\@space}
+            {\expandafter\string\cpt@tempb\@space}%
+        }%
+      }%
+    }%
+  }%
+}
+\new@def*\cpt@fullleterr#1#2{%
+  \simpleexpandarg\ifsingletokenTF{#1}{%
+    \simpleexpandarg\ifsingletokenTF{#2}{}{%
+      \cpt@err{Multiple or blank argument '\expandcsonce{#2}'}\@ehc
+    }%
+  }{%
+    \cpt@err{Multiple or blank argument '\expandcsonce{#1}'}\@ehc
+  }%
+}
+\robust@def*\cptletcsset#1{%
+  \def\comma@do##1{%
+    \oifblankTF{\@gobble##1}{}{\fulllet##1}%
+  }%
+  \comma@@loop{#1}%
+}
+\new@def*\ifcounterTF#1{%
+  \ifstrcmpTF\count{#1}\@secondoftwo{%
+    \expandafter\cpt@ifcounter@a\meaning#1:\noboundary
+  }%
+}
+\edef\cpt@ifcounter@a#1#2{%
+  \def#1##1:##2\noboundary{#2##1\string\count\noboundary}%
+  \def#2##1\string\count##2\noboundary{\noexpand\ifblankTF{##1}}%
+}
+\cpt@ifcounter@a\cpt@ifcounter@a\cpt@ifcounter@b
+% Can't be called \ifdimTF (=\ifdimcmpTF):
+\new@def*\ifdimensionTF#1{%
+  \ifstrcmpTF\dimen{#1}\@secondoftwo{%
+    \expandafter\cpt@ifdimen@a\meaning#1:\noboundary
+  }%
+}
+\edef\cpt@ifdimen@a#1#2{%
+  \def#1##1:##2\noboundary{#2##1\string\dimen\noboundary}%
+  \def#2##1\string\dimen##2\noboundary{\noexpand\ifblankTF{##1}}%
+}
+\cpt@ifdimen@a\cpt@ifdimen@a\cpt@ifdimen@b
+\robust@def*\pushnumeric#1{%
+  \usecsn{push\ifcounterTF#1{count}{numb}er}#1%
+}
+\robust@def*\popnumeric#1{%
+  \usecsn{pop\ifcounterTF#1{count}{numb}er}#1%
+}
+\robust@def*\pushnumber#1{%
+  \ifdefTF{#1}{\edef#1{\the\numexpr#1+1}}{\chardef#1\@ne}%
+}
+\robust@def*\popnumber#1{%
+  \ifdefTF#1{%
+    \ifnumcmpTF#1=\z@{%
+      \let\relax\relax
+      \cpt@err{Number '\string#1' is already 0}\@ehc
+    }{%
+      \edef#1{\the\numexpr#1-1}%
+    }%
+  }{%
+    \let\relax\relax
+    \cpt@err{Number '\string#1' is undefined}\@ehc
+  }%
+}
+\robust@def*\pushcounter#1{%
+  \ifdefTF#1{%
+    \ifcounterTF#1{%
+      \global\advance#1\@ne
+    }{%
+      \cpt@err{Number '\string#1' isn't a counter}\@ehc
+    }%
+  }{%
+    \usecsn{newcount}#1%
+  }%
+}
+\robust@def*\popcounter#1{%
+  \ifdefTF#1{%
+    \ifnumcmpTF#1=\z@{%
+      \cpt@err{Counter or number '\string#1' is already 0}\@ehc
+    }{%
+      \ifcounterTF#1{\global\advance#1\cpt@mone}{%
+        \cpt@err{Number '\string#1' isn't a counter}\@ehc
+      }%
+    }%
+  }{%
+    \cpt@err{Counter '\string#1' is undefined}\@ehc
+  }%
+}
+\new@def*\push@rnarg#1{%
+  \expandafter\cptremovescape\push@arg @\romannumeral#1%
+}
+\robust@def*\pushfunctions#1#2{%
+  \ifdefTF#2{%
+    \ifcounterTF#2{%
+      \global\advance#2\@ne
+    }{%
+      \xdef#2{\the\numexpr#2+1}%
+    }%
+  }{%
+    \chardef#2\@ne
+  }%
+  \def\push@do{%
+    \cptexpandsecondonce{\letcsntocs{\push@rnarg{#2}}}\push@arg
+  }%
+  \let\rsv@escapechar\escapechar\escapechar\cpt@xcii
+  \pushingloop{#1}%
+  \escapechar\rsv@escapechar
+}
+\robust@def*\popfunctions#1#2{%
+  \ifdefTF#2{%
+    \ifnum#2=\z@
+      \cpt@err{Number '\string#2' is currently '0'}\@ehc
+    \fi
+  }{%
+    \cpt@err{Pop function with unknown number \string#2?}\@ehc
+  }%
+  \def\push@do{%
+    \expandafter\letcstocsn\push@arg{\push@rnarg{#2}}%
+    \undefcsn{\push@rnarg{#2}}%
+  }%
+  \let\rsv@escapechar\escapechar\escapechar\cpt@xcii
+  \pushingloop{#1}%
+  \escapechar\rsv@escapechar
+  \ifcounterTF#2{%
+    \global\advance#2\cpt@mone
+  }{%
+    \xdef#2{\the\numexpr#2-1}%
+  }%
+}
+% Why separate \pushcsvinternals from \pushfunctions?
+% There is a reason:
+\robust@def*\pushcsvinternals#1#2{%
+  \def\push@do{%
+    \cptexpandsecondonce{\letcsntocs{\push@rnarg{#2}}}\push@arg
+  }%
+  \pushingloop{#1}%
+}
+\robust@def*\popcsvinternals#1#2{%
+  \def\push@do{%
+    \expandafter\letcstocsn\push@arg{\push@rnarg{#2}}%
+    \undefcsn{\push@rnarg{#2}}%
+  }%
+  \pushingloop{#1}%
+}
+\robust@def*\pushingloop#1{%
+  \def\comma@do##1{%
+    \normal@despace{##1}\push@arg
+    \push@do\relax
+  }%
+  \comma@@loop{#1}%
+}
+\robust@def*\cpt@toodeep#1#2{%
+  \cpt@err{Command '\string#1' nested too deeply}%
+    {Sorry, but command '\string#1' can't be nested
+    \MsgBrk to depth(s) higher than #2.}%
+  \@gobble
+}
+\robust@def*\csv@@loop{%
+  \cpt@normalizefalse
+  \chardef\csv@kv@type\z@
+  \cpt@teststoptb\cpt@csvkvparse
+}
+\robust@def*\csv@@parse{%
+  \cpt@normalizetrue
+  \chardef\csv@kv@type\z@
+  \cpt@teststoptb\cpt@csvkvparse
+}
+\robust@def*\kv@@parse{%
+  \cpt@normalizetrue
+  \chardef\csv@kv@type\@ne
+  \cpt@teststoptb\cpt@csvkvparse
+}
+\newletcs\remainder@do\@gobble
+\newsentinel\csv@nil
+\newcount\csv@depth\csv@depth\cpt@mone
+\newcommand\cpt@csvkvparse[2][,]{%
+  \if@boolTF{cpt@st}{\let\csv@arg#2}{\edef\csv@arg{\unexpanded{#2}}}%
+  \advance\csv@depth\@ne
+  \ifnumcmpFT\csv@depth>\z@{}{%
+    \pushcsvinternals{\csv@parse@a,\csv@parse@b,\csv@kv@do,
+      \ifcpt@useempty,\ifcpt@breakloop,\ifcpt@normalize,
+      \remainder@do}\csv@depth
+  }%
+  \letcstocsn\csv@kv@do{\ifnum\csv@kv@type=\z@ csv\else kv\fi @do}%
+  \ifdefTF\csv@kv@do{}{%
+    \cpt@err{'\string\csv@do' or '\string\kv@do' undefined}\@ehc
+  }%
+  \long\def\csv@parse@a{%
+    \if@boolTF{cpt@breakloop}{%
+      \defpass\cpt@tempa####1\csv@nil#1{\remainder@do{####1}}%
+    }{%
+      \csv@parse@b.%
+    }%
+  }%
+  \long\def\csv@parse@b##1#1{%
+    \edef\csv@arg{\expandcsonce{\@gobble##1}}%
+    \ifsentinelTF\csv@arg\csv@nil{}{%
+      \ifcsnullTF\csv@arg{%
+        \if@boolFT{cpt@useempty}{}{\csv@kv@do{}\relax}%
+      }{%
+        \expandafter\csv@kv@do\expandafter{\csv@arg}\relax
+      }%
+      \csv@parse@a
+    }%
+  }%
+  \if@boolFT{cpt@normalize}{}{%
+    \ifcsnullTF\csv@arg{}{%
+      \cpt@sttrue
+      \usecsn{cpt@\ifnum\csv@kv@type=\@ne kv\else csv\fi normalize}%
+      [#1]\csv@arg
+    }%
+  }%
+  \cpt@breakloopfalse
+  \expandafter\csv@parse@a\csv@arg#1\csv@nil#1%
+  \ifnumcmpFT\csv@depth>\z@{%
+    \ifnum\csv@depth=\z@
+      \global\let\remainder@do\@gobble
+      \gundefcs\csv@kv@do
+    \fi
+  }{%
+    \popcsvinternals{\csv@parse@a,\csv@parse@b,\csv@kv@do,\ifcpt@useempty,
+      \ifcpt@breakloop,\ifcpt@normalize,\remainder@do}\csv@depth
+  }%
+  \advance\csv@depth\cpt@mone
+}
+% Apart from \pushingloop and some simple jobs, \comma@@loop
+% isn't necessary. \pushingloop can't use \csv@@loop, since
+% \csv@@loop calls \pushingloop to push its internals:
+\newsentinel\comma@nil
+\robust@def*\comma@@loop#1{%
+  \pushnumber\comma@depth
+  \ifnum\comma@depth>\@ne\cpt@toodeep\comma@@loop1\fi
+  \cpt@commaloop#1,\comma@nil,%
+  \popnumber\comma@depth
+  \undefcs\comma@do
+}
+\robust@def*\cpt@commaloop#1,{%
+  \def\comma@arg{#1}%
+  \ifsentinelTF\comma@arg\comma@nil{}{%
+    \comma@do{#1}\relax\cpt@commaloop
+  }%
+}
+\robust@def*\tsv@@loop{%
+  \cpt@despacetrue\cpt@robdespacefalse
+  \cpt@testst\cpt@tsvparse@a
+}
+\robust@def*\tsv@@parse{%
+  \cpt@despacetrue\cpt@robdespacetrue
+  \cpt@testst\cpt@tsvparse@a
+}
+\newsentinel\tsv@nil
+\robust@def\cpt@tsvparse@a#1{%
+  \if@boolTF{cpt@st}{\let\tsv@arg#1}{\edef\tsv@arg{\unexpanded{#1}}}%
+  \advance\csv@depth\@ne
+  \ifnumcmpFT\csv@depth>\z@{}{%
+    \pushcsvinternals{\tsv@do,\ifcpt@useempty,\ifcpt@breakloop,%
+      \ifcpt@despace,\ifcpt@robdespace,\remainder@do}\csv@depth
+  }%
+  \cpt@breakloopfalse
+  \expandafter\cpt@tsvparse@b\tsv@arg\tsv@nil
+  \ifnumcmpFT\csv@depth>\z@{%
+    \ifnum\csv@depth=\z@
+      \global\let\remainder@do\@gobble
+      \gundefcs\tsv@do
+    \fi
+  }{%
+    \popcsvinternals{\tsv@do,\ifcpt@useempty,\ifcpt@breakloop,%
+      \ifcpt@despace,\ifcpt@robdespace,\remainder@do}\csv@depth
+  }%
+  \advance\csv@depth\cpt@mone
+}
+\robust@def*\cpt@tsvparse@b{%
+  \if@boolTF{cpt@breakloop}{%
+    \defpass\cpt@tempa##1\tsv@nil{\remainder@do{##1}}%
+  }{%
+    \begingroup
+    \let\temp@bgroup\bgroup
+    \let\bgroup\cpt@undefined
+    \futurelet\next\cpt@tsvparse@c
+  }%
+}
+\robust@def\cpt@tsvparse@c#1{%
+  \cptpassexpanded{\endgroup\edef\noexpand\tsv@arg
+    {\noexpand\unexpanded{\ifxTF\next\temp@bgroup
+    {{\unexpanded{#1}}}{\unexpanded{#1}}}}}%
+  \if@boolFT{cpt@despace}{}{%
+    \usecsn{\ifcpt@robdespace rob\fi despacecontent}\tsv@arg
+  }%
+  \ifsentinelTF\tsv@arg\tsv@nil{}{%
+    \ifcsnullTF\tsv@arg{%
+      \ifcpt@useempty\tsv@do{}\relax\fi
+    }{%
+      \expandafter\tsv@do\expandafter{\tsv@arg}\relax
+    }%
+    \cpt@tsvparse@b
+  }%
+}
+% Fast, but non-robust and non-nesting, tsv parser.
+% \tsv@@parse does preserve outer braces but sometimes this
+% isn't required, necessitating a call to a brace stripper.
+% \siso@@loop strips outer braces in its arguments.
+\newsentinel\siso@nil
+\robust@def*\siso@@loop#1{%
+  \pushnumber\siso@depth
+  \ifnum\siso@depth>\@ne\cpt@toodeep\siso@@loop1\fi
+  \cpt@sisoloop#1\siso@nil
+  \popnumber\siso@depth
+}
+\robust@def*\cpt@sisoloop#1{%
+  \def\siso@arg{#1}%
+  \ifsentinelTF\siso@arg\siso@nil{}{%
+    \siso@do{#1}\relax
+    \cpt@sisoloop
+  }%
+}
+\robust@def*\on@currlevel#1#2{%
+  \ifdefTF\curr@level{%
+    \ifnum\curr@level=\z@
+      \cpt@err{'\string\curr@level' is zero}{%
+        I can't do anything on zero current level.}%
+    \fi
+  }{%
+    \cpt@err{'\string\curr@level' undefined}\@ehc
+  }%
+  \cptexpandsecond{#1}
+    {\noexpandcsn{\cptgobblescape#2@\romannumeral\curr@level}}%
+}
+\new@def*\cptliststack#1#2{%
+  \ifx#2\@empty\@empty\else\expandcsonce{#2}#1\fi
+}
+\new@def\cptafterfi#1\fi{\fi#1}
+\new@def\cptafterelsefi#1\else#2\fi{\fi#1}
+\new@def\cptafterfifi#1\fi#2\fi{\fi\fi#1}
+\robust@def*\emptify#1{\let#1\@empty}
+\robust@def*\gemptify#1{\global\let#1\@empty}
+\robust@def*\genemptify{\cpt@teststpm\cpt@genemptify}
+\def\cpt@genemptify#1{%
+  \ifcpt@pm\global\fi\ifcpt@st\else\long\fi\def#1{}%
+}
+\robust@def*\emptifycsn{\aftercsname\emptify}
+\robust@def*\gemptifycsn{\global\aftercsname\emptify}
+\robust@def*\emptifycsset#1{%
+  \def\comma@do##1{%
+    \ifsingletokenFT{#1}{%
+      \cpt@err{Multiple tokens '\detokenize{##1}'}\@ehc
+    }{%
+      \ifescapedTF{##1}{%
+        \def##1{}%
+      }{%
+        \cpt@err{Can't emptify unescaped macro '\string##1'}\@ehc
+      }%
+    }%
+  }%
+  \comma@@loop{#1}%
+}
+\robust@def*\cptonlypreamble{\cpt@testst\cpt@onlypreamble}
+\robust@def*\cpt@onlypreamble#1{%
+  \let\ifv@\ifcpt@st
+  \begingroup
+  \def\cpt@resa{}%
+  \def\comma@do##1{%
+    \normal@despace{##1}\cpt@tempa
+    \ifcsnullTF\cpt@tempa{}{%
+      \simpleexpandarg\ifescapedFT\cpt@tempa{%
+        \cpt@err{'\expandcsonce\cpt@tempa' not a command}\@ehc
+      }{%
+        \simpleexpandarg\ifsingletokenTF\cpt@tempa{%
+          \xifinsetTF{,\expandcsonce\cpt@tempa,}%
+            {,\expandcsonce\cpt@resa,}{%
+            \cpt@warn{Command '\expandcsonce\cpt@tempa' multiply
+              \MsgBrk submitted to \string\cptonlypreamble:
+              ignored}%
+          }{%
+            \cptaddtolist*\cpt@resa\cpt@tempa
+            \ifv@
+              \cptexpandarg\AtEndOfPackage
+                {\noexpand\@onlypreamble\expandcsonce\cpt@tempa}%
+            \else
+              \expandafter\@onlypreamble\cpt@tempa
+            \fi
+          }%
+        }{%
+          \cpt@err{Invalid multiple arguments
+            '\expandcsonce\cpt@tempa'}\@ehc
+        }%
+      }%
+    }%
+  }%
+  \comma@@loop{#1}%
+  \endgroup
+}
+\robust@def*\ifelementcountTF{%
+  \cpt@testopt\cpt@ifelementcount{,}%
+}
+\robust@def*\cpt@ifelementcount[#1]#2#3{%
+  \def\csv@do##1{\pushnumber\reserved@a}%
+  \chardef\reserved@a\z@
+  \csv@@loop*[#1]{#2}%
+  \ifcptcond\ifnum\reserved@a>#3\fi
+}
+\new@def*\ifcsnullTF#1{%
+  \@nameuse{@\expandafter\ifx\expandafter\noboundary
+    \@gobble#1.\noboundary second\else first\fi oftwo}%
+  {\@nameuse{@\ifx#1\@empty first\else second\fi oftwo}}%
+  \@secondoftwo
+}
+\new@def*\ifcsnullFT#1{\ifcsnullTF{#1}\@secondoftwo\@firstoftwo}
+\new@def*\oifcsnullTF#1{\expandafter\ifcsnullTF\expandafter{#1}}
+\new@def*\oifcsnullFT#1{\expandafter\ifcsnullFT\expandafter{#1}}
+\new@def*\xifcsnullTF#1{%
+  \expandafter\ifcsnullTF\expandafter
+  {\romannumeral-`\q\cptfullexpand{#1}}%
+}
+\new@def*\ifcsnnullTF#1{%
+  \ifblankTF{#1}{%
+    \@secondoftwo
+  }{%
+    \ifcsndefTF{#1}{%
+      \expandafter\ifx\csname#1\endcsname\@empty
+        \expandafter\@firstoftwo
+      \else
+        \expandafter\@secondoftwo
+      \fi
+    }{%
+      \@secondoftwo
+    }%
+  }%
+}
+\new@def*\ifcsnnullFT#1{%
+  \ifcsnnullTF{#1}\@secondoftwo\@firstoftwo
+}
+\new@def*\ifdefnotnullTF#1{%
+  \ifdefTF{#1}{%
+    \ifcsnullTF{#1}\@secondoftwo\@firstoftwo
+  }\@secondoftwo
+}
+\new@def*\ifdefnotnullFT#1{%
+  \ifdefnotnullTF{#1}\@secondoftwo\@firstoftwo
+}
+\new@def*\ifcsndefnotnullTF#1{%
+  \ifcsndefTF{#1}{%
+    \ifcsnnullTF{#1}\@secondoftwo\@firstoftwo
+  }\@secondoftwo
+}
+\new@def*\ifcsndefnotnullFT#1{%
+  \ifcsndefnotnullTF{#1}\@secondoftwo\@firstoftwo
+}
+% For private use only where #1 is surely one token:
+\new@def*\simpleexpandarg#1#2{\expandafter#1\expandafter{#2}}
+
+\new@def*\expandcsonce#1{\unexpanded\expandafter{#1}}
+\new@def*\expandcsnonce#1{\cptthreexp\expandcsonce\usecsn{#1}}
+\new@def*\expandcstwice#1{\unexpanded\cptthreexp{#1}}
+\new@def*\expandcsntwice#1{\aftercsname\expandcstwice{#1}}
+\new@def*\noexpandcsn#1{\expandcsonce{\csname#1\endcsname}}
+\newletcs\cptmakecs\noexpandcsn
+\new@def*\cptoxdetok#1{\detokenize\expandafter{#1}}
+\new@def*\cpttxdetok#1{\detokenize\cptthreexp{#1}}
+\new@def*\cptsxdetok#1{\detokenize\cptsevenxp{#1}}
+\robust@def\cptpassexpanded#1{%
+  \begingroup\protected@edef\x{\endgroup#1}\x
+}
+\newletcs\cptexpanded\cptpassexpanded
+\long\def\cptfullexpand#1{%
+	\romannumeral-`\q\cpt@fullexpand{#1}{}%
+}
+\long\def\cpt@fullexpand#1{%
+	\expandafter\cpt@fullexp@nd\romannumeral-`\q#1\exp@nil
+}
+\long\def\cpt@fullexp@nd#1#2\exp@nil#3{%
+	\ifblankTF{#2}{#3#1}{\cpt@fullexpand{#2}{#3#1}}%
+}
+\robust@def\cptpassunexpanded#1{\begingroup\long\def\x{\endgroup#1}\x}
+\newletcs\cptpassasis\cptpassunexpanded
+\robust@def\defpass#1#2#{\afterassignment#1\long\def#1#2}
+\robust@def\edefpass#1#2#{\afterassignment#1\long\edef#1#2}
+\robust@def*\cptexpandarg#1#2{\cptpassexpanded{\unexpanded{#1}{#2}}}
+\robust@def*\cptexpandargonce#1#2{%
+  \cptpassexpanded{\unexpanded{#1}{\expandcsonce{#2}}}%
+}
+\robust@def*\cptexpandsecond#1#2{\cptpassexpanded{\unexpanded{#1}#2}}
+\robust@def*\cptexpandsecondonce#1#2{%
+  \cptpassexpanded{\unexpanded{#1}\expandcsonce{#2}}%
+}
+\robust@def*\cptexpandsecondarg#1#2#3{%
+  \cptpassexpanded{\unexpanded{#1#2}{#3}}%
+}
+\robust@def*\cptexpandsecondargonce#1#2#3{%
+  \cptpassexpanded{\unexpanded{#1#2}{\expandcsonce{#3}}}%
+}
+\robust@def*\cptexpandtwoargs#1#2#3{%
+  \cptpassexpanded{\unexpanded{#1}{#2}{#3}}%
+}
+\robust@def*\cptexpandtwoargsonce#1#2#3{%
+  \cptpassexpanded
+  {\unexpanded{#1}{\expandcsonce{#2}}{\expandcsonce{#3}}}%
+}
+\robust@def*\StyleFileRCSInfo$#1 #2 #3 #4 #5 #6 #7 #8 ${%
+  \def\cpt@filedate{#4}%
+  \def\cpt@fileversion{v#3}%
+  \def\cpt@filetime{#5}%
+  \def\cpt@fileauthor{#6\@space#7}%
+}
+\new@def*\cpt@filedesc{}
+\defpass\cpt@tempa#1{%
+  \robust@def*\StyleFilePurpose##1{%
+    \gdef\cpt@filedesc{##1#1(\cpt@fileauthor)}%
+  }%
+}{ }
+\new@def*\StyleFileInfo{%
+  \cpt@filedate\@space\cpt@fileversion\@space\cpt@filedesc
+}
+\robust@def*\SetStyleFileMessages{%
+  \begingroup
+  \catcode`\ =9\catcode`\^^I=9\relax
+  \edef\cpt@tempa{\expandafter\@carcube\@currname\@nil @}%
+  \def\cpt@tempb{\@testopt{\expandafter\endgroup
+    \cpt@SetStyleFileMessages}}%
+  \expandafter\cpt@tempb\expandafter{\cpt@tempa}%
+}
+\robust@def*\cpt@SetStyleFileMessages[#1]#2#3#4{%
+  \begingroup
+  \def\cpt@tempa##1{\noexpandcsn{##1}}%
+  \shelldef\cpt@tempb{\global\protected\@namedef}%
+  \edef\cpt@tempc{\ifx\@currext\@pkgextension Package\else Class\fi}%
+  \@tempswafalse
+  \kernel@for\cpt@resa:={#2,#3,#4}\do{%
+    \ifcsname#1\cpt@resa\endcsname
+      \@tempswatrue\let\cpt@resb\cpt@resa
+    \fi
+  }%
+  \if@tempswa
+    \def\reserved@a{#1\cpt@resb}\@notdefinable
+  \else
+    \cptpassexpanded{%
+      \cpt@tempb{#1#2}####1{\cpt@tempa{\cpt@tempc Info}%
+        {\@currname}{####1\noexpand\@gobble}}%
+      \cpt@tempb{#1#3}####1{\cpt@tempa{\cpt@tempc WarningNoLine}%
+        {\@currname}{####1}}%
+      \cpt@tempb{#1#4}####1####2{\cpt@tempa{\cpt@tempc Error}%
+        {\@currname}{####1}{####2}}%
+    }%
+  \fi
+  \endgroup
+  \interactionmode\thr@@
+}
+\SetStyleFileMessages[cpt@]{info}{warn}{err}
+\robust@def*\cpt@begingroup{%
+  \begingroup
+  \cpt@grouplevel\currentgrouplevel
+  \cpt@grouptype\currentgrouptype
+}
+\robust@def*\cpt@endgroup{%
+  \ifnum\cpt@grouptype=\currentgrouptype
+    \ifnum\cpt@grouplevel=\currentgrouplevel\else
+      \cpt@err{There is a group level mismatch}\@ehc
+      \aftergroup\showgroups
+    \fi
+  \else
+    \cpt@err{There is a group type mismatch}\@ehc
+    \aftergroup\showgroups
+  \fi
+  \endgroup
+}
+\new@def*\ifboolTF#1{%
+  \ifcsndefTF{if#1}{%
+    \if@boolTF{#1}%
+  }{%
+    \cpt@err{Boolean '\usecsn{#1}' undefined}\@ehc
+  }%
+}
+\new@def*\ifboolFT#1{\ifboolTF{#1}\@secondoftwo\@firstoftwo}
+\new@def*\ifbooleanTF#1#{\ifboolTF{#1}}
+\new@def*\if@boolTF#1{%
+  \usecsn{@\usecsn{if#1}first\else second\fi oftwo}%
+}
+\new@def*\if@boolFT#1{\if@boolTF{#1}\@secondoftwo\@firstoftwo}
+\new@def\cptiterate#1\repeat{\cpt@iterate\@gobble{#1}}
+\new@def\cpt@iterate\@gobble#1{%
+  #1\relax\expandafter\cpt@iterate\fi\@gobble{#1}%
+}
+\new@def\cptwhilecond#1\fi#2{%
+  #1#2\relax\cptswap{\cpt@whilecond{#1#2\relax}\fi}\fi
+}
+\new@def\cpt@whilecond#1\fi{%
+  #1\expandafter\cpt@whilecond\else\@gobbletwo\fi{#1}\fi
+}
+\new@def*\cpt@numlt#1<{#1<\numexpr}
+\new@def*\cpt@numgt#1>{#1>\numexpr}
+\new@def*\cpt@numeq#1={#1=\numexpr}
+\new@def*\cpt@dimlt#1<{#1<\dimexpr}
+\new@def*\cpt@dimgt#1>{#1>\dimexpr}
+\new@def*\cpt@dimeq#1={#1=\dimexpr}
+\new@def*\cptwhilenum#1\do#2{%
+	\ifnum\numexpr\cpt@numlt\cpt@numgt\cpt@numeq#1%
+  \remove@to@nnil<=>\@nnil\relax#2\relax
+  \cptswap{\cpt@whilenum{#1}{\relax#2\relax}}\fi
+}
+\new@def*\cpt@whilenum#1#2{%
+  \ifnum\numexpr\cpt@numlt\cpt@numgt\cpt@numeq#1%
+  \remove@to@nnil<=>\@nnil#2%
+  \expandafter\cpt@whilenum\else
+  \expandafter\@gobbletwo\fi{#1}{#2}%
+}
+\new@def*\cptwhiledim#1\do#2{%
+	\ifdim\dimexpr\cpt@dimlt\cpt@dimgt\cpt@dimeq#1%
+  \remove@to@nnil<=>\@nnil\relax#2\relax
+  \cptswap{\cpt@whiledim{#1}{\relax#2\relax}}\fi
+}
+\new@def*\cpt@whiledim#1#2{%
+  \ifdim\dimexpr\cpt@dimlt\cpt@dimgt\cpt@dimeq#1%
+  \remove@to@nnil<=>\@nnil#2%
+  \expandafter\cpt@whiledim\else
+  \expandafter\@gobbletwo\fi{#1}{#2}%
+}
+\new@def*\ifnumcmpTF#1#{%
+  \usecsn{@\ifnum\numexpr\cpt@numlt\cpt@numgt\cpt@numeq#1%
+  \remove@to@nnil<=>\@nnil first\else second\fi oftwo}%
+}
+\new@def*\ifnumcmpFT#1#{\usecsn{@\ifnumcmpTF#1{second}{first}oftwo}}
+\new@def*\ifdimcmpTF#1#{%
+  \usecsn{@\ifdim\dimexpr\cpt@dimlt\cpt@dimgt\cpt@dimeq#1%
+  \remove@to@nnil<=>\@nnil first\else second\fi oftwo}%
+}
+\new@def*\ifdimcmpFT#1#{\usecsn{@\ifdimcmpTF#1{second}{first}oftwo}}
+\robust@def*\cpt@defcheck#1#2\cpt@nil{%
+  \new@def*#1##1\cpt@nil{%
+    \begingroup
+    \def\cpt@tempa####1#2####2\cpt@nil{\endgroup
+      \@nameuse{@\ifblankTF{####2}{second}{first}oftwo}%
+    }%
+    \cpt@tempa##1#2\cpt@nil
+  }%
+}
+\def\siso@do#1{\cpt@defcheck#1\cpt@nil}%
+\siso@@loop{%
+  {\cpt@checkeq=}{\cpt@checkgt>}{\cpt@checklt<}{\cpt@checkhyp-}%
+}
+\robust@def*\cpt@defsplit@at#1#2\cpt@nil{%
+  \new@def*#1##1\cpt@nil{%
+    \begingroup
+    \def\cpt@tempa####1#2####2\cpt@nil{\endgroup
+      \def\lpt{####1}\def\rpt{####2}%
+    }%
+    \ifinsetTF{#2}{##1}{%
+      \cpt@tempa##1#2\cpt@nil
+    }{%
+      \def\lpt{##1}\def\rpt{}%
+    }%
+  }%
+}
+\def\siso@do#1{\cpt@defsplit@at#1\cpt@nil}%
+\siso@@loop{%
+  {\cpt@split@ateq=}{\cpt@split@atgt>}%
+  {\cpt@split@atlt<}{\cpt@split@athyp-}%
+}
+\robust@def\DefSuffixChecker#1#2#3{%
+  \def#1##1##2##3{%
+    \begingroup
+    \toks@{}%
+    \def\xwm@tempa{%
+      \ifsingleTF{##2}{%
+        \ifsingleTF{##3}{\toks@{##1##2##3}}{\toks@{##1##2{##3}}}%
+      }{%
+        \ifsingleTF{##3}{\toks@{##1{##2}##3}}{\toks@{##1{##2}{##3}}}%
+      }%
+    }%
+    \defpass\xwm@tempb{%
+      \ifstrcmpTF{##2}{#2}{\xwm@tempa}{%
+        \ifstrcmpTF{##2}{#3}{%
+          \ifstrcmpTF{##3}{#2}{\toks@{##1##3##2}}{\xwm@tempa}%
+        }{\xwm@tempa}%
+      }%
+    }%
+    \expandafter\endgroup\the\toks@
+  }%
+}
+\new@def*\ifnumoddTF#1#{%
+  \usecsn{@\ifodd#1\@empty first\else second\fi oftwo}%
+}
+\new@def*\ifnumoddFT#1#{\usecsn{@\ifnumoddTF#1{second}{first}oftwo}}
+\newletcs\ifnumevenTF\ifnumoddFT
+\robust@def*\cptnumdef#1#2{\edef#1{\the\numexpr#2}}
+\robust@def*\cptdimdef#1#2{\edef#1{\the\dimexpr#2}}
+\robust@def*\cptnumadd#1#2{\edef#1{\the\numexpr#1+#2}}
+\robust@def*\cptdimadd#1#2{\edef#1{\the\dimexpr#1+#2}}
+\new@edef*\@leftbracechar{\expandafter\@car\string{\@nil\iffalse}\fi}
+\new@def\cptstrcmp#1#2{%
+  \ifcptcond\ifnum\pdfstrcmp{#1}{#2}=\z@\fi
+}
+\new@def\ifstrcmpTF#1#2{%
+  \cptstrcmp{\detokenize{#1}}{\detokenize{#2}}%
+}
+\new@def\ifstrcmpFT#1#2{\ifstrcmpTF{#1}{#2}\@secondoftwo\@firstoftwo}
+\robust@def\oifstrcmpTF#1#2{\cptexpandtwoargsonce\ifstrcmpTF{#1}{#2}}
+\robust@def\oif@sp@strcmpTF#1#2{%
+  \ifsingletokenTF{#1}{%
+    \ifsingletokenTF{#2}{%
+      \ifnum\pdfstrcmp{\expandcsonce{#1}}{\expandcsonce{#2}}=\z@
+        \expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi
+    }{%
+      \cpt@err{'\detokenize{#2}' not a single token}\@ehc
+    }%
+  }{%
+    \cpt@err{'\detokenize{#1}' not a single token}\@ehc
+  }%
+}
+\robust@def\oifstrcmpFT#1#2{\cptexpandtwoargsonce\ifstrcmpFT{#1}{#2}}
+\robust@def\xifstrcmpTF#1#2{\cptexpandtwoargs\ifstrcmpTF{#1}{#2}}
+\robust@def\xifstrcmpFT#1#2{\cptexpandtwoargs\ifstrcmpFT{#1}{#2}}
+\robust@def\ifstreqTF#1#2{%
+  \begingroup
+  \robust@despace{#1}\cpt@tempa
+  \robust@despace{#2}\cpt@tempb
+  \aftercsname\endgroup{@\ifnum\pdfstrcmp
+  {\cptoxdetok\cpt@tempa}{\cptoxdetok\cpt@tempb}%
+  =\z@ first\else second\fi oftwo}%
+}
+\robust@def\ifstreqFT#1#2{\ifstreqTF{#1}{#2}\@secondoftwo\@firstoftwo}
+\robust@def\oifstreqTF#1#2{\cptexpandtwoargsonce\ifstreqTF{#1}{#2}}
+\robust@def\oifstreqFT#1#2{\cptexpandtwoargsonce\ifstreqFT{#1}{#2}}
+\robust@def\xifstreqTF#1#2{\cptexpandtwoargs\ifstreqTF{#1}{#2}}
+\robust@def\xifstreqFT#1#2{\cptexpandtwoargs\ifstreqFT{#1}{#2}}
+\long\def\ifbracedTF#1{%
+  \cptstrcmp{\detokenize\expandafter{\@gobble#1.}}{}\@secondoftwo{%
+    \cptstrcmp{\detokenize\expandafter{\@gobble#1}}{}{%
+      \cptstrcmp{\expandafter\cpt@car\detokenize{#1}\car@nil}\@leftbracechar
+        \@firstoftwo\@secondoftwo
+    }{%
+      \@secondoftwo
+    }%
+  }%
+}
+\newcommand\ifbracedFT[1]{\ifbracedTF{#1}\@secondoftwo\@firstoftwo}
+\long\def\ifleftbracedTF#1{%
+  \cptstrcmp{\detokenize\expandafter{\@gobble#1.}}{}\@secondoftwo{%
+    \cptstrcmp{\expandafter\cpt@car\detokenize{#1}\car@nil}\@leftbracechar
+      \@firstoftwo\@secondoftwo
+  }%
+}
+\new@def\ifxTF#1#2{%
+  \usecsn{@\ifx#1#2\@empty first\else second\fi oftwo}%
+}
+\new@def\ifxFT#1#2{\ifxTF{#1}{#2}\@secondoftwo\@firstoftwo}
+\new@def*\ifdefeqTF#1#2{%
+  \ifdefTF{#1}{%
+    \ifdefTF{#2}{%
+      \usecsn{@\ifx#1#2first\else second\fi of oftwo}%
+    }\@secondoftwo
+  }\@secondoftwo
+}
+\new@def\ifdefeqFT#1#2{\ifdefeqTF{#1}{#2}\@secondoftwo\@firstoftwo}
+\new@def\ifcateqTF#1#{%
+  \usecsn{@\ifcat#1first\else second\fi oftwo}%
+}
+\new@def\ifcharcmpTF#1#2{%
+  \ifsingletokenTF{#1}{%
+    \ifsingletokenTF{#2}{%
+      \usecsn{@\if\detokenize\expandafter{\romannumeral\expandafter
+        \cptswap\expandafter{\romannumeral-`\q#2}{-`\q#1}}%
+        first\else second\fi oftwo}%
+    }{%
+      \cpt@err{More than one token in '\detokenize{#2}'}\@ehc
+      \@secondoftwo
+    }%
+  }{%
+    \cpt@err{More than one token in '\detokenize{#1}'}\@ehc
+    \@secondoftwo
+  }%
+}
+\new@def\ifcharcmpFT#1#2{\ifcharcmpTF{#1}{#2}\@secondoftwo\@firstoftwo}
+\new@def\ifexpandableTF#1#2#3{%
+  \romannumeral\ifleftbracedTF{#1}\@secondoftwo{%
+  \ifblankTF{#1}\@secondoftwo{\expandafter\ifx\noexpand#1#1%
+  \expandafter\@secondoftwo\else\expandafter\@firstoftwo\fi}}%
+  {0 #2}{0 #3}%
+}
+\new@def*\iffirstisspaceTF#1{%
+  \long\def\iffirstisspaceTF##1##2##3{%
+    \romannumeral\usecsn{@\ifblankTF{##1}{second}%
+    {\cpt@iffirstisspace.##1#1\@nnil}oftwo}{0#1##2}{0#1##3}%
+  }%
+}
+\iffirstisspaceTF{ }
+\new@def\cpt@iffirstisspace#1 {%
+  \expandafter\ifblankTF\expandafter{\@gobble#1}{first}{second}%
+  \remove@to@nnil
+}
+\new@def\ifsingletokenTF#1#2#3{%
+  \romannumeral-`\q\ifblankTF{#1}\@secondoftwo{%
+    \ifbracedTF{#1}\@secondoftwo{%
+      \iffirstisspaceTF{#1}{%
+        \expandafter\ifblankTF\expandafter{\@gobblespace#1}%
+      }{%
+        \expandafter\ifblankTF\expandafter{\@gobble#1}%
+      }%
+      \@firstoftwo\@secondoftwo
+    }%
+  }{#2}{#3}%
+}
+\newletcs\ifsingleTF\ifsingletokenTF
+\robust@def*\ifsingletokenFT#1{%
+  \ifsingletokenTF{#1}\@secondoftwo\@firstoftwo
+}
+\new@def\if@sp@singletokenTF#1#2#3{%
+  \romannumeral-`\q\ifblankTF{#1}\@secondoftwo{%
+    \ifbracedTF{#1}\@secondoftwo{%
+      \expandafter\ifblankTF\expandafter{\@gobble#1}%
+      \@firstoftwo\@secondoftwo
+    }%
+  }{#2}{#3}%
+}
+\robust@def*\cpt@listparser@err#1{%
+  \@latex@error{Invalid list parser '#1'}\@ehc
+}
+\robust@def*\cpt@checklistparser#1#2{%
+  \ifsingletokenTF{#1}{%
+    \xifinsetTF{\cptoxdetok{#1}}{\detokenize{,;:/+-|*&}}{%
+      #2%
+    }{%
+      \cpt@listparser@err{#1}%
+    }%
+  }{%
+    \cpt@listparser@err{#1}%
+  }%
+}
+\robust@def\exitgroupdef#1{%
+  \cptpassexpanded{\endgroup\edef
+    \noexpand#1{\noexpand\unexpanded{\expandcsonce#1}}}%
+}
+\robust@def*\cptaftergroup#1{%
+  \advance\@tempcnta\@ne
+  \csn@xdef{cpt@aftergroup@\romannumeral\@tempcnta}{%
+    \gundefcsn{cpt@aftergroup@\romannumeral\@tempcnta}%
+    \unexpanded\ifblankTF{#1}{}\expandafter{#1}%
+  }%
+  \aftercsname\aftergroup{cpt@aftergroup@\romannumeral\@tempcnta}%
+}
+\robust@def\cptafterassignment#1{%
+  \begingroup
+  \advance\@tempcnta\@ne
+  \csn@xdef{cpt@afterassignment@\romannumeral\@tempcnta}{%
+    \gundefcsn{cpt@afterassignment@\romannumeral\@tempcnta}%
+    \unexpanded\ifblankTF{#1}{}\expandafter{#1}%
+  }%
+  \aftercsname{\endgroup\afterassignment}{%
+    cpt@afterassignment@\romannumeral\@tempcnta}%
+}
+\robust@def*\cptexpandmacro#1#2{%
+  \ifsingletokenTF{#1}{%
+    \ifcptmacroTF{#1}{%
+      \ifexpandableTF{#1}{%
+        \simpleexpandarg\cptexpandmacro{#1}#2%
+      }{%
+        \edef#2{\unexpanded{#1}}%
+      }%
+    }{%
+      \edef#2{\unexpanded{#1}}%
+    }%
+  }{%
+    \edef#2{\unexpanded{#1}}%
+  }%
+}
+% Donald Arseneau's \@ifnextchar:
+\robust@def\cpt@ifnextchar#1#2#3{%
+  \begingroup
+  \@ifnextchar\relax
+    {\cpt@ifnextchar@a{#1}{#2}{#3}}%
+    {\cpt@ifnextchar@a{#1}{#2}{#3}}%
+}
+\robust@def\cpt@ifnextchar@a#1#2#3{%
+  \ifcase
+     \ifcat\noexpand\@let@token\bgroup 1\fi
+     \ifcat\noexpand\@let@token\egroup 1\fi
+     0\let\next\cpt@ifnextchar@b
+  \else
+     \def\next{\endgroup\@ifnextchar}%
+  \fi
+  \expandafter\next\expandafter{\string#1}{#2}{#3}%
+}
+\robust@def\cpt@ifnextchar@b#1#2#3#4{%
+  \escapechar92\relax
+  \edef\cpt@tempa{\cpt@ifnextchar@c{#1}\cpt@ifnextchar@c{#4}}%
+  \expandafter\endgroup\csname\expandafter @\expandafter
+    \ifx\cpt@tempa first\else second\fi oftwo\endcsname
+  {#2}{#3}#4%
+}
+\new@def\cpt@ifnextchar@c#1{%
+  \expandafter\cpt@ifnextchar@d\string#1\relax\noindent{#1}%
+}
+\new@def\cpt@ifnextchar@d#1#2\noindent#3{%
+  \ifx\relax#2#1\else\noexpand#3\fi
+}
+\robust@def\cpt@testopt#1#2{\cpt@ifnextchar[{#1}{#1[{#2}]}}
+\robust@def*\cpt@ifbrack#1#2{\cpt@ifnextchar[{#1}{#2}}
+\new@def*\cpt@xtestopt#1#2#3{%
+  \cpt@xifbrack#1\noboundary[\noboundary{#2#1}{#2[{#3}]{#1}}%
+}
+\new@def*\cpt@xifbrack#1[#2\noboundary#3#{%
+  \usecsn{@\ifblankTF{#1#2}{first}{second}oftwo}%
+}
+\robust@def\cpt@testpnopt#1#2{\cpt@ifnextchar({#1}{#1({#2})}}
+\robust@def\cpt@ifstar#1{\cpt@ifnextchar*{\@firstoftwo{#1}}}
+\robust@def\cpt@ifplus#1{\cpt@ifnextchar+{\@firstoftwo{#1}}}
+\robust@def\cpt@ifprime#1{\cpt@ifnextchar'{\@firstoftwo{#1}}}
+\robust@def\cpt@testst#1{\cpt@ifstar{\cpt@sttrue#1}{\cpt@stfalse#1}}
+\robust@def\cpt@testpl#1{\cpt@ifplus{\cpt@pltrue#1}{\cpt@plfalse#1}}
+\robust@def\cpt@teststpl#1{\cpt@testst{\cpt@testpl{#1}}}
+\robust@def\cpt@testpm#1{\cpt@ifprime{\cpt@pmtrue#1}{\cpt@pmfalse#1}}
+\robust@def\cpt@teststpm#1{\cpt@testst{\cpt@testpm{#1}}}
+\robust@def\cpt@teststopta#1{\cpt@testst{\cpt@testopt{#1}{}}}
+\robust@def\cpt@teststoptb#1{\cpt@testst{\cpt@testopt{#1}{,}}}
+\robust@def\cpt@teststoptc#1#2{\cpt@testst{\cpt@testopt{#1}{#2}}}
+\new@def*\ifstreqcase#1{\cpt@xtestopt{#1}\cpt@ifstreqcase{}}
+\new@def\cpt@ifstreqcase[#1]#2#3{%
+  \expandafter\cptswapfirstbraced\expandafter{#2}%
+    {\cpt@ifstreqc@se#3\cpt@mil\cpt@mil\cpt@nil}{#1}%
+}
+\new@def\cpt@ifstreqc@se#1#2#3\cpt@nil#4#5{%
+  \ifblankTF{#3}{#5}{%
+    \ifstrcmpTF{#1}{#4}{#2}{%
+      \cpt@ifstreqc@se#3\cpt@nil{#4}{#5}%
+    }%
+  }%
+}
+\new@def*\ifstrincase#1{\cpt@xtestopt{#1}\cpt@ifstrincase{}}
+\new@def\cpt@ifstrincase[#1]#2#3{%
+  \expandafter\cptswapfirstbraced\expandafter{#2}%
+    {\cpt@ifstrinc@se#3\cpt@mil\cpt@mil\cpt@nil}{#1}%
+}
+\new@def\cpt@ifstrinc@se#1#2#3\cpt@nil#4#5{%
+  \ifblankTF{#3}{#5}{%
+    \ifinsetTF{#1}{#4}{#2}{%
+      \cpt@ifstrinc@se#3\cpt@nil{#4}{#5}%
+    }%
+  }%
+}
+% LaTeX kernel's \in@ (which is used frequently elsewhere)
+% is not reliable in cases like \in@{cc}{abc}. So we provide
+% a modified form of it here:
+\robust@def\cptinset#1#2{%
+  \begingroup
+  \def\in@@##1#1##2##3\in@@{\endgroup
+    \ifx##2\cptinset\cpt@infalse\else\cpt@intrue\fi
+  }%
+  \in@@#2{\in@@}#1\cptinset\in@@
+}
+\newletcs\cpt@in\cptinset
+\robust@def\ifinsetTF#1#2{%
+  \cptinset{#1}{#2}%
+  \@nameuse{@\ifcpt@in first\else second\fi oftwo}%
+}
+\robust@def\ifinsetFT#1#2{\ifinsetTF{#1}{#2}\@secondoftwo\@firstoftwo}
+\robust@def\oifinsetTF#1#2{%
+  \begingroup
+  \edef\cpt@tempa{{\expandcsonce{#1}}{\expandcsonce{#2}}}%
+  \expandafter\endgroup\expandafter\ifinsetTF\cpt@tempa
+}
+\robust@def\oifinsetFT#1#2{\oifinsetTF{#1}{#2}\@secondoftwo\@firstoftwo}
+\robust@def\xifinsetTF#1#2{%
+  \begingroup
+  \protected@edef\cpt@tempa{{#1}{#2}}%
+  \expandafter\endgroup\expandafter\ifinsetTF\cpt@tempa
+}
+\robust@def\xifinsetFT#1#2{\xifinsetTF{#1}{#2}\@secondoftwo\@firstoftwo}
+\robust@def\if@sp@inlistTF#1#2#3{%
+  \xifinsetTF{\detokenize{#1}\cptoxdetok{#2}\detokenize{#1}}%
+    {\detokenize{#1}\cptoxdetok{#3}\detokenize{#1}}%
+}
+\robust@def\if@sp@inlistFT#1#2#3{%
+  \if@sp@inlistTF{#1}{#2}{#3}\@secondoftwo\@firstoftwo
+}
+\robust@def*\cptaddtotoks#1{%
+  \long\shelldef\cptaddtotoks##1##2{%
+    \toks##1\oifblankTF{\the\toks##1}{{##2}}%
+      {\expandafter{\the\toks##1#1##2}}%
+  }%
+}
+\cptaddtotoks{ }
+\robust@def*\cptaddtolist{\cpt@teststoptb{\cpt@addtolist\expandcsonce{e}}}
+\robust@def*\cptgaddtolist{\cpt@teststoptb{\cpt@addtolist\expandcsonce{x}}}
+\robust@def*\cptxaddtolist{\cpt@teststoptb{\cpt@addtolist\@firstofone{e}}}
+\robust@def*\cptgxaddtolist{\cpt@teststoptb{\cpt@addtolist\@firstofone{x}}}
+\robust@def\cpt@addtolist#1#2[#3]#4#5{%
+  \ifcpt@check\cpt@checklistparser{#3}\relax\fi
+  \begingroup
+  \def\cpt@tempa{\endgroup
+    \ifdefTF#4{%
+      \if@boolTF{cpt@st}{%
+        \usecsn{protected@#2def}#4{\cptliststack#3#4#1{#5}}%
+      }{%
+        \usecsn{#2def}#4{\cptliststack#3#4\unexpanded{#5}}%
+      }%
+    }{%
+      \if@boolTF{cpt@st}{%
+        \usecsn{protected@#2def}#4{#1{#5}}%
+      }{%
+        \usecsn{#2def}#4{\unexpanded{#5}}%
+      }%
+    }%
+  }%
+  \ifblankTF{#5}{\ifcpt@useempty\cpt@tempa\else\endgroup\fi}\cpt@tempa
+}
+\robust@def*\cptfilterremoveelements{%
+  \cpt@testopt\cpt@filterremoveelements{,}%
+}
+\robust@def*\cpt@filterremoveelements[#1]#2#3#4{%
+  \begingroup
+  \cptdeclarefilter{#4}%
+  \ifdefTF{#2}{}{\def#2{}}%
+  \edef\cpt@delete{\unexpanded{#3}}%
+  \ifcsnullTF\cpt@delete{}{%
+    \cpt@sttrue\cpt@csvnormalize[#1]\cpt@delete
+  }%
+  \edef\cpt@tempd##1{%
+    {\detokenize{#1}\noexpand\cptoxdetok{##1}\detokenize{#1}}%
+    {\detokenize{#1}\cptoxdetok\cpt@delete\detokenize{#1}}%
+  }%
+  \def\cpt@tempc{}%
+  \def\csv@do##1{%
+    \edef\cpt@tempa{\unexpanded{##1}}%
+    \cpt@usefilter\cpt@tempa\cpt@tempb
+    % no \if@sp@inlistTF here:
+    \expandafter\xifinsetTF\cpt@tempd\cpt@tempb{}{%
+      \cptaddtolist[#1]\cpt@tempc{##1}%
+    }%
+  }%
+  \ifcsnullTF#2{}{%
+    \ifcsnullTF\cpt@delete{}{%
+      \csv@@parse*[#1]#2%
+    }%
+  }%
+  \let#2\cpt@tempc
+  \exitgroupdef#2%
+}
+\robust@def*\cptdeclarefilter#1{%
+  \edef\cpt@usefilter##1##2{%
+    \ifblankTF{#1}{\let##2##1}{%
+      \ifxTF{#1}\relax{\let##2##1}{%
+        \ifstrcmpTF{#1}\nofilter{\let##2##1}{%
+          \unexpanded{#1}{##1}{##2}%
+        }%
+      }%
+    }%
+  }%
+}
+\newletcs\everymergeitem\@iden
+\robust@def*\cptfiltermergelists{\cpt@testopt\cpt@filtermergelists{,}}
+\robust@def*\cpt@filtermergelists[#1]#2#3#4{%
+  \begingroup
+  \cptdeclarefilter{#4}%
+  \ifdefTF{#2}{}{\def#2{}}%
+  \ifblankTF{#3}{%
+    \def\cpt@update{}%
+  }{%
+    \edef\cpt@update{\unexpanded{#3}}%
+  }%
+  \def\cpt@add##1{%
+    \edef#2{\cptliststack#1#2%
+      \everymergeitem{\expandcsonce{##1}}}%
+  }%
+  \def\csv@do##1{%
+    \cpt@choicefdfalse
+    \edef\cpt@merge@a{\unexpanded{##1}}%
+    \cpt@usefilter\cpt@merge@a\cpt@merge@b
+    \def\csv@do####1{%
+      \edef\cpt@merge@c{\unexpanded{####1}}%
+      \cpt@usefilter\cpt@merge@c\cpt@merge@d
+      \cptscantokens\cpt@merge@b
+      \cptscantokens\cpt@merge@d
+      \ifx\cpt@merge@b\cpt@merge@d
+        \cpt@choicefdtrue\cpt@add\cpt@merge@a
+      \else
+        \cpt@add\cpt@merge@c
+      \fi
+    }%
+    \cptexpandargonce{\def#2{}\csv@@parse[#1]}#2%
+    \if@boolTF{cpt@choicefd}{}{\cpt@add\cpt@merge@a}%
+  }%
+  \ifcsnullTF#2{%
+    \edef#2{\expandcsonce\cpt@update}%
+  }{%
+    \ifcsnullTF\cpt@update{}{%
+      \csv@@parse*[#1]\cpt@update
+    }%
+  }%
+  \exitgroupdef#2%
+  \let\everymergeitem\@firstofone
+}
+\robust@def*\preservebracedefQ#1#2{%
+  \def\preserve@prefix{#1}%
+  \def\preserve@delimiter{#2}%
+}
+\preservebracedefQ\long\@nil
+\robust@def*\preservebracedef#1{%
+  \cpt@preservebracedef
+  \cpt@pr@servebracedef#1.%
+}
+\robust@def*\PreserveBraceDef#1#2{%
+  \cpt@preservebracedef
+  \long\edef\preserve@after{\unexpanded{#1}}%
+  \afterassignment\preserve@after
+  \cpt@pr@servebracedef#2.%
+}
+\robust@def*\cpt@preservebracedef{%
+  \begingroup
+  \def\x{\endgroup\preserve@prefix
+    \def\cpt@pr@servebracedef####1####2}%
+  \expandafter\x\preserve@delimiter{%
+    \preserve@prefix\edef##1{%
+      \unexpanded\expandafter{\remove@to@dot##2}%
+    }%
+  }%
+}
+\@namedef{@gobblespace} {}
+\robust@def*\csn@newif#1{%
+  \ifstrcmpTF{#1}{x}{%
+    \cpt@err{Redefining '\cptmakecs{ifx}'?}\@ehc
+  }{%
+    \usecsn{newif\cptthreexp}\usecsn{if#1}%
+  }%
+}
+\robust@def*\csn@def#1{\cptthreexp\def\usecsn{#1}}
+\robust@def*\csn@gdef#1{\cptthreexp\gdef\usecsn{#1}}
+\robust@def*\csn@edef#1{\cptthreexp\edef\usecsn{#1}}
+\robust@def*\csn@xdef#1{\cptthreexp\xdef\usecsn{#1}}
+\robust@def*\letcsntocs#1{\cptthreexp\let\usecsn{#1}}
+\robust@def*\gletcsntocs#1{\global\cptthreexp\let\usecsn{#1}}
+\robust@def*\letcstocsn#1#2{%
+  \begingroup\expandafter\endgroup\expandafter
+  \let\expandafter#1\csname#2\endcsname
+}
+\robust@def*\gletcstocsn#1#2{%
+  \begingroup\expandafter\endgroup\expandafter\global
+  \expandafter\let\expandafter#1\csname#2\endcsname
+}
+\robust@def*\letcsntocsn#1#2{%
+  \begingroup\expandafter\endgroup
+  \expandafter\let\csname#1\expandafter
+  \endcsname\csname#2\endcsname
+}
+\robust@def*\gletcsntocsn#1#2{%
+  \begingroup\expandafter\endgroup\expandafter
+  \global\expandafter\let\csname#1\expandafter
+  \endcsname\csname#2\endcsname
+}
+\new@def\aftercsname#1#2{%
+  \expandafter\cptswap\expandafter{\csname#2\endcsname}{#1}%
+}
+\new@def\xaftercsname#1#2{%
+  \cptsevenxp\cptswap\cptthreexp{\csname#2\endcsname}{#1}%
+}
+\robust@def*\globalize#1{\cptglet#1#1}
+\robust@def*\globalizecsn#1{%
+  \begingroup\expandafter\endgroup\expandafter
+  \global\expandafter\let\csname#1\expandafter\endcsname
+  \csname#1\endcsname
+}
+\robust@def*\undefcs#1{\let#1\cpt@undefined}
+\robust@def*\gundefcs{\global\undefcs}
+\robust@def*\undefcsn#1{\aftercsname\undefcs{#1}}
+\robust@def*\gundefcsn{\global\undefcsn}
+\robust@def*\undefcsset{\cpt@testst\cpt@undefcsset}
+\robust@def*\cpt@undefcsset#1{%
+  \ifcpt@st\let\cpt@tempa#1\else\def\cpt@tempa{#1}\fi
+  \def\comma@do##1{%
+    \normal@despace{##1}\cpt@tempa
+    \simpleexpandarg\ifescapedTF\cpt@tempa{%
+      \expandafter\undefcs\cpt@tempa
+    }{%
+      \cpt@err{I can't find escape in token
+        '\cptoxdetok\cpt@tempa':\MsgBrk
+        Maybe it's an active character}\@ehc
+    }%
+  }%
+  \simpleexpandarg\comma@@loop\cpt@tempa
+}
+\robust@def*\cpttrimparser{\cpt@testopt\cpt@trimparser{,}}
+\robust@def\cpt@trimparser[#1]#2{%
+  \begingroup
+  \edef\cpt@tempd{\detokenize{#1}}%
+  \let\trimpr@nil\cpt@nil
+  \def\cpt@trimb{%
+    \xifinsetFT{\cpt@tempd\trimpr@nil}{\cptoxdetok{#2}\trimpr@nil}{}{%
+      \cptexpandsecond
+        {\def\cpt@trimc####1}\cpt@tempd\trimpr@nil{%
+        \edef#2{\expandcsonce{\@gobble####1}}%
+        \cpt@trimb
+      }%
+      \expandafter\cpt@trimc\expandafter.#2\trimpr@nil
+    }%
+  }%
+  \defpass\cpt@trima{%
+    \xifinsetTF{\trimpr@nil\cpt@tempd}{\trimpr@nil\cptoxdetok{#2}}{%
+      \expandafter\def\expandafter\cpt@trimc
+      \cpt@tempd####1\trimpr@nil{%
+        \edef#2{\unexpanded{####1}}%
+        \cpt@trima
+      }%
+      \expandafter\cpt@trimc#2\trimpr@nil
+    }{%
+      \cpt@trimb
+    }%
+  }%
+  \exitgroupdef#2%
+}
+\robust@def*\stripouterbraces{\cpt@testopt\cpt@stripouterbraces\@ne}
+\robust@def\cpt@stripouterbraces[#1]{%
+  \begingroup
+  \def\after@def##1##2##3{\exitgroupdef{##3}}%
+  \@tempcnta\z@
+  \catcode`\{=1
+  \catcode`\}=2
+  \catcode`\#=6
+  \cpt@str@pouterbraces{#1}%
+}
+\robust@def\cpt@str@pouterbraces#1#2#3{%
+  \advance\@tempcnta\@ne
+  \edef#3{\unexpanded{#2}}%
+  \cpt@str@pouterbr@ces#2\strip@nil#3#1%
+}
+\robust@def\cpt@str@pouterbr@ces#1\strip@nil#2#3{%
+  \defcmpifx{#1}#2%
+    \expandafter\after@def
+  \else
+    \ifnum\@tempcnta>#3\relax
+      \cptthreexp\after@def
+    \else
+      \cptthreexp\cpt@str@pouterbraces
+    \fi
+  \fi
+  {#3}{#1}{#2}%
+}
+\robust@def\stripallouterbraces#1#2{%
+  \edef#2{\unexpanded\cptthreexp{\cpt@stripallouterbraces{#1}}}%
+}
+\robust@def\stripallouterbraces@incs#1{%
+  \expandafter\stripallouterbraces\expandafter{#1}#1%
+}
+%% Based on a solution by Ulrich Diez:
+\robust@def\cpt@stripallouterbraces#1{%
+  \romannumeral\ifbracedTF{#1}{%
+    \expandafter\ifnullTF\expandafter{\@gobble#1}{%
+      \expandafter\@gobble\cpt@stripallouterbraces#1%
+    }{0 #1}%
+  }{0 #1}%
+}
+%%
+
+\robust@def\defcmpifx#1#2{%
+  \begingroup
+  \edef\cpt@tempa{\unexpanded{#1}}%
+  \expandafter\endgroup\ifx#2\cpt@tempa
+}
+\robust@def\defcmpifxTF#1#2{%
+  \begingroup
+  \edef\cpt@tempa{\unexpanded{#1}}%
+  \ifxTF#2\cpt@tempa
+    {\endgroup\@firstoftwo}{\endgroup\@secondoftwo}%
+}
+\robust@def\defcmpifxFT#1#2{%
+  \defcmpifxTF{#1}{#2}\@secondoftwo\@firstoftwo
+}
+\robust@def\cpt@starafter#1#2{%
+  \begingroup
+  \def\cpt@tempa{#1}%
+  \def\cpt@tempb##1{#1{#2}}%
+  \def\cpt@tempc{\futurelet\next\cpt@staract}%
+  \cpt@tempc
+}
+\new@def*\cpt@staract{%
+  \ifxTF\@sptoken\next{%
+    \afterassignment\cpt@tempc\let\next= %
+  }{%
+    \cptpassexpanded{\endgroup
+      \ifxTF*\next{\expandcsonce\cpt@tempb}%
+        {\expandcsonce\cpt@tempa}%
+    }%
+  }%
+}
+\robust@def*\cptbracearg{\cpt@testopt\cpt@bracearg\@ne}
+\robust@def\cpt@bracearg[#1]#2#3{%
+  \begingroup
+  \@tempcnta\z@
+  \loop
+    \edef#3{\unexpanded{{#2}}}%
+    \advance\@tempcnta\@ne
+    \ifnum\@tempcnta<#1\relax
+  \repeat
+  \exitgroupdef#3%
+}
+\new@edef*\ifcptmacroTF#1{%
+  \unexpanded{\expandafter\cpt@ifmacro\meaning}%
+  #1\detokenize{macro}:\cpt@nil
+}
+\new@def*\ifcptmacroFT#1{\ifcptmacroTF{#1}\@secondoftwo\@firstoftwo}
+\edef\cpt@ifmacro{%
+  \def\noexpand\cpt@ifmacro##1\detokenize{macro}:##2\cpt@nil
+}
+\robust@def*\csnmeaning#1{\aftercsname\meaning{#1}}
+\cpt@ifmacro{\usecsn{@\ifblankTF{#2}{second}{first}oftwo}}
+\robust@def*\cpt@nomacroerr#1{%
+  \cpt@err{Argument '\detokenize{#1}' isn't a macro}\@ehc
+}
+\robust@def*\ifescapedTF#1{%
+  \begingroup\escapechar92\relax
+  \edef\cpt@tempa{\expandafter\cpt@car\string#1x\car@nil}%
+  \cptthreexp\endgroup\usecsn{@\ifx\cpt@tempa
+    \@backslashchar first\else second\fi oftwo}%
+}
+\robust@def*\ifescapedFT#1{\ifescapedTF{#1}\@secondoftwo\@firstoftwo}
+\ifcptdefinable\robustaliascount\relax
+\newcommand*\cptrobustify[1]{%
+  \def\comma@do##1{%
+    \normal@despace{##1}\cpt@tempa
+    \simpleexpandarg\ifescapedTF\cpt@tempa{%
+      \oifdefTF\cpt@tempa{%
+        \cptexpandsecondonce{\aftercsname\newletcs
+          {rsv@\expandafter\cptremovescape\cpt@tempa}}\cpt@tempa
+        \expandafter\protected\expandafter\edef\cpt@tempa
+          {\noexpandcsn{rsv@\expandafter\cptremovescape\cpt@tempa}}%
+        \pushnumber\robustaliascount
+      }{%
+        \cpt@err{Command '\string\cpt@tempa' undefined}\@ehc
+      }%
+    }{%
+      \cpt@err{String '\detokenize{\cpt@tempa}' not escaped}\@ehc
+    }%
+  }%
+  \comma@@loop{#1}%
+}
+\robust@def*\leftaddtocs{%
+  \let\cpt@def\edef\let\swap\cptswap\cpt@addtocs
+}
+\robust@def*\gleftaddtocs{%
+  \let\cpt@def\xdef\let\swap\cptswap\cpt@addtocs
+}
+\robust@def*\rightaddtocs{%
+  \let\cpt@def\edef\let\swap\cptalloftwo\cpt@addtocs
+}
+\robust@def*\grightaddtocs{%
+  \let\cpt@def\xdef\let\swap\cptalloftwo\cpt@addtocs
+}
+\robust@def*\rightaddtocsn{\aftercsname\rightaddtocs}
+\robust@def*\grightaddtocsn{\aftercsname\grightaddtocs}
+\robust@def*\leftaddtocsn{\aftercsname\leftaddtocs}
+\robust@def*\gleftaddtocsn{\aftercsname\gleftaddtocs}
+\robust@def*\cpteveryscantokens{%
+  \everyeof{\noexpand}%
+  \endlinechar\m@ne
+  \makeatletter
+  \catcode`\ =10
+  \catcode`\\\z@
+  \catcode`\{\@ne
+  \catcode`\}\tw@
+}
+% #1 must be a non-parametered macro:
+\robust@def*\cptscantokens#1{%
+  \begingroup
+  \edef#1{\long\def\string#1{\cptoxdetok{#1}}}%
+  \cpteveryscantokens
+  \scantokens\expandafter{#1}\relax
+  \exitgroupdef#1%
+}
+\robust@def\cpt@addtocs#1#2{%
+  \cpt@getmacroprefix{#1}%
+  \ifdefTF#1{%
+    \macroprefix\cpt@def#1{\swap{\expandcsonce{#1}}{\unexpanded{#2}}}%
+  }{%
+    \macroprefix\cpt@def#1{\unexpanded{#2}}%
+  }%
+  \undefcs\cpt@def\undefcs\swap
+}
+\robust@def*\cpt@getmacroprefix#1{%
+  \begingroup
+  \edef\cpt@tempa##1{\def##1####1\detokenize{macro}:####2\noboundary}%
+  \cpt@tempa\@ifmacro{%
+    \def\macroprefix{##1}%
+    \usecsn{@\ifblankTF{##2}{second}{first}oftwo}%
+  }%
+  \edef\cpt@tempb##1{##1\detokenize{macro}:\noboundary}%
+  \cpt@tempb{\expandafter\@ifmacro\meaning#1}{%
+    \@testtrue
+  }{%
+    \@testfalse\def\macroprefix{}%
+  }%
+  \cpteveryscantokens
+  \cptpassexpanded{%
+    \endgroup\noexpand\scantokens
+    {\def\noexpand\macroprefix{\macroprefix}\relax}%
+  }%
+}
+\robust@def*\cpt@gettogswstate#1{%
+  \lowercase{%
+    \ifinsetTF{,#1,}{,true,on,}{%
+      \let\cpt@togswstate\@firstoftwo
+    }{%
+      \ifinsetTF{,#1,}{,false,off,}{%
+        \let\cpt@togswstate\@secondoftwo
+      }{%
+        \@latex@error{Invalid toggle switch value '#1'}%
+          {Valid toggle switch values are 'true' and 'false'.}%
+      }%
+    }%
+  }%
+}
+\robust@def*\cpt@undeftogswerr#1{%
+  \cpt@err{Toggle switch '#1' undefined}\@ehc
+}
+\robust@def*\settogswtrue#1{%
+  \ifcsndefTF{cpt@togsw@#1}{%
+    \letcsntocs{cpt@togsw@#1}\@firstoftwo
+  }{\cpt@undeftogswerr{#1}}%
+}
+\robust@def*\settogswfalse#1{%
+  \ifcsndefTF{cpt@togsw@#1}{%
+    \letcsntocs{cpt@togsw@#1}\@secondoftwo
+  }{\cpt@undeftogswerr{#1}}%
+}
+\new@def*\iftogswTF#1{%
+  \ifcsndefTF{cpt@togsw@#1}%
+    {\usecsn{cpt@togsw@#1}}%
+    {\cpt@undeftogswerr{#1}\@gobbletwo}%
+}
+\new@def*\iftogswFT#1{\iftogswTF{#1}\@secondoftwo\@firstoftwo}
+\robust@def*\settogsw#1#2{%
+  \ifcsndefTF{cpt@togsw@#1}{%
+    \cpt@gettogswstate{#2}%
+    \letcsntocs{cpt@togsw@#1}\cpt@togswstate
+  }{\cpt@undeftogswerr{#1}}%
+}
+\robust@def*\killtogsw#1{%
+  \ifcsndefTF{cpt@togsw@#1}{%
+    \letcsntocs{cpt@togsw@#1}\cpt@undefined
+  }{%
+    \cpt@info{Toggle switch '#1' not defined: not killed}%
+  }%
+}
+\robust@def*\BeforeStartOfDocument{%
+  \grightaddtocs\cpt@beforestartdoc@hook
+}
+\new@def*\cpt@beforestartdoc@hook{}
+\gleftaddtocs\document{%
+  \endgroup
+  \let\BeforeStartOfDocument\@firstofone
+  \cpt@beforestartdoc@hook
+  \let\BeforeStartOfDocument\@notprerr
+  \gundefcs\cpt@beforestartdoc@hook
+  \begingroup
+}
+\robust@def*\AfterStartOfDocument{%
+  \grightaddtocs\cpt@afterstartdoc@hook
+}
+\new@def*\cpt@afterstartdoc@hook{}
+\grightaddtocs\document{%
+  \let\AfterStartOfDocument\@firstofone
+  \cpt@afterstartdoc@hook
+  \let\AfterStartOfDocument\@notprerr
+  \gundefcs\cpt@afterstartdoc@hook
+  \ignorespaces
+}
+\gleftaddtocs\@popfilename{%
+  \usecsn{%
+    @\ifcsname\@currname.\@currext-cpt@hook\endcsname
+    iden\else gobble\fi
+  }%
+  {\usecsn{\@currname.\@currext-cpt@hook}}%
+  \gundefcsn{\@currname.\@currext-cpt@hook}%
+}
+\robust@def*\ifpackagewithTF{\cpt@ifoptions\@pkgextension}
+\robust@def*\ifclasswithTF{\cpt@ifoptions\@clsextension}
+\robust@def*\cpt@ifoptions#1#2{%
+  \cptexpandarg\cpt@ifopti@ns{\cpt@optionlist{#2.#1}}%
+}
+\robust@def*\cpt@ifopti@ns#1#2{%
+  \cpt@stfalse\cpt@kvnormalize[,]{#1}%
+  \let\temp@optlist\cpt@normalizedlist
+  \cpt@choicefdtrue
+  \def\kv@do##1{%
+    \if@sp@inlistTF,{##1}\temp@optlist
+      {}{\cpt@choicefdfalse\cptbreakloop}%
+  }%
+  \kv@@parse{#2}%
+  \undefcs\temp@optlist
+  \if@boolTF{cpt@choicefd}\@firstoftwo\@secondoftwo
+}
+\robust@def*\ifpackageafterTF{\cpt@ifpkgafter\@pkgextension}
+\robust@def*\ifclassafterTF{\cpt@ifpkgafter\@clsextension}
+\robust@def*\cpt@ifpkgafter#1#2#3{%
+  \usecsn{@if#1loaded}{#2}{}{%
+    \AfterStartOfDocument{%
+      \usecsn{@if#1loaded}{#2}{%
+        \cpt@warn{\@cls@pkg '#2' was loaded afterwards}%
+        #3\relax
+      }{}%
+    }%
+  }%
+}
+\robust@def*\cptloadpackages{%
+  \begingroup
+  \toks@{}%
+  \begingroup
+  \catcode`\;=12\catcode`\|=12
+  \endlinechar\m@ne
+  \expandafter\endgroup\cpt@loadpackages
+}
+\robust@def\cpt@loadpackages#1{%
+  \cpt@useemptyfalse
+  \def\csv@do##1{%
+    \cpt@lo@dpackages##1|||\cpt@nil
+  }%
+  \csv@@parse[;]{#1}%
+  \expandafter\endgroup\the\toks@
+}
+\robust@def\cpt@lo@dpackages#1|#2|#3|#4\cpt@nil{%
+  \stripallouterbraces{#2}\cpt@tempb
+  \cpt@sttrue\cpt@kvnormalize[,]\cpt@tempb
+  \@ifpackageloaded{#1}{%
+    \edef\cpt@tempa{\cpt@optionlist{#1.\@pkgextension}}%
+    \ifx\cpt@tempa\cpt@tempb\else
+      \cpt@err{Option clash for package #1.\@pkgextension}\@ehc
+      \expandafter\@gobbletwo
+    \fi
+  }{%
+    \cptexpanded{%
+      \cptaddtotoks0{%
+        \ifcsnullTF\@currname{\noexpand\usepackage}{%
+        \noexpand\RequirePackage}[\cpt@tempb]{#1}[#3]%
+      }%
+    }%
+  }%
+}
+\robust@def*\AfterEndOfStyleFile{%
+  \begingroup
+  \def\cpt@tempa{\endgroup
+    \expandafter\grightaddtocs
+    \csname\@currname.\@currext-cpt@hook\endcsname
+  }%
+  \ifcsnullTF\@currname\endgroup\cpt@tempa
+}
+\edef\cpt@hashchar{\string#}
+\robust@def*\cpt@pushhash{%
+  \begingroup
+  \@makeother{\#}%
+  \endlinechar\m@ne
+  \cpt@pop@hash
+}
+\robust@def\cpt@push@hash#1#2{%
+  \xifinsetTF\cpt@hashchar{\detokenize{#1}}{%
+    \edef\x##1{##1\detokenize{#1}\cpt@hashchar\cpt@nil}%
+    \edef\y##1{\def##1####1\cpt@hashchar####2\cpt@nil}%
+    \y\y{%
+      \ifblankTF{##2}{%
+        \toks@\expandafter{\the\toks@##1}%
+      }{%
+        \cptpassexpanded
+          {\toks@{\the\toks@##1\cpt@hashchar\cpt@hashchar}}%
+        \y##2\cpt@nil
+      }%
+    }%
+    \x{\toks@{}\y}%
+  }{%
+    \toks@\expandafter{\detokenize{#1}}%
+  }%
+  \edef#2{\the\toks@}%
+  \exitgroupdef#2%
+}
+\robust@def*\cpt@pophash{%
+  \begingroup
+  \@makeother{\#}%
+  \endlinechar\m@ne
+  \cpt@push@hash
+}
+\robust@def\cpt@pop@hash#1#2{%
+  \xifinsetTF{\detokenize{##}}{\detokenize{#1}}{%
+    \edef\x##1{##1\detokenize{#1##}\cpt@nil}%
+    \edef\y##1{\def##1####1\detokenize{##}####2\cpt@nil}%
+    \y\y{%
+      \ifblankTF{##2}{%
+        \toks@\expandafter{\the\toks@##1}%
+      }{%
+        \cptpassexpanded{\toks@{\the\toks@##1\cpt@hashchar}}%
+        \y##2\cpt@nil
+      }%
+    }%
+    \x{\toks@{}\y}%
+  }{%
+    \toks@\expandafter{\detokenize{#1}}%
+  }%
+  \edef#2{\the\toks@}%
+  \exitgroupdef#2%
+}
+\cptonlypreamble{%
+  \cptloadpackages,\ifpackagewithTF,\ifclasswithTF,\cpt@ifoptions,
+  \cptpushcatcodes,\cptpopcatcodes,\UseNormalCatcodes,
+  \rsv@UseNormalCatcodes,\StyleFilePurpose,\StyleFileInfo,
+  \AfterEndOfStyleFile,\StyleFileRCSInfo,\SetStyleFileMessages,
+  \XDeclareOption,\XDeclareOptions,\XDeclareCommandOption,
+  \XDeclareCommandOptions,\XDeclareBooleanOption,\XDeclareBooleanOptions,
+  \XDeclareBiBooleanOptions,\XProcessOptions,\XExecuteOptions,
+  \cpt@processedoptions,\cpt@optionlist,\cpt@findoption@a,
+  \cpt@findoption@b,\cpt@processoptions,\cpt@xprocessoptions,
+  \cpt@yprocessoptions,\cpt@pr@cessoptions,\BeforeStartOfDocument,
+  \AfterStartOfDocument,\XInvalidOptionHandler,\XDeclareInvalidOption,
+  \XDeclareInvalidOptions,\XUnknownOptionHandler,\ExternalOptions
+}
+\robust@def*\csv@@normalize{\cpt@teststoptb\cpt@csvnormalize}
+\robust@def\cpt@csvnormalize[#1]#2{%
+  \chardef\normalize@listtype\z@
+  \csv@kv@normalize{#1}{#2}\cpt@normalizedlist
+}
+\robust@def*\kv@@normalize{\cpt@teststoptb\cpt@kvnormalize}
+\robust@def\cpt@kvnormalize[#1]#2{%
+  \chardef\normalize@listtype\@ne
+  \csv@kv@normalize{#1}{#2}\cpt@normalizedlist
+}
+\robust@def\csv@kv@normalize#1#2#3{%
+  \let\ifcpt@normst\ifcpt@st
+  \cpt@checklistparser{#1}\relax
+  \begingroup
+  \expandafter\setup@parser@normalize\string#1%
+  \ifcpt@normst
+    \toks@\expandafter{\expandafter#1#2#1}%
+  \else
+    \toks@{#1#2#1}%
+  \fi
+  \normalize@activeparser
+  \expandafter\normalize@spaceletter\string#1%
+  \expandafter\normalize@letterspace\string#1%
+  \expandafter\normalize@doubleletter\string#1%
+  \ifnumcmpFT\normalize@listtype=\@ne{}{%
+    \normalize@activeequal
+    \expandafter\normalize@spaceletter\string=%
+    \expandafter\normalize@letterspace\string=%
+    \expandafter\normalize@doubleletter\string=%
+    \cpt@commaequalerr
+  }%
+  \edef#3{\the\toks@}%
+  \expandafter\cpttrimparser\expandafter[\string#1]#3%
+  \exitgroupdef#3%
+  \ifcpt@normst\let#2#3\undefcs#3\fi
+  \undefcs\ifcpt@normst
+}
+\def\setup@parser@normalize#1{%
+  \begingroup
+  \uccode`\~\string=`#1%
+  \uppercase{\endgroup
+    \def\normalize@activeparser{%
+      \def\cpt@tempa####1~####2\cpt@nil{%
+        \toks@\expandafter{\the\toks@####1}%
+        \ifblankTF{####2}{}{\cpt@tempa#1####2\cpt@nil}%
+      }%
+      \toks@\expandafter{\expandafter}%
+      \expandafter\cpt@tempa\the\toks@~\cpt@nil
+    }%
+  }%
+}
+\begingroup
+\catcode`\=\string=12
+\uccode`\~=`\=%
+\uppercase{\endgroup
+  \def\normalize@activeequal{%
+    \def\cpt@tempa##1~##2\cpt@nil{%
+      \expandafter\ifblankTF\expandafter{\the\toks@}{%
+        \toks@{##1}%
+      }{%
+        \toks@\expandafter{\the\toks@=##1}%
+      }%
+      \ifblankTF{##2}{}{\cpt@tempa##2\cpt@nil}%
+    }%
+    \toks@\expandafter{\expandafter}\expandafter
+    \cpt@tempa\the\toks@~\cpt@nil
+  }%
+}
+\def\normalize@doubleletter#1{%
+  \def\cpt@tempa##1#1#1##2\cpt@nil{%
+    \ifblankTF{##2}{%
+      \toks@{##1}%
+    }{%
+      \toks@{##1#1##2}%
+      \expandafter\cpt@tempa\the\toks@\cpt@nil
+    }%
+  }%
+  \expandafter\cpt@tempa\the\toks@#1#1\cpt@nil
+}
+\defpass\cpt@tempa#1{%
+  \def\normalize@spaceletter##1{%
+    \def\cpt@tempa####1#1##1####2\cpt@nil{%
+      \ifblankTF{####2}{%
+        \toks@{####1}%
+      }{%
+        \toks@{####1##1####2}%
+        \expandafter\cpt@tempa\the\toks@\cpt@nil
+      }%
+    }%
+    \expandafter\cpt@tempa\the\toks@#1##1\cpt@nil
+  }%
+  \def\normalize@letterspace##1{%
+    \def\cpt@tempa####1##1#1####2\cpt@nil{%
+      \ifblankTF{####2}{%
+        \toks@{####1}%
+      }{%
+        \toks@{####1##1####2}%
+        \expandafter\cpt@tempa\the\toks@\cpt@nil
+      }%
+    }%
+    \expandafter\cpt@tempa\the\toks@##1#1\cpt@nil
+  }%
+}{ }
+\robust@def*\cpt@commaequalerr{%
+  \def\cpt@tempa##1,=##2\cpt@nil{%
+    \ifblankTF{##2}{}{%
+      \cpt@err{There is 'comma' next to 'equal' (,=) in
+        \MsgBrk your key-value list}\@ehc
+    }%
+  }%
+  \expandafter\cpt@tempa\the\toks@,=\cpt@nil
+}
+\let\cpt@documentclass\cpt@undefined
+\robust@def*\cpt@getdocumentclass{%
+  \def\csv@do##1{%
+    \filename@parse{##1}%
+    \ifx\filename@ext\@clsextension
+      \ifcsndefFT{opt@\filename@area\filename@base.\filename@ext}{}{%
+        \xdef\cpt@documentclass{%
+          \filename@area\filename@base.\filename@ext
+        }%
+      }%
+    \fi
+    \ifx\cpt@documentclass\cpt@undefined\else\cpt@breaklooptrue\fi
+  }%
+  \csv@@parse*\@filelist
+  \ifdefTF\cpt@documentclass{}{%
+    \@latex@info@no@line{'catoptions' package loaded before
+      \string\documentclass: \MsgBrk no problem}%
+  }%
+}
+\cptpassasis{%
+  \ifxTF\@filelist\relax{}{%
+    \ifxTF\@filelist\@gobble{}{%
+      \ifxTF\@filelist\@empty\relax\cpt@getdocumentclass
+    }%
+  }%
+  \ifxTF\cpt@documentclass\cpt@undefined{%
+    \let\cpt@documentclass\@empty
+    \let\cpt@classoptionslist\@empty
+  }{%
+    \ifxTF\@classoptionslist\relax{}{%
+      \ifxTF\@classoptionslist\@empty{}{%
+        \cpt@sttrue\cpt@kvnormalize[,]\@classoptionslist
+      }%
+    }%
+    \let\cpt@classoptionslist\@classoptionslist
+    \def\@fileswith@ptions##1[##2]##3{%
+      \ifstreqTF{##3}{xkeyval}{%
+        \let\@classoptionslist\cpt@classoptionslist
+      }{%
+        \ifstreqFT{##3}{kvoptions}{}{%
+          \let\@classoptionslist\cpt@classoptionslist
+        }%
+      }%
+      \cpt@ifbrack{\@fileswith@pti@ns##1[##2]##3}%
+        {\@fileswith@pti@ns##1[##2]##3[]}%
+    }%
+    \def\comma@do##1{%
+      \ifinsetTF{=}{##1}{}{%
+        \cptgaddtolist\@classoptionslist{##1}%
+      }%
+    }%
+    \cptexpandargonce{\emptify\@classoptionslist\comma@@loop}%
+    \@classoptionslist
+  }%
+}
+\robust@def*\cpt@testfam#1{%
+  \cpt@ifnextchar<{#1}{#1<\@currname.\@currext>}%
+}
+\robust@redef\@pass@ptions#1#2#3{%
+  \begingroup
+  \ifsingletokenTF{#2}{%
+    \ifcptmacroTF{#2}{%
+      \let\@expand\expandcsonce
+    }{%
+      \let\@expand\unexpanded
+    }%
+  }{%
+    \let\@expand\unexpanded
+  }%
+  \ifcsndefTF{opt@#3.#1}{%
+    \ifblankTF{#2}{}{%
+      \cptexpandarg{\cptexpandsecond{\cpt@filtermergelists[,]}%
+        {\cptmakecs{opt@#3.#1}}}{\@expand{#2}}{}%
+    }%
+  }{%
+    \csn@edef{opt@#3.#1}{\@expand{#2}}%
+  }%
+  \globalizecsn{opt@#3.#1}%
+  \endgroup
+}
+\robust@redef*\OptionNotUsed{%
+  \ifx\@currext\@clsextension
+    \cptexpandargonce{\cpt@filtermergelists[,]%
+      \@unusedoptionlist}\CurrentOption\nofilter
+  \fi
+}
+\robust@redef*\@use@ption{%
+  \if@sp@inlistFT,\CurrentOption\@unusedoptionlist{}{%
+    \cptexpandargonce{\cpt@filterremoveelements[,]%
+      \@unusedoptionlist}\CurrentOption\nofilter
+  }%
+  \csname ds@\CurrentOption\endcsname
+}
+\robust@redef*\@fileswith@pti@ns#1[#2]#3[#4]{%
+  \begingroup
+  \edef\fileopts{\unexpanded{#2}}%
+  \ifcsnullTF\fileopts{}{\cpt@sttrue\cpt@kvnormalize[,]\fileopts}%
+  \def\fileswithopts##1##2{%
+    \noexpand\@onefilewithoptions{##1}%
+    [\expandcsonce\fileopts]\unexpanded{[#4]##2}%
+  }%
+  \def\file@withopts##1{\cptpassexpanded{\toks@{##1}}}%
+  \toks@{}%
+  \ifxTF#1\@clsextension{%
+    \ifx\@classoptionslist\relax
+      \xdef\@classoptionslist{\expandcsonce\fileopts}%
+      \file@withopts{\fileswithopts{#3}{#1\@documentclasshook}}%
+    \else
+      \file@withopts{\fileswithopts{#3}{#1}}%
+    \fi
+  }{%
+    \edef\cpt@tempa{\cptzapspaces{#3}}%
+    \DiscardEmptyEntry
+    \def\csv@do##1{%
+      \file@withopts{\the\toks@\fileswithopts{##1}\@pkgextension}%
+    }%
+    \csv@@loop*\cpt@tempa
+  }%
+  \expandafter\endgroup\the\toks@
+}
+\let\@@fileswith@pti@ns\@fileswith@pti@ns
+\robust@def*\RecoverAtRequirePackage#1{%
+  \ifblankFT{#1}{}{%
+    \cpt@err{Blank argument to command
+      \string\RecoverAtRequirePackage}\@ehc
+    \@gobble
+  }%
+  \begingroup
+  \edef\cpt@tempb{\expandcsnonce{\@currname.\@currext-h@@k}}%
+  \def\comma@do##1{%
+    \ifescapedTF{##1}{%
+      \ifdefTF#1{}{%
+        \cpt@err{Undefined argument to command\MsgBrk
+          \string\RecoverAtRequirePackage}\@ehc
+      }%
+    }{%
+      \cpt@err{Non-escaped argument to command\MsgBrk
+        \string\RecoverAtRequirePackage}\@ehc
+      \@gobble
+    }%
+    \cptthreexp\ifcptdefinable\usecsn{rsv@\cptremovescape##1}{%
+      \gletcsntocs{rsv@\cptremovescape##1}##1%
+    }%
+    \edef\cpt@tempa{%
+      \cptglet\unexpanded{##1}=\noexpandcsn{rsv@\cptremovescape##1}%
+    }%
+    \xifinsetTF{\cptoxdetok\cpt@tempa}{\cptoxdetok\cpt@tempb}{}{%
+      \expandafter\AtEndOfPackage\expandafter{\cpt@tempa}%
+    }%
+    \xifinsetTF{\cptoxdetok\cpt@tempa}{\cptoxdetok\RequirePackage}{}{%
+      \xdef\RequirePackage{%
+        \expandcsonce\cpt@tempa\expandcsonce\RequirePackage
+      }%
+    }%
+  }%
+  \comma@@loop{#1}%
+  \endgroup
+}
+\robust@def*\cpt@badoptionerr#1{%
+  \expandafter\ifescapedTF\expandafter{#1}{%
+    \cpt@err{Bad option name '\expandcsonce{#1}'}\@ehc
+  }{%
+    \expandafter\ifcptmacroFT\expandafter{#1}{}{%
+      \cpt@err{Bad option name '\expandcsonce{#1}'}\@ehc
+    }%
+  }%
+}
+\robust@def*\XDeclareOption{%
+  \let\@fileswith@pti@ns\@badrequireerror
+  \cpt@ifstar
+    {\cpt@testfam\cpt@define@default@ds}%
+    {\cpt@testfam\cpt@declareoption}%
+}
+\robust@def*\cpt@declareoption<#1>#2{%
+  \normal@despace{#1}\cpt@currfam
+  \normal@despace{#2}\cpt@curropt
+  \cpt@badoptionerr\cpt@curropt
+  \cptexpandarg\cpt@testopt
+    {\cpt@d@clareoption{\cpt@currfam}{\cpt@curropt}}{}%
+}
+\robust@def\cpt@d@clareoption#1#2[#3]#4{%
+  \cpt@d@cl@reoption{#1}{#2}{#3}%
+  \if@boolTF{cpt@olddx}{%
+    \long\csn@xdef{#1@ds@#2}{\unexpanded{#4}}%
+  }{%
+    \begingroup
+    \long\def\cpt@tempa##1{\endgroup
+      \long\csn@gdef{#1@ds@#2}####1{##1}%
+    }%
+    \cpt@tempa{#4}%
+  }%
+  \cpt@olddxfalse
+}
+\robust@def*\XDeclareOptions{%
+  \let\@fileswith@pti@ns\@badrequireerror
+  \cpt@ifstar{%
+    \cpt@err{Command \noexpand\XDeclareOptions has no
+      star form}\@ehc
+  }{%
+    \cpt@testfam\cpt@declareoptions
+  }%
+}
+\robust@def*\cpt@declareoptions<#1>#2{%
+  \cpt@testopt{\cpt@d@clareoptions{#1}{#2}}{}%
+}
+\robust@def\cpt@d@clareoptions#1#2[#3]#4{%
+  \edef\curr@fam{\xp@despace{#1}}%
+  \def\csv@do##1{%
+    \cpt@badoptionerr{##1}%
+    \simpleexpandarg\cpt@d@clareoption\curr@fam{##1}[#3]{#4}%
+  }%
+  \csv@@parse[,]{#2}%
+  \undefcs\curr@fam
+}
+
+\robust@def*\XInvalidOptionHandler{%
+  \cpt@testfam\cpt@invalidoptionhandler
+}
+\robust@def*\cpt@invalidoptionhandler<#1>#2{%
+  \def\comma@do##1{%
+    \normal@despace{##1}\cpt@currfam
+    \ifcsndefTF{\cpt@currfam @invalidoptionerr}{%
+      \cpt@err{Invalid option handler already defined
+        \MsgBrk for family '\cpt@currfam'}{%
+        Second invalid option handler for family
+        '\cpt@currfam'?
+      }%
+    }{%
+      \csn@gdef{\cpt@currfam @invalidoptionerr}####1{#2####1}%
+    }%
+  }%
+  \comma@@loop{#1}%
+}
+\robust@def*\XDeclareInvalidOptions{%
+  \let\@fileswith@pti@ns\@badrequireerror
+  \cpt@ifstar{%
+    \cpt@err{Invalid star suffix for command
+      \MsgBrk\string\XDeclareInvalidOption}\@ehc
+  }{%
+    \cpt@testfam\cpt@declarenulloptions
+  }%
+}
+\newletcs\XDeclareInvalidOption\XDeclareInvalidOptions
+\robust@def*\cpt@declarenulloptions<#1>#2{%
+  \def\csv@do##1{%
+    \cpt@d@clarenulloptions{##1}{#2}%
+  }%
+  \csv@@parse[,]{#1}%
+  \cpt@olddxfalse
+}
+\robust@def*\cpt@d@clarenulloptions#1#2{%
+  \def\csv@do##1{%
+    \ifcsndefTF{#1@ds@##1}{%
+      \cpt@err{Option '##1' of family '#1'
+        \MsgBrk is already defined}\@ehc
+    }{%
+      \cpt@badoptionerr{##1}%
+      \cpt@d@cl@reoption{#1}{##1}{}%
+      \ifcsndefTF{#1@invalidoptionerr}{%
+        \gletcsntocsn{#1@ds@##1}{#1@invalidoptionerr}%
+      }{%
+        \begingroup
+        \def\cpt@temp@err{%
+          \cpt@err{Option '##1' of family '#1'
+            \MsgBrk is invalid or null}{%
+            Invalid option '##1' of family '#1'.}%
+        }%
+        \if@boolTF{cpt@olddx}{%
+          \long\csn@xdef{#1@ds@##1}{\cpt@temp@err}%
+        }{%
+          \long\csn@xdef{#1@ds@##1}####1{\cpt@temp@err}%
+        }%
+        \endgroup
+      }%
+    }%
+  }%
+  \csv@@parse[,]{#2}%
+}
+\robust@def*\XDeclareCommandOption{%
+  \let\@fileswith@pti@ns\@badrequireerror
+  \chardef\cmdoption\@ne
+  \cpt@testfam\cpt@declarecmdoption
+}
+\robust@def*\XDeclareCommandOptions{%
+  \let\@fileswith@pti@ns\@badrequireerror
+  \chardef\cmdoption\@ne
+  \cpt@testfam\cpt@declarecmdoptions
+}
+\robust@def*\XDeclareBooleanOption{%
+  \let\@fileswith@pti@ns\@badrequireerror
+  \chardef\cmdoption\z@
+  \cpt@testfam\cpt@declarecmdoption
+}
+\robust@def*\cpt@declarecmdoption<#1>#2{%
+  \normal@despace{#1}\cpt@currfam
+  \normal@despace{#2}\cpt@curropt
+  \cpt@badoptionerr\cpt@curropt
+  \cptexpandarg\cpt@testopt
+    {\cpt@d@clarecmdoption{\cpt@currfam}{\cpt@curropt}}{}%
+}
+\robust@def\cpt@d@clarecmdoption#1#2[#3]{%
+  \cptexpandarg{\cpt@testpnopt{\cpt@d@cl@recmdoption
+    {#1}{#2}{#3}}}{\ifnum\cmdoption=\@ne cmd\fi\@currname @}%
+}
+\robust@def\cpt@d@cl@recmdoption#1#2#3(#4)#5{%
+  \cpt@d@cl@reoption{#1}{#2}{#3}%
+  \ifnum\cmdoption=\@ne
+    \def\cpt@resa{\csn@def{#4#2}{####1}}%
+  \else
+    \csn@newif{#4#2}%
+    \def\cpt@resa{%
+      \ifinsetTF{,####1,}{,true,false,}{}{%
+        \@latex@error{Invalid value for option '#2'}\@ehc
+      }%
+      \cptuse{#4#2####1}%
+    }%
+  \fi
+  \long\def\cpt@resb##1{%
+    \long\csn@gdef{#1@ds@#2}####1{##1\relax}%
+  }%
+  \expandafter\cpt@resb\expandafter{\cpt@resa#5}%
+}
+\robust@def*\XDeclareBooleanOptions{%
+  \let\@fileswith@pti@ns\@badrequireerror
+  \chardef\cmdoption\z@
+  \cpt@testfam\cpt@declarecmdoptions
+}
+\robust@def*\cpt@declarecmdoptions<#1>#2{%
+  \cpt@testopt{\cpt@d@clarecmdoptions{#1}{#2}}{}%
+}
+\robust@def\cpt@d@clarecmdoptions#1#2[#3]{%
+  \cptexpandarg{\cpt@testpnopt{\cpt@d@cl@recmdoptions
+    {#1}{#2}{#3}}}{\ifnum\cmdoption=\@ne cmd\fi\@currname @}%
+}
+\robust@def\cpt@d@cl@recmdoptions#1#2#3(#4)#5{%
+  \edef\curr@fam{\xp@despace{#1}}%
+  \def\csv@do##1{%
+    \cpt@badoptionerr{##1}%
+    \simpleexpandarg\cpt@d@cl@recmdoption\curr@fam{##1}{#3}(#4){#5}%
+  }%
+  \csv@@parse[,]{#2}%
+  \undefcs\curr@fam
+}
+\robust@def*\XDeclareBiBooleanOptions{%
+  \let\@fileswith@pti@ns\@badrequireerror
+  \chardef\cmdoption\z@
+  \cpt@testfam\cpt@declarebibooloptions
+}
+\robust@def*\cpt@declarebibooloptions<#1>#2{%
+  \begingroup
+  \@tempcnta\z@
+  \def\comma@do##1{\advance\@tempcnta\@ne}%
+  \comma@@loop{#2}%
+  \ifnum\@tempcnta>\tw@
+    \cpt@err{Biboolean options '#2' more than 2}\@ehc
+    \aftergroup\@gobble
+  \else
+    \ifnum\@tempcnta<\tw@
+      \cpt@err{Biboolean options '#2' less than 2}\@ehc
+      \aftergroup\@gobble
+    \fi
+  \fi
+  \endgroup
+  \cpt@testopt{\cpt@d@clarebibooloptions{#1}{#2}}{}%
+}
+\robust@def\cpt@d@clarebibooloptions#1#2[#3]{%
+  \cptexpandarg{\cpt@testpnopt{\cpt@d@cl@rebibooloptions
+    {#1}{#2}{#3}}}{\@currname @}%
+}
+\robust@def\cpt@d@cl@rebibooloptions#1#2#3(#4)#5#6{%
+  \edef\curr@fam{\xp@despace{#1}}%
+  \def\curr@opts{#2}%
+  \cpt@sttrue\cpt@csvnormalize[,]\curr@opts
+  \begingroup
+  \def\cpt@tempa##1,##2\cpt@nil{%
+    \def\cpt@tempa####1{%
+      \endgroup
+      \cpt@newv@riables{togsw}{####1@}{##1,##2}[false]%
+      \cpt@d@cl@recmdoption{####1}{##1}{#3}(#4){%
+        #5\relax
+        \settogswtrue{####1@##2}%
+        \iftogswTF{####1@##1}{}{%
+          \cpt@bibooltrue
+          \ifboolTF{#4##1}{%
+            \XExecuteOptions<####1>{##2=false}%
+          }{%
+            \XExecuteOptions<####1>{##2=true}%
+          }%
+        }%
+        \settogswfalse{####1@##2}%
+        \cpt@biboolfalse
+      }%
+      \cpt@d@cl@recmdoption{####1}{##2}{#3}(#4){%
+        #6\relax
+        \settogswtrue{####1@##1}%
+        \iftogswTF{####1@##2}{}{%
+          \cpt@bibooltrue
+          \ifboolTF{#4##2}{%
+            \XExecuteOptions<####1>{##1=false}%
+          }{%
+            \XExecuteOptions<####1>{##1=true}%
+          }%
+        }%
+        \settogswfalse{####1@##1}%
+        \cpt@biboolfalse
+      }%
+    }%
+    \expandafter\cpt@tempa\expandafter{\curr@fam}%
+  }%
+  \expandafter\cpt@tempa\curr@opts\cpt@nil
+  \undefcs\curr@opts\undefcs\curr@fam
+}
+\robust@def\cpt@d@cl@reoption#1#2#3{%
+  \ifcsndefTF{#1@declaredoptions}{%
+    \xifinsetTF{,\cptoxdetok{#2},}{,\cpt@getdeclaredoptions{#1},}{%
+      \cpt@warn{Option '#2' multiply defined\MsgBrk in
+        family '#1'\MsgBrk (in \@cls@pkg\@space'\@currname')%
+      }%
+    }{%
+      \aftercsname{\cptaddtolist*}{#1@declaredoptions}{#2}%
+    }%
+  }{%
+    \csn@xdef{#1@declaredoptions}{\expandcsonce{#2}}%
+  }%
+  \csn@xdef{#1@ds@#2@default}{%
+    \noexpandcsn{#1@ds@#2}{\unexpanded{#3}}%
+  }%
+}
+\robust@def*\XDisableOptions{%
+  \cpt@testst{%
+    \let\ifv@\ifcpt@st
+    \cpt@testfam\cpt@disableoption
+  }%
+}
+\robust@def*\cpt@disableoption<#1>#2{%
+  \def\csv@do##1{%
+    \cpt@dis@bleoption{##1}{#2}%
+  }%
+  \csv@@parse[,]{#1}%
+  \undefcs\ifv@
+}
+\robust@def*\cpt@dis@bleoption#1#2{%
+  \def\csv@do##1{%
+    \ifcsndefFT{#1@ds@##1}{%
+      \cpt@info{Option '##1' of family '#1'\MsgBrk
+        is undeclared: not disabled}
+    }{%
+      \cptpassexpanded{%
+        \ifv@\noexpand\AtBeginDocument{\fi
+          \cpt@filtermergelists[,]%
+            \noexpandcsn{#1@disabledoptions}{##1}%
+            \noexpand\nofilter
+          \noexpand\undefcsn{#1@ds@##1@default}%
+          \csn@gdef{#1@ds@##1}{%
+            \noexpand\@latex@error{%
+              Key '##1' of families '#1' is disabled
+            }{%
+              Key '##1' of family '#1'\MsgBrk
+              has been disabled. You can't set or reset\MsgBrk
+              it at this late stage. Perhaps you should\MsgBrk
+              have set it earlier in \string\documentclass\MsgBrk
+              or \string\usepackage
+            }%
+          }%
+        \ifv@}\fi
+      }%
+    }%
+  }%
+  \csv@@parse[,]{#2}%
+}
+\robust@def*\XLogDisabledOptions{%
+  \cpt@ifnextchar<\cpt@disabledoptionlist
+    \cpt@dis@bledoptionlist
+}
+\robust@def*\cpt@disabledoptionlist<#1>{%
+  \cpt@dis@bledoptionlist{#1}%
+}
+\robust@def*\cpt@dis@bledoptionlist#1{%
+  \def\cpt@disablea##1{%
+    \ifcsndefTF{##1@disabledoptions}{%
+      \cpt@info{Disabled options of family '##1':
+        ^^J\expandcsnonce{##1@disabledoptions}}%
+    }{%
+      \cpt@info{No disabled options in family '##1'
+        \MsgBrk at this point\ifcsnullTF\@currname{}
+        {:\@space You can try the command
+        \MsgBrk\noexpand\XLogDisabledOptions again after
+        \MsgBrk begin document}}%
+    }%
+  }%
+  \def\cpt@disableb##1##2{%
+    \cpt@err{Command \noexpand\XLogDisabledOptions issued
+      \MsgBrk in document but family name contains
+      \MsgBrk ##1 extension \string##2,
+      \MsgBrk a preamble command}\@ehc
+  }%
+  \def\csv@do##1{%
+    \ifcsnullFT\@currname{%
+      \cpt@disablea{##1}%
+    }{%
+      \ifinsetTF\@pkgextension{##1}{%
+        \cpt@disableb{package}\@pkgextension
+      }{%
+        \ifinsetTF\@clsextension{##1}{%
+          \cpt@disableb{class}\@clsextension
+        }{%
+          \cpt@disablea{##1}%
+        }%
+      }%
+    }%
+  }%
+  \ifblankTF{#1}{}{\csv@@parse{#1}}%
+  \undefcsset{\cpt@disablea,\cpt@disableb}%
+}
+\robust@def*\ifoptdisabledTF{%
+  \v@true
+  \cpt@testfam\cpt@ifoptdisabled
+}
+\robust@def*\ifoptdisabledFT{%
+  \v@false
+  \cpt@testfam\cpt@ifoptdisabled
+}
+\robust@def*\cpt@ifoptdisabled<#1>#2{%
+  \cpt@choicefdfalse
+  \def\csv@do##1{%
+    \cpt@ifoptdis@bled{##1}{#2}%
+  }%
+  \csv@@parse[,]{#1}%
+  \if@boolTF{v@}\if@boolTF\if@boolFT{cpt@choicefd}%
+}
+\robust@def*\cpt@ifoptdis@bled#1#2{%
+  \ifcsndefFT{#1@disabledoptions}{}{%
+    \xifinsetFT{#2}{\expandcsnonce{#1@disabledoptions}}{}{%
+      \cptbreakloop\cpt@choicefdtrue
+    }%
+  }%
+}
+\robust@def*\ifoptdefTF{%
+  \v@true
+  \cpt@testfam\cpt@ifoptdef
+}
+\robust@def*\ifoptdefFT{%
+  \v@false
+  \cpt@testfam\cpt@ifoptdef
+}
+\robust@def*\cpt@ifoptdef<#1>#2{%
+  \cpt@choicefdfalse
+  \def\csv@do##1{%
+    \cpt@ifoptd@f{##1}{#2}%
+  }%
+  \csv@@parse[,]{#1}%
+  \if@boolTF{v@}\if@boolTF\if@boolFT{cpt@choicefd}%
+}
+\robust@def*\cpt@ifoptd@f#1#2{%
+  \ifcsndefFT{#1@ds@#2}{}{%
+    \cptbreakloop\cpt@choicefdtrue
+  }%
+}
+\new@def*\cpt@getdeclaredoptions#1{%
+  \ifcsndefFT{#1@declaredoptions}{}{%
+    \ifcsnnullTF{#1@declaredoptions}{}{%
+      \detokenize\cptsevenxp{\usecsn{#1@declaredoptions}}%
+    }%
+  }%
+}
+\robust@def*\XUnknownOptionHandler{%
+  \cpt@testfam\cpt@unknownoptionhandler
+}
+\robust@def*\cpt@unknownoptionhandler<#1>{%
+  \cpt@testopt{\cpt@unkn@wnoptionhandler#1}{}%
+}
+\robust@def*\cpt@unkn@wnoptionhandler#1[#2]#3{%
+  \edef\unknown@ds{%
+    \unexpanded{\csn@def{\cpt@tempa @default@ds}##1##2##3{#3}}%
+  }%
+  \def\csv@do##1{%
+    \ifcsndefFT{##1@default@ds}{}{%
+      \cpt@warn{Unknown option handler for family
+        \MsgBrk '##1' replaced}%
+    }%
+    \def\cpt@tempa{##1}\unknown@ds
+    \csn@def{##1@default@na}{#2}%
+  }%
+  \csv@@parse[,]{#1}%
+  \undefcs\unknown@ds
+}
+\robust@def*\cpt@define@default@ds<#1>#2{%
+  \csn@def{#1@default@ds}##1##2##3{#2}%
+  \shelldef\cpt@define@default@ds<##1>##2{%
+    \cpt@err{'\string\XDeclareOption*' multiply defined in
+      \MsgBrk\@cls@pkg\space'\@currname'}{Multiple star
+      variant of \noexpand\XDeclareOption in
+      \@cls@pkg\@space'\@currname'.}%
+  }%
+}
+\RecoverAtRequirePackage\cpt@define@default@ds
+\new@def*\cpt@optionlist#1{%
+  \ifcsndefFT{opt@#1}{}{\unexpanded\cptsevenxp{\usecsn{opt@#1}}}%
+}
+\newletcs\cpt@processedoptions\@empty
+\robust@def*\XProcessOptions{%
+  \cpt@inpoxtrue
+  \let\@fileswith@pti@ns\@badrequireerror
+  \edef\cpt@testname{\@currname.\@currext}%
+  \ifx\cpt@testname\cpt@documentclass
+    \let\@unusedoptionlist\cpt@classoptionslist
+  \fi
+  \edef\cpt@classoptions{%
+    \ifx\cpt@testname\cpt@documentclass\else
+      \expandcsonce\cpt@classoptionslist\fi
+  }%
+  \edef\@curroptions{\cpt@optionlist{\@currname.\@currext}}%
+  \ifcsnullTF\@curroptions\@empty
+    {\cpt@sttrue\cpt@kvnormalize[,]\@curroptions}%
+  \cpt@testst{\cpt@testfam\cpt@processoptions}%
+}
+\robust@def*\cpt@processoptions<#1>{%
+  \if@boolTF{cpt@st}{%
+    \cpt@testopt{\cpt@xprocessoptions#1}{}%
+  }{%
+    \cpt@testopt{\cpt@yprocessoptions#1}{}%
+  }%
+}
+\robust@def*\cpt@yprocessoptions#1[#2]{%
+  \edef\cpt@currna{\unexpanded{#2}}%
+  \ifcsnullTF\cpt@currna{}
+    {\cpt@sttrue\cpt@csvnormalize[,]\cpt@currna}%
+  \def\csv@do##1{%
+    \cpt@ypr@cessoptions{##1}%
+  }%
+  \csv@@parse[,]{#1}%
+  \cpt@pr@cessoptions{#1}%
+  \cpt@pr@cessopti@ns
+}
+\robust@def*\cpt@ypr@cessoptions#1{%
+  \edef\cpt@currfam{\unexpanded{#1}}%
+  \def\kv@do##1{%
+    \edef\CurrentOption{\unexpanded{##1}}%
+    \ifcsnullTF\CurrentOption{}{%
+      \cpt@findoption@a
+      \if@boolFT{cpt@optfd}{}{%
+        \ifcsndefFT{#1@ds@\cpt@curropt}{}{%
+          \ifcsnullTF\cpt@currna{%
+            \cpt@igoptfalse
+          }{%
+            \if@sp@inlistTF,\cpt@curropt\cpt@currna{%
+              \cpt@igopttrue
+            }{%
+              \cpt@igoptfalse
+            }%
+          }%
+          \cpt@useoption
+        }%
+      }%
+    }%
+  }%
+  \ifcsnullTF\cpt@classoptions{}{%
+    \ifcsnnullTF{#1@declaredoptions}{}{%
+      \cptexpandsecond{\kv@@parse*}{\noexpandcsn{#1@declaredoptions}}%
+    }%
+  }%
+}
+\robust@def*\cpt@xprocessoptions#1[#2]{%
+  \edef\cpt@currna{\unexpanded{#2}}%
+  \ifcsnullTF\cpt@currna{}
+    {\cpt@sttrue\cpt@csvnormalize[,]\cpt@currna}%
+  \def\csv@do##1{%
+    \cpt@xpr@cessoptions{##1}%
+  }%
+  \csv@@parse[,]{#1}%
+  \cpt@pr@cessoptions{#1}%
+  \cpt@pr@cessopti@ns
+}
+\robust@def*\cpt@xpr@cessoptions#1{%
+  \def\cpt@currfam{#1}%
+  \edef\DeclaredOptions{\cpt@getdeclaredoptions\cpt@currfam}%
+  \def\kv@do##1{%
+    \edef\CurrentOption{\unexpanded{##1}}%
+    \ifcsnullTF\CurrentOption{}{%
+      \cpt@findoption@b
+      \if@sp@inlistFT,\cpt@curropt\DeclaredOptions{}{%
+        \ifcsndefFT{#1@ds@\cpt@curropt}{}{%
+          \ifcsnullTF\cpt@currna{%
+            \cpt@igoptfalse
+          }{%
+            \if@sp@inlistTF,\cpt@curropt\cpt@currna{%
+              \cpt@igopttrue
+            }{%
+              \cpt@igoptfalse
+            }%
+          }%
+          \cpt@useoption
+        }%
+      }%
+    }%
+  }%
+  \ifcsnullTF\cpt@classoptions{}{\kv@@parse*\cpt@classoptions}%
+}
+\robust@def*\cpt@pr@cessoptions#1{%
+  \def\cpt@fams{#1}%
+  \def\kv@do##1{%
+    \edef\CurrentOption{\unexpanded{##1}}%
+    \ifcsnullTF\CurrentOption{}{%
+      \cpt@findoption@b
+      \def\csv@do####1{%
+        \def\cpt@currfam{####1}%
+        \ifcsndefTF{\cpt@currfam @ds@\cpt@curropt}{%
+          \ifcsnullTF\cpt@currna{%
+            \cpt@igoptfalse
+          }{%
+            \if@sp@inlistTF,\cpt@curropt\cpt@currna{%
+              \cpt@igopttrue
+            }{%
+              \cpt@igoptfalse
+            }%
+          }%
+          \cpt@useoption
+        }{%
+          \if@sp@inlistTF,\cpt@curropt\ExternalOptions{}{%
+            \cpt@addto@undef@opts
+            \cpt@use@default@ds
+          }%
+        }%
+      }%
+      \ifcsnullTF\cpt@fams{}{\csv@@loop*[,]\cpt@fams}%
+    }%
+  }%
+  \ifcsnullTF\@curroptions{}{\kv@@parse*[,]\@curroptions}%
+}
+\robust@def*\cpt@pr@cessopti@ns{%
+  \let\CurrentOption\@empty
+  \ifx\cpt@documentclass\cpt@undefined\else
+    \let\cpt@processedoptions\@empty\fi
+  \undefcs\cpt@classoptions
+  \let\@fileswith@pti@ns\@@fileswith@pti@ns
+  \cpt@olddxfalse
+  \AtEndOfPackage{\let\@unprocessedoptions\relax}%
+}
+\robust@def*\cpt@use@default@ds{%
+  \begingroup
+  \let\@xp\expandcsonce
+  \ifcsndefTF{\cpt@currfam @default@na}{}{%
+    \csn@def{\cpt@currfam @default@na}{}%
+  }%
+  \toks@{\default@ds}%
+  \ifcsndefFT{\cpt@currfam @default@ds}{}{%
+    \edef\cpt@tempa{\expandcsnonce{\cpt@currfam @default@na}}%
+    \if@sp@inlistTF,\cpt@curropt\cpt@tempa{}{%
+      \edef\cpt@tempa{%
+        {\@xp\cpt@currfam}{\@xp\cpt@curropt}{\@xp\cpt@currval}%
+      }%
+      \edef\cpt@tempb{\cptmakecs{\cpt@currfam @default@ds}}%
+      \edef\cpt@tempc{%
+        \unexpanded\cptsevenxp{\expandafter\cpt@tempb\cpt@tempa}%
+      }%
+      \xifinsetFT{\detokenize{define/.code=}}{\cptoxdetok\cpt@tempc}{%
+        \toks@\cptthreexp{\expandafter\cpt@tempb\cpt@tempa}%
+      }{%
+        \cptexpandmacro\cpt@currval\curr@val
+        \despacecontent\curr@val
+        \def\cpt@tempb{\XDeclareBooleanOption}%
+        \let\cmd\@empty
+        \oifstrcmpTF{true}\curr@val{}{%
+          \oifstrcmpTF{false}\curr@val{}{%
+            \def\cpt@tempb{\XDeclareCommandOption}%
+            \def\cmd{cmd}%
+          }%
+        }%
+        \def\cpt@tempa##1define/.code=##2\cpt@nil{%
+          \cptexpanded{\toks@{%
+            \cpt@tempb<\cpt@currfam>{\cpt@curropt}[\@xp\curr@val]%
+              (\cmd\@currname @){\unexpanded{##2}}%
+            \XExecuteOptions<\cpt@currfam>{\cpt@curropt=\@xp\curr@val}%
+          }}%
+        }%
+        \expandafter\cpt@tempa\cpt@tempc\cpt@nil
+      }%
+    }%
+  }%
+  \expandafter\endgroup\the\toks@
+}
+\robust@def*\XExecuteOptions{%
+  \cpt@inpoxfalse
+  \cpt@testfam\cpt@executeoptions
+}
+\robust@def*\cpt@executeoptions<#1>#2{%
+  \cpt@testopt{\cpt@ex@cuteoptions{#1}{#2}}{}%
+}
+\robust@def*\cpt@ex@cuteoptions#1#2[#3]{%
+  \edef\cpt@currna{\unexpanded{#3}}%
+  \ifcsnullTF\cpt@currna{}{%
+    \cpt@sttrue\cpt@csvnormalize[,]\cpt@currna
+  }%
+  \def\csv@do##1{%
+    \cpt@ex@cuteopti@ns{##1}{#2}%
+  }%
+  \csv@@parse[,]{#1}%
+  \cpt@olddxfalse
+  \undefcsset{\ExecutedOptions,\exec@warnlist}%
+}
+\robust@def*\cpt@ex@cuteopti@ns#1#2{%
+  \def\cpt@currfam{#1}%
+  \ifnum\cpt@optdepth=\z@
+    \csn@def{\cpt@currfam @executedoptions}{}%
+    \csn@def{\cpt@currfam @exec@warnlist}{}%
+  \fi
+  \edef\DeclaredOptions{\cpt@getdeclaredoptions\cpt@currfam}%
+  \def\kv@do##1{%
+    \edef\CurrentOption{\unexpanded{##1}}%
+    \ifcsnullTF\CurrentOption{}{%
+      \cpt@findoption@b
+      \edef\ExecutedOptions{%
+        \expandcsnonce{\cpt@currfam @executedoptions}%
+      }%
+      \edef\exec@warnlist{%
+        \expandcsnonce{\cpt@currfam @exec@warnlist}%
+      }%
+      \if@sp@inlistTF,\cpt@curropt\cpt@currna{}{%
+        \cpt@igoptfalse
+        \if@sp@inlistTF,\cpt@curropt\DeclaredOptions{%
+          \if@sp@inlistTF,\cpt@curropt\ExecutedOptions{%
+            \if@sp@inlistTF,\cpt@curropt\exec@warnlist{}{%
+              \ifcpt@bibool\else
+                \cpt@warn{Option '\cpt@curropt' of family
+                  '\cpt@currfam'\MsgBrk multiply submitted to
+                  \string\XExecuteOptions:\MsgBrk re-executed}%
+              \fi
+              \aftercsname{\cptgaddtolist*}
+                {\cpt@currfam @exec@warnlist}\cpt@curropt
+            }%
+          }{%
+            \aftercsname{\cptgaddtolist*}
+              {\cpt@currfam @executedoptions}\cpt@curropt
+          }%
+          \cpt@useoption
+        }{%
+          \cpt@addto@undecl@opts
+        }%
+      }%
+    }%
+  }%
+  \kv@@parse{#2}%
+}
+\robust@def\cpt@findoption@a{%
+  \cpt@optfdfalse
+  \def\csv@do##1{%
+    \ifblankTF{##1}{}{%
+      \xifinsetTF{=}{\detokenize{##1}}{%
+        \cpt@splitoption##1=\split@nil
+      }{%
+        \edef\cpt@curropt{\unexpanded{##1}}%
+        \let\cpt@currval\@empty
+      }%
+      \ifx\cpt@curropt\CurrentOption
+        \cpt@optfdtrue\cpt@breaklooptrue
+        \edef\OptionFound{\unexpanded{##1}}%
+      \else
+        \let\cpt@curropt\@empty
+        \let\OptionFound\@empty
+      \fi
+    }%
+  }%
+  \csv@@parse*[,]\cpt@classoptions
+}
+\robust@def\cpt@findoption@b{%
+  \let\OptionFound\CurrentOption
+  \xifinsetTF{=}{\cptoxdetok\CurrentOption}{%
+    \expandafter\cpt@splitoption\CurrentOption=\split@nil
+  }{%
+    \let\cpt@curropt\CurrentOption
+    \let\cpt@currval\@empty
+  }%
+}
+\robust@def\cpt@splitoption#1=#2\split@nil{%
+  \normal@despace{#1}\cpt@curropt
+  \ifinsetTF{=\split@nil}{#2\split@nil}{%
+    \begingroup
+    \defpass\cpt@tempa##1=##2\split@nil{\endgroup
+      \simpleexpandarg\normal@despace{\@gobble##1}\cpt@currval
+    }%
+    .#2\split@nil
+  }{%
+    \normal@despace{#2}\cpt@currval
+  }%
+}
+\robust@def*\cpt@useoption{%
+  \if@boolFT{cpt@inpox}{}{%
+    \if@sp@inlistTF,\CurrentOption\cpt@processedoptions{}{%
+      \cptgaddtolist*\cpt@processedoptions\CurrentOption
+    }%
+    \ifcsnullTF\OptionFound{}{\cpt@removecurroption\OptionFound}%
+    \ifxTF\OptionFound\CurrentOption{}{%
+      \cpt@removecurroption\CurrentOption
+    }%
+  }%
+  \if@boolTF{cpt@igopt}{}{%
+    \ifcsndefFT{\cpt@currfam @ds@\cpt@curropt}{}{%
+      \if@boolTF{cpt@olddx}{%
+        \cptuse{\cpt@currfam @ds@\cpt@curropt}%
+      }{%
+        \ifcsnullTF\cpt@currval{%
+          \cptthreexp\cpt@usedefault
+          \csname\cpt@currfam @ds@\cpt@curropt
+            @default\endcsname\cpt@nil
+        }{%
+          \cpt@useoption@a
+        }%
+      }%
+    }%
+  }%
+}
+\robust@def*\cpt@useoption@a{%
+  \cpt@pushoptionstate
+  \cptexpandargonce{\cptuse{\cpt@currfam @ds@\cpt@curropt}}%
+    \cpt@currval\relax
+  \cpt@popoptionstate
+}
+\new@def*\ExternalOptions{%
+  10pt,11pt,12pt,14pt,17pt,20pt,25pt,30pt,36pt,48pt,60pt,%
+  a0paper,a1paper,a2paper,a3paper,a4paper,a6paper,%
+  b0paper,b1paper,b2paper,b3paper,b4paper,b5paper,b6paper,%
+  letterpaper,legalpaper,executivepaper,landscape,oneside,%
+  twoside,draft,final,titlepage,notitlepage,onecolumn,%
+  twocolumn,leqno,fleqn,openbib,openright,openleft,openany,%
+  article,ms,showtrims,oldfontcommands,extrafontsizes,noetex%
+}
+\robust@def*\AddToExternalOptions#1{%
+  \cpt@filtermergelists[,]\ExternalOptions{#1}\nofilter
+}
+\robust@def*\RemoveFromExternalOptions#1{%
+  \cpt@filterremoveelements[,]\ExternalOptions{#1}\nofilter
+}
+\robust@def*\cpt@addto@undecl@opts{%
+  \edef\everymergeitem##1{\@space##1}%
+  \cptexpandarg{\cpt@filtermergelists[;]\cpt@undeclaredopts}%
+    {\cpt@currfam,\cpt@curropt,\cpt@currval}\nofilter
+}
+\robust@def*\cpt@addto@undef@opts{%
+  \edef\everymergeitem##1{\@space##1}%
+  \if@sp@inlistTF,\cpt@curropt\ExternalOptions{}{%
+    \cptexpandarg{\cpt@filtermergelists[;]\cpt@undefinedopts}%
+      {\cpt@currfam,\cpt@curropt,\cpt@currval}\nofilter
+  }%
+}
+\AfterStartOfDocument{\AtEndDocument{%
+  \ifdefFT\cpt@undeclaredopts{}{%
+    \ifcsnullTF\cpt@undeclaredopts{}{%
+      \edef\cpt@undeclaredopts{%
+        \simpleexpandarg\xp@despace\cpt@undeclaredopts
+      }%
+      \cpt@warn{%
+        Undeclared options found in \string\XExecuteOptions
+        \MsgBrk (family,option,value):
+        ^^J\expandcsonce\cpt@undeclaredopts
+      }%
+    }%
+  }%
+  \ifdefFT\cpt@undefinedopts{}{%
+    \ifcsnullTF\cpt@undefinedopts{}{%
+      \edef\cpt@undefinedopts{%
+        \simpleexpandarg\xp@despace\cpt@undefinedopts
+      }%
+      \cpt@warn{%
+        Undefined options (family,option,value):
+        ^^J\expandcsonce\cpt@undefinedopts
+        \MsgBrk Default action taken in each case
+      }%
+    }%
+  }%
+}}
+\robust@def*\cpt@usedefault#1#2\cpt@nil{%
+  \ifcptmacroTF{#1}{%
+    \edef\cpt@tempa{\cptremovescape#1}%
+  }{%
+    \cpt@nomacroerr{#1}%
+  }%
+  \edef\cpt@tempb{\cpt@currfam @ds@\cpt@curropt}%
+  \@onelevel@sanitize\cpt@tempb
+  \ifxTF\cpt@tempa\cpt@tempb{%
+    \begingroup
+    \csn@def{\cpt@currfam @ds@\cpt@curropt}##1{%
+      \toks@{\def\cpt@currval{##1}}%
+    }%
+    \cptuse{\cpt@currfam @ds@\cpt@curropt @default}%
+    \expandafter\endgroup\the\toks@
+    \cpt@useoption@a
+  }{%
+    \cpt@warn{Non-standard default function for option
+      '\expandcsonce\cpt@curropt':\MsgBrk Executed anyway}%
+    \cpt@pushoptionstate
+    \cptuse{\cpt@currfam @ds@\cpt@curropt @default}\relax
+    \cpt@popoptionstate
+  }%
+}
+\robust@def*\cpt@optionstate{%
+  \cpt@currfam,\cpt@currna,\cpt@curropt,\cpt@currval,%
+  \CurrentOption,\OptionFound,\ifcpt@inpox,\ifcpt@optfd,%
+  \ifcpt@igopt,\DeclaredOptions
+}
+\robust@def*\cpt@pushoptionstate{%
+  \simpleexpandarg\pushfunctions\cpt@optionstate\cpt@optdepth
+}
+\robust@def*\cpt@popoptionstate{%
+  \simpleexpandarg\popfunctions\cpt@optionstate\cpt@optdepth
+}
+\robust@def*\cpt@removecurroption#1{%
+  \cptexpandargonce{\cpt@filterremoveelements[,]%
+    \@unusedoptionlist}{#1}\nofilter
+}
+\robust@def*\CleanupUnusedOptionlist#1{%
+  \ifcptmacroTF{#1}{}{\cpt@nomacroerr{#1}}%
+  \BeforeStartOfDocument{%
+    \ifdefFT#1{}{%
+      \ifcsnullTF#1{}{%
+        \ifcsnullTF\@unusedoptionlist{}{%
+          \def\comma@do##1{%
+            \normal@despace{##1}\cpt@tempa
+            \if@sp@inlistFT,\cpt@tempa\@unusedoptionlist{}{%
+              \cpt@removecurroption\cpt@tempa
+            }%
+          }%
+          \simpleexpandarg\comma@@loop#1%
+        }%
+      }%
+    }%
+    \globalize\@unusedoptionlist
+    \emptify#1%
+  }%
+}
+\CleanupUnusedOptionlist\cpt@processedoptions
+\cptpassunexpanded{%
+  \begingroup
+  \def\cpt@tempa{\endgroup
+    \newgletcs\kernel@DeclareOption\DeclareOption
+    \newgletcs\kernel@ProcessOptions\ProcessOptions
+    \newgletcs\kernel@ExecuteOptions\ExecuteOptions
+    \gdef\DeclareOption{\cpt@olddxtrue\XDeclareOption}%
+    \gdef\ProcessOptions{\cpt@olddxtrue\XProcessOptions}%
+    \gdef\ExecuteOptions{\cpt@olddxtrue\XExecuteOptions}%
+    \AtEndOfPackage{%
+      \ifcpt@usepox\else
+        \def\documentclass{%
+          \let\documentclass\@twoclasseserror
+          \if@compatibility\else
+            \def\usepackage{%
+              \cptglet\DeclareOption\kernel@DeclareOption
+              \cptglet\ProcessOptions\kernel@ProcessOptions
+              \cptglet\ExecuteOptions\kernel@ExecuteOptions
+              \cpt@olddxfalse
+              \RequirePackage
+            }%
+          \fi
+          \@fileswithoptions\@clsextension
+        }%
+      \fi
+    }%
+  }%
+  \ifx\cpt@documentclass\cpt@undefined
+    \expandafter\cpt@tempa\else\expandafter\endgroup\fi
+}
+\XDeclareBooleanOption{verbose}[true](cpt@){}
+\XDeclareBiBooleanOptions{draft,final}[true](cpt@){}{}
+\XDeclareBooleanOption{usepox}[true](cpt@){%
+  \ifcpt@usepox
+    \AtEndOfPackage{%
+      \gdef\DeclareOption{\cpt@olddxtrue\XDeclareOption}%
+      \gdef\ProcessOptions{\cpt@olddxtrue\XProcessOptions}%
+      \gdef\ExecuteOptions{\cpt@olddxtrue\XExecuteOptions}%
+    }%
+  \fi
+}
+\XDisableOptions*{draft,final}
+\XDeclareOption*{\cpt@warn{Unknown option '\CurrentOption' ignored}}
+\XExecuteOptions{verbose=false,usepox=true}
+\XProcessOptions*\relax
+\cptpopcatcodes
+\cptrestorecatcodes
+\declarefutureletset[fl@]{lbracket,star,rquote}
+\shelllet\@ltx@warn\@latex@warning@no@line
+\shelllet\@ltx@info\@latex@info@no@line
+\shelllet\@ltx@err\@latex@error
+
+\endinput
+
+%% End of file catoptions.sty %%

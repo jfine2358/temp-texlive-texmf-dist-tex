@@ -1,0 +1,265 @@
+%%
+%% This is file `tagpdf.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% tagpdf.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2019 Ulrike Fischer
+%% 
+%% It may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License (LPPL), either version 1.3c of
+%% this license or (at your option) any later version.  The latest
+%% version of this license is in the file:
+%% 
+%%    https://www.latex-project.org/lppl.txt
+%% 
+%% This file is part of the "tagpdf bundle" (The Work in LPPL)
+%% and all files in that bundle must be distributed together.
+%% 
+%% File: tagpdf.dtx
+\ProvidesExplPackage {tagpdf} {2021/02/23} {0.80}
+  { A package to experiment with pdf tagging }
+
+\bool_if:nF
+  {
+    \bool_lazy_and_p:nn
+      {\cs_if_exist_p:N \pdfmanagement_if_active_p:}
+      { \pdfmanagement_if_active_p: }
+  }
+  {  %error for now, perhaps warning later.
+    \PackageError{tagpdf}
+     {
+       PDF~resource~management~is~no~active!\MessageBreak
+       tagpdf~will~no~work.
+     }
+     {
+       Activate~it~with \MessageBreak
+       \string\RequirePackage{pdfmanagement-testphase}\MessageBreak
+       \string\DeclareDocumentMetadata{<options>}\MessageBreak
+       before~\string\documentclass
+     }
+  }
+
+
+\prop_if_exist:NT \g_msg_module_name_prop
+  {
+    \prop_gput:Nnn \g_msg_module_name_prop { tag }{ tagpdf }
+  }
+
+\cs_set_eq:NN \__tag_tex_global:D              \tex_global:D
+
+%%% package options
+\bool_new:N\g__tag_mode_lua_bool
+
+\DeclareOption {luamode}    { \sys_if_engine_luatex:T { \bool_gset_true:N \g__tag_mode_lua_bool } }
+\DeclareOption {genericmode}{ \bool_gset_false:N\g__tag_mode_lua_bool }
+\ExecuteOptions{luamode}
+\ProcessOptions
+
+%%% some packages
+\RequirePackage{l3ref-tmp}
+ %================
+ % temporary code
+ % ===============
+ % faking the LastPage label:
+ \cs_new_protected:Npn \__tag_lastpagelabel:
+   {
+     \legacy_if:nT { @filesw }
+       {
+         \exp_args:NNnx \exp_args:NNx\iow_now:Nn \@auxout
+            {
+              \token_to_str:N \newlabeldata
+                {__tag_LastPage}
+                {
+                  {abspage} { \int_use:N \g_shipout_readonly_int}
+                  {tagmcabs}{ \int_use:N \c@g__tag_MCID_abs_int }
+                }
+            }
+       }
+   }
+
+ \AddToHook{enddocument/afterlastpage}
+  {\__tag_lastpagelabel:}
+
+ % a command to override the general default. See issue in ref
+ \cs_if_exist:NF \ref_value:nnn
+   {
+     \cs_new:Npn \ref_value:nnn #1#2#3
+       {
+         \exp_args:Nee
+           \__ref_value:nnn
+            { \tl_to_str:n {#1} } { \tl_to_str:n {#2} } {#3}
+       }
+     \cs_new:Npn \__ref_value:nnn #1#2#3
+       {
+         \tl_if_exist:cTF { g__ref_label_ #1 _ #2 _tl }
+           { \tl_use:c { g__ref_label_ #1 _ #2 _tl } }
+           {
+             % test if attribute exist at all?
+             #3
+           }
+       }
+   }
+
+ %=============
+ % attributes
+ %=============
+\ref_attribute_gset:nnnn {tagstruct}    {0}{now}    { \int_use:N \c@g__tag_struct_abs_int }
+\ref_attribute_gset:nnnn {tagstructobj} {}{now}
+ {
+  \exp_args:Ne
+   \pdf_object_if_exist:nT {c__tag_struct_ \int_use:N \c@g__tag_struct_abs_int _obj}
+    {
+      \pdf_object_ref:e{c__tag_struct_ \int_use:N \c@g__tag_struct_abs_int _obj}
+    }
+ }
+ % replace by abspage??
+\ref_attribute_gset:nnnn {tagabspage}{0}{shipout}{ \int_use:N \g_shipout_readonly_int }
+\ref_attribute_gset:nnnn {tagmcabs } {0}{now}    { \int_use:N \c@g__tag_MCID_abs_int }
+\ref_attribute_gset:nnnn {tagmcid }  {0}{now}    { \int_use:N \g__tag_MCID_tmp_bypage_int }
+\clist_const:Nn \c__tag_refmc_clist     {tagabspage,tagmcabs,tagmcid} %mc is new!!
+\clist_const:Nn \c__tag_refstruct_clist {tagstruct,tagstructobj}
+\cs_generate_variant:Nn \ref_label:nn { nv }
+\cs_new_protected:Npn \__tag_ref_label:nn #1 #2 %#1 label, #2 name of list mc or struct
+  {
+    \@bsphack
+    \ref_label:nv {#1}{c__tag_ref#2_clist}
+    \@esphack
+  }
+\cs_new:Npn \__tag_ref_value:nnn #1 #2 #3 %#1 label, #2 attribute, #3 default
+  {
+    \ref_value:nnn {#1}{#2}{#3}
+  }
+\cs_new:Npn \__tag_ref_value_lastpage:nn #1 #2
+  {
+    \ref_value:nnn {__tag_LastPage}{#1}{#2}
+  }
+
+\cs_generate_variant:Nn \__tag_ref_label:nn {en}
+\cs_generate_variant:Nn \__tag_ref_value:nnn {enn}
+
+\RequirePackage{etoolbox}
+
+\cs_generate_variant:Nn \str_set_convert:Nnnn {Nonn, Noon, Nnon }
+
+%%% tagpdfsetup,
+%%% TODO: checks need to be improved
+\int_new:N  \l__tag_loglevel_int
+\tl_new:N   \l__tag_tree_tabs_order_tl
+
+\keys_define:nn { __tag / setup }
+  {
+    activate-mc     .bool_gset:N = \g__tag_active_mc_bool,
+    activate-tree   .bool_gset:N = \g__tag_active_tree_bool,
+    activate-struct .bool_gset:N = \g__tag_active_struct_bool,
+    activate-all    .meta:n ={activate-mc,activate-tree,activate-struct},
+    check-tags      .bool_gset:N = \g__tag_check_tags_bool,
+    check-tags      .initial:n  = true,
+    log             .choice:,
+    log / none      .code:n = {\int_set:Nn \l__tag_loglevel_int { 0 }},
+    log / v         .code:n = {\int_set:Nn \l__tag_loglevel_int { 1 }},
+    log / vv        .code:n = {\int_set:Nn \l__tag_loglevel_int { 2 }},
+    log / vvv       .code:n = {\int_set:Nn \l__tag_loglevel_int { 3 }},
+    log / all       .code:n = {\int_set:Nn \l__tag_loglevel_int { 10 }},
+    tagunmarked     .bool_gset:N = \g__tag_tagunmarked_bool,
+    tagunmarked     .initial:n  = true,
+    tabsorder       .choice:,
+    tabsorder / row       .code:n = %{\tl_set:Nn \l__tag_tree_tabs_order_tl {/Tabs/R}},
+      \pdfmanagement_add:nnn { Page } {Tabs}{/R},
+    tabsorder / column    .code:n = %{\tl_set:Nn \l__tag_tree_tabs_order_tl {/Tabs/C}},
+      \pdfmanagement_add:nnn { Page } {Tabs}{/C},
+    tabsorder / structure .code:n = %{\tl_set:Nn \l__tag_tree_tabs_order_tl {/Tabs/S}},
+      \pdfmanagement_add:nnn { Page } {Tabs}{/S},
+    tabsorder / none      .code:n = %{\tl_set:Nn \l__tag_tree_tabs_order_tl {}},
+      \pdfmanagement_remove:nn {Page} {Tabs},
+    tabsorder       .initial:n = structure,
+    uncompress      .code:n = {\pdf_uncompress:  },
+  }
+\hook_gput_code:nnn{begindocument}{tagpdf}
+  {
+    \bool_if:NT \g__tag_active_struct_bool
+      {
+         \pdfmanagement_add:nnn { Catalog / MarkInfo } { Marked } { true }
+      }
+  }
+
+
+
+\cs_new:Nn   \__tag_finish_page_hook: { }
+
+
+\hook_gput_code:nnn
+  { shipout/before }
+  { tagpdf/cnt }
+  {
+    \__tag_finish_page_hook:
+    %\int_gincr:N \g__tag_abspage_int
+  }
+
+\sys_if_engine_xetex:T
+  { %lets try with xelatex ...
+    %\PackageError { tagpdf } { xelatex~is~not~supported~-~aborting } {}
+    %\tex_endinput:D
+    \file_input:n {tagpdf-pdftex.def}
+  }
+
+\sys_if_engine_luatex:T
+  {
+    \file_input:n {tagpdf-luatex.def}
+  }
+
+\sys_if_engine_pdftex:T
+  {
+    \file_input:n {tagpdf-pdftex.def}
+  }
+
+\sys_if_output_dvi:T
+  {
+    %\PackageError { tagpdf } { dvi~output~is~not~supported~-~aborting }{}
+    %\tex_endinput:D
+  }
+
+\cs_generate_variant:Nn \__tag_prop_gput:Nnn      { Nxn , Nxx, Nnx , cnn, cxn, cnx, cno}
+\cs_generate_variant:Nn \__tag_seq_gput_right:Nn  { Nx  , No, cn, cx }
+\cs_generate_variant:Nn \__tag_prop_new:N   { c }
+\cs_generate_variant:Nn \__tag_seq_new:N    { c }
+\cs_generate_variant:Nn \__tag_seq_show:N   { c }
+\cs_generate_variant:Nn \__tag_prop_show:N  { c }
+\cs_generate_variant:Nn \prop_gput:Nnn {Nxx}
+\cs_generate_variant:Nn \prop_put:Nnn  {Nxx}
+
+\cs_generate_variant:Nn \pdffile_embed_stream:nnn {nxx,oxx}
+\cs_generate_variant:Nn \pdf_object_ref:n {e}
+
+\tl_new:N \g__tag_tmpa_tl
+\tl_new:N \l__tag_tmpa_tl
+\tl_new:N \l__tag_tmpb_tl
+\tl_new:N \l__tag_tmpc_tl
+\tl_new:N \l__tag_tmpd_tl
+\tl_new:N \l__tag_tmpe_tl
+\str_new:N \l__tag_tmpa_str
+
+\cs_new:Nn\__tag_prop_count:nn { + 1 }
+
+%% Loading the tagpdf sub packages
+\RequirePackage { tagpdf-checks-code }
+\RequirePackage { tagpdf-user }
+\RequirePackage { tagpdf-tree-code }
+\RequirePackage { tagpdf-roles-code }
+\RequirePackage { tagpdf-attr-code }
+\RequirePackage { tagpdf-mc-code-shared }
+\bool_if:NTF \g__tag_mode_lua_bool
+  {
+   \RequirePackage {tagpdf-mc-code-lua}
+  }
+  {
+   \RequirePackage { tagpdf-mc-code-generic } %
+  }
+
+\RequirePackage { tagpdf-struct-code }
+\RequirePackage { tagpdf-space-code }
+%% 
+%%
+%% End of file `tagpdf.sty'.

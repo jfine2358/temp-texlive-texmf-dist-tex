@@ -1,0 +1,227 @@
+%%
+%% This is file `footnoterange.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% footnoterange.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Project: footnoterange
+%% Version: 2018/10/15 v1.0b
+%% 
+%% Copyright (C) 2012 - 2018 by
+%%     H.-Martin M"unch <Martin dot Muench at Uni-Bonn dot de>
+%% Portions of code copyrighted by other people as marked;
+%% lines marked "FMi": code by Frank Mittelbach, thanks!
+%% 
+%% The usual disclaimer applies:
+%% If it doesn't work right that's your problem.
+%% (Nevertheless, please send an e-mail to the maintainer
+%%  when you find an error in this package.)
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either
+%% version 1.3c of this license or (at your option) any later
+%% version. This version of this license is in
+%%    https://www.latex-project.org/lppl/lppl-1-3c.txt
+%% and the latest version of this license is in
+%%    https://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of
+%% LaTeX version 2005/12/01 or later.
+%% 
+%% This work has the LPPL maintenance status "maintained".
+%% 
+%% The Current Maintainer of this work is H.-Martin Muench.
+%% 
+%% This work consists of the main source file footnoterange.dtx,
+%% the README, and the derived files
+%%    footnoterange.sty, footnoterange.pdf,
+%%    footnoterange.ins, footnoterange.drv,
+%%    footnoterange-example.tex, footnoterange-example.pdf.
+%% 
+%% In memoriam
+%%  Claudia Simone Barth + 1996/01/30
+%%  Tommy Muench + 2014/01/02
+%%  Hans-Klaus Muench + 2014/08/24
+%% 
+\NeedsTeXFormat{LaTeX2e}[2011/06/27]
+\ProvidesPackage{footnoterange}[2018/10/15 v1.0b
+            References to ranges of footnotes (HMM)]
+%% Provides the footnoterange and footnoterange* environments to
+%% refer to ranges of footnotes.
+\RequirePackage{ltxcmds}[2011/11/09]% v1.22; for "\ltx@ifpackageloaded"
+\RequirePackage{letltxmacro}[2010/09/02]% v1.4; for "\GlobalLetLtxMacro"
+
+\newcommand{\fnr@ifhyperrfn}{%
+  \ifHy@hyperfootnotes% option hyperfootnotes=true
+    \addtocounter{Hfootnote}{+1}%
+    % Code from the hyperref package
+      \global\let\Hy@saved@currentHref\@currentHref%
+      \hyper@makecurrent{Hfootnote}%
+      \global\let\Hy@footnote@currentHref\@currentHref%
+      \global\let\@currentHref\Hy@saved@currentHref%
+    % End of code from the hyperref package
+  \fi%
+}
+
+\newcommand{\fnr@rangefootnote}[2][\empty]{%
+  \nolinebreak%
+  % no \footnotemark here
+  \addtocounter\@mpfn{+1}%
+  \ltx@ifpackageloaded{hyperref}{\fnr@ifhyperrfn}{\relax}%
+  \xdef\fnr@opt{#1}% contains the optional argument
+  \xdef\fnr@arabic{\arabic\@mpfn}%
+  \edef\fnr@formated{\thefootnote}%
+  \ifx\fnr@opt\empty%
+    \footnotetext{\label{fnr:\fnr@arabic}#2}%
+  \else%
+    \PackageWarning{footnoterange}{%
+      Custom footnote-numbers used in a footnoterange\MessageBreak%
+      environment: Footnote with natural number\MessageBreak%
+      \ifx\fnr@formated\fnr@arabic%
+        \fnr@arabic\space%
+      \else%
+        \space\fnr@arabic\space (\fnr@formated )%
+      \fi%
+      \MessageBreak%
+      was renumbered to \fnr@opt\MessageBreak%
+     }%
+    \ltx@ifpackageloaded{hyperref}{% hyperref loaded
+      \footnotetext[#1]{\phantomsection\label{fnr:\fnr@arabic}#2}%
+     }{% hyperref not loaded
+      \footnotetext[#1]{\label{fnr:\fnr@arabic}#2}%
+     }%
+  \fi%
+}
+
+
+\newcommand{\fnr@ifhyperfnrA}{%
+  \ifHy@hyperfootnotes% option hyperfootnotes=true
+    \hbox{\hyperref[fnr:\fnr@first]{%
+          \@textsuperscript{\normalfont \ref*{fnr:\fnr@first}}}}%
+  \else% option hyperfootnotes=false
+    \hbox{\@textsuperscript{\normalfont \ref*{fnr:\fnr@first}}}%
+  \fi%
+}
+
+\newcommand{\fnr@ifhyperfnrN}{%
+  \ifHy@hyperfootnotes% option hyperfootnotes=true
+    \hbox{\hyperref[fnr:\fnr@first]{%
+            \@textsuperscript{\normalfont \ref*{fnr:\fnr@first}}}%
+          \@textsuperscript{\normalfont --}%
+          \hyperref[fnr:\arabic\@mpfn]{%
+            \@textsuperscript{\normalfont \ref*{fnr:\arabic\@mpfn}}}}%
+  \else% option hyperfootnotes=false
+    \hbox{\@textsuperscript{\normalfont \ref*{fnr:\fnr@first}%
+                                        --\ref*{fnr:\arabic\@mpfn}}}%
+  \fi%
+}
+
+\newenvironment{footnoterange}{%
+  % at begin of the footnoterange environment
+  \ifhmode \unskip \fi% FMi
+  \addtocounter\@mpfn{+1}%
+  \xdef\fnr@first{\arabic\@mpfn}%
+  \addtocounter\@mpfn{-1}%
+  \let\fnr@origfn\footnote%
+  \let\footnote\fnr@rangefootnote%
+  \GlobalLetLtxMacro{\fnr@origfnmark}{\footnotemark}%
+  \GlobalLetLtxMacro{\footnotemark}{\fnr@rangefootnotemark}%
+  \ignorespaces% FMi
+}{% at end of the footnoterange environment
+  \ifhmode% FMi
+    \unskip% FMi
+    \xdef\fnr@aftergroup{\spacefactor\the\spacefactor\relax}% FMi
+  \else% FMi
+    \xdef\fnr@aftergroup{\relax}%
+  \fi% FMi
+  \let\footnote\fnr@origfn%
+  \GlobalLetLtxMacro{\footnotemark}{\fnr@origfnmark}%
+  \ifx\fnr@first\fnr@arabic% There is only one reference in the environment.
+    \PackageInfo{footnoterange}{%
+      Environment footnoterange used,\MessageBreak%
+      but only one footnote (number \fnr@first ) is contained%
+      \MessageBreak%
+     }%
+    \ltx@ifpackageloaded{hyperref}{\fnr@ifhyperfnrA% hyperref package loaded
+    }{% hyperref package not loaded
+      \hbox{\@textsuperscript{\normalfont \ref{fnr:\fnr@first}}}%
+     }%
+  \else%
+    \ltx@ifpackageloaded{hyperref}{\fnr@ifhyperfnrN% hyperref package loaded
+    }{% hyperref package not loaded
+      \hbox{\@textsuperscript{\normalfont \ref{fnr:\fnr@first}%
+                                        --\ref{fnr:\arabic\@mpfn}}}%
+     }%
+  \fi%
+  \aftergroup\fnr@aftergroup% FMi
+}
+
+\newenvironment{footnoterange*}{%
+  % at begin of the footnoterange* environment
+  \ifhmode \unskip \fi% FMi
+  \addtocounter\@mpfn{+1}%
+  \xdef\fnr@first{\arabic\@mpfn}%
+  \addtocounter\@mpfn{-1}%
+  \let\fnr@origfn\footnote%
+  \let\footnote\fnr@rangefootnote%
+  \GlobalLetLtxMacro{\fnr@origfnmark}{\footnotemark}%
+  \GlobalLetLtxMacro{\footnotemark}{\fnr@rangefootnotemark}%
+  \ignorespaces% FMi
+}{% at end of the footnoterange* environment
+  \ifhmode% FMi
+    \unskip% FMi
+    \xdef\fnr@aftergroup{\spacefactor\the\spacefactor\relax}% FMi
+  \else% FMi
+    \xdef\fnr@aftergroup{\relax}%
+  \fi% FMi
+  \let\footnote\fnr@origfn%
+  \GlobalLetLtxMacro{\footnotemark}{\fnr@origfnmark}%
+  \ifx\fnr@first\fnr@arabic% There is only one reference in the environment.
+    \PackageInfo{footnoterange}{%
+      Environment footnoterange used,\MessageBreak%
+      but only one footnote (number \fnr@first ) is contained%
+      \MessageBreak%
+     }%
+    \ltx@ifpackageloaded{hyperref}{% hyperref package loaded
+      \hbox{\@textsuperscript{\normalfont \ref*{fnr:\fnr@first}}}%
+    }{% hyperref package not loaded
+      \hbox{\@textsuperscript{\normalfont \ref{fnr:\fnr@first}}}%
+     }%
+  \else%
+    \ltx@ifpackageloaded{hyperref}{% hyperref package loaded
+      \hbox{\@textsuperscript{\normalfont \ref*{fnr:\fnr@first}%
+                                        --\ref*{fnr:\arabic\@mpfn}}}%
+    }{% hyperref package not loaded
+      \hbox{\@textsuperscript{\normalfont \ref{fnr:\fnr@first}%
+                                        --\ref{fnr:\arabic\@mpfn}}}%
+     }%
+  \fi%
+  \aftergroup\fnr@aftergroup% FMi
+}
+
+
+\newcommand{\fnr@rangefootnotemark}[1][\empty]{%
+  \PackageError{footnoterange}{%
+     \string\footnotemark\space not supported in footnoterange(*) environment%
+   }{The footnoterange package does not handle a \string\footnotemark.\MessageBreak%
+     Either use \string\footnote\string{...\string}\space instead of%
+     \string\footnotemark\space and \string\footnotetext\string{...\string}\MessageBreak%
+     in footnoterange and footnoterange* environments,\MessageBreak%
+     or do not use those environments around a \string\footnotemark\MessageBreak%
+     (or \string\renewcommand\string{\string\fnr@rangefootnotemark\string}\MessageBreak%
+     with your own fixing code).%
+    }%
+  \xdef\fnr@mopt{#1}%
+  \ifx\fnr@mopt\empty%
+    \fnr@origfnmark%
+  \else%
+    \fnr@origfnmark[#1]%
+  \fi%
+}
+
+\endinput
+%%
+%% End of file `footnoterange.sty'.

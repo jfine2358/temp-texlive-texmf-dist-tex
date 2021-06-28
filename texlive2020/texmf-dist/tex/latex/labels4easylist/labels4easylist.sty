@@ -1,0 +1,90 @@
+% Copyright (c) 2015-2019 Robert Ryszard Paciorek <rrp@opcode.eu.org>
+% 
+% MIT License
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+% Version 1.0 (2019-05-13): first public release
+
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{labels4easylist}
+
+\RequirePackage{xparse}
+\RequirePackageWithOptions{easylist}
+
+%
+% configurable refernece labels for easylist items
+%
+
+% add label to item entry, usage:
+%  \itemLabel{LabelName}[skipA][skibB]
+% skipA - number of level to skip at front
+% skipB - number of level to skip at end
+\DeclareDocumentCommand{\itemLabel}{ m O{0} o } {%
+	% prepare ref-label text in \elLabel@currRefLabel
+	\xdef\elLabel@currRefLabel{}{%
+		\elLabel@currLevel=1%
+		\elLabel@minLevel=#2%
+		\elLabel@maxLevel=\el@PreviousItem%
+		\IfValueTF{#3}{\advance\elLabel@maxLevel by -#3}{\elLabel@GetLastLevel}%
+		\elLabel@RecurencyGetEnumLevel%
+	}%
+	% create ref-label with id from #1 and text from \elLabel@currRefLabel
+	\let\@currentlabel\elLabel@currentlabel%
+	\def\@currentlabel{\elLabel@currRefLabel}%
+	\label{#1}%
+	\let\elLabel@currentlabel\@currentlabel%
+}
+
+% counters
+\newcount\elLabel@currLevel
+\newcount\elLabel@minLevel
+\newcount\elLabel@maxLevel
+
+% recursive skip final unused levels and not enumerate levels
+\newcommand{\elLabel@GetLastLevel} {
+	\ifnum\elLabel@maxLevel>\elLabel@minLevel%
+		\ifnum\elLabel@maxLevel=\csname Hide\the\elLabel@maxLevel\endcsname
+			\advance\elLabel@maxLevel by -1
+			\elLabel@GetLastLevel
+		\else%
+			\ifnum\value{List\the\elLabel@maxLevel}=0
+				\advance\elLabel@maxLevel by -1
+				\elLabel@GetLastLevel
+			\fi%
+		\fi%
+	\fi%
+}
+
+% recursive build label text for reference
+\newcommand{\elLabel@RecurencyGetEnumLevel} {%
+	% if (minLev < currLev AND currLev <= maxLev AND value !=0)
+	\ifnum\elLabel@currLevel>\elLabel@minLevel \ifnum\elLabel@currLevel>\elLabel@maxLevel\else \ifnum\value{List\the\elLabel@currLevel}=0\else%
+		\xdef\elLabel@currRefLabel{\elLabel@currRefLabel%
+			\csname el@NumberDenotation:\csname Numbers\the\elLabel@currLevel\endcsname\endcsname{List\the\elLabel@currLevel}%
+			\ifnum\elLabel@currLevel<\elLabel@maxLevel \csname Mark\the\elLabel@currLevel\endcsname \fi%
+		}%
+	\fi\fi\fi%
+	% recursion:
+	\ifnum\elLabel@currLevel<\elLabel@maxLevel
+		\advance\elLabel@currLevel by 1
+		\elLabel@RecurencyGetEnumLevel
+	\fi%
+}

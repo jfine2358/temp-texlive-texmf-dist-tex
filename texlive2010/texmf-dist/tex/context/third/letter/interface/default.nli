@@ -1,0 +1,749 @@
+%D \module
+%D   [       file=default,
+%D        version=2010.06.17,
+%D          title=\CONTEXT\ Letter Interface,
+%D       subtitle=Default Interface,
+%D         author=Wolfgang Schuster,
+%D           date=\currentdate,
+%D      copyright=Wolfgang Schuster,
+%D          email=schuster.wolfgang@googlemail.com,
+%D        license=Public Domain]
+
+\unprotect
+
+%D \subject{Reference line}
+%D 
+%D Dimen value to save the height of the reference line.
+
+\ifdefined\letter!height!reference \else \newdimen\letter!height!reference \fi
+
+%D We come now to the new macros defined in this file, they are meant to place the
+%D information about date, phone number and more information. You could select on of
+%D the alternatives with \type{\setupletter[alternative=...]}.
+%D 
+%D I define here only what I need myself but you're free to define your own
+%D alternatives but try to avoid to use the same names as I do. You could also send
+%D me your alternatives and I will include them.
+%D 
+%D This is the first alternative a, it use the values from the style file without any
+%D change, this is the normal layout for a DIN letter.
+
+\long\def\doformatreferencelista#1%
+  {\def\\{\egroup\hbox\bgroup}%
+   \setupinterlinespace\hbox\bgroup#1\egroup\par}
+
+\long\def\formatreferencelista#1%
+  {\bgroup
+   \convertargument#1\to\ascii
+   \vbox
+     {\vbox{\doattributes{\????ld\ascii}\c!titlestyle\c!titlecolor
+        {\doformatreferencelista{\labeltext{\v!letter:\ascii}}}}
+      \vtop{\doattributes{\????ld\ascii}\c!textstyle\c!textcolor
+        {\doformatreferencelista{\lettervalue\ascii}}}}%
+   \egroup
+   \hfill}
+
+% \defineletterelement[\v!reference][\v!a]
+%   {\setbox\scratchbox\hbox\!!to\hsize
+%      {\getcommacommandsize[\@@@@lsreferencelist]% \@@@@ldreference?
+%       \ifnum\commalistsize<\plustwo\hfill\fi
+%       \processcommacommand[\@@@@lsreferencelist]\formatreferencelista\unskip}%
+%    \global\letter!height!reference\htdp\scratchbox
+%    \box\scratchbox}
+
+\defineletterelement[\v!reference][\v!a]
+  {\setbox\scratchbox\hbox\!!to\hsize
+     {\getcommacommandsize[\letterstylevalue\currentcorrespondenceelement\c!list]%
+      \ifnum\commalistsize<\plustwo\hfill\fi
+      \processcommacommand[\letterstylevalue\currentcorrespondenceelement\c!list]\formatreferencelista\unskip}%
+   \ifx\currentcorrespondenceelement\v!reference\global\letter!height!reference\htdp\scratchbox\fi
+   \box\scratchbox}
+
+\startsetups[\v!letter:\v!reference:\v!a]
+
+\setupletterstyle
+  [\v!reference]
+  [\c!hoffset=\backspace,
+   \c!voffset=\dimexpr\letterstylevalue{\v!address\v!layer}\c!voffset+\letterstylevalue{\v!address\v!frame}\c!height+\plusthree\c!mm\relax,
+   \c!width=\textwidth]
+
+\setupletterstyle
+  [\v!firstpage]
+  [\c!topspace=\dimexpr\letterstylevalue{\v!reference\v!layer}\c!voffset+\letterstylevalue\v!reference\c!spaceafter+\letter!height!reference\relax]
+
+\stopsetups
+
+%D This is the alternative b, you could use it if you want to place the information
+%D in a infoblock not just a simple line, it is also better suited if you want to
+%D place more infomration.
+
+\long\def\formatreferencelistb#1%
+  {\bgroup
+   \doifelse{#1}\v!line
+     {\blank[\v!line]}
+     {\hbox
+        {\doattributes{\????ld#1}\c!titlestyle\c!titlecolor
+           {\labeltext{\v!letter:#1}\lettervalue{#1\c!separator}}%
+         \doattributes{\????ld#1}\c!textstyle\c!textcolor
+           {\lettervalue{#1}}}}%
+   \egroup}
+
+% \defineletterelement[\v!reference][\v!b]
+%   {\vtop % why not \vbox?
+%      {\processcommacommand[\@@@@lsreferencelist]\formatreferencelistb}}
+
+\defineletterelement[\v!reference][\v!b]
+  {\vtop{\processcommacommand[\letterstylevalue\currentcorrespondenceelement\c!list]\formatreferencelistb}}
+
+\startsetups[\v!letter:\v!reference:\v!b]
+
+\setupletterstyle
+  [\v!reference]
+  [\v!layer]
+  [\c!hoffset=125.7mm,
+   \c!voffset=\letterstylevalue{\v!address\v!layer}\c!voffset]
+
+\setupletterstyle
+  [\v!reference]
+  [\v!frame]
+  [\c!width=\dimexpr\paperwidth-\letterstylevalue{\v!reference\v!layer}\c!hoffset-\cutspace\relax,
+   \c!height=\v!fit]
+
+\stopsetups
+
+%D The third alternative c could used, if you want to place just a single line
+%D with text and nothing more, like your place and the date. You need only the
+%D following two lines in your document.
+%D 
+%D \starttyping
+%D \setupletter[alternative=c,list=reference]
+%D \setupletter[reference=\rightaligned{Place, \currentdate}]
+%D \stoptyping
+
+\long\def\formatreferencelistc#1%
+  {\bgroup
+   \convertargument#1\to\ascii
+   \doattributes{\????ld\ascii}\c!textstyle\c!textcolor
+     {\lettervalue\ascii}%
+   \egroup}
+
+% \defineletterelement[\v!reference][\v!c]
+%   {\hbox\!!to\hsize
+%      {\processcommacommand[\@@@@lsreferencelist]\formatreferencelistc}}
+
+\defineletterelement[\v!reference][\v!c]
+  {\hbox\!!to\hsize
+     {\processcommacommand[\letterstylevalue\currentcorrespondenceelement\c!list]\formatreferencelistc}}
+
+\startsetups[\v!letter:\v!reference:\v!c]
+
+\setups[\v!letter:\v!reference:\v!a]
+
+\stopsetups
+
+%D Alternative d, text is placed in a block like alternative bit the text
+%D is put in a table.
+
+\long\def\doformatreferencelistd#1%
+  {\doifelse{#1}\v!line
+     {\NC\NC\NC\NR} % why did \TB not work?
+     {\NC \doattributes{\????ld#1}\c!titlestyle\c!titlecolor
+            {\labeltext{\v!letter:#1}\lettervalue{#1\c!separator}}%
+      \NC\doattributes{\????ld#1}\c!textstyle\c!textcolor{\lettervalue{#1}}
+      \NC\NR}}
+
+\def\formatreferencelistd#1%
+  {\appendtoks\doformatreferencelistd{#1}\to\scratchtoks}
+
+% \defineletterelement[\v!reference][\v!d]
+%   {\vtop % why not \vbox?
+%      {\scratchtoks\emptytoks
+%       \processcommacommand[\@@@@lsreferencelist]\formatreferencelistd
+%       \setuptabulate[\c!before=,\c!after=]%
+%       \starttabulate[|l|l|]
+%       \the\scratchtoks
+%       \stoptabulate}}
+
+\defineletterelement[\v!reference][\v!d]
+  {\vtop
+     {\scratchtoks\emptytoks
+      \processcommacommand[\letterstylevalue\currentcorrespondenceelement\c!list]\formatreferencelistd
+      \setuptabulate[\c!before=,\c!after=]%
+      \starttabulate[|l|l|]
+      \the\scratchtoks
+      \stoptabulate}}
+
+\startsetups[\v!letter:\v!reference:\v!d]
+
+\setupletterstyle
+  [\v!reference]
+  [\v!layer]
+  [\c!hoffset=125.7mm,
+   \c!voffset=\letterstylevalue{\v!address\v!layer}\c!voffset]
+
+\setupletterstyle
+  [\v!reference]
+  [\v!frame]
+  [\c!width=\dimexpr\paperwidth-\letterstylevalue{\v!reference\v!layer}\c!hoffset-\cutspace\relax,
+   \c!height=\v!fit]
+
+\stopsetups
+
+%D Alternative e, nearly the same as a but you can control the width of the
+%D fields with the width key for \tex{setupletter}.
+
+\long\def\doformatreferenceliste#1%
+  {\def\\{\egroup\hbox\bgroup}%
+   \setupinterlinespace\hbox\bgroup#1\egroup\par}
+
+\long\def\formatreferenceliste#1%
+  {\bgroup
+   \convertargument#1\to\ascii
+   \doifelselettervalue{\ascii\c!width}
+     {\hbox\!!to\lettervalue{\ascii\c!width}}
+     {\hbox}
+     {\vbox
+        {\vbox{\doattributes{\????ld\ascii}\c!titlestyle\c!titlecolor
+           {\doformatreferenceliste{\labeltext{\v!letter:\ascii}}}}
+         \vtop{\doattributes{\????ld\ascii}\c!textstyle\c!textcolor
+           {\doformatreferenceliste{\lettervalue\ascii}}}}}%
+   \egroup}
+
+% \defineletterelement[\v!reference][\v!e]
+%   {\hbox\!!to\hsize
+%      {\processcommacommand[\@@@@lsreferencelist]\formatreferenceliste\hss}}
+
+\defineletterelement[\v!reference][\v!e]
+  {\hbox\!!to\hsize
+     {\processcommacommand[\letterstylevalue\currentcorrespondenceelement\c!list]\formatreferenceliste\hss}}
+
+\startsetups[\v!letter:\v!reference:\v!e]
+
+\setups[\v!letter:\v!reference:\v!a]
+
+\stopsetups
+
+%D The alternative \mono{none} could be used to disable the reference.
+%D 
+%D The advantage is to change only the list alternative to nothing, another
+%D method to get this result to use alternative c and remove all values from
+%D the reference but the none key is better.
+
+\resetletterelement[\v!reference][\v!none]
+
+\startsetups[\v!letter:\v!reference:\v!none]
+
+  % Use the topspace value from the style file
+
+\stopsetups
+
+%D \subject{Letter environment}
+%D 
+%D \macros
+%D   {startletter}
+%D 
+%D The main macro in this file, it is used to write the letter content.
+%D It is also possible to set the address and a few other values like
+%D the opening and closing with the optional argument, the values are
+%D local in this case and not global like the values you could set with
+%D \tex{setupletter}.
+
+\newtoks\letter!local!commands
+\newtoks\letter!local!setups
+
+\chardef\letterenvironmentmode\zerocount
+
+\def\startletter
+  {\begingroup
+   \dodoubleempty\dostartletter}
+
+\def\dostartletter[#1][#2]%
+  {\doifelse\@@@@lsoptionmethod\v!buffer\dostartbufferletter\dostartcontentletter[#1][#2]}
+
+\long\def\dostartcontentletter[#1][#2]#3\stopletter
+  {\ifsecondargument
+     \getparameters[\????ld][#1]%
+     \letter!local!setups{#1}%
+     \doifundefinedelse{\????ld\????ld#2}
+       {\setvalue{\????ld\c!toaddress}{#2}}
+       {\setvalue{\????ld\c!toaddress}{\getvalue{\????ld\????ld#2}}}%
+   \else\iffirstargument
+     \doifassignmentelse{#1}
+       {\getparameters[\????ld][#1]%
+        \letter!local!setups{#1}}
+       {\doifundefinedelse{\????ld\????ld#1}
+          {\setvalue{\????ld\c!toaddress}{#1}}
+          {\setvalue{\????ld\c!toaddress}{\getvalue{\????ld\????ld#1}}}}%
+   \fi\fi
+   \setbuffer[lettercontent]#3\endbuffer
+   \processlettervalues
+   \directsetup{\v!letter:\v!place}%
+   \endgroup}
+
+\def\dostartbufferletter[#1][#2]%
+  {\def\stopletter
+     {\processlettervalues
+      \directsetup{\v!letter:\v!place}%
+      \endgroup}
+   \ifsecondargument
+     \getparameters[\????ld][#1]%
+     \letter!local!setups{#1}%
+     \doifundefinedelse{\????ld\????ld#2}
+       {\setvalue{\????ld\c!toaddress}{#2}}
+       {\setvalue{\????ld\c!toaddress}{\getvalue{\????ld\????ld#2}}}%
+   \else\iffirstargument
+     \doifassignmentelse{#1}
+       {\getparameters[\????ld][#1]%
+        \letter!local!setups{#1}}
+       {\doifundefinedelse{\????ld\????ld#1}
+          {\setvalue{\????ld\c!toaddress}{#1}}
+          {\setvalue{\????ld\c!toaddress}{\getvalue{\????ld\????ld#1}}}}%
+   \fi\fi
+   \dostartbuffer[lettercontent][startletter][stopletter]}
+
+\def\processlettersetups#1#2%
+  {\ifcsname\????ld:#1:\v!setups\endcsname
+     \appendtocommalist{#1}\letter!list!descriptions
+   \fi}
+
+\letvalueempty{\????ld:\c!postscript:\v!setups}
+\letvalueempty{\????ld:\c!copy      :\v!setups}
+\letvalueempty{\????ld:\c!enclosure :\v!setups}
+
+\def\processlettervalues
+  {\globalletempty\letter!list!descriptions
+   \global\letter!local!commands\emptytoks
+   \def\opening##1{\doglobal\appendtoks\setvalue{\????ld\c!opening   }{##1}\to\letter!local!commands}%
+   \def\closing##1{\doglobal\appendtoks\setvalue{\????ld\c!closing   }{##1}\to\letter!local!commands}%
+   \def\ps     ##1{\doglobal\appendtoks\setvalue{\????ld\c!postscript}{##1}\to\letter!local!commands\doglobal\appendtocommalist\c!postscript\letter!list!descriptions}%
+   \def\cc     ##1{\doglobal\appendtoks\setvalue{\????ld\c!copy      }{##1}\to\letter!local!commands\doglobal\appendtocommalist\c!copy      \letter!list!descriptions}%
+   \def\encl   ##1{\doglobal\appendtoks\setvalue{\????ld\c!enclosure }{##1}\to\letter!local!commands\doglobal\appendtocommalist\c!enclosure \letter!list!descriptions}%
+   \setbox\scratchbox\vbox{\trialtypesettingtrue\getbuffer[lettercontent]}%
+   \doifmode{mkiv}{\processassignmentcommand[\dotoks\letter!local!setups]\processlettersetups}% only available in mkiv
+   \flushtoks\letter!local!commands}
+
+\def\gobblelettervalues
+  {\def\dogobblelettervalues##1{\letcsnamecs\csname##1\endcsname\gobbleoneargument}%
+   \processcommalist[\c!opening,\c!closing,\c!ps,\c!cc,\c!encl]\dogobblelettervalues}
+
+%D \macros
+%D   {startlettercontent}
+%D 
+%D The letter content is saved in the value content, although I could
+%D place it in the corresponding I prefer this solution because you could
+%D now use it in your own macros and redefine the content setups to your
+%D own wishes.
+
+\setupletter
+  [\c!content={\getbuffer[lettercontent]}]
+
+\def\startlettercontent
+  {\dostartbuffer[lettercontent][startlettercontent][stoplettercontent]}
+
+%D After the definition of all macros I could now put the content
+%D in the corresponding setups, this is only important if you want
+%D to define your own layout for header, address etc.
+
+\defineletterelement[\v!head][\v!a]
+  {\lettervalue\c!fromname
+   \doiflettervalue\c!fromname\\
+   \lettervalue\c!fromaddress}
+
+\setvalue{@@head@@\c!rule\v!no    }{\!!doneafalse\!!donebfalse}
+\setvalue{@@head@@\c!rule\v!none  }{\!!doneafalse\!!donebfalse}
+\setvalue{@@head@@\c!rule\v!off   }{\!!doneafalse\!!donebfalse}
+\setvalue{@@head@@\c!rule\v!top   }{\!!doneatrue              }
+\setvalue{@@head@@\c!rule\v!before}{\!!doneatrue              }
+\setvalue{@@head@@\c!rule\v!bottom}{\!!donebtrue              }
+\setvalue{@@head@@\c!rule\v!after }{\!!donebtrue              }
+\setvalue{@@head@@\c!rule\v!yes   }{\!!donebtrue              }
+\setvalue{@@head@@\c!rule\v!on    }{\!!donebtrue              }
+
+\def\doletterelementheadrule
+  {\!!doneafalse
+   \!!donebfalse
+   \def\dodoletterelementheadrule##1{\csname @@head@@\c!rule##1\endcsname}%
+   \processcommacommand[\letterstylevalue\v!head\c!fromrule]\dodoletterelementheadrule}
+
+\defineletterelement[\v!head][\v!left]
+  {\normalhbox
+     {\framed[frame=off,location=bottom,align=right,width=\hsize]
+        {\doletterelementheadrule
+         \dostartattributes{\????ld\c!fromname}\c!style\c!color
+         \lettervalue\c!fromname
+         \if!!donea
+           \doifelselettervalue\c!fromlogo
+             {\setbox\scratchbox\hbox{\lettervalue\c!fromlogo}%
+              \scratchdimen\dimexpr\letterstylevalue\v!head\c!rulewidth-\wd\scratchbox\relax}
+             {\scratchdimen\letterstylevalue\v!head\c!rulewidth}%
+           \vskip-.5\lineheight\blackrule
+             [\c!width=\scratchdimen,
+              \c!height=\letterstylevalue\v!head\c!rulethickness,
+              \c!color=\letterstylevalue\v!head\c!rulecolor]%
+         \fi
+         \dostopattributes
+         \\
+         \dostartattributes{\????ld\c!fromaddress}\c!style\c!color
+         \lettervalue\c!fromaddress
+         \doiflettervalue\c!fromphone{\\\lettervalue\c!fromphone}%
+         \doiflettervalue\c!fromfax  {\\\lettervalue\c!fromfax  }%
+         \doiflettervalue\c!frommail {\\\lettervalue\c!frommail }%
+         \doiflettervalue\c!fromurl  {\\\lettervalue\c!fromurl  }%
+         \if!!doneb
+           \ifzeropt\letterstylevalue\v!head\c!rulewidth
+             \scratchdimen\hsize
+           \else
+             \scratchdimen\letterstylevalue\v!head\c!rulewidth
+           \fi
+           \vskip-.5\lineheight\blackrule
+             [\c!width=\scratchdimen,
+              \c!height=\letterstylevalue\v!head\c!rulethickness,
+              \c!color=\letterstylevalue\v!head\c!rulecolor]%
+         \fi
+         \dostopattributes}%
+      \doiflettervalue\c!fromlogo{\llap{\lettervalue\c!fromlogo}}}}%
+
+\defineletterelement[\v!head][\v!middle]
+  {\normalhbox
+     {\framed[frame=off,location=bottom,align=middle,width=\hsize]
+        {\doletterelementheadrule
+         \dostartattributes{\????ld\c!fromname}\c!style\c!color
+         \lettervalue\c!fromname
+         \if!!donea
+           \ifzeropt\letterstylevalue\v!head\c!rulewidth
+             \scratchdimen\hsize
+           \else
+             \scratchdimen\letterstylevalue\v!head\c!rulewidth
+           \fi
+           \vskip-.5\lineheight\blackrule
+             [\c!width=\scratchdimen,
+              \c!height=\letterstylevalue\v!head\c!rulethickness,
+              \c!color=\letterstylevalue\v!head\c!rulecolor]%
+         \fi
+         \dostopattributes
+         \\
+         \dostartattributes{\????ld\c!fromaddress}\c!style\c!color
+         \lettervalue\c!fromaddress
+         \doiflettervalue\c!fromphone{\\\lettervalue\c!fromphone}%
+         \doiflettervalue\c!fromfax  {\\\lettervalue\c!fromfax  }%
+         \doiflettervalue\c!frommail {\\\lettervalue\c!frommail }%
+         \doiflettervalue\c!fromurl  {\\\lettervalue\c!fromurl  }%
+         \if!!doneb
+           \ifzeropt\letterstylevalue\v!head\c!rulewidth
+             \scratchdimen\hsize
+           \else
+             \scratchdimen\letterstylevalue\v!head\c!rulewidth
+           \fi
+           \vskip-.5\lineheight\blackrule
+             [\c!width=\scratchdimen,
+              \c!height=\letterstylevalue\v!head\c!rulethickness,
+              \c!color=\letterstylevalue\v!head\c!rulecolor]%
+         \fi
+         \dostopattributes}}}
+
+\defineletterelement[\v!head][\v!right]
+  {\normalhbox
+     {\doiflettervalue\c!fromlogo{\rlap{\lettervalue\c!fromlogo}}%
+      \framed[frame=off,location=bottom,align=left,width=\hsize]
+        {\doletterelementheadrule
+         \dostartattributes{\????ld\c!fromname}\c!style\c!color
+         \lettervalue\c!fromname
+         \if!!donea
+           \ifzeropt\letterstylevalue\v!head\c!rulewidth
+             \scratchdimen\hsize
+           \else
+             \doifelselettervalue\c!fromlogo
+               {\setbox\scratchbox\hbox{\lettervalue\c!fromlogo}%
+                \scratchdimen\dimexpr\letterstylevalue\v!head\c!rulewidth-\wd\scratchbox\relax}
+               {\scratchdimen\letterstylevalue\v!head\c!rulewidth}%
+           \fi
+           \vskip-.5\lineheight\blackrule
+             [\c!width=\scratchdimen,
+              \c!height=\letterstylevalue\v!head\c!rulethickness,
+              \c!color=\letterstylevalue\v!head\c!rulecolor]%
+         \fi
+         \dostopattributes
+         \\
+         \dostartattributes{\????ld\c!fromaddress}\c!style\c!color
+         \\\lettervalue\c!fromaddress
+         \doiflettervalue\c!fromphone{\\\lettervalue\c!fromphone}%
+         \doiflettervalue\c!fromfax  {\\\lettervalue\c!fromfax  }%
+         \doiflettervalue\c!frommail {\\\lettervalue\c!frommail }%
+         \doiflettervalue\c!fromurl  {\\\lettervalue\c!fromurl  }%
+         \if!!doneb
+           \ifzeropt\letterstylevalue\v!head\c!rulewidth
+             \scratchdimen\hsize
+           \else
+             \scratchdimen\letterstylevalue\v!head\c!rulewidth
+           \fi
+           \vskip-.5\lineheight\blackrule
+             [\c!width=\scratchdimen,
+              \c!height=\letterstylevalue\v!head\c!rulethickness,
+              \c!color=\letterstylevalue\v!head\c!rulecolor]%
+         \fi
+         \dostopattributes}}}
+
+\startsetups[\v!letter:\v!head]
+\def\\{\letterstylevalue\v!head\c!separator}
+\executeifdefined{\v!letter:\v!head:\@@@@lsheadalternative}{\getvalue{\v!letter:\v!head:\v!a}}
+\stopsetups
+
+\startsetups[\v!letter:\v!foot]
+\executeifdefined{\v!letter:\v!foot:\@@@@lsfootalternative}\donothing
+\stopsetups
+
+\startsetups[\v!letter:\v!nexthead]
+\executeifdefined{\v!letter:\v!nexthead:\@@@@lsnextheadalternative}\donothing
+\stopsetups
+
+\startsetups[\v!letter:\v!nextfoot]
+\executeifdefined{\v!letter:\v!nextfoot:\@@@@lsnextfootalternative}\donothing
+\stopsetups
+
+\defineletterelement[\v!nexthead][\v!fullblock]
+  {\hbox\!!to\hsize
+     {\rlap{\lettervalue\c!toname}%
+      \midaligned{\pagenumber}%
+      \llap{\framed[\c!frame=\v!off,\c!location=\v!top,\c!align=\v!left]
+        {\lettervalue\c!date   \\
+         \lettervalue\c!reference}}}}
+
+\defineletterelement[\v!nexthead][\v!hanging]
+  {\hbox\!!to\hsize
+     {\framed[\c!frame=\v!off,\c!location=\v!top,\c!align=v!right]
+       {\lettervalue\c!toname    \\
+        \lettervalue\c!date      \\
+        \lettervalue\c!reference \\
+        \labeltext\c!page\pagenumber}}\hss}
+
+\defineletterelement[\v!nexthead][\v!semiblock]
+  {\hbox\!!to\hsize
+     {\rlap{\lettervalue\c!toname}%
+      \midaligned{\pagenumber}%
+      \llap{\lettervalue\c!date}}}
+
+\copyletterelement[\v!nexthead][\v!simplified][\v!fullblock]
+\copyletterelement[\v!nexthead][\v!modified  ][\v!hanging  ]
+
+%D \subject{Addressee field}
+%D 
+%D The address field is separated into two different fields.
+%D The upper field is meant for dispatch information, the official height
+%D in germany is 3 lines but this would lead to different heights dependent
+%D of the font size and the fonts own height. The lower field contains the
+%D name and address of the receiver and has a height of 6 lines in germany.
+%D This value will lead to the same problem as the upper field, because the
+%D whole address field has a fixed height and both field should fit into
+%D this space. I solved this problem by assinging the upper field 1/3 of the
+%D address height and the lower field 2/3 of the address height.
+%D 
+%D If you hace problem to put all information in the limited space you could
+%D try to reduce the font size or reduce the interlinespace in the field.
+
+\presetlocalframed[\????ls\v!dispatch ]
+\presetlocalframed[\????ls\v!addressee]
+
+\startsetups[\v!letter:\v!place:\v!dispatch]
+
+  \localframed
+    [\????ls\v!dispatch]
+    {\doadaptleftskip {\letterstylevalue\v!dispatch\c!leftmargin }%
+     \doadaptrightskip{\letterstylevalue\v!dispatch\c!rightmargin}%
+     \doattributes{\????ls\v!dispatch}\c!style\c!color{\directsetup{\v!letter:\v!address:\v!dispatch}}}
+
+\stopsetups
+
+\startsetups[\v!letter:\v!place:\v!addressee]
+
+  \localframed
+    [\????ls\v!addressee]
+    {\doadaptleftskip {\letterstylevalue\v!addressee\c!leftmargin }%
+     \doadaptrightskip{\letterstylevalue\v!addressee\c!rightmargin}%
+     \doattributes{\????ls\v!addressee}\c!style\c!color{\directsetup{\v!letter:\v!address:\v!content}}}
+
+\stopsetups
+
+\defineletterelement[\v!address][\v!a]
+  {\doif\@@@@lsoptiondispatch \v!yes{\directsetup{\v!letter:\v!place:\v!dispatch }}%
+   \doif\@@@@lsoptionaddressee\v!yes{\directsetup{\v!letter:\v!place:\v!addressee}}}
+
+\startsetups[\v!letter:\v!address]
+\offinterlineskip\endgraf
+\executeifdefined{\v!letter:\v!address:\@@@@lsaddressalternative}{\getvalue{\v!letter:\v!address:\v!a}}
+\stopsetups
+
+\startsetups[\v!letter:\v!address:\v!dispatch]
+\lettervalue\c!dispatch
+\stopsetups
+
+\startsetups[\v!letter:\v!address:\v!content]
+\def\\{\letterstylevalue\v!address\c!separator}%
+\lettervalue\c!toname
+\doiflettervalue\c!toname\\
+\lettervalue\c!toaddress
+\stopsetups
+
+%D The following setups shouldn't be changed ar you will loose information
+%D in the output.
+%D 
+%D The reference line is choosen with the alternative key or if you set
+%D a not defined alternative the definition a is choosen.
+
+\startsetups[\v!letter:\v!reference]
+\executeifdefined{\v!letter:\v!reference:\@@@@lsreferencealternative}{\getvalue{\v!letter:\v!reference:\v!a}}
+\stopsetups
+
+\resetletterelement[\v!location][\v!a]
+
+\setvalue{\v!letter:\v!location:\v!french}%
+  {\lettervalue\c!place
+   \doiflettervalue\c!place{\lettervalue{\c!place\c!separator}}%
+   \lettervalue\c!date}
+
+\startsetups[\v!letter:\v!location]
+\executeifdefined{\v!letter:\v!location:\@@@@lslocationalternative}{\getvalue{\v!letter:\v!location:\v!a}}
+\stopsetups
+
+\startsetups[\v!letter:\v!title]
+\doifelselettervalue\c!title
+  {\lettervalue\c!title}
+  {\doiflettervalue\c!attention
+     {\labeltext{\v!letter:\c!attention}\lettervalue\c!attention}}
+\stopsetups
+
+\startsetups[\v!letter:\v!subject]
+\def\\{\letterstylevalue\v!subject\c!separator}%
+\labeltext{\v!letter:\c!subject}\lettervalue\c!subject
+\stopsetups
+
+\defineletterelement[\v!opening][\v!a]
+  {\doifelselettervalue\c!opening
+     {\lettervalue\c!opening}
+     {\doiflettervalue\c!salutation
+        {\lettervalue\c!salutation}}}
+
+\defineletterelement[\v!opening][\v!french]
+  {\ExpandSecondAfter\doifsomething{\letterstylevalue\v!option\c!indenting}
+     {\setupindenting[\@@@@lsoptionindenting]}%
+   \letterelement[\v!opening][\v!a]}
+
+\startsetups[\v!letter:\v!opening]
+\executeifdefined{\v!letter:\v!opening:\@@@@lsopeningalternative}{\getvalue{\v!letter:\v!opening:\v!a}}
+\stopsetups
+
+\startsetups[\v!letter:\v!content]
+\gobblelettervalues\lettervalue\c!content
+\stopsetups
+
+%D \subject{Closing and appendices}
+%D 
+%D It is possible to attach a signature to the closing command, before the signature
+%D a skip is inserted but only if the the signature key has a value. The height of the
+%D closing environment itself has a height of 4 lines to provide a free space for your
+%D own handwritten signature and to have a little bit space between the closing text
+%D and the appendices.
+
+\defineletterelement[\v!closing][\v!a]
+  {\lettervalue\c!closing
+   \doiflettervalue\c!signature{\letterstylevalue\v!closing\c!inbetween}%
+   \lettervalue\c!signature}
+
+\defineletterelement[\v!closing][\v!french]
+  {\ExpandSecondAfter\doifsomething{\letterstylevalue\v!option\c!indenting}
+     {\setupindenting[\@@@@lsoptionindenting,\v!first]}%
+   \lettervalue\c!closing
+   \doiflettervalue\c!signature{\letterstylevalue\v!closing\c!inbetween}%
+   \raggedcenter\doadaptleftskip{.5\textwidth}% quick and dirty
+   \lettervalue\c!signature\endgraf}
+
+\defineletterelement[\v!closing][\v!simplified]
+  {\doiflettervalue\c!signature{\letterstylevalue\v!closing\c!inbetween}%
+   \lettervalue\c!signature}
+
+\startsetups[\v!letter:\v!closing]
+\def\\{\letterstylevalue\v!closing\c!separator}
+\executeifdefined{\v!letter:\v!closing:\@@@@lsclosingalternative}{\getvalue{\v!letter:\v!closing:\v!a}}
+\stopsetups
+
+\startsetups[\v!letter:\v!appendices]
+\let\\\crlf
+\doflushletterdescription
+\stopsetups
+
+\dodefineletterdescription[\v!enclosure]
+
+\startsetups[\v!letter:\v!enclosure]
+\lettervalue\c!enclosure
+\stopsetups
+
+\dodefineletterdescription[\v!copy]
+
+\startsetups[\v!letter:\v!copy]
+\lettervalue\c!copy
+\stopsetups
+
+\dodefineletterdescription[\v!postscript]
+
+\startsetups[\v!letter:\v!postscript]
+\lettervalue\c!postscript
+\stopsetups
+
+\defineletterelement[\v!backaddress][\v!yes]
+  {\lettervalue\c!fromname
+   \doiflettervalue\c!fromaddress\\
+   \lettervalue\c!fromaddress}
+
+\resetletterelement[\v!backaddress][\v!no]
+
+\defineletterelement[\v!backaddress][\v!auto]
+  {\doifelselettervalue\c!backaddress
+     {\lettervalue\c!backaddress}
+     {\lettervalue\c!fromname
+      \doiflettervalue\c!fromaddress\\
+      \lettervalue\c!fromaddress}}
+
+\startsetups[\v!letter:\v!backaddress]
+\def\\{\letterstylevalue\c!backaddress\c!separator}
+\executeifdefined{\v!letter:\v!backaddress:\@@@@lsbackaddressalternative}{\getvalue{\v!letter:\v!backaddress:\v!no}}
+\stopsetups
+
+%D To prevent a pagebreak between the last line of the text and
+%D the siganture a nonbreakable vertical space is necessary.
+%D The vertical space is inserted in the style file with the normal
+%D before and after commands where we control the distance between
+%D the elements.
+
+\doifmodeelse{mkii}
+  {\defineblankmethod[\v!nobreak]{\penalty\!!tenthousand}}
+  {\definevspacing   [\v!nobreak][\v!samepage           ]}
+
+%D \subject{Additional settings}
+%D 
+%D I set alternative a as default value for alternative, the only content
+%D is the date with a label. f you dont want a label choose alternative c
+%D or change the label.
+
+\startsetups[\v!letter:\v!optimize]
+
+  \startnointerference % trial typesetting to get the heigth of the reference line
+    \dontcomplain
+    \let\currentcorrespondenceelement\v!reference
+    \executeifdefined{\v!letter:\v!reference:\@@@@lsreferencealternative}\donothing
+  \stopnointerference
+
+  \setups[\v!letter:\v!reference:\@@@@lsreferencealternative]
+
+\stopsetups
+
+%D We have at the moment only the values from the core module, I use the settings
+%D from the dinb file as default settings, you could replace them in your own
+%D document but I won't change the default style.
+%D 
+%D The labels are stored in a common file, you could use them in your own interface
+%D but you have to live with my names.
+
+\useletterstyle    [dinb]      % layout
+\useletterextension[label]     % labels
+\useletterextension[addrentry] % database
+
+\protect \endinput

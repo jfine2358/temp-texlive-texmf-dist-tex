@@ -1,0 +1,406 @@
+%%
+%% This is file `erw-l3.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% erw-l3.dtx  (with options: `package')
+%% ----------------------------------------------------------------
+%% erw-l3 Utilities built around expl3
+%% Released under the LaTeX Project Public License v1.3c or later
+%% See http://www.latex-project.org/lppl.txt
+%% ----------------------------------------------------------------
+%% 
+\ProvidesExplPackage
+  {erw-l3}              % Package name
+  {2018/6/21}     % Release date
+  {0.1.3}                 % Release version
+  {Utilities built around expl3} % Description
+\NeedsTeXFormat{LaTeX2e}
+\RequirePackage{expl3}[2018/06/01]
+\RequirePackage{xparse}[2018/02/01]
+\RequirePackage{l3keys2e}
+\ExplSyntaxOn
+\msg_new:nnn{erw}{generic}{#1}
+\cs_set:Npn \erw_compose:NnV
+  #1 % method
+  #2 % funs
+  #3 % var
+{
+  \erw_fold_set_par:n{Nf}
+  \erw_fold_apply_par:n{Nf}
+  \erw_cs_set_inline:Nn \__erw_map:n
+  {
+     #1{##1}#3
+  }
+  \exp_args:Nf\erw_map:n
+  {
+      \tl_reverse:n{#2}
+  }
+}
+\cs_set:Npn \erw_compose:nV #1 #2
+{
+  \erw_compose:NnV \erw_fold:NV {#1} #2
+}
+\cs_set:Npn \erw_compose_c:nV #1 #2
+{
+  \erw_compose:NnV \erw_fold:cV {#1} #2
+}
+\tl_new:N \__erw_compose_tl
+\cs_set:Npn \erw_compose:nn #1 #2
+{
+  \tl_set:Nn \__erw_compose_tl {#2}
+  \erw_compose:nV{#1}\__erw_compose_tl
+  \__erw_compose_tl
+}
+\cs_set:Npn \erw_compose_c:nn #1 #2
+{
+  \tl_set:Nn \__erw_compose_tl {#2}
+  \erw_compose_c:nV{#1}\__erw_compose_tl
+  \__erw_compose_tl
+}
+\cs_set:Npn \erw_compose_seq:nV #1 #2
+{
+  \erw_compose:NnV \erw_fold_seq:NV {#1} #2
+}
+\cs_set:Npn \erw_compose_seq_c:nV
+  #1 % funs
+  #2 % seq
+{
+  \erw_compose:NnV \erw_fold_seq:cV {#1} #2
+}
+\cs_set:Npn \erw_compose_vers:nV #1 #2
+{
+   \msg_error:nnn{erw}{generic}{erw_compose_vers:nV~yet-to~be~implemented}
+}
+\cs_set:Npn \erw_compose_seq_vers:nV #1 #2
+{
+   \msg_error:nnn{erw}{generic}{erw_compose_vers:nV~yet-to~be~implemented}
+}
+\cs_set:Npn \erw_compose_vers:nn #1 #2
+{
+   \erw_numbrd_cs_reset:{}
+      \tl_map_function:nN{#1}\erw_numbrd_cs_new:n
+      \exp_last_unbraced:Nx
+      \erw_compose_c:nn
+         {{\erw_numbrd_cs_names_braced:{}}}
+         {#2}
+}
+\cs_set:Npn \__erw_cs_name:N #1
+{
+    \exp_last_unbraced:Nf \use_i:nnn {\cs_split_function:N #1}
+}
+\cs_set:Npn \erw_apply:Nn
+  #1 % fun
+  #2 % tl
+{
+  #1{#2}
+}
+\cs_generate_variant:Nn \erw_apply:Nn {No, Nf, Nx, c}
+\cs_set:Npn \erw_cs_set_eq:NN #1 #2
+{
+  \cs_set:Npn #1 ##1{#2{##1}}
+}
+\cs_generate_variant:Nn \erw_cs_set_eq:NN {cN}
+\cs_set:Npn \erw_cs_set_inline:Nn #1 #2
+{
+  \cs_set:Npn #1 ##1{#2}
+}
+\cs_generate_variant:Nn \erw_cs_set_inline:Nn {cn}
+\tl_set:Nn \__erw_fold_set_par_tl{\c_novalue_tl}
+\tl_set:Nn \__erw_fold_apply_par_tl{\c_novalue_tl}
+\cs_set:Npn \erw_fold_set_par:n #1
+{
+  \tl_set:Nn \__erw_fold_set_par_tl{#1}
+}
+\cs_set:Npn \erw_fold_apply_par:n #1
+{
+  \tl_set:Nn \__erw_fold_apply_par_tl{#1}
+}
+\cs_set:Npn \erw_fold:NV
+  #1 % fun
+  #2 % var
+{
+  \use:c{tl_set:\__erw_fold_set_par_tl}
+     #2
+    {\use:c{erw_apply:\__erw_fold_apply_par_tl}{#1}{#2}}
+}
+\cs_generate_variant:Nn \erw_fold:NV {cV}
+\tl_new:N \__erw_fold_seq_item_tl
+\cs_set:Npn \erw_fold_seq:NV
+  #1 % fun
+  #2 % seq
+{
+  \seq_get_right:NN #2 \__erw_fold_seq_item_tl
+  \erw_fold:NV #1 \__erw_fold_seq_item_tl
+  \seq_put_right:No #2 {\__erw_fold_seq_item_tl}
+}
+\cs_generate_variant:Nn \erw_fold_seq:NV {cV}
+\cs_set:Npn \erw_identity:n #1{#1}
+\cs_set:Npn\__erw_items_to:nnn #1 #2 #3
+{
+    \int_compare:nNnTF
+    {#1}>{#2}
+    {
+        \exp_args:Nf \tl_head:n{#3}
+        \__erw_items_to:nnn
+            {#1}
+            {\int_eval:n{#2+1}}
+            {\exp_args:Nf \tl_tail:n{#3}}
+    }
+    {
+        \exp_args:Nf \tl_head:n{#3}
+    }
+}
+\cs_set:Npn \erw_items_to:nn #1 #2
+{
+    \__erw_items_to:nnn
+        {#1}
+        {1}
+        {#2}
+}
+\cs_set:Npn \erw_last_item:n #1
+{
+    \exp_args:Nof \tl_item:nn
+        {#1}
+        {
+            \tl_count:n{#1}
+        }
+}
+\cs_set:Npn \erw_repeat:nn #1 #2
+{
+    \int_step_inline:nnnn{1}{1}{#1}{#2}
+}
+\cs_set:Npn \erw_split:nnn #1 #2 #3
+{
+    \tl_head:n{#1}
+    \use:c{exp_args:#3} \tl_map_inline:nn
+    {
+        \tl_tail:n
+        {
+            #1
+        }
+    }{#2##1}
+}
+\cs_set:Npn \erw_split:nn #1 #2
+{
+    \erw_split:nnn{#1}{#2}{Nf}
+}
+\cs_set:Npn \erw_map:n #1
+{
+  \__erw_map:nn#1\q_recursion_tail\q_recursion_stop\q_recursion_tail\q_recursion_stop
+}
+\cs_set:Npn \__erw_map:nn #1 #2
+{
+  \quark_if_recursion_tail_stop:n{#1}
+  \__erw_map:n{#1}  \__erw_map:nn{#2}
+}
+\cs_new:Npn \__erw_map:n #1
+{
+  \msg_error:nnn
+    {erw}
+    {generic}
+    {__erw_map:n~not~set}
+}
+\cs_set:Npn \erw_map:Nn
+  #1 % fun
+  #2 % tl
+{
+  \erw_cs_set_eq:NN \__erw_map:n #1
+  \erw_map:n{#2}
+}
+\cs_set:Npn \erw_map_inline:nn
+  #1 % inl
+  #2 % tl
+{
+  \erw_cs_set_inline:Nn \__erw_map:n {#1}
+  \erw_map:n{#2}
+}
+\cs_set:Npn \erw_apply:Nnn #1 #2 #3
+{
+    #1{#2}{#3}
+}
+\cs_set:Npn \erw_apply:Nnnn #1 #2 #3 #4
+{
+    #1{#2}{#3}{#4}
+}
+\cs_set:Npn \erw_apply:Nnnnn #1 #2 #3 #4 #5
+{
+    #1{#2}{#3}{#4}{#5}
+}
+
+\cs_set:Npn \__erw_map_thread_at:Nnn #1 #2 #3
+{
+     \erw_apply:Nn #1
+     {\exp_args:Nf\tl_item:nn {#3} {#2} }
+}
+\cs_set:Npn \__erw_map_thread_at:Nnnn #1 #2 #3 #4
+{
+     \erw_apply:Nnn #1
+     {\exp_args:Nf\tl_item:nn {#3} {#2} }
+     {\exp_args:Nf\tl_item:nn {#4} {#2} }
+}
+\cs_set:Npn \__erw_map_thread_at:Nnnnn #1 #2 #3 #4 #5
+{
+     \erw_apply:Nnnn #1
+     {\exp_args:Nf\tl_item:nn {#3} {#2} }
+     {\exp_args:Nf\tl_item:nn {#4} {#2} }
+     {\exp_args:Nf\tl_item:nn {#5} {#2} }
+}
+\cs_set:Npn \__erw_map_thread_at:Nnnnnn #1 #2 #3 #4 #5 #6
+{
+     \erw_apply:Nnnnn #1
+     {\exp_args:Nf\tl_item:nn {#3} {#2} }
+     {\exp_args:Nf\tl_item:nn {#4} {#2} }
+     {\exp_args:Nf\tl_item:nn {#5} {#2} }
+     {\exp_args:Nf\tl_item:nn {#6} {#2} }
+}
+\cs_set:Npn \erw_map_thread_at:Nnn #1 #2 #3
+{
+    \exp_args:Nf\int_case:nnTF
+    {
+        \tl_count:n{#3}
+    }
+    {
+        {1}{ \__erw_map_thread_at:Nnn #1{#2}#3 }
+        {2}{ \__erw_map_thread_at:Nnnn #1{#2}#3 }
+        {3}{ \__erw_map_thread_at:Nnnnn #1{#2}#3 }
+        {4}{ \__erw_map_thread_at:Nnnnnn #1{#2}#3 }
+    }
+    {
+        % Do nothing
+    }
+    {
+        \msg_error:nnn{erw}
+            {generic}
+            {erw_map_thread_at:~count~of~#3~not~withing~1~to~4}
+    }
+}
+
+\cs_set:Npn \erw_map_thread:Nn #1 #2
+{
+    % TODO check that #2 is a matrix
+    \int_step_inline:nn
+    {
+        \exp_args:Nf \tl_count:n{ \tl_head:n{#2} }
+    }
+    {
+        \erw_map_thread_at:Nnn #1 {##1} {#2}
+    }
+}
+\int_new:N \__erw_numbrd_cs_int
+\cs_set:Npn \erw_numbrd_cs_name:n #1{__erw_numbrd_cs_\int_to_alph:n{#1}:n}
+\cs_set:Npn \erw_numbrd_cs_name_braced:n #1{{\erw_numbrd_cs_name:n{#1}}}
+\tl_set:Nn \__erw_numbrd_cs_name_tl {\erw_numbrd_cs_name:n{\__erw_numbrd_cs_int}}
+\cs_set:Npn \erw_numbrd_cs:nn #1 #2
+{
+    \erw_apply:cn{__erw_numbrd_cs_\int_to_alph:n{#1}:n}{#2}
+}
+\cs_new_protected:Npn \erw_numbrd_cs_reset:
+{
+    \int_zero:N \__erw_numbrd_cs_int
+    \tl_set:Nn \__erw_numbrd_cs_ext_tl{}
+}
+\cs_new_protected:Npn \erw_numbrd_cs_new:n #1
+{
+    \int_incr:N \__erw_numbrd_cs_int
+    \erw_cs_set_inline:cn{\__erw_numbrd_cs_name_tl}
+    {
+        \token_if_cs:NTF
+            {#1}
+            {#1{##1}}
+            {#1}
+    }
+}
+\cs_new:Npn \erw_numbrd_cs_names:nnn #1 #2 #3
+{
+    \int_step_function:nnnN { #1 }{ #2 }{ #3 } \erw_numbrd_cs_name:n
+}
+\cs_new:Npn \erw_numbrd_cs_names_braced:nnn #1 #2 #3
+{
+    \int_step_function:nnnN { #1 }{ #2 }{ #3 } \erw_numbrd_cs_name_braced:n
+    % TODO \tl_range_braced:nnn?
+}
+\cs_new:Npn \erw_numbrd_cs_names_braced:
+{
+    \erw_numbrd_cs_names_braced:nnn{1}{1}{\__erw_numbrd_cs_int}
+}
+\cs_set:Npn \__erw_disambig:NN #1 #2 {#1{#2}}
+\cs_generate_variant:Nn \__erw_disambig:NN { Nc }
+\NewDocumentCommand{\disambignewcmd}{ s m m m }
+{
+  \msg_error:nnn{erw}{generic}{disambignewcmd~undefined}
+}
+\NewDocumentCommand{\disambignewenv}{ s m m m m }
+{
+  \msg_error:nnn{erw}{generic}{disambignewenv~undefined}
+}
+\keys_define:nn { erw }
+{
+  disambig .code:n =
+  {
+    \RenewDocumentCommand{\disambignewcmd}{ s m m m }
+  {
+      \IfBooleanTF{##1}
+          {\__erw_disambig:Nc{\RenewDocumentCommand}}
+          {\__erw_disambig:Nc{\NewDocumentCommand}}
+        {#1 \__erw_cs_name:N ##2}
+        {##3}
+        {##4}
+  }
+  \RenewDocumentCommand{\disambignewenv}{ s m m m m }
+  {
+      \IfBooleanTF{##1}
+        {\RenewDocumentEnvironment}
+        {\NewDocumentEnvironment}
+      {#1##2}
+      {##3}
+      {##4}
+      {##5}
+  }
+  },
+  disambig .initial:n = \c_empty_tl
+}
+\NewDocumentCommand{\disambigset}{ m }
+{
+    \keys_set:nn { erw }
+    {
+          disambig={#1}
+    }
+}
+\NewDocumentCommand{\disambigunset}{}
+{
+    \disambigset{\c_empty_tl}
+}
+\NewDocumentCommand{\numbrdcsnew}{ s m }
+{
+    \IfBooleanTF{#1}
+        {}
+        { \erw_numbrd_cs_reset:{}}
+    \tl_map_function:nN {#2}\erw_numbrd_cs_new:n
+}
+\NewDocumentCommand{\numbrdcs}{ m m }
+{
+    \erw_numbrd_cs:nn{#1}{#2}
+}
+\ExplSyntaxOff
+%% 
+%% Copyright (C) 2018 by Erwann Rogard
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License (LPPL), either
+%% version 1.3c of this license or (at your option) any later
+%% version.  The latest version of this license is in the file:
+%% 
+%% http://www.latex-project.org/lppl.txt
+%% 
+%% This work is "maintained" (as per LPPL maintenance status) by
+%% Erwann Rogard.
+%% 
+%% This work consists of the file  erw-l3.dtx
+%% and the derived files   erw-l3.ins,
+%%                                 erw-l3.pdf and
+%%                                 erw-l3.sty.
+%% 
+%%
+%% End of file `erw-l3.sty'.

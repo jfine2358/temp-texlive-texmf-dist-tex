@@ -1,0 +1,191 @@
+% tkz-tools-utilities
+% Copyright 2020  Alain Matthes
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status “maintained”.
+% 
+% The Current Maintainer of this work is Alain Matthes.
+%  utf8 encoding
+\def\fileversion{3.06c}
+\def\filedate{2020/03/18} 
+\typeout{2020/03/18 3.06c  tkz-tools-utilities.tex}  
+\makeatletter
+% for testing results
+\def\extractxy#1{%
+\pgfextractx{\pgf@x}{\pgfpointanchor{#1}{center}}
+\pgfextracty{\pgf@y}{\pgfpointanchor{#1}{center}}
+\typeout{#1 \the\pgf@x,\the\pgf@y} 
+} 
+
+%<-------------- some tools -------------------------------------------------> 
+\def\tkzutil@empty{}
+\def\tkzutil@firstofone#1{#1}
+\def\tkzutil@firstoftwo#1#2{#1}
+\def\tkzutil@secondoftwo#1#2{#2}
+%<--------------------------------------------------------------------------–>
+\long\def\tkzutil@ifundefined#1{%
+  \expandafter\ifx\csname#1\endcsname\relax
+    \expandafter\tkzutil@firstoftwo
+  \else
+    \expandafter\tkzutil@secondoftwo
+  \fi} 
+%<--------------------------------------------------------------------------–>
+\long\def\iftkznodedefined#1#2#3{%
+    \tkzutil@ifundefined{pgf@sh@ns@#1}{#3}{#2}%
+}
+%<--------------------------------------------------------------------------–>
+\gdef\tkzActivOff{%
+   \edef\tkzTwoPtCode{\the\catcode`\:} 
+   \edef\tkzPtExCode{\the\catcode`\!} 
+   \edef\tkzPtVirCode{\the\catcode`\;} 
+   \catcode`\:=12 \catcode`\!=12 \catcode`\;=12
+   }%
+\gdef\tkzActivOn{%
+   \catcode`\:=\tkzTwoPtCode\relax
+   \catcode`\!=\tkzPtExCode\relax
+   \catcode`\;=\tkzPtVirCode\relax
+}% 
+%<------  Initialisation of the colors with tkzSetUpColors  -----------------> 
+% Première macro SetUpColors %%%%%%%%%%%%%%%%%%%%%
+%Possible
+\pgfkeys{/tkzsucolor/.is family}
+\def\setupcolorkeys#1{%
+   \pgfkeys{/tkzsucolor,#1}}
+\setupcolorkeys{
+   background/.estore in   =  \setupcolor@background,
+   text/.estore in         =  \setupcolor@text,
+   @initial/.style         =  {background=white,text=black},
+   @apply/.code            =  {\pagecolor{\setupcolor@background}%
+                                    \color{\setupcolor@text}%
+ },
+}
+\def\tkzSetUpColors{\pgfutil@ifnextchar[{\tkz@SetUpColors}{\tkz@SetUpColors[]}}
+\def\tkz@SetUpColors[#1]{\setupcolorkeys{@initial,#1,@apply}}
+
+%<------  Initialisation of all colors   -----------------> 
+\pgfkeys{/tkzsupallcol/.cd,
+         background/.store in       = \tkz@suac@bkc,
+         text/.store in             = \tkz@suac@txt,
+         background              = \tkz@backgroundcolor,% see tkz-base.cfg
+         text                    = \tkz@textcolor% idem
+        } 
+\def\tkzSetUpAllColors{\pgfutil@ifnextchar[{\tkz@SetUpAllColors}{%
+                                 \tkz@SetUpAllColors[]}} 
+\def\tkz@SetUpAllColors[#1]{%
+   \pgfqkeys{/tkzsupallcol}{#1} % now we redine the based colors
+   \def\tkz@fillcolor{\tkz@suac@bkc}   
+   \def\tkz@mainlinecolor{\tkz@suac@txt}
+   \def\tkz@textcolor{\tkz@suac@txt}
+   \def\tkz@otherlinecolor{\tkz@suac@txt!50}
+   \def\tkz@sua@color{\tkz@suac@txt} 
+   \tkzSetUpAxis[color=\tkz@suac@txt]
+   \tkzSetUpGrid[color=\tkz@suac@txt]      
+   \pagecolor{\tkz@suac@bkc}
+   \color{\tkz@suac@txt}  
+}
+%<--------------------------------------------------------------------------–>
+%              Pour savoir le nombre de décimales d'un nombre
+% le nombre dans #1 et le résultat dans \c@pgfmath@countb
+%<--------------------------------------------------------------------------–>
+\newcommand\tkz@getdecimal[1]{\expandafter\@getdecimal#1.\@nil}
+\def\@getdecimal#1.#2\@nil{%
+  \ifx\empty#2\empty
+    % Si #2 est vide, c'est qu'il n'y avait pas de point
+    % dans la chaîne initiale
+    \c@pgfmath@countb0 %
+   \gdef\tkz@decpart{}%
+  \else
+    % sinon c'est la chaîne qui suit le point décimal...
+    \CountToken{#2}%
+    % ... y compris le point en trop ajouté par \tkz@getdecimal  :-)
+    \advance\c@pgfmath@countb by-1 %
+    \@@getdecimal#2\@nil
+  \fi
+}
+\def\@@getdecimal#1.\@nil{\gdef\tkz@decpart{#1}}
+%<---------------------------------------------------------–>
+% code from JCC modifi
+\newcommand\CountToken[1]{%
+ \c@pgfmath@countb0 %
+  \expandafter\C@untToken#1\@nil
+%modifi ajout du expandafter
+}
+\newcommand\C@untToken{%
+  \afterassignment\C@untT@ken\let\CurrT@ken=
+}
+\newcommand\C@untT@ken{%
+ \ifx\CurrT@ken\@nil \else
+   \advance\c@pgfmath@countb by1 %
+   \expandafter\C@untToken
+ \fi
+}
+% end code from JCC    
+%<---------------------------------------------------------–>
+%            Tools
+%<---------------------------------------------------------–>
+%<–––––––– code from TeX in Practice ––––––––>
+\def\SubStringConditional #1#2{%
+    TT\fi
+    \edef\@MainString{#1}%
+    \edef\@SubStringConditionalTemp{{#1}{#2}}%
+    \expandafter\@SubStringConditional\@SubStringConditionalTemp
+}
+\def\@SubStringConditional #1#2{% 
+    \def\@TestSubS ##1#2##2\\{% 
+        \def\@TestTemp{##1}% 
+    }% 
+    \@TestSubS #1#2\\
+    \ifx\@MainString\@TestTemp
+        \tkz@TestSubStringfalse
+    \else
+        \tkz@TestSubStringtrue
+    \fi
+    \iftkz@TestSubString
+}
+\def\RecursionMacroEnd #1#2#3{% 
+    #1\relax
+        \def\@RecursionMacroEndNext{#2}% 
+    \else
+        \def\@RecursionMacroEndNext{#3}% 
+    \fi
+    \@RecursionMacroEndNext
+}
+\def\ReplaceSubStrings #1#2#3#4{%
+    \def\@ReplaceResult{#1}%
+    \edef\@ReplaceMain{#2}%
+    \edef\@ReplaceSub{#3}%
+    \edef\@ReplaceSubRep{#4}%
+    \@ReplaceSubStrings
+}
+\def\@ReplaceSubStrings{% 
+    \RecursionMacroEnd
+        {\if\SubStringConditional{\@ReplaceMain}{\@ReplaceSub}}%
+      {\@ReplaceSubStringsDo}{\expandafter\edef\@ReplaceResult{\@ReplaceMain}}%
+}
+\def\@ReplaceSubStringsDoX{%
+    \def\@ReplaceSubStringsDoA ##1%
+}%
+\def\@ReplaceSubStringsDo{% 
+    \expandafter\@ReplaceSubStringsDoX \@ReplaceSub
+                                    ##2\@EndReplaceSubStrings{%
+        \edef\@ReplaceMain{##1\@ReplaceSubRep ##2}%
+    }%
+    \expandafter\@ReplaceSubStringsDoA\@ReplaceMain
+        \@EndReplaceSubStrings
+    \@ReplaceSubStrings
+}
+%<---------------------------------------------------------–>
+\def\DisabledNumprint{%
+      \let\tkz@numprint\numprint
+      \let\numprint\relax
+      }
+\def\EnabledNumprint{\let\numprint\tkz@numprint} 
+%<---------------------------------------------------------–>
+\makeatother
+\endinput

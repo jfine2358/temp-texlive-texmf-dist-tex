@@ -1,0 +1,85 @@
+%% Copyright (c) 2010 by Martin Scharrer <martin@scharrer-online.de>
+%% -----------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%
+%%   http://www.latex-project.org/lppl.txt
+%%
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2008/05/04 or later.
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The Current Maintainer of this work is Martin Scharrer.
+%%
+%% This work consists of the files currfile.dtx, currfile.ins
+%% and the derived file currfile.sty.
+%%
+%% $Id: standalone.dtx 1803 2010-04-03 13:59:44Z martin $
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{currfile}
+    [2010/04/08 v0.1 Current input file name and path]
+\RequirePackage{kvoptions}
+\SetupKeyvalOptions{family=currfile,prefix=currfile@}
+\DeclareStringOption[tex]{mainext}
+\DeclareStringOption[]{maindir}
+\ProcessKeyvalOptions*\relax
+\RequirePackage{filehook}
+\filehook@prefixwarg\filehook@include@atbegin{%
+  \currfile@push
+  \currfile@set{#1}%
+}
+\filehook@appendwarg\filehook@include@after{%
+  \currfile@pop
+}
+\filehook@prefixwarg\filehook@input@atbegin{%
+  \currfile@push
+  \currfile@set{#1}%
+}
+\filehook@appendwarg\filehook@input@atend{%
+  \currfile@pop
+}
+\def\currfile@set#1{%
+  \begingroup
+    \filename@parse{#1}%
+    \global\let\currfiledir\filename@area
+    \global\let\currfilebase\filename@base
+    \xdef\currfileext{\ifx\filename@ext\relax tex\else\filename@ext\fi}%
+    \xdef\currfilename{\currfilebase\ifx\currfileext\empty\else.\currfileext\fi}%
+    \xdef\currfilepath{\currfiledir\currfilename}%
+  \endgroup
+}
+\def\currfile@push{%
+  \xdef\currfile@stack{%
+    {\currfiledir}%
+    {\currfilebase}%
+    {\currfileext}%
+    \currfile@stack
+  }%
+}
+\def\currfile@pop{%
+  \ifx\currfile@stack\empty
+    \PackageWarning{currfile}{File stack underflow!}{}{}%
+    \global\let\currfile@stack\currfile@stackinit
+  \fi
+  \expandafter\currfile@pop@\currfile@stack\relax
+  \relax\relax\relax
+}
+\def\currfile@pop@#1#2#3#4\relax{%
+  \gdef\currfiledir{#1}%
+  \gdef\currfilebase{#2}%
+  \gdef\currfileext{#3}%
+  \xdef\currfilename{\currfilebase\ifx\currfileext\empty\else.\currfileext\fi}%
+  \xdef\currfilepath{\currfiledir\currfilename}%
+  \gdef\currfile@stack{#4}%
+}
+\def\currfile@stack{}
+\currfile@set{\currfile@maindir\jobname.\currfile@mainext}
+\currfile@push
+\let\currfile@stackinit\currfile@stack
+\endinput
+%%
+%% End of file `currfile.sty'.

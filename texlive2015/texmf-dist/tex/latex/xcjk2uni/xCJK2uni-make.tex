@@ -1,0 +1,324 @@
+%%
+%% This is file `xCJK2uni-make.tex',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% xCJK2uni.dtx  (with options: `make')
+%% 
+%%    Copyright (C) 2013-2014 by Qing Lee <sobenlee@gmail.com>
+%% --------------------------------------------------------------------------
+%%    This work may be distributed and/or modified under the
+%%    conditions of the LaTeX Project Public License, either version 1.3
+%%    of this license or (at your option) any later version.
+%%    The latest version of this license is in
+%%      http://www.latex-project.org/lppl.txt
+%%    and version 1.3 or later is part of all distributions of LaTeX
+%%    version 2005/12/01 or later.
+%% 
+%%    This work has the LPPL maintenance status "maintained".
+%%    The Current Maintainer of this work is Qing Lee.
+%% 
+\input expl3-generic %
+\GetIdInfo$Id: xCJK2uni.dtx 691 2014-06-20 09:20:07Z sobenlee $
+  {Convert CJK character to Unicode.}
+\ExplSyntaxOn
+\cs_if_exist:NF \ProvidesExplFile
+  {
+    \group_begin:
+      \cs_set_nopar:Npn \ProvidesExplFile #1#2#3#4
+        { \iow_log:x { File:~#1~#2~v#3~#4 } }
+    \exp_after:wN \group_end:
+  }
+\ProvidesExplFile{xCJK2uni-make.tex}
+  {\ExplFileDate}{0.4}{\ExplFileDescription}
+\msg_new:nnn { xCJK2uni } { file-not-found }
+  {
+    SFD file~`#2'~for~encoding~`#1'~not~found.\\
+    xCJK2uni~will~not~work!
+  }
+\ior_new:N \g__CJKtu_sfd_ior
+\tl_new:N \g__CJKtu_path_str
+\luatex_if_engine:TF
+  {
+    \tl_gset:Nx \g__CJKtu_path_str
+      {
+        \luatex_directlua:D
+          {
+            kpse.set_program_name("luatex") ~
+            local ~ sfd = kpse.find_file("UGBK.sfd", "subfont~definition~files") ~
+            if ~ sfd ~ then ~
+              tex.write(sfd) ~
+            end
+          }
+      }
+  }
+  {
+    \ior_open:NnTF \g__CJKtu_sfd_ior { |kpsewhich ~ UGBK.sfd }
+      {
+        \ior_get_str:NN \g__CJKtu_sfd_ior \g__CJKtu_path_str
+        \ior_close:N \g__CJKtu_sfd_ior
+      }
+      { \msg_fatal:nnnn { xCJK2uni } { file-not-found } { GBK } { UGBK.sfd } }
+  }
+\tl_if_blank:oTF { \g__CJKtu_path_str }
+  { \msg_fatal:nnnn { xCJK2uni } { file-not-found } { GBK } { UGBK.sfd } }
+  {
+    \seq_set_split:NnV \l_tmpa_seq { / } \g__CJKtu_path_str
+    \seq_pop_right:NN \l_tmpa_seq \g__CJKtu_path_str
+    \tl_gset:Nx \g__CJKtu_path_str { \seq_use:Nn \l_tmpa_seq { / } }
+  }
+\tl_const:Nx \c__CJKtu_hash_str { \iow_char:N \# }
+\tl_const:Nx \c__CJKtu_lbrace_str { \iow_char:N \{ }
+\tl_const:Nx \c__CJKtu_rbrace_str { \iow_char:N \} }
+\tl_const:Nx \c__CJKtu_backslash_str { \iow_char:N \\ }
+\tl_const:Nx \c__CJKtu_indent_str
+  { \c_catcode_other_space_tl \c_catcode_other_space_tl }
+\iow_new:N \g__CJKtu_sfd_map_iow
+\iow_new:N \g__CJKtu_sfd_cmap_iow
+\seq_new:N \l__CJKtu_sfd_plane_seq
+\seq_new:N \l__CJKtu_sfd_line_seq
+\tl_new:N \l__CJKtu_sfd_plane_tl
+\tl_new:N \l__CJKtu_cmap_block_tl
+\int_new:N \l__CJKtu_sfd_index_int
+\prop_new:N \c__CJKtu_sfd_map_prop
+\prop_gput:Nnn \c__CJKtu_sfd_map_prop { GB   } { { 10 } { UGB } }
+\prop_gput:Nnn \c__CJKtu_sfd_map_prop { JIS  } { { 40 } { UJIS } }
+\prop_gput:Nnn \c__CJKtu_sfd_map_prop { KS   } { { 60 } { UKS } }
+\prop_gput:Nnn \c__CJKtu_sfd_map_prop { Bg5  } { { 00 } { UBig5 } }
+\prop_gput:Nnn \c__CJKtu_sfd_map_prop { Bg5+ } { { 09 } { UBg5plus } }
+\prop_gput:Nnn \c__CJKtu_sfd_map_prop { GBK  } { { 19 } { UGBK } }
+\cs_new_protected_nopar:Npn \__CJKtu_write_file:nnn #1#2#3
+  {
+    \group_begin:
+    \file_path_include:n { \g__CJKtu_path_str / }
+    \ior_open:NnTF \g__CJKtu_sfd_ior { #3.sfd }
+      {
+        \group_end:
+        \seq_clear:N \l__CJKtu_sfd_plane_seq
+        \__CJKtu_write_sfd_map_header:n {#1}
+        \ior_str_map_inline:Nn \g__CJKtu_sfd_ior
+          { \str_if_eq:nnT {##1} { 00 ~ 0x0000_0x00FF } { \ior_map_break: } }
+        \ior_str_map_inline:Nn \g__CJKtu_sfd_ior
+          {
+            \tl_if_blank:nTF {##1}
+              {
+                \ior_map_break:n
+                  {
+                    \__CJKtu_write_sfd_map_trailer:n {#1}
+                    \__CJKtu_write_cmap_file:n {#2}
+                  }
+              }
+              { \__CJKtu_read_sfd_line:nnn {##1} {#1} {#2} }
+          }
+        \iow_close:N \g__CJKtu_sfd_cmap_iow
+        \ior_close:N \g__CJKtu_sfd_ior
+        \seq_clear:N \l__CJKtu_sfd_plane_seq
+        \seq_clear:N \l__CJKtu_sfd_line_seq
+      }
+      {
+        \group_end:
+        \msg_critical:nnxx { xCJK2uni } { file-not-found } {#1} { #3.sfd }
+      }
+  }
+\group_begin:
+\char_set_lccode:nn { \c_zero } { `\\ }
+\char_set_lccode:nn { \c_one }  { `\x }
+\char_set_catcode_other:n { \c_zero }
+\char_set_catcode_other:n { \c_one }
+\tl_to_lowercase:n
+  {
+    \group_end:
+    \cs_new_protected_nopar:Npn \__CJKtu_read_sfd_line:nnn #1#2#3
+      { \__CJKtu_read_sfd_line:nwnn #1 ^^00 \q_nil \q_stop {#2} {#3} }
+    \cs_new_protected_nopar:Npn \__CJKtu_read_sfd_line:nwnn
+      #1 0^^01 #2 ^^00 #3 \q_stop #4#5
+      { \__CJKtu_read_sfd_line:nnnnn {#1} { 0^^01 } {#2} {#4} {#5} }
+  }
+\cs_new_protected_nopar:Npn \__CJKtu_read_sfd_line:nnnnn #1#2#3#4#5
+  {
+    \tl_if_blank:nF {#1}
+      {
+        \seq_if_empty:NF \l__CJKtu_sfd_plane_seq
+          {
+            \iow_now:Nx \g__CJKtu_sfd_map_iow
+              {
+                \c__CJKtu_indent_str \c__CJKtu_indent_str
+                \token_to_str:N \fi: \iow_newline:
+                \c__CJKtu_indent_str \c__CJKtu_rbrace_str
+              }
+            \__CJKtu_write_cmap_file:n {#5}
+          }
+        \__CJKtu_write_plane_map:nn {#1} {#4}
+        \tl_set:Nx \l__CJKtu_sfd_plane_tl { \tl_trim_spaces:n {#1} }
+      }
+    \seq_set_split:Nnn \l__CJKtu_sfd_line_seq {#2} {#3}
+    \seq_concat:NNN \l__CJKtu_sfd_plane_seq
+      \l__CJKtu_sfd_plane_seq \l__CJKtu_sfd_line_seq
+    \iow_now:Nx \g__CJKtu_sfd_map_iow
+      {
+        \c__CJKtu_indent_str \c__CJKtu_indent_str \c__CJKtu_indent_str
+        \seq_use:Nn \l__CJKtu_sfd_line_seq { \or: }
+        \token_to_str:N \or:
+      }
+  }
+\cs_new_protected_nopar:Npn \__CJKtu_write_plane_map:nn #1#2
+  {
+    \iow_now:Nx \g__CJKtu_sfd_map_iow
+      {
+        \cs_new_nopar:cpn { ~ __CJKtu_ #2 _sfd_map_ \int_eval:n {#1} :n ~ } ~
+        \c__CJKtu_hash_str 1 \iow_newline:
+        \c__CJKtu_indent_str \c__CJKtu_lbrace_str \iow_newline:
+        \c__CJKtu_indent_str \c__CJKtu_indent_str
+        \exp_not:N \if_case:w \etex_numexpr:D
+          \c__CJKtu_hash_str 1 ~ \token_to_str:N \scan_stop:
+      }
+  }
+\cs_new_protected_nopar:Npn \__CJKtu_write_cmap_file:n #1
+  {
+    \tl_clear:N \l__CJKtu_cmap_block_tl
+    \int_zero:N \l__CJKtu_sfd_index_int
+    \iow_open:Nn \g__CJKtu_sfd_cmap_iow { c #1 \l__CJKtu_sfd_plane_tl .cmap }
+    \__CJKtu_write_cmap_header:nn { C #1 } { \l__CJKtu_sfd_plane_tl }
+    \iow_now:Nx \g__CJKtu_sfd_cmap_iow
+      {
+        \iow_newline:
+        1~begincodespacerange \iow_newline:
+        \c__CJKtu_indent_str < 00 > ~
+        <
+          \int_to_Hex:n
+            { \seq_count:N \l__CJKtu_sfd_plane_seq - \c_one }
+        > \iow_newline:
+        endcodespacerange
+      }
+    \seq_map_function:NN \l__CJKtu_sfd_plane_seq \__CJKtu_write_cmap_body:n
+    \tl_if_empty:NF \l__CJKtu_cmap_block_tl
+      {
+        \iow_now:Nx \g__CJKtu_sfd_cmap_iow
+          {
+            \iow_newline:
+            \int_mod:nn { \l__CJKtu_sfd_index_int } { \c_one_hundred } ~
+            beginbfchar \iow_newline:
+            \l__CJKtu_cmap_block_tl
+            endbfchar
+          }
+      }
+    \__CJKtu_write_cmap_trailer:
+    \seq_clear:N \l__CJKtu_sfd_plane_seq
+  }
+\cs_new_protected_nopar:Npn \__CJKtu_write_cmap_body:n #1
+  {
+    \int_case:nnTF { \l__CJKtu_sfd_index_int }
+      { { 99 } { } { 199 } { } }
+      {
+        \iow_now:Nx \g__CJKtu_sfd_cmap_iow
+          {
+            \iow_newline:
+            100 ~ beginbfchar \iow_newline:
+            \l__CJKtu_cmap_block_tl
+            < \int_to_Hex:n { \l__CJKtu_sfd_index_int } > ~
+            <#1> \iow_newline:
+            endbfchar
+          }
+        \tl_clear:N \l__CJKtu_cmap_block_tl
+      }
+      {
+        \tl_put_right:Nx \l__CJKtu_cmap_block_tl
+          {
+            <
+              \int_compare:nNnF \l__CJKtu_sfd_index_int > \c_fifteen { 0 }
+              \int_to_Hex:n { \l__CJKtu_sfd_index_int }
+            > ~ <#1> \iow_newline:
+          }
+      }
+    \int_incr:N \l__CJKtu_sfd_index_int
+  }
+\group_begin:
+\char_set_catcode_other:N \%
+\cs_new_protected_nopar:Npn \__CJKtu_write_sfd_map_header:n #1
+  {
+    \iow_now:Nx \g__CJKtu_sfd_map_iow
+      {
+        %<*#1> \iow_newline:
+        \cs_new_nopar:cpn { ~ CJKtu_#1_sfd_map:nn ~ } ~ \c__CJKtu_hash_str 1
+        \iow_newline: \c__CJKtu_indent_str \c__CJKtu_lbrace_str \iow_newline:
+        \c__CJKtu_indent_str \c__CJKtu_indent_str
+        \token_to_str:N \cs_if_exist_use:cF
+        \iow_newline: \c__CJKtu_indent_str \c__CJKtu_indent_str \c__CJKtu_indent_str
+          { ~ __CJKtu_#1_sfd_map_ ~ \exp_not:N \int_eval:n { \c__CJKtu_hash_str 1 } ~ :n ~}
+        \iow_newline: \c__CJKtu_indent_str \c__CJKtu_indent_str \c__CJKtu_indent_str
+          { ~ \exp_not:N \use_none:n } \iow_newline:
+        \c__CJKtu_indent_str \c__CJKtu_rbrace_str
+      }
+  }
+\cs_new_protected_nopar:Npn \__CJKtu_write_sfd_map_trailer:n #1
+  {
+    \iow_now:Nx \g__CJKtu_sfd_map_iow
+      {
+        \c__CJKtu_indent_str \c__CJKtu_indent_str
+        \token_to_str:N \fi: \iow_newline:
+        \c__CJKtu_indent_str \c__CJKtu_rbrace_str \iow_newline:
+        %</#1>
+      }
+  }
+\cs_new_protected_nopar:Npn \__CJKtu_write_cmap_header:nn #1#2
+  {
+   \iow_now:Nx \g__CJKtu_sfd_cmap_iow
+      {
+        %!PS-Adobe-3.0~Resource-CMap \iow_newline:
+        %%DocumentNeededResources:~ProcSet~(CIDInit) \iow_newline:
+        %%IncludeResource:~ProcSet~(CIDInit) \iow_newline:
+        %%BeginResource:~CMap~(TeX-#1-#2-0) \iow_newline:
+        %%Title:~(TeX-#1-#2-0~TeX~#1-#2~0) \iow_newline:
+        %%Version:~1.000 \iow_newline:
+        %%EndComments \iow_newline: \iow_newline:
+        /CIDInit~/ProcSet~findresource~begin \iow_newline: \iow_newline:
+        12~dict~begin \iow_newline: \iow_newline:
+        begincmap \iow_newline: \iow_newline:
+        /CIDSystemInfo~3~dict~dup~begin \iow_newline:
+        \c__CJKtu_indent_str /Registry~(TeX)~def \iow_newline:
+        \c__CJKtu_indent_str /Ordering~(#1-#2)~def \iow_newline:
+        \c__CJKtu_indent_str /Supplement~0~def \iow_newline:
+        end~def \iow_newline: \iow_newline:
+        /CMapName~/TeX-#1-#2-0~def \iow_newline:
+        /CMapVersion~1.000~def \iow_newline:
+        /CMapType~2~def \iow_newline: \iow_newline:
+        /WMode~0~def
+      }
+  }
+\cs_new_protected_nopar:Npx  \__CJKtu_write_cmap_trailer:
+  {
+    \iow_now:Nn \g__CJKtu_sfd_cmap_iow
+      {
+        \iow_newline:
+        endcmap \iow_newline:
+        CMapName~currentdict~/CMap~defineresource~pop \iow_newline:
+        end \iow_newline:
+        end \iow_newline: \iow_newline:
+        %%EndResource \iow_newline:
+        %%EOF
+      }
+  }
+\group_end:
+\iow_open:Nn \g__CJKtu_sfd_map_iow { xCJK2uni-sfd.def }
+\prop_map_inline:Nn \c__CJKtu_sfd_map_prop
+  { \__CJKtu_write_file:nnn {#1} #2 }
+\iow_close:N \g__CJKtu_sfd_map_iow
+\cs_if_exist_use:NF \CJKtuend { \tex_end:D }
+%% 
+%%    This package consists of the file  xCJK2uni.dtx,
+%%                 and the derived files xCJK2uni.pdf,
+%%                                       xCJK2uni.sty,
+%%                                       xCJK2uni.ins,
+%%                                       xCJK2uni-make.tex,
+%%                                       xCJK2uni-sfd.def,
+%%                                       xCJK2uni-UBg5plus.def,
+%%                                       xCJK2uni-UBig5.def,
+%%                                       xCJK2uni-UGB.def,
+%%                                       xCJK2uni-UGBK.def,
+%%                                       xCJK2uni-UJIS.def,
+%%                                       xCJK2uni-UKS.def,
+%%                                       c****.cmap, and
+%%                                       README.
+%%
+%% End of file `xCJK2uni-make.tex'.

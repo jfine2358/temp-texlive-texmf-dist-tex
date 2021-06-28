@@ -1,0 +1,230 @@
+%%
+%% This is file `icite.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% icite.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2019 by Robert Alessi <alessi@robertalessi.net>
+%% 
+%% Please send error reports and suggestions for improvements to Robert
+%% Alessi <alessi@robertalessi.net>
+%% 
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful, but
+%% WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%% General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see
+%% <http://www.gnu.org/licenses/>.
+%% 
+%% This work consists of the file icite.dtx, icite.ins and a Makefile.
+%% Running "make" generates the derived files README.md, icite.pdf and icite.sty.
+%% Running "make inst" installs the files in the user's TeX tree.
+%% Running "make install" installs the files in the local TeX tree.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{icite}
+    [2019/03/17 v1.2 Make Indices locorum citatorum]
+\RequirePackage{xkeyval}
+\DeclareOptionX{citecmd}[cite]{\def\ic@dfltcit{#1}}
+\newif\ifdefault@index
+\newif\ifno@index
+\DeclareOptionX{defaultindex}[loccit]{
+  \edef\@tempa{#1}
+  \edef\@none{none}
+  \ifx\@tempa\@none
+  \no@indextrue
+  \else
+  \default@indextrue
+  \def\ic@dfltind{#1}
+  \fi
+}
+\newif\ifno@bibengine
+\define@boolkey{icite.sty}[@pkg@]{nobibengine}[true]{%
+  \if@pkg@nobibengine\no@bibenginetrue\else\fi}
+\ExecuteOptionsX{citecmd}
+\ProcessOptionsX\relax
+\RequirePackage{xparse}
+\RequirePackage{datatool}
+\RequirePackage{usebib}
+\NewDocumentCommand{\ic@nullcmd}{O{}O{}m}{}
+\define@reuse@key{author}
+\define@reuse@key{indexauthor}
+\define@reuse@key{sortname}
+\define@reuse@key{title}
+\define@reuse@key{shorttitle}
+\define@reuse@key{indextitle}
+\define@reuse@key{indexsorttitle}
+\define@reuse@key{entrysubtype}
+\define@reuse@key{shorthand}
+\def\get@bibentry#1#2{\@ifundefined{reuse@#1@#2}{}
+  {\@nameuse{reuse@#1@#2}}}
+\DTLnewdb{icite@indices}
+\NewDocumentCommand{\IndexSubtypeAs}{m m}{%
+  \DTLnewrow{icite@indices}
+  \DTLnewdbentry{icite@indices}{subtype}{#1}
+  \DTLnewdbentry{icite@indices}{index}{#2}
+}
+\@onlypreamble\IndexSubtypeAs
+\NewDocumentCommand{\TitleStyle}{m}{\emph{#1}}
+\NewDocumentCommand{\SetTitleStyle}{m}{%
+  \RenewDocumentCommand{\TitleStyle}{m}{#1}
+}
+\@onlypreamble\SetTitleStyle
+\def\ic@authtitdelim{, }
+\NewDocumentCommand{\AuthorTitleDelim}{m}{%
+  \def\ic@authtitdelim{#1}
+}
+\@onlypreamble\AuthorTitleDelim
+\def\ic@titpgdelim{, }
+\NewDocumentCommand{\TitlePageDelim}{m}{%
+  \def\ic@titpgdelim{#1}
+}
+\@onlypreamble\TitlePageDelim
+\NewDocumentCommand{\icite}{o o m O{\ic@dfltcit}}{%
+  \edef\ic@argiv{#4}%
+  \edef\ic@null{ic@nullcmd}%
+  \ifno@bibengine\let\ic@argiv\ic@null\else\fi%
+  \edef\@shorthand{\get@bibentry{#3}{shorthand}}%
+  \edef\@subtype{\get@bibentry{#3}{entrysubtype}}%
+  \edef\@author{\get@bibentry{#3}{author}}%
+  \edef\@indexauthor{\get@bibentry{#3}{indexauthor}}%
+  \edef\@sortname{\get@bibentry{#3}{sortname}}%
+  \edef\@indexsorttitle{\get@bibentry{#3}{indexsorttitle}}%
+  \edef\@indextitle{\get@bibentry{#3}{indextitle}}%
+  \edef\@shorttitle{\get@bibentry{#3}{shorttitle}}%
+  \edef\@title{\get@bibentry{#3}{title}}%
+  \ifx\@indexauthor\empty
+      \def\@useauthor{\@author}%
+    \else
+      \def\@useauthor{\@indexauthor}%
+    \fi
+  \ifx\@sortname\empty
+      \def\@sortedauthor{\@useauthor}%
+    \else
+      \def\@sortedauthor{{\@sortname}@\@useauthor}%
+    \fi
+  \ifx\@indextitle\empty
+    \ifx\@shorttitle\empty
+      \def\@usetitle{\@title}%
+    \else
+      \def\@usetitle{\@shorttitle}%
+    \fi
+  \else
+    \def\@usetitle{\@indextitle}%
+  \fi
+  \ifx\@indexsorttitle\empty
+    \def\@sortedtitle{{\@usetitle}@\TitleStyle{\@usetitle}}%
+  \else
+    \def\@sortedtitle{{\@indexsorttitle}@\TitleStyle{\@usetitle}}%
+  \fi
+  \IfNoValueTF{#1}%
+  {\DTLifdbempty{icite@indices}{%
+      \ifno@index\else
+      \ifdefault@index%
+      \index[\ic@dfltind]{\@sortedauthor!\@sortedtitle}%
+      \else%
+      \index{\@sortedauthor!\@sortedtitle}%
+      \fi\fi%
+    }{%
+      \DTLforeach*{icite@indices}{%
+        \icite@subtype=subtype,\icite@index=index}{%
+        \ifx\@subtype\icite@subtype%
+        \index[\icite@index]{\@sortedauthor!\@sortedtitle}%
+        \dtlbreak%
+        \else%
+        \ifno@index\else
+        \ifdefault@index%
+        \index[\ic@dfltind]{\@sortedauthor!\@sortedtitle}%
+        \else%
+        \index{\@sortedauthor!\@sortedtitle}%
+        \fi\fi%
+        \fi}}
+    \ifno@bibengine
+    \ifx\@shorthand\empty%
+    \@useauthor\ic@authtitdelim\TitleStyle{\@usetitle}%
+    \else%
+    \@shorthand%
+    \fi%
+    \else%
+    \fi%
+    \csname\ic@argiv\endcsname{#3}%
+  }
+  {\IfNoValueTF{#2}%
+    {\DTLifdbempty{icite@indices}{%
+        \ifno@index\else
+        \ifdefault@index%
+        \index[\ic@dfltind]{\@sortedauthor!\@sortedtitle!#1}%
+        \else%
+        \index{\@sortedauthor!\@sortedtitle!#1}%
+        \fi\fi%
+      }{%
+        \DTLforeach*{icite@indices}{%
+          \icite@subtype=subtype,\icite@index=index}{%
+          \ifx\@subtype\icite@subtype%
+          \index[\icite@index]{\@sortedauthor!\@sortedtitle!#1}%
+          \dtlbreak%
+          \else%
+          \ifno@index\else
+          \ifdefault@index%
+          \index[\ic@dfltind]{\@sortedauthor!\@sortedtitle!#1}%
+          \else%
+          \index{\@sortedauthor!\@sortedtitle!#1}%
+          \fi\fi%
+          \fi}}%
+      \ifno@bibengine
+      \ifx\@shorthand\empty%
+      \@useauthor\ic@authtitdelim\TitleStyle{\@usetitle}%
+         \ic@titpgdelim{#1}%
+      \else%
+      \@shorthand, {#1}%
+      \fi%
+      \else%
+      \fi%
+      \csname\ic@argiv\endcsname[{#1}]{#3}%
+    }
+    {\DTLifdbempty{icite@indices}{%
+        \ifno@index\else
+        \ifdefault@index%
+        \index[\ic@dfltind]{\@sortedauthor!\@sortedtitle!#2}%
+        \else%
+        \index{\@sortedauthor!\@sortedtitle!#2}%
+        \fi\fi%
+      }{%
+        \DTLforeach*{icite@indices}{%
+          \icite@subtype=subtype,\icite@index=index}{%
+          \ifx\@subtype\icite@subtype%
+          \index[\icite@index]{\@sortedauthor!\@sortedtitle!#2}%
+          \dtlbreak%
+          \else%
+          \ifno@index\else
+          \ifdefault@index%
+          \index[\ic@dfltind]{\@sortedauthor!\@sortedtitle!#2}%
+          \else%
+          \index{\@sortedauthor!\@sortedtitle!#2}%
+          \fi\fi%
+          \fi}}%
+      \ifno@bibengine
+      \ifx\@shorthand\empty%
+      #1 \@useauthor\ic@authtitdelim\TitleStyle{\@usetitle}%
+         \ic@titpgdelim{#2}%
+      \else%
+      #1 \@shorthand, {#2}%
+      \fi
+      \else%
+      \fi%
+      \csname\ic@argiv\endcsname[#1][{#2}]{#3}%
+    }%
+  }%
+}
+\endinput
+%%
+%% End of file `icite.sty'.

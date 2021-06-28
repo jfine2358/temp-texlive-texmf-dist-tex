@@ -1,0 +1,561 @@
+% This package is covered by the LaTeX project public license 
+% (see \url{http://www.latex-project.org/lppl.txt}). 
+% Please report bugs to the author (Michael Palmer, mpalmer@uwaterloo.ca) 
+
+% modifications since 1.1:
+% - added second optional argument to \note (tikz code)
+% - expunged package ifthen, since we require etoolbox anyway
+% - added package name to default pdfcreator string
+% - added 'important' option for applying different note formatting
+% - added 'staggered' option to prevent overlapping placement of notes
+% - added 'scaletopage' option to pick a page other than the first one
+%   in case that one has an atypical size, as sometimes happens. 
+% - added \pagegrid user macro to draw a grid of helplines over top
+%   the included source page.
+
+% In the docs, we should tell the users that the page environment is, in fact,
+% a tikzpicture - so they can use nodes etc inside it. Maybe we should 
+% specify a relative unit for the x axis also? yes, we do now. we also shift
+% the scope, so that the origin is always at the bottom left of the source page. 
+% we also need to add to the docs that the leftnotes env can stay - you don't 
+% need to remove it when you set twocolumn to false. 
+
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{pdfreview}[2019/02/22 v1.20]
+
+\RequirePackage{
+    adjustbox,
+    calc,
+    environ,
+    etoolbox,
+    fp,
+    graphicx,
+    kvoptions,
+    tikz,
+    twoopt,
+    xstring
+}
+
+\usetikzlibrary{calc,arrows,positioning}
+
+% improve file name handling
+\RequirePackage[extendedchars,space]{grffile}
+
+% provide \sout (strikeout)
+\RequirePackage[normalem]{ulem}
+
+\SetupKeyvalOptions{%
+   family=annotation,
+   prefix=prv@,
+}
+
+\DeclareBoolOption[true]{grid}
+\DeclareBoolOption[false]{twocolumn}
+\DeclareBoolOption[false]{notenumbers}
+\DeclareBoolOption[true]{inline}
+\DeclareBoolOption[false]{withnotesonly}
+\DeclareBoolOption[false]{staggered}
+%
+\DeclareStringOption[1]{scaletopage}
+\DeclareStringOption[black!30]{gridcolor}
+\DeclareStringOption[0.75]{bodywidth}
+\DeclareStringOption[{1cm 1cm 1cm 1cm}]{trim}
+\DeclareStringOption[0cm]{trimshift}
+\DeclareStringOption[0.5pt]{bodyframe}
+\DeclareStringOption[noname]{sourcedoc}
+\DeclareStringOption[0]{pageoffset}
+\DeclareStringOption[c]{alignnotes}
+\DeclareStringOption[yellow]{notesbg}
+\DeclareStringOption[red]{important}
+\DeclareStringOption[black]{notesframe}
+\DeclareStringOption[3pt]{notesep}
+\DeclareStringOption[footnotesize]{fontsize}
+\DeclareStringOption[100]{maxscale}
+\DeclareStringOption[2.5cm]{insertpagemargin}
+
+\ProcessKeyvalOptions*
+
+% break up trim options - passing raw kvoptions input through to adjustbox fails. 
+% count spaces
+\StrCount{\prv@trim}{ }[\prv@trimspaces]
+
+\typeout{trim option: \prv@trim}
+\typeout{trim spaces: \prv@trimspaces}
+
+% \ifstrequal from etoolbox doesn't work here
+\IfEq{\prv@trimspaces}{0}%
+  % no spaces - trim all four sides the same 
+  {\edef\prv@trimleft{\prv@trim}%
+   \edef\prv@trimright{\prv@trim}%
+   \edef\prv@trimtop{\prv@trim}%
+   \edef\prv@trimbottom{\prv@trim}%
+  }{\IfEq{\prv@trimspaces}{1}%
+  % one space - apply separate trimming to h and v
+  {\StrCut{\prv@trim}{ }{\prv@trimh}{\prv@trimv}%
+   \edef\prv@trimleft{\prv@trimh}%
+   \edef\prv@trimright{\prv@trimh}%
+   \edef\prv@trimtop{\prv@trimv}%
+   \edef\prv@trimbottom{\prv@trimv}}
+  {% assume it's different parameters for all four sides
+   \StrCut{\prv@trim}{ }{\prv@trimleft}{\prv@trimtwo}%
+   \StrCut{\prv@trimtwo}{ }{\prv@trimbottom}{\prv@trimthree}%
+   \StrCut{\prv@trimthree}{ }{\prv@trimright}{\prv@trimtop}}}
+
+\newcommand{\resettrim}[1][0pt]{% may be needed for figure pages
+   \edef\prv@trimleft{#1}%
+   \edef\prv@trimright{#1}%
+   \edef\prv@trimtop{#1}%
+   \edef\prv@trimbottom{#1}%
+}
+
+\newcommand{\sourcedoc}{\prv@sourcedoc}
+
+% control the split between the included page and the notes pane
+\newlength{\prv@noteswidth}
+\newlength{\prv@sourcebodywidth}
+\newlength{\prv@bodyoffset}
+\newlength{\prv@notesxoffset}
+\newlength{\prv@bodypadding}
+
+% a length for keeping track of bottom of the last note, 
+% to guard against vertical overlap 
+\newlength{\prv@currentnotebottom}
+\newlength{\prv@requestedbottom}
+\newlength{\prv@workingbottom}
+\newlength{\prv@notesboxheight}
+\newcommand{\prv@anchor}{west}
+
+% empty space between body and notes 
+\setlength{\prv@bodypadding}{\prv@notesep}
+
+\newlength{\prv@bodyframewidth}
+\setlength{\prv@bodyframewidth}{\prv@bodyframe}
+
+\newcommand{\prv@notesfont}{\csname \prv@fontsize \endcsname}
+
+\newsavebox{\prv@charbox}
+\sbox{\prv@charbox}{\prv@notesfont\phantom{x}\strut}
+
+\newlength{\prv@xsep}
+\setlength{\prv@xsep}{0.75\wd\prv@charbox}
+
+\newlength{\prv@helpnumwidth}
+\setlength{\prv@helpnumwidth}{\widthof{\prv@notesfont$\prv@maxscale$}+2\prv@xsep}
+
+\RequirePackage[hidelinks]{hyperref}
+\hypersetup{pdfcreator={LaTeX with the pdfreview package}}
+\RequirePackage{bookmark}
+
+\newlength{\prv@notestextwidth}
+\newlength{\prv@pageheight}
+\newlength{\prv@unitheight}
+\newlength{\prv@unitwidth}
+
+\newlength{\prv@currentheight}
+
+\newsavebox{\prv@pagebox}
+\newsavebox{\prv@gridboxright}
+\newsavebox{\prv@gridboxleft}
+
+% global setlength - from https://tex.stackexchange.com/questions/406015/
+\gdef\gsetlength#1#2{%
+  \begingroup
+    \setlength\skip@{#2}
+    \global#1=\skip@
+  \endgroup
+}
+
+\tikzset{
+  notesfont/.style={ % used for both notes and help line numbers
+    font=\prv@notesfont
+  },
+  %
+  sticky/.style={     % set font and graphics, but not size or anchor
+    notesfont,        % operation will shift the whole page up. 
+    draw=\prv@notesframe,
+    fill=\prv@notesbg,
+    rounded corners=0.5pt,
+    inner xsep=\prv@xsep,
+    inner ysep=0.4\ht\prv@charbox,
+    outer ysep=0.5pt,
+    outer xsep=0pt,
+  },
+  %   
+  notes/.style={
+    sticky,
+    anchor=south west,% 't has to be this way, otherwise, the sbox 
+    text width=\prv@notestextwidth,
+    text height=\ht\prv@charbox,
+    alias=NN,
+    append after command={
+      \pgfextra{ % calculate and globally save node height
+        % simplified for height only, from Alain Matthes answer
+        % to https://tex.stackexchange.com/questions/38473/ 
+        % the reason for this is that within tikzpicture the 
+        % \ht operator doesn't work on saveboxes for some reason.
+        % so we are forced to extract the height from the node. 
+        \coordinate (A) at (NN.south);
+        \coordinate (B) at (NN.north);
+        \pgfpointdiff{\pgfpointanchor{A}{center}}%
+                     {\pgfpointanchor{B}{center}}%
+        \pgfmathsetlength{\global\prv@notesboxheight}{\pgf@y}
+      }
+    }
+  },
+  %
+  important/.style={
+    notes,
+    draw=\prv@important
+  },
+  %
+  helpnum/.style={
+    notesfont,
+    draw=none,
+    text=\prv@gridcolor,
+    text width=\prv@helpnumwidth,
+    align=center,
+    inner xsep=0pt,
+    inner ysep=-1em, % hack to squash scale y offset caused by node text 
+  },
+  %
+  grid/.style={
+    draw=\prv@gridcolor, 
+    very thin,
+  },
+  %
+  boxnode/.style={
+    inner sep=0pt,
+    outer sep=0pt,
+    anchor=south west,
+    draw=none
+  },
+  %
+  strutline/.style={
+    draw=white,
+    line width=0pt
+  },
+  %
+  hypertarget/.style={
+    draw=none,
+    inner sep=0pt,
+    outer sep=0pt,
+    alias=targetnode,
+    append after command={
+      node[draw=none,above of=targetnode,yshift=\prv@notesboxheight]
+      {\hypertarget{#1}{}}
+    }
+  },
+  %
+  hyperlink/.style={
+    notes,
+    alias=sourcenode,
+    append after command={
+      let \p1=(sourcenode.north west),
+        \p2=(sourcenode.south east),
+        \n1={\x2-\x1},
+        \n2={\y1-\y2} in
+      node [inner sep=0pt, outer sep=0pt,anchor=north west,at=(\p1)] 
+      {\hyperlink{#1}{\phantom{\rule{\n1}{\n2}}}}
+    }
+  },
+}
+
+\newcommand{\prv@drawgridboxright}{%
+  \ifnumless{\ht\prv@gridboxright}{10}{%
+    \global\sbox{\prv@gridboxright}{%
+    \begin{tikzpicture}[y=\prv@unitheight,grid]%
+    \foreach \y in {0, 4, ..., \prv@maxscale}{%
+      \begin{scope}[yshift=\y\prv@unitheight]%
+        \draw (0,0) -- ++(\prv@noteswidth-\prv@helpnumwidth,0) node[helpnum,anchor=west]{$\y$};
+        \ifnumequal{\y}{\prv@maxscale}{}{%
+        \foreach \z/\w in {1/1,2/2.5,3/1}{%
+           \draw (0,\z) -- ++(\w,0);
+        }}%
+      \end{scope}
+    }
+    \end{tikzpicture}}}{}%
+  \usebox{\prv@gridboxright}%
+}
+
+\newcommand{\prv@drawgridboxleft}{%
+  \ifnumless{\ht\prv@gridboxleft}{10}{%
+    \global\sbox{\prv@gridboxleft}{%
+    \begin{tikzpicture}[y=\prv@unitheight,grid,xscale=-1]%
+    \foreach \y in {0, 4, ..., \prv@maxscale}{%
+      \begin{scope}[yshift=\y\prv@unitheight]%
+        \draw (0,0) -- ++(\prv@noteswidth-\prv@helpnumwidth,0) node[helpnum,anchor=east]{$\y$};
+        \ifnumequal{\y}{\prv@maxscale}{}{%
+        \foreach \z/\w in {1/1,2/2.5,3/1}{%
+           \draw (0,\z) -- ++(\w,0);
+        }}%
+      \end{scope}
+    }
+    \end{tikzpicture}}}{}%
+  \usebox{\prv@gridboxleft}%
+}
+
+\newcounter{prv@offsetpage}
+\newcommand*{\prv@pagelabel}{}
+
+% boolean switch for suppressing output of empty pages
+\newbool{prv@isempty}
+\setbool{prv@isempty}{true}
+
+% boolean that is set if code executes inside page environment
+\newbool{prv@inpage}
+\setbool{prv@inpage}{false}
+
+% flag for noteslist
+\newbool{prv@noteslistempty}
+\setbool{prv@noteslistempty}{true}
+
+\newsavebox{\prv@wrapper}
+
+\newlength{\prv@leftshifted}
+\newlength{\prv@rightshifted}
+
+% flag for initial scaling - we scale dimensions to the first included page
+\newbool{prv@initialscaling}
+\setbool{prv@initialscaling}{false}
+
+\newcommand{\prv@scaledo}{%
+    \gsetlength{\prv@sourcebodywidth}{\prv@bodywidth\textwidth}%
+    \ifprv@twocolumn%
+        \gsetlength{\prv@noteswidth}{0.5\textwidth-0.5\prv@sourcebodywidth-\prv@bodypadding}%
+        \gsetlength{\prv@bodyoffset}{\prv@noteswidth+\prv@bodypadding-\prv@bodyframe}%
+    \else%
+        \gsetlength{\prv@noteswidth}{\textwidth-\prv@sourcebodywidth-\prv@bodypadding}%
+        \gsetlength{\prv@bodyoffset}{0pt}%
+    \fi%
+    % the x offset for the notes is a bit surprising, because the effective 
+    % offset gets altered by the savebox mechanism. This value applies to 
+    % the notes in the right margin; for the left margin, we override it locally
+    % in the leftnotes environment. 
+    \gsetlength{\prv@notesxoffset}{\textwidth-\prv@noteswidth}%
+    \gsetlength{\prv@notestextwidth}{\prv@noteswidth-\prv@helpnumwidth-2\prv@xsep}%
+    \sbox{\prv@pagebox}{%
+        {\setlength{\fboxsep}{0pt}%
+        \adjustbox{clip,trim=\prv@trimleft{} \prv@trimbottom{} \prv@trimright{} \prv@trimtop{},%
+                   width=\prv@sourcebodywidth,fbox=\prv@bodyframe}%
+                   {\includegraphics[page=\prv@scaletopage]%
+                   {\sourcedoc}}%
+    }}%
+    \gsetlength{\prv@pageheight}{\ht\prv@pagebox}%
+    \gsetlength{\prv@unitheight}{\prv@pageheight/\prv@maxscale}%
+    \gsetlength{\prv@unitwidth}{\prv@sourcebodywidth/\prv@maxscale}%
+    \global\setbool{prv@initialscaling}{true}
+}
+
+\NewEnviron{page}[2][]{%
+\ifbool{prv@initialscaling}%
+  {}%
+  {\prv@scaledo}% use first page to scale internal length parameters
+\clearpage%
+% first, lets adjust the horizontal shifting
+\ifnumodd{#2}%
+    {\setlength{\prv@leftshifted}{\prv@trimleft+\prv@trimshift}%
+     \setlength{\prv@rightshifted}{\prv@trimright-\prv@trimshift}}
+    {\setlength{\prv@leftshifted}{\prv@trimleft-\prv@trimshift}%
+     \setlength{\prv@rightshifted}{\prv@trimright+\prv@trimshift}}
+
+%\setlength{\prv@currentnotebottom}{\prv@pageheight}%
+\pgfmathsetlength{\global\prv@currentnotebottom}{\prv@pageheight}%
+\setcounter{prv@offsetpage}{#2+\prv@pageoffset}%
+\ifnumless{\value{prv@offsetpage}}{1}%
+  {\renewcommand*{\prv@pagelabel}{\roman{page}}}%
+  {\renewcommand*{\prv@pagelabel}{\arabic{prv@offsetpage}}}%
+\ifbool{prv@withnotesonly}{}%
+  {\phantomsection%
+   \bookmark[level=1,page=\arabic{page}]{p. \prv@pagelabel}}%
+\begin{lrbox}{\prv@wrapper}%
+\noindent\begin{minipage}[c][\textheight]{\textwidth}%
+\noindent\begin{center}%
+\begin{adjustbox}{width=\textwidth}%
+\begin{tikzpicture}[x=\prv@unitwidth,y=\prv@unitheight,node distance=3pt]%
+\ifprv@twocolumn
+  \ifprv@grid
+    \node[boxnode] at (0,0){\prv@drawgridboxleft};
+  \else
+    \draw[strutline](0,0) -- (\prv@noteswidth,0);
+  \fi
+\fi
+\ifprv@grid
+  \node[boxnode,anchor=south east] at (\textwidth,0) {\prv@drawgridboxright};
+\else
+  \draw[strutline](\textwidth,0) -- ++(-\prv@noteswidth,0);
+\fi
+\begin{scope}
+\setlength{\fboxsep}{0pt}
+\node[boxnode] at (\prv@bodyoffset,0) 
+    {\adjustbox{clip, trim=\prv@leftshifted{} \prv@trimbottom{} \prv@rightshifted{} \prv@trimtop{},%
+               #1,width=\prv@sourcebodywidth,fbox=\prv@bodyframe}%
+               {\includegraphics[page=#2]{\sourcedoc}%
+                }};%
+\end{scope}
+% create a scope that overlays with the source page, in both
+% one- and two-column mode
+\begin{scope}[xshift=\prv@bodyoffset]
+%
+\global\setbool{prv@inpage}{true}
+\BODY
+\global\setbool{prv@inpage}{false}
+%
+\end{scope}
+\end{tikzpicture}%
+\end{adjustbox}%
+\end{center}%
+\end{minipage}%
+\end{lrbox}
+%
+\ifboolexpr{bool {prv@isempty} and bool {prv@withnotesonly}}%
+  {\global\deadcycles=0}%
+  {\noindent\usebox{\prv@wrapper}}%
+\global\setbool{prv@isempty}{true}\ignorespaces
+}
+
+\newenvironment{leftnotes}% locally override the xoffset for the notes. 
+{\ifprv@twocolumn%
+  \setlength{\prv@notesxoffset}{\prv@helpnumwidth}%
+\fi%
+% allow notes to start from the top again in staggered mode
+ % simple \setlength fails here, but \pgfmathsetlength works
+\pgfmathsetlength{\global\prv@currentnotebottom}{\prv@pageheight}}
+%
+{\pgfmathsetlength{\global\prv@currentnotebottom}{\prv@pageheight}}
+
+% a matching no-op environment for the bureaucratically inclined
+\newenvironment{rightnotes}{}{}
+
+% use an insertpage environment for putting out the list of notes if requested
+\newcommand{\prv@noteslist}{\begin{listofnotes}\begin{enumerate}}
+
+\newcounter{note}
+\newsavebox{\prv@notesbox}
+
+\newcommand{\prv@calcbottom}[2]{% 
+  % calculate bottom y to place next note on
+  % arguments: requested y pos, alignment. All other variables are global 
+  %
+  % scale requested bottom position to source page height
+  \FPdiv{\prv@bottomratio}{#1}{\prv@maxscale}%
+  \setlength{\prv@requestedbottom}{\prv@bottomratio\prv@pageheight}%
+  % correct requested bottom position for alignment
+  \ifstrequal{#2}{b}%
+    {}%
+    {\ifstrequal{#2}{c}%
+      {\addtolength{\prv@requestedbottom}{-0.5\prv@notesboxheight}}%
+      {\addtolength{\prv@requestedbottom}{-\prv@notesboxheight}}}%
+  % adjust actual position to avoid overlap where needed. It seems we need two 
+  % steps, since pgf is needed to make it stick globally, but it doesn't take 
+  % the \minof operator. Oooh the manifold joys of LaTeX. 
+  \ifprv@staggered%
+    \setlength{\prv@workingbottom}{\prv@currentnotebottom-\prv@notesboxheight}
+    \gsetlength{\prv@currentnotebottom}%
+        {\minof{\prv@requestedbottom}{\prv@workingbottom}}
+  \else%
+    \gsetlength{\prv@currentnotebottom}{\prv@requestedbottom}%
+  \fi%
+}
+
+% draw a grid of help lines over the source page. We don't 
+% use this as a global option, and the optional argument 
+% to the page environment is already taken; therefore, it 
+% just goes into a user macro. 
+\newcommandtwoopt{\pagegrid}[2][][10]{%
+  \foreach \x in {0,#2,...,100}{
+    \draw[very thin,\prv@gridcolor,#1](0,\x) -- (100,\x);
+    \draw[very thin,\prv@gridcolor,#1](\x,0) -- (\x,100);
+}}
+
+\newcommand{\prv@importantitem}{\bfseries}% 
+
+\newcommandtwoopt{\note}[4][\prv@alignnotes][]{%
+\ifbool{prv@inpage}{%
+    \ifbool{prv@isempty}%
+      {%
+        \ifbool{prv@withnotesonly}%
+          {\phantomsection%
+           \bookmark[level=1,page=\arabic{page}]{p. \prv@pagelabel}}{}%
+        \global\setbool{prv@isempty}{false}%
+      }%
+      {}%
+    \stepcounter{note}%
+    %
+    \begin{scope}[xshift=-\prv@bodyoffset]
+    \ifprv@inline
+        \sbox\prv@notesbox{\node[notes,#2] {%
+        \vspace{-\baselineskip}\newline% hack to force enough height for tabulars
+        \raggedright\setlength{\parindent}{1em}\noindent%
+          \ifprv@notenumbers\arabic{note})\ \fi%
+          #4
+        };}
+        \prv@calcbottom{#3}{#1}
+        \node[hypertarget=note\arabic{note}] at (\prv@notesxoffset,\prv@currentnotebottom){%
+        \bookmark[level=2,dest=note\arabic{note}]{Note \arabic{note}}\usebox{\prv@notesbox}};
+    \else
+        \sbox\prv@notesbox{\node[notes,#2]{12345.};}
+        \prv@calcbottom{#3}{#1}
+        \node[hypertarget=note\arabic{note},hyperlink=noteitem\arabic{note}]
+               at (\prv@notesxoffset,\prv@currentnotebottom){%
+        \bookmark[level=2,dest=note\arabic{note}]{Note \arabic{note}}%
+        \raggedright\setlength{\parindent}{1em}\noindent%
+        \global\setbool{prv@noteslistempty}{false}
+        \IfSubStr{#2}{important}%
+            {\g@addto@macro\prv@noteslist{\item%
+                 \hypertarget{noteitem\arabic{enumi}}{}{\prv@importantitem{}#4}%
+                 \hyperlink{note\arabic{enumi}}{~$\uparrow$}}}%
+            {\g@addto@macro\prv@noteslist{\item%
+                 \hypertarget{noteitem\arabic{enumi}}{}{#4}%
+                 \hyperlink{note\arabic{enumi}}{~$\uparrow$}}}%
+        %
+        \arabic{note}.
+        };
+    \fi
+    \end{scope}}
+    {\PackageWarning{pdfreview}{Not typesetting note outside of page environment}}%
+}% end \note
+
+\newcommand{\cnote}[3][]{\note[c][#1]{#2}{#3}}
+\newcommand{\bnote}[3][]{\note[b][#1]{#2}{#3}}
+\newcommand{\tnote}[3][]{\note[t][#1]{#2}{#3}}
+
+\newcommandtwoopt{\remark}[3][100][c]{\note[#2]{#1}{#3}}
+
+% provide for extra pages with text
+\newenvironment{insertpage}[1][General comments]%{}{}%
+{\clearpage%
+\phantomsection\addcontentsline{toc}{section}{#1}%
+\newgeometry{margin=\prv@insertpagemargin}
+\section*{#1}}
+%
+{\clearpage\aftergroup\restoregeometry}
+
+% noteslist is like insertpage, except that we don't restore the geometry
+% this will keep the modified margins in place for other appendices like 
+% bibliographies
+\newenvironment{listofnotes}%
+{\clearpage%
+\phantomsection\addcontentsline{toc}{section}{List of notes}%
+\newgeometry{margin=\prv@insertpagemargin}
+\section*{List of notes}}
+%
+{\clearpage}
+
+
+\AtBeginDocument{% divide up the page. Use package geometry if not yet loaded by user. 
+    \@ifpackageloaded{geometry}{}% use of both package options and \newgeometry is intentional. 
+        {\RequirePackage[hmargin=0.25cm,vmargin=2.5cm]{geometry}%
+         \newgeometry{hmargin=0.25cm,vmargin=2.5cm}}%
+}%
+
+\AtEndDocument{%
+\ifprv@inline% do nothing
+\else% close the notes list and print it out
+    \ifbool{prv@noteslistempty}{}{%
+        \g@addto@macro\prv@noteslist{\end{enumerate}\end{listofnotes}}
+        \clearpage
+        \prv@noteslist
+    }
+\fi}
+
+\newcommand{\ssout}[1]{\,\textbf{#1}\,}

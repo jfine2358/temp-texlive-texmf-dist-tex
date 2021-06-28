@@ -1,0 +1,51 @@
+%
+% pxpdfpages.sty
+% written by Hironobu Yamashita (@aminophen)
+%
+% This package is part of the plautopatch bundle.
+% https://github.com/aminophen/plautopatch
+%
+% This package is expected to be compatible with
+%   * pdfpages.sty
+%     (2015/07/19 v0.5a -- 2017/10/31 v0.5l)
+%   * plcore.ltx in platex
+%     (2001/09/26 v1.2a -- 2018/09/02 v1.3)
+%
+
+%% package declaration
+\NeedsTeXFormat{pLaTeX2e}
+\ProvidesPackage{pxpdfpages}
+  [2018/08/20 v0.1 Patch to pdfpages for (u)pLaTeX]
+
+%% preparations
+\def\pxpdpg@pkgname{pxpdfpages}
+\def\pxpdpg@warn{\PackageWarningNoLine\pxpdpg@pkgname}
+\def\pxpdpg@info{\PackageInfo\pxpdpg@pkgname}
+
+%% load it
+\RequirePackageWithOptions{pdfpages}
+\RequirePackage{pxatbegshi}% pdfpages requires atbegshi
+
+%% patch internal for pdfpages to work with tombow
+%% Note: this code should be copied to gentombow.sty!
+\def\pxpdpg@patch@pdfpages{%
+  \RequirePackage{etoolbox}
+  \patchcmd{\AM@output}{%
+    \setlength{\@tempdima}{\AM@xmargin}%
+    \edef\AM@xmargin{\the\@tempdima}%
+    \setlength{\@tempdima}{\AM@ymargin}%
+    \edef\AM@ymargin{\the\@tempdima}%
+  }{%
+    \setlength{\@tempdima}{\AM@xmargin\iftombow+1in\fi}%
+    \edef\AM@xmargin{\the\@tempdima}%
+    \setlength{\@tempdima}{\AM@ymargin\iftombow-1in\fi}%
+    \edef\AM@ymargin{\the\@tempdima}%
+  }
+  {\pxpdpg@info{Patch for pdfpages applied}}
+  {\pxpdpg@warn{Patch for pdfpages failed}}%
+  }
+\AtBeginDocument{\@ifpackageloaded{pdfpages}{\pxpdpg@patch@pdfpages}{}}
+
+%% all done
+
+\endinput

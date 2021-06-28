@@ -1,0 +1,154 @@
+%%
+%% This is file `pdfpc-movie.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% pdfpc-movie.dtx  (with options: `pdfpc-movie.sty,package')
+%%  pdfpc-movie.dtx
+%%  Copyright 2018 Sebastian Friedl
+%% 
+%%  This work may be distributed and/or modified under the
+%%  conditions of the LaTeX Project Public License, either version 1.3c
+%%  of this license of (at your option) any later version.
+%%  The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%%  and version 1.3c or later is part of all distributions of LaTeX
+%%  version 2008/05/04 or later.
+%% 
+%%  This work has the LPPL maintenance status 'maintained'.
+%%  Current maintainer of the work is Sebastian Friedl
+%% 
+%%  This work consists of the files pdfpc-movie.dtx, pdfpc-movie.ins,
+%%  pdfpc-movie-doc.dtx and the derived file pdfpc-movie.sty
+%% 
+%% \CharacterTable
+%%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%%   Digits        \0\1\2\3\4\5\6\7\8\9
+%%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%%   Dollar        \$     Percent       \%     Ampersand     \&
+%%   Acute accent  \'     Left paren    \(     Right paren   \)
+%%   Asterisk      \*     Plus          \+     Comma         \,
+%%   Minus         \-     Point         \.     Solidus       \/
+%%   Colon         \:     Semicolon     \;     Less than     \<
+%%   Equals        \=     Greater than  \>     Question mark \?
+%%   Commercial at \@     Left bracket  \[     Backslash     \\
+%%   Right bracket \]     Circumflex    \^     Underscore    \_
+%%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%%   Right brace   \}     Tilde         \~}
+\ProvidesPackage{pdfpc-movie}%
+    [2018/07/21 v1.0 pdfpc compatible hyperlinking of movies]
+\NeedsTeXFormat{LaTeX2e}
+\RequirePackage{etoolbox}
+\AtEndPreamble{\RequirePackage{hyperref}}
+\RequirePackage{pgfkeys}
+\newif\if@pdfpcmovie@autostart
+\newif\if@pdfpcmovie@loop
+\newif\if@pdfpcmovie@noprogress
+\newcount\pdfpcmovie@remopts
+\newbox\pdfpcmovie@posterbox
+\newdimen\pdfpcmovie@posterwd
+\newdimen\pdfpcmovie@posterht
+\newdimen\pdfpcmovie@posterdp
+\pgfkeys{%
+    /pdfpc-movie/width/.cd, .value required,
+        .code={\pdfpcmovie@posterwd=#1\relax},
+    /pdfpc-movie/height/.cd, .value required,
+        .code={\pdfpcmovie@posterht=#1\relax},
+    /pdfpc-movie/depth/.cd, .value required,
+        .code={\pdfpcmovie@posterdp=#1\relax},
+    /pdfpc-movie/autostart/.cd, .value forbidden,
+        .code={%
+            \@pdfpcmovie@autostarttrue
+            \advance\pdfpcmovie@remopts 1\relax},
+    /pdfpc-movie/loop/.cd, .value forbidden,
+        .code={%
+            \@pdfpcmovie@looptrue
+            \advance\pdfpcmovie@remopts 1\relax},
+    /pdfpc-movie/noprogress/.cd, .value forbidden,
+        .code={%
+            \@pdfpcmovie@noprogresstrue
+            \advance\pdfpcmovie@remopts 1\relax},
+    /pdfpc-movie/start/.cd, .value required,
+        .code={%
+            \def\pdfpcmovie@start{#1}
+            \advance\pdfpcmovie@remopts 1\relax},
+    /pdfpc-movie/stop/.cd, .value required,
+        .code={%
+            \def\pdfpcmovie@stop{#1}
+            \advance\pdfpcmovie@remopts 1\relax},
+}
+\def\pdfpcmovie{}
+\renewcommand{\pdfpcmovie}[3][]{%
+    \leavevmode%
+    \IfFileExists{\@currdir #3}{}{\PackageWarning{pdfpc-movie}{%
+            The movie file "#3" could not be found in the current
+            directory, where it must reside for viewing.}%
+    }%
+    \setbox\pdfpcmovie@posterbox=\hbox{#2}%
+    \@pdfpcmovie@autostartfalse%
+    \@pdfpcmovie@loopfalse%
+    \@pdfpcmovie@noprogressfalse%
+    \let\pdfpcmovie@start\@empty%
+    \let\pdfpcmovie@stop\@empty%
+    \pdfpcmovie@posterwd=\wd\pdfpcmovie@posterbox%
+    \pdfpcmovie@posterht=\ht\pdfpcmovie@posterbox%
+    \pdfpcmovie@posterdp=\dp\pdfpcmovie@posterbox%
+    %
+    \pdfpcmovie@remopts=0%
+    \pgfkeys{/pdfpc-movie/.cd, #1}%
+    \ifnum\pdfpcmovie@remopts>0\def\pdfpcmovie@params{?}%
+    \else\def\pdfpcmovie@params{}%
+    \fi%
+    %
+    \if@pdfpcmovie@autostart%
+        \edef\pdfpcmovie@params{\pdfpcmovie@params autostart}%
+        \advance\pdfpcmovie@remopts -1\relax%
+        \ifnum\pdfpcmovie@remopts>0%
+            \edef\pdfpcmovie@params{\pdfpcmovie@params\&}%
+        \fi%
+    \fi%
+    %
+    \if@pdfpcmovie@loop%
+        \edef\pdfpcmovie@params{\pdfpcmovie@params loop}%
+        \advance\pdfpcmovie@remopts -1\relax%
+        \ifnum\pdfpcmovie@remopts>0%
+            \edef\pdfpcmovie@params{\pdfpcmovie@params\&}%
+        \fi%
+    \fi%
+    %
+    \if@pdfpcmovie@noprogress%
+        \edef\pdfpcmovie@params{\pdfpcmovie@params noprogress}%
+        \advance\pdfpcmovie@remopts -1\relax%
+        \ifnum\pdfpcmovie@remopts>0%
+            \edef\pdfpcmovie@params{\pdfpcmovie@params\&}%
+        \fi%
+    \fi%
+    %
+    \ifx\pdfpcmovie@start\@empty\else%
+        \edef\pdfpcmovie@params{\pdfpcmovie@params start=\pdfpcmovie@start}%
+        \advance\pdfpcmovie@remopts -1\relax%
+        \ifnum\pdfpcmovie@remopts>0%
+            \edef\pdfpcmovie@params{\pdfpcmovie@params\&}%
+        \fi%
+    \fi%
+    %
+    \ifx\pdfpcmovie@stop\@empty\else%
+        \edef\pdfpcmovie@params{\pdfpcmovie@params stop=\pdfpcmovie@stop}%
+        \advance\pdfpcmovie@remopts -1\relax%
+        \ifnum\pdfpcmovie@remopts>0%
+            \edef\pdfpcmovie@params{\pdfpcmovie@params\&}%
+        \fi%
+    \fi%
+    %
+    %
+    %
+    \wd\pdfpcmovie@posterbox=\pdfpcmovie@posterwd%
+    \ht\pdfpcmovie@posterbox=\pdfpcmovie@posterht%
+    \dp\pdfpcmovie@posterbox=\pdfpcmovie@posterdp%
+    \href{run:#3\pdfpcmovie@params}{\box\pdfpcmovie@posterbox}%
+}
+\endinput
+%%
+%% End of file `pdfpc-movie.sty'.

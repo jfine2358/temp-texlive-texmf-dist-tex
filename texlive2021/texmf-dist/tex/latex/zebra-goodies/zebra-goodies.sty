@@ -1,0 +1,120 @@
+%%
+%% This is file `zebra-goodies.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% zebra-goodies.dtx  (with options: `package')
+%% Copyright (C) 2016-2019, Ruini Xue <xueruini@gmail.com>
+%% 
+%% It may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License (LPPL), either version 1.3c of
+%% this license or (at your option) any later version.  The latest
+%% version of this license is in the file:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+
+
+\ProvidesPackage{zebra-goodies}
+[2019/07/04 0.8.0 Easy Notes Taking]
+\RequirePackage{kvoptions}
+\SetupKeyvalOptions{
+  family=zebra,
+  prefix=zebr@,
+  setkeys=\kvsetkeys}
+\DeclareBoolOption{draft}
+\DeclareComplementaryOption{final}{draft}
+\DeclareBoolOption{microtype}
+\setkeys{zebra}{draft,microtype}
+\ProcessKeyvalOptions{zebra}
+\ifzebr@microtype
+  \RequirePackage{microtype}
+\fi
+\RequirePackage{xcolor}
+\RequirePackage{tikzpagenodes}
+\RequirePackage{marginnote}
+\@ifundefined{dbend}{\RequirePackage{manfnt}}{}
+\newlength{\zebr@tempdima}
+\newcount{\zebr@tikzpage}
+\newcommand*{\zebr@marginnote}[1]{%
+  \begin{tikzpicture}[remember picture, overlay]%
+    \pgfextractx{\zebr@tempdima}{\pgfpointanchor{current page text area}{center}}%
+    \global\zebr@tempdima=\zebr@tempdima
+    \global\zebr@tikzpage=\oddpage@page
+  \end{tikzpicture}%
+  \begingroup
+    \ifdim\zebr@tempdima>0pt \reversemarginpar\fi
+    \marginnote{#1}%
+  \endgroup% resets \reversemarginpar
+}
+\def\zebr@note{%
+  \ifzebr@draft\expandafter\zebr@note@\else\expandafter\@gobblefour\fi}
+\newcommand{\zebr@note@}[4]{%
+  \zebr@marginnote{\textcolor{#2}{\dbend}}%
+  \expandafter\stepcounter{zebr@num@#1}%
+  \textcolor{#2}{[\colorbox[gray]{0.97}{%
+      \textcolor{#2!70!black}{%
+        \textsc{\MakeLowercase{\MakeUppercase#1}}
+        {\expandafter\csname thezebr@num@#1\endcsname}\texttt{#3}:}} #4]}}
+\newcommand{\zebr@prepend}[2]{%
+  \ifx\relax#2\relax\relax\else#1#2\fi}
+\def\zebr@noteslist{}
+\def\zebranewnote#1#2{%
+  \g@addto@macro\zebr@noteslist{,#1}%
+  \expandafter\newcounter\expandafter{zebr@num@#1}
+  \expandafter\gdef\csname zebr@color@#1\endcsname{#2}
+  \expandafter\newcommand\csname zebra#1\endcsname[2][]{%
+    \zebr@note{#1}{#2}{\zebr@prepend{@}{##1}}{##2}}
+  \@ifundefined{#1}{%
+    \expandafter\def\csname #1\endcsname{\csname zebra#1\endcsname}}{%
+    \PackageWarning{zebra}{'\textbackslash{#1}' has been taken.
+      Use '\textbackslash{zebra#1}' instead.}}}
+\zebranewnote{todo}{purple}
+\zebranewnote{fixed}{teal}
+\zebranewnote{comment}{blue}
+\zebranewnote{note}{violet}
+\zebranewnote{placeholder}{gray}
+\def\zebr@listnotes{%
+  \ifzebr@draft\zebr@listnotes@\fi}
+\def\zebr@listnotes@{%
+  \def\temp@a{}
+  \edef\temp@noteslist{\expandafter\@gobble\zebr@noteslist}
+  \@for\temp@b:=\temp@noteslist\do{%
+    \expandafter\ifnum\expandafter\value\expandafter{zebr@num@\temp@b} > 0%
+      \def\temp@c{\expandafter\csname thezebr@num@\temp@b\endcsname}
+      \edef\temp@d{\noexpand\textcolor{%
+          \expandafter\csname zebr@color@\temp@b\endcsname}{\temp@b}%
+        \noexpand &  \temp@c\noexpand\\}
+      \expandafter\g@addto@macro\expandafter\temp@a\expandafter{\temp@d}%
+    \fi}
+  \ifx\temp@a\@empty\else%
+    \noindent\dotfill\par
+    \section*{Zebra Notes}
+    \par \medskip
+    \begin{center}
+      \begin{tabular}{lr}
+        \hline
+        \textbf{Type} & \textbf{Number} \\\hline
+        \temp@a
+        \hline
+      \end{tabular}
+    \end{center}
+  \fi}
+\AtEndDocument{\zebr@listnotes}
+\definecolor{zebrablue}{HTML}{4F81BD}
+\definecolor{zebrared}{HTML}{C0504D}
+\definecolor{zebragreen}{HTML}{9BBB00}
+\definecolor{zebrapurple}{HTML}{9F4C7C}
+\definecolor{zebrayellow}{HTML}{D9CD2E}
+\definecolor{zebragreen2}{HTML}{00E000}
+%% 
+%% This work is "maintained" (as per LPPL maintenance status) by
+%%   Ruini Xue.
+%% 
+%% This work consists of the file  zebra-goodies.dtx
+%%           and the derived files zebra-goodies.ins,
+%%                                 zebra-goodies.pdf and
+%%                                 zebra-goodies.sty.
+%% 
+%%
+%% End of file `zebra-goodies.sty'.

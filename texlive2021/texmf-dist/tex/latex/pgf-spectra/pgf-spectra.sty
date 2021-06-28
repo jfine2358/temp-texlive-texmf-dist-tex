@@ -1,0 +1,975 @@
+% Hugo Gomes @ 15/04/2016 (v1.0)
+% Hugo Gomes @ 15/03/2021 (v2.0.0)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\NeedsTeXFormat{LaTeX2e}%
+\ProvidesPackage{pgf-spectra}[15/03/2021 pgf-spectra v2.0.0]%
+\RequirePackage{tikz}%
+\DeclareOption{LSE}{\input{./spectra.data.LSE.tex}}%
+\DeclareOption{NIST}{\input{./spectra.data.NIST.tex}}%
+\ExecuteOptions{NIST}%
+\ProcessOptions\relax%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{wlIRcolor}{rgb}{.3157,.2373,.2373}% NEW
+\definecolor{wlUVcolor}{rgb}{.3,.2568,.3}% NEW
+%
+\newif\ifwl@absorption%
+\newif\ifcur@elem@exist%
+\newif\ifwl@drawaxis%
+\newif\ifwl@axislabel%
+\newif\ifwl@intensity%
+\newif\ifwl@redshift% NEW
+\newif\ifwl@RSvalue% NEW
+% defining PGF keys
+\pgfkeys{/wl/.cd,%
+element/.get=\wl@element,%
+element/.store in=\wl@element,%
+element/.default=NONE,%
+width/.get=\wl@width,%
+width/.store in=\wl@width,%
+width/.default={0.9\textwidth},%
+height/.get=\wl@height,%
+height/.store in=\wl@height,%
+height/.default=1cm,%
+back/.get=\wl@back,%
+back/.store in=\wl@back,%
+back/.default=black,%
+backIRUV/.get=\wl@backnotvisible,% NEW
+backIRUV/.store in=\wl@backnotvisible,% NEW
+backIRUV/.default=black,% NEW
+IRcolor/.get=\wl@IRcolor,% NEW
+IRcolor/.store in=\wl@IRcolor,% NEW
+IRcolor/.default=wlIRcolor,% NEW
+UVcolor/.get=\wl@UVcolor,% NEW
+UVcolor/.store in=\wl@UVcolor,% NEW
+UVcolor/.default=wlUVcolor,% NEW
+charge/.get=\wl@charge,%
+charge/.store in=\wl@charge,%
+charge/.default=0,%
+Imin/.get=\wl@intmin,%
+Imin/.store in=\wl@intmin,%
+Imin/.default=0,%
+lines/.get=\wl@lines,%
+lines/.store in=\wl@lines,%
+lines/.default={},%
+line width/.get=\wl@linewidth,%
+line width/.store in=\wl@linewidth,%
+line width/.default=1pt,%
+begin/.get=\wl@begin,%
+begin/.store in=\wl@begin,%
+begin/.default=380,%
+end/.get=\wl@end,%
+end/.store in=\wl@end,%
+end/.default=780,%
+axis step/.get=\wl@axisstep,%
+axis step/.store in=\wl@axisstep,%
+axis step/.default=20,%
+axis ticks/.get=\wl@axisticks,% NEW
+axis ticks/.store in=\wl@axisticks,% NEW
+axis ticks/.default=0,% NEW
+axis color/.get=\wl@axiscolor,%
+axis color/.store in=\wl@axiscolor,%
+axis color/.default=black,%
+axis font/.get=\wl@axisfont,%
+axis font/.store in=\wl@axisfont,%
+axis font/.default={\tiny},%
+axis font color/.get=\wl@axisfontcolor,%
+axis font color/.store in=\wl@axisfontcolor,%
+axis font color/.default=white,%
+label position/.get=\wl@labelposition,%
+label position/.store in=\wl@labelposition,%
+label position/.default={west},%
+label before text/.get=\wl@labelbtext,%
+label before text/.store in=\wl@labelbtext,%
+label before text/.default={},%
+label after text/.get=\wl@labelatext,%
+label after text/.store in=\wl@labelatext,%
+label after text/.default={},%
+label font/.get=\wl@labelfont,%
+label font/.store in=\wl@labelfont,%
+label font/.default={\bfseries\small},%
+label font color/.get=\wl@labelfontcolor,%
+label font color/.store in=\wl@labelfontcolor,%
+label font color/.default=black,%
+gamma/.get=\wl@gamma,%
+gamma/.store in=\wl@gamma,%
+gamma/.default=0.8,%
+brightness/.get=\wl@brightness,%
+brightness/.store in=\wl@brightness,%
+brightness/.default=1,%
+line intensity/.get=\wl@lineint,%
+line intensity/.store in=\wl@lineint,%
+line intensity/.default=100,%
+relative intensity threshold/.get=\wl@relintthresh,%
+relative intensity threshold/.store in=\wl@relintthresh,%
+relative intensity threshold/.default=0.25,%
+absorption/.is if=wl@absorption,%
+axis/.is if=wl@drawaxis,%
+label/.is if=wl@axislabel,%
+relative intensity/.is if=wl@intensity,%
+redshift/.get=\wl@redshift,% NEW
+redshift/.store in=\wl@redshift,% NEW
+redshift/.default={},% NEW
+show redshift value/.is if=wl@RSvalue% NEW
+}%
+% setting keys with default values
+\pgfkeys{/wl/.cd,element,width,height,back,backIRUV,IRcolor,UVcolor,charge,Imin,lines,line width,begin,end,% NEW -> backIRUV,IRcolor,UVcolor
+axis color,axis font,axis font color,axis step,axis ticks,label position,label before text,label after text,label font,label font color,gamma,brightness,line intensity,%
+relative intensity threshold,absorption=false,axis=false,label=false,relative intensity=false,redshift,show redshift value=false}% NEW -> redshift, show redshift value
+% strings for \ifx tests
+\def\wlN@NE{NONE}%
+\def\wl@ll{all}%
+\def\wl@visible{visible}%
+\def\wl@visible@list{visible,visible5,visible10,visible15,visible20,visible25,visible30,visible35,visible40,visible45,visible50,visible55,visible60,visible65,visible70,visible75,visible80,visible85,visible90,visible95,visible100}%
+\def\wl@label@position@list{west,north west,north,north east,east,south east,south,south west}%
+\def\wl@redshift@D{D}% NEW
+%%%% COMMANDS -------------------------------------------------------------------------------->
+% commands ##################################################
+\newif\ifpgfspectra@StyleIsDef\pgfspectra@StyleIsDeffalse% NEW
+% \pgfspectraStyle[options]% NEW
+\def\pgfspectraStyle[#1]{\pgfspectraStyleReset\pgfspectra@StyleIsDeftrue\relax\tikzset{/wl/.cd,#1}%
+\def\pgfspectra@DoStyle{\tikzset{/wl/.cd,#1}}% applies storing user style for future use
+}% NEW
+% \pgfspectraStyleReset% NEW
+\def\pgfspectraStyleReset{\pgfspectra@StyleIsDeffalse\tikzset{/wl/.cd,%
+element=NONE,width=0.9\textwidth,height=1cm,back=black,backIRUV=black,IRcolor=wlIRcolor,UVcolor=wlUVcolor,%
+charge=0,Imin=0,lines={},line width=1pt,begin=380,end=780,axis color=black,axis font=\tiny,axis font color=white,axis step=20,axis ticks=0,label position=west,%
+label before text={},label after text={},label font=\bfseries\small,label font color=black,gamma=0.8,brightness=1,line intensity=100,%
+relative intensity threshold=0.25,absorption=false,axis=false,label=false,relative intensity=false,redshift={},show redshift value=false}}% NEW
+% --------------- The main command to draw the spectra -----------------------------------------
+% \pgfspectra[options]
+\def\pgfspectra{\@ifnextchar[\wl@pgfspectra@withoptions{\wl@pgfspectra@nooptions}}%
+\def\wl@pgfspectra@nooptions{\wl@pgfspectra@continuous(0.9\textwidth,1cm)}%
+% ##########################################################
+\def\wl@pgfspectra@continuous(#1,#2){\ignorespaces%
+\begin{tikzpicture}%
+\pgfmathparse{#1/400}\edef\xscale{\pgfmathresult}
+\pgfmathparse{1.4*\xscale+.09*\linewidth/\wl@width}\edef\wl@linewidth{\pgfmathresult}% NEW {\xscale} -> {1.4*\xscale+.09*\linewidth/\wl@width}
+\foreach \x in {380,...,780}%
+        {%
+        \wlcolor{\x}%
+        \pgfmathparse{(\x-380)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+        \draw[wl@temp,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,#2);%
+        }%
+\end{tikzpicture}%
+}%
+% ##########################################################
+\def\wl@pgfspectra@withoptions[#1]{\ignorespaces%
+% setting default values or user style
+\ifpgfspectra@StyleIsDef\pgfspectraStyleReset\pgfspectra@DoStyle\pgfspectra@StyleIsDeftrue\relax\else\pgfspectraStyleReset\relax\fi% NEW
+% process options (key values)
+\pgfkeys{/wl/.cd,#1}%
+% axis height
+\setbox0=\hbox{\wl@axisfont\selectfont380}\edef\@wl@axis@height{\the\ht0}%
+% process visible background (visible+opacity)
+\wl@counta=0%
+\wl@countb=-1%
+\@for\@myarg:=\wl@visible@list\do{%
+            \ifx\wl@back\@myarg\wl@countb=\wl@counta\fi%
+            \advance\wl@counta by1%
+            }%
+\ifnum\wl@countb=-1\edef\@visible@opacity{1}\else% NEW
+\ifnum\wl@countb=0\let\wl@back\wl@visible\edef\@visible@opacity{.5}\else%
+\ifnum\wl@countb>0\let\wl@back\wl@visible\pgfmathparse{.05*\wl@countb}\edef\@visible@opacity{\pgfmathresult}\fi\fi\fi%
+%back color: \wl@back\\ debug
+% ----------------------------------------------------------------------------------------------------------
+% check limits... % NEW
+\ifnum\wl@end<10\relax\def\wldez{10}\let\wl@end\wldez\fi%
+\ifnum\wl@end>4000\relax\def\wlquatromil{4000}\let\wl@end\wlquatromil\fi%
+\ifnum\wl@begin<10\relax\def\wldez{10}\let\wl@begin\wldez\fi%
+\ifnum\wl@begin>4000\relax\def\wlquatromil{4000}\let\wl@begin\wlquatromil\fi%
+% ----------------------------------------------------------------------------------------------------------
+% verifying redshift key
+\ifx\wl@redshift\@empty\relax%
+\wl@redshiftfalse%
+\else%
+\wl@processredshiftkey\wl@redshift\relax%
+\fi%
+% ----------------------------------------------------------------------------------------------------------
+% if no element provided draws continuous spectrum with options or user list of lines
+\ifx\wl@element\wlN@NE%no element by the user
+    \ifx\wl@elt@chemsym\undefined\else\let\wl@elt@chemsym\undefined\fi%
+    \ifx\wl@lines\@empty%no lines by the user => continuous spectrum
+    % draws the continuous spectrum width options (default or by the user)
+    \begin{tikzpicture}%
+        \pgfkeys{/wl/.cd,#1}% NEW
+        \pgfmathparse{\wl@width/(abs(\wl@end-\wl@begin))}\edef\xscale{\pgfmathresult}%
+        \ifwl@drawaxis%draws the axis
+        \wl@utils@draw@axis%
+        \fi%\ifwl@drawaxis
+        \ifwl@axislabel%put the label
+        \wl@utils@put@label%
+        \fi%\ifwl@axislabel
+        \let\wl@back\wl@visible%
+        \let\wl@background@UVcolor\wl@backnotvisible\let\wl@background@IRcolor\wl@backnotvisible\relax%
+        \wl@utils@drawbackground{\@visible@opacity*\wl@brightness}%
+    \end{tikzpicture}%
+    \let\wl@list@@\@empty%
+    \else% lines by the user
+    \edef\wl@list@@{\wl@lines}%
+    \let\wl@background@UVcolor\wl@backnotvisible\let\wl@background@IRcolor\wl@backnotvisible\relax%
+    \fi%\wl@lines\@empty
+\else%\wl@element\wlN@NE
+    % else get element(s) data
+    \wl@countc=0%
+    \wl@countd=1%
+    \@for\@myarg:=\wl@element\do{\advance\wl@countc by1}%count number of elements
+    \wl@addt@list{}{}%
+    \@for\@myarg:=\wl@element\do{%
+            \cur@elem@existtrue%
+            \def\wl@elt@chemsym{NOT FOUND!}%
+            \def\@search@result@err{NOT FOUND!}%
+            \wl@elt@data{\@myarg}\relax%
+            % check if element provided exists
+            \ifx\@search@result@err\wl@elt@chemsym Element\ ``\@myarg'' with charge ``\wl@charge'' not found!\cur@elem@existfalse\else%
+            % if exists, set the wavelength's list
+            \wl@set@element@list{\wl@elt@elemdata}{\wl@elt@Imax}%
+            \fi%\@search@result@err\wl@elt@chemsym
+            \ifcur@elem@exist\ifnum\wl@countd<\wl@countc\wl@addt@list{\wl@list@@}{,}\fi\fi%
+            \advance\wl@countd by1%
+            }%end do
+\fi%\wl@element\wlN@NE
+% check if there are lines to draw and make the spectrum
+    \ifx\wl@list@@\@empty\ifx\wl@element\wlN@NE\else Element\ ``\wl@element'' with charge ``\wl@charge'' have no lines to display.\fi\else%
+        \ifwl@absorption%absortion spectrum
+        \begin{tikzpicture}%
+                \pgfkeys{/wl/.cd,#1}% NEW
+                \pgfmathparse{\wl@width/(abs(\wl@end-\wl@begin))}\edef\xscale{\pgfmathresult}%
+                \ifwl@drawaxis%draws the axis
+                \wl@utils@draw@axis%
+                \fi%\ifwl@drawaxis
+                \ifwl@axislabel%put the label
+                \wl@utils@put@label%
+                \fi%\ifwl@axislabel
+                \let\wl@back\wl@visible%
+                \let\wl@background@UVcolor\wl@UVcolor\let\wl@background@IRcolor\wl@IRcolor\relax%
+                \wl@utils@drawbackground{\wl@brightness}%
+                % draws the lines
+                \wl@utils@drawabsorptionlines%
+        \end{tikzpicture}%
+        \else%emission spectrum
+        % draws the spectrum
+        \ifx\wl@back\wl@visible%visible background
+        \begin{tikzpicture}%
+                \pgfkeys{/wl/.cd,#1}% NEW
+                \pgfmathparse{\wl@width/(abs(\wl@end-\wl@begin))}\edef\xscale{\pgfmathresult}%
+                \ifwl@drawaxis%draws the axis
+                \wl@utils@draw@axis%
+                \fi%\ifwl@drawaxis
+                \ifwl@axislabel%put the label
+                \wl@utils@put@label%
+                \fi%\ifwl@axislabel
+                \let\wl@background@UVcolor\wl@backnotvisible\let\wl@background@IRcolor\wl@backnotvisible\relax%
+                \wl@utils@drawbackground{\@visible@opacity*\wl@brightness}%
+                \wl@utils@drawemissionlines% emission lines
+        \end{tikzpicture}%
+        \else%without visible background
+        \begin{tikzpicture}%
+                \pgfkeys{/wl/.cd,#1}% NEW
+                \pgfmathparse{\wl@width/(abs(\wl@end-\wl@begin))}\edef\xscale{\pgfmathresult}%
+                \ifwl@drawaxis%draws the axis
+                \wl@utils@draw@axis%
+                \fi%\ifwl@drawaxis
+                \ifwl@axislabel%put the label
+                \wl@utils@put@label%
+                \fi%\ifwl@axislabel
+                \let\wl@background@UVcolor\wl@backnotvisible\let\wl@background@IRcolor\wl@backnotvisible\relax%
+                \wl@utils@drawbackground{0}% dummy argument
+                \wl@utils@drawemissionlines% emission lines
+        \end{tikzpicture}%
+        \fi%\wl@back\@visible
+        \fi%\ifwl@absorption
+    \fi% \wl@list@@\@empty
+}%
+% ##########################################################
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% get individual line data from one element of the array data
+\def\wl@get@line@info[#1 #2 #3]{%
+\def\@currentline@wl{#1}% return
+\def\@currentline@int{#2}% return
+\def\@currentline@charge{#3}% return
+}%
+% ######################################################################
+% ################### \wl@set@element@list ####################################
+% ######################################################################
+%
+% \wl@set@element@list{\wl@elt@elemdata}{\wl@elt@Imax}
+% RETURN: \wl@list@@ -> (wl1,wl2,...)
+%           or if relative intensity true (between 0 and 1)
+%                \wl@list@@ -> (wl1/int1,wl2/int2,...)
+%
+\newif\ifwl@first% for first ocurrence of Imin
+\def\wl@set@element@list#1#2{\ignorespaces% \wl@elt@Imax
+\wl@firsttrue%
+\wl@counta=0%
+\wl@countb=1%
+\pgfmathparse{int(\wl@intmin*100)}\edef\@wl@intmin{\pgfmathresult}%intensity percentage
+\ifnum\@wl@intmin=0% include all intensities
+\ifx\wl@ll\wl@charge%ALL lines
+\@for\@myarg:=#1\do{\advance\wl@counta by1}%count all entries
+        \ifwl@intensity%
+        \@for\@myarg:=#1%
+        \do{%
+        \expandafter\wl@get@line@info\@myarg%
+        \pgfmathparse{\wl@relintthresh+(1-\wl@relintthresh)*\@currentline@int/#2}\edef\wl@intensity@to@list{\pgfmathresult}%
+        \ifnum\wl@countb<\wl@counta\wl@addt@list{\wl@list@@}{\@currentline@wl/\wl@intensity@to@list,}\else%
+        \wl@addt@list{\wl@list@@}{\@currentline@wl/\wl@intensity@to@list}\fi%
+        \advance\wl@countb by1%
+        }%END do
+        \else%
+        \@for\@myarg:=#1%
+        \do{%
+        \expandafter\wl@get@line@info\@myarg%
+        \ifnum\wl@countb<\wl@counta\wl@addt@list{\wl@list@@}{\@currentline@wl,}\else%
+        \wl@addt@list{\wl@list@@}{\@currentline@wl}\fi%
+        \advance\wl@countb by1%
+        }%END do
+        \fi%
+\else% lines for one specific charge
+\@for\@myarg:=#1\do{\expandafter\wl@get@line@info\@myarg\ifx\@currentline@charge\wl@charge\advance\wl@counta by 1\fi}%count only if is the desired charge
+        \ifwl@intensity%
+        \@for\@myarg:=#1%
+        \do{%
+        \expandafter\wl@get@line@info\@myarg%
+        \pgfmathparse{\wl@relintthresh+(1-\wl@relintthresh)*\@currentline@int/#2}\edef\wl@intensity@to@list{\pgfmathresult}%
+        \ifx\@currentline@charge\wl@charge%add to list if is the desired charge
+            \ifnum\wl@countb<\wl@counta\wl@addt@list{\wl@list@@}{\@currentline@wl/\wl@intensity@to@list,}\else%
+            \wl@addt@list{\wl@list@@}{\@currentline@wl/\wl@intensity@to@list}\fi%
+        \advance\wl@countb by 1%
+        \fi%
+        }%END do
+        \else%
+        \@for\@myarg:=#1%
+        \do{%
+        \expandafter\wl@get@line@info\@myarg%
+        \ifx\@currentline@charge\wl@charge%add to list if is the desired charge
+            \ifnum\wl@countb<\wl@counta\wl@addt@list{\wl@list@@}{\@currentline@wl,}\else%
+            \wl@addt@list{\wl@list@@}{\@currentline@wl}\fi%
+        \advance\wl@countb by 1%
+        \fi%
+        }%END do
+        \fi%
+\fi%
+\else%\wl@intmin>0 & \wl@intmin<1
+\ifnum\@wl@intmin>100\else%
+\pgfmathparse{\wl@intmin*#2}\edef\wl@actual@int{\pgfmathresult}%
+\ifx\wl@ll\wl@charge%ALL lines
+\@for\@myarg:=#1\do{\advance\wl@counta by 1}%count all entries
+        \ifwl@intensity%
+        \@for\@myarg:=#1%
+        \do{%
+        \expandafter\wl@get@line@info\@myarg%
+        \pgfmathparse{notless(\@currentline@int,\wl@actual@int)}\relax\edef\wl@int@result{\pgfmathresult}%
+        \ifnum\wl@int@result=1%
+            \pgfmathparse{\wl@relintthresh+(1-\wl@relintthresh)*\@currentline@int/#2}\edef\wl@intensity@to@list{\pgfmathresult}%
+            \ifwl@first\wl@addt@list{\wl@list@@}{\@currentline@wl/\wl@intensity@to@list}\else%
+            \wl@addt@list{\wl@list@@}{,\@currentline@wl/\wl@intensity@to@list}\fi%
+            \ifwl@first\wl@firstfalse\fi%
+        \fi%
+        \advance\wl@countb by 1%
+        }%END do
+        \else%
+        \@for\@myarg:=#1%
+        \do{%
+        \expandafter\wl@get@line@info\@myarg%
+        \pgfmathparse{notless(\@currentline@int,\wl@actual@int)}\relax\edef\wl@int@result{\pgfmathresult}%
+        \ifnum\wl@int@result=1%
+            \ifwl@first\wl@addt@list{\wl@list@@}{\@currentline@wl}\else%
+            \wl@addt@list{\wl@list@@}{,\@currentline@wl}\fi%
+            \ifwl@first\wl@firstfalse\fi%
+        \fi%
+        \advance\wl@countb by 1%
+        }%END do
+        \fi%
+\else% lines for one specific charge
+\@for\@myarg:=#1\do{\expandafter\wl@get@line@info\@myarg\ifx\@currentline@charge\wl@charge\advance\wl@counta by 1\fi}%count only if is the desired charge
+        \ifwl@intensity%
+        \@for\@myarg:=#1%
+        \do{%
+        \expandafter\wl@get@line@info\@myarg%
+        \ifx\@currentline@charge\wl@charge%add to list if is the desired charge
+            \pgfmathparse{notless(\@currentline@int,\wl@actual@int)}\edef\wl@int@result{\pgfmathresult}%
+            \ifnum\wl@int@result=1%
+            \pgfmathparse{\wl@relintthresh+(1-\wl@relintthresh)*\@currentline@int/#2}\edef\wl@intensity@to@list{\pgfmathresult}%
+            \ifwl@first\wl@addt@list{\wl@list@@}{\@currentline@wl/\wl@intensity@to@list}\else%
+            \wl@addt@list{\wl@list@@}{,\@currentline@wl/\wl@intensity@to@list}\fi%
+            \ifwl@first\wl@firstfalse\fi%
+        \fi%
+        \advance\wl@countb by 1%
+        \fi%
+        }%END do
+        \else%
+        \@for\@myarg:=#1%
+        \do{%
+        \expandafter\wl@get@line@info\@myarg%
+        \ifx\@currentline@charge\wl@charge%add to list if is the desired charge
+            \pgfmathparse{notless(\@currentline@int,\wl@actual@int)}\edef\wl@int@result{\pgfmathresult}%
+            \ifnum\wl@int@result=1%
+            \ifwl@first\wl@addt@list{\wl@list@@}{\@currentline@wl}\else%
+            \wl@addt@list{\wl@list@@}{,\@currentline@wl}\fi%
+            \ifwl@first\wl@firstfalse\fi%
+        \fi%
+        \advance\wl@countb by 1%
+        \fi%
+        }%END do
+        \fi%
+\fi%
+\fi%
+\fi%
+}%
+% add to list
+\def\wl@addt@list#1#2{\edef\wl@list@@{#1#2}}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% internal utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\wl@utils@draw@axis{\ignorespaces%
+                \ifnum\wl@begin>\wl@end%
+                % New xshift={-2.5*\@wl@axis@height} to hold bigger numbers, e.g. 2500
+                \draw[draw=none,fill=\wl@axiscolor] ([xshift={2.5*\@wl@axis@height}]0,\wl@height+2.5pt) rectangle ([xshift={-2.5*\@wl@axis@height}]-\wl@width,-2.5*\@wl@axis@height);%
+                        % minor ticks -> NEW
+                        \ifnum\wl@axisticks>0\relax%
+                        \pgfmathparse{\wl@end+\wl@axisstep/(\wl@axisticks+1)}\pgfmathparse{int(\pgfmathresult)}
+                        \edef\@axis@list{\wl@end,\pgfmathresult,...,\wl@begin}
+                        \foreach \x in \@axis@list%
+                        {%
+                        \pgfmathparse{(\wl@end-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                        \draw[\wl@axisfontcolor!80!transparent,line width=.25pt] (\wl@currentx,-.375*\@wl@axis@height) -- ++(0,.375*\@wl@axis@height);
+                        }%
+                        \fi%
+                \pgfmathparse{\wl@end+\wl@axisstep}\pgfmathparse{int(\pgfmathresult)}
+                \edef\@axis@list{\wl@end,\pgfmathresult,...,\wl@begin}
+                \foreach \x in \@axis@list%
+                {%
+                \pgfmathparse{(\wl@end-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                \draw[\wl@axisfontcolor,line width=.25pt] (\wl@currentx,-.75*\@wl@axis@height) -- ++(0,.75*\@wl@axis@height);
+                \node[\wl@axisfontcolor,font=\wl@axisfont,above,inner sep=0pt] at (\wl@currentx,-2.25*\@wl@axis@height) {\x};
+                }%
+                \else%
+                \draw[draw=none,fill=\wl@axiscolor] ([xshift={-2.5*\@wl@axis@height}]0,\wl@height+2.5pt) rectangle ([xshift={2.5*\@wl@axis@height}]\wl@width,-2.5*\@wl@axis@height);%
+                        % minor ticks -> NEW
+                        \ifnum\wl@axisticks>0\relax%
+                        \pgfmathparse{\wl@begin+\wl@axisstep/(\wl@axisticks+1)}\pgfmathparse{int(\pgfmathresult)}
+                        \edef\@axis@list{\wl@begin,\pgfmathresult,...,\wl@end}
+                        \foreach \x in \@axis@list%
+                        {%
+                        \pgfmathparse{(\x-\wl@begin)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                        \draw[\wl@axisfontcolor!80!transparent,line width=.25pt] (\wl@currentx,-.375*\@wl@axis@height) -- ++(0,.375*\@wl@axis@height);
+                        }%
+                        \fi%
+                \pgfmathparse{\wl@begin+\wl@axisstep}\pgfmathparse{int(\pgfmathresult)}
+                \edef\@axis@list{\wl@begin,\pgfmathresult,...,\wl@end}
+                \foreach \x in \@axis@list%
+                {%
+                \pgfmathparse{(\x-\wl@begin)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                \draw[\wl@axisfontcolor,line width=.25pt] (\wl@currentx,-.75*\@wl@axis@height) -- ++(0,.75*\@wl@axis@height);
+                \node[\wl@axisfontcolor,font=\wl@axisfont,above,inner sep=0pt] at (\wl@currentx,-2.25*\@wl@axis@height) {\x};
+                }%
+                \fi%
+}%
+\def\wl@utils@put@label{\ignorespaces%
+                \ifx\wl@elt@chemsym\undefined\def\wl@elt@chemsym{}\fi%
+                \wl@get@label@position%
+                \ifnum\wl@begin>\wl@end%
+                        \ifcase\wl@label@position%
+                        %west
+                            \ifwl@drawaxis%\ifwl@axislabel%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,left,minimum width=2em,align=right] at (-2.5*\@wl@axis@height-\wl@width,0.5*\wl@height-1.25*\@wl@axis@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,left,minimum width=2em,align=right] at (-\wl@width,0.5*\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \or%north west
+                            \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,above right,inner xsep=0pt] at (-2.5*\@wl@axis@height-\wl@width,\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,above right,inner xsep=0pt] at (-\wl@width,\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \or%north
+                        \node[\wl@labelfontcolor,font=\wl@labelfont,above] at (-0.5*\wl@width,\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                        \or%north east
+                        \ifwl@drawaxis%
+                        \node[\wl@labelfontcolor,font=\wl@labelfont,above left,inner xsep=0pt] at (2.5*\@wl@axis@height,\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                        \else%
+                        \node[\wl@labelfontcolor,font=\wl@labelfont,above left,inner xsep=0pt] at (0,\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                        \fi
+                        \or%east
+                            \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,right] at (2.5*\@wl@axis@height,0.5*\wl@height-1.25*\@wl@axis@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,right] at (0,0.5*\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \or%south east
+                            \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below left,inner xsep=0pt] at (2.5*\@wl@axis@height,-2.5*\@wl@axis@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below left,inner xsep=0pt] at (0,0) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \or%south
+                            \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below] at (-0.5*\wl@width,-2.5*\@wl@axis@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below] at (-0.5*\wl@width,0) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \or%south west
+                            \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below right,inner xsep=0pt] at (-2.5*\@wl@axis@height-\wl@width,-2.5*\@wl@axis@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below right,inner xsep=0pt] at (-\wl@width,0) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \fi%
+                \else%
+                        \ifcase\wl@label@position%
+                        %west
+                            \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,left,minimum width=2em,align=right] at (-2.5*\@wl@axis@height,0.5*\wl@height-1.25*\@wl@axis@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,left,minimum width=2em,align=right] at (0,0.5*\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \or%north west
+                            \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,above right,inner xsep=0pt] at (-2.5*\@wl@axis@height,\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,above right,inner xsep=0pt] at (0,\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \or%north
+                        \node[\wl@labelfontcolor,font=\wl@labelfont,above] at (0.5*\wl@width,\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                        \or%north east
+                        \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,above left,inner xsep=0pt] at (\wl@width+2.5*\@wl@axis@height,\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,above left,inner xsep=0pt] at (\wl@width,\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \or%east
+                            \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,right] at ([xshift={2.5*\@wl@axis@height}]\wl@width,0.5*\wl@height-1.25*\@wl@axis@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,right] at (\wl@width,0.5*\wl@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \or%south east
+                            \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below left,inner xsep=0pt] at (\wl@width+2.5*\@wl@axis@height,-2.5*\@wl@axis@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below left,inner xsep=0pt] at (\wl@width,0) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \or%south
+                            \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below] at (0.5*\wl@width,-2.5*\@wl@axis@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below] at (0.5*\wl@width,0) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \or%south west
+                            \ifwl@drawaxis%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below right,inner xsep=0pt] at (-2.5*\@wl@axis@height,-2.5*\@wl@axis@height) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \else%
+                            \node[\wl@labelfontcolor,font=\wl@labelfont,below right,inner xsep=0pt] at (0,0) {\wl@labelbtext\wl@elt@chemsym\wl@labelatext};%
+                            \fi%
+                        \fi%
+                \fi%
+}%
+\def\wl@utils@drawbackground#1{\ignorespaces% NEW - in this version draws from UV, VIS to IV -> replaces \wl@utils@visiblespectrum#1
+% reprocess visible background (only visible) -> needed because of the override in keys
+    \wl@counta=0%
+    \wl@countb=-1%
+    \@for\@myarg:=\wl@visible@list\do{%
+            \ifx\wl@back\@myarg\wl@countb=\wl@counta\fi%
+            \advance\wl@counta by1%
+            }%
+        \ifnum\wl@countb>-1\let\wl@back\wl@visible\fi%
+                \pgfmathparse{int(#1*100)}\edef\wl@bright{\pgfmathresult}%
+                \pgfmathparse{1.4*\xscale+.09*\linewidth/\wl@width}\edef\wl@linewidth{\pgfmathresult}% NEW {\xscale} -> {1.4*\xscale+.09*\linewidth/\wl@width}
+                \ifnum\wl@begin>\wl@end% 0
+                    \ifnum\wl@end<380\relax% 1
+                        \pgfmathparse{(\wl@end-380)*\xscale}\edef\wl@pointA{\pgfmathresult pt}%
+                        \ifnum\wl@begin>780\relax% 2
+                            \pgfmathparse{(\wl@end-780)*\xscale}\edef\wl@pointB{\pgfmathresult pt}%
+                            \draw[draw=none,fill=\wl@background@UVcolor] (0,0) rectangle (\wl@pointA,\wl@height);%
+                            \draw[draw=none,fill=\wl@background@IRcolor] (\wl@pointB,0) rectangle (-\wl@width,\wl@height);%
+                                \ifx\wl@back\wl@visible% 3 visible background
+                                    \foreach \x in {780,...,380}{%
+                                    \wlcolor{\x}%
+                                    \colorlet{wlcolor}{wl@temp!\wl@bright!black}%
+                                    \pgfmathparse{\wl@pointB+(780-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                                    \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);}%
+                                \else% 3
+                                    \draw[draw=none,fill=\wl@back] (\wl@pointA,0) rectangle (\wl@pointB,\wl@height);%
+                                \fi% 3
+                        \else% 2
+                            \pgfmathparse{(\wl@end-\wl@begin)*\xscale}\edef\wl@pointB{\pgfmathresult pt}%
+                            \draw[draw=none,fill=\wl@background@UVcolor] (0,0) rectangle (\wl@pointA,\wl@height);%
+                                \ifx\wl@back\wl@visible% 3 visible background
+                                    \foreach \x in {\wl@begin,...,380}{%
+                                    \wlcolor{\x}%
+                                    \colorlet{wlcolor}{wl@temp!\wl@bright!black}%
+                                    \pgfmathparse{\wl@pointB+(\wl@begin-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                                    \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);}%
+                                \else% 3
+                                    \draw[draw=none,fill=\wl@back] (\wl@pointA,0) rectangle (\wl@pointB,\wl@height);%
+                                \fi% 3
+                        \fi% 2
+                    \else% 1
+                        \ifnum\wl@begin>780\relax% 2
+                            \pgfmathparse{(\wl@end-780)*\xscale}\edef\wl@pointB{\pgfmathresult pt}%
+                            \draw[draw=none,fill=\wl@background@IRcolor] (\wl@pointB,0) rectangle (-\wl@width,\wl@height);%
+                                \ifx\wl@back\wl@visible% 3 visible background
+                                    \foreach \x in {780,...,\wl@end}{%
+                                    \wlcolor{\x}%
+                                    \colorlet{wlcolor}{wl@temp!\wl@bright!black}%
+                                    \pgfmathparse{\wl@pointB+(780-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                                    \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);}%
+                                \else% 3
+                                    \draw[draw=none,fill=\wl@back] (0,0) rectangle (\wl@pointB,\wl@height);%
+                                \fi% 3
+                        \else% 2
+                            \pgfmathparse{(\wl@end-\wl@begin)*\xscale}\edef\wl@pointB{\pgfmathresult pt}%
+                                \ifx\wl@back\wl@visible% 3 visible background
+                                    \foreach \x in {\wl@begin,...,\wl@end}{%
+                                    \wlcolor{\x}%
+                                    \colorlet{wlcolor}{wl@temp!\wl@bright!black}%
+                                    \pgfmathparse{\wl@pointB+(\wl@begin-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                                    \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);}%
+                                \else% 3
+                                    \draw[draw=none,fill=\wl@back] (0,0) rectangle (\wl@pointB,\wl@height);%
+                                \fi% 3
+                        \fi% 2
+                    \fi% 1
+                \else% 0
+                    \ifnum\wl@begin<380\relax% 1
+                        \pgfmathparse{(380-\wl@begin)*\xscale}\edef\wl@pointA{\pgfmathresult pt}%
+                        \ifnum\wl@end>780\relax% 2
+                            \pgfmathparse{(780-\wl@begin)*\xscale}\edef\wl@pointB{\pgfmathresult pt}%
+                            \draw[draw=none,fill=\wl@background@UVcolor] (0,0) rectangle (\wl@pointA,\wl@height);%
+                            \draw[draw=none,fill=\wl@background@IRcolor] (\wl@pointB,0) rectangle (\wl@width,\wl@height);%
+                                \ifx\wl@back\wl@visible% 3 visible background
+                                    \foreach \x in {380,...,780}{%
+                                    \wlcolor{\x}%
+                                    \colorlet{wlcolor}{wl@temp!\wl@bright!black}%
+                                    \pgfmathparse{\wl@pointB-(780-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                                    \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);}%
+                                \else% 3
+                                    \draw[draw=none,fill=\wl@back] (\wl@pointA,0) rectangle (\wl@pointB,\wl@height);%
+                                \fi% 3
+                        \else% 2
+                            \pgfmathparse{(\wl@end-\wl@begin)*\xscale}\edef\wl@pointB{\pgfmathresult pt}%
+                            \draw[draw=none,fill=\wl@background@UVcolor] (0,0) rectangle (\wl@pointA,\wl@height);%
+                                \ifx\wl@back\wl@visible% 3 visible background
+                                    \foreach \x in {\wl@end,...,380}{%
+                                    \wlcolor{\x}%
+                                    \colorlet{wlcolor}{wl@temp!\wl@bright!black}%
+                                    \pgfmathparse{\wl@pointB-(\wl@end-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                                    \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);}%
+                                \else% 3
+                                    \draw[draw=none,fill=\wl@back] (\wl@pointA,0) rectangle (\wl@pointB,\wl@height);%
+                                \fi% 3
+                        \fi% 2
+                    \else% 1
+                        \ifnum\wl@end>780\relax% 2
+                            \pgfmathparse{(780-\wl@begin)*\xscale}\edef\wl@pointB{\pgfmathresult pt}%
+                            \draw[draw=none,fill=\wl@background@IRcolor] (\wl@pointB,0) rectangle (\wl@width,\wl@height);%
+                                \ifx\wl@back\wl@visible% 3 visible background
+                                    \foreach \x in {\wl@begin,...,780}{%
+                                    \wlcolor{\x}%
+                                    \colorlet{wlcolor}{wl@temp!\wl@bright!black}%
+                                    \pgfmathparse{(\x-\wl@begin)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                                    \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);}%
+                                \else% 3
+                                    \draw[draw=none,fill=\wl@back] (0,0) rectangle (\wl@pointB,\wl@height);%
+                                \fi% 3
+                        \else% 2
+                            \pgfmathparse{(\wl@end-\wl@begin)*\xscale}\edef\wl@pointB{\pgfmathresult pt}%
+                                \ifx\wl@back\wl@visible% 3 visible background
+                                    \foreach \x in {\wl@begin,...,\wl@end}{%
+                                    \wlcolor{\x}%
+                                    \colorlet{wlcolor}{wl@temp!\wl@bright!black}%
+                                    \pgfmathparse{\x-\wl@begin)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                                    \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);}%
+                                \else% 3
+                                    \draw[draw=none,fill=\wl@back] (0,0) rectangle (\wl@pointB,\wl@height);%
+                                \fi% 3
+                        \fi% 2
+                    \fi% 1
+                \fi%0
+}%
+\def\wl@utils@drawabsorptionlines{\ignorespaces%
+                \ifnum\wl@begin>\wl@end%
+                    \ifwl@intensity%
+                        \ifwl@redshift\wl@utils@redshift\fi% NEW
+                        \foreach \x/\y in \wl@list@@%
+                        {%
+                        \pgfmathparse{notless(\x,\wl@end)}\edef\wl@x@nl{\pgfmathresult}%
+                        \pgfmathparse{notgreater(\x,\wl@begin)}\edef\wl@x@ng{\pgfmathresult}%
+                        \pgfmathparse{and(\wl@x@nl,\wl@x@ng)}\edef\wl@plot@point{\pgfmathresult}%
+                        \ifnum\wl@plot@point=1%
+                        \pgfmathparse{(\wl@end-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                        \pgfmathparse{int(\y*100)}\edef\wl@black{\pgfmathresult}%
+                        \wlcolor{\x}%
+                        \colorlet{wlcolor}{black!\wl@black!wl@temp}%
+                        \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);%
+                        \fi%
+                        }%
+                    \else%
+                        \ifwl@redshift\wl@utils@redshift\fi% NEW
+                        \foreach \x in \wl@list@@%
+                        {%
+                        \pgfmathparse{notless(\x,\wl@end)}\edef\wl@x@nl{\pgfmathresult}%
+                        \pgfmathparse{notgreater(\x,\wl@begin)}\edef\wl@x@ng{\pgfmathresult}%
+                        \pgfmathparse{and(\wl@x@nl,\wl@x@ng)}\edef\wl@plot@point{\pgfmathresult}%
+                        \ifnum\wl@plot@point=1%
+                        \pgfmathparse{(\wl@end-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                        \wlcolor{\x}%
+                        \colorlet{wlcolor}{black!\wl@lineint!wl@temp}%
+                        \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);%
+                        \fi%
+                        }%
+                    \fi%
+                \else%
+                    \ifwl@intensity%
+                        \ifwl@redshift\wl@utils@redshift\fi% NEW
+                        \foreach \x/\y in \wl@list@@%
+                        {%
+                        \pgfmathparse{notless(\x,\wl@begin)}\edef\wl@x@nl{\pgfmathresult}%
+                        \pgfmathparse{notgreater(\x,\wl@end)}\edef\wl@x@ng{\pgfmathresult}%
+                        \pgfmathparse{and(\wl@x@nl,\wl@x@ng)}\edef\wl@plot@point{\pgfmathresult}%
+                        \ifnum\wl@plot@point=1%
+                        \pgfmathparse{(\x-\wl@begin)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                        \pgfmathparse{int(\y*100)}\edef\wl@black{\pgfmathresult}%
+                        \wlcolor{\x}%
+                        \colorlet{wlcolor}{black!\wl@black!wl@temp}%
+                        \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);%
+                        \fi%
+                        }%
+                    \else%
+                        \ifwl@redshift\wl@utils@redshift\fi% NEW
+                        \foreach \x in \wl@list@@%
+                        {%
+                        \pgfmathparse{notless(\x,\wl@begin)}\edef\wl@x@nl{\pgfmathresult}%
+                        \pgfmathparse{notgreater(\x,\wl@end)}\edef\wl@x@ng{\pgfmathresult}%
+                        \pgfmathparse{and(\wl@x@nl,\wl@x@ng)}\edef\wl@plot@point{\pgfmathresult}%
+                        \ifnum\wl@plot@point=1%
+                        \pgfmathparse{(\x-\wl@begin)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                        \wlcolor{\x}%
+                        \colorlet{wlcolor}{black!\wl@lineint!wl@temp}%
+                        \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);%
+                        \fi%
+                        }%
+                    \fi%
+                \fi%
+\ifwl@RSvalue% NEW
+\ifnum\wl@begin>\wl@end%
+\ifwl@drawaxis\pgfmathparse{-\wl@width-2.5*\@wl@axis@height}\edef\wl@redshiftinfo@x{\pgfmathresult pt}%
+\else\pgfmathparse{-\wl@width}\edef\wl@redshiftinfo@x{\pgfmathresult pt}\fi%
+\else%
+\ifwl@drawaxis\pgfmathparse{-2.5*\@wl@axis@height}\edef\wl@redshiftinfo@x{\pgfmathresult pt}%
+\else\edef\wl@redshiftinfo@x{0pt}\fi%
+\fi%
+\ifwl@drawaxis\pgfmathparse{-.75*\@wl@axis@height-1.3*\ht0-2pt}\edef\wl@redshiftinfo@y{\pgfmathresult pt}\else\edef\wl@redshiftinfo@y{0pt}\fi%
+\node[below right,inner xsep=0pt,font=\wl@axisfont] at (\wl@redshiftinfo@x,\wl@redshiftinfo@y) {\wl@redshiftinfo};%
+\fi% NEW
+}%
+\def\wl@utils@drawemissionlines{\ignorespaces%
+                \ifnum\wl@begin>\wl@end%
+                \ifwl@intensity%
+                    \ifwl@redshift\wl@utils@redshift\fi% NEW
+                        \foreach \x/\y in \wl@list@@%
+                        {%
+                        \wlcolor{\x}%
+                        \pgfmathparse{notless(\x,\wl@end)}\edef\wl@x@nl{\pgfmathresult}%
+                        \pgfmathparse{notgreater(\x,\wl@begin)}\edef\wl@x@ng{\pgfmathresult}%
+                        \pgfmathparse{and(\wl@x@nl,\wl@x@ng)}\edef\wl@plot@point{\pgfmathresult}%
+                        \ifnum\wl@plot@point=1%
+                        \pgfmathparse{(\wl@end-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                        \pgfmathparse{int(\y*100)}\edef\wl@black{\pgfmathresult}%
+                        \colorlet{wlcolor}{wl@temp!\wl@black!black}%
+                        \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);%
+                        \fi%
+                        }%
+                \else%
+                    \ifwl@redshift\wl@utils@redshift\fi% NEW
+                        \foreach \x in \wl@list@@%
+                        {%
+                        \wlcolor{\x}%
+                        \pgfmathparse{notless(\x,\wl@end)}\edef\wl@x@nl{\pgfmathresult}%
+                        \pgfmathparse{notgreater(\x,\wl@begin)}\edef\wl@x@ng{\pgfmathresult}%
+                        \pgfmathparse{and(\wl@x@nl,\wl@x@ng)}\edef\wl@plot@point{\pgfmathresult}%
+                        \ifnum\wl@plot@point=1%
+                        \pgfmathparse{(\wl@end-\x)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                        \colorlet{wlcolor}{wl@temp!\wl@lineint!black}%
+                        \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);%
+                        \fi%
+                        }%
+                \fi%
+                \else%
+                \ifwl@intensity%
+                    \ifwl@redshift\wl@utils@redshift\fi% NEW
+                        \foreach \x/\y in \wl@list@@%
+                        {%
+                        \wlcolor{\x}%
+                        \pgfmathparse{notless(\x,\wl@begin)}\edef\wl@x@nl{\pgfmathresult}%
+                        \pgfmathparse{notgreater(\x,\wl@end)}\edef\wl@x@ng{\pgfmathresult}%
+                        \pgfmathparse{and(\wl@x@nl,\wl@x@ng)}\edef\wl@plot@point{\pgfmathresult}%
+                        \ifnum\wl@plot@point=1%
+                        \pgfmathparse{(\x-\wl@begin)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                        \pgfmathparse{int(\y*100)}\edef\wl@black{\pgfmathresult}%
+                        \colorlet{wlcolor}{wl@temp!\wl@black!black}%
+                        \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);%
+                        \fi%
+                        }%
+                \else%
+                    \ifwl@redshift\wl@utils@redshift\fi% NEW
+                        \foreach \x in \wl@list@@%
+                        {%
+                        \wlcolor{\x}%
+                        \pgfmathparse{notless(\x,\wl@begin)}\edef\wl@x@nl{\pgfmathresult}%
+                        \pgfmathparse{notgreater(\x,\wl@end)}\edef\wl@x@ng{\pgfmathresult}%
+                        \pgfmathparse{and(\wl@x@nl,\wl@x@ng)}\edef\wl@plot@point{\pgfmathresult}%
+                        \ifnum\wl@plot@point=1%
+                        \pgfmathparse{(\x-\wl@begin)*\xscale}\edef\wl@currentx{\pgfmathresult pt}%
+                        \colorlet{wlcolor}{wl@temp!\wl@lineint!black}%
+                        \draw[wlcolor,line width=\wl@linewidth] (\wl@currentx,0) -- ++(0,\wl@height);%
+                        \fi%
+                        }%
+                \fi%
+                \fi%
+\ifwl@RSvalue% NEW
+\ifnum\wl@begin>\wl@end%
+\ifwl@drawaxis\pgfmathparse{-\wl@width-2.5*\@wl@axis@height}\edef\wl@redshiftinfo@x{\pgfmathresult pt}%
+\else\pgfmathparse{-\wl@width}\edef\wl@redshiftinfo@x{\pgfmathresult pt}\fi%
+\else%
+\ifwl@drawaxis\pgfmathparse{-2.5*\@wl@axis@height}\edef\wl@redshiftinfo@x{\pgfmathresult pt}%
+\else\edef\wl@redshiftinfo@x{0pt}\fi%
+\fi%
+\ifwl@drawaxis\pgfmathparse{-.75*\@wl@axis@height-1.3*\ht0-2pt}\edef\wl@redshiftinfo@y{\pgfmathresult pt}\else\edef\wl@redshiftinfo@y{0pt}\fi%
+\node[below right,inner xsep=0pt,font=\wl@axisfont] at (\wl@redshiftinfo@x,\wl@redshiftinfo@y) {\wl@redshiftinfo};%
+\fi% NEW
+}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% return: integer with position (e.g. '0' for west, ... )
+\def\wl@get@label@position{\ignorespaces%
+\wl@countc=0%
+\@for\@mylabel:=\wl@label@position@list%
+            \do{%
+            \ifx\@mylabel\wl@labelposition\edef\wl@label@position{\the\wl@countc}\fi%
+            \advance\wl@countc by1%
+            }%
+}%
+% NEW ----------------------
+% redshift: lambda(obs)=lambda(emit)*{(1+v/c*cos(theta))/sqrt(1-v^2/c^2)} ---> Relativistic Doppler
+% vbar-> v/c -> normalized velocity of the source (e.g. '0.9' for v=0.9c )
+% theta ->angle between the direction of relative motion of the source and the direction of emission in the observer's frame (zero angle is directly away from the observer)
+\def\wl@processredshiftkey#1{\ignorespaces%
+\wl@redshiftfalse%
+\edef\wl@redshiftkey@expand{#1}% to expand a value passed by a macro (not necessary if the user provided a number...)
+\expandafter\wl@redshiftkey@firstchar\wl@redshiftkey@expand\relax%
+\ifcat1\wl@@RedShift\relax%
+\pgfmathparse{1+#1}\relax%
+\edef\wl@UMMAISZ{\pgfmathresult}\wl@redshifttrue%
+\edef\wl@redshiftinfo{redshift z=#1}%
+\else%
+\edef\wl@redshiftkey@expand{#1}%
+\expandafter\wl@process@redshift\wl@redshiftkey@expand\relax%
+\fi%
+}%
+\def\wl@redshiftkey@firstchar#1#2\relax{\edef\wl@@RedShift{#1}}%
+\def\wl@process@redshift#1=#2/#3\relax{%
+\edef\wl@redshifttest{#1}%
+\ifx\wl@redshifttest\wl@redshift@D\relax%
+\pgfmathparse{(1+#2*cos(#3))/sqrt(1-#2*#2)}%
+\edef\wl@UMMAISZ{\pgfmathresult}\wl@redshifttrue%
+\pgfmathparse{#2*cos(#3))/sqrt(1-#2*#2)}%
+\edef\wl@redshiftinfo{Relativistic Doppler redshift z=\pgfmathresult\ (\mbox{v\hskip.1ex=\hskip.1ex#2\hskip.1exc\hskip.5ex;\hskip.5ex\ensuremath{\theta}\hskip.1ex=\hskip.1ex#3\ensuremath{^\circ}})}%
+\fi%
+}%
+% \wl@utils@redshift ---------------------------------------------------------------------
+% returns the wllist with the shift computed
+\def\wl@utils@redshift{\ignorespaces%
+    \let\wt@backlist@@\wl@list@@\relax%
+    \let\wl@list@@\@empty\relax%
+    \wl@firsttrue\relax%
+    \ifwl@intensity% list (lambda/intensity)
+        \foreach \x/\y in \wt@backlist@@{%
+            \pgfmathparse{\x*\wl@UMMAISZ}\edef\@currentline@wl{\pgfmathresult}%
+            \ifwl@first\global\wl@addt@list{\wl@list@@}{\@currentline@wl/\y}\else%
+                \global\wl@addt@list{\wl@list@@}{,\@currentline@wl/\y}\fi%
+            \ifwl@first\global\wl@firstfalse\fi%
+        }%
+    \else% list (lambda)
+        \foreach \x in \wt@backlist@@{%
+            \pgfmathparse{\x*\wl@UMMAISZ}\edef\@currentline@wl{\pgfmathresult}%
+            \ifwl@first\global\wl@addt@list{}{\@currentline@wl}\else%
+                \global\wl@addt@list{\wl@list@@}{,\@currentline@wl}\fi%
+            \ifwl@first\global\wl@firstfalse\fi%
+        }%
+    \fi%
+}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% nm2rgb convert nanometer wavelength to rgb
+% (380 <= Lambda <= 780 ) -> r,g,b on stack
+%
+% BASED on FORTRAN Code
+% RGB VALUES FOR VISIBLE WAVELENGTHS by Dan Bruton (astro@tamu.edu)
+% This program can be found at
+% http://www.physics.sfasu.edu/astro/color.html
+% and was last updated on February 20, 1996.
+% The spectrum is generated using approximate RGB values for visible
+% wavelengths between 380 nm and 780 nm.
+% The red, green and blue values (RGB) are
+% assumed to vary linearly with wavelength (for GAMMA=1).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newdimen\wl%wavelength
+\newdimen\wl@i%intensity
+\newdimen\@wl@gamma%gamma
+\newdimen\wlc@lorr%red (0. - 1)
+\newdimen\wlc@lorg%green (0. - 1)
+\newdimen\wlc@lorb%blue (0. - 1) % wavelength to rgb values
+\newcount\wl@counta% tmp counter
+\newcount\wl@countb% tmp counter
+\newcount\wl@countc% tmp counter
+\newcount\wl@countd% tmp counter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \wlcolor{wavelength}
+\def\wlcolor#1{\ignorespaces%
+\wl=#1pt%
+\@wl@gamma=\wl@gamma pt%
+% compute the rgb components
+\ifdim\wl<10pt\relax\PackageWarning{pgf-spectra}{(#1nm) wavelength out of range ignored. The wavelength must be graeter or equal to 10nm (EUV)...}\else% NEW
+\ifdim\wl<379.99999pt\relax\else%% NEW
+\ifdim\wl<440pt\wlc@lorr=440pt\advance\wlc@lorr by-\wl\divide\wlc@lorr by60\wlc@lorg=0pt\wlc@lorb=1pt\else%
+\ifdim\wl<490pt\wlc@lorr=0pt\wlc@lorg=\wl\advance\wlc@lorg by-440pt\divide\wlc@lorg by50\wlc@lorb=1pt\else%
+\ifdim\wl<510pt\wlc@lorr=0pt\wlc@lorg=1pt\wlc@lorb=510pt\advance\wlc@lorb by-\wl\divide\wlc@lorb by20\else%
+\ifdim\wl<580pt\wlc@lorr=\wl\advance\wlc@lorr by-510pt\divide\wlc@lorr by70\wlc@lorg=1pt\wlc@lorb=0pt\else%
+\ifdim\wl<645pt\wlc@lorr=1pt\wlc@lorg=645pt\advance\wlc@lorg by-\wl\divide\wlc@lorg by65\wlc@lorb=0pt\else%
+\ifdim\wl<780.00001pt\wlc@lorr=1pt\wlc@lorg=0pt\wlc@lorb=0pt\else%
+\ifdim\wl>4000pt\relax\PackageWarning{pgf-spectra}{invalid wavelength (#1nm). The wavelength must be lesser or equal to 4000nm (NIR)...}% NEW
+\relax%
+\fi\fi\fi\fi\fi\fi\fi\fi\fi%
+% intensity correction at vision limits
+\ifdim\wl>700pt\ifdim\wl<780.00001pt\wl@i=780pt\advance\wl@i by-\wl\divide\wl@i by80\multiply\wl@i by7\advance\wl@i by3pt\divide\wl@i by10\fi\else%  NEW
+\ifdim\wl<420pt\ifdim\wl>379.99999pt\wl@i=\wl\advance\wl@i by-380pt\divide\wl@i by40\multiply\wl@i by7\advance\wl@i by3pt\divide\wl@i by10\fi\else%
+\wl@i=1pt%
+\fi\fi%
+%apply intensity at vision limits correction and  gamma
+\ifdim\wl<380pt\colorlet{wl@temp}{\wl@UVcolor}\else\ifdim\wl>780pt\colorlet{wl@temp}{\wl@IRcolor}\else% NEW
+\pgfmathparse{\wlc@lorr*\wl@i^\@wl@gamma}\edef\wl@red{\pgfmathresult}%
+\pgfmathparse{\wlc@lorg*\wl@i^\@wl@gamma}\edef\wl@green{\pgfmathresult}%
+\pgfmathparse{\wlc@lorb*\wl@i^\@wl@gamma}\edef\wl@blue{\pgfmathresult}%
+\definecolor{wl@temp}{rgb}{\wl@red,\wl@green,\wl@blue}%
+\fi\fi% NEW
+\colorlet{wlcolor}{wl@temp}
+}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\wl@elt@search#1#2#3#4{\ignorespaces%
+% #1 Chemical Symbol, entered by USER
+% #2 Chemical Symbol to compare to, e.g. Na
+% #3 Emission Lines Data (or error message)
+% #4 Imax
+\edef\wl@CS@user{#1}\edef\wl@CS@comp{#2}\relax% New
+\ifx\wl@CS@user\wl@CS@comp\relax% New -> was \iftthenelse{...
+\def\wl@elt@chemsym{#2}%  set chemical symbol
+\def\wl@elt@elemdata{#3}%  set element lines data
+\def\wl@elt@Imax{#4}%  set element Imax
+\fi%
+}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\endinput

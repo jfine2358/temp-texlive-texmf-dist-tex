@@ -1,0 +1,161 @@
+    \setupbodyfont[dejavu,10pt]
+
+\setuplayout
+  [width=middle,
+   height=middle,
+   backspace=1cm,
+   topspace=1cm,
+   footer=0pt,
+   header=1.25cm]
+
+\setuphead
+  [subject]
+  [style=\bfa,
+   page=yes]
+
+\setuppagenumbering
+  [location=]
+
+\setupheadertexts
+  [\currentdate][MkIV cleanup Status / Page \pagenumber]
+
+\starttext
+
+% anch attr back buff colo font grph java lang luat lxml math meta mlib mult node
+% pack page phys scrn spac strc supp symb syst tabl toks typo
+
+\startsubject[title=Todo]
+
+\startitemize[packed]
+    \startitem currently the new namespace prefixes are not consistent but this
+               will be done when we're satisfied with one scheme \stopitem
+    \startitem there will be additional columns in the table, like for namespace
+               so we need another round of checking then \stopitem
+    \startitem the imp modules are not in the list and need checking too \stopitem
+    \startitem the s, x, m modules will be checked, redone and reorganized \stopitem
+    \startitem the lua code will be cleaned up upgraded as some is quite old
+               and experimental \stopitem
+    \startitem we need a proper dependency tree and better defined loading order \stopitem
+    \startitem all dotag.. will be moved to the tags_.. namespace \stopitem
+    \startitem we need to check what messages are gone (i.e.\ clean up mult-mes) \stopitem
+    \startitem some commands can go from mult-def (and the xml file) \stopitem
+    \startitem check for setuphandler vs simplesetuphandler \stopitem
+    \startitem all showcomposition etc can go (we can redo that in lua if needed) \stopitem
+    \startitem for the moment we will go for \type {xxxx_} namespaces that (mostly) match
+               the filename but later we can replace these by longer names (via a script) so
+               module writers should {\bf not} use the core commands with \type{_} in the
+               name \stopitem
+    \startitem the message system will be unified \stopitem
+\stopitemize
+
+\stopsubject
+
+\startsubject[title=Status]
+
+\startluacode
+
+    local coremodules = dofile("status-mkiv.lua")
+
+    if coremodules then
+
+        local function tabelize(loaded,what)
+
+            if loaded then
+
+                local nofunknown = 0
+                local nofloaded  = #loaded
+
+                for i=1,nofloaded do
+                    loaded[i].order = i
+                end
+
+                table.sort(loaded,function(a,b) return a.filename < b.filename end)
+
+                context.starttabulate { "|Tr|Tl|Tl|l|p|" }
+                context.NC() -- context.bold("order")
+                context.NC() context.bold("file")
+                context.NC() context.bold("mark")
+                context.NC() context.bold("status")
+                context.NC() context.bold("comment")
+                context.NC() context.NR()
+                for i=1,nofloaded do
+                    local module = loaded[i]
+                    local status = module.status
+                    context.NC() context(module.order)
+                    context.NC() context(module.filename)
+                    context.NC() context(module.marktype)
+                    if status == "unknown" then
+                        context.NC() context.bold(status)
+                        nofunknown = nofunknown + 1
+                    else
+                        context.NC() context(status)
+                    end
+                    context.NC() context(module.comment)
+                    context.NC() context.NR()
+                end
+                context.stoptabulate()
+
+                context.blank()
+
+                context("Of the %s %s modules (so far) in this list %s have the status unknown",nofloaded,what,nofunknown)
+
+            end
+
+        end
+
+        tabelize(coremodules.core, "core")
+        tabelize(coremodules.extra,"extra")
+
+    end
+
+    local namespaces = dofile("status-namespaces.lua")
+
+    local valid = table.tohash {
+        "toks", "attr", "page", "buff", "font", "colo", "phys", "supp", "typo", "strc",
+        "syst", "tabl", "spac", "scrn", "lang", "lxml", "mlib", "java", "pack", "math",
+        "symb", "grph", "anch", "luat", "mult", "back", "node", "meta",
+        "module",
+    }
+
+    context.startsubject { title = "Valid prefixes" }
+
+    for namespace, data in table.sortedhash(namespaces) do
+        if valid[namespace] then
+            context.type(namespace)
+        end
+        context.par()
+    end
+
+    context.stopsubject()
+
+    context.startsubject { title = "Messy namespaces" }
+
+    for namespace, data in table.sortedhash(namespaces) do
+        if valid[namespace] then
+        else
+            context(namespace)
+        end
+        context.par()
+    end
+
+    context.stopsubject()
+
+    local registers  = dofile("status-registers.lua")
+
+    context.startsubject { title = "Messy registers" }
+    for register, data in table.sortedhash(registers) do
+        context(register)
+        context.par()
+        for name in table.sortedhash(data) do
+            context.quad()
+            context.type(name)
+            context.par()
+        end
+        context.par()
+    end
+
+\stopluacode
+
+\stopsubject
+
+\stoptext

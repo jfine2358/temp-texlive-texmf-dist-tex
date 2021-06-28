@@ -1,0 +1,55 @@
+\ProvidesPackage{luavlna}[2021-03-02 luavlna]
+
+\RequirePackage{kvoptions}
+
+\def\nosingledefaults{\relax}
+\input luavlna 
+
+% we need to redefine the setting functions to use directly the language numbers
+% in order to support polyglossia
+\def\singlechars#1#2{%
+  \ifcsname l@#1\endcsname%
+    \expandafter\directlua\expandafter{set_singlechars("\the\csname l@#1\endcsname","#2")}%
+  \fi%
+}
+
+% Define compound initials
+\def\compoundinitials#1#2{%
+  \ifcsname l@#1\endcsname%
+    \expandafter\directlua\expandafter{set_compounds("\the\csname l@#1\endcsname","#2")}%
+  \fi%
+}
+
+
+\def\enablesplithyphens#1{%
+  \ifcsname l@#1\endcsname%
+  \typeout{set lang #1, \the\csname l@#1\endcsname}%
+    \directlua{enable_split_hyphens("\the\csname l@#1\endcsname")}%
+  \fi%
+}
+
+\def\disablesplithyphens#1{%
+  \ifcsname l@#1\endcsname%
+    \directlua{disable_split_hyphens("\the\csname l@#1\endcsname")}%
+  \fi%
+}
+
+\DeclareVoidOption{noinitials}{\noinitials}
+\DeclareVoidOption{nounits}{\nounits}
+\DeclareVoidOption{nopredegrees}{\nopredegrees}
+\DeclareVoidOption{nosufdegrees}{\nosufdegrees}
+\DeclareVoidOption{noprocess}{\preventsingleoff}
+\DeclareVoidOption{debug}{\preventsingledebugon}
+\DeclareBoolOption[true]{defaults}
+\ProcessKeyvalOptions*
+
+\ifluavlna@defaults
+\AtBeginDocument{%
+  \singlechars{czech}{AIiVvOoUuSsZzKk}
+  \singlechars{slovak}{AIiVvOoUuSsZzKk}
+  \compoundinitials{czech}{Ch,CH}
+  \enablesplithyphens{czech}
+  \enablesplithyphens{slovak}
+}
+\fi
+\endinput

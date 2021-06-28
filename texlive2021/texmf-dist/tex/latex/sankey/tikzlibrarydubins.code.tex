@@ -1,0 +1,386 @@
+%%
+%% This is file `tikzlibrarydubins.code.tex',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% sankey.dtx  (with options: `tikzlibrarydubins.code.tex')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (C) 2016, 2021 by Paul Gaborit
+%% 
+%% This work may be distributed and/or modified under the conditions of the
+%% LaTeX Project Public License, either version 1.3 of this license or (at
+%% your option) any later version.  The latest version of this license is
+%% in
+%% 
+%% <http://www.latex-project.org/lppl.txt>
+%% 
+%% and version 1.3 or later is part of all distributions of LaTeX version
+%% 2005/12/01 or later.
+%% 
+%% This work has the LPPL maintenance status “maintained”.
+%% 
+%% The Current Maintainer of this work is Paul Gaborit.
+%% 
+%% This work consists of the files sankey.dtx, sankey.ins and the derived
+%% files sankey.sty, tikzlibrarydubins.code.tex, sankey-doc-preamble.sty,
+%% sankey-example1.tex, sankey-example2.tex, sankey-example3.tex,
+%% sankey-example3-variation.tex, sankey-example4.tex,
+%% sankey-example-energy.tex
+%% 
+\def\tikzlibrarydubins@version{v3.0}
+\def\tikzlibrarydubins@date{2021/03/14}
+
+\usetikzlibrary{calc}
+\RequirePackage{etoolbox}
+\RequirePackage{xfp}
+
+\newbool{dubinspathreverse}
+
+\def\ifpgfmathcond#1{%
+  \pgfmathparse{(#1)?1:0}%
+  \ifnumequal{\pgfmathresult}{1}%
+}
+
+\def\dbp@getxy#1#2#3{%
+  \tikz@scan@one@point\pgfutil@firstofone(#3)\relax%
+  \edef#1{\the\pgf@x}%
+  \edef#2{\the\pgf@y}%
+}
+
+\def\dbp@anglebetween#1#2#3{%macro, s, t
+  \dbp@getxy\dbp@ax\dbp@ay{#2}
+  \dbp@getxy\dbp@bx\dbp@by{#3}
+  \pgfmathsetmacro#1{atan2(\dbp@by-\dbp@ay,\dbp@bx-\dbp@ax)}
+}
+
+\def\dbp@distancebetween#1#2#3{%macro, s, t
+  \dbp@getxy\dbp@ax\dbp@ay{#2}
+  \dbp@getxy\dbp@bx\dbp@by{#3}
+  \edef#1{\fpeval{sqrt(%
+      (\dbp@bx-\dbp@ax)*(\dbp@bx-\dbp@ax)%
+      +(\dbp@by-\dbp@ay)*(\dbp@by-\dbp@ay)%
+      )}}%
+}
+
+\newcommand\dbp@rsr{% s, sa, t, ta, as, len, at, r
+  let
+  \p{tr}=([shift={(\dbp@angb-90:\dbp@radius pt)}]\dbp@b),
+  \n1={\dbp@anga+90},
+  \n2={\dbp@angb+90},
+  \n3={\n2+\dbp@lastangle}
+  in
+  arc(\n1:\n1-\dbp@firstangle:\dbp@rradius pt)
+  -- ([shift={(\p{tr})}]\n3:\dbp@rradius pt)
+  arc(\n3:\n2:\dbp@rradius pt)
+}
+
+\newcommand\dbp@lsl{% s, sa, t, ta, as, len, at, r
+  let
+  \p{tl}=([shift={(\dbp@angb+90:\dbp@radius pt)}]\dbp@b),
+  \n1={\dbp@anga-90},\n2={\n1+\dbp@firstangle},
+  \n3={\dbp@angb-90},\n4={\n3-\dbp@lastangle}
+  in
+  arc(\n1:\n2:\dbp@lradius pt)
+  -- ([shift={(\p{tl})}]\n4:\dbp@lradius pt)
+  arc(\n4:\n3:\dbp@lradius pt)
+}
+
+\newcommand\dbp@rsl{% s, sa, t, ta, as, len, at, r
+  let
+  \p{tl}=([shift={(\dbp@angb+90:\dbp@radius pt)}]\dbp@b),
+  \n1={\dbp@anga+90},\n2={\n1-\dbp@firstangle},
+  \n3={\dbp@angb-90},\n4={\n3-\dbp@lastangle}
+  in
+  arc(\n1:\n2:\dbp@rradius pt)
+  -- ([shift={(\p{tl})}]\n4:\dbp@lradius pt)
+  arc(\n4:\n3:\dbp@lradius pt)
+}
+
+\newcommand\dbp@lsr{% s, sa, t, ta, as, len, at, r
+  let
+  \p{tr}=([shift={(\dbp@angb-90:\dbp@radius pt)}]\dbp@b),
+  \n1={\dbp@anga-90},\n2={\n1+\dbp@firstangle},
+  \n3={\dbp@angb+90},\n4={\n3+\dbp@lastangle}
+  in
+  arc(\n1:\n2:\dbp@lradius pt)
+  -- ([shift={(\p{tr})}]\n4:\dbp@rradius pt)
+  arc(\n4:\n3:\dbp@rradius pt)
+}
+
+\newcommand\dbp@lrl{% s, sa, t, ta, as, ai, at, r
+  let
+  \n1={\dbp@anga-90},\n2={\n1+\dbp@firstangle},
+  \n3={\dbp@angb-90},\n4={\n3-\dbp@lastangle}
+  in
+  arc(\n1:\n2:\dbp@lradius pt)
+  arc(\n2+180:\n2+180-\dbp@midparam:\dbp@rradius pt)
+  arc(\n4:\n3:\dbp@lradius pt)
+}
+
+\newcommand\dbp@rlr{% s, sa, t, ta, as, ai, at, r
+  let
+  \n1={\dbp@anga+90},\n2={\n1-\dbp@firstangle},
+  \n3={\dbp@angb+90},\n4={\n3+\dbp@lastangle}
+  in
+  arc(\n1:\n2:\dbp@rradius pt)
+  arc(\n2+180:\n2+180+\dbp@midparam:\dbp@lradius pt)
+  arc(\n4:\n3:\dbp@rradius pt)
+}
+\newcommand\dbp@rev@lsl{\dbp@rsr}
+\newcommand\dbp@rev@rsr{\dbp@lsl}
+\newcommand\dbp@rev@lsr{\dbp@lsr}
+\newcommand\dbp@rev@rsl{\dbp@rsl}
+\newcommand\dbp@rev@lrl{\dbp@rlr}
+\newcommand\dbp@rev@rlr{\dbp@lrl}
+
+\newcommand\dubinspath[1]{%
+  \pgfextra{
+    \dubinspathset{#1}
+    \ifbool{dubinspathreverse}{
+      \edef\dbp@newa{\dbp@b}
+      \edef\dbp@newb{\dbp@a}
+      \pgfmathsetmacro\dbp@newanga{180+\dbp@angb}
+      \pgfmathsetmacro\dbp@newangb{180+\dbp@anga}
+      \edef\dbp@newfirstangle{\dbp@lastangle}
+      \edef\dbp@newlastangle{\dbp@firstangle}
+      \edef\dbp@newmethod{rev@\dbp@method}
+      \edef\dbp@newlradius{\dbp@rradius}
+      \edef\dbp@newrradius{\dbp@lradius}
+      \dubinspathset{
+        start point=\dbp@newa,
+        end point=\dbp@newb,
+        start angle=\dbp@newanga,
+        end angle=\dbp@newangb,
+        first angle=\dbp@newfirstangle,
+        last angle=\dbp@newlastangle,
+        left and right minimum radii=\dbp@newlradius pt and \dbp@newrradius pt,
+        method=\dbp@newmethod,
+      }
+    }{}
+  }
+  \csname dbp@\dbp@method\endcsname%
+}
+
+%% solution
+
+\def\dbp@store#1#2{%
+  \expandafter\xdef\csname dbp@store@#1@#2\endcsname%
+  {\csname dbp@#2\endcsname}%
+}
+\def\dbp@get#1#2{%
+  \csname dbp@store@#1@#2\endcsname%
+}
+
+\def\dbp@setparams#1#2#3#4#5{%
+  % method, length, fisrt angle, middle param, last angle
+  \edef\dbp@method{#1}
+  \edef\dbp@length{#2}
+  \edef\dbp@firstangle{#3}
+  \edef\dbp@middleparam{#4}
+  \edef\dbp@lastangle{#5}
+  \ifdef{\dbp@storename}{
+    \foreach \p in {method,length,firstangle,middleparam,lastangle}{
+      \dbp@store{\dbp@storename}{\p}
+    }
+  }{}
+}
+
+\def\dbp@updateparams#1#2#3#4#5{
+  \ifpgfmathcond{#2<\dbp@length}{
+    \dbp@setparams{#1}{#2}{#3}{#4}{#5}
+  }{}
+}
+
+\tikzset{
+  dubins path/.is family,
+  dubins path,
+  start point/.store in=\dbp@a,
+  start angle/.store in=\dbp@anga,
+  end point/.store in=\dbp@b,
+  end angle/.store in=\dbp@angb,
+  store/.store in=\dbp@storename,
+  use store/.style={
+    method=\dbp@get{#1}{method},
+    first angle=\dbp@get{#1}{firstangle},
+    last angle=\dbp@get{#1}{lastangle},
+    middle param=\dbp@get{#1}{middleparam},
+  },
+  minimum radius/.code={
+    \pgfmathsetmacro\dbp@radius{#1}
+    \pgfmathsetmacro\dbp@rradius{#1}
+    \pgfmathsetmacro\dbp@lradius{#1}
+  },
+  left and right minimum radii/.code args={#1 and #2}{
+    \pgfmathsetmacro\dbp@lradius{#1}
+    \pgfmathsetmacro\dbp@rradius{#2}
+    \pgfmathsetmacro\dbp@radius{(\dbp@lradius + \dbp@rradius)/2}
+  },
+  method/.store in=\dbp@method,
+  first angle/.store in=\dbp@firstangle,
+  last angle/.store in=\dbp@lastangle,
+  middle param/.store in=\dbp@midparam,
+  reverse/.is if=dubinspathreverse,
+}
+
+\newcommand\dubinspathset[1]{\tikzset{dubins path,#1}}
+
+\newcommand\dubinspathcalc[1]{%
+  \begingroup
+  \dubinspathset{#1}
+  \tikzset{
+    declare function={
+      angtodist(\dbp@a,\dbp@r)={abs(\dbp@a)*.01745329*\dbp@r};
+      modangr(\dbp@a,\dbp@b)={
+        (
+        Mod(\dbp@a,360)<Mod(\dbp@b,360)
+        ?
+        Mod(\dbp@a,360)
+        :
+        Mod(\dbp@a,360)-360)+\dbp@b-Mod(\dbp@b,360
+        )
+      };
+      modangl(\dbp@a,\dbp@b)={
+        (
+        Mod(\dbp@a,360)<Mod(\dbp@b,360)
+        ?
+        Mod(\dbp@a,360)+360
+        :
+        Mod(\dbp@a,360))+(\dbp@b)-Mod(\dbp@b,360)
+      };
+    },
+  }
+
+  \pgfmathsetmacro\dbp@radius{\dbp@rradius}
+  \pgfmathsetmacro\dbp@anga{mod((\dbp@anga)+180,360)-180}
+  \pgfmathsetmacro\dbp@angb{mod((\dbp@angb)+180,360)-180}
+  \path
+  let
+  \p{a}=(\dbp@a),
+  \p{b}=(\dbp@b),
+  \p{ar}=($(\p{a}) + (\dbp@anga-90:\dbp@radius pt)$),
+  \p{al}=($(\p{a}) + (\dbp@anga+90:\dbp@radius pt)$),
+  \p{br}=($(\p{b}) + (\dbp@angb-90:\dbp@radius pt)$),
+  \p{bl}=($(\p{b}) + (\dbp@angb+90:\dbp@radius pt)$)
+  in \pgfextra{
+    \pgfinterruptpath
+
+    % RSR (ar and br)
+    \dbp@anglebetween\dbp@rsrarbr{\p{ar}}{\p{br}}
+    \dbp@distancebetween\dbp@rsrdarbr{\p{ar}}{\p{br}}
+    \pgfmathsetmacro\dbp@rsrangone{Mod(\dbp@anga-\dbp@rsrarbr,360)}
+    \pgfmathsetmacro\dbp@rsrangtwo{Mod(\dbp@rsrarbr-\dbp@angb,360)}
+    \pgfmathsetmacro\dbp@rsrlen{\dbp@rsrdarbr}
+    \pgfmathsetmacro\dbp@rsrdist{
+      angtodist(\dbp@rsrangone,\dbp@radius)
+      +\dbp@rsrlen
+      +angtodist(\dbp@rsrangtwo,\dbp@radius)
+    }
+    \dbp@setparams{rsr}{\dbp@rsrdist}{\dbp@rsrangone}{\dbp@rsrlen}{\dbp@rsrangtwo}
+
+    % LSL (al and bl)
+    \dbp@anglebetween\dbp@lslalbl{\p{al}}{\p{bl}}
+    \dbp@distancebetween\dbp@lsldalbl{\p{al}}{\p{bl}}
+    \pgfmathsetmacro{\dbp@lslangone}{mod(\dbp@lslalbl-\dbp@anga+720,360)}
+    \pgfmathsetmacro{\dbp@lslangtwo}{mod(\dbp@angb-\dbp@lslalbl+720,360)}
+    \pgfmathsetmacro\dbp@lsllen{\dbp@lsldalbl}
+    \pgfmathsetmacro\dbp@lsldist{
+      angtodist(\dbp@lslangone,\dbp@radius)
+      +\dbp@lsllen
+      +angtodist(\dbp@lslangtwo,\dbp@radius)
+    }
+    \dbp@updateparams%
+    {lsl}{\dbp@lsldist}{\dbp@lslangone}{\dbp@lsllen}{\dbp@lslangtwo}
+
+    % RSL (ar and bl)
+    \dbp@distancebetween\dbp@rsldarbl{\p{ar}}{\p{bl}}
+    \pgfmathtruncatemacro\dbp@rslok{(\dbp@rsldarbl>=2*\dbp@radius)?1:0}
+    \ifnumequal{\dbp@rslok}{1}{
+      \dbp@anglebetween\dbp@rslarbl{\p{ar}}{\p{bl}}
+      \pgfmathsetmacro\dbp@rslanglesup{
+        asin(\dbp@radius/\dbp@rsldarbl*2)}
+      \pgfmathsetmacro\dbp@rslangone
+      {Mod(\dbp@anga-\dbp@rslarbl+\dbp@rslanglesup,360)}
+      \pgfmathsetmacro\dbp@rslangtwo
+      {Mod(\dbp@angb-\dbp@rslarbl+\dbp@rslanglesup,360)}
+      \pgfmathsetmacro\dbp@rsllen{veclen(\dbp@rsldarbl,\dbp@radius)}
+      \pgfmathsetmacro\dbp@rsldist{
+        angtodist(\dbp@rslangone,\dbp@radius)
+        +\dbp@rsllen
+        +angtodist(\dbp@rslangtwo,\dbp@radius)
+      }
+
+      \dbp@updateparams%
+      {rsl}{\dbp@rsldist}{\dbp@rslangone}{\dbp@rsllen}{\dbp@rslangtwo}
+    }{}
+
+    % LSR (al and br)
+    \dbp@distancebetween\dbp@lsrdalbr{\p{al}}{\p{br}}
+    \pgfmathtruncatemacro\dbp@lsrok{(\dbp@lsrdalbr>=2*\dbp@radius)?1:0}
+    \ifnumequal{\dbp@lsrok}{1}{
+      \dbp@anglebetween\dbp@lsralbr{\p{al}}{\p{br}}
+      \pgfmathsetmacro\dbp@lsranglesup{
+        asin(\dbp@radius/\dbp@lsrdalbr*2)}
+      \pgfmathsetmacro\dbp@lsrangone
+      {Mod(\dbp@lsralbr+\dbp@lsranglesup-\dbp@anga,360)}
+      \pgfmathsetmacro\dbp@lsrangtwo
+      {Mod(\dbp@lsralbr+\dbp@lsranglesup-\dbp@angb,360)}
+      \pgfmathsetmacro\dbp@lsrlen{veclen(\dbp@lsrdalbr,\dbp@radius)}
+      \pgfmathsetmacro\dbp@lsrdist{
+        angtodist(\dbp@lsrangone,\dbp@radius)
+        +\dbp@lsrlen
+        +angtodist(\dbp@lsrangtwo,\dbp@radius)
+      }
+      \dbp@updateparams%
+      {lsr}{\dbp@lsrdist}{\dbp@lsrangone}{\dbp@lsrlen}{\dbp@lsrangtwo}
+    }{}
+
+    % LRL (al and bl)
+    \dbp@distancebetween\dbp@lrldalbl{\p{al}}{\p{bl}}
+    \pgfmathtruncatemacro\dbp@lrlok{(\dbp@lrldalbl<=4*\dbp@radius)?1:0}
+    \ifnumequal{\dbp@lrlok}{1}{
+      \dbp@anglebetween\dbp@lrlalbl{\p{al}}{\p{bl}}
+      \pgfmathsetmacro\dbp@lrlangsup{acos(\dbp@lrldalbl/\dbp@radius/4)}
+      \pgfmathsetmacro\dbp@lrlangone{
+        modangl(\dbp@lrlalbl+\dbp@lrlangsup,\dbp@anga-90)-(\dbp@anga-90)}
+      \pgfmathsetmacro\dbp@lrlangtwo{%
+        (\dbp@angb-90)-modangr(\dbp@lrlalbl+180-\dbp@lrlangsup,\dbp@angb-90)}
+      \pgfmathsetmacro\dbp@lrlangthree{360-2*(90-\dbp@lrlangsup)}
+      \pgfmathsetmacro\dbp@lrldist{
+        angtodist(\dbp@lrlangone,\dbp@radius)
+        +angtodist(\dbp@lrlangthree,\dbp@radius)
+        +angtodist(\dbp@lrlangtwo,\dbp@radius)
+      }
+      \dbp@updateparams%
+      {lrl}{\dbp@lrldist}{\dbp@lrlangone}{\dbp@lrlangthree}{\dbp@lrlangtwo}
+    }{}
+
+    % RLR (ar and br)
+    \dbp@distancebetween\dbp@rlrdarbr{\p{ar}}{\p{br}}
+    \pgfmathtruncatemacro\dbp@rlrok{(\dbp@rlrdarbr<=4*\dbp@radius)?1:0}
+    \ifnumequal{\dbp@rlrok}{1}{
+      \dbp@anglebetween\dbp@rlrarbr{\p{ar}}{\p{br}}
+      \pgfmathsetmacro\dbp@rlrangsup{acos(\dbp@rlrdarbr/\dbp@radius/4)}
+      \pgfmathsetmacro\dbp@rlrangone{
+        (\dbp@anga+90)-modangr(\dbp@rlrarbr-\dbp@rlrangsup,\dbp@anga+90)}
+      \pgfmathsetmacro\dbp@rlrangtwo{%
+        modangl(\dbp@rlrarbr+180+\dbp@rlrangsup,\dbp@angb+90)-(\dbp@angb+90)}
+      \pgfmathsetmacro\dbp@rlrangthree{360-2*(90-\dbp@rlrangsup)}
+      \pgfmathsetmacro\dbp@rlrdist{
+        angtodist(\dbp@rlrangone,\dbp@radius)
+        +angtodist(\dbp@rlrangthree,\dbp@radius)
+        +angtodist(\dbp@rlrangtwo,\dbp@radius)
+      }
+      \dbp@updateparams%
+      {rlr}{\dbp@rlrdist}{\dbp@rlrangone}{\dbp@rlrangthree}{\dbp@rlrangtwo}
+    }{}
+
+    \endpgfinterruptpath
+  };
+  \endgroup
+}
+\endinput
+%%
+%% End of file `tikzlibrarydubins.code.tex'.

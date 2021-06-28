@@ -1,0 +1,228 @@
+% Copyright 2007-2009 by Massimo Redaelli
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/LICENSE for more details.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Bipole label positioning
+
+%% Options
+\ctikzset{label/.style = { l=#1 } }
+\ctikzset{l/.code = { 
+	\pgfkeys{/tikz/circuitikz/bipole/label/name=#1}
+	\ctikzsetvalof{bipole/label/unit}{}
+	\ifpgf@circ@siunitx 
+		\pgf@circ@handleSI{#1}
+		\ifpgf@circ@siunitx@res 
+			\edef\pgf@temp{\pgf@circ@handleSI@val}
+			\pgfkeyslet{/tikz/circuitikz/bipole/label/name}{\pgf@temp}
+			\edef\pgf@temp{\pgf@circ@handleSI@unit}
+			\pgfkeyslet{/tikz/circuitikz/bipole/label/unit}{\pgf@temp}
+		\else
+		\fi
+	\else
+	\fi
+}}
+
+\ctikzset{label above/.code = { 
+		l=#1, 
+		\circuitikzbasekey/bipole/label/position=90 }
+}
+
+\ctikzset{l^/.style = { 
+		l=#1,
+		\circuitikzbasekey/bipole/label/position=90 } 
+}
+
+\ctikzset{label below/.code = { 
+		l=#1,
+		\circuitikzbasekey/bipole/label/position=-90 } 
+}
+
+\ctikzset{l_/.style = { 
+		l=#1,
+		\circuitikzbasekey/bipole/label/position=-90 } 
+}
+
+\ctikzset{annotation/.style = { a=#1 } }
+\ctikzset{a/.code = {
+		\pgfkeys{/tikz/circuitikz/bipole/annotation/name=#1}
+		\ctikzsetvalof{bipole/annotation/unit}{}
+		\ifpgf@circ@siunitx
+		\pgf@circ@handleSI{#1}
+		\ifpgf@circ@siunitx@res
+		\edef\pgf@temp{\pgf@circ@handleSI@val}
+		\pgfkeyslet{/tikz/circuitikz/bipole/annotation/name}{\pgf@temp}
+		\edef\pgf@temp{\pgf@circ@handleSI@unit}
+		\pgfkeyslet{/tikz/circuitikz/bipole/annotation/unit}{\pgf@temp}
+		\else
+		\fi
+		\else
+		\fi
+	}}
+
+\ctikzset{annotation above/.code = { 
+	a=#1, 
+	\circuitikzbasekey/bipole/annotation/position=90 }
+}
+
+\ctikzset{a^/.style = { 
+	a=#1,
+	\circuitikzbasekey/bipole/annotation/position=90 } 
+}
+
+\ctikzset{annotation below/.code = { 
+	a=#1,
+	\circuitikzbasekey/bipole/annotation/position=-90 } 
+}
+\ctikzset{a_/.style = { 
+	a=#1,
+	\circuitikzbasekey/bipole/annotation/position=-90 } 
+}
+
+
+
+\def\pgf@circ@drawlabels#1{
+	\pgfextra{
+		\pgfmathsubtract{\pgf@circ@direction}{90}
+		\edef\pgf@circ@labanc{\expandafter\pgf@circ@stripdecimals\pgfmathresult\pgf@nil}
+		
+		\edef\pgf@circ@temp{\ctikzvalof{bipole/#1/position}} 
+		\ifnum \pgf@circ@temp < 0
+			\pgfmathadd{\pgf@circ@labanc}{180}
+			\edef\pgf@circ@labanc{\expandafter\pgf@circ@stripdecimals\pgfmathresult\pgf@nil}
+		\fi
+		\ifpgf@circuit@bipole@inverted
+			\pgfmathadd{\pgf@circ@temp}{180} %If shape is inverted, use opposite anchor
+			\edef\pgf@circ@temp{\expandafter\pgf@circ@stripdecimals\pgfmathresult\pgf@nil}
+		\fi
+		
+		\ifnum \ctikzvalof{mirror value} = -1
+			\pgfmathadd{\pgf@circ@temp}{180} %If shape is mirrored, use opposite anchor
+			\edef\pgf@circ@temp{\expandafter\pgf@circ@stripdecimals\pgfmathresult\pgf@nil}
+		\fi
+	}
+		%Firstly, place a coodinate directly at the edge of the shape
+		(\ctikzvalof{bipole/name}.\pgf@circ@temp) coordinate (labelcoor)
+		%now decide, which labels should be drawn
+		\pgfextra{
+			\edef\pgf@temp{\ctikzvalof{label/align}}
+			\def\pgf@circ@temp{straight}
+		}
+		\ifx\pgf@temp\pgf@circ@temp %straight
+			\pgf@circ@drawreglabels{#1}
+		\else
+			\pgfextra{\def\pgf@circ@temp{rotate}}
+			\ifx\pgf@temp\pgf@circ@temp %rotate
+				\pgf@circ@drawrotlabels{#1}
+			\else% smart
+				\pgf@circ@drawsmartlabels{#1}
+			\fi
+		\fi
+}
+
+
+\def\pgf@circ@drawsmartlabels#1{
+	\pgfextra{
+		\pgfmathmod{\pgf@circ@direction}{90}
+		\edef\pgfcircmathresult{\expandafter\pgf@circ@stripdecimals\pgfmathresult\pgf@nil}
+	}
+	\ifnum \pgfcircmathresult > 20	
+		\ifnum \pgfcircmathresult < 70
+			\pgf@circ@drawrotlabels{#1}
+		\else
+			\pgf@circ@drawreglabels{#1}
+		\fi
+	\else
+		\pgf@circ@drawreglabels{#1}
+	\fi
+}
+
+
+\def\pgf@circ@drawrotlabels#1{
+	\pgfextra{
+		\ifnum \ctikzvalof{bipole/#1/position}>0
+		%we need some more space for placement below, due to mid-anchor
+			\def\pgf@circ@labposdistance{1.5ex}
+			\else
+			\def\pgf@circ@labposdistance{2ex}
+		\fi
+		%Calculate rotation of the label from direction and strip decimals
+		\edef\pgfcirclabrot{\expandafter\pgf@circ@stripdecimals\pgf@circ@direction\pgf@nil}
+		% rotate the label at second or third quadrant:
+		\ifnum \pgfcirclabrot > 90 \ifnum \pgfcirclabrot < 270
+			\pgfmathsubtract{\pgf@circ@direction}{180}
+			\edef\pgfcirclabrot{\expandafter\pgf@circ@stripdecimals\pgfmathresult\pgf@nil}
+			%invert the space relationships due to rotatet strings
+			\ifnum \ctikzvalof{bipole/#1/position}>0
+				\def\pgf@circ@labposdistance{2ex}
+			\else
+				\def\pgf@circ@labposdistance{1.5ex}
+			\fi
+		\fi\fi
+		\pgfmathparse{\ctikzvalof{bipole/#1/position}>0?\pgf@circ@direction+90:\pgf@circ@direction-90}
+		\edef\pgf@circ@labposangle{\expandafter\pgf@circ@stripdecimals\pgfmathresult\pgf@nil}
+	}				
+	(labelcoor)++(\pgf@circ@labposangle:\pgf@circ@labposdistance) coordinate(labelcoor)
+	node[anchor=mid,rotate=\pgfcirclabrot](\ctikzvalof{bipole/name}#1){\pgf@circ@finallabels{#1}}
+}
+
+\def\pgf@circ@drawreglabels#1{
+
+	%Now calculate all shape positions
+	%Use mid-anchor at x-axis and base-anchor at y-axis, respectively.
+	%All points between will be addressed by angled-anchors:
+	\pgfextra{
+		\pgfmathadd{\pgf@circ@labanc}{90}
+		\edef\pgf@circ@temp{\expandafter\pgf@circ@stripdecimals\pgfmathresult\pgf@nil}
+		\pgfmathparse{mod(\pgf@circ@temp,180)>135?mod(\pgf@circ@temp,180)-180:mod(\pgf@circ@temp,180)}
+		\edef\pgfcircmathresult{\expandafter\pgf@circ@stripdecimals\pgfmathresult\pgf@nil}
+	}
+	%Values between -5 and 5 are at pos /neg x-axis, values around 90 are at both y-axis
+	\ifnum \pgfcircmathresult > 84 \ifnum \pgfcircmathresult< 96
+		\pgfextra{\edef\pgf@circ@labpos{\expandafter\pgf@circ@stripdecimals\pgf@circ@direction\pgf@nil}}
+		\ifnum \pgf@circ@labpos > 180
+			\ifnum \ctikzvalof{bipole/#1/position} > 0
+				\pgfextra{\def\pgf@circ@labanc{mid west}}
+			\else
+				\pgfextra{\def\pgf@circ@labanc{mid east}}
+			\fi
+		\else
+			\ifnum \ctikzvalof{bipole/#1/position} > 0
+				\pgfextra{\def\pgf@circ@labanc{mid east}}
+			\else
+				\pgfextra{\def\pgf@circ@labanc{mid west}}
+			\fi
+		\fi
+	\fi\fi
+	\ifnum \pgfcircmathresult <6
+		\ifnum \ctikzvalof{bipole/#1/position} < 0
+			%we need some more space for placement below, due to mid-anchor
+			(labelcoor)++(-\pgf@circ@labanc:2ex) coordinate(labelcoor)
+		\else
+			(labelcoor)++(-\pgf@circ@labanc:1.5ex) coordinate(labelcoor)
+		\fi
+		\pgfextra{\def\pgf@circ@labanc{mid}}
+	\fi
+	 (labelcoor) node[anchor=\pgf@circ@labanc](\ctikzvalof{bipole/name}#1){\pgf@circ@finallabels{#1}}
+}
+
+\def\pgf@circ@finallabels#1{%
+	\edef\pgf@temp{}%
+	\edef\pgf@circ@temp{\ctikzvalof{bipole/#1/unit}}%
+	\ifx\pgf@temp\pgf@circ@temp%
+	\ctikzvalof{bipole/#1/name}%
+	\else%
+	$\SI{\ctikzvalof{bipole/#1/name}}{\ctikzvalof{bipole/#1/unit}}$%
+	\fi%
+}
+
+\ctikzset{text/.style = { t=#1 } }
+\ctikzset{t/.code = { 
+	\ctikzsetvalof{bipoles/twoport/text}{#1}
+}}
+\endinput

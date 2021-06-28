@@ -1,0 +1,605 @@
+%%
+%% This is file `zhnumber.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% zhnumber.dtx  (with options: `package')
+%% 
+%%    Copyright (C) 2012 by Qing Lee <sobenlee@gmail.com>
+%% --------------------------------------------------------------------------
+%%    This work may be distributed and/or modified under the
+%%    conditions of the LaTeX Project Public License, either version 1.3
+%%    of this license or (at your option) any later version.
+%%    The latest version of this license is in
+%%      http://www.latex-project.org/lppl.txt
+%%    and version 1.3 or later is part of all distributions of LaTeX
+%%    version 2005/12/01 or later.
+%% 
+%%    This work has the LPPL maintenance status "maintained".
+%%    The Current Maintainer of this work is Qing Lee.
+%% 
+\NeedsTeXFormat{LaTeX2e}
+\RequirePackage{expl3}
+\GetIdInfo$Id: zhnumber.dtx 367 2012-11-23 04:45:50Z sobenlee $
+  {Typesetting numbers with Chinese glyphs}
+\ProvidesExplPackage{\ExplFileName}{\ExplFileDate}{1.6}{\ExplFileDescription}
+\msg_new:nnn { zhnumber } { l3-too-old }
+  {
+    Support~package~'expl3'~too~old. \\\\
+    Please~update~an~up~to~date~version~of~the~bundles\\\\
+    'l3kernel'~and~'l3packages'\\\\
+    using~your~TeX~package~manager~or~from~CTAN.
+  }
+\@ifpackagelater { expl3 } { 2012/07/16 } { }
+  { \msg_error:nn  { zhnumber }  { l3-too-old } }
+\RequirePackage{xparse}
+\RequirePackage{l3keys2e}
+\DeclareExpandableDocumentCommand \zhnumber { o m }
+  { \zhnum_number_aux:nNn {#1} \zhnum_number:n {#2} }
+\cs_new_nopar:Nn \zhnum_number:n { \zhnum_number:w #1 . \q_nil . \q_stop }
+\cs_new_nopar:Nn \zhnum_number_aux:nNn
+  {
+    \IfNoValueTF {#1} { #2 {#3} }
+      { \group_begin: \zhnumsetup {#1} #2 {#3} \group_end: }
+  }
+\cs_new_nopar:Npn \zhnum_number:w #1.#2.#3 \q_stop
+  {
+    \quark_if_nil:nTF {#2}
+      { \zhnum_integer_or_fraction:w #1 / \q_nil / \q_stop }
+      { \zhnum_decimal:nn {#1} {#2} }
+  }
+\cs_new_nopar:Npn \zhnum_integer_or_fraction:w #1/#2/#3 \q_stop
+  {
+    \quark_if_nil:nTF {#2}
+      { \zhnum_integer:f {#1} }
+      { \zhnum_fraction:w #2 \q_mark #1 ; \q_nil ; \q_stop }
+  }
+\cs_new_nopar:Npn \zhnum_fraction:w #1 \q_mark #2;#3;#4 \q_stop
+  {
+    \quark_if_nil:nTF {#3}
+      {
+        \zhnum_blank_to_zero:f {#1} \c_zhnum_parts_tl
+        \zhnum_blank_to_zero:f {#2}
+      }
+      {
+        \tl_if_blank:fF {#2} { \zhnumber {#2} \c_zhnum_and_tl }
+        \zhnum_blank_to_zero:f {#1} \c_zhnum_parts_tl
+        \zhnum_blank_to_zero:f {#3}
+      }
+  }
+\cs_generate_variant:Nn \tl_if_blank:nF { f }
+\cs_new_nopar:Nn \zhnum_decimal:nn
+  {
+    \zhnum_blank_to_zero:f {#1} \c_zhnum_dot_tl
+    \tl_if_blank:fTF {#2} { \c_zhnum_zero_tl } { \zhdigits * {#2} }
+  }
+\cs_generate_variant:Nn \tl_if_blank:nTF { f }
+\cs_new_nopar:Nn \zhnum_blank_to_zero:n
+  { \tl_if_blank:nTF {#1} { \zhnum_digit_map:n \c_zero } { \zhnumber {#1} } }
+\cs_generate_variant:Nn \zhnum_blank_to_zero:n { f }
+\DeclareExpandableDocumentCommand \zhnum { o m }
+  { \zhnum_number_aux:nNn {#1} \zhnum_counter:n {#2} }
+\cs_new_nopar:Nn \zhnum_counter:n
+  {
+    \exp_args:Nc \token_if_int_register:NTF { c@#1 }
+      { \zhnum_integer:v { c@#1 } }
+      { \@nocounterr {#1} }
+  }
+\cs_new_nopar:Nn \zhnum_integer:n
+  {
+    \int_compare:nNnT { \__int_get_sign:n {#1} \c_one } < \c_zero { \c_zhnum_minus_tl }
+    \zhnum_parse_number:f { \zhnum_trim_zeros:f { \zhnum_erase_separator:n {#1} } }
+  }
+\cs_generate_variant:Nn \zhnum_integer:n { f , v , V }
+\cs_new_nopar:Nn \zhnum_erase_separator:n
+  { \cs_to_str:c { \tl_map_function:nN {#1} \zhnum_erase_separator_aux:N } }
+\cs_new_nopar:Nn \zhnum_erase_separator_aux:N { \zhnum_if_number:NT {#1} {#1} }
+\cs_new_nopar:Nn \zhnum_trim_zeros:n
+  {
+    \tl_if_empty:nTF {#1} \c_zero
+      {
+        \int_compare:nNnTF { \tl_head:n {#1} } = \c_zero
+          { \zhnum_trim_zeros:o { \use_none:n #1 } } {#1}
+      }
+  }
+\prg_new_conditional:Nnn \zhnum_if_number:N { p , T , F , TF }
+  {
+    \if_int_compare:w \c_one < 1 #1 \exp_stop_f:
+      \prg_return_true: \else: \prg_return_false: \fi:
+  }
+\cs_generate_variant:Nn \zhnum_trim_zeros:n { f , o }
+\cs_generate_variant:Nn \cs_to_str:N        { c }
+\cs_new_nopar:Nn \zhnum_parse_number:n
+  {
+    \zhnum_parse_number:nff {#1}
+      { \tl_count:n {#1} }
+      { \int_mod:nn { \tl_count:n {#1} } \c_four }
+  }
+\cs_new_nopar:Nn \zhnum_parse_number:nnn
+  {
+    \int_compare:nNnTF {#2} < \c_two
+      { \zhnum_digit_map:n {#1} }
+      {
+        \zhnum_split_number:fNNfn { \zhnum_insert_zeros:n {#3} #1 }
+          \c_true_bool \c_true_bool
+          {
+            \int_compare:nNnTF {#3} = \c_zero
+              { \int_eval:n { (#2) / \c_four - \c_one } }
+              { \int_div_truncate:nn {#2} \c_four }
+          }
+          { \c_zero }
+      }
+  }
+\cs_generate_variant:Nn \zhnum_parse_number:n   {   f }
+\cs_generate_variant:Nn \zhnum_parse_number:nnn { nff }
+\cs_new_nopar:Nn \zhnum_insert_zeros:n
+  {
+    \if_case:w \int_eval:n { #1 - \c_one } \exp_stop_f:
+      \or: \exp_after:wN \use_none:n
+      \or: \exp_after:wN \use_none:nn
+    \else: \exp_after:wN \use_none:nnn
+    \fi:
+    000
+  }
+\cs_new_nopar:Nn \zhnum_split_number:nNNnn
+  {
+    \zhnum_split_number_aux:fnNNnn { \zhnum_number_item:nn {#1} {#5} }
+      {#1} #2#3 {#4} {#5}
+  }
+\cs_new_nopar:Nn \zhnum_split_number_aux:nnNNnn
+  {
+    \int_compare:nNnTF {#1} = \c_zero { \use_i_ii:nnn }
+      {
+        \bool_if:NF #3 { \c_zhnum_zero_tl }
+        \zhnum_process_number:NNn #3#4 {#1}
+        \zhnum_scale_map:n { #5 - #6 }
+        \int_compare:nNnTF { \int_mod:nn {#1} \c_ten } = \c_zero
+          { \use_i_ii:nnn } { \zhnum_use_i_iii:nnn }
+      }
+    { \int_compare:nNnF {#5} = {#6} }
+    { {
+        \zhnum_split_number:nNNnf
+          {#2} \c_false_bool \c_true_bool {#5} { \int_eval:n { #6 + \c_one } }
+    } }
+    { {
+        \zhnum_split_number:nNNnf
+          {#2} \c_true_bool \c_false_bool {#5} { \int_eval:n { #6 + \c_one } }
+    } }
+  }
+\cs_new_nopar:Nn \zhnum_use_i_iii:nnn {#1#3}
+\cs_generate_variant:Nn \zhnum_split_number:nNNnn { fNNf , nNNnf }
+\cs_generate_variant:Nn \zhnum_split_number_aux:nnNNnn { f }
+\cs_new_nopar:Nn \zhnum_number_item:nn
+  { \zhnum_number_item_aux:nNNNN {#2} #1 \q_recursion_stop }
+\cs_new_nopar:Nn \zhnum_number_item_aux:nNNNN
+  {
+    \int_compare:nNnTF {#1} = \c_zero
+      { \zhnum_recursion_stop:NNNNw #2#3#4#5 }
+      { \zhnum_number_item_aux:fNNNN { \int_eval:n { #1 - \c_one } } }
+  }
+\cs_generate_variant:Nn \zhnum_number_item_aux:nNNNN { f }
+\cs_new_nopar:Npn \zhnum_recursion_stop:NNNNw #1#2#3#4#5 \q_recursion_stop {#1#2#3#4}
+\cs_new_nopar:Nn \zhnum_process_number:NNn
+  { \zhnum_process_number:NNNNNN #3#1#2 }
+\cs_new_nopar:Nn \zhnum_process_number:NNNNNN
+  {
+    \int_compare:nNnTF {#1} = \c_zero
+      { \bool_if:NF #6 { \c_zhnum_zero_tl } }
+      { \zhnum_digit_map:n {#1} \c_zhnum_thousand_tl }
+    \int_compare:nNnTF {#2} = \c_zero
+      { \int_compare:nNnT { #1 * (#3#4) } > \c_zero { \c_zhnum_zero_tl } }
+      {
+        \bool_if:nTF
+          { \l_zhnum_ancient_bool && \int_compare_p:nNn {#2} = \c_two }
+          { \zhnum_digit_map:n { #2 00 } }
+          { \zhnum_digit_map:n {#2} \c_zhnum_hundred_tl }
+      }
+    \int_compare:nNnTF {#3} = \c_zero
+      { \int_compare:nNnT { #2 * #4 } > \c_zero { \c_zhnum_zero_tl } }
+      {
+        \bool_if:nF
+          {
+            \int_compare_p:nNn {#3}   = \c_one  &&
+            \int_compare_p:nNn {#1#2} = \c_zero && #6 && #5
+          }
+          {
+            \bool_if:nTF
+              {
+                \l_zhnum_ancient_bool                   &&
+                ( \int_compare_p:nNn {#3} = \c_two   ||
+                  \int_compare_p:nNn {#3} = \c_three ||
+                  \int_compare_p:nNn {#3} = \c_four )
+              }
+              { \zhnum_digit_map:n { #3 0 } \use_none:n }
+              { \zhnum_digit_map:n {#3} }
+          }
+        \c_zhnum_ten_tl
+      }
+    \int_compare:nNnF {#4} = \c_zero { \zhnum_digit_map:n {#4} }
+  }
+\DeclareExpandableDocumentCommand \zhdigits { s o m }
+  {
+    \IfBooleanTF {#1}
+      { \zhnum_digits_aux:nnN {#2} {#3} \zhnum_digits_zero_aux:N }
+      { \zhnum_digits_aux:nnN {#2} {#3} \zhnum_digits_null_aux:N }
+  }
+\cs_new_nopar:Nn \zhnum_digits_aux:nnN
+  {
+    \IfNoValueTF {#1} { \tl_map_function:fN {#2} #3 }
+      { \group_begin: \zhnumsetup {#1} \tl_map_function:fN {#2} #3 \group_end: }
+  }
+\cs_new_nopar:Nn \zhnum_digits_null:n { \tl_map_function:fN {#1} \zhnum_digits_null_aux:N }
+\cs_generate_variant:Nn \zhnum_digits_null:n { V }
+\cs_generate_variant:Nn \tl_map_function:nN  { f }
+\cs_new_nopar:Nn \zhnum_digits_null_aux:N { \zhnum_digits_aux:NN \c_true_bool  #1 }
+\cs_new_nopar:Nn \zhnum_digits_zero_aux:N { \zhnum_digits_aux:NN \c_false_bool #1 }
+\cs_new_nopar:Nn \zhnum_digits_aux:NN
+  {
+    \str_if_eq_x:nnTF {#2} . \c_zhnum_dot_tl
+      {
+        \str_if_eq_x:nnTF {#2} -
+          { \c_zhnum_minus_tl }
+          {
+            \zhnum_if_number:NT {#2}
+              {
+                \bool_if:nTF { \int_compare_p:nNn {#2} = \c_zero }
+                  { \bool_if:NTF #1 \c_zhnum_null_tl \c_zhnum_zero_tl }
+                  { \zhnum_digit_map:n {#2} }
+              }
+          }
+      }
+  }
+\DeclareExpandableDocumentCommand \zhdate { s m }
+  {
+    \zhnum_date:w #2 \q_stop
+    \IfBooleanT {#1} { \zhweekday {#2} }
+  }
+\cs_new_nopar:Npn \zhnum_date:w #1/#2/#3 \q_stop
+  {
+    \zhnum_check_time:Nn \zhnum_digits_null:n {#1} \c_zhnum_year_tl
+    \zhnum_check_time:Nn \zhnum_integer:f {#2} \c_zhnum_month_tl
+    \zhnum_check_time:Nn \zhnum_integer:f {#3} \c_zhnum_day_tl
+  }
+\cs_new_nopar:Npn \zhtoday
+  {
+    \zhnum_check_time:Nn \zhnum_digits_null:V \tex_year:D \c_zhnum_year_tl
+    \zhnum_check_time:Nn \zhnum_integer:V \tex_month:D \c_zhnum_month_tl
+    \zhnum_check_time:Nn \zhnum_integer:V \tex_day:D   \c_zhnum_day_tl
+  }
+\cs_new_nopar:Nn \zhnum_check_time:Nn
+  { \bool_if:NTF \l_zhnum_time_bool {#1} { \int_eval:n } {#2} }
+\cs_new_nopar:Npn \zhweekday #1 { \zhnum_week_day:w #1 \q_stop }
+\cs_new_nopar:Nn \zhnum_Zeller:nnn
+  {
+    \int_compare:nNnTF
+      { #1 \zhnum_two_digits:n {#2} \zhnum_two_digits:n {#3} } > { 1582 10 04 }
+      { \zhnum_Zeller_aux:Nnnn \zhnum_Zeller_Gregorian:nnn }
+      { \zhnum_Zeller_aux:Nnnn \zhnum_Zeller_Julian:nnn }
+    {#1} {#2} {#3}
+  }
+\cs_new_nopar:Nn \zhnum_Zeller_aux:Nnnn
+  {
+    \int_compare:nNnTF {#3} < \c_three
+      { #1 { #2 - \c_one } { #3 + \c_twelve } {#4} }
+      { #1 {#2} {#3} {#4} }
+  }
+\cs_new_nopar:Nn \zhnum_two_digits:n
+  {
+    \int_compare:nNnT {#1} < \c_ten { 0 }
+    \int_eval:n {#1}
+  }
+\cs_new_nopar:Nn \zhnum_Zeller_Gregorian:nnn
+  {
+    \int_mod:nn
+      {
+          \int_eval:n {#3}
+        + \int_div_truncate:nn { 26 * ( \int_eval:n {#2} + \c_one ) } \c_ten
+        + \int_eval:n {#1}
+        + \int_div_truncate:nn {#1} \c_four
+        + \c_six * \int_div_truncate:nn {#1} \c_one_hundred
+        + \int_div_truncate:nn {#1} { 400 }
+      }
+      { \c_seven }
+  }
+\cs_new_nopar:Nn \zhnum_Zeller_Julian:nnn
+  {
+    \int_mod:nn
+      {
+          \int_eval:n {#3}
+        + \int_div_truncate:nn { 26 * ( \int_eval:n {#2} + \c_one ) } \c_ten
+        + \int_eval:n {#1}
+        + \int_div_truncate:nn {#1} \c_four
+        + \c_five
+      }
+      { \c_seven }
+  }
+\cs_new_nopar:Npn \zhnum_week_day:w #1/#2/#3 \q_stop
+  {
+    \if_case:w \int_eval:n { \zhnum_Zeller:nnn {#1} {#2} {#3} } \exp_stop_f:
+           \c_zhnum_sat_tl
+      \or: \c_zhnum_sun_tl
+      \or: \c_zhnum_mon_tl
+      \or: \c_zhnum_tue_tl
+      \or: \c_zhnum_wed_tl
+      \or: \c_zhnum_thu_tl
+      \or: \c_zhnum_fri_tl
+    \fi:
+  }
+\cs_new_nopar:Npn \zhtime #1 { \zhnum_time:w #1 \q_stop }
+\group_begin:
+\char_set_lccode:nn { `\; } { `\: }
+\tl_to_lowercase:n
+  {
+    \group_end:
+    \cs_new_nopar:Npn \zhnum_time:w #1 ; #2 \q_stop
+      {
+        \zhnum_check_time:Nn \zhnum_integer:f {#1} \c_zhnum_hour_tl
+        \zhnum_check_time:Nn \zhnum_integer:f {#2} \c_zhnum_minute_tl
+      }
+  }
+\cs_new_nopar:Npn \zhcurrtime
+  {
+    \zhnum_check_time:Nn \zhnum_integer:f
+      { \int_div_truncate:nn \tex_time:D { 60 } } \c_zhnum_hour_tl
+    \zhnum_check_time:Nn \zhnum_integer:f
+      { \int_mod:nn \tex_time:D { 60 } } \c_zhnum_minute_tl
+  }
+\cs_new_nopar:Nn \zhnum_digit_map:n
+  { \tl_use:c { c_zhnum_ \zhnum_int_to_word:n {#1} _tl } }
+\cs_new_nopar:Nn \zhnum_scale_map:n
+  {
+    \cs_if_exist_use:cF { c_zhnum_scale_ \zhnum_int_to_word:n {#1} _tl }
+      { \zhnum_scale_map_hook:n {#1} }
+  }
+\cs_new_nopar:Nn \zhnum_scale_map_loop:n
+  { \zhnum_scale_map:n { \int_mod:nn {#1} \g_zhnum_scale_int } }
+\int_new:N \g_zhnum_scale_int
+\int_set_eq:NN \g_zhnum_scale_int \c_eleven
+\cs_new_eq:NN \zhnum_scale_map_hook:n \zhnum_scale_map_loop:n
+\NewDocumentCommand \zhnumExtendScaleMap { > { \TrimSpaces } o m }
+  {
+   \int_zero:N \l_tmpa_int
+    \clist_map_inline:nn {#2}
+      {
+        \int_incr:N \l_tmpa_int
+        \tl_set:Nx \l_tmpa_tl
+          { c_zhnum_scale_ \zhnum_int_to_word:n { \l_tmpa_int + \c_eleven } _tl }
+        \tl_if_exist:cF \l_tmpa_tl { \int_incr:N \g_zhnum_scale_int }
+        \tl_set:cn { \l_tmpa_tl } {##1}
+      }
+    \IfValueT {#1} { \cs_set:Nn \zhnum_scale_map_hook:n {#1} }
+  }
+\cs_new_nopar:Nn \zhnum_int_to_word:n
+  {
+    \if_case:w \int_eval:n {#1} \exp_stop_f:
+           zero
+      \or: one
+      \or: two
+      \or: three
+      \or: four
+      \or: five
+      \or: six
+      \or: seven
+      \or: eight
+      \or: nine
+      \or: ten
+      \or: eleven
+    \else:
+      \int_case:nnn {#1}
+        {
+          { 20 } { twenty }  { 30  } { thirty }
+          { 40 } { forty }   { 200 } { two_hundred }
+        }
+        { \int_to_roman:n {#1} }
+    \fi:
+  }
+
+\keys_define:nn { zhnum / options }
+  {
+    -   .tl_set:N = \l_zhnum_minus_tl        ,
+    -0  .tl_set:N = \l_zhnum_null_tl         ,
+    E2  .tl_set:N = \l_zhnum_hundred_tl      ,
+    E3  .tl_set:N = \l_zhnum_thousand_tl     ,
+    FE2 .tl_set:N = \l_zhnum_financial_hundred_tl ,
+    FE3 .tl_set:N = \l_zhnum_financial_thousand_tl ,
+  }
+\clist_map_inline:nn
+  { 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 20 , 30 , 40 , 200 }
+  {
+    \keys_define:nn { zhnum / options }
+      { #1 .tl_set:c = { l_zhnum_ \zhnum_int_to_word:n {#1} _tl } }
+    \int_compare:nNnF {#1} > \c_ten
+      {
+        \keys_define:nn { zhnum / options }
+          { F#1 .tl_set:c = { l_zhnum_financial_ \zhnum_int_to_word:n {#1} _tl } }
+      }
+  }
+\clist_map_inline:nn
+  { 4 , 8 , 12 , 16 , 20 , 24 , 28 , 32 , 36 , 40 , 44 }
+  {
+    \keys_define:nn { zhnum / options }
+      { E#1 .tl_set:c = { l_zhnum_scale_ \zhnum_int_to_word:n { #1 / 4 } _tl } }
+  }
+\clist_map_inline:nn
+  {
+    dot , and , parts , year , month , day , weekday , hour , minute
+    mon , tue , wed , thu , fri , sat , sun
+  }
+  { \keys_define:nn { zhnum / options } { #1 .tl_set:c = { l_zhnum_ #1 _tl } } }
+\cs_new_nopar:Nn \zhnum_parse_config:
+  {
+    \prop_map_function:NN \g_zhnum_cfg_map_prop \zhnum_check_simp:nn
+    \prop_map_function:NN \g_zhnum_cfg_map_prop \zhnum_check_financial:nn
+    \zhnum_set_zero:
+    \zhnum_set_week_day:
+  }
+\cs_new_nopar:Nn \zhnum_check_simp:nn
+  {
+    \zhnum_check_simp_aux:nn {#1} {#2}
+    \prop_get:NnNT \g_zhnum_cfg_map_finan_prop {#1} \l_tmpa_tl
+      { \exp_args:NnV \zhnum_check_simp_aux:nn { financial_ #1 } \l_tmpa_tl }
+  }
+\cs_new_nopar:Nn \zhnum_check_simp_aux:nn
+  {
+    \prop_get:NnNTF \g_zhnum_cfg_map_var_prop { #1 _trad } \l_tmpa_tl
+      {
+        \prop_get:NnNTF \g_zhnum_cfg_map_var_prop { #1 _simp } \l_tmpb_tl
+          {
+            \tl_set:cx { l_zhnum_ #1 _tl }
+              {
+                \exp_not:n { \bool_if:NTF \l_zhnum_simp_bool }
+                  { \exp_not:V \l_tmpb_tl } { \exp_not:V \l_tmpa_tl }
+              }
+          }
+          {
+            \tl_set:cx { l_zhnum_ #1 _tl }
+              {
+                \exp_not:n { \bool_if:NTF \l_zhnum_simp_bool }
+                  { \exp_not:n {#2} } { \exp_not:V \l_tmpa_tl }
+              }
+          }
+      }
+      { \tl_set:cn { l_zhnum_ #1 _tl } {#2} }
+  }
+\cs_new_nopar:Nn \zhnum_check_financial:nn
+  {
+    \prop_get:NnNTF \g_zhnum_cfg_map_finan_prop {#1} \l_tmpa_tl
+      {
+        \tl_set:cx { c_zhnum_ #1 _tl }
+          {
+            \exp_not:n { \bool_if:NTF \l_zhnum_normal_bool }
+              { \exp_not:c { l_zhnum_ #1 _tl } }
+              { \exp_not:c { l_zhnum_financial_ #1 _tl } }
+          }
+      }
+      { \tl_set:cx { c_zhnum_ #1 _tl } { \exp_not:c { l_zhnum_ #1 _tl } } }
+  }
+\cs_new_nopar:Nn \zhnum_set_zero:
+  {
+    \tl_set:Nx \l_zhnum_zero_tl
+      {
+        \exp_not:n { \bool_if:nTF \l_zhnum_null_bool }
+          { \exp_not:V \l_zhnum_null_tl } { \exp_not:V \l_zhnum_zero_tl }
+      }
+  }
+\cs_new_nopar:Nn \zhnum_set_week_day:
+  {
+    \tl_set:Nx \l_zhnum_mon_tl { \exp_not:N \c_zhnum_weekday_tl \exp_not:V \l_zhnum_one_tl   }
+    \tl_set:Nx \l_zhnum_tue_tl { \exp_not:N \c_zhnum_weekday_tl \exp_not:V \l_zhnum_two_tl   }
+    \tl_set:Nx \l_zhnum_wed_tl { \exp_not:N \c_zhnum_weekday_tl \exp_not:V \l_zhnum_three_tl }
+    \tl_set:Nx \l_zhnum_thu_tl { \exp_not:N \c_zhnum_weekday_tl \exp_not:V \l_zhnum_four_tl  }
+    \tl_set:Nx \l_zhnum_fri_tl { \exp_not:N \c_zhnum_weekday_tl \exp_not:V \l_zhnum_five_tl  }
+    \tl_set:Nx \l_zhnum_sat_tl { \exp_not:N \c_zhnum_weekday_tl \exp_not:V \l_zhnum_six_tl   }
+    \tl_set:Nx \l_zhnum_sun_tl { \exp_not:N \c_zhnum_weekday_tl \exp_not:V \l_zhnum_day_tl   }
+    \clist_map_inline:nn { mon , tue , wed , thu , fri , sat , sun }
+      { \tl_set:cx { c_zhnum_ ##1 _tl } { \exp_not:c { l_zhnum_ ##1 _tl } } }
+  }
+\cs_new:Nn \zhnum_load_cfg:n
+  {
+    \cs_if_exist:NT \CJK@makeActive
+      {
+        \int_compare:nNnTF { \char_value_catcode:n {"080} } = \active
+          { \bool_set_false:N \l_zhnum_set_CJK_active_bool }
+          { \bool_set_true:N \l_zhnum_set_CJK_active_bool \CJK@makeActive }
+      }
+    \prop_clear:N \g_zhnum_cfg_map_prop
+    \prop_clear:N \g_zhnum_cfg_map_var_prop
+    \prop_clear:N \g_zhnum_cfg_map_finan_prop
+    \file_input:n { zhnumber - #1 .cfg }
+    \zhnum_parse_config:
+    \bool_if:nT { \cs_if_exist_p:N \CJK@makeInactive && \l_zhnum_set_CJK_active_bool }
+      { \CJK@makeInactive }
+  }
+\cs_new_protected_nopar:Nn \zhnum_set_digits_map:nn
+  { \prop_put:Nnn \g_zhnum_cfg_map_prop {#1} {#2} }
+\cs_new_protected_nopar:Nn \zhnum_set_digits_map:nnn
+  {
+    \prop_put_if_new:Nnn \g_zhnum_cfg_map_prop {#1} {#3}
+    \prop_put:Nnn \g_zhnum_cfg_map_var_prop {#1_#2} {#3}
+  }
+\cs_new_protected_nopar:Nn \zhnum_set_financial_map:nn
+  { \prop_put:Nnn \g_zhnum_cfg_map_finan_prop {#1} {#2} }
+\cs_new_protected_nopar:Nn \zhnum_set_financial_map:nnn
+  {
+    \prop_put_if_new:Nnn \g_zhnum_cfg_map_finan_prop {#1} {#3}
+    \prop_put:Nnn \g_zhnum_cfg_map_var_prop { financial_#1_#2 } {#3}
+  }
+\prop_new:N \g_zhnum_cfg_map_prop
+\prop_new:N \g_zhnum_cfg_map_var_prop
+\prop_new:N \g_zhnum_cfg_map_finan_prop
+\keys_define:nn { zhnum / options }
+  {
+    encoding      .choice_code:n =
+      {
+        \tl_gset:Nx \c_zhnum_encoding_tl
+          { \exp_args:NV \tl_expandable_lowercase:n \l_keys_choice_tl }
+        \zhnum_load_cfg:n { \c_zhnum_encoding_tl }
+      } ,
+    encoding .generate_choices:n = { UTF8 , GBK , Big5 } ,
+    encoding          .default:n = { GBK } ,
+    encoding / Bg5       .meta:n = { encoding = Big5 } ,
+    encoding / unknown   .code:n =
+      { \msg_error:nnx { zhnumber } { encoding-invalid } { \l_keys_value_tl } } ,
+    style .multichoice: ,
+    style / Normal       .code:n =
+      {
+        \bool_set_false:N \l_zhnum_ancient_bool
+        \bool_set_true:N  \l_zhnum_normal_bool
+      } ,
+    style / Financial    .code:n =
+      {
+        \bool_set_false:N \l_zhnum_ancient_bool
+        \bool_set_false:N \l_zhnum_normal_bool
+      } ,
+    style / Ancient      .code:n =
+      {
+        \bool_set_true:N \l_zhnum_ancient_bool
+        \bool_set_true:N \l_zhnum_normal_bool
+      } ,
+    style / Simplified   .code:n = { \bool_set_true:N  \l_zhnum_simp_bool } ,
+    style / Traditional  .code:n = { \bool_set_false:N \l_zhnum_simp_bool } ,
+    style             .default:n = { Normal , Simplified } ,
+    null             .bool_set:N = \l_zhnum_null_bool ,
+    time .choice: ,
+    time / Chinese       .code:n = { \bool_set_true:N \l_zhnum_time_bool } ,
+    time / Arabic        .code:n = { \bool_set_false:N  \l_zhnum_time_bool } ,
+    time              .default:n = { Arabic } ,
+    reset                .code:n = { \zhnum_load_cfg:n { \c_zhnum_encoding_tl } } ,
+  }
+\msg_new:nnn { zhnumber } { encoding-invalid }
+  {
+    The~encoding~'#1'~is~invalid,~please~check~it~over.\\\\
+    Available~encoding~are~'UTF8',~'GBK'~and~'Big5'.\\
+  }
+\NewDocumentCommand \zhnumsetup { m }
+  {
+    \keys_set:nn { zhnum / options } {#1}
+    \tex_ignorespaces:D
+  }
+\keys_set:nn { zhnum / options } { style , time }
+\ProcessKeysOptions { zhnum / options }
+\ExplSyntaxOn
+\tl_if_exist:NF \c_zhnum_encoding_tl
+  {
+    \exp_args:Nnx \keys_set:nn { zhnum / options }
+      {
+        encoding =
+          {
+            \bool_if:nTF { \xetex_if_engine_p: || \luatex_if_engine_p: }
+              { UTF8 } { GBK }
+          }
+      }
+  }
+\ExplSyntaxOff
+%% 
+%%    This package consists of the file  zhnumber.dtx,
+%%                 and the derived files zhnumber.pdf,
+%%                                       zhnumber.sty,
+%%                                       zhnumber-utf8.cfg,
+%%                                       zhnumber-gbk.cfg,
+%%                                       zhnumber-big5.cfg,
+%%                                       zhnumber.ins and
+%%                                       README.
+%%
+%% End of file `zhnumber.sty'.

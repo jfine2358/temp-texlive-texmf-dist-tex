@@ -1,0 +1,205 @@
+%
+% plautopatch.sty
+% written by Hironobu Yamashita (@aminophen)
+%
+% This package is part of the plautopatch bundle.
+% https://github.com/aminophen/plautopatch
+%
+
+\NeedsTeXFormat{LaTeX2e}% not pLaTeX2e on purpose!
+\ProvidesPackage{plautopatch}
+    [2018/11/25 v0.9b Automated patches for pLaTeX/upLaTeX]
+
+\ifx\pfmtname\@undefined
+  \PackageWarningNoLine{plautopatch}{%
+    This package is meant for pLaTeX/upLaTeX,\MessageBreak
+    you will not need it.}
+  \expandafter\endinput
+\fi
+
+\NeedsTeXFormat{pLaTeX2e}% just in case ...
+\def\platpc@pkgname{plautopatch}
+\def\platpc@err{\PackageError\platpc@pkgname}
+\def\platpc@warn{\PackageWarningNoLine\platpc@pkgname}
+\def\platpc@info{\PackageInfo\platpc@pkgname}
+
+\RequirePackage{filehook}
+
+% low-level helpers
+
+%% \platpc@ifreq@add{<package>}
+% = if not loaded yet, \RequirePackage{<package>}
+%   and add to list.
+\def\platpc@ifreq@add#1{%
+  \@ifpackageloaded{#1}{}{%
+    \RequirePackage{#1}\platpc@addtolist{#1}%
+  }%
+}
+
+%% \platpc@addtolist{<package>}
+% = add <package> to list named \platpc@list.
+\def\platpc@addtolist#1{\xdef\platpc@list{\platpc@list, #1}}
+\def\platpc@list{}% initialize
+
+%% \platpc@ifnotdisabled{<package>}{<code>}
+% = execute <code> if <package> is not disabled.
+\def\platpc@ifnotdisabled#1{%
+  \expandafter\ifx\csname platpc@disable@#1\endcsname\relax
+    \expandafter\@firstofone
+  \fi
+}
+
+%% \platpc@err@toolate{<package>}
+% = content of the "too-late" error.
+\def\platpc@err@toolate#1{%
+  \platpc@err{Package `#1' already loaded!\MessageBreak
+    Use \string\RequirePackage{\platpc@pkgname} earlier}\@ehc
+}
+
+% high-level helpers
+
+%% \platpc@patch@after{<orig>}{<patch>}
+% = Load <patch> after <orig>.
+\def\platpc@patch@after#1#2{%
+  \expandafter\def\csname platpc@end@#1\endcsname{%
+    \platpc@ifnotdisabled{#1}{\platpc@ifreq@add{#2}}%
+  }%
+  \@ifpackageloaded{#1}{%
+    \csname platpc@end@#1\endcsname
+  }{%
+    \AtEndOfPackageFile{#1}{\csname platpc@end@#1\endcsname}%
+  }%
+}
+\@onlypreamble\platpc@patch@after
+
+%% \platpc@patch@after@both{<orig 1>}{<orig 2>}{<patch>}
+% = Load <patch> after both <orig 1> & <orig 2>.
+\def\platpc@patch@after@both#1#2#3{%
+  \expandafter\def\csname platpc@end@#1+#2\endcsname{%
+    \platpc@ifnotdisabled{#1}{\platpc@ifnotdisabled{#2}{%
+      \platpc@ifreq@add{#3}%
+    }}%
+  }%
+  \@ifpackageloaded{#1}{%
+    \@ifpackageloaded{#2}{%
+      \csname platpc@end@#1+#2\endcsname
+    }{%
+      \AtEndOfPackageFile{#2}{\csname platpc@end@#1+#2\endcsname}%
+    }%
+  }{%
+    \@ifpackageloaded{#2}{%
+      \AtEndOfPackageFile{#1}{\csname platpc@end@#1+#2\endcsname}%
+    }{%
+      \AtEndOfPackageFile{#1}{%
+        \@ifpackageloaded{#2}{\csname platpc@end@#1+#2\endcsname}{}%
+      }%
+      \AtEndOfPackageFile{#2}{%
+        \@ifpackageloaded{#1}{\csname platpc@end@#1+#2\endcsname}{}%
+      }%
+    }%
+  }%
+}
+\@onlypreamble\platpc@patch@after@both
+
+%% \platpc@patch@before{<orig>}{<patch>}
+% = Load <patch> before <orig>.
+%   used when both conditions are met:
+%   - <patch> must be loaded *before* <orig>
+%   - <patch> contains \RequirePackage{<orig>}
+\def\platpc@patch@before#1#2{%
+  \expandafter\def\csname platpc@begin@#1\endcsname{%
+    \platpc@ifnotdisabled{#1}{%
+      % if <patch> is already loaded, nothing to do
+      \@ifpackageloaded{#2}{}{% else
+        % the code (*!) should be used only once,
+        % remove it immediately when this macro is executed
+        \expandafter\let\csname platpc@begin@#1\endcsname\relax
+        % pretend as if <orig> not loaded
+        \expandafter\let\csname ver@#1.sty\endcsname\relax
+        % load the <patch> package
+        \RequirePackage{#2}\platpc@addtolist{#2}%
+        % avoid loading <orig> twice by discarding "\@@input <orig>" (*!)
+        \let\platpc@filehook@@atbegin\filehook@@atbegin
+        \def\filehook@@atbegin\@@input####1\filehook@atend{%
+          \let\filehook@@atbegin\platpc@filehook@@atbegin
+          % avoid infinite loop even when \AtEndOfPackageFile used
+          \expandafter\let\csname filehook@atend@#1.sty\endcsname\relax
+          \filehook@@atbegin
+          \filehook@atend}%
+        % all done
+      }%
+    }%
+  }%
+  % if <orig> is already loaded at this point, too late!
+  \@ifpackageloaded{#1}{%
+    \platpc@err@toolate{#1}%
+  }{% else
+    \AtBeginOfPackageFile{#1}{\csname platpc@begin@#1\endcsname}%
+  }%
+}
+\@onlypreamble\platpc@patch@before
+
+% interface for users who want don't patches
+
+%% \plautopatchdisable{<orig 1>,<orig 2>,...}
+% = Disable patches triggered by <orig 1>, <orig 2>, ...
+\newcommand{\plautopatchdisable}[1]{%
+  \edef\@tempa{\zap@space#1 \@empty}%
+  \@for\@tempa:=\@tempa\do{%
+    \expandafter\let\csname platpc@disable@\@tempa\endcsname\@empty
+  }%
+}
+\@onlypreamble\plautopatchdisable
+
+% show list of loaded patches
+
+\AtEndDocument{\platpc@showlist}
+\def\platpc@showlist{%
+  \ifx\platpc@list\@empty
+    \platpc@info{No additional packages loaded}
+  \else
+    % the first token of \platpc@list should be ','
+    \typeout{%
+      ***** List of packages loaded by `\platpc@pkgname': *****^^J%
+      \expandafter\@gobble\platpc@list.^^J%
+      *****************************************************}%
+  \fi
+}
+
+% register patches
+
+\platpc@patch@after{doc}{pldocverb}% (maintained here!)
+\ifx\enablecjktoken\@undefined
+  \platpc@patch@after{tracefnt}{ptrace}% platex
+\else
+  \platpc@patch@after{tracefnt}{uptrace}% uplatex
+\fi
+\platpc@patch@after{fltrace}{pfltrace}% platex
+\platpc@patch@after{array}{plarray}% platex-tools
+\platpc@patch@after@both{array}{plext}{plextarray}% platex-tools
+\platpc@patch@after@both{delarray}{plext}{plextdelarray}% platex-tools
+\platpc@patch@after@both{colortbl}{plext}{plextcolortbl}% (maintained here!)
+\platpc@patch@after{arydshln}{plarydshln}% (maintained here!)
+\platpc@patch@after@both{arydshln}{plext}{plextarydshln}% (maintained here!)
+\platpc@patch@after{siunitx}{plsiunitx}% (maintained here!)
+% --- in most cases, pxeverysel can be safely loaded even after everysel
+% --- but it can fail when \AtBeginDocument{everysel} is involved
+\platpc@patch@before{everysel}{pxeverysel}% platex-tools
+\platpc@patch@after{everyshi}{pxeveryshi}% platex-tools
+\platpc@patch@after{atbegshi}{pxatbegshi}% platex-tools
+\platpc@patch@before{ftnright}{pxftnright}% platex-tools
+\platpc@patch@after{multicol}{pxmulticol}% platex-tools
+\platpc@patch@after{pdfpages}{pxpdfpages}% (maintained here!)
+
+% for TikZ/PGF
+\platpc@patch@after{pgfrcs}{pxpgfrcs}% (maintained here!)
+% --- pxpgfmark is useful on e-(u)pTeX + dvipdfmx
+% --- but does no harm for other conditions
+\platpc@patch@after{pgfcore}{pxpgfmark}% by Takayuki YATO (ZR)
+
+% special case, mainly for problematic packages
+% --- mdwtab forbids loading array
+% --- so plarray should also be forbidden
+\AtEndOfPackageFile{mdwtab}{\@namedef{ver@plarray.sty}{}}
+
+\endinput

@@ -1,0 +1,946 @@
+%  _________________________________________________________________
+% |                                                                 |
+% |                                                                 |
+% |                           chemfig v0.1                          |
+% |                                                                 |
+% |                          June 23, 2010                          |
+% |                                                                 |
+% |_________________________________________________________________|
+%
+% This is chemfig.sty, the code of the "chemfig" package.
+%
+% Maintainer: Christian Tellechea
+% E-mail    : unbonpetit@gmail.com
+%             Comments, bug reports and suggestions are welcome.
+% Licence   : Released under the LaTeX Project Public License v1.3c or
+%             later, see http://www.latex-project.org/lppl.txt
+% Copyright : Christian Tellechea 2010
+%
+% The "chemfig" package consists of the 4 following files:
+%   chemfig.sty (this file)
+%   README
+%   chemfig_doc_fr.tex, chemfig_doc_fr.pdf (manual in french)
+%
+% -------------------------------------------------------------------
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%
+%     http://www.latex-project.org/lppl.txt
+%
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+% -------------------------------------------------------------------
+% This work has the LPPL maintenance status `maintained'.
+%
+% The Current Maintainer of this work is Christian Tellechea
+% -------------------------------------------------------------------
+\newcommand*\CF@ver         {0.1}
+\newcommand*\CF@date        {2010/06/23}
+\newcommand*\CF@fr@date     {23 juin 2010}
+\newcommand*\CF@en@date     {June 23, 2010}
+\newcommand*\CF@package@name{chemfig}
+
+\ProvidesPackage\CF@package@name[\CF@date\space v\CF@ver\space Draw molecule with an easy syntax]
+\NeedsTeXFormat{LaTeX2e}
+\RequirePackage{tikz}
+
+\newcount\CF@cnt@atomingroup
+\newcount\CF@cnt@groupnumber
+\newcount\CF@cnt@atomnumber
+\newcount\CF@cnt@cycle
+
+\newif\ifCF@incycle
+\newif\ifCF@cyclearc
+
+\newdimen\CF@dimax
+\newdimen\CF@dimbx
+\newdimen\CF@dimay
+\newdimen\CF@dimby
+
+\newbox\CF@lewis@box
+\newbox\CF@box@boxa
+\newbox\CF@box@boxb
+
+\newcommand*\CF@display@chem[1]{\ensuremath{\mathrm{#1}}}
+
+\def\CF@empty@node{{}}
+
+\newcommand*\CF@global@let{\global\let}
+
+\expandafter\let\expandafter\CF@char@triplebond\string~
+
+\def\CF@cycle@inraduiscoeff{0.75}% coeff multiplicateur du rayon des arcs dans les cycles
+
+\newcommand*\setcrambond[3]{%
+	\def\CF@cram@basewidth{#1}%
+	\ifx\@empty#2\@empty\def\CF@cram@dashlength{1pt}\else\def\CF@cram@dashlength{#2}\fi
+	\ifx\@empty#3\@empty\def\CF@cram@dashsep{2pt}\else\def\CF@cram@dashsep{#3}\fi}
+\setcrambond{}{}{}
+
+\newcommand*\setatomsep[1]{\def\CF@atom@sep{#1}}% espacement des atomes liés
+\setatomsep{}
+
+\newcommand*\setbondoffset[1]{\def\CF@bond@offset{#1}}% offset des liaisons
+\setbondoffset{2pt}
+
+\newcommand*\setdoublesep[1]{\def\CF@double@sep{#1}}
+\setdoublesep{2pt}
+
+\newcommand*\CF@read@manual{Please, read the manual.}
+
+\newcommand*\definesubmol[2]{% #1 est le nom, #2 est le code
+	\ifcsname CF@@#1\endcsname
+		\PackageWarning\CF@package@name{The submol "#1" already defined\MessageBreak I redefined it instead.}%
+	\fi
+	\expandafter\def\csname CF@@#1\endcsname{#2}%
+}
+
+\newcommand*\redefinesubmol[2]{%
+	\unless\ifcsname CF@@#1\endcsname
+		\PackageWarning\CF@package@name{The submol "#1" cannot be redefined\MessageBreak I defined it instead.}%
+	\fi
+	\expandafter\def\csname CF@@#1\endcsname{#2}%
+}
+
+\newcommand*\CF@if@integer[1]{%
+	\begingroup
+	\afterassignment\CF@after@integer
+	\CF@cnt@cycle0#1\relax
+}
+
+\def\CF@after@integer#1\relax{%
+	\endgroup
+	\ifx\@empty#1\@empty\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi
+}
+
+\def\CF@swap@fi#1\fi{\fi#1}
+
+\def\CF@gobble@tonil#1\@nil{}
+
+\newcommand*\CF@swap@arg[2]{#2{#1}}
+
+\newcommand*\CF@expand@second[2]{\expandafter\CF@swap@arg\expandafter{#2}{#1}}
+
+\newcommand*\CF@swap@two[2]{#2#1}
+
+\newcommand*\CF@expand@afterfirst[2]{\expandafter\CF@swap@two\expandafter{#2}{#1}}
+
+\newcommand*\CF@edef@second[2]{%
+	\begingroup\edef\CF@tmp@str{#2}\expandafter\endgroup
+	\expandafter\CF@swap@two\expandafter{\CF@tmp@str}{#1}%
+}
+
+\newcommand*\CF@add@tocs[2]{\expandafter\def\expandafter#1\expandafter{#1#2}}
+
+\newcommand*\CF@expadd@tocs[2]{\expandafter\CF@add@tocs\expandafter#1\expandafter{#2}}
+
+\newcommand*\CF@edefadd@tocs[2]{%
+	\begingroup\edef\CF@tmp@str{#2}\expandafter\endgroup
+	\expandafter\CF@add@tocs\expandafter#1\expandafter{\CF@tmp@str}%
+}
+
+\newcommand*\CF@if@firsttokmatch[2]{% est ce que #1 et #2 commencent par les mêmes tokens ?
+	\futurelet\CF@toks@a\CF@gobble@tonil#1\relax\@nil
+	\futurelet\CF@toks@b\CF@gobble@tonil#2\relax\@nil
+	\csname @\ifx\CF@toks@a\CF@toks@b first\else second\fi oftwo\endcsname
+}
+
+\newcommand*\CF@if@firsttokin[2]{% teste si le token qui commence #1 appartient aux tokens mis dans #2
+	\ifx\@empty#2\@empty%
+		\expandafter\@secondoftwo
+	\else
+		\CF@if@firsttokmatch{#1}{#2}%
+			{\expandafter\@firstoftwo}%
+			{\CF@swap@fi\CF@expand@second{\CF@if@firsttokin{#1}}{\@gobble#2}}%
+	\fi
+}
+
+\newcommand*\CF@if@instr[2]{%
+	\def\CF@if@instr@i##1#2##2\@nil{\ifx\@empty##2\@empty\expandafter\@secondoftwo\else\expandafter\@firstoftwo\fi}%
+	\CF@if@instr@i#1\@@nil#2\@nil
+}
+
+\newcommand*\CF@seek@node[3]{% cherche un noeud au début de #1 l'assigne dans la sc #2 et met le reste dans #3
+	\let#2\@empty
+	\def#3{#1}%
+	\CF@seek@node@i{#1}#2#3%
+}
+
+\newcommand*\CF@seek@node@i[3]{%
+	\ifx\@empty#1\@empty
+		\let#3\@empty
+	\else
+		\CF@if@firsttokmatch{#1}\bgroup
+			{\CF@expadd@tocs#2{\expandafter{\@car#1\@nil}}%
+			\CF@swap@fi\CF@expand@second\CF@seek@node@i{\@gobble#1}#2#3%
+			}%
+			{\CF@expand@second\CF@if@firsttokin{\@car#1\@nil}{-=\CF@char@triplebond<>(!*}%
+				{\def#3{#1}}%
+				{\CF@expadd@tocs#2{\@car#1\@nil}%
+				\CF@swap@fi\CF@expand@second\CF@seek@node@i{\@gobble#1}#2#3%
+				}%
+			}%
+	\fi
+}
+
+% on sait que #1 commence par -,=,~,<,>. On analyse cette liaison
+% #2 reçoit le type de liaisons (1 pour -, 2 pour =, 3 pour ~)
+\newcommand*\CF@bond@findnum[2]{%
+	\futurelet\CF@toks@a\CF@gobble@tonil#1\@nil
+	\edef#2{%
+		\ifx-\CF@toks@a1%
+		\else
+			\ifx=\CF@toks@a2%
+			\else
+				\ifx\CF@char@triplebond\CF@toks@a3%
+				\else
+					\ifx>\CF@toks@a4%
+					\else
+						\ifx<\CF@toks@a5%
+						\else0% si 0 --> il y a une erreur non dûe à l'utilisateur
+						\fi
+					\fi
+				\fi
+			\fi
+		\fi}%
+	\ifnum#2>\thr@@% si c'est une liaison de Cram
+		\expandafter\futurelet\expandafter\CF@toks@a\expandafter\CF@gobble@tonil\@gobble#1\@nil% chope le caractère suivant
+		\ifx:\CF@toks@a
+			\edef#2{\number\numexpr#2+2}% si c 'est un :, signe du pointillé, ajoute 2
+		\else
+			\ifx|\CF@toks@a
+				\edef#2{\number\numexpr#2+4}% si c 'est un "|", signe du triangle évide, ajouter 4
+			\fi
+		\fi
+	\fi
+}
+
+\newcommand*\CF@analyse@bond[2]{%
+	\CF@bond@findnum{#1}#2%
+	\expandafter\def\expandafter\CF@remain@afterbond\expandafter{\@gobble#1}%mange le premier signe de la liaison
+	\let\CF@doublebond@type\z@
+	\ifnum#2=\tw@% si c'est une double liaison, regarde s'il y a un + ou - derrière
+		\expandafter\futurelet\expandafter\CF@toks@a\expandafter\CF@gobble@tonil\@gobble#1\@nil
+		\ifx^\CF@toks@a
+			\let\CF@doublebond@type\@ne
+			\expandafter\def\expandafter\CF@remain@afterbond\expandafter{\@gobbletwo#1}% mange le "^"
+		\else
+			\ifx_\CF@toks@a
+				\let\CF@doublebond@type\tw@
+				\expandafter\def\expandafter\CF@remain@afterbond\expandafter{\@gobbletwo#1}% mange le "_"
+			\fi
+		\fi
+	\else
+		\ifnum#2>5 % si c'est une laision de Cram pointillée ou triangle évidé
+			\expandafter\def\expandafter\CF@remain@afterbond\expandafter{\@gobbletwo#1}% mange un caractère de plus
+		\fi
+	\fi
+	\expandafter\CF@if@firsttokmatch\expandafter{\CF@remain@afterbond}[%
+		{\expandafter\CF@seekbond@optarg\CF@remain@afterbond\@nil\CF@remain@afterbond}%
+		{\expandafter\CF@seekbond@optarg\expandafter[\expandafter]\CF@remain@afterbond\@nil\CF@remain@afterbond}%
+	\ifCF@incycle
+		\pgfmathparse{360/\CF@cycle@num+\CF@initcycle@angle}%
+		\edef\CF@current@stringangle{::+\pgfmathresult}%
+		\def\CF@initcycle@angle{0}%
+		\let\CF@current@length\CF@default@length% et on ignore la longueur de liaison spécifiée
+	\fi
+	\CF@expand@second\CF@set@bondangle{\CF@current@stringangle}\CF@current@angle
+}
+
+\newcommand*\CF@set@bondangle[2]{% le code de la direction est contenu dans #1, en sortie, #2 contient l'angle
+	\ifx\@empty#1\@empty%
+		\let#2\CF@default@angle
+	\else
+		\if:\expandafter\noexpand\@car#1\@nil
+			\if:\expandafter\expandafter\expandafter\noexpand\expandafter\@car\@gobble#1\@nil
+				\pgfmathparse{\CF@previous@angle+\expandafter\@gobble\@gobble#1}%
+				\let#2\pgfmathresult
+			\else
+				\CF@expand@second{\def#2}{\@gobble#1}
+			\fi% puis normalise l'angle entre 0 et 360
+			\pgfmathparse{#2-360*floor(#2/360)}%
+			\ifdim\pgfmathresult pt<\z@\pgfmathparse{\pgfmathresult+360}\fi
+			\let#2\pgfmathresult
+		\else
+			\pgfmathparse{#1-floor(#1/8)*8}%
+			\ifdim\pgfmathresult pt<\z@\pgfmathparse{\pgfmathresult+8}\fi
+			\edef#2{\ifcase\expandafter\CF@int@part\pgfmathresult\@nil0\or45\or90\or135\or180\or225\or270\or315\else-1\fi}% angle =-1 --> erreur
+		\fi
+	\fi
+}
+
+\def\CF@int@part#1.#2\@nil{#1 }
+
+\newcommand*\CF@test@assign[3]{\ifx\@empty#2\@empty\let#1#3\else\def#1{#2}\fi}
+
+% #1 est une liste de 4 éléments a,b,c,d chacun assignés aux sc #2,#3,#4,#5
+\newcommand*\CF@parse@list[6]{%
+	\def\CF@parse@list@i##1,##2,##3,##4,##5\@nil{%
+		\CF@test@assign#2{##1}\CF@default@stringangle
+		\CF@test@assign#3{##2}\CF@default@length
+		\CF@test@assign#4{##3}\CF@default@fromatom
+		\CF@test@assign#5{##4}\CF@default@toatom
+		\CF@test@assign#6{##5}\CF@default@tikz}%
+	\CF@parse@list@i#1,,,,\@nil
+}
+
+\def\CF@seekbond@optarg[#1]{%
+	\CF@parse@list{#1}\CF@current@stringangle\CF@current@length\CF@current@fromatom\CF@current@toatom\CF@current@tikz
+	\CF@seekbond@optarg@i\relax
+}
+
+\def\CF@seekbond@optarg@i#1\@nil#2{%
+	\CF@expand@second{\def#2}{\@gobble#1}% le \@gobble bouffe le \relax et laisse intact le reste
+}
+
+\newcommand*\CF@seek@submol{%
+	\CF@expand@second\CF@if@firsttokmatch\CF@remain@molecule!%
+		{\expandafter\expandafter\expandafter\def
+		\expandafter\expandafter\expandafter\CF@remain@molecule
+		\expandafter\expandafter\expandafter
+			{\csname CF@@\expandafter\expandafter\expandafter\@car\expandafter\@gobble\CF@remain@molecule\@nil
+			\expandafter\expandafter\expandafter\endcsname\csname @gobble\expandafter\expandafter\expandafter\endcsname
+			\csname @gobble\expandafter\endcsname\CF@remain@molecule}%
+		\CF@seek@submol
+		}%
+		\relax
+}
+
+\newcommand*\CF@insert@emptygroup[1]{% insère {} au début de la sc #1
+	\expandafter\def\expandafter#1\expandafter{\expandafter{\expandafter}#1}%
+}
+
+\newcommand*\CF@make@other[1]{%
+	\ifx\@empty#1\@empty
+	\else
+		\expandafter\@makeother\@car#1\@nil
+		\CF@swap@fi
+		\CF@expand@second\CF@make@other{\@gobble#1}%
+	\fi
+}
+
+\newcommand*\chemfig{%
+	\begin{tikzpicture}[every node/.style={anchor=base,inner sep=0pt,outer sep=0pt,minimum size=0pt},baseline]
+	\begingroup
+		\CF@global@let\CF@hook@list\@empty
+		\ifx\CF@atom@sep\@empty\def\CF@atom@sep{3em}\fi
+		\ifx\CF@cram@basewidth\@empty\def\CF@cram@basewidth{1.5ex}\fi
+		\CF@incyclefalse
+		\global\CF@cnt@groupnumber\z@
+		\let\CF@last@action\z@% 0=début du dessin 1=tracé d'un noeud 2=tracé d'une liaison
+		\gdef\CF@cycle@anglecorrection{180/\CF@cycle@num}%
+		\everyeof{\@nil}\endlinechar\m@ne
+		\CF@make@other{[]:(),-=~!?<>;*|}%
+		\CF@chemfig@i
+}
+
+\newcommand*\CF@chemfig@i[1]{%
+	\CF@chemfig@ii{#1}%
+	\end{tikzpicture}%
+}
+
+\newcommand*\CF@chemfig@ii[1]{% #1 est le code de la molécule
+	\ifnum\CF@last@action=\thr@@
+		\ifCF@incycle
+			\def\CF@default@angle{0}%
+		\else
+			\ifnum\CF@cnt@cycle=\z@% si c'est le début d'un cycle
+				\pgfmathparse{\CF@previous@angle+180+\CF@cycle@anglecorrection}% on met la liaison à +180° + correction
+			\else
+				\pgfmathparse{\CF@previous@angle-90+180/\CF@cycle@num}% sinon à la bissectrice du sommet du cycle
+			\fi
+			\let\CF@default@angle\pgfmathresult
+		\fi
+	\else
+		\def\CF@default@angle{0}%
+	\fi% angle par défaut
+	\let\CF@current@angle\CF@default@angle
+	\def\CF@default@stringangle{:0}%
+	\def\CF@default@length{1}% longueur de la liaison par défaut
+	\let\CF@default@fromatom\@empty% numero de l'atome d'où partent les liaisons par défaut
+	\let\CF@default@toatom\@empty% numéro de l'atome où arrivent les laisons par défaut
+	\let\CF@default@tikz\@empty
+	\if[\expandafter\noexpand\@car#1\@nil
+		\CF@seekbond@optarg#1\@nil\CF@remain@molecule
+		\expandafter\CF@set@bondangle\expandafter{\CF@current@stringangle}\CF@current@angle
+		\let\CF@default@angle\CF@current@angle
+		\let\CF@previous@angle\CF@current@angle
+		\unless\ifx\@empty\CF@current@stringangle\let\CF@default@angle\CF@current@angle\fi
+		\unless\ifx\@empty\CF@current@length\let\CF@default@length\CF@current@length\fi
+		\unless\ifx\@empty\CF@current@fromatom\let\CF@default@fromatom\CF@current@fromatom\fi
+		\unless\ifx\@empty\CF@current@toatom\let\CF@default@toatom\CF@current@toatom\fi
+		\unless\ifx\@empty\CF@current@tikz\let\CF@default@tikz\CF@current@tikz\fi
+	\else
+		\def\CF@remain@molecule{#1}% on prend tout puisque pas d'argument optionnel au début
+	\fi% après l'argument entre crochet au début, on passe à la suite
+	\ifCF@incycle% si on commence un cycle
+		\let\CF@current@angle\CF@previous@angle
+	\else
+		\let\CF@current@angle\CF@default@angle
+	\fi
+	\edef\CF@default@stringangle{:\CF@default@angle}%
+	\let\CF@current@length\CF@default@length
+	\let\CF@current@fromatom\CF@default@fromatom
+	\let\CF@current@toatom\CF@default@toatom
+	\let\CF@current@tikz\CF@default@tikz
+	\ifnum\CF@last@action=\z@
+		\let\CF@previous@angle\CF@default@angle
+		\node(CF@node){};
+		\CF@expand@second\CF@if@firsttokin{\CF@remain@molecule}{-=(*\CF@char@triplebond?<>}%
+			{\CF@insert@emptygroup\CF@remain@molecule}%
+			\relax
+	\fi
+	\CF@chemfig@iii
+}
+
+\newcommand*\CF@chemfig@iii{%
+	\let\CF@next@scan\CF@chemfig@iii% à prioi, on reboucle
+	\ifx\CF@remain@molecule\@empty
+		\let\CF@next@scan\endgroup
+	\else
+		\CF@seek@submol
+		\CF@expand@second\CF@seek@node{\CF@remain@molecule}\CF@current@atomgroup\CF@remain@molecule
+		\ifx\@empty\CF@current@atomgroup% pas de noeud pour commencer ?
+			\def\CF@bond@outnode{n\CF@last@groupnumber-%
+				 \ifx\CF@current@fromatom\@empty
+					 \ifdim\CF@current@angle pt<90pt \number\CF@cnt@atomingroup
+					 \else\ifdim\CF@current@angle pt>270pt \number\CF@cnt@atomingroup\else1\fi
+					 \fi
+				 \else\CF@current@fromatom
+				 \fi}%
+			\CF@expand@second\CF@if@firsttokin\CF@remain@molecule{-=<>\CF@char@triplebond}% la suite est une liaison
+				{\ifnum\CF@last@action=\tw@% c'est la deuxième liaison consécutive ?
+					\CF@insert@emptygroup\CF@remain@molecule% insère un groupe vide
+					\edef\CF@bond@outnode{\CF@bond@outnode}%
+				\else
+					\ifCF@incycle\advance\CF@cnt@cycle\@ne\fi
+					\CF@expand@second\CF@analyse@bond{\CF@remain@molecule}\CF@bond@type
+					\edef\CF@bond@outnode{\CF@bond@outnode}%
+					\let\CF@remain@molecule\CF@remain@afterbond
+					\csname @% il y a plus de liaisons que de sommet dans le cycle ?
+						\ifCF@incycle
+							\ifnum\CF@cnt@cycle=\CF@cycle@num first\else second\fi
+						\else second\fi
+						oftwo%
+					\endcsname
+						{\let\CF@next@scan\endgroup
+						\CF@draw@bond\CF@bond@type{\CF@bond@outnode}{\CF@hook@cycle}\CF@previous@atomgroup\CF@hook@atomgroup}%
+						{\node[at=(\CF@bond@outnode),shift=(\CF@current@angle:\CF@current@length*\CF@atom@sep)](CF@node){};
+						\let\CF@previous@angle\CF@current@angle
+						\let\CF@last@action\tw@}%
+				\fi
+				\ifx\CF@remain@molecule\@empty% plus rien après la liaison -> insère un groupe vide
+					\CF@insert@emptygroup\CF@remain@molecule
+				\fi
+				}%
+				{\edef\CF@bond@outnode{\CF@bond@outnode}% évalue le l'atome de départ de liaison
+				\CF@expand@second\CF@if@firsttokmatch\CF@remain@molecule(% une parenthèse pour commencer ?
+					{\ifnum\CF@last@action=\tw@% il y avait une liaison juste avant ?
+						\CF@insert@emptygroup\CF@remain@molecule
+					\else
+						\CF@expand@second\CF@grab@submol\CF@remain@molecule
+						\begingroup
+							\ifCF@incycle\let\CF@last@action\thr@@\fi% on était dans un cycle
+							\CF@incyclefalse
+							\aftergroup\CF@chemfig@iii
+							\def\CF@next@scan{\CF@expand@second\CF@chemfig@ii\CF@sub@mol}%
+					\fi
+				    }%
+					{\ifx\CF@remain@molecule\@empty
+						\let\CF@next@scan\endgroup
+					\else% ce qui reste après le noeud courant n'est pas vide, ne commence pas par "-=~", ni par une parenthèse
+						\CF@expand@second\CF@if@firsttokmatch\CF@remain@molecule*% un cycle ?
+						{\ifnum\CF@last@action=\tw@
+							\CF@insert@emptygroup\CF@remain@molecule% insère un groupe vide
+						\else
+							\ifCF@incycle\let\CF@last@action\thr@@\fi% on était dans un cycle
+							\ifnum\CF@last@action=\thr@@\let\CF@lastcycle@num\CF@cycle@num\fi
+							\CF@expand@second{\CF@expand@second\CF@if@firsttokmatch}{\expandafter\@gobble\CF@remain@molecule}*% un 2è "*" ?
+								{\CF@expand@second{\CF@expand@second{\def\CF@remain@molecule}}{\expandafter\@gobble\CF@remain@molecule}% enlève la 1er étoile
+								\CF@expand@second{\CF@expand@second\CF@if@firsttokmatch}{\expandafter\@gobble\CF@remain@molecule}[% un crochet ensuite ?
+									{\expandafter\CF@cycle@parsepreamblewithoptarg\CF@remain@molecule\@nil% \begingroup inclus
+									}%
+									{\def\CF@cyclearc@startangle{0}\def\CF@cyclearc@endangle{360}%
+									\let\CF@cyclearc@directtikz\@empty
+									\expandafter\CF@cycle@parsepreamble\CF@remain@molecule\@nil% \begingroup inclus
+									}%
+								\CF@cyclearctrue
+								}%
+								{\expandafter\CF@cycle@parsepreamble\CF@remain@molecule\@nil% \begingroup inclus
+								\CF@cyclearcfalse
+								}%
+							\CF@cnt@cycle\z@
+							\edef\CF@hook@cycle{\CF@bond@outnode}%
+							\let\CF@hook@atomgroup\CF@previous@atomgroup
+							\CF@incycletrue
+							\ifnum\CF@last@action=\thr@@
+								\pgfmathparse{360/\CF@lastcycle@num-180}% c'est un cycle dans un cycle
+							\else
+								\pgfmathparse{-180/\CF@cycle@num-90+\CF@cycle@anglecorrection}%
+							\fi
+							\let\CF@initcycle@angle\pgfmathresult
+							\ifCF@cyclearc% on doit tracer l'arc de cercle dans le cycle ?
+								\pgfmathparse{\CF@cycle@inraduiscoeff*\CF@current@length*\CF@atom@sep/(2*tan(180/\CF@cycle@num))}%
+								\let\CF@cyclearc@radius\pgfmathresult
+								\pgfmathparse{\CF@current@angle+\CF@initcycle@angle+180/\CF@cycle@num+90}
+								\let\CF@cyclearc@initangle\pgfmathresult
+								\pgfmathparse{\CF@current@length*\CF@atom@sep/(2*sin(180/\CF@cycle@num))}%
+								\node[at=(\CF@bond@outnode),shift=(\CF@cyclearc@initangle:\pgfmathresult pt)](arccenter){};% le centre de l'arc
+								\node[at=(arccenter),shift=(\CF@cyclearc@startangle:\CF@cyclearc@radius pt)](initarc){};% le début de l'arc
+								\expandafter\draw\expandafter[\CF@cyclearc@directtikz](initarc) arc (\CF@cyclearc@startangle:\CF@cyclearc@endangle:\CF@cyclearc@radius pt);
+							\fi
+							\aftergroup\CF@chemfig@iii
+							\def\CF@next@scan{\CF@expand@second\CF@chemfig@ii\CF@sub@mol}%
+						\fi
+						}%
+						{\PackageError\CF@package@name{Something went wrong at this point: \detokenize\expandafter{\CF@remain@molecule}}{If you think it's a bug, please, send a Minimal Example to the author.}}%
+					\fi}%
+				}%
+		\else
+			\CF@expand@second{\CF@expand@second{\CF@expand@second\CF@draw@atomgroup\CF@current@angle}\CF@current@toatom}\CF@current@atomgroup
+		\fi
+	\fi
+	\CF@next@scan
+}
+
+\def\CF@cycle@parsepreamble*#1#2\@nil{%
+	\ifnum#1<\thr@@
+		\PackageError\CF@package@name{A cycle must be at least a triangle.}{}
+	\fi
+	\def\CF@remain@molecule{#2}%
+	\CF@expand@second\CF@grab@submol\CF@remain@molecule
+	\begingroup
+	\def\CF@cycle@num{#1}%
+}
+
+\def\CF@cycle@parsepreamblewithoptarg*[#1]#2#3\@nil{%
+	\CF@cycle@parseoptarg#1,,,\@nil
+	\CF@cycle@parsepreamble*#2#3\@nil
+}
+
+\def\CF@cycle@parseoptarg#1,#2,#3,#4\@nil{%
+	\ifx\@empty#1\@empty\def\CF@cyclearc@startangle{0}\else\def\CF@cyclearc@startangle{#1}\fi
+	\ifx\@empty#2\@empty\def\CF@cyclearc@endangle{360}\else\def\CF@cyclearc@endangle{#2}\fi
+	\def\CF@cyclearc@directtikz{#3}%
+}
+
+\newcommand*\CF@grab@submol[1]{%
+	\begingroup
+		\catcode`(\@ne\catcode`)\tw@
+		\expandafter\expandafter\expandafter
+	\endgroup
+	\expandafter\CF@grab@submol@i\scantokens{\relax#1}% le \relax sert à meubler pour ne pas que l'argument délimité n'enlève les accolades
+}
+
+\def\CF@grab@submol@i#1\@nil{%
+	\expandafter\assign@tonil\expandafter\CF@remain@molecule\scantokens\expandafter\expandafter\expandafter{\expandafter\@gobble\@gobble#1}%
+	\expandafter\assign@tonil\expandafter\CF@sub@mol\scantokens\expandafter\expandafter\expandafter{\expandafter\@car\@gobble#1\@nil}%
+}
+
+\def\assign@tonil#1#2\@nil{\def#1{#2}}
+
+\newcommand*\CF@ifcar@isupperletter[1]{%
+	\csname @%
+		\ifcat\relax\noexpand#1second% faux si c'est une sc
+		\else
+			\ifnum`#1<`Asecond\else\ifnum`#1>`Zsecond\else first\fi\fi
+		\fi
+	oftwo\endcsname
+}
+
+% Créé 4 noeuds au dessus et au dessous des noeuds #1 et #2
+% à une distance de #3 du noeud #1 et #4 du noeud #2
+\newcommand*\CF@create@normnodes[4]{%
+	\ifx\@empty#3\@empty\else
+		\node[at=(#1),xshift=#3*\CF@norm@x,yshift=#3*\CF@norm@y](#11){};
+		\node[at=(#1),xshift=-#3*\CF@norm@x,yshift=-#3*\CF@norm@y](#12){};
+	\fi
+	\ifx\@empty#4\@empty\else
+		\node[at=(#2),xshift=#4*\CF@norm@x,yshift=#4*\CF@norm@y](#21){};
+		\node[at=(#2),xshift=-#4*\CF@norm@x,yshift=-#4*\CF@norm@y](#22){};
+	\fi
+}
+
+\newcommand*\CF@compute@nodevect[2]{%
+	\pgfextractx\CF@dimax{\pgfpointanchor{#1}{center}}%
+	\pgfextracty\CF@dimay{\pgfpointanchor{#1}{center}}%
+	\pgfextractx\CF@dimbx{\pgfpointanchor{#2}{center}}%
+	\pgfextracty\CF@dimby{\pgfpointanchor{#2}{center}}%
+	\pgfmathparse{veclen(\CF@dimbx-\CF@dimax,\CF@dimby-\CF@dimay)}\let\CF@len@vector\pgfmathresult
+	\pgfmathparse{(\CF@dimay-\CF@dimby)/\CF@len@vector}\let\CF@norm@x\pgfmathresult
+	\pgfmathparse{(\CF@dimbx-\CF@dimax)/\CF@len@vector}\let\CF@norm@y\pgfmathresult
+}
+
+\newcommand*\CF@draw@bond[5]{% #1=type de liaison #2 et #3:nom de noeuds de début et fin #4 et #5: contenu des atomes de début et fin
+	\edef\CF@start@offset{\ifx#4\CF@empty@node0pt\else\ifx#4\@empty0pt\else\CF@bond@offset\fi\fi}%
+	\edef\CF@end@offset{\ifx#5\CF@empty@node0pt\else\ifx#5\@empty0pt\else\CF@bond@offset\fi\fi}%
+	\path(#2)--(#3)coordinate[pos=0](#2@)coordinate[pos=1](#3@);%
+	\CF@compute@nodevect{#2@}{#3@}%
+	\pgfmathparse{\CF@start@offset/\CF@len@vector}\let\CF@start@coeff\pgfmathresult
+	\pgfmathparse{1-\CF@end@offset/\CF@len@vector}\let\CF@end@coeff\pgfmathresult
+	\path(#2@)--(#3@)coordinate[pos=\CF@start@coeff](#2@@)coordinate[pos=\CF@end@coeff](#3@@);%
+	\ifcase#1\relax
+		\PackageError\CF@package@name{Unknown bond type, this error should not occur}{If you think it's a bug, send a Minimal Example to the author.}%
+	\or% 1 = liaison simple
+		\CF@draw@bond@i(#2@@)--(#3@@);
+	\or% 2 = liaison double
+		\ifCF@incycle
+			\ifnum\CF@doublebond@type=\z@
+				\let\CF@doublebond@type\@ne
+			\fi
+		\fi
+		\ifcase\CF@doublebond@type
+			\CF@create@normnodes{#2@@}{#3@@}{\CF@double@sep/2}{\CF@double@sep/2}%
+			\CF@draw@bond@i(#2@@1)--(#3@@1);
+			\CF@draw@bond@i(#2@@2)--(#3@@2);
+		\or
+			\CF@create@normnodes{#2@@}{#3@@}\CF@double@sep\CF@double@sep
+			\CF@draw@bond@i(#2@@)--(#3@@);
+			\CF@draw@bond@i(#2@@1)--(#3@@1);
+		\or
+			\CF@create@normnodes{#2@@}{#3@@}\CF@double@sep\CF@double@sep
+			\CF@draw@bond@i(#2@@)--(#3@@);
+			\CF@draw@bond@i(#2@@2)--(#3@@2);
+		\fi
+	\or% 3 = liaison triple
+		\CF@create@normnodes{#2@@}{#3@@}\CF@double@sep\CF@double@sep
+		\CF@draw@bond@i(#2@@)--(#3@@);
+		\CF@draw@bond@i(#2@@1)--(#3@@1);
+		\CF@draw@bond@i(#2@@2)--(#3@@2);
+	\or% 4 = liaison Cram pleine de #2 vers #3
+		\CF@create@normnodes{#2@@}{#3@@}{\CF@cram@basewidth/2}{}%
+		\expandafter\filldraw\expandafter[\CF@current@tikz,line join=bevel](#2@@1)--(#2@@2)--(#3@@)--(#2@@1);
+	\or% 5 = liaison Cram pleine de #3 vers #2
+		\CF@create@normnodes{#3@@}{#2@@}{\CF@cram@basewidth/2}{}%
+		\expandafter\filldraw\expandafter[\CF@current@tikz,line join=bevel](#3@@1)--(#3@@2)--(#2@@)--(#3@@1);
+	\or% 6 = liaison Cram pointillée de #2 vers #3
+		\begin{scope}
+			\CF@create@normnodes{#2@@}{#3@@}{\CF@cram@basewidth/2}{}%
+			\clip(#2@@1)--(#2@@2)--(#3@@)--(#2@@1);
+			\expandafter\draw\expandafter[\CF@current@tikz,dash pattern=on \CF@cram@dashlength off \CF@cram@dashsep,line width=\CF@cram@basewidth](#2@@)--(#3@@);
+		\end{scope}
+	\or% 7 = liaison Cram pointillée de #3 vers #2
+		\begin{scope}
+			\CF@create@normnodes{#3@@}{#2@@}{\CF@cram@basewidth/2}{}%
+			\clip(#3@@1)--(#3@@2)--(#2@@)--(#3@@1);
+			\expandafter\draw\expandafter[\CF@current@tikz,dash pattern=on \CF@cram@dashlength off \CF@cram@dashsep,line width=\CF@cram@basewidth](#3@@)--(#2@@);
+		\end{scope}
+	\or% 8 = liaison Cram triangle évidé de #2 vers #3
+		\CF@create@normnodes{#2@@}{#3@@}{\CF@cram@basewidth/2}{}%
+		\expandafter\draw\expandafter[\CF@current@tikz,line join=bevel](#2@@1)--(#2@@2)--(#3@@)--(#2@@1);
+	\or% 9 = liaison Cram triangle évidé de #3 vers #1
+		\CF@create@normnodes{#3@@}{#2@@}{\CF@cram@basewidth/2}{}%
+		\expandafter\draw\expandafter[\CF@current@tikz,line join=bevel](#3@@1)--(#3@@2)--(#2@@)--(#3@@1);
+	\else
+		\PackageError\CF@package@name{Unknown bond type, this error should not occur}{If you think it's a bug, send a Minimal Example to the author.}%
+	\fi
+}
+
+\newcommand*\CF@draw@bond@i{\expandafter\draw\expandafter[\CF@current@tikz]}
+
+\newcommand*\CF@hook@drawall{% dessine tous les crochets contenus dansla sc \CF@hook@draw
+	\ifx\CF@hook@drawlist\@empty
+	\else
+		\expandafter\CF@hook@drawfirst\CF@hook@drawlist\@nil% trace un lien de crochet à crochet
+		\expandafter\CF@hook@drawall
+	\fi
+}
+
+\def\CF@hook@drawfirst[#1,#2,#3]#4#5#6#7#8\@nil%
+{%
+	\def\CF@hook@drawlist{#8}%
+	\begingroup
+		\def\CF@current@tikz{#3}%
+		\def\CF@hook@startcontent{#6}\def\CF@hook@endcontent{#7}%
+		\CF@if@integer{#2}%
+			{\CF@draw@bond{#2}{#4}{#5}\CF@hook@startcontent\CF@hook@endcontent}%
+			{\CF@bond@findnum{#2}\CF@bond@currentnum
+			\CF@draw@bond\CF@bond@currentnum{#4}{#5}\CF@hook@startcontent\CF@hook@endcontent
+			}%
+	\endgroup
+}
+
+\def\CF@extract@atom#1-#2\@nil{#2}% transforme le bound@outnode en n° de l'atome
+
+\newcommand*\CF@draw@atomgroup[3]{% #1=angle d'arrivée de la liaison #2=numero atome sur lequel arrive la liaison #3=groupe d'atomes
+	\expandafter\let\expandafter\CF@bond@outcontent% assigne le contenu de l'atome d'où part la liaison
+		\csname\ifdefined\CF@bond@outnode atom@\expandafter\CF@extract@atom\CF@bond@outnode\@nil\else @empty\fi\endcsname
+	\global\advance\CF@cnt@groupnumber\@ne
+	\let\CF@current@atom\@empty
+	\CF@global@let\CF@hook@drawlist\@empty
+	\CF@cnt@atomingroup\z@
+	\CF@if@firsttokmatch{#3}?{\CF@draw@atomgroup@i{{}#3}}{\CF@draw@atomgroup@i{#3}}%
+	\def\CF@current@atomgroup{#3}%
+	\CF@if@instr{#3}?%
+		{\CF@remove@hook\CF@current@atomgroup
+		\ifx\@empty\CF@current@atomgroup\let\CF@current@atomgroup\CF@empty@node\fi}%
+		\relax
+	\ifx\@empty#2\@empty%
+	\else
+		\ifnum#2<\@ne
+			\PackageWarning\CF@package@name{No atom found at position #2.}{Pershaps you mispelled the optional argument of the bond.}%
+		\else
+			\ifnum#2>\CF@cnt@atomingroup
+				\PackageError\CF@package@name{No atom found at position #2.}{Pershaps you mispelled the optional argument of the bond.}%
+			\fi
+		\fi
+	\fi
+	\edef\CF@hook@atomnumber{%
+		\ifx\@empty#2\@empty%
+			\ifdim#1pt>90pt
+				\ifdim#1pt<270pt \number\CF@cnt@atomingroup\else1\fi
+			\else1%
+			\fi
+		\else#2%
+		\fi}%
+	\CF@cnt@atomnumber\CF@hook@atomnumber
+	\ifx\CF@current@atomgroup\CF@empty@node
+		\let\CF@node@strut\@empty
+	\else
+		\def\CF@node@strut{\vphantom\CF@bond@outcontent}%
+	\fi
+	\def\CF@node@content{\expandafter\CF@display@chem\expandafter{\csname atom@\number\CF@cnt@atomnumber\endcsname\CF@node@strut}}%
+	\edef\CF@opt@string{anchor=\ifnum\CF@last@action=\z@ base\else center\fi,at=(CF@node)}% premier atome de la molécule affiché
+	\loop
+		\unless\ifnum\CF@cnt@atomnumber>\CF@cnt@atomingroup
+		\expandafter\node\expandafter[\CF@opt@string](n\number\CF@cnt@groupnumber-\number\CF@cnt@atomnumber){\CF@node@content};%
+		\let\CF@node@strut\@empty
+		\advance\CF@cnt@atomnumber\@ne
+		\edef\CF@opt@string{anchor=base west,at=(n\number\CF@cnt@groupnumber-\number\numexpr\CF@cnt@atomnumber-1.base east)}%
+	\repeat
+	\CF@cnt@atomnumber\CF@hook@atomnumber
+	\ifnum\CF@last@action=\tw@% s'il faut tracer une liaison
+		\gdef\CF@cycle@anglecorrection{0}% alors c'est qu'un cycle ne peut pas commencer la molécule : annulation de la correction d'angle
+		\CF@draw@bond\CF@bond@type{\CF@bond@outnode}{n\number\CF@cnt@groupnumber-\number\CF@cnt@atomnumber}\CF@previous@atomgroup\CF@current@atomgroup
+	\fi
+	\let\CF@last@action\@ne% met la dernière action à 1 : affichage d'un noeud
+	\loop
+		\ifnum\CF@cnt@atomnumber>\@ne
+		\advance\CF@cnt@atomnumber\m@ne
+		\edef\CF@opt@string{anchor=base east,at=(n\number\CF@cnt@groupnumber-\number\numexpr\CF@cnt@atomnumber+1.base west)}%
+		\expandafter\node\expandafter[\CF@opt@string](n\number\CF@cnt@groupnumber-\number\CF@cnt@atomnumber){\CF@node@content};%
+	\repeat
+	\CF@hook@drawall
+	\edef\CF@last@groupnumber{\number\CF@cnt@groupnumber}%
+	\let\CF@previous@atomgroup\CF@current@atomgroup
+}
+
+\newcommand*\CF@draw@atomgroup@i[1]{% transforme #1 en un groupe d'atomes
+	\ifx\@empty#1\@empty%
+	\else
+		\advance\CF@cnt@atomingroup\@ne
+		\CF@if@firsttokmatch{#1}\egroup
+			{\CF@expand@second{\def\CF@current@atom}{\expandafter{\@car#1\@nil}}}%
+			{\CF@expand@second{\def\CF@current@atom}{\@car#1\@nil}}% prend le 1er car
+		\CF@swap@fi\CF@expand@second\CF@draw@atomgroup@ii{\@gobble#1}%
+	\fi
+}
+
+\newcommand*\CF@draw@atomgroup@ii[1]{% transforme #1 en un groupe d'atomes
+	\ifx\@empty#1\@empty%
+		\expandafter\let\csname atom@\number\CF@cnt@atomingroup\endcsname\CF@current@atom
+		\let\CF@current@atom\@empty
+	\else
+		\CF@if@firsttokmatch{#1}\bgroup
+			{\CF@expadd@tocs\CF@current@atom{\expandafter{\@car#1\@nil}}%
+			\CF@swap@fi\CF@expand@second\CF@draw@atomgroup@ii{\@gobble#1}%
+			}%
+			{\CF@expand@second\CF@ifcar@isupperletter{\@car#1\@nil}%
+				{\expandafter\let\csname atom@\number\CF@cnt@atomingroup\endcsname\CF@current@atom
+				\let\CF@current@atom\@empty
+				\CF@swap@fi\CF@draw@atomgroup@i{#1}
+				}%
+				{\CF@if@firsttokmatch{#1}?%
+					{\expandafter\CF@if@firsttokmatch\expandafter{\@gobble#1}[% un crochet après le "?"
+						{\expandafter\CF@grab@optarg\@gobble#1\@nil\CF@after@hook}%
+						{\expandafter\CF@grab@optarg\expandafter[\expandafter]\@gobble#1\@nil\CF@after@hook}%
+					\CF@expand@second{\CF@expand@second\CF@if@instr\CF@hook@list}{\expandafter(\CF@hook@currentname)}% crochet déjà défini ?
+						{\expandafter\CF@hook@parselist\expandafter{\CF@hook@currentname}% va chercher les caractéristiques du crochet sauvegardé
+						\CF@edefadd@tocs\CF@hook@drawlist{%
+							[\CF@hook@currentname,\CF@hook@currentlink,\CF@hook@currenttikz]{\CF@hook@savedcoord}{n\number\CF@cnt@groupnumber-\number\CF@cnt@atomingroup}}%
+						\CF@expadd@tocs\CF@hook@drawlist{\expandafter{\CF@hook@savedcontent}}%
+						\CF@expadd@tocs\CF@hook@drawlist{\expandafter{\CF@current@atom}}% ajoute les 4 arguments à la liste des crochets à tracer
+						\CF@global@let\CF@hook@drawlist\CF@hook@drawlist
+						}%
+						{\CF@edefadd@tocs\CF@hook@list{(\CF@hook@currentname)|n\number\CF@cnt@groupnumber-\number\CF@cnt@atomingroup|}%
+						\CF@expadd@tocs\CF@hook@list{\CF@current@atom|}%
+						\CF@global@let\CF@hook@list\CF@hook@list
+						}%
+					\CF@swap@fi\CF@expand@second\CF@draw@atomgroup@ii\CF@after@hook
+					}%
+					{\CF@expadd@tocs\CF@current@atom{\@car#1\@nil}%
+					\CF@swap@fi\CF@expand@second\CF@draw@atomgroup@ii{\@gobble#1}%
+					}%
+				}%
+			}%
+	\fi
+}
+
+\def\CF@kook@defaultname{a}
+\def\CF@hook@defaultlink{-}
+\def\CF@hook@defaulttikz{}
+
+\def\CF@hook@parseoptarg#1,#2,#3\@nil{%
+	\CF@test@assign\CF@hook@currentname{#1}\CF@kook@defaultname
+	\CF@test@assign\CF@hook@currentlink{#2}\CF@hook@defaultlink
+	\CF@test@assign\CF@hook@currenttikz{#3}\CF@hook@defaulttikz
+}
+
+\def\CF@grab@optarg[#1]#2\@nil#3{%
+	\CF@hook@parseoptarg#1,,\@nil
+	\def#3{#2}%
+}
+
+\newcommand*\CF@hook@parselist[1]{% #1 est le nom du noeud à retrouver
+	\def\CF@hook@parselist@i##1(#1)|##2|##3|##4\@nil{%
+		\def\CF@hook@savedcoord{##2}\def\CF@hook@savedcontent{##3}%
+	}%
+	\expandafter\CF@hook@parselist@i\CF@hook@list\@nil
+}
+
+\def\CF@remove@hook#1{% enlève tous les crochets (et leurs arguments optionnels) de la sc #1
+	\expandafter\CF@if@instr\expandafter{#1}{?[}%
+		{\expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter#1%
+			\expandafter\expandafter\expandafter{\expandafter\CF@remove@opthook#1\@nil}%
+		\CF@remove@hook#1%
+		}%
+		{\CF@remove@hook@i#1}%
+}
+
+\def\CF@remove@hook@i#1{%
+	\expandafter\CF@if@instr\expandafter{#1}?%
+		{\expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter#1%
+			\expandafter\expandafter\expandafter{\expandafter\CF@remove@singlehook#1\@nil}%
+		\CF@remove@hook@i#1%
+		}%
+		\relax
+}
+
+\def\CF@remove@opthook#1?[#2]#3\@nil{#1#3}
+
+\def\CF@remove@singlehook#1?#2\@nil{#1#2}
+
+\newcommand*\setlewis[3]{%
+	\ifx\@empty#1\@empty\def\CF@lewis@offset{1.5pt}\else\def\CF@lewis@offset{#1}\fi
+	\ifx\@empty#2\@empty\def\CF@lewis@length{8pt}\else\def\CF@lewis@length{#2}\fi
+	\ifx\@empty#3\@empty\def\CF@lewis@style{}\else\def\CF@lewis@style{#3}\fi}
+\setlewis{}{}{}
+
+\newcommand*\lewis[1]{\begingroup\@makeother;\CF@lewis@i#1\@nil}
+
+\def\CF@lewis@i#1,#2\@nil%
+{%
+	\setbox\CF@lewis@box\hbox{\CF@display@chem{#2}}%
+	\def\CF@lewis@remainpos{#1}%
+	\let\CF@lewis@previouspos\@empty
+	\loop
+		\unless\ifx\CF@lewis@remainpos\@empty
+		\edef\CF@lewis@currentpos{\expandafter\@car\CF@lewis@remainpos\@nil}%
+		\edef\CF@lewis@remainpos{\expandafter\@gobble\CF@lewis@remainpos}%
+		\pgfmathparse{\wd\CF@lewis@box/2+\ifcase\CF@lewis@currentpos\space1\or1\or0\or-1\or-1\or-1\or0\or1\fi*(\wd\CF@lewis@box/2+\CF@lewis@offset)}%
+		\let\CF@lewis@x\pgfmathresult
+		\pgfmathparse{\ht\CF@lewis@box/2+\ifcase\CF@lewis@currentpos\space0\or1\or1\or1\or0\or-1\or-1\or-1\fi*(\ht\CF@lewis@box/2\ifnum\CF@lewis@currentpos>4 +\dp\CF@lewis@box\fi+\CF@lewis@offset)}%
+		\let\CF@lewis@y\pgfmathresult
+		\edef\CF@lewis@xoffset{\ifcase\CF@lewis@currentpos\space0\or0.7071\or1\or0.7071\or0\or-0.7071\or-1\or-0.7071\fi}%
+		\edef\CF@lewis@yoffset{\ifcase\CF@lewis@currentpos\space-1\or-0.7071\or0\or0.7071\or1\or0.7071\or0\or-0.7071\fi}%
+		\if.\expandafter\@car\CF@lewis@remainpos\relax\@nil
+			\edef\CF@lewis@remainpos{\expandafter\@gobble\CF@lewis@remainpos}%
+			\tikz \draw[overlay,fill,black] ([xshift=-\CF@lewis@yoffset*0.8,yshift=\CF@lewis@xoffset*0.8]\CF@lewis@x pt,\CF@lewis@y pt)circle(0.8pt);%
+		\else
+			\if|\expandafter\@car\CF@lewis@remainpos\relax\@nil
+				\edef\CF@lewis@remainpos{\expandafter\@gobble\CF@lewis@remainpos}%
+				\expandafter\tikz\expandafter\draw\expandafter[\CF@lewis@style,overlay]%
+					(\CF@lewis@x-\CF@lewis@length*\CF@lewis@xoffset/2 pt,\CF@lewis@y-\CF@lewis@length*\CF@lewis@yoffset/2 pt)--
+					([xshift=-\CF@lewis@yoffset*2,yshift=\CF@lewis@xoffset*2]\CF@lewis@x-\CF@lewis@xoffset*\CF@lewis@length/2 pt,\CF@lewis@y-\CF@lewis@yoffset*\CF@lewis@length/2 pt)--
+					([xshift=-\CF@lewis@yoffset*2,yshift=\CF@lewis@xoffset*2]\CF@lewis@x+\CF@lewis@length*\CF@lewis@xoffset/2 pt,\CF@lewis@y+\CF@lewis@length*\CF@lewis@yoffset/2 pt)--
+					(\CF@lewis@x+\CF@lewis@length*\CF@lewis@xoffset/2 pt,\CF@lewis@y+\CF@lewis@length*\CF@lewis@yoffset/2 pt)--cycle;%
+			\else
+				\expandafter\tikz\expandafter\draw\expandafter[\CF@lewis@style,overlay]%
+					(\CF@lewis@x-\CF@lewis@length*\CF@lewis@xoffset/2 pt,\CF@lewis@y-\CF@lewis@length*\CF@lewis@yoffset/2 pt)--%
+					(\CF@lewis@x+\CF@lewis@length*\CF@lewis@xoffset/2 pt,\CF@lewis@y+\CF@lewis@length*\CF@lewis@yoffset/2 pt);%
+			\fi
+		\fi
+	\repeat
+	\box\CF@lewis@box
+	\endgroup
+}
+
+\newcommand*\chembelow[3][1.5pt]{%
+	\setbox\CF@box@boxa\hbox{\CF@display@chem{#2}}\setbox\CF@box@boxb\hbox{\CF@display@chem{#3}}%
+	\vtop{%
+		\hbox{\CF@display@chem{#2}}%
+		\hrule width0pt depth0pt height#1\relax
+		\hbox{%
+			\hskip\dimexpr(\wd\CF@box@boxa-\wd\CF@box@boxb)/2\relax
+			\CF@display@chem{#3}%
+			\hskip\dimexpr(\wd\CF@box@boxa-\wd\CF@box@boxb)/2\relax
+			}%
+			\vskip-\dimexpr\ht\CF@box@boxb+\dp\CF@box@boxb+#1\relax
+		}%
+}
+
+\newcommand*\chemabove[3][1.5pt]{%
+	\setbox\CF@box@boxa\hbox{\CF@display@chem{#2}}\setbox\CF@box@boxb\hbox{\CF@display@chem{#3}}%
+	\vtop{%
+		\hbox{\CF@display@chem{#2}}%
+		\hrule width0pt depth0pt height-\dimexpr#1+\ht\CF@box@boxa+\ht\CF@box@boxb+\dp\CF@box@boxb\relax
+		\hbox{%
+			\hskip\dimexpr(\wd\CF@box@boxa-\wd\CF@box@boxb)/2\relax
+			\CF@display@chem{#3}%
+			\hskip\dimexpr(\wd\CF@box@boxa-\wd\CF@box@boxb)/2\relax
+			}%
+		}%
+}
+
+%%%%%% les signes et les flèches
+\newcommand*\chemsign[2][0.5em]{\hbox{\kern#1\relax#2\kern#1}}
+
+\newcommand*\setchemrel[3]{%
+	\ifx\@empty#1\@empty\def\CF@chemrel@vsep{2pt}\else\def\CF@chemrel@vsep{#1}\fi
+	\ifx\@empty#2\@empty\def\CF@chemrel@hsep{0.7em}\else\def\CF@chemrel@hsep{#2}\fi
+	\ifx\@empty#3\@empty\def\CF@chemrel@length{4em}\else\def\CF@chemrel@length{#3}\fi
+}
+
+\setchemrel{}{}{}
+
+\newcommand*\chemrel[1][]{\def\CF@stuff@above{#1}\CF@chemchemrel@i}
+\newcommand*\CF@chemchemrel@i[1][]{\def\CF@stuff@below{#1}\CF@chemchemrel@ii\CF@stuff@above\CF@stuff@below}
+\newcommand*\CF@chemchemrel@ii[3]{%
+	\def\CF@equi@chars{<>}\def\CF@chemrel@chars{#3}%
+	\def\CF@chemrel@stuff
+		{\leavevmode\kern\CF@chemrel@hsep
+		\begin{tikzpicture}[every node/.style={anchor=base,inner sep=0pt,outer sep=0pt,minimum size=0pt},baseline]%
+			\CF@if@instr{#3}{<>}%
+				{\node[yshift=-2pt] at(0,0)(chemrel@start){\vphantom I};\node[yshift=-2pt] at(\CF@chemrel@length,0)(chemrel@end){\vphantom I};%
+				\expandafter\draw\expandafter[\CF@remove@equichars#3,\@nil->](chemrel@start)--(chemrel@end);%
+				\node[yshift=2pt] at(0,0)(chemrel@start){\vphantom I};\node[yshift=2pt] at(\CF@chemrel@length,0)(chemrel@end){\vphantom I};%
+				\expandafter\draw\expandafter[\CF@remove@equichars#3,\@nil<-](chemrel@start)--(chemrel@end);
+				}%
+				{\node at(0,0)(chemrel@start){\vphantom I};\node at(\CF@chemrel@length,0)(chemrel@end){\vphantom I};%
+				\draw[#3](chemrel@start)--(chemrel@end);%
+				}%
+		\end{tikzpicture}%
+		\kern\CF@chemrel@hsep
+		}%
+	\ifx#1\@empty
+		\ifx#2\@empty\CF@chemrel@stuff
+		\else\chembelow[\CF@chemrel@vsep]\CF@chemrel@stuff{\hbox{#2}}%
+		\fi
+	\else
+		\ifx#2\@empty\chemabove[\CF@chemrel@vsep]\CF@chemrel@stuff{\hbox{#1}}%
+		\else\chemabove[\CF@chemrel@vsep]{\chembelow[\CF@chemrel@vsep]\CF@chemrel@stuff{\hbox{#2}}}{\hbox{#1}}%
+		\fi
+	\fi
+}
+
+\def\CF@remove@equichars#1<>#2\@nil{#1#2}
+\endinput
+
+#####################################################################
+#                            Historique                             #
+#####################################################################
+
+v0.1        2010/06/23  Première version publique sur le CTAN
+---------------------------------------------------------------------

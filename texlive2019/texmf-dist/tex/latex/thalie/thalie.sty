@@ -1,0 +1,624 @@
+%%
+%% This is file `thalie.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% thalie.dtx  (with options: `package')
+%% Copyright 2010-2019 Louis Paternault
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% 
+%% This work has the LPPL maintenance status `maintained'.
+%% 
+%% The Current Maintainer of this work is Louis Paternault
+%% 
+%% This work consists of the files thalie.dtx and thalie.ins
+%% and the derived file thalie.sty.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{thalie}
+    [2019/02/24 v0.10a A package to typeset drama plays]
+
+\RequirePackage{pgfkeys}
+\RequirePackage{etoolbox}
+\RequirePackage{suffix}
+\RequirePackage{tabularx}
+\RequirePackage{xspace}
+\RequirePackage{translations}
+\LoadDictionary{thalie}
+\LoadDictionaryFor{fallback}{thalie}
+\newcommand{\playname}{\GetTranslation{Play}}
+\newcommand{\actname}{\GetTranslation{Act}}
+\newcommand{\scenename}{\GetTranslation{Scene}}
+\newcommand{\interludename}{\GetTranslation{Interlude}}
+\newcommand{\curtainname}{\GetTranslation{Curtain}}
+\newcommand{\pausename}{\GetTranslation{Pause}}
+\newcommand{\playmark}[1]{%
+  \markboth{\MakeUppercase{#1}}{}%
+}
+\newcommand{\actmark}[1]{%
+  \markright{\MakeUppercase{%
+    \GetTranslation{Act}\ \theact%
+    \ifdefempty{#1}{}{: #1}%
+  }}%
+}
+\newcommand{\scenemark}[1]{%
+}
+\newcounter{play}
+\renewcommand{\theplay}{\arabic{play}}
+\newcounter{act}[play]
+\renewcommand{\theact}{\Roman{act}}
+\newcounter{scene}[act]
+\renewcommand{\thescene}{\arabic{scene}}
+\newcommand{\@displaytitle}[3]{
+  % Arguments:
+  % - Style
+  % - Label (none = not in toc)
+  % - Title
+  \ifdefstring{#1}{center}{
+    \begin{center}
+      \textsc{#2}
+
+      #3
+    \end{center}
+  }{\ifdefstring{#1}{bigcenter}{
+    \begin{center}
+      \Large
+      \textsc{#2}
+
+      #3
+    \end{center}
+  }{\ifdefstring{#1}{box}{
+    \begin{center}
+      \framebox{\begin{minipage}{0.7\textwidth}
+      \begin{center}
+        \Large \bfseries
+      \vspace{0.5em}
+
+      #2
+      \ifboolexpr{test{\ifstrempty{#3}} or test{\ifstrempty{#2}}}{}{---}
+      #3
+
+      \vspace{0.5em}
+    \end{center}
+    \end{minipage}}
+    \end{center}
+    \vspace{1em}
+  }{}}}
+}
+\newcommand\@clearpage[1]{%
+  % Clear page if necessary
+  \ifboolexpr{test{\ifdefstring{#1}{part}} or test{\ifdefstring{#1}{chapter}}}{
+    \cleardoublepage
+    \thispagestyle{empty}
+  }{}
+}
+
+\newcommand{\play}[2][]{%
+  \refstepcounter{play}
+  \ifstrempty{#1}{
+    \def\@short{#2}
+  }{
+    \def\@short{#1}
+  }
+  \@clearpage{\@playlevel}
+  \playmark{\@short}
+  \addcontentsline{toc}{\@playlevel}{\@short}
+  \ifdefstring{\@playstyle}{custom}{
+    \customplay{\theplay}{#2}
+  }{
+    \@displaytitle{\@playstyle}{}{#2}
+  }
+}
+\WithSuffix\newcommand\play*[1]{%
+  \@clearpage{\@playlevel}
+  \ifdefstring{\@playstyle}{custom}{
+    \customplay*{#1}
+  }{
+    \@displaytitle{\@playstyle}{}{#1}
+  }
+}
+\newcommand{\act}[2][]{%
+  \refstepcounter{act}
+  \ifstrempty{#1}{
+    \def\@short{#2}
+  }{
+    \def\@short{#1}
+  }
+  \ifdefempty{\@short}{
+    \def\@label{\GetTranslation{Act} \theact{}}
+  }{
+    \def\@label{\GetTranslation{Act} \theact{}\xspace: }
+  }
+  \@clearpage{\@actlevel}
+  \actmark{\@short}
+  \addcontentsline{toc}{\@actlevel}{\@label\@short}
+  \ifdefstring{\@actstyle}{custom}{
+    \customact{\theact}{#2}
+  }{
+    \@displaytitle{\@actstyle}{\GetTranslation{Act} \theact}{#2}
+  }
+}
+\WithSuffix\newcommand\act*[1]{%
+  \@clearpage{\@actlevel}
+  \ifdefstring{\@actstyle}{custom}{
+    \customact*{#1}
+  }{
+    \@displaytitle{\@actstyle}{}{#1}
+  }
+}
+\newcommand{\scene}[2][]{%
+  \refstepcounter{scene}
+  \ifstrempty{#1}{
+    \def\@short{#2}
+  }{
+    \def\@short{#1}
+  }
+  \ifdefempty{\@short}{
+    \def\@label{\GetTranslation{Scene} \thescene{}}
+  }{
+    \def\@label{\GetTranslation{Scene} \thescene{}\xspace: }
+  }
+  \@clearpage{\@scenelevel}
+  \scenemark{\@short}
+  \addcontentsline{toc}{\@scenelevel}{\@label\@short}
+  \ifdefstring{\@scenestyle}{custom}{
+    \customscene{\thescene}{#2}
+  }{
+    \@displaytitle{\@scenestyle}{\GetTranslation{Scene} \thescene}{#2}
+  }
+}
+\WithSuffix\newcommand\scene*[1]{%
+  \@clearpage{\@scenelevel}
+  \ifdefstring{\@scenestyle}{custom}{
+    \customscene*{#1}
+  }{
+    \@displaytitle{\@scenestyle}{}{#1}
+  }
+}
+\newcommand{\interlude}[2][]{%
+  \ifstrempty{#1}{
+    \def\@short{#2}
+  }{
+    \def\@short{#1}
+  }
+  \ifdefempty{\@short}{
+    \def\@label{\GetTranslation{Interlude}}
+  }{
+    \def\@label{\GetTranslation{Interlude}\xspace: }
+  }
+  \ifdefstring{\@interludelevel}{play}{
+    \@clearpage{\@playlevel}
+    \playmark{\@short}
+    \addcontentsline{toc}{\@playlevel}{\@label\@short}
+    \@displaytitle{\@playstyle}{\GetTranslation{Interlude}}{#2}
+  }{\ifdefstring{\@interludelevel}{act}{
+    \@clearpage{\@actlevel}
+    \actmark{\@short}
+    \addcontentsline{toc}{\@actlevel}{\@label\@short}
+    \@displaytitle{\@actstyle}{\GetTranslation{Interlude}}{#2}
+  }{% \@interludelevel is scene
+    \@clearpage{\@scenelevel}
+    \scenemark{\@short}
+    \addcontentsline{toc}{\@scenelevel}{\@label\@short}
+    \@displaytitle{\@scenestyle}{\GetTranslation{Interlude}}{#2}
+  }}
+}
+\WithSuffix\newcommand\interlude*[1]{%
+  \ifdefstring{\@interludelevel}{play}{
+    \@clearpage{\@playlevel}
+    \@displaytitle{\@playstyle}{\GetTranslation{Interlude}}{#1}
+  }{\ifdefstring{\@interludelevel}{act}{
+    \@clearpage{\@actlevel}
+    \@displaytitle{\@actstyle}{\GetTranslation{Interlude}}{#1}
+  }{% \@interludelevel is scene
+    \@clearpage{\@scenelevel}
+    \@displaytitle{\@scenestyle}{\GetTranslation{Interlude}}{#1}
+  }}
+}
+\newcommand\curtain{
+  \begin{center}
+    \Large\textsc{\GetTranslation{Curtain}}
+  \end{center}
+}
+\newcommand{\@maybexspace}{%
+  \if@xspace%
+    \xspace%
+  \fi%
+}
+\newcommand{\@speaks}[2][]{%
+  \ifstrempty{#1}{%
+    \speakswithoutdirection{#2}%
+  }{%
+    \speakswithdirection{#2}{#1}%
+  }\@maybexspace%
+}
+\newenvironment{@smallcenter}
+    {\par\smallskip\centering}
+    {\par\nopagebreak\ignorespacesafterend}
+\providecommand{\speakswithdirection}{}
+\providecommand{\speakswithoutdirection}{}
+\newcommand{\@setcharacterstyle}[1]{
+  \ifstrequal{#1}{bold}{%
+    % Bold style
+    \renewcommand\speakswithdirection[2]{%
+      \noindent%
+      {\bfseries\sffamily ##1} \emph{(##2)}\xspace:%
+    }
+    \renewcommand\speakswithoutdirection[1]{%
+      \noindent%
+      {\bfseries\sffamily ##1\xspace:}%
+    }%
+  }{}%
+  \ifstrequal{#1}{center}{%
+    % Center style
+    \renewcommand\speakswithdirection[2]{%
+      \begin{center}%
+      \textsc{##1},\\\emph{##2}%
+      \end{center}%
+      \par\ignorespacesafterend%
+    }%
+    \renewcommand\speakswithoutdirection[1]{%
+      \begin{center}%
+      \textsc{##1}%
+      \end{center}%
+      \par\ignorespacesafterend%
+    }%
+  }{}%
+  \ifstrequal{#1}{imprimerie-verse}{%
+    % Style for verse plays defined by the French Imprimerie nationale
+    \renewcommand\speakswithdirection[2]{%
+      \begin{@smallcenter}%
+      \textsc{##1}, \emph{##2}%
+      \end{@smallcenter}%
+    }%
+    \renewcommand\speakswithoutdirection[1]{%
+      \begin{@smallcenter}%
+      \textsc{##1}%
+      \end{@smallcenter}%
+    }%
+  }{}%
+  \ifstrequal{#1}{imprimerie-prose}{%
+    % Style for prose plays defined by the French Imprimerie nationale
+    \renewcommand\speakswithdirection[2]{%
+      \noindent\hspace*{-\parindent}\textsc{##1}, \emph{##2}\xspace:%
+    }%
+    \renewcommand\speakswithoutdirection[1]{%
+      \noindent\hspace*{-\parindent}\textsc{##1}\xspace:%
+    }%
+  }{}%
+  \ifstrequal{#1}{arden}{%
+    \renewcommand\speakswithdirection[2]{%
+      \noindent\hspace*{-\parindent}\textsc{\MakeLowercase{##1}} [\emph{##2}]\quad%
+    }%
+    \renewcommand\speakswithoutdirection[1]{%
+      \noindent\hspace*{-\parindent}\textsc{\MakeLowercase{##1}}\quad%
+    }%
+  }{}%
+  \ifstrequal{#1}{simple}{%
+    % Simple style
+    \renewcommand\speakswithdirection[2]{%
+      \indent\textsc{##1}, \emph{##2}\xspace:%
+    }%
+    \renewcommand\speakswithoutdirection[1]{%
+      \indent\textsc{##1}\xspace:%
+    }%
+  }{}%
+  \ifstrequal{#1}{margin}{%
+    % Margin style
+    \setlength{\leftskip}{3cm}
+    \renewcommand\speakswithdirection[2]{%
+      \hspace{-3cm} ##1 ##2
+    }
+    \renewcommand\speakswithoutdirection[1]{%
+      \hspace{-3cm} ##1
+    }%
+  }{}%
+}
+\newcommand{\@dramatis@clear}{}
+\newcommand{\@empty@}{}
+\providebool{@dramatis@hidden}
+\newenvironment{dramatis}[1][]{
+  \@dramatis@clear{}
+  \undef{\@dramatis@clear}
+  \ifstrequal{#1}{hidden}{
+    \booltrue{@dramatis@hidden}
+  }{\ifstrempty{#1}{
+    \boolfalse{@dramatis@hidden}
+    \dramatisenv
+  }{
+    \ClassError{thalie}{%
+      Environment dramatis does not accept option #1.%
+    }{
+    }
+  }
+  }
+}{%
+  \notbool{@dramatis@hidden}{%
+    \enddramatisenv
+  }{}%
+}
+\newenvironment{dramatisenv}{%
+  \list{}{\rightmargin1cm\leftmargin2cm}\item[]
+}{%
+  \endlist%
+}
+
+\newcommand{\dramatischaractername}[1]{\textbf{#1}}
+
+\newcommand{\dramatischaracterdescription}[1]{#1}
+
+\newcommand{\characterspace}{ %
+  \notbool{@dramatis@hidden}{%
+    \smallskip\newline %
+  }{} %
+}
+
+\newcommand{\dramatischaracter}[2]{ %
+  \hspace*{-1cm} %
+  \ifboolexpr{(not test {\ifdefempty{#1}}) and test {\ifdefempty{#2}}}{%
+    \dramatischaractername{#1} %
+  }{}%
+  \ifboolexpr{ test{\ifdefempty{#1}} and not test{\ifdefempty{#2}}}{%
+    \dramatischaracterdescription{#2} %
+  }{}%
+  \ifboolexpr{ (not test{\ifdefempty{#1}}) and (not test{\ifdefempty{#2}})}{%
+    \dramatischaractername{#1}, \dramatischaracterdescription{#2} %
+  }{}%
+  \newline %
+}
+
+  \newlength{\@spaceaftergroup}
+\newenvironment{charactergroup}[2][5cm]{%
+  \notbool{@dramatis@hidden}{%
+    \gdef\@groupname{#2} %
+    \gdef\@grouplength{#1} %
+      \hspace*{-1.3pt}\math\left. %
+      \minipage[c]{#1} %
+      \vspace*{2pt} %
+  }{}%
+}{%
+  \notbool{@dramatis@hidden}{%
+    \vspace*{-8pt} %
+    \endminipage %
+    \right\} \endmath %
+    %
+    \setlength{\@spaceaftergroup}{\linewidth}
+    \addtolength\@spaceaftergroup{-\@grouplength}
+    \addtolength\@spaceaftergroup{-20pt}
+    \begin{minipage}[c]{\@spaceaftergroup}
+        \@groupname %
+    \end{minipage}
+  \newline %
+  }{}%
+}
+\newcommand{\setcharactername}[2]{%
+    \expandafter\gdef\csname#1name\endcsname{%
+      #2\@maybexspace%
+    }%
+    \expandafter\gdef\csname#1\endcsname{%
+      \@ifnextchar[{%
+        \defcharcommand@with{#2}%
+      }{%
+        \defcharcommand@without{#2}%
+      }%
+    }%
+    \xappto{\@dramatis@clear}{%
+      \global\noexpand\csundef{#1}%
+      \global\noexpand\csundef{#1name}%
+    }%
+}
+\newcommand{\@definecharactercommand}[2]{%
+  \ifcsdef{#1}{%
+    \ClassError{thalie}{%
+      A command named \@backslashchar#1 already exists. We cannot define a new
+      one.%
+    }{%
+      Choose another command name to introduce character #2's lines.%
+    }%
+  }{%
+  }%
+  \ifcsdef{#1name}{%
+    \ClassError{thalie}{%
+      A command named \@backslashchar#1name already exists. We cannot define a
+      new one.%
+    }{%
+      Choose another command name to introduce character #2's lines, such that
+      when a new command is defined by adding "name" to it, it does not
+      conflict with an existing one.
+    }%
+  }{%
+  }%
+  \setcharactername{#1}{#2}%
+}
+\def\defcharcommand@with#1[#2]{\@speaks[#2]{#1}}
+\def\defcharcommand@without#1{\@speaks{#1}}
+\pgfkeys{
+  % Character definition
+  /THALIE/CHARACTER/.is family,
+  /THALIE/CHARACTER,
+  cmd/.value required,
+  cmd/.store in=\@cmd,
+  drama/.value required,
+  drama/.store in=\@drama,
+  desc/.value required,
+  desc/.store in=\@desc,
+}
+\newcommand{\character}[2][]{
+  \undef{\@drama}
+  \undef{\@cmd}
+  \undef{\@desc}
+  \pgfkeys{/THALIE/CHARACTER, #1}%
+ % Forbidden combinations
+  \ifboolexpr{
+    ( test{\ifdef{\@cmd}} and test{\ifstrempty{#2}} ) or
+    ( test{\ifstrempty{#2}} and test{\ifundef{\@cmd}} and test{\ifundef{\@desc}} and test{\ifundef{\@drama}} ) or
+    ( test{\ifundef{\@cmd}} and (not test{\ifstrempty{#2}}) and test{\ifdef{\@drama}} )
+  }{
+    \ClassError{thalie}{Invalid character definition.}{All combination of omitted arguments are not allowed. See the documentation for more information}
+  }{}
+  % Defining character command
+  \ifboolexpr{ test{\ifdef{\@cmd}} and (not test{\ifstrempty{#2}}) }{%
+    \@definecharactercommand{\@cmd}{#2}
+  }{}%
+  \notbool{@dramatis@hidden}{%
+    \ifboolexpr{ (not test{\ifstrempty{#2}}) and test{\ifdef{\@cmd}} and test{\ifdef{\@drama}} and test{\ifundef{\@desc}}}{%
+      \ifdefempty{\@drama}{%
+      % Hidden character. Nothing added to dramatis personae
+      }{%
+      % Populating dramatis personae
+      \dramatischaracter{\@drama}{\@empty@}
+      }%
+    }{%
+      % Populating dramatis personae
+      \ifcsundef{@desc}{\gdef\@desc{}}{}%
+      \ifcsundef{@drama}{\gdef\@drama{#2}}{}%
+      \dramatischaracter{\@drama}{\@desc}
+    }%
+  }{}%
+}
+\newcommand{\disposablecharacter}[2][]{%
+  \@speaks[#1]{#2}%
+}
+\newcommand{\onstage}[1]{{\centering \emph{#1}\par\medskip}}
+\newcommand{\did}[1]{\emph{(#1)} }
+\newenvironment{dida}{%
+  \begin{quote}
+  \begin{em}
+  }{%
+  \end{em}
+  \end{quote}
+}
+\newcommand\pause{\did{\GetTranslation{Pause}}}
+
+
+\newlength{\@verseadjust}
+\setlength{\@verseadjust}{0pt}
+
+\newcommand{\adjustverse}[1]{\setlength{\@verseadjust}{#1}}
+
+\newcommand{\pauseverse}{{\abovedisplayshortskip\z@\abovedisplayskip\z@
+      \belowdisplayshortskip\z@\belowdisplayskip\z@
+  $$\global\dimen\@ne\predisplaysize
+   \xdef\tmp{%
+        \predisplaysize\the\predisplaysize
+        \prevgraf\the\prevgraf\relax}%
+  $$\vskip\dimexpr-\parskip-\baselineskip\relax}\tmp
+}
+
+\newcommand{\resumeverse}{%
+  \hspace{\@verseadjust}\hspace{\the\dimen\@ne}
+}
+\RequirePackage{pgfopts}
+
+\pgfkeys{
+  % Character style
+  /THALIE/.cd,
+  characterstyle/.value required,
+  characterstyle/.default=simple,
+  characterstyle/.is choice,
+  characterstyle/bold/.code=\@setcharacterstyle{bold},
+  characterstyle/center/.code=\@setcharacterstyle{center},
+  characterstyle/margin/.code=\@setcharacterstyle{margin},
+  characterstyle/simple/.code=\@setcharacterstyle{simple},
+  characterstyle/arden/.code=\@setcharacterstyle{arden},
+  characterstyle/imprimerie-verse/.code=\@setcharacterstyle{imprimerie-verse},
+  characterstyle/imprimerie-prose/.code=\@setcharacterstyle{imprimerie-prose},
+  characterstyle,
+}
+
+\pgfkeys{
+  % play style
+  /THALIE/.cd,
+  playstyle/.value required,
+  playstyle/.default=box,
+  playstyle/.is choice,
+  playstyle/center/.code=\def\@playstyle{center},
+  playstyle/bigcenter/.code=\def\@playstyle{bigcenter},
+  playstyle/box/.code=\def\@playstyle{box},
+  playstyle/custom/.code=\def\@playstyle{custom},
+  playstyle,
+}
+\pgfkeys{
+  % act style
+  /THALIE/.cd,
+  actstyle/.value required,
+  actstyle/.default=bigcenter,
+  actstyle/.is choice,
+  actstyle/center/.code=\def\@actstyle{center},
+  actstyle/bigcenter/.code=\def\@actstyle{bigcenter},
+  actstyle/box/.code=\def\@actstyle{box},
+  actstyle/custom/.code=\def\@actstyle{custom},
+  actstyle,
+}
+\pgfkeys{
+  % scene style
+  /THALIE/.cd,
+  scenestyle/.value required,
+  scenestyle/.default=center,
+  scenestyle/.is choice,
+  scenestyle/center/.code=\def\@scenestyle{center},
+  scenestyle/bigcenter/.code=\def\@scenestyle{bigcenter},
+  scenestyle/box/.code=\def\@scenestyle{box},
+  scenestyle/custom/.code=\def\@scenestyle{custom},
+  scenestyle,
+}
+
+\pgfkeys{
+  % play level
+  /THALIE/.cd,
+  playlevel/.value required,
+  playlevel/.default=chapter,
+  playlevel/.store in=\@playlevel,
+  playlevel,
+}
+\pgfkeys{
+  % act level
+  /THALIE/.cd,
+  actlevel/.value required,
+  actlevel/.default=section,
+  actlevel/.store in=\@actlevel,
+  actlevel,
+}
+\pgfkeys{
+  % scene level
+  /THALIE/.cd,
+  scenelevel/.value required,
+  scenelevel/.default=subsection,
+  scenelevel/.store in=\@scenelevel,
+  scenelevel,
+}
+\pgfkeys{
+  % interlude level
+  /THALIE/.cd,
+  interludelevel/.value required,
+  interludelevel/.default=act,
+  interludelevel/.is choice,
+  interludelevel/play/.code=\def\@interludelevel{play},
+  interludelevel/act/.code=\def\@interludelevel{act},
+  interludelevel/scene/.code=\def\@interludelevel{scene},
+  interludelevel,
+}
+\newif\if@xspace
+\pgfkeys{
+  % xspace option
+  /THALIE/.cd,
+  xspace/.value required,
+  xspace/.is if=@xspace,
+  xspace/.default=true,
+  xspace,
+}
+
+\ProcessPgfPackageOptions{/THALIE}
+\newcommand{\setthalieoptions}[1]{%
+  \pgfkeys{/THALIE/.cd, #1}%
+}
+\endinput
+%%
+%% End of file `thalie.sty'.

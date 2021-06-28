@@ -1,0 +1,289 @@
+if not modules then modules = { } end modules ['mlib-fio'] = {
+    version   = 1.001,
+    comment   = "companion to mlib-ctx.mkiv",
+    author    = "Hans Hagen, PRAGMA-ADE, Hasselt NL",
+    copyright = "PRAGMA ADE / ConTeXt Development Team",
+    license   = "see context related readme files",
+}
+
+local type = type
+local find = string.find
+local concat = table.concat
+local suffix, addsuffix = file.suffix, file.addsuffix
+
+local findfile     = resolvers.findfile
+local new_instance = mplib.new
+
+local trace_terminal = false  trackers.register("metapost.terminal", function(v) trace_terminal = v end)
+
+local report_metapost = logs.reporter("metapost")
+local report_terminal = logs.reporter("metapost","terminal")
+local report_logger   = logs.reporter("metapost","log")
+local report_error    = logs.reporter("metapost","error")
+
+mplib.realtimelogging = false
+
+local l, nl, dl = { }, 0, false
+local t, nt, dt = { }, 0, false
+local e, ne, de = { }, 0, false
+
+local function logger(target,str)
+    if target == 1 then
+        -- log
+    elseif target == 2 or target == 3 then
+        -- term
+        if str == "\n" then
+            mplib.realtimelogging = true
+            if nl > 0 then
+                report_logger(concat(l,"",1,nl))
+                nl, dl = 0, false
+            elseif not dl then
+                report_logger("")
+                dl = true
+            end
+        else
+            nl = nl + 1
+            l[nl] = str
+        end
+    elseif target == 4 then
+        report_error(str)
+    end
+end
+
+local finders = { }
+mplib.finders = finders -- also used in meta-lua.lua
+
+local function validftype(ftype)
+    if ftype == "mp" then
+        return "mp"
+    else
+        return nil
+    end
+end
+
+-- We can have a list!
+
+local suffixlist = { "mpxl", "mpiv", "mp" } -- no "mf"
+
+local function findmpfile(name,ftype)
+    local validtyp = validftype(ftype)
+    local fullname = findfile(name,validtyp)
+    if fullname and fullname ~= "" then
+        return fullname
+    elseif suffix(name) == "" then
+        for i=1,#suffixlist do
+            fullname = findfile(addsuffix(name,suffixlist[i]),validtyp)
+            if fullname and fullname ~= "" then
+                return fullname
+            end
+        end
+    end
+    return nil
+end
+
+finders.file = function(specification,name,mode,kind)
+    if mode == "r" then
+        return findmpfile(name,kind)
+    elseif file.is_writable(name) then
+        return name
+    else
+        return nil
+    end
+end
+
+local function finder(name,mode,kind) -- fake message for mpost.map and metafun.mpvi
+    local specification = url.hashed(name)
+    local finder = finders[specification.scheme] or finders.file
+    local found = finder(specification,name,mode,validftype(ftype))
+    return found
+end
+
+local findtexfile = resolvers.findtexfile
+local opentexfile = resolvers.opentexfile
+local splitlines  = string.splitlines
+
+local function writetoterminal(terminaldata,maxterm,d)
+    local t = type(d)
+    local n = 0
+    if t == "string" then
+        d = splitlines(d)
+        n = #d
+        for i=1,#d do
+            maxterm = maxterm + 1
+            terminaldata[maxterm] = d[i]
+        end
+    elseif t == "table" then
+        for i=1,#d do
+            local l = d[i]
+            if not l then
+                -- just ignore
+            elseif find(l,"[\n\r]") then
+                local s = splitlines(l)
+                local m = #s
+                for i=1,m do
+                    maxterm = maxterm + 1
+                    terminaldata[maxterm] = s[i]
+                end
+                n = n + m
+            else
+                maxterm = maxterm + 1
+                terminaldata[maxterm] = d[i]
+                n = 1
+            end
+        end
+    end
+    if trace_terminal then
+        report_metapost("writing %i lines, in cache %s",n,maxterm)
+    end
+    return maxterm
+end
+
+local function readfromterminal(terminaldata,maxterm,nowterm)
+    if nowterm >= maxterm then
+        terminaldata[nowterm] = false
+        maxterm = 0
+        nowterm = 0
+        if trace_terminal then
+            report_metapost("resetting, maxcache %i",#terminaldata)
+        end
+        return maxterm, nowterm, nil
+    else
+        if nowterm > 0 then
+            terminaldata[nowterm] = false
+        end
+        nowterm = nowterm + 1
+        local s = terminaldata[nowterm]
+        if trace_terminal then
+            report_metapost("reading line %i: %s",nowterm,s)
+        end
+        return maxterm, nowterm, s
+    end
+end
+
+local function fileopener()
+
+    -- these can go into the table itself
+
+    local terminaldata = { }
+    local maxterm      = 0
+    local nowterm      = 0
+
+    local terminal = {
+        name   = "terminal",
+        close  = function()
+         -- terminal = { }
+         -- maxterm  = 0
+         -- nowterm  = 0
+        end,
+        reader = function()
+            local line
+            maxterm, nowterm, line = readfromterminal(terminaldata,maxterm,nowterm)
+            return line
+        end,
+        writer = function(d)
+            maxterm = writetoterminal(terminaldata,maxterm,d)
+        end,
+    }
+
+    return function(name,mode,kind)
+        if name == "terminal" then
+         -- report_metapost("opening terminal")
+            return terminal
+        elseif mode == "w" then
+            -- we need an extra check here for permissions
+            local f = io.open(name,"wb")
+            if f then
+             -- report_metapost("opening file %a for writing",full)
+                return {
+                    name   = full,
+                    writer = function(s) return f:write(s) end, -- io.write(f,s)
+                    close  = function()  f:close() end,
+                }
+            end
+        else
+            local full = findtexfile(name,validftype(ftype))
+            if full then
+             -- report_metapost("opening file %a for reading",full)
+                return opentexfile(full)
+            end
+        end
+    end
+
+end
+
+local overloadmode = "warning"
+
+directives.register("metapost.overloadmode",function(v)
+    if v == "warning" or v == "error" then
+        overloadmode = v
+    else
+        overloadmode= false
+    end
+end)
+
+local propertycodes = {
+    [-3] = "mutable",
+    [ 1] = "primitive",
+    [ 2] = "permanent",
+    [ 3] = "immutable",
+}
+
+mplib.propertycodes = propertycodes
+
+local report = logs.reporter("metafun", "log")
+
+local function overload(property,name)
+    if overloadmode and property >= 0 then
+        -- turn of warning after format is loaded
+        local code = propertycodes[property] or "unknown"
+        report("overloading %s %a",code, name)
+        -- no overload permitted
+        if overloadmode == "error" then
+            luatex.abort()
+        end
+        return false
+    else
+        -- overload permitted
+        return true
+    end
+end
+
+local showcontext = mplib.showcontext
+
+local function handleerror(instance, message, helpinfo, interaction)
+    report()
+    report("error: %s", message)
+    report()
+    showcontext(instance)
+    report()
+    report(helpinfo)
+    report()
+    if interaction == 5 then
+        -- todo
+--         luatex.abort()
+    end
+end
+
+local function handlewarning(instance, message)
+    report()
+    report("warning: %s", message)
+    report()
+end
+
+function mplib.new(specification)
+    local instance
+    local openfile = fileopener()
+    specification.find_file     = finder
+    specification.run_logger    = logger
+    specification.run_overload  = overload
+    specification.run_error     = function(...) handleerror  (instance,...) end
+    specification.run_warning   = function(...) handlewarning(instance,...) end
+    specification.open_file     = openfile
+    specification.interaction   = "silent"
+    specification.job_name      = tex.jobname -- mandate in order to get something back
+    specification.halt_on_error = true
+    instance = new_instance(specification)
+    return instance, openfile("terminal")
+end
+
+mplib.finder = finder

@@ -1,0 +1,518 @@
+% Copyright (C) 2009 Alain Matthes  
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License , either version 1.3
+% of this license or (at your option) any later version and/or
+% 2. under the GNU Public License.
+% See http://www.latex-project.org/lppl.txt for details.
+%
+%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %                                                               %
+    %     alterqcm.sty         encodage : utf8                      %
+    %                                                               %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %                                                               %
+    %           Créé par Alain Matthes le 19-09-2006.               %
+    %                                                               %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%<–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––>
+%% Objet : Création de qcm
+%% Utilisation
+%% \AQquestion{question}
+%% {{proposition},
+%% {proposition}}
+%<–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––>
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{alterqcm}
+  [2009/03/29 v3.1 qcm creation]
+  \DeclareOption{french}{%
+  \def\aqlanguage{french}
+  \def\aqlabelforquest{Questions}
+  \def\aqlabelforrep{R\'eponses}
+  \def\aqfoottext{suite sur la page suivante\ldots}} 
+  \DeclareOption{english}{%
+  \def\aqlanguage{english}
+  \def\aqlabelforquest{Questions}
+  \def\aqlabelforrep{Answers}
+  \def\aqfoottext{Continued on the next page\ldots}}
+  \DeclareOption{german}{%
+  \def\aqlanguage{german}
+  \def\aqlabelforquest{Fragen}
+  \def\aqlabelforrep{Antworten}
+  \def\aqfoottext{Fortsetzung nächste Seite\ldots}}
+\ExecuteOptions{french}
+\ProcessOptions\relax
+\RequirePackage{xkeyval}[2005/11/25]
+\RequirePackage{calc}
+\RequirePackage{ifthen,forloop}
+\RequirePackage{array}
+\RequirePackage{multirow}
+\RequirePackage{pifont}%v v1.00
+%<--------------------------------------------------------------->
+% from RANDOM.TEX       v.1   (Donald Arseneau)
+%<--------------------------------------------------------------->
+\newcount\randomi % the random number seed (while executing)
+\newcounter{identRow}
+\newcounter{identCol}
+\newcounter{tmp}
+
+\global\randomi\catcode`\@  % scratch variable during definitions
+\catcode`\@=11
+
+\def\nextrandom{\begingroup
+ \ifnum\randomi<\@ne % then initialize with time
+    \global\randomi\time
+    \global\multiply\randomi388 \global\advance\randomi\year
+    \global\multiply\randomi31 \global\advance\randomi\day
+    \global\multiply\randomi97 \global\advance\randomi\month
+    \message{Randomizer initialized to \the\randomi.}%
+    \nextrandom \nextrandom \nextrandom
+ \fi
+ \count@ii\randomi
+ \divide\count@ii 127773 % modulus = multiplier * 127773 + 2836
+ \count@\count@ii
+ \multiply\count@ii 127773
+ \global\advance\randomi-\count@ii % random mod 127773
+ \global\multiply\randomi 16807
+ \multiply\count@ 2836
+ \global\advance\randomi-\count@
+ \ifnum\randomi<\z@ \global\advance\randomi 2147483647\relax\fi
+ \endgroup
+}
+
+\countdef\count@ii=2 % use only in boxes!
+\ifx\@tempcnta\undefined \csname newcount\endcsname \@tempcnta \fi
+\ifx\@tempcntb\undefined \csname newcount\endcsname \@tempcntb \fi
+
+\def\setrannum#1#2#3{% count register, minimum, maximum
+ \@tempcnta#3\advance\@tempcnta-#2\advance\@tempcnta\@ne
+ \@tempcntb 2147483645 %  =  m - 2  =  2^{31} - 3
+ \divide\@tempcntb\@tempcnta
+ \getr@nval
+ \advance\ranval#2\relax
+ #1\ranval
+}
+
+\def\getr@nval{% The values in \@tempcnta and \@tempcntb are parameters
+ \nextrandom
+ \ranval\randomi \advance\ranval\m@ne \divide\ranval\@tempcntb
+ \ifnum\ranval<\@tempcnta\else \expandafter\getr@nval \fi
+}
+
+\catcode`\@=\randomi
+\global\randomi=0
+\newcount\ranval
+%<--------------------------------------------------------------->
+\newtoks\tdml@a
+\newtoks\tdml@b
+\newcount\@alea
+\newcount\n@arg 
+\newbox\qcm@tempbox 
+\newdimen\qcm@hauteurquest 
+\newdimen\qcm@hauteurprop 
+\newdimen\qcm@wdquest 
+\newdimen\qcm@wdprop
+\newdimen\qcm@dimtmpa 
+\newdimen\qcm@dimtmpb 
+\newdimen\qcm@dimtmp 
+\newcounter{AQ@numquestion}\setcounter{AQ@numquestion}{0}%
+\newcounter{qcm@numb}
+\newcounter{AQ@numprop}\setcounter{AQ@numprop}{0}% v0.93
+\newcounter{alea@numfirst}
+\newcounter{alea@numlast}
+%<–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––>
+%                         Début Code QCM
+%<–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––>
+
+\define@choicekey*[AQ]{global}{language}[\val\nr]{french,
+                                                  english,
+                                                  german}{%
+\edef\AQ@global@language{\nr}
+\ifcase\nr\relax
+\def\cmdAQ@global@tone{Questions}
+\def\cmdAQ@global@ttwo{R\'eponses}
+\def\aqfoottext{suite sur la page suivante\ldots}   
+\or   
+\def\cmdAQ@global@tone{Questions}
+\def\cmdAQ@global@ttwo{Answers}
+\def\aqfoottext{Continued on the next page\ldots} 
+\or 
+\def\cmdAQ@global@tone{Fragen}
+\def\cmdAQ@global@ttwo{Antworten}
+\def\aqfoottext{Fortsetzung nächste Seite\ldots} 
+\fi%
+}
+\define@cmdkey  [AQ] {global} {lq}{}
+\define@cmdkey  [AQ] {global} {pq}{}
+\define@cmdkey  [AQ] {global} {symb}{}
+\define@cmdkey  [AQ] {global} {corsymb}{}
+\define@cmdkey  [AQ] {global} {bonus}{}
+\define@cmdkey  [AQ] {global} {malus}{}
+\define@cmdkey  [AQ] {global} {numstyle}{}
+\define@cmdkey  [AQ] {global} {propstyle}{} 
+\define@cmdkey  [AQ] {global} {size}{}
+\define@cmdkey  [AQ] {global} {tone}{}  
+\define@cmdkey  [AQ] {global} {ttwo}{}
+\define@cmdkey  [AQ] {global} {numbreak}{}
+\define@boolkey [AQ] {global} {transparent}[true]{}
+\define@boolkey [AQ] {global} {VF}         [true]{}
+\define@boolkey [AQ] {global} {sep}        [true]{}
+\define@boolkey [AQ] {global} {pre}        [true]{}
+\define@boolkey [AQ] {global} {title}      [true]{}
+\define@boolkey [AQ] {global} {long}       [true]{}
+\define@boolkey [AQ] {global} {num}        [true]{}
+\define@boolkey [AQ] {global} {numprop}    [false]{} 
+\define@boolkey [AQ] {global} {nosquare}   [false]{} 
+\define@boolkey [AQ] {global} {correction} [true]{}
+\define@boolkey [AQ] {global} {alea}       [true]{}
+\presetkeys     [AQ] {global} {
+                               lq          = 100mm,
+                               pq          = 0pt,
+                               sep         = false,
+                               pre         = false,
+                               bonus       = {0,5},
+                               malus       = {0,25},
+                               VF          = false,
+                               long        = false,
+                               symb        = $\square$,
+                               corsymb     = $\blacksquare$, 
+                               num         = true,
+                               transparent = false,
+                               nosquare    = false,
+                               correction  = false,%v1.00
+                               numstyle    = \arabic,
+                               propstyle   = \alph,%  v0.93
+                               numprop     = false,%   v0.93
+                               size        = \normalsize,
+                               title       = true,
+                               ttwo        = \aqlabelforrep,
+                               tone        = \aqlabelforquest,
+                               numbreak    = 0,
+                               alea        = false}{}
+\define@cmdkey[AQ]{local}{pq}{}
+\define@cmdkey[AQ]{local}{br}{}
+\presetkeys[AQ]{local}{br=1,pq= \cmdAQ@global@pq}{}%
+\newcommand{\qcm@pre}{Pour chacune des questions ci-dessous, une seule des r\'eponses propos\'ees est exacte. Vous devez  cocher la r\'eponse exacte sans justification.
+Une bonne r\'eponse rapporte \textbf{\cmdAQ@global@bonus\ point}. Une mauvaise r\'eponse enl\`eve \textbf{\cmdAQ@global@malus\ point}.  L'absence de r\'eponse ne rapporte ni n'enl\`eve aucun point. Si le total des points est n\'egatif, la note globale attribu\'ee \`a l'exercice est \textbf{0}.}
+\newcommand{\qcm@preVF}{Pour chacune des affirmations ci-dessous, cocher la case V (l'affirmation est vraie) ou la case F (l'affirmation est fausse) sur l'ANNEXE, \`a rendre avec la copie. Les r\'eponses ne seront pas justifi\'ees.
+Une bonne r\'eponse rapporte \textbf{\cmdAQ@global@bonus\ point}. Une mauvaise r\'eponse enl\`eve \textbf{\cmdAQ@global@malus\ point}.  L'absence de r\'eponse ne rapporte ni n'enl\`eve aucun point. Si le total des points est n\'egatif, la note globale attribu\'ee \`a l'exercice est \textbf{0}.}
+
+\newcommand*{\AQms}{\aq@ms}
+\def\aq@ms(#1,#2){\vrule height #1pt depth #2pt width 0pt}
+\newcommand*{\altersquare}{\vbox{\hrule\hbox to 6pt{\vrule height 5.2pt \hfil\vrule}\hrule}}
+%v1.00
+\newcommand*{\dingsquare}{\ding{114}}
+%v1.00
+\newcommand*{\dingchecksquare}{\mbox{\ding{114}\hspace{-.7em}\raisebox{.2ex}[1ex]{\ding{51}}}} 
+\newcommand*{\aq@style@title}{\textbf}
+\newcommand*{\aq@style@numquest}{\textbf} 
+\newcommand*{\aq@style@numrep}{\textbf}
+
+
+
+\newcommand{\qcm@title}{%
+\hline%
+   \hfil{\aq@style@title{\cmdAQ@global@tone}}\hfil%
+ & \hfil{\aq@style@title{\cmdAQ@global@ttwo}}\hfil\\ \hline%
+ \ifAQ@global@long \endfirsthead
+\hline 
+   \hfil{\aq@style@title{\cmdAQ@global@tone}}\hfil%
+ & \hfil{\aq@style@title{\cmdAQ@global@ttwo}}\hfil\\ \hline%
+\endhead
+& \raisebox{-1em}\hfill{\emph{\aqfoottext}} \\ \hline
+\endfoot
+\endlastfoot\fi
+}%
+
+\newcommand{\AQmessage}[1]{%
+\multicolumn{2}{|l|}{%
+\begin{minipage}{\textwidth-\tabcolsep*2-\arrayrulewidth*2}%
+
+\smallskip #1    \smallskip
+\end{minipage}}\\ \hline%
+}%
+
+\newcommand{\melange}{%
+\setrannum{\@alea}{1}{\value{qcm@numb}}% 
+   \ifcase\@alea%
+      \or
+      \global\let\qcm@tempfirst\qcm@arga
+      \or
+      \global\let\qcm@tempfirst\qcm@argb
+      \or
+      \global\let\qcm@tempfirst\qcm@argc
+      \or
+      \global\let\qcm@tempfirst\qcm@argd
+      \or
+      \global\let\qcm@tempfirst\qcm@arge
+      \fi
+\setcounter{alea@numfirst}{\@alea}%
+\setrannum{\@alea}{1}{\value{qcm@numb}}%
+   \ifcase\@alea%
+      \or
+      \global\let\qcm@templast\qcm@arga
+      \or
+      \global\let\qcm@templast\qcm@argb
+      \or
+      \global\let\qcm@templast\qcm@argc
+      \or
+      \global\let\qcm@templast\qcm@argd
+      \or
+      \global\let\qcm@templast\qcm@arge
+      \fi
+\setcounter{alea@numlast}{\@alea}%
+\global\let\qcm@temp\qcm@tempfirst%
+\global\let\qcm@tempfirst\qcm@templast%
+\global\let\qcm@templast\qcm@temp%
+\global\expandafter\let\csname qcm@arg\alph{alea@numfirst}%
+\endcsname\qcm@tempfirst%
+\global\expandafter\let\csname qcm@arg\alph{alea@numlast}%
+\endcsname\qcm@templast%
+}%
+%<–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––>
+\newcommand{\qcm@hauteurbox}[1]{%
+\setbox\qcm@tempbox=%
+\vbox{\parbox[t]{\textwidth-\tabcolsep*4-\arrayrulewidth*3-\cmdAQ@global@lq}%
+{\cmdAQ@global@symb\quad\mbox{#1}}}% \cmdAQ@global@symb remplace $\square$
+\qcm@dimtmpa\ht\qcm@tempbox\relax%  
+\qcm@dimtmpb\dp\qcm@tempbox\relax%  
+\advance\qcm@dimtmpa by\qcm@dimtmpb}%
+%<–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––>
+\newcommand{\qcm@adjust}[1]{%
+\setbox\qcm@tempbox=%
+\vbox{%
+\parbox[t]{\cmdAQ@global@lq}{\aq@style@numquest{\number\value{AQ@numquestion}.}\hspace{3pt}#1}}%
+\qcm@dimtmpa\ht\qcm@tempbox%
+\qcm@dimtmpb\dp\qcm@tempbox%
+\qcm@wdquest\wd\qcm@wdquest%
+\advance\qcm@dimtmpa by\qcm@dimtmpb\relax% 
+\qcm@hauteurquest=\qcm@dimtmpa%
+\qcm@hauteurbox{\qcm@arga}%
+\qcm@hauteurprop=\qcm@dimtmpa%
+\qcm@hauteurbox{\qcm@argb}%
+\advance\qcm@hauteurprop by\qcm@dimtmpa\relax% 
+\ifnum\value{qcm@numb}>2\relax%
+\qcm@hauteurbox{\qcm@argc}%
+\advance\qcm@hauteurprop by\qcm@dimtmpa\relax\fi 
+\ifnum\value{qcm@numb}>3\relax%
+\qcm@hauteurbox{\qcm@argd}%
+\advance\qcm@hauteurprop by\qcm@dimtmpa\relax\fi
+\ifnum\value{qcm@numb}>4\relax%
+\qcm@hauteurbox{\qcm@arge}%
+\advance\qcm@hauteurprop by\qcm@dimtmpa\relax\fi
+\ifdim\qcm@hauteurquest<\qcm@hauteurprop%
+\global\qcm@dimtmp=0pt
+\qcm@dimtmpa\ht\qcm@tempbox%
+\qcm@dimtmpb\dp\qcm@tempbox%
+\advance\qcm@dimtmpa by3pt%
+\advance\qcm@dimtmpb by2pt%
+\vrule height\qcm@dimtmpa depth\qcm@dimtmpb width0pt%
+\else
+\advance\qcm@hauteurquest by-\qcm@hauteurprop%
+\divide\qcm@hauteurquest by\theqcm@numb\relax%
+\divide\qcm@hauteurquest by2\relax%
+\global\qcm@dimtmp=\qcm@hauteurquest\fi
+}%
+%<–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––>
+\newcommand{\qcm@prop}[2]{%
+\setbox\qcm@tempbox=\vbox{#1}%
+\qcm@wdprop\wd\qcm@tempbox% 
+\qcm@dimtmpa\ht\qcm@tempbox\advance\qcm@dimtmpa by4pt\advance\qcm@dimtmpa by\qcm@dimtmp\relax%
+\qcm@dimtmpb\dp\qcm@tempbox\advance\qcm@dimtmpb by3pt\advance\qcm@dimtmpb by\qcm@dimtmp\relax%
+\ifAQ@global@VF\hfil\fi% 
+\ifAQ@global@transparent\def\cmdAQ@global@corsymb{$\bigcirc$}%
+\def\cmdAQ@global@symb{}\fi%
+\ifAQ@global@numprop\stepcounter{AQ@numprop}%
+{\aq@style@numrep{(\cmdAQ@global@propstyle{AQ@numprop})}}%
+\else
+  \ifAQ@global@nosquare%
+    \else%
+      \ifAQ@global@correction%
+      \def\@stop{1}
+        \@for\goodrep:=\cmdAQ@local@br\do{%
+        \ifnum\@stop<6 %
+         \global\let\mysymb\cmdAQ@global@symb
+         \ifthenelse{\equal{\goodrep}{#2}}{%
+                     \global\let\mysymb\cmdAQ@global@corsymb \def\@stop{9}}{%
+                     }%
+                     \fi}%
+                     \mysymb\hspace*{6pt}%
+      \else 
+          \cmdAQ@global@symb\hspace*{6pt}%
+       \fi
+      \fi
+ \fi% 
+ \ifAQ@global@transparent
+ \vrule height0pt depth0pt width\qcm@wdprop
+ \else
+ \ignorespaces#1%
+ \fi
+ \vrule height\qcm@dimtmpa depth\qcm@dimtmpb width0pt%
+ \ifAQ@global@VF\hfil\fi}%
+%<–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––>
+\newcommand{\AQquestion}[3][]{%
+\setkeys[AQ]{local}{#1}%
+\stepcounter{AQ@numquestion}% 
+\setcounter{AQ@numprop}{0} % v0.93
+\setcounter{qcm@numb}{0}%
+\@for\liste:=#3\do{%
+\stepcounter{qcm@numb}%
+\global\expandafter\let\csname qcm@arg\alph{qcm@numb}\endcsname\liste}%
+\ifAQ@global@alea\ifAQ@global@VF\else%
+\n@arg=0 %
+\loop\ifnum\n@arg<\value{qcm@numb}\melange\advance\n@arg by1\repeat\fi\fi%
+\qcm@adjust{#2}%
+\multirow{1}{\cmdAQ@global@lq}[\cmdAQ@local@pq]{%
+\ifAQ@global@num\aq@style@numquest{\cmdAQ@global@numstyle{AQ@numquestion}.}%
+\hspace{3pt}\fi%
+\ifAQ@global@transparent%
+\hrule height0pt depth0pt width\qcm@wdquest%
+\else%
+#2\vss%
+\fi%
+ }%
+&\setkeys[AQ]{local}{#1}%
+      \qcm@prop{\qcm@arga}{1}\\%
+      \ifAQ@global@sep\cline{2-2}\fi%
+&\setkeys[AQ]{local}{#1}%
+      \qcm@prop{\qcm@argb}{2}\\%
+      \ifAQ@global@sep\cline{2-2}\fi%
+      \ifnum\value{qcm@numb}=2\hline\else\ifAQ@global@sep\cline{2-2}\fi%
+&\setkeys[AQ]{local}{#1}%
+      \qcm@prop{\qcm@argc}{3}\\%
+      \ifnum\value{qcm@numb}=3\hline\else\ifAQ@global@sep\cline{2-2}\fi%
+&\setkeys[AQ]{local}{#1}%
+      \qcm@prop{\qcm@argd}{4}\\%
+      \ifnum\value{qcm@numb}=4\hline\else\ifAQ@global@sep\cline{2-2}\fi%
+&\setkeys[AQ]{local}{#1}%
+     \qcm@prop{\qcm@arge}{5}\\%
+\hline\fi\fi\fi}%
+%<–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––>
+\newcommand{\qcm@questionVF}[2][]{%
+\setkeys[AQ]{local}{#1}
+\stepcounter{AQ@numquestion}% 
+\setcounter{AQ@numprop}{0}% v0.93 
+\protected@xdef\qcm@arga{\textbf{V}}
+\protected@xdef\qcm@argb{\textbf{F}}
+\setcounter{qcm@numb}{2}%
+\qcm@adjust{#2}%
+\multirow{3}{\cmdAQ@global@lq}[\cmdAQ@local@pq]{%
+\ifAQ@global@num\aq@style@numquest{\cmdAQ@global@numstyle{AQ@numquestion}.}\hspace{3pt}\fi%
+#2\vss}%
+  &\setkeys[AQ]{local}{#1}\qcm@prop{\qcm@arga}{1}\\
+\ifAQ@global@sep \cline{2-2}\fi% 
+  &\setkeys[AQ]{local}{#1}\qcm@prop{\qcm@argb}{2}\\
+\hline}%
+%<–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––>
+\newenvironment{alterqcm}[1][]{%
+\ifAQ@global@numprop \setkeys [AQ] {global} {nosquare = true}{}\fi% %
+\setkeys[AQ]{global}{#1}%
+\setcounter{AQ@numquestion}{\cmdAQ@global@numbreak}%
+\ifAQ@global@VF\let\AQquestion\qcm@questionVF\let\qcm@pre\qcm@preVF\fi%
+\ifAQ@global@pre\qcm@pre\par\medskip\fi%
+\hfill\break%
+\ifAQ@global@long%
+\setlength\LTleft{0pt}%
+\setlength\LTright\fill%
+\setlength{\LTpre}{\intextsep}%
+\setlength{\LTpost}{\intextsep}%
+\begin{longtable}[l]{%
+@{}|>{\cmdAQ@global@size}p{\cmdAQ@global@lq}!{\extracolsep{\fill}}%
+|>{\cmdAQ@global@size}p{\textwidth-\tabcolsep*4-\arrayrulewidth*3-\cmdAQ@global@lq}|@{}}%
+ \else
+   \begin{tabular}{%
+    @{}|>{\cmdAQ@global@size}p{\cmdAQ@global@lq}%
+    |>{\cmdAQ@global@size}p{%
+       \textwidth-\tabcolsep*4-\arrayrulewidth*3-\cmdAQ@global@lq}%
+    |@{}}%
+ \fi
+ \ifAQ@global@title\qcm@title\else\hline\fi%
+}%
+{\ifAQ@global@long%
+ \end{longtable}%
+ \else
+ \end{tabular}%
+ \fi%
+}%
+
+%<–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––>
+% #1 chemin & #2 theme & #3 liste de numéros
+% code de JC Charpentier
+%----------------------------------------------------------%
+
+\newcommand\InputQuestionList[3]{%
+  
+  \tdml@a={}%
+  \tdml@b={}%
+  \ifx\relax#3\relax\else % 
+    \tdml@#3,\@nil,%
+    \expandafter\tdml@clean\the\tdml@a\@nil
+  \fi
+   \expandafter\gdef\expandafter\last@val\expandafter{\the\tdml@b}
+  \AQ@TA{#1}{#2}{\the\tdml@a}%
+  \AQ@TB{#1}{#2}{\last@val}}
+%----------------------------------------------------------%
+\long\def\tdml@#1,{%
+  \ifx\@nil#1\relax
+  \else
+    \expandafter\addtotoks\the\tdml@b,\to\tdml@a
+    \tdml@b={#1}%
+    \expandafter\tdml@
+  \fi
+}
+%----------------------------------------------------------%
+\long\def\addtotoks#1\to#2{%
+  #2=\expandafter{\the#2#1}%
+}
+%----------------------------------------------------------%
+\long\def\tdml@clean,#1\@nil{%
+  \ifx\relax#1\relax
+    \tdml@a{}%
+  \else
+    \tdml@@clean#1\@nil
+  \fi
+}
+%----------------------------------------------------------%
+\long\def\tdml@@clean#1,\@nil{%
+    \tdml@a{#1}%
+}
+%----------------------------------------------------------%
+%----------------------------------------------------------%
+\newcommand\AQ@TA[3]{\@for\nb:=#3\do{%
+\input #1#2\nb}
+}
+
+\newcommand\AQ@TB[3]{\input#1#2#3}%
+%----------------------------------------------------------%
+%----------------------------------------------------------%
+\newcount\prop
+\def\aq@tvi(#1,#2){\vrule height #1pt depth #2pt width 0pt}
+\define@cmdkey [AQ] {ann} {propstyle}[true]{}
+\define@boolkey [AQ] {ann} {VF}[true]{}
+\presetkeys     [AQ] {ann} {propstyle   = \arabic,
+                            VF          = false}{}
+
+\newcommand*{\AQannexe}[4][]{%
+\setkeys[AQ]{ann}{#1}% 
+\setcounter{tmp}{#4}%
+\stepcounter{tmp}%
+\begin{tabular}{*{\number\value{tmp}}{|>{\hfill}c}|}\hline%
+ \ifAQ@ann@VF%
+N&V&F%
+ \else
+N\forLoop{1}{#4}{identCol}%
+   {& \cmdAQ@ann@propstyle{identCol}}\fi
+\tabularnewline\hline%
+\forLoop{#2}{#3}{identRow}
+ {\number\value{identRow}&%
+ \forLoop{2}{\number\value{tmp}}{identCol}%
+    {$\ $%
+    \ifthenelse{\equal{\value{identCol}}{#4}}{}{&}%
+    }%
+\tabularnewline\hline}%
+\end{tabular}%
+}%
+
+\endinput

@@ -1,0 +1,137 @@
+%% -*-mode: tex-mode -*-
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Written and (C) by Jérôme Lelong <jerome.lelong@gmail.com>            %%
+%%                                                                       %%
+%% This program is free software; you can redistribute it and/or modify  %%
+%% it under the terms of the GNU General Public License as published by  %%
+%% the Free Software Foundation; either version 3 of the License, or     %%
+%% (at your option) any later version.                                   %%
+%%                                                                       %%
+%% This program is distributed in the hope that it will be useful,       %%
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of        %%
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         %%
+%% GNU General Public License for more details.                          %%
+%%                                                                       %%
+%% You should have received a copy of the GNU General Public License     %%
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>. %%
+%%                                                                       %%
+%% This file is part of the chklref package.                             %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\NeedsTeXFormat{LaTeX2e}%
+\ProvidesPackage{chklref}%
+\RequirePackage{afterpackage}%
+
+\gdef\CHK@stack{}
+
+\newwrite\CHK@write
+\immediate\openout\CHK@write\jobname.chk%
+\def\CHK@immediate@write{\immediate\write}
+\def\CHK@print#1{%
+  \protect\CHK@immediate@write\CHK@write{#1}%
+}
+
+% Make sure the auxiliary files are still suitable for usage without the
+% chklref package.
+\RequirePackage{auxhook}
+\AddLineBeginAux{\string\let\string\CHK@immediate@write\string\@gobbletwo}
+\let\@starttoc@orig\@starttoc
+\def\@starttoc#1{%
+  \@starttoc@orig{#1}%
+  \addtocontents{#1}{\string\let\string\CHK@immediate@write\string\@gobbletwo}
+}
+
+% Track the name of the file currently processed.
+% This is successfuly done by currfile for
+% \include{toto}, \input{toto} but NOT \input toto
+% So we need an extra trick, but do it as late as possible.
+\RequirePackage{currfile}
+\def\CHK@currentfile{\expandafter\expandafter\currfilename}
+\def\CHK@@input#1 {\input{#1}}
+\AtBeginDocument{%
+  \def\input{\@ifnextchar\bgroup\@iinput\CHK@@input}
+}
+
+\def\CHK@redefine#1#2{%
+  \expandafter\let\csname CHK@#1@orig\expandafter\endcsname\csname#1\endcsname%
+  \expandafter\def\csname#1\endcsname##1{%
+    \CHK@print{#2{##1} line \the\inputlineno\space file \CHK@currentfile}%
+    \expandafter\expandafter\csname CHK@#1@orig\endcsname{##1}}
+}
+
+\def\CHK@redefine@#1#2{%
+  \expandafter\let\csname CHK@#1@orig\expandafter\endcsname\csname#1\endcsname%
+  \expandafter\def\csname#1\endcsname##1{%
+    \CHK@print{#2 ##1 line \the\inputlineno\space file \CHK@currentfile}%
+    \expandafter\expandafter\csname CHK@#1@orig\endcsname{##1}}
+}
+
+\CHK@redefine{begin}{begin}
+\CHK@redefine{end}{end}
+
+\AfterPackage{hyperref}{
+  \AtBeginDocument{%
+    \let\CHK@label@orig=\label
+    \def\label#1{%
+      \CHK@print{label #1 line \the\inputlineno\space file \CHK@currentfile}%
+      \CHK@label@orig{#1}}
+
+    \Hy@SetCatcodes
+    \def\HyPsd@ref#1{\HyPsd@@ref#1*\END}%
+    \def\HyPsd@@ref#1*#2\END{%
+      \ifx\\#2\\%
+        \HyPsd@@@ref{#1}%
+      \else
+        \expandafter\HyPsd@@@ref
+      \fi
+    }%
+    \def\HyPsd@@@ref#1{%
+      \expandafter\ifx\csname r@#1\endcsname\relax
+        ??%
+      \else
+        \expandafter\expandafter\expandafter\@car\csname r@#1\endcsname\@nil
+      \fi
+      \CHK@print{ref #1 line \the\inputlineno\space file \CHK@currentfile}%
+    }
+    \let\ref=\HyPsd@ref
+    \Hy@RestoreCatcodes
+  }
+}
+
+\AtBeginDocument{%
+  \newif\ifCHK@hyperref
+  \newif\ifCHK@amsmath
+  \@ifpackageloaded{hyperref}{\CHK@hyperreftrue}{}
+  \@ifpackageloaded{amsmath}{\CHK@amsmathtrue}{}
+
+  \ifCHK@amsmath% %With AMS-LaTeX tags
+     %%\CHK@redefine{label@in@display}{label@in@display}
+     \let\CHK@label@in@display@orig=\label@in@display
+     \def\label@in@display#1{%
+       \CHK@print{label #1 line \the\inputlineno\space file \CHK@currentfile}
+       \CHK@label@in@display@orig{#1}}
+
+     \CHK@redefine@{eqref}{ref}
+     \CHK@redefine@{ref}{ref}
+     \CHK@redefine@{label}{label}
+     \CHK@redefine@{citation}{citation}
+     \CHK@redefine@{bibcite}{bibcite}
+
+  \else
+    \ifCHK@hyperref\else
+      \CHK@redefine@{label}{label}
+      \CHK@redefine@{ref}{ref}
+      \CHK@redefine@{citation}{citation}
+      \CHK@redefine@{bibcite}{bibcite}
+    \fi
+  \fi
+}
+
+\AtEndDocument{
+  \message{\CHK@stack}
+}
+% To prevent error with packages already defining the \AfterPackage macro.
+\let\AfterPackage=\relax
+\endinput

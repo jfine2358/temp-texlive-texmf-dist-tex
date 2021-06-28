@@ -1,0 +1,836 @@
+%D \module
+%D   [       file=strc-sec,
+%D        version=2008.10.20,
+%D          title=\CONTEXT\ Structure Macros,
+%D       subtitle=Sectioning,
+%D         author=Hans Hagen,
+%D           date=\currentdate,
+%D      copyright={PRAGMA ADE \& \CONTEXT\ Development Team}]
+%C
+%C This module is part of the \CONTEXT\ macro||package and is
+%C therefore copyrighted by \PRAGMA. See mreadme.pdf for
+%C details.
+
+\writestatus{loading}{ConTeXt Structure Macros / Sectioning}
+
+\unprotect
+
+\ifdefined \v!block \else \def\v!block{block} \fi
+
+% compatibility issue:
+%
+% \def\setfullsectionnumber #1{}
+% \def\preparefullnumber    #1{}
+% \def\fullsectionnumber    {1--1--1}
+% \def\makesectionnumber    [#1]{}
+% \def\makesectionformat    {}
+% \def\sectionformat        {1--1-1-1-1-1-1}
+% \def\composedsectionnumber{}
+% \def\@@kolist{}
+
+% \setuphead[section]   [separator=\separatorlist{?,!,*}]
+% \setuphead[subsection][separator=\separatorlist{??,!!,**}]
+%
+% \let\spr\separatorlist % this will enable this feature
+%
+% \setuphead[section]   [separator={?,!,*}]
+% \setuphead[subsection][separator={??,!!,**}]
+%
+% \setupheads[separator={A,B,C,D,E,F}]
+% \chapter{test}
+% \section{test} \subsection{test} \subsection{test}
+% \section{test} \subsection{test} \subsection{test}
+
+% lua interface / names and interface might change
+
+\def\setstructurelevel         #1#2{\ctxlua{structures.sections.setlevel("#1","#2")}}  % name, level|parent
+\def\getstructurelevel           #1{\ctxlua{structures.sections.getcurrentlevel("#1")}}% name
+\def\setstructurenumber        #1#2{\ctxlua{structures.sections.setnumber(#1,"#2")}}   % level, number (+/-)
+\def\getstructurenumber          #1{\ctxlua{structures.sections.getnumber(#1)}}        % level
+\def\getsomestructurenumber    #1#2{\ctxlua{structures.sections.getnumber(#1,"#2")}}   % level, what
+\def\getfullstructurenumber      #1{\ctxlua{structures.sections.fullnumber(#1)}}       % level
+\def\getsomefullstructurenumber#1#2{\ctxlua{structures.sections.fullnumber(#1,"#2")}}
+\def\getspecificstructuretitle   #1{\ctxlua{structures.sections.structuredata("#1","titledata.title",nil,"\headparameter\s!catcodes")}}%
+
+% will be:
+%
+% \def\getfullstructurenumber         #1{\ctxcommand{structurenumber(\thenamedheadlevel{#1})}}
+
+% structure heads (like \startchapter)
+
+% \c!deeptextcommand, \c!deepnumbercommand: undefined !
+% \c!before \c!after \c!distance
+% \c!page \c!header  \c!text \c!footer=,
+% \c!numbercommand \c!textcommand \c!ownnumber \c!number
+% \c!file \c!grid \c!margintext
+% \c!expansion \c!xmlsetup \s!catcode
+
+\installcorenamespace{head}
+\installcorenamespace{headlevel}
+\installcorenamespace{headincrement}
+\installcorenamespace{headplace}
+\installcorenamespace{headmarkyes}
+\installcorenamespace{headmarknop}
+
+\installcommandhandler \??head {head} \??head
+
+\let\setupheads\setuphead % will go
+
+\appendtoks
+    \ifx\currentheadparent\empty
+        \edef\currentheaddefault{\headparameter\c!default}%
+        \edef\currentheadsection{\headparameter\c!section}%
+        \ifx\currenthead\currentheaddefault
+          \let\currentheadparent\currentheadsection
+        \else\ifx\currentheaddefault\empty
+          \let\currentheadparent\currentheadsection
+        \else
+          \let\currentheadparent\currentheaddefault
+        \fi\fi
+        \normalexpanded {%
+            \setheadparameter{\c!label}{\currenthead}%
+            \setheadparameter{\c!coupling}{\currenthead}%
+            \setheadparameter{\s!parent}{\??head\currentheadparent}%
+            \definemarking[\currenthead]         [\currentheadsection]%
+            \definemarking[\currenthead\v!number][\currentheadsection]%
+            \setupmarking [\currenthead]         [\c!filtercommand=\noexpand\sectionheadmarkingtitle {\currenthead}]%
+            \setupmarking [\currenthead\c!number][\c!filtercommand=\noexpand\sectionheadmarkingnumber{\currenthead}]%
+        }%
+        \doifelselist\currenthead\donothing
+          {\definelist[\currenthead][\c!prefix=\v!no]}%
+    \else
+        \normalexpanded {%
+            \setheadparameter{\c!label}{\currenthead}%
+            \setheadparameter{\c!coupling}{\currentheadparent}%
+            \definemarking[\currenthead]         [\currentheadparent]%
+            \definemarking[\currenthead\v!number][\currentheadparent\c!number]%
+        }%
+        \doifelselist\currenthead\donothing
+          {\normalexpanded{\definelist[\currenthead][\currentheadparent][\c!prefix=\v!no]}}%
+    \fi
+    \presetlabeltext[\currenthead=]%
+    \the\everysetuphead
+\to \everydefinehead
+
+\appendtoks
+   \setstructurelevel\currenthead{\thenamedheadlevel\currenthead}%
+\to \everydefinehead
+
+\appendtoks
+    % beware, this is a global register
+    \begingroup
+    \edef\currentsectionheadcoupling{\sectionheadcoupling\currenthead}%
+    \edef\currentsectionheadsection {\sectionheadsection \currentsectionheadcoupling}%
+    \edef\currentsectionlevel       {\sectionlevel       \currentsectionheadsection}%
+    \ctxlua{structures.sections.register("\currenthead",{
+        coupling = "\currentsectionheadcoupling",
+        section  = "\currentsectionheadsection",
+        level    = \currentsectionlevel,
+    })}%
+    \endgroup
+\to \everydefinehead
+
+\appendtoks
+ % \setevalue{\e!next \currenthead}{\donexthead [\currenthead]}%
+   \setevalue{\e!start\currenthead}{\dostarthead[\currenthead]}%
+   \setevalue{\e!stop \currenthead}{\dostophead [\currenthead]}%
+\to \everydefinehead
+
+\appendtoks
+   \doifelse{\headparameter\c!ownnumber}\v!yes
+     {\setevalue\currenthead{\dohandleheadown[\currenthead]}}
+     {\setevalue\currenthead{\dohandleheadnop[\currenthead]}}%
+\to \everysetuphead
+
+\let\currentnamedsection\empty
+
+\unexpanded\def\startnamedsection
+  {\dotripleempty\dostartnamedsection}
+
+\def\dostartnamedsection[#1]% [#2][#3]
+  {\pushmacro\currentnamedsection
+   \edef\currentnamedsection{#1}%
+   \normalexpanded{\dodostarthead[\currentnamedsection]}} % [#2][#3]
+
+\unexpanded\def\stopnamedsection
+  {\normalexpanded{\dostophead[\currentnamedsection]}%
+   \popmacro\currentnamedsection}
+
+% structure sections (the parents of chapter etc)
+
+\let\firstsectionname\empty
+\let\lastsectionname \empty
+
+\let\resetallstructuremarks            \relax
+\let\resetcurrentstructuremarks        \relax
+\let\resetcurrentstructuremarkswithpage\relax
+
+\def\resetallstructuremarks            {\resetmarking[\firstsectionname]} % will become option (was \v!section-1)
+\def\resetcurrentstructuremarks        {\resetmarking[\lastsectionname]}  % will become option
+%def\resetcurrentstructuremarkswithpage{\resetmarking[\lastsectionname]}  % will become option
+
+% -2=text -1=manual 0=block 1+=structurelevel
+
+\newcount\maxstructuredepth
+
+\def\setnextsectionlevel#1%
+  {\global\advance\maxstructuredepth\plusone
+   \setevalue{\??headlevel#1}{\the\maxstructuredepth}}
+
+\def\sectionlevel#1%
+  {\csname\??headlevel\ifcsname\??headlevel#1\endcsname#1\else\v!none\fi\endcsname}
+
+\setvalue{\??headlevel\v!block}{0}
+\setvalue{\??headlevel\v!none }{-1}
+\setvalue{\??headlevel\v!text }{-2}
+
+\newtoks\everydefinesection
+
+\unexpanded\def\definesection[#1]%
+  {\ifcsname\??headlevel#1\endcsname \else
+     \edef\currentsection{#1}% not used, will go
+     \edef\currenthead{#1}%
+     \setnextsectionlevel{#1}%
+     \setstructurelevel{#1}{\sectionlevel{#1}}%
+     \normalexpanded{\setheadparameter{\s!parent}{\??head\lastsectionname}}% TO BE CHECKED, WE HAVE A HELPER
+     \the\everydefinesection
+     % so far for these default inheritances
+     \definemarking[#1]%
+     \ifnum\maxstructuredepth>\plusone
+       \normalexpanded{\noexpand\relatemarking[#1][\lastsectionname]}% so, the parent will reset the child
+     \fi
+     \xdef\lastsectionname{#1}%
+     \ifx\firstsectionname\empty
+        \glet\firstsectionname\lastsectionname
+     \fi
+   \fi}
+
+\unexpanded\def\setupsection
+  {\dotripleempty\dosetupsection}
+
+\def\dosetupsection[#1][#2][#3]%
+  {\ifcsname\??headlevel#1\endcsname
+     \dodosetupsection[#1][#2][#3]%
+   \else
+     \dodosetupsection[\sectionheadsection{#1}][#2][#3]%
+   \fi}
+
+\def\dodosetupsection[#1][#2][#3]%
+  {\pushmacro\currenthead
+   \ifthirdargument
+     \edef\currenthead{#1#2}%     % not used at any more in mkiv (sets now)
+     \setupcurrenthead[#3]%
+   \else
+     \edef\currenthead{#1}%
+     \setupcurrenthead[#2]%
+   \fi
+   \popmacro\currenthead}
+
+% we share the parameters as sections are roots of heads so eventually we can
+% consider \definesection -> \definehead with one argument
+
+\appendtoks
+    % This is a rather practical default that we don't want to
+    % be part of the parent chain lookup mechanism; it's also
+    % mkii compatible. Somewhat weird that it's part of the
+    % top level structure but it will be flattened anyway.
+    \let\currenthead\currentsection %
+    \setheadparameter\c!textstyle  {\strictheadparameter\c!style}%
+    \setheadparameter\c!textcolor  {\strictheadparameter\c!color}%
+    \setheadparameter\c!numberstyle{\strictheadparameter\c!style}%
+    \setheadparameter\c!numbercolor{\strictheadparameter\c!color}%
+\to \everydefinesection
+
+% head -> head
+
+\def\sectionheadmarkingtitle #1#2{\ctxlua{structures.marks.title("#1","#2")}}
+\def\sectionheadmarkingnumber#1#2{\ctxlua{structures.marks.number("#1","#2")}}
+
+\def\sectionheadcoupling#1{\namedheadparameter{#1}\c!coupling}
+\def\sectionheadsection #1{\namedheadparameter{#1}\c!section}
+
+% head construction
+
+\unexpanded\def\dohandleheadown{\dodoubleempty\dodohandleheadown} % [ref] {nr} {title}
+\unexpanded\def\dohandleheadnop{\dodoubleempty\dodohandleheadnop} % [ref] {title}
+\unexpanded\def\dostarthead    {\dotripleempty\dodostarthead}     % [settings] [userdata] !!! also used at lua end
+
+\newconditional\currentstructureown
+
+\newtoks\everybeforehead % hook, todo: before/after keys
+\newtoks\everyafterhead  % hook, todo: before/after keys
+
+\unexpanded\def\dodohandleheadown[#1][#2]#3#4%
+  {\settrue\currentstructureown
+   \triggerautostructurelevel
+   \dohandlehead{#1}{\c!reference={#2},\c!ownnumber={#3},\c!title={#4}}{}} % name ref nr title --
+
+\unexpanded\def\dodohandleheadnop[#1][#2]% for taco: [key=value] variant
+  {\setfalse\currentstructureown
+   \triggerautostructurelevel
+   \doifassignmentelse{#2}\dodohandleheadnopA\dodohandleheadnopB{#1}{#2}}
+
+\unexpanded\def\dodohandleheadnopA#1#2%
+  {\dohandlehead{#1}{#2}{}}
+
+\unexpanded\def\dodohandleheadnopB#1#2#3%
+  {\dohandlehead{#1}{\c!reference={#2},\c!title={#3}}{}} % name ref nr title --
+
+\unexpanded\def\dodostarthead[#1][#2][#3]% for the moment no grouping, too annoying with page breaks
+  {\setfalse\currentstructureown
+  %\globalpushmacro\currenthead % this does not work out well
+   \xdef\currenthead{#1}%
+   \setsystemmode\currenthead % new, also here now
+   \headparameter\c!beforesection % beware, no users vars set yet
+   \the\everybeforehead
+   \dohandlehead{#1}{#2}{#3}% name -- -- -- userdata (we might move the tagged to here)
+   \headparameter\c!insidesection}
+
+\unexpanded\def\dostophead[#1]% !!! also used at lua end
+  {\dostoptagged
+   \dostoptagged
+  %\globalpopmacro\currenthead % so we do a hard recover
+   \xdef\currenthead{#1}% recover
+   \headparameter\c!aftersection
+   \the\everyafterhead
+   \resetsystemmode\currenthead} % new, also here now
+
+% \unexpanded\def\donexthead[#1][#2][#3]% obsolete
+%   {\setfalse\currentstructureown
+%    \xdef\currenthead{#1}%
+%    \dohandlehead{#1}{#2}{#3}} % name -- -- -- userdata
+
+% \newconditional\structurereversesectionnumbers  % todo: key/val
+
+\newconditional\headtolist
+\newconditional\headdoincrement
+\newconditional\headdoplace
+\newconditional\headleaveempty
+\newconditional\headhidden
+\newconditional\headshownumber
+\newconditional\headisdisplay
+
+\setvalue{\??headincrement\v!yes  }{\settrue \headdoincrement\settrue \headtolist}
+\setvalue{\??headincrement\v!no   }{\setfalse\headdoincrement\setfalse\headtolist}
+\setvalue{\??headincrement\v!list }{\setfalse\headdoincrement\settrue \headtolist}
+\setvalue{\??headincrement\s!empty}{\settrue \headdoincrement\settrue \headtolist}
+
+\def\setheadincrement
+  {\edef\currentheadincrement{\headparameter\c!incrementnumber}%
+   \ifcsname\??headincrement\currentheadincrement\endcsname
+     \csname\??headincrement\currentheadincrement\endcsname
+   \else
+     \settrue \headdoincrement\settrue \headtolist
+     % \filterheadnumber
+   \fi}
+
+\def\filterheadnumber
+  {\settrue\headdoincrement
+   \settrue\headtolist
+   \ifx\currentproduct\empty
+     % todo : filter from other toc (number, file, title)
+     % use  : \currentheadincrement as spec
+   \fi}
+
+\setvalue{\??headplace\v!yes}%
+  {\setfalse\headleaveempty
+   \settrue \headdoplace
+   \setfalse\headhidden}
+
+\setvalue{\??headplace\v!empty}%
+  {\settrue \headleaveempty
+   \settrue \headdoplace
+   \setfalse\headhidden}
+
+\setvalue{\??headplace\v!no}%
+  {\settrue \headleaveempty
+   \setfalse\headdoplace
+   \setfalse\headhidden}
+
+\setvalue{\??headplace\v!hidden}%
+  {\settrue \headleaveempty
+   \setfalse\headdoplace
+   \settrue \headhidden}
+
+\def\setheadplacement
+  {\executeifdefined
+     {\??headplace\headparameter\c!placehead}
+     {\getvalue{\??headplace\v!yes}}}
+
+
+\ifdefined\setheaddisplay \else \let\setheaddisplay\relax \fi
+
+\newmode\v!sectionnumber
+
+\def\dosettructureheadnumbercontent
+  {\setsystemmode\v!sectionnumber
+   \settrue\headshownumber} % why ?
+
+\def\doresettructureheadnumbercontent
+  {\resetsystemmode\v!sectionnumber
+   \setfalse\headshownumber} % why ?
+
+\def\setheadnumber
+  {\doifelse{\sectionblockparameter\c!number}\v!yes % todo
+     {\doifelse{\headparameter\c!number}\v!yes
+        {\settrue\headshownumber}
+        {\setfalse\headshownumber}}
+     {\setfalse\headshownumber}}
+
+\unexpanded\def\theheadsynchonization
+  {\currentstructuresynchronize}
+
+% BEWARE: \marking[section]{my text} does not work as we use list indices instead
+% so we need a 'keep track of raw set option' (or maybe a funny internal prefix)
+
+\unexpanded\def\setheadmarking % li:: so that we can use \marking[section]{Taco needed this}
+  {\normalexpanded{\setmarking[\currenthead]{li::\currentstructurelistnumber}}}
+
+\let\deepstructurenumbercommand\relax
+\let\deepstructuretitlecommand \relax
+
+\unexpanded\def\fullheadnumber
+  {\edef\currentheadlabeltag{\currentsectionblock\c!label}%
+   \dostarttagged\t!sectionnumber\empty
+   \labeltexts
+     {\headparameter\currentheadlabeltag}
+     {\ifx\deepstructurenumbercommand\relax
+        \structurenumber
+      \else
+        \normalexpanded{\noexpand\deepstructurenumbercommand{\structurenumber}}%
+      \fi}%
+   \dostoptagged}
+
+\unexpanded\def\fullheadtitle
+  {\dostarttagged\t!sectiontitle\empty
+   \ifx\deepstructuretitlecommand\relax
+     \structuretitle
+   \else
+     \normalexpanded{\noexpand\deepstructuretitlecommand{\structuretitle}}%
+   \fi
+   \dostoptagged}
+
+\let\currenthead        \empty
+\let\currentheadcoupling\empty
+\let\currentheadsection \empty
+\let\currentheadlevel   \!!zerocount
+\let\currentheadcounter \!!zerocount
+
+% here we could inherit as well but it's a bit complex
+
+\def\doregisterhead#1#2#3% name data userdata
+  {\structurecomponent
+    %[\c!label={\headparameter\c!label}, % why { }
+     [\c!label={\headparameter{\currentsectionblock\c!label}},
+      \c!incrementnumber=\ifconditional\headdoincrement\v!yes\else\v!no\fi, % not that needed
+      \c!saveinlist=\ifconditional\headtolist\v!yes\else\v!no\fi,
+      \c!level=\currentheadlevel,
+      \c!name=#1,
+      \c!number=\ifconditional\headdoincrement\ifconditional\headshownumber\v!yes\else\v!no\fi\else\v!no\fi,
+      \c!bookmark=,
+      \c!marking=,
+      \c!list=,
+      \c!expansion=\headparameter\c!expansion,
+      \c!xmlsetup=\headparameter\c!xmlsetup,
+      \s!catcodes=\headparameter\s!catcodes,
+      \c!sectionresetset=\headparameter\c!sectionresetset,
+      \c!sectionseparatorset=\headparameter\c!sectionseparatorset,
+      \c!sectionconversionset=\headparameter\c!sectionconversionset,
+      \c!sectionconversion=\headparameter\c!conversion, % just for compatibility
+      \c!sectionstarter=\headparameter\c!sectionstarter,
+      \c!sectionstopper=\headparameter\c!sectionstopper,
+      \c!sectionset=\headparameter\c!sectionset,
+      \c!sectionsegments=\headparameter\c!sectionsegments,
+      \c!reference=\headparameter\c!reference,
+      \c!referenceprefix=\headparameter\c!referenceprefix,
+      \c!backreference=,
+      \c!command=,
+      #2]%
+     [#3]%
+   \reportcurrentstructure}
+
+\unexpanded\def\placeheadtext  {\dosingleempty\strc_sections_place_head_text  } % use with care
+\unexpanded\def\placeheadnumber{\dosingleempty\strc_sections_place_head_number} % use with care
+
+\ifdefined\setupheadcomponentfont \else
+
+    \unexpanded\def\setupheadcomponentfont#1#2%
+      {\dontconvertfont
+       \useheadstyleandcolor\c!style\c!color
+       \useheadstyleandcolor#1#2%
+       \setupinterlinespace}
+
+\fi
+
+\def\strc_sections_place_head_text[#1]%
+  {\dontleavehmode
+   \begingroup
+   \edef\currenthead{#1}%
+   \setupheadcomponentfont\c!textstyle\c!textcolor
+   \relax
+   \getspecificstructuretitle{\thenamedheadlevel{#1}}%
+   \endgraf
+   \endgroup}
+
+\def\strc_sections_place_head_number[#1]%
+  {\dontleavehmode
+   \begingroup
+   \edef\currenthead{#1}%
+   \setupheadcomponentfont\c!numberstyle\c!numbercolor
+   \relax
+   \getfullstructurenumber{\thenamedheadlevel{#1}}%
+   \endgraf
+   \endgroup}
+
+\ifdefined\presetnumberheadalternative \else \let\presetnumberheadalternative\relax \fi
+\ifdefined\setautostructurelevel       \else \let\setautostructurelevel      \relax \fi
+\ifdefined\triggerautostructurelevel   \else \let\triggerautostructurelevel  \relax \fi
+
+\def\dohandlehead#1#2#3% name data userdata (we can move #1 to the caller)
+  {\xdef\currenthead        {#1}%
+   \xdef\currentheadcoupling{\sectionheadcoupling\currenthead}%
+   \xdef\currentheadsection {\sectionheadsection \currentheadcoupling}%
+   \xdef\currentheadlevel   {\sectionlevel       \currentheadsection}%
+   %writestatus\m!system{setup: \currenthead,\currentheadcoupling,\currentheadsection,\currentheadlevel}%
+   %
+   \setautostructurelevel
+   \setheadincrement
+   \setheadplacement
+   \setheaddisplay
+   \setheadnumber
+   %
+   \unexpanded\def\\{\space}%
+   \flushingcolumnfloatsfalse
+   %
+   % todo: also mark (for header)
+   %
+   % we might remove the lower level
+   %
+   % not here, after optional \page: \doregisterhead\currenthead{#2}{#3}%
+   %
+%    \xdef\currentheadcounter{\currentsectioncountervalue}% lua call
+   %
+   % \currentstructuresynchronize % will move
+   %
+   \edef\numberheaddistance   {\headparameter\c!distance   }% compatibility
+   \edef\numberheadalternative{\headparameter\c!alternative}% compatibility
+   \presetnumberheadalternative
+   %
+   \let\getheadnumber\empty
+   \let\getheadtitle \empty
+   \let\getheadsyncs \empty
+   \ifconditional\headdoincrement
+     \ifconditional\headdoplace
+       \doheadspacingbeforeyes
+       \doregisterhead\currenthead{#2}{#3}% after optional \page
+       \let\getheadsyncs\theheadsynchonization
+       \let\getheadtitle\fullheadtitle
+       \ifconditional\headshownumber
+         \let\getheadnumber\fullheadnumber
+         \placecurrentheadnumbertext
+       \else
+         \placecurrentheadtext
+       \fi
+       \doheadspacingafteryes
+     \else\ifconditional\headhidden
+       \doregisterhead\currenthead{#2}{#3}% after optional \page
+       \let\getheadsyncs\theheadsynchonization
+       \placecurrentheadhidden % only something when tracing
+     \else
+       \doheadspacingbeforenop % toegevoegd ivm subpaginanr / tug sheets
+       \doregisterhead\currenthead{#2}{#3}% after optional \page
+       \let\getheadsyncs\theheadsynchonization
+       \placecurrentheadempty % just flush 'm
+       \doheadspacingafternop
+     \fi\fi
+   \else
+     \ifconditional\headdoplace
+       \doheadspacingbeforeyes
+       \doregisterhead\currenthead{#2}{#3}% after optional \page
+       \let\getheadsyncs\theheadsynchonization
+       \let\getheadtitle\fullheadtitle
+       \placecurrentheadtext
+       \doheadspacingafteryes
+     \else\ifconditional\headhidden
+       \doregisterhead\currenthead{#2}{#3}% after optional \page
+       \let\getheadsyncs\theheadsynchonization
+       \placecurrentheadhidden % only something when tracing
+     \else
+       % do nothing / should be vbox to 0pt
+       \doheadspacingbeforenop
+       \doregisterhead\currenthead{#2}{#3}% after optional \page
+       \let\getheadsyncs\theheadsynchonization
+       \placecurrentheadempty % just flush 'm
+       \doheadspacingafternop
+     \fi\fi
+   \fi
+   \flushingcolumnfloatstrue
+   \setfalse\ignorehandlepagebreak
+   % ignorespaces prevents spaces creeping in when after=\dontleavehmode
+   \dostarttagged\t!sectioncontent\empty
+   \ifconditional\headisdisplay % \ifdisplaysectionhead
+     \ignorespaces
+   \else
+     \expandafter\GotoPar
+   \fi}
+
+% typesetting
+
+\unexpanded\def\placecurrentheadnumbertext
+  {\setheadmarking
+   \getheadnumber/\getheadtitle
+   \getheadsyncs}
+
+\unexpanded\def\placecurrentheadtext
+  {\setheadmarking
+   \getheadtitle
+   \getheadsyncs}
+
+\unexpanded\def\placecurrentheadempty
+  {\setheadmarking
+   \getheadsyncs}
+
+\installcorenamespace{hiddenheadattr}
+\installcorenamespace{hiddenheadsync}
+
+% todo: when in the page builder we need to resolve the marking immediately
+% because otherwise we have an async
+
+\unexpanded\def\placecurrentheadhidden % maybe trialtypesetting check
+  {\setxvalue{\??hiddenheadattr\currenthead}%
+     {\headreferenceattributes}% can be used when making a box
+   \setxvalue{\??hiddenheadsync\currenthead}%
+     {\noexpand\letgvalue{\??hiddenheadsync\currenthead}\relax
+      \noexpand\setmarking[\currentheadcoupling]{li::\currentstructurelistnumber}%
+      \hbox\headreferenceattributes{}% otherwise no destination ... maybe tag ref as hidden and fall back on page reference
+      \currentstructuresynchronize}} % and it's a node anyway
+
+\def\synchronizehead           #1{\csname\??hiddenheadsync#1\endcsname}
+\def\theheadreferenceattributes#1{\csname\??hiddenheadattr#1\endcsname}
+
+\unexpanded\def\placerawheaddata  [#1]{\synchronizehead{#1}}
+\unexpanded\def\placerawheadtext  [#1]{\getspecificstructuretitle{\thenamedheadlevel{#1}}}
+\unexpanded\def\placerawheadnumber[#1]{\getfullstructurenumber{\thenamedheadlevel{#1}}}
+
+% \setuphead[chapter][placehead=hidden]
+% \chapter {test}
+%
+% %(\synchronizehead{chapter}) % \getheadsyncs
+% %(\getfullstructurenumber{\thenamedheadlevel{chapter}})
+% %(\getspecificstructuretitle{\thenamedheadlevel{chapter}})
+%
+% (\placerawheaddata  [chapter])
+% (\placerawheadnumber[chapter])
+% (\placerawheadtext  [chapter])
+
+% pagebreaks
+
+\newcount\precedingstructurelevel \precedingstructurelevel\plusone
+\newconditional\ignorehandlepagebreak
+
+\def\doheadspacingbeforeyes
+  {\docheckheadbefore
+   \dohandleheadpagebreakyes
+   \headparameter\c!inbetween
+   \dostarttagged\t!section\currenthead}
+
+\def\doheadspacingbeforenop
+  {\docheckheadbefore
+   \dohandleheadpagebreaknop
+   \headparameter\c!inbetween
+   \dostarttagged\currenthead\empty}
+
+\def\emptyheadcorrection
+  {\ifconditional\headleaveempty % inlined \emptyheadcorrection (with after=\blank)
+     \penalty10000 % first ... we need to adapt this all to vspacing
+     \vskip-\lineheight
+     \kern\zeropoint
+     \prevdepth\strutdepth
+   \fi}
+
+\def\doheadspacingafteryes
+  {\ifconditional\headisdisplay
+     \dosomebreak\nobreak % needs to be adapted to vspacing
+     \emptyheadcorrection
+     \headparameter\c!after
+   \fi}
+
+\def\doheadspacingafternop
+  {}
+
+\newsignal\continuousheadsignal
+
+\def\docheckheadbefore#1%
+  {\ifhmode
+     \scratchcounter\lastpenalty\unpenalty % no beauty in this
+     \ifdim\lastskip=\continuousheadsignal
+       % no page break
+       \ifconditional\ignorehandlepagebreak
+         \setfalse\ignorehandlepagebreak
+       \else
+         \global\precedingstructurelevel\currentheadlevel
+         \nobreak
+       \fi
+       \global\settrue\continuoussectionhead
+     \else
+       \penalty\scratchcounter
+       \global\setfalse\continuoussectionhead
+       #1%
+     \fi
+   \else
+     \global\setfalse\continuoussectionhead
+     #1%
+   \fi}
+
+\def\dodocheckheadlayout#1#2%
+  {\doifelselayouttextline{#1}
+     {\doifsomething{\headparameter#2}{\expanded{\setuplayouttext[#1][\c!state=\headparameter#2]}}}
+     \donothing}
+
+\setvalue{\??headmarknop\v!page }{}
+\setvalue{\??headmarknop\v!reset}{\resetcurrentstructuremarks}
+\setvalue{\??headmarkyes\v!page }{} % to be checked: {\resetcurrentstructuremarks}
+\setvalue{\??headmarkyes\v!reset}{\resetcurrentstructuremarks}
+
+\def\docheckheadlayout
+  {\doifelsenothing{\headparameter\c!page}
+     {\getvalue{\??headmarknop\headparameter\c!marking}}
+     {\page[\headparameter\c!page]%
+      \getvalue{\??headmarkyes\headparameter\c!marking}%
+      \dodocheckheadlayout\v!header\c!header
+      \dodocheckheadlayout\v!text  \c!text
+      \dodocheckheadlayout\v!footer\c!footer}}
+
+\def\currentsectioncountervalue {\ctxlua{structures.sections.depthnumber(\thenamedheadlevel\currenthead)}}
+\def\previoussectioncountervalue{\ctxlua{structures.sections.depthnumber(\thenamedheadlevel\currenthead-1)}}
+
+\def\dohandleheadpagebreaknop
+  {\doifelse{\headparameter\c!continue}\v!yes
+     {\ifnum\previoussectioncountervalue=\zerocount
+        \docheckheadlayout
+      \else\ifnum\currentsectioncountervalue>\zerocount
+        \docheckheadlayout
+      \fi\fi}%
+     {\docheckheadlayout}}
+
+\def\dohandleheadpagebreakyes
+  {%[[\currenthead @\thenamedheadlevel\currenthead/prev:\previoussectioncountervalue/curr:\currentsectioncountervalue]]
+   \ifconditional\ignorehandlepagebreak
+     \setfalse\ignorehandlepagebreak
+   \else
+%      \ifnum\lastpenalty>\zerocount
+%        \global\pagebreakdisabledtrue
+%      \fi
+     % beware, these numbers are not yet know here
+     \doifelse{\headparameter\c!continue}\v!yes
+       {\ifnum\previoussectioncountervalue=\zerocount
+          \docheckheadlayout
+        \else\ifnum\currentsectioncountervalue>\zerocount
+          \docheckheadlayout
+        \fi\fi}%
+       {\docheckheadlayout}%
+     \doifnot{\headparameter\c!aligntitle}\v!float\page_otr_command_flush_side_floats
+     \headparameter\c!before
+     \relax
+%      \ifpagebreakdisabled
+%        \global\pagebreakdisabledfalse
+%      \else
+%        \dopreventbreakafterheadauto % not ok as it binds the prev par
+%      \fi
+     \doif{\headparameter\c!aligntitle}\v!float\indent
+     \global\precedingstructurelevel\currentheadlevel
+   \fi}
+
+\settrue\autoheadbreak % todo: \vspacing[category:8] == keep_together
+
+\def\dopreventbreakafterheadauto % used after \c!before
+  {\ifconditional\autoheadbreak
+      \vspacing[\v!samepage-\currentheadlevel]%
+   \fi}
+
+\def\dopreventbreakafterheadspec#1% see enumerations etc
+  {\ifconditional\autoheadbreak
+      \vspacing[\v!samepage-\the\numexpr\currentheadlevel+1\relax]% todo #1
+   \fi}
+
+\def\dohandlepagebreakX{\dopreventbreakafterheadspec} % no \let so we can redefine
+
+% we do support negative numbers but it can have side effects that we won't
+% catch
+%
+% \chapter{some} \setupheadnumber[chapter][3] \chapter{more}
+% \setupheadnumber[section][8] \section{b} \section{c} \setupheadnumber[section][-1] \section{d}
+
+\def\thenamedheadlevel#1%
+  {\sectionlevel{\sectionheadsection{\sectionheadcoupling{#1}}}}
+
+\unexpanded\def\setupheadnumber
+  {\dodoubleargument\dosetupheadnumber}
+
+\def\dosetupheadnumber[#1][#2]% todo: reset if at other level
+  {\setstructurenumber{\thenamedheadlevel{#1}}{#2}}
+
+\def\currentheadnumber{0} % ==> \currentheadnumber
+
+\unexpanded\def\determineheadnumber[#1]%
+  {\xdef\currentheadnumber{\getstructurenumber{\thenamedheadlevel{#1}}}}
+
+% The previous macro is been replaced by the expandable:
+
+\def\namedheadnumber      #1{\getstructurenumber    {\thenamedheadlevel{#1}}}
+\def\somenamedheadnumber#1#2{\getsomestructurenumber{\thenamedheadlevel{#1}}{#2}}
+
+\unexpanded\def\headnumber
+  {\dodoubleempty\doheadnumber}
+
+\def\doheadnumber[#1][#2]% simple case is just a number
+  {\getsomefullstructurenumber{\iffirstargument\thenamedheadlevel{#1}\fi}{#2}}
+
+\def\someheadnumber
+  {\dodoubleempty\dosomeheadnumber}
+
+\def\dosomeheadnumber[#1][#2]%
+  {\dontleavehmode
+   \begingroup
+   \edef\currenthead{#1}%
+   \getsomefullstructurenumber{\thenamedheadlevel{#1}}{#2}%
+   \endgroup}
+
+\let\sectioncountervalue\structurevalue
+
+\def\currentheadtext{obsolete, use marks}
+
+% list references, will be redone in lua when we need it
+
+\let\startlistreferences\relax
+\let\stoplistreferences \relax
+
+% experimental
+
+\newconditional\c_strc_sections_auto_levels
+
+\appendtoks
+    \settrue\c_strc_sections_auto_levels
+\to \everyenableelements
+
+\def\setautostructurelevel
+  {\ifconditional\c_strc_sections_auto_levels
+     \ctxcommand{autonextstructurelevel(\number\currentheadlevel)}%
+     \global\setfalse\c_strc_sections_auto_levels
+   \fi}
+
+\def\triggerautostructurelevel
+  {\global\settrue\c_strc_sections_auto_levels}
+
+\def\finalizeautostructurelevels
+  {\ctxcommand{autofinishstructurelevels()}}
+
+\unexpanded\def\finalizeautostructurelevel
+  {\dostoptagged
+   \dostoptagged}
+
+\appendtoks
+    \finalizeautostructurelevels
+\to \everystoptext
+
+\protect \endinput

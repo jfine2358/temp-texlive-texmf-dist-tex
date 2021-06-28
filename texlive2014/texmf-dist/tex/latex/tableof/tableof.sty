@@ -1,0 +1,165 @@
+%%
+%% This is file `tableof.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% tableof.dtx  (with options: `package')
+%% 
+%% IMPORTANT NOTICE:
+%% 
+%% For the copyright see the source file.
+%% 
+%% Any modified versions of this file must be renamed
+%% with new filenames distinct from tableof.sty.
+%% 
+%% For distribution of the original source see the terms
+%% for copying and modification in the file tableof.dtx.
+%% 
+%% This generated file may be distributed as long as the
+%% original source files, as listed above, are part of the
+%% same distribution. (The sources need not necessarily be
+%% in the same archive or directory.)
+%%
+\ProvidesPackage{tableof}
+ [2013/03/04 v1.2 tables of tagged contents (jfB)]
+%%
+%% Package `tableof' by Jean-Francois Burnol
+%% Copyright (C) 2012,2013 by Jean-Francois Burnol
+%%
+\NeedsTeXFormat{LaTeX2e}
+\DeclareOption*{\PackageWarning{tableof}{Option `\CurrentOption' is unknown.}}
+\ProcessOptions\relax
+\newtoks\tof@toctoks
+\def\tof@readtoc#1{%
+  \ifeof #1
+     \let\tof@nextread\@gobble
+     \global\tof@toctoks\expandafter{\the\tof@toctoks}%
+  \else
+     \let\tof@nextread\tof@readtoc
+     \read #1 to \tof@buffer
+     \tof@toctoks\expandafter\expandafter\expandafter
+       {\expandafter\the\expandafter\tof@toctoks\tof@buffer}%
+  \fi
+  \tof@nextread{#1}}
+\IfFileExists{\jobname .toc}
+    {{% \endlinechar-1
+        \makeatletter
+        \newread\tof@tf
+        \openin\tof@tf\@filef@und
+           \tof@readtoc\tof@tf
+        \closein\tof@tf}}{}
+\AtBeginDocument{
+    \addtocontents{toc}{\string\@ifundefined{tof@begin}}
+    \addtocontents{toc}{{\let\string\tof@begin\string\relax%
+        \string\let\string\tof@finish\string\relax%
+        \string\let\string\tof@starttags\string\@gobble%
+        \string\let\string\tof@stoptags\string\@gobble%
+        \string\let\string\tof@tagthis\string\@gobble%
+        \string\let\string\tof@untagthis\string\@gobble}{}}
+    \addtocontents{toc}{\string\tof@begin}
+    \@ifpackageloaded{hyperref}
+       {\def\tof@gobblethree@orfour#1#2#3#4{}%
+        \ifx\hyper@last\@undefined\tof@toctoks{}\fi}
+       {\def\tof@gobblethree@orfour#1#2#3{}}}
+\AtEndDocument{\addtocontents{toc}{\string\tof@finish}}
+\newcommand\tofOpenTocFileForWrite{%
+  \if@filesw
+   \newwrite \tf@toc
+   \immediate \openout \tf@toc \jobname .toc\relax
+  \fi}
+\def\tof@tags{}
+\def\tof@tags@tmp{}
+\def\tof@untags@tmp{}
+\def\tof@true#1{\expandafter\let\csname tofsw@#1\endcsname\iftrue}
+\def\tof@false#1{\expandafter\let\csname tofsw@#1\endcsname\iffalse}
+\def\tof@secondiftrue#1{\csname tofsw@#1\endcsname
+                       \let\tof@next\@secondoftwo\fi}
+\def\tof@secondiffalse#1{\csname tofsw@#1\endcsname\else
+                       \let\tof@next\@secondoftwo\fi}
+\def\tof@setflags#1{\let\tof@next\@firstoftwo
+        \@for\@tempa:=#1\do{\tof@true{\@tempa}}%
+        \@for\@tempa:=\tof@tags\do{\tof@false{\@tempa}}%
+        \@for\@tempa:=\tof@tags@tmp\do{\tof@false{\@tempa}}%
+        \@for\@tempa:=\tof@untags@tmp\do{\tof@true{\@tempa}}}
+\def\tof@filter#1#2{\ifx#1#2\else
+               \ifx\tof@tmptags\@empty\edef\tof@tmptags{#2}\else
+               \edef\tof@tmptags{\tof@tmptags,#2}\fi\fi}
+\def\tof@@starttags#1{%
+        \ifx\tof@tags\@empty\edef\tof@tags{#1}\else
+        \edef\tof@tags{\tof@tags,#1}\fi}
+\def\tof@@stoptags#1{%
+        \@for\@tempa:=#1\do{\def\tof@tmptags{}%
+            \@for\@tempb:=\tof@tags\do{\tof@filter\@tempa\@tempb}%
+            \edef\tof@tags{\tof@tmptags}}}
+\def\tof@init#1{%
+    \def\tof@begin{%
+        \begingroup
+        \def\tof@finish{\endgroup\global\let\tof@begin\relax}%
+        \let\tof@savedcontentsline\contentsline
+        \let\tof@starttags\tof@@starttags
+        \let\tof@stoptags\tof@@stoptags
+        \def\tof@tagthis####1{\def\tof@tags@tmp{####1}}%
+        \def\tof@untagthis####1{\def\tof@untags@tmp{####1}}%
+        \def\contentsline{#1}}}
+\def\tof@and#1{%
+    \tof@init{\tof@setflags{#1}\def\tof@tags@tmp{}\def\tof@untags@tmp{}%
+        \@for\@tempa:=#1\do{\tof@secondiftrue{\@tempa}}%
+        \tof@next\tof@savedcontentsline\tof@gobblethree@orfour}%
+    \the\tof@toctoks}
+\def\tof@or#1{%
+    \tof@init{\tof@setflags{#1}\def\tof@tags@tmp{}\def\tof@untags@tmp{}%
+        \@for\@tempa:=#1\do{\tof@secondiffalse{\@tempa}}%
+        \tof@next\tof@gobblethree@orfour\tof@savedcontentsline}%
+    \the\tof@toctoks}
+\def\tof@nor#1{%
+    \tof@init{\tof@setflags{#1}\def\tof@tags@tmp{}\def\tof@untags@tmp{}%
+        \@for\@tempa:=#1\do{\tof@secondiffalse{\@tempa}}%
+        \tof@next\tof@savedcontentsline\tof@gobblethree@orfour}%
+   \the\tof@toctoks}
+\def\tof@nand#1{%
+    \tof@init{\tof@setflags{#1}\def\tof@tags@tmp{}\def\tof@untags@tmp{}%
+        \@for\@tempa:=#1\do{\tof@secondiftrue{\@tempa}}%
+        \tof@next\tof@gobblethree@orfour\tof@savedcontentsline}%
+    \the\tof@toctoks}
+\newcommand*\tableof{\@ifstar{\tof@or}{\tof@and}}
+\newcommand*\tablenotof{\@ifstar{\tof@nand}{\tof@nor}}
+\def\tof@nextof@or#1{\toks\z@{\tof@setflags{#1}%
+        \@for\@tempa:=#1\do{\tof@secondiffalse{\@tempa}}%
+        \tof@next
+        {\def\tof@tags@tmp{}\def\tof@untags@tmp{}\tof@gobblethree@orfour}}%
+        \@ifstar{\tof@nextof@nand}{\tof@nextof@nor}}
+\def\tof@nextof@and#1{\toks\z@{\tof@setflags{#1}%
+             \@for\@tempa:=#1\do{\tof@secondiftrue{\@tempa}}%
+             \tof@next\@secondoftwo\@firstoftwo
+             {\def\tof@tags@tmp{}\def\tof@untags@tmp{}\tof@gobblethree@orfour}}%
+        \@ifstar{\tof@nextof@nand}{\tof@nextof@nor}}
+\def\tof@nextof@nor#1{%
+       \toks\z@\expandafter{\the\toks\z@
+             {\tof@setflags{#1}\def\tof@tags@tmp{}\def\tof@untags@tmp{}%
+              \@for\@tempa:=#1\do{\tof@secondiffalse{\@tempa}}%
+              \tof@next\tof@savedcontentsline\tof@gobblethree@orfour}}%
+       \expandafter\tof@init\expandafter{\the\toks\z@}%
+       \tof@printtoc}
+\def\tof@nextof@nand#1{%
+       \toks\z@\expandafter{\the\toks\z@
+             {\tof@setflags{#1}\def\tof@tags@tmp{}\def\tof@untags@tmp{}%
+              \@for\@tempa:=#1\do{\tof@secondiftrue{\@tempa}}%
+              \tof@next\tof@gobblethree@orfour\tof@savedcontentsline}}%
+       \expandafter\tof@init\expandafter{\the\toks\z@}%
+       \tof@printtoc}
+\newcommand*{\nexttocwithtags}{\let\tof@printtoc\relax
+             \@ifstar{\tof@nextof@or}{\tof@nextof@and}}
+\newcommand*{\tableoftaggedcontents}{\def\tof@printtoc{\the\tof@toctoks}%
+             \@ifstar{\tof@nextof@or}{\tof@nextof@and}}
+\newcommand*\toftagthis[1]{\addtocontents{toc}
+          {\string\tof@tagthis{#1}}}
+\newcommand*\tofuntagthis[1]{\addtocontents{toc}
+          {\string\tof@untagthis{#1}}}
+\newcommand*\toftagstart[1]{\addtocontents{toc}
+          {\string\tof@starttags{#1}}}
+\newcommand*\toftagstop[1]{\addtocontents{toc}
+          {\string\tof@stoptags{#1}}}
+\endinput
+%%
+%% End of file `tableof.sty'.

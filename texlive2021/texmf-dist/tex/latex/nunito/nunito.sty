@@ -1,0 +1,69 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{nunito}
+    [2021/01/15 v.0.0.1 (Carl-Clemens Ebinger & autoinst)  Style file for Nunito fonts.]
+
+\RequirePackage{xkeyval}
+\newcommand*{\Nunito@scale}{1}
+\DeclareOptionX{scale}{\renewcommand*{\Nunito@scale}{#1}}
+\DeclareOptionX{scaled}{\renewcommand*{\Nunito@scale}{#1}}
+
+\DeclareOptionX{lining}{\edef\Nunito@figurestyle{LF}}
+\DeclareOptionX{oldstyle}{\edef\Nunito@figurestyle{OsF}}
+\DeclareOptionX{tabular}{\edef\Nunito@figurealign{T}}
+\DeclareOptionX{mainfont}{
+    \renewcommand{\familydefault}{\rmdefault}
+}
+\DeclareOptionX{black}{\edef\bfseries@rm{black}}
+\DeclareOptionX{extrabold}{\edef\bfseries@rm{extrabold}}
+\DeclareOptionX{semibold}{\edef\bfseries@rm{semibold}}
+\DeclareOptionX{bold}{\edef\bfseries@rm{bold}}
+\DeclareOptionX{regular}{\edef\mdseries@rm{regular}}
+\ExecuteOptionsX{oldstyle,tabular}
+\ProcessOptionsX\relax
+
+\RequirePackage{fontenc,textcomp}
+\RequirePackage{ifthen}
+\RequirePackage{mweights}
+
+\IfFileExists{fontaxes.sty}{
+    \RequirePackage{fontaxes}
+    \fa@naming@exception{figures}{{superior}{proportional}}{Sup}
+    \fa@naming@exception{figures}{{superior}{tabular}}{Sup}
+    \def\supfigures{\@nomath\supfigures
+        \fontfigurestyle{superior}\selectfont}
+    \let\sufigures\supfigures
+    \DeclareTextFontCommand{\textsup}{\supfigures}
+    \let\textsu\textsup
+    \let\textsuperior\textsup
+
+}{}
+
+%   Here we implement the scale=MatchLowercase option.
+%   If this is given, we must compute the correct value of
+%   the "\Nunito@scale" parameter before loading the .fd files;
+%   but to determine that value we of course need the font's x-height.
+%   To avoid triggering the loading of .fd files,
+%   we use plain TeX's \font primitive to load the testfont.
+%   We then compute the ratio of the current x-height to our font's x-height;
+%   this is the "\Nunito@scale" we will pass to the .fd files.
+\ifthenelse{\equal{\Nunito@scale}{MatchLowercase}}
+    {   \newlength{\Nunito@currentx}
+        \settoheight{\Nunito@currentx}{x}
+        \newlength{\Nunito@xheight}
+        \settoheight{\Nunito@xheight}
+            {{\font\testfont=Nunito-Regular-tosf-ot1 at \f@size pt\testfont x}}
+        \renewcommand*{\Nunito@scale}
+            {\strip@pt\dimexpr\number\numexpr\number\dimexpr\Nunito@currentx\relax*65536/\number\dimexpr\Nunito@xheight\relax\relax sp\relax}}
+    {}
+
+  \def\sufigures{\@nomath\sufigures\fontfigurestyle{superior}\selectfont}
+
+  \def\nunitotabular{\fontfamily{Nunito-TLF}\selectfont}
+%not defined.  \def\nunitoproportional{\fontfamily{Nunito-LF}\selectfont}
+
+\renewcommand*
+    {\rmdefault}
+    {Nunito-\Nunito@figurealign\Nunito@figurestyle}
+
+
+\endinput

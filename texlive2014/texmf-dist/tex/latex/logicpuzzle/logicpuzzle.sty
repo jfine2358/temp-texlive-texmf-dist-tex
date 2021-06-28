@@ -1,0 +1,1582 @@
+%%
+%% Copyright (C) 2013 by:
+%% Josef Kleber
+%% <josef.kleber@gmx.de>
+%%
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.3 of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%%
+%%    http://www.latex-project.org/lppl.txt
+%%
+%% and version 1.3 or later is part of all distributions of LaTeX version
+%% 2003/12/01 or later.
+%%
+%% This work has the LPPL maintenance status "author-maintained".
+%%
+%% The Current Maintainer of this work is Josef Kleber.
+%%
+%% This work consists of all files listed in manifest.txt.
+%%
+\ProvidesPackage{logicpuzzle}[2013/06/06 logicpuzzle.sty v2.4 - Josef Kleber (C) 2013]%
+%
+\RequirePackage{xkeyval}%
+\RequirePackage{ifthen}%
+\RequirePackage{ragged2e}%
+\RequirePackage{etoolbox}%
+\RequirePackage{marginnote}%
+\RequirePackage{tikz}%
+\usetikzlibrary{decorations.pathmorphing,decorations.pathreplacing,calc,shapes.geometric}%
+\pgfdeclarelayer{LPdump}%
+\pgfdeclarelayer{LPbgcolor}%
+\pgfdeclarelayer{LPbackgroundtwo}%
+\pgfdeclarelayer{LPbackground}%
+\pgfdeclarelayer{LPforeground}%
+\pgfdeclarelayer{LPforegroundtwo}%
+\pgfsetlayers{LPdump,LPbgcolor,LPbackgroundtwo,LPbackground,main,LPforeground,LPforegroundtwo}%
+%
+\newcounter{LP@rows}%
+\newcounter{LP@columns}%
+\newcounter{LP@counter@unique}%
+\newcounter{LP@counti}%
+\newcounter{LP@countii}%
+\newcounter{LP@whiledo@i}%
+\newcounter{LP@whiledo@ii}%
+\newcounter{LP@count@ig@i}%
+\newcounter{LP@count@ig@ii}%
+\newcounter{LP@count@ig@iii}%
+\newcounter{LP@count@ig@iv}%
+\newcounter{LP@puzzlecounter}%
+\setcounter{LP@puzzlecounter}{1}%
+%
+\newlength\LP@length%
+%
+\newcommand*\LP@counterstyle{none}%
+\newcommand*\LP@titleformat{}%
+\gdef\LP@env@prefix{}%
+\gdef\LP@package{}%
+\gdef\LP@rows{}%
+\gdef\LP@columns{}%
+\gdef\LP@scale{1}%
+\gdef\LP@color{black}%
+\gdef\LP@bgcolor{}%
+\gdef\LP@fontsize\Large%
+\gdef\LP@cvoffset{0pt}%
+%
+\def\LP@normallines{0.5pt}%
+\def\LP@thicklines{1.5pt}%
+\def\LP@grid@linestyle{}%
+\def\LP@draw@opacity{1}%
+\def\LP@rel@tikzpath{}%
+\def\LP@tracks@scale{.3}%
+\def\LP@fw@linestyle{-|}%
+%
+\newcommand*\LP@Pfive{.5}%
+%
+% init
+%
+% #1 package prefix
+% #2 package
+% #3 option
+% #4 default
+\newcommand*\LP@define@key[4]%
+{%
+  \expandafter\gdef\csname#1@#3\endcsname{#4}%
+  \define@key{#2.sty}{#3}[#4]%
+  {%
+    \expandafter\gdef\csname#1@#3\endcsname{##1}%
+  }%
+  \define@key{#2}{#3}%
+  {%
+    \expandafter\def\csname#1@#3\endcsname{##1}%
+  }%
+}%
+%
+% #1 package prefix
+% #2 package
+% #3 default
+\newcommand*\LP@define@choicekey@fontsize[3]%
+{%
+  \expandafter\gdef\csname#1@fontsize\endcsname{\Large}%
+  \define@choicekey*{#2.sty}{fontsize}[\LP@dck@fontsize\nr]{tiny,scriptsize,footnotesize,small,normalsize,large,Large,LARGE,huge,Huge}[#3]%
+  {%
+    \ifcase\nr\relax%
+      \expandafter\gdef\csname#1@fontsize\endcsname{\tiny}%
+    \or%
+      \expandafter\gdef\csname#1@fontsize\endcsname{\scriptsize}%
+    \or%
+      \expandafter\gdef\csname#1@fontsize\endcsname{\footnotesize}%
+    \or%
+      \expandafter\gdef\csname#1@fontsize\endcsname{\small}%
+    \or%
+      \expandafter\gdef\csname#1@fontsize\endcsname{\normalsize}%
+    \or%
+      \expandafter\gdef\csname#1@fontsize\endcsname{\large}%
+    \or%
+      \expandafter\gdef\csname#1@fontsize\endcsname{\Large}%
+    \or%
+      \expandafter\gdef\csname#1@fontsize\endcsname{\LARGE}%
+    \or%
+      \expandafter\gdef\csname#1@fontsize\endcsname{\huge}%
+    \or%
+      \expandafter\gdef\csname#1@fontsize\endcsname{\Huge}%
+    \fi%
+  }%
+  \define@choicekey*{#2}{fontsize}[\LP@dck@fontsize\nr]{tiny,scriptsize,footnotesize,small,normalsize,large,Large,LARGE,huge,Huge}[#3]%
+  {%
+    \ifcase\nr\relax%
+      \expandafter\def\csname#1@fontsize\endcsname{\tiny}%
+    \or%
+      \expandafter\def\csname#1@fontsize\endcsname{\scriptsize}%
+    \or%
+      \expandafter\def\csname#1@fontsize\endcsname{\footnotesize}%
+    \or%
+      \expandafter\def\csname#1@fontsize\endcsname{\small}%
+    \or%
+      \expandafter\def\csname#1@fontsize\endcsname{\normalsize}%
+    \or%
+      \expandafter\def\csname#1@fontsize\endcsname{\large}%
+    \or%
+      \expandafter\def\csname#1@fontsize\endcsname{\Large}%
+    \or%
+      \expandafter\def\csname#1@fontsize\endcsname{\LARGE}%
+    \or%
+      \expandafter\def\csname#1@fontsize\endcsname{\huge}%
+    \or%
+      \expandafter\def\csname#1@fontsize\endcsname{\Huge}%
+    \fi%
+  }%
+}%
+%
+% colors
+%
+% #1 name
+% #2 rgb color
+\newcommand*\LP@definecolor[2]%
+{%
+  \definecolor{#1}{rgb}{#2}%
+}%
+%
+\LP@definecolor{LP@c@i}{.9,.9,.98}%
+\LP@definecolor{LP@c@ii}{.688,.932,.932}%
+\LP@definecolor{LP@c@iii}{.88,1,1}%
+\LP@definecolor{LP@c@iv}{1,1,.88}%
+\LP@definecolor{LP@c@v}{1,.855,.725}%
+\LP@definecolor{LP@c@vi}{.498,1,0}%
+\LP@definecolor{LP@c@vii}{.53,.808,.98}%
+\LP@definecolor{LP@c@viii}{.196,.804,.196}%
+\LP@definecolor{LP@c@ix}{1,.96,.932}%
+\LP@definecolor{LP@c@griddots}{.25,.51,.33}%
+\LP@definecolor{LP@c@cross}{.25,.51,.33}%
+\LP@definecolor{LP@c@mirror}{.8,.8,.8}%
+\definecolor{LP@c@tunnel}{rgb}{.7,.7,.7}%
+\definecolor{LP@c@tunnel@i}{rgb}{.8,.8,.8}%
+\definecolor{LP@c@tunnel@ii}{rgb}{.5,.5,.5}%
+\LP@definecolor{LP@c@bridge}{1,0,0}%
+\colorlet{LP@c@track}{black!80}%
+%
+% drawing grids
+%
+% #1 grid x min
+% #2 grid y min
+% #3 grid x max
+% #4 grid y max
+% #5 step
+\newcommand*\LP@drawgrid[5]%
+{%
+  \setcounter{LP@counti}{#3}% max column
+  \setcounter{LP@countii}{#4}% max row
+  \stepcounter{LP@counti}%
+  \stepcounter{LP@countii}%
+  \draw[step=#5,line width=\LP@normallines,\LP@grid@linestyle,draw opacity=\LP@draw@opacity] (#1,#2) grid (\value{LP@counti},\value{LP@countii});%
+}%
+%
+\newcommand*\LP@drawgriddots%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \pgfmathsetmacro{\START}{1}%
+  % dots are drawn immediatly after the grid,
+  % so we can recycle LP@counti and LP@countii
+  \pgfmathsetmacro{\ENDC}{\arabic{LP@counti}}%
+  \pgfmathsetmacro{\ENDR}{\arabic{LP@countii}}%
+  \begin{pgfonlayer}{LPforeground}%
+  \foreach \i in {\START,...,\ENDC}%
+    \foreach \j in {\START,...,\ENDR}%
+      \fill[color=LP@c@griddots] (\i,\j) circle [radius=3pt];%
+  \end{pgfonlayer}%
+}%
+%
+\newcommand*\LP@magnetsgrid%
+{%
+  \LP@set@LP@fontsize{\LP@env@prefix}%
+  \LP@set@LP@columns{\LP@env@prefix}%
+  \LP@set@LP@rows{\LP@env@prefix}%
+  \setcounter{LP@counti}{\LP@columns}% max column
+  \setcounter{LP@countii}{\LP@rows}% max row
+  \stepcounter{LP@counti}%
+  \stepcounter{LP@countii}%
+  \draw[step=1cm,line width=\LP@normallines] (-1,1) grid (1,\arabic{LP@countii});%
+  \draw[step=1cm,line width=\LP@normallines] (1,\arabic{LP@countii}) grid ++(\LP@columns,2);%
+  \draw[line width=\LP@normallines] (0,\arabic{LP@countii}) -- ++(0,1) -- ++(1,0);%
+  \draw[line width=\LP@thicklines] (-1,1) rectangle (1,\arabic{LP@countii});%
+  \draw[line width=\LP@thicklines] (1,\arabic{LP@countii}) rectangle ++(\LP@columns,2);%
+  \draw[line width=\LP@thicklines] (1,\arabic{LP@countii}) rectangle ++(-2,2);%
+  \node[font=\LP@fontsize\bfseries] at (0.5,\arabic{LP@counti}.5) {$-$};%
+  \stepcounter{LP@counti}%
+  \node[font=\LP@fontsize\bfseries] at (-0.5,\arabic{LP@counti}.5) {$+$};%
+}%
+%
+\newcommand*\LP@drawsudokugrid%
+{%
+  \draw[line width=\LP@thicklines,draw opacity=\LP@draw@opacity] (1,1) -- (1,10);%
+  \draw[line width=\LP@thicklines,draw opacity=\LP@draw@opacity] (4,1) -- (4,10);%
+  \draw[line width=\LP@thicklines,draw opacity=\LP@draw@opacity] (7,1) -- (7,10);%
+  \draw[line width=\LP@thicklines,draw opacity=\LP@draw@opacity] (10,1) -- (10,10);%
+  \draw[line width=\LP@thicklines,draw opacity=\LP@draw@opacity] (1,1) -- (10,1);%
+  \draw[line width=\LP@thicklines,draw opacity=\LP@draw@opacity] (1,4) -- (10,4);%
+  \draw[line width=\LP@thicklines,draw opacity=\LP@draw@opacity] (1,7) -- (10,7);%
+  \draw[line width=\LP@thicklines,draw opacity=\LP@draw@opacity] (1,10) -- (10,10);%
+}%
+%
+% drawing grid background
+%
+% #1 grid x min
+% #2 grid y min
+% #3 grid x max
+% #4 grid y max
+% #5 bgcolor
+\newcommand*\LP@drawbackground[5]%
+{%
+  \ifthenelse{\equal{#5}{}}%
+  {}% no bgcolor
+  {%
+    \setcounter{LP@counti}{#3}% max column
+    \setcounter{LP@countii}{#4}% max row
+    \stepcounter{LP@counti}%
+    \stepcounter{LP@countii}%
+    \begin{pgfonlayer}{LPbgcolor}%
+      \fill[color=#5] (#1,#2) rectangle (\value{LP@counti},\value{LP@countii});%
+    \end{pgfonlayer}{LPbgcolor}%
+  }%
+}%
+%
+% In the grid
+%
+\newcommand*\LP@ingrid[5]%
+{%
+  \setcounter{LP@count@ig@i}{#1}% column
+  \setcounter{LP@count@ig@ii}{#2}% row
+  \setcounter{LP@count@ig@iii}{#3}% max column
+  \setcounter{LP@count@ig@iv}{#4}% max row
+  %#5 style
+  %
+  \ifnum\value{LP@count@ig@i}<1%
+    \PackageError{#5}%
+                 {element outside of the grid}%
+                 {You tried to set an element at (#1,#2),\MessageBreak which is outside the grid (1,1) .. (#3,#4)}%
+  \fi%
+  \ifnum\value{LP@count@ig@ii}<1%
+    \PackageError{#5}%
+                 {element outside of the grid}%
+                 {You tried to set an element at (#1,#2),\MessageBreak which is outside the grid (1,1) .. (#3,#4)}%
+  \fi%
+  \ifnum\value{LP@count@ig@i}>\value{LP@count@ig@iii}%
+    \PackageError{#5}%
+                 {element outside of the grid}%
+                 {You tried to set an element at (#1,#2),\MessageBreak which is outside the grid (1,1) .. (#3,#4)}%
+  \fi%
+  \ifnum\value{LP@count@ig@ii}>\value{LP@count@ig@iv}%
+    \PackageError{#5}%
+                 {element outside of the grid}%
+                 {You tried to set an element at (#1,#2),\MessageBreak which is outside the grid (1,1) .. (#3,#4)}%
+  \fi%
+}%
+%
+\newcommand*\setrule[3]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \LP@set@LP@bgcolor{\LP@env@prefix}%
+  \ifthenelse{\equal{\LP@bgcolor}{}}%
+  {\gdef\LP@sr@bgcolor{white}}%
+  {\gdef\LP@sr@bgcolor{\LP@bgcolor}}%
+  \stepcounter{LP@counter@unique}%
+  \begin{pgfonlayer}{LPdump}%
+    \node [shape=rectangle,inner sep=0pt] (A_\theLP@counter@unique) at (#1\LP@Pfive,#2\LP@Pfive) {\tikz\draw[scale=\LP@scale,color=\LP@sr@bgcolor] (0.08,0.1) rectangle (0.92,0.9);};%
+  \end{pgfonlayer}%
+  \node [shape=rectangle,inner sep=0pt,anchor=north west,scale=\LP@scale,font=\tiny] at (A_\theLP@counter@unique.north west) {$#3$};%
+}%
+%
+% #1 column
+% #2 row
+% #3 content
+\newcommand*\LP@setcellcontent[3]%
+{%
+  \node at (#1\LP@Pfive,#2\LP@Pfive){#3};%
+}%
+%
+% #1 column
+% #2 row
+% #3 content
+\newcommand*\LP@setcellcontentC[3]%
+{%
+  \node at (#1,#2){#3};%
+}%
+%
+\newcommand*\LP@setcellcontentVE[3]%
+{%
+  \node at (#1,#2\LP@Pfive){#3};%
+}%
+%
+\newcommand*\LP@setcellcontentHE[3]%
+{%
+  \node at (#1\LP@Pfive,#2){#3};%
+}%
+%
+% #1 csv list
+% #2 column
+% #3 row
+\newcommand*\LP@setrowcontents[3]%
+{%
+  \setcounter{LP@counti}{#2}%
+  \setcounter{LP@countii}{#3}%
+  \forcsvlist\LP@setrowcontents@i{#1}{\LP@env@prefix}%
+}%
+%
+\newcommand*\LP@setrowcontents@i[1]%
+{%
+  \LP@setrowcontents@ii{#1}{\LP@env@prefix}%
+}%
+%
+\newcommand*\LP@setrowcontents@ii[2]%
+{%
+  \LP@setcellcontent{\arabic{LP@counti}}{\arabic{LP@countii}}{\csname #2@fontsize\endcsname#1}%
+  \stepcounter{LP@counti}%
+}%
+%
+\newcommand*\LP@setrowcontents@edge[3]%
+{%
+  \setcounter{LP@counti}{#2}%
+  \setcounter{LP@countii}{#3}%
+  \forcsvlist\LP@setrowcontents@edge@i{#1}{\LP@env@prefix}%
+}%
+%
+\newcommand*\LP@setrowcontents@edge@i[1]%
+{%
+  \LP@setrowcontents@edge@ii{#1}{\LP@env@prefix}%
+}%
+%
+\newcommand*\LP@setrowcontents@edge@ii[2]%
+{%
+  \LP@setcellcontentVE{\arabic{LP@counti}}{\arabic{LP@countii}}{\csname #2@fontsize\endcsname#1}%
+  \stepcounter{LP@counti}%
+}%
+%
+\newcommand*\setrow[2]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \LP@setrowcontents{#2}{1}{#1}%
+}%
+%
+% #1 csv list
+% #2 column
+% #3 row
+\newcommand*\LP@setcolumncontents[3]%
+{%
+  \setcounter{LP@counti}{#2}%
+  \setcounter{LP@countii}{#3}%
+  \forcsvlist\LP@setcolumncontents@i{#1}%
+}%
+%
+\newcommand*\LP@setcolumncontents@i[1]%
+{%
+  \LP@setcolumncontents@ii{#1}{\LP@env@prefix}%
+}%
+%
+\newcommand*\LP@setcolumncontents@ii[2]%
+{%
+  \LP@setcellcontent{\arabic{LP@counti}}{\arabic{LP@countii}}{\csname #2@fontsize\endcsname#1}%
+  \stepcounter{LP@countii}%
+}%
+%
+\newcommand*\LP@setcolumncontents@edge[3]%
+{%
+  \setcounter{LP@counti}{#2}%
+  \setcounter{LP@countii}{#3}%
+  \forcsvlist\LP@setcolumncontents@edge@i{#1}%
+}%
+%
+\newcommand*\LP@setcolumncontents@edge@i[1]%
+{%
+  \LP@setcolumncontents@edge@ii{#1}{\LP@env@prefix}%
+}%
+%
+\newcommand*\LP@setcolumncontents@edge@ii[2]%
+{%
+  \LP@setcellcontentHE{\arabic{LP@counti}}{\arabic{LP@countii}}{\csname #2@fontsize\endcsname#1}%
+  \stepcounter{LP@countii}%
+}%
+%
+\newcommand*\setcolumn[2]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \LP@setcolumncontents{#2}{#1}{1}%
+}%
+%
+\newcommand*\setcell[3]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \LP@set@LP@fontsize{\LP@env@prefix}%
+  \LP@set@LP@rows{\LP@env@prefix}%
+  \LP@set@LP@columns{\LP@env@prefix}%
+  \LP@ingrid{#1}{#2}{\LP@columns}{\LP@rows}{\LP@package}%
+  \LP@setcellcontent{#1}{#2}{\LP@fontsize#3}%
+}%
+%
+\newcommand*\setcells[2]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \LP@set@LP@fontsize{\LP@env@prefix}%
+  \LP@set@LP@rows{\LP@env@prefix}%
+  \LP@set@LP@columns{\LP@env@prefix}%
+  \foreach \LP@sc@column/\LP@sc@row in {#1}%
+  {%
+    \LP@ingrid{\LP@sc@column}{\LP@sc@row}{\LP@columns}{\LP@rows}{\LP@package}%
+    \LP@setcellcontent{\LP@sc@column}{\LP@sc@row}{\LP@fontsize#2}%
+  };%
+}%
+%
+\newcommand*\setbigcell[4][Huge]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \LP@set@LP@bgcolor{\LP@env@prefix}%
+  \ifthenelse{\equal{\LP@bgcolor}{}}%
+  {\gdef\LP@sbc@bgcolor{white}}%
+  {\gdef\LP@sbc@bgcolor{\LP@bgcolor}}%
+  \setcounter{LP@counti}{#2}%
+  \setcounter{LP@countii}{#3}%
+  \stepcounter{LP@counti}%
+  \stepcounter{LP@countii}%
+  \draw[line width=\LP@normallines,fill=\LP@sbc@bgcolor,\LP@grid@linestyle] (#2,#3) rectangle ++(2,2);%
+  \begin{pgfonlayer}{LPforegroundtwo}%
+    \fill[color=\LP@sbc@bgcolor] (\arabic{LP@counti},\arabic{LP@countii}) circle [radius=3.5pt*\LP@scale];%
+    \node at (\arabic{LP@counti},\arabic{LP@countii}){\csname#1\endcsname#4};%
+  \end{pgfonlayer}%
+}%
+%
+\newcommand*\setcolorrow[2]%
+{%
+  \setcounter{LP@counti}{1}%
+  \setcounter{LP@countii}{#1}%
+  \forcsvlist\LP@setcolorrow@i{#2}%
+}%
+%
+\newcommand*\LP@setcolorrow@i[1]%
+{%
+  \ifthenelse{\equal{#1}{0}}%
+  {%
+    \gdef\LP@HT@color{black}%
+    \begin{puzzlebackground}%
+      \fillcell{\arabic{LP@counti}}{\arabic{LP@countii}}%
+    \end{puzzlebackground}%
+  }%
+  {%
+    \expandafter\gdef\expandafter\LP@HT@color{LP@c@\romannumeral#1}%
+    \begin{puzzlebackground}%
+      \fillcell{\arabic{LP@counti}}{\arabic{LP@countii}}%
+    \end{puzzlebackground}%
+    \setcell{\arabic{LP@counti}}{\arabic{LP@countii}}{#1}%
+  }%
+  \stepcounter{LP@counti}%
+}%
+%
+\newcommand*\setcolorcolumn[2]%
+{%
+  \setcounter{LP@counti}{#1}%
+  \setcounter{LP@countii}{1}%
+  \forcsvlist\LP@setcolorcolumn@i{#2}%
+}%
+%
+\newcommand*\LP@setcolorcolumn@i[1]%
+{%
+  \ifthenelse{\equal{#1}{0}}%
+  {%
+    \gdef\LP@HT@color{black}%
+    \begin{puzzlebackground}%
+      \fillcell{\arabic{LP@counti}}{\arabic{LP@countii}}%
+    \end{puzzlebackground}%
+  }%
+  {%
+    \expandafter\gdef\expandafter\LP@HT@color{LP@c@\romannumeral#1}%
+    \begin{puzzlebackground}%
+      \fillcell{\arabic{LP@counti}}{\arabic{LP@countii}}%
+    \end{puzzlebackground}%
+    \setcell{\arabic{LP@counti}}{\arabic{LP@countii}}{#1}%
+  }%
+  \stepcounter{LP@countii}%
+}%
+%
+\def\LP@KKR@print@element#1%
+{%
+  \if!\ifnum9<1#1!\else_\fi%
+    \ifLP@KKR@solution%
+      \setcell{\arabic{LP@counti}}{\arabic{LP@countii}}{#1}%
+    \else%
+    \fi%
+  \else%
+    #1%
+  \fi%
+}%
+%
+\newcommand*\kakurorow[2]%
+{%
+  \setcounter{LP@counti}{1}%
+  \setcounter{LP@countii}{#1}%
+  \foreach \LP@element in {#2}%
+  {%
+    \LP@KKR@print@element{\LP@element}%
+    \stepcounter{LP@counti}%
+  };%
+}%
+%
+\newcommand*\kakurocolumn[2]%
+{%
+  \setcounter{LP@counti}{#1}%
+  \setcounter{LP@countii}{1}%
+  \foreach \LP@element in {#2}%
+  {%
+    \LP@KKR@print@element{\LP@element}%
+    \stepcounter{LP@countii}%
+  };%
+}%
+%
+\newcommand*\bridgesrow[2]%
+{%
+  \setcounter{LP@counti}{1}%
+  \setcounter{LP@countii}{#1}%
+  \LP@set@LP@fontsize{\LP@env@prefix}%
+  \LP@set@LP@color{\LP@env@prefix}%
+  \foreach \LP@element in {#2}%
+  {%
+    \ifthenelse{\equal{\LP@element}{}}%
+    {}%
+    {%
+      \draw[fill=\LP@color] (\arabic{LP@counti},\arabic{LP@countii}) circle (0.5cm);%
+      \node[scale=\LP@scale,font=\LP@fontsize] at (\arabic{LP@counti},\arabic{LP@countii}){\LP@element};%
+    }%
+    \stepcounter{LP@counti}%
+  };%
+}%
+%
+\newcommand*\bridgescolumn[2]%
+{%
+  \setcounter{LP@counti}{#1}%
+  \setcounter{LP@countii}{1}%
+  \LP@set@LP@fontsize{\LP@env@prefix}%
+  \LP@set@LP@color{\LP@env@prefix}%
+  \foreach \LP@element in {#2}%
+  {%
+    \ifthenelse{\equal{\LP@element}{}}%
+    {}%
+    {%
+      \draw[fill=\LP@color] (\arabic{LP@counti},\arabic{LP@countii}) circle (0.5cm);%
+      \node[scale=\LP@scale,font=\LP@fontsize] at (\arabic{LP@counti},\arabic{LP@countii}){\LP@element};%
+    }%
+    \stepcounter{LP@countii}%
+  };%
+}%
+%
+\newcommand*\fillcell[2]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \LP@set@LP@color{\LP@env@prefix}%
+  \LP@set@LP@rows{\LP@env@prefix}%
+  \LP@set@LP@columns{\LP@env@prefix}%
+  \LP@ingrid{#1}{#2}{\LP@columns}{\LP@rows}{\LP@package}%
+  \LP@setcellcontent{#1}{#2}{\LP@Block}%
+}%
+%
+% #1 row
+% #2 csv list
+\newcommand*\fillrow[2]%
+{%
+  \setcounter{LP@counti}{1}%
+  \setcounter{LP@countii}{#1}%
+  \forcsvlist\LP@fillrow@i{#2}%
+}%
+%
+\newcommand*\LP@fillrow@i[1]%
+{%
+  \ifthenelse{\equal{#1}{1}}%
+  {\fillcell{\arabic{LP@counti}}{\arabic{LP@countii}}}%
+  {}%
+  \stepcounter{LP@counti}%
+}%
+%
+% #1 column
+% #2 csv list
+\newcommand*\fillcolumn[2]%
+{%
+  \setcounter{LP@counti}{#1}%
+  \setcounter{LP@countii}{1}%
+  \forcsvlist\LP@fillcolumn@i{#2}%
+}%
+%
+\newcommand*\LP@fillcolumn@i[1]%
+{%
+  \ifthenelse{\equal{#1}{1}}%
+  {\fillcell{\arabic{LP@counti}}{\arabic{LP@countii}}}%
+  {}%
+  \stepcounter{LP@countii}%
+}%
+%
+\newcommand*\framearea[2]%
+{%
+  \draw[line width=\LP@thicklines,color=#1] #2;%
+}%
+%
+\newcommand*\fillarea[2]%
+{%
+  \draw[line width=\LP@thicklines,fill=#1] #2 ;%
+}%
+%
+\newcommand*\colorarea[2]%
+{%
+  \fill[color=#1] #2 ;%
+}%
+%
+% #1 column
+% #2 row
+% #3 csv list of directions
+\newcommand*\tikzpath[3]%
+{%
+  (#1\LP@rel@tikzpath,#2\LP@rel@tikzpath)%
+  \foreach \LP@direction in {#3}%
+  {%
+    \ifnum\LP@direction=1%
+    --++(-1,-1)%
+    \fi%
+    \ifnum\LP@direction=2%
+    --++(0,-1)%
+    \fi%
+    \ifnum\LP@direction=3%
+    --++(1,-1)%
+    \fi%
+    \ifnum\LP@direction=4%
+    --++(-1,0)%
+    \fi%
+    \ifnum\LP@direction=6%
+    --++(1,0)%
+    \fi%
+    \ifnum\LP@direction=7%
+    --++(-1,1)%
+    \fi%
+    \ifnum\LP@direction=8%
+    --++(0,1)%
+    \fi%
+    \ifnum\LP@direction=9%
+    --++(1,1)%
+    \fi%
+  };%
+}%
+%
+\newcommand*\xtikzpath[3]%
+{%
+  (#1\LP@rel@tikzpath,#2\LP@rel@tikzpath)%
+  \foreach \LP@dir/\LP@plength in {#3}%
+  {%
+    \ifnum\LP@dir=1%
+    --++(-\LP@plength,-\LP@plength)%
+    \fi%
+    \ifnum\LP@dir=2%
+    --++(0,-\LP@plength)%
+    \fi%
+    \ifnum\LP@dir=3%
+    --++(\LP@plength,-\LP@plength)%
+    \fi%
+    \ifnum\LP@dir=4%
+    --++(-\LP@plength,0)%
+    \fi%
+    \ifnum\LP@dir=6%
+    --++(\LP@plength,0)%
+    \fi%
+    \ifnum\LP@dir=7%
+    --++(-\LP@plength,\LP@plength)%
+    \fi%
+    \ifnum\LP@dir=8%
+    --++(0,\LP@plength)%
+    \fi%
+    \ifnum\LP@dir=9%
+    --++(\LP@plength,\LP@plength)%
+    \fi%
+  };%
+}%
+%
+\newcommand*\filldiagonals[1][yellow!20]%
+{%
+  \LP@set@LP@columns{\LP@env@prefix}%
+  \LP@set@LP@rows{\LP@env@prefix}%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \setcounter{LP@counti}{\LP@columns}%
+  \setcounter{LP@countii}{\LP@rows}%
+  \stepcounter{LP@counti}%
+  \stepcounter{LP@countii}%
+  \ifnum\value{LP@counti}=\value{LP@countii}%
+    \begin{puzzlebackground}%
+      \def\LP@color{#1}%
+      \setcounter{LP@whiledo@i}{1}%
+      \setcounter{LP@whiledo@ii}{\LP@rows}%
+      \whiledo{\value{LP@whiledo@i}<\value{LP@counti}}%
+      {%
+        \LP@setcellcontent{\arabic{LP@whiledo@i}}{\arabic{LP@whiledo@i}}{\LP@Block}%
+        \LP@setcellcontent{\arabic{LP@whiledo@i}}{\arabic{LP@whiledo@ii}}{\LP@Block}%
+        \stepcounter{LP@whiledo@i}%
+        \addtocounter{LP@whiledo@ii}{-1}%
+      }%
+    \end{puzzlebackground}%
+  \else%
+    \PackageError{\LP@package}%
+                 {non quadratic grid (\filldiagonals)}%
+                 {You tried to fill diagonals,\MessageBreak in a non quadratic grid (1,1) .. (\arabic{LP@counti},\arabic{LP@countii})\MessageBreak doesn't make sense!}%
+  \fi%
+}%
+%
+\newcommand*\framepuzzle[1][black]%
+{%
+  \LP@set@LP@columns{\LP@env@prefix}%
+  \LP@set@LP@rows{\LP@env@prefix}%
+  \setcounter{LP@counti}{\LP@columns}%
+  \setcounter{LP@countii}{\LP@rows}%
+  \stepcounter{LP@counti}%
+  \stepcounter{LP@countii}%
+  \draw[line width=\LP@thicklines,color=#1] (1,1)--(1,\arabic{LP@countii});%
+  \draw[line width=\LP@thicklines,color=#1] (1,\arabic{LP@countii})--(\arabic{LP@counti},\arabic{LP@countii});%
+  \draw[line width=\LP@thicklines,color=#1] (\arabic{LP@counti},\arabic{LP@countii})--(\arabic{LP@counti},1);%
+  \draw[line width=\LP@thicklines,color=#1] (\arabic{LP@counti},1)--(1,1);%
+}%
+%
+\newcommand*\placecross[2]%
+{%
+  \LP@setcellcontentC{#1}{#2}{\LP@Cross}%
+}%
+%
+\newcommand*\placemirror[3]%
+{%
+  \LP@setcellcontentC{#1}{#2}{\LP@Mirror{#3}}%
+}%
+%
+\newcommand*\placearrow[3]%
+{%
+  \LP@setcellcontentC{#1}{#2}{\LP@Arrow{#3}}%
+}%
+\newenvironment{puzzlebackground}%
+{%
+  \begin{pgfonlayer}{LPbackground}%
+}%
+{%
+  \end{pgfonlayer}%
+}%
+%
+\newenvironment{puzzleforeground}%
+{%
+  \begin{pgfonlayer}{LPforeground}%
+}%
+{%
+  \end{pgfonlayer}%
+}%
+%
+% around the grid
+%
+\newcommand*\LP@bottomrow[1]%
+{%
+  \LP@setrowcontents{#1}{1}{0}%
+}%
+%
+\newcommand*\LP@bottomrow@edge[1]%
+{%
+  \LP@setrowcontents@edge{#1}{1}{0}%
+}%
+%
+\newcommand*\LP@leftcolumn[1]%
+{%
+  \LP@setcolumncontents{#1}{0}{1}%
+}%
+%
+\newcommand*\LP@toprow[1]%
+{%
+  \LP@toprow@i{#1}{\LP@env@prefix}%
+}%
+%
+\newcommand*\LP@toprow@i[2]%
+{%
+  \LP@setrowcontents{#1}{1}{\theLP@rows}%
+}%
+%
+\newcommand*\LP@rightcolumn[1]%
+{%
+  \LP@rightcolumn@i{#1}{\LP@env@prefix}%
+}%
+%
+\newcommand*\LP@rightcolumn@i[2]%
+{%
+  \LP@setcolumncontents{#1}{\theLP@columns}{1}%
+}%
+%
+\newcommand*\LP@rightcolumn@edge[1]%
+{%
+  \LP@rightcolumn@edge@i{#1}{\LP@env@prefix}%
+}%
+%
+\newcommand*\LP@rightcolumn@edge@i[2]%
+{%
+  \LP@setcolumncontents@edge{#1}{\theLP@columns}{1}%
+}%
+%
+% Presentation
+%
+\newcommand*\titleformat[1]%
+{%
+  \renewcommand*\LP@titleformat{#1}%
+}%
+\titleformat{\centering\Large\color{blue}}%
+%
+\newcommand*\puzzlecounter{\theLP@puzzlecounter}%
+%
+\newcommand*\setpuzzlecounter[1]%
+{%
+  \setcounter{LP@puzzlecounter}{#1}%
+}%
+%
+% #1 counterstyle
+\newcommand*\LP@drawcounter[1]%
+{%
+  \LP@set@LP@cvoffset{\LP@env@prefix}%
+  \csname LP@cs@#1\endcsname%
+}%
+%
+\newcommand*{\definecounterstyle}[2]%
+{%
+  \expandafter\gdef\csname LP@cs@#1\endcsname{#2}%
+}%
+%
+\definecounterstyle{none}{}%
+\definecounterstyle{left}{\begingroup\reversemarginpar\marginnote{\tikz\node[shape=rectangle,fill=yellow!40,inner sep=7pt,draw,rounded corners=3pt,thick]{\Huge\puzzlecounter};}[\LP@cvoffset]\endgroup}%
+\definecounterstyle{right}{\marginnote{\tikz\node[shape=rectangle,fill=yellow!40,inner sep=7pt,draw,rounded corners=3pt,thick]{\Huge\puzzlecounter};}[\LP@cvoffset]}%
+%
+\newcommand*\LP@Block{\tikz[scale=\LP@scale]\draw[line width=\LP@normallines,fill=\LP@color] (0,0) rectangle (1,1);}%
+%
+\newcommand*\LP@Arrow[1]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \def\LP@rotate{45}%
+  \ifthenelse{\equal{#1}{LeftUp}}{\def\LP@rotate{135}}{}%
+  \ifthenelse{\equal{#1}{LeftDown}}{\def\LP@rotate{225}}{}%
+  \ifthenelse{\equal{#1}{RightDown}}{\def\LP@rotate{315}}{}%
+  \pgfmathsetmacro{\LPlinewidth}{3pt*\LP@scale}%
+  \tikz\draw[->,line width=\LPlinewidth,rotate=\LP@rotate,scale=\LP@scale] (0.1,.5) -- (0.9,.5);%
+}%
+%
+\newcommand*\LP@Cross%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{tikzpicture}%
+    \begin{pgfonlayer}{LPforeground}%
+      \pgfmathsetmacro{\LPlinewidth}{3pt*\LP@scale}%
+      \draw[line width=\LPlinewidth,scale=\LP@scale,color=LP@c@cross] (.35,.35) -- (0.65,.65) -- (.5,.5) -- (.65,.35)-- (.35,.65);%
+    \end{pgfonlayer}%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@Mirror[1]%
+{%
+  \def\LP@rotate{0}%
+  \ifthenelse{\equal{#1}{V}}{\def\LP@rotate{90}}{}%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{tikzpicture}%
+    \begin{pgfonlayer}{LPforegroundtwo}%
+      \pgfmathsetmacro{\LPlinewidth}{3pt*\LP@scale}%
+      \draw[line width=\LPlinewidth,scale=\LP@scale,color=LP@c@mirror,rotate=\LP@rotate] (.35,.5) -- (0.65,.5);%
+    \end{pgfonlayer}%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@Mine%
+{%
+  \begin{tikzpicture}[scale=\LP@scale]%
+    \fill[color=black] (.2,.5) -- (.5,.6) -- (.5,.4) -- cycle;%
+    \fill[color=black] (.8,.5) -- (.5,.6) -- (.5,.4) -- cycle;%
+    \fill[color=black] (.5,.8) -- (.4,.5) -- (.6,.5) -- cycle;%
+    \fill[color=black] (.5,.2) -- (.4,.5) -- (.6,.5) -- cycle;%
+    \shade[ball color=black] (.5,.5) circle (.225cm);%
+  \end{tikzpicture}%
+}%
+\let\Mine\LP@Mine%
+%
+\newcommand*\LP@Portal%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{tikzpicture}[scale=\LP@scale]%
+    \fill[color=black] (0,0) -- (0,1) -- (.4,.5) -- (.4,0) -- cycle;%
+    \fill[color=LP@c@tunnel@ii] (0,1) -- (1,1) -- (1,.5) -- (.4,.5) -- cycle;%
+    \fill[color=LP@c@tunnel@i] (.4,0) rectangle (1,.5);%
+    \draw[line width=\LP@normallines] (0,0) rectangle (1,1) ;%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\portal[2]%
+{%
+  \begin{puzzlebackground}%
+    \LP@setcellcontent{#1}{#2}{\LP@Portal}%
+  \end{puzzlebackground}%
+}%
+%
+\newcommand*\tube[1]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \bgroup%
+    \def\LP@rel@tikzpath{.5}%
+    \begin{pgfonlayer}{LPbackgroundtwo}%
+      \pgfsetcornersarced{\pgfpoint{3mm}{3mm}}%
+      \draw[color=LP@c@tunnel!80!black, line width=.4cm*\LP@scale] #1;%
+      \draw[color=LP@c@tunnel, line width=.38cm*\LP@scale] #1;%
+      \draw[color=LP@c@tunnel!85, line width=.35cm*\LP@scale] #1;%
+      \draw[color=LP@c@tunnel!70, line width=.32cm*\LP@scale] #1;%
+      \draw[color=LP@c@tunnel!55, line width=.29cm*\LP@scale] #1;%
+      \draw[color=LP@c@tunnel!45, line width=.25cm*\LP@scale] #1;%
+      \draw[color=LP@c@tunnel!35, line width=.2cm*\LP@scale] #1;%
+    \end{pgfonlayer}%
+  \egroup%
+}%
+%
+\newcommand*\LP@Tree%
+{%
+  \begin{tikzpicture}[scale=.07*\LP@scale]%
+    \draw[fill=brown!95!black!95,line width=.1pt*\LP@scale]%
+      (.75,-1) .. controls (.5,.5) and   (.5,3) .. (0.5,4) --%
+      (-0.5,4) .. controls (-.5,3) and (-.5,.5) .. (-.75,-1);%
+    \shade[top color=green!50!black!60,draw=black,line width=.1pt*\LP@scale,bottom color=green!50!black]%
+      (0,10) .. controls  (0,8)     and (1,7)    .. (1.5,7)%
+             ..  controls (1,7)     and (1,7)    .. (0.5,7.25)%
+             ..  controls (1.5,5)   and (2.5,4)  .. (3,4)%
+             ..  controls (2,4)     and (1.25,4) .. (1,4.5)%
+             ..  controls (2,2)     and (3.5,2)  .. (4,2)%
+             ..  controls (1,1)     and (-1,1)   .. (-4,2)%
+             ..  controls (-3.5,2)  and (-2,2)   .. (-1,4.5)%
+             ..  controls (-1.25,4) and (-2,4)   .. (-3,4)%
+             ..  controls (-2.5,4)  and (-1.5,5) .. (-0.5,7.25)%
+             ..  controls (-1,7)    and (-1,7)   .. (-1.5,7)%
+             ..  controls (-1,7)    and (0,8)    .. (0,10);%
+  \end{tikzpicture}%
+}%
+%
+\let\Tree\LP@Tree%
+%
+\newcommand*\LP@Tent%
+{%
+  \begin{tikzpicture}[scale=\LP@scale]%
+    \draw[fill=yellow!50,line width=.1pt*\LP@scale] (.1,.1) -- (.6,.1) -- (.9,.5) -- (.75,.8) -- (.35,.6)  -- cycle;%
+    \draw[line width=.1pt*\LP@scale] (.35,.6) -- (.35,.1);%
+    \draw[line width=.1pt*\LP@scale] (.35,.6) -- (.6,.1);%
+  \end{tikzpicture}%
+}%
+%
+\let\Tent\LP@Tent%
+%
+\newcommand*\KKR[2]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \LP@set@LP@bgcolor{\LP@env@prefix}%
+  \LP@set@LP@color{\LP@env@prefix}%
+  \ifthenelse{\equal{\LP@bgcolor}{}}%
+  {\gdef\LP@sr@bgcolor{white}}%
+  {\gdef\LP@sr@bgcolor{\LP@bgcolor}}%
+  \stepcounter{LP@counter@unique}%
+  \begin{pgfonlayer}{LPdump}%
+    \node [shape=rectangle,inner sep=0pt] (A_\theLP@counter@unique) at (\arabic{LP@counti}\LP@Pfive,\arabic{LP@countii}\LP@Pfive) {\tikz\draw[scale=\LP@scale,color=\LP@sr@bgcolor] (0.08,0.1) rectangle (0.92,0.9);};%
+  \end{pgfonlayer}%
+  \begin{puzzlebackground}%
+    \fill[color=\LP@color] (\arabic{LP@counti},\arabic{LP@countii}) rectangle ++(1,1);%
+    \draw[line width=\LP@normallines] (\arabic{LP@counti},\arabic{LP@countii}) -- ++(0,1) -- ++(1,-1);%
+  \end{puzzlebackground}%
+  \node [shape=rectangle,inner sep=0pt,anchor=south west,scale=\LP@scale,font=\small] at (A_\theLP@counter@unique.south west) {#1};%
+  \node [shape=rectangle,inner sep=0pt,anchor=north east,scale=\LP@scale,font=\small] at (A_\theLP@counter@unique.north east) {#2};%
+}%
+%
+\newcommand*\Black%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{puzzlebackground}%
+    \fill[color=black] (\arabic{LP@counti},\arabic{LP@countii}) rectangle ++(1,1);%
+  \end{puzzlebackground}%
+}%
+%
+\newcommand*\LP@Diamond%
+{%
+  \begin{tikzpicture}[scale=\LP@scale*.9]%
+  \clip (.05,.905) rectangle (.95,.1);%
+  \draw[line width=\LP@normallines,fill=yellow!20] (.5,.1) -- (.7,.9) -- (.3,.9) -- cycle;%
+  \draw[line width=\LP@normallines,fill=orange!20] (.5,.1) -- (.7,.9) -- (.9,.8) -- cycle;%
+  \draw[line width=\LP@normallines,fill=orange!20] (.5,.1) -- (.3,.9) -- (.1,.8) -- cycle;%
+  \draw[line width=\LP@normallines] (.1,.8) -- (.9,.8);%
+\end{tikzpicture}%
+}%
+%
+\let\Diamond\LP@Diamond%
+%
+\newcommand*\LP@Star%
+{%
+  \tikz\node[shape=star,fill=yellow,draw,scale=.8*\LP@scale,star point height=.25cm] {};%
+}%
+%
+\let\Star\LP@Star%
+%
+\newcommand*\LP@ArrowA[2][red]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \pgfmathsetmacro{\LPlinewidth}{3pt*\LP@scale}%
+  \tikz\draw[->,line width=\LPlinewidth,rotate=#2,scale=\LP@scale,color=#1] (0.1,.5) -- (0.9,.5);%
+}%
+%
+\newcommand*\LP@c@stararrow{red}%
+\newcommand*\Right{\LP@ArrowA[\LP@c@stararrow]{0}}%
+\newcommand*\RightUp{\LP@ArrowA[\LP@c@stararrow]{45}}%
+\newcommand*\Up{\LP@ArrowA[\LP@c@stararrow]{90}}%
+\newcommand*\LeftUp{\LP@ArrowA[\LP@c@stararrow]{135}}%
+\newcommand*\Left{\LP@ArrowA[\LP@c@stararrow]{180}}%
+\newcommand*\LeftDown{\LP@ArrowA[\LP@c@stararrow]{225}}%
+\newcommand*\Down{\LP@ArrowA[\LP@c@stararrow]{270}}%
+\newcommand*\RightDown{\LP@ArrowA[\LP@c@stararrow]{315}}%
+%
+\newcommand*\LP@DarkCloud{\tikz[scale=0.7*\LP@scale]\fill[color=black!60] (0,0) rectangle (1,1);}%
+%
+\newcommand*\LP@Moon{\tikz[scale=0.7*\LP@scale]\fill[color=black!60] (0,0) circle (0.5cm);}%
+%
+\newcommand*\LP@MoonR%
+{%
+  \begin{tikzpicture}[scale=0.7*\LP@scale]%
+    \fill[color=black!60] (0.5,0.5) circle (0.5cm);%
+    \fill[color=yellow] (.5,0) arc (270:450:.5);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@MoonL%
+{%
+  \begin{tikzpicture}[scale=0.7*\LP@scale]%
+    \fill[color=black!60] (0.5,0.5) circle (0.5cm);%
+    \fill[color=yellow] (.5,0) arc (270:90:.5);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@MoonT%
+{%
+  \begin{tikzpicture}[scale=0.7*\LP@scale]%
+    \fill[color=black!60] (0.5,0.5) circle (0.5cm);%
+    \fill[color=yellow] (0,0.5) arc (180:0:.5);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@MoonB%
+{%
+  \begin{tikzpicture}[scale=0.7*\LP@scale]%
+    \fill[color=black!60] (0.5,0.5) circle (0.5cm);%
+    \fill[color=yellow] (0,0.5) arc (180:360:.5);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@MoonTL%
+{%
+  \begin{tikzpicture}[scale=0.7*\LP@scale]%
+    \fill[color=yellow] (0.5,0.5) circle (0.5cm);%
+    \fill[color=black!60] (1,.5) -- (.5,.5) -- (.5,0) arc (270:360:.5);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@MoonBL%
+{%
+  \begin{tikzpicture}[scale=0.7*\LP@scale]%
+    \fill[color=yellow] (0.5,0.5) circle (0.5cm);%
+    \fill[color=black!60] (1,.5) -- (.5,.5) -- (.5,1) arc (90:0:.5);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@MoonBR%
+{%
+  \begin{tikzpicture}[scale=0.7*\LP@scale]%
+    \fill[color=yellow] (0.5,0.5) circle (0.5cm);%
+    \fill[color=black!60] (0,.5) -- (.5,.5) -- (.5,1) arc (90:180:.5);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@MoonTR%
+{%
+  \begin{tikzpicture}[scale=0.7*\LP@scale]%
+    \fill[color=yellow] (0.5,0.5) circle (0.5cm);%
+    \fill[color=black!60] (0,.5) -- (.5,.5) -- (.5,0) arc (270:180:.5);%
+  \end{tikzpicture}%
+}%
+%
+\let\Cloud\LP@DarkCloud%
+\let\Moon\LP@Moon%
+\let\MoonR\LP@MoonR%
+\let\MoonL\LP@MoonL%
+\let\MoonT\LP@MoonT%
+\let\MoonB\LP@MoonB%
+\let\MoonTL\LP@MoonTL%
+\let\MoonBL\LP@MoonBL%
+\let\MoonBR\LP@MoonBR%
+\let\MoonTR\LP@MoonTR%
+%
+\define@key{LP@Line}{double}[double]%
+{%
+  \def\LP@Line@double{double}%
+}%
+%
+\define@key{LP@Line}{color}[LP@c@bridge]%
+{%
+  \def\LP@Line@linecolor{#1}%
+}%
+%
+\define@key{LP@Line}{linewidth}[1mm]%
+{%
+  \def\LP@Line@linewidth{#1}%
+}%
+%
+\newcommand*\LP@Line[2][]%
+{%
+  \def\LP@Line@double{}%
+  \def\LP@Line@linecolor{LP@c@bridge}%
+  \def\LP@Line@linewidth{1mm}%
+  \setkeys{LP@Line}{#1}%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{pgfonlayer}{LPbackgroundtwo}%
+    \ifthenelse{\equal{\LP@Line@double}{double}}%
+    {\draw[double,double distance=\LP@Line@linewidth*\LP@scale,color=\LP@Line@linecolor, line width=\LP@Line@linewidth*\LP@scale] #2;}%
+    {\draw[color=\LP@Line@linecolor, line width=\LP@Line@linewidth*\LP@scale] #2;}%
+  \end{pgfonlayer}%
+}%
+%
+\newcommand*\bridge[2][]%
+{%
+  \LP@Line[#1]{#2}%
+}%
+%
+\newcommand*\LP@trackC%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{tikzpicture}[scale=\LP@scale]%
+    \pgfsetcornersarced{\pgfpoint{4mm*\LP@scale}{4mm*\LP@scale}}%
+    \draw[color=LP@c@track, line width=.3cm*\LP@scale] (0,.5)--(.5,.5)--(.5,0);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@G@trackC[1][0]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{tikzpicture}[scale=\LP@scale,rotate=#1]%
+    \clip (0,0) rectangle (1,1);%
+    \pgfsetcornersarced{\pgfpoint{4mm*\LP@scale}{4mm*\LP@scale}}%
+    \draw[color=LP@c@track, line width=.3cm*\LP@scale] (0,.5)--(.5,.5)--(.5,0);%
+  \end{tikzpicture}%
+}%
+%
+\let\CurveBL\LP@G@trackC%
+\newcommand*\CurveBR{\LP@G@trackC[90]}%
+\newcommand*\CurveTR{\LP@G@trackC[180]}%
+\newcommand*\CurveTL{\LP@G@trackC[270]}%
+%
+\newcommand*\LP@trackS%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{tikzpicture}[scale=\LP@scale]%
+    \draw[draw opacity=0] (.2,0) -- (.8,1);%
+    \draw[color=LP@c@track, line width=.3cm*\LP@scale] (.5,0)--(.5,1);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@G@trackS[1][0]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{tikzpicture}[scale=\LP@scale,rotate=#1]%
+    \clip (0,0) rectangle (1,1);%
+    \draw[color=LP@c@track, line width=.3cm*\LP@scale] (.5,0)--(.5,1);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\StraightV{\LP@G@trackS}%
+\newcommand*\StraightH{\LP@G@trackS[90]}%
+\let\Straight\StraightV%
+%
+\newcommand*\LP@trackCR%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{tikzpicture}[scale=\LP@scale]%
+    \draw[color=LP@c@track, line width=.3cm*\LP@scale] (0,0.5)--(1,.5);%
+    \draw[color=LP@c@track, line width=.3cm*\LP@scale] (0.5,0)--(.5,.2);%
+    \draw[color=LP@c@track, line width=.3cm*\LP@scale] (0.5,1)--(.5,.8);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\LP@G@trackCR[1][0]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{tikzpicture}[scale=\LP@scale,rotate=#1]%
+    \clip (0,0) rectangle (1,1);%
+    \draw[color=LP@c@track, line width=.3cm*\LP@scale] (0,0.5)--(1,.5);%
+    \draw[color=LP@c@track, line width=.3cm*\LP@scale] (0.5,0)--(.5,.2);%
+    \draw[color=LP@c@track, line width=.3cm*\LP@scale] (0.5,1)--(.5,.8);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\CrossH{\LP@G@trackCR}%
+\newcommand*\CrossV{\LP@G@trackCR[90]}%
+\let\Cross\CrossH%
+%
+\newcommand*\LP@graveltrap%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \begin{tikzpicture}[scale=\LP@scale]%
+    \clip (0,0) rectangle (1,1);%
+    \fill[color=LP@c@track] (.5,.5) circle (.1cm);%
+  \end{tikzpicture}%
+}%
+%
+\let\Graveltrap\LP@graveltrap%
+%
+\newcommand*\parkinglot[2]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \LP@set@LP@color{\LP@env@prefix}%
+  \LP@set@LP@bgcolor{\LP@env@prefix}%
+  \LP@set@LP@fontsize{\LP@env@prefix}%
+  \ifthenelse{\equal{\LP@color}{}}%
+  {\gdef\LP@c@parkinglot{black}}%
+  {\gdef\LP@c@parkinglot{\LP@color}}%
+  \ifthenelse{\equal{\LP@bgcolor}{}}%
+  {\gdef\LP@c@bg@parkinglot{white}}%
+  {\gdef\LP@c@bg@parkinglot{\LP@bgcolor}}%
+  \setcounter{LP@counti}{#1}%
+  \setcounter{LP@countii}{#2}%
+  \stepcounter{LP@counti}%
+  \stepcounter{LP@countii}%
+  \draw[color=\LP@c@parkinglot,line width=\LP@normallines,fill=\LP@c@bg@parkinglot] (#1,#2) rectangle ++(2,2);%
+  \node[color=\LP@c@parkinglot,font=\sffamily\bfseries\LP@fontsize] at (\arabic{LP@counti},\arabic{LP@countii}){P};%
+}%
+%
+\newcommand*\pitlane[3]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \LP@set@LP@color{\LP@env@prefix}%
+  \ifthenelse{\equal{\LP@color}{}}%
+  {\gdef\LP@c@pitlane{black}}%
+  {\gdef\LP@c@pitlane{\LP@color}}%
+  \ifthenelse{\equal{#3}{V}}%
+  {\draw[color=black,line width=\LP@normallines,fill=\LP@c@pitlane] (#1,#2) rectangle ++(1,4);}%
+  {\draw[color=black,line width=\LP@normallines,fill=\LP@c@pitlane] (#1,#2) rectangle ++(4,1);}%
+}%
+%
+\newcommand*\LP@trackline[3]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \pgfmathsetlength{\LP@length}{.1cm*\LP@scale}%
+  \scalebox{\LP@tracks@scale}%
+  {%
+    \hspace{\LP@length}%
+    \setcounter{LP@whiledo@i}{#1}%
+    \whiledo{\arabic{LP@whiledo@i}>0}%
+    {%
+      \LP@trackS%
+      \addtocounter{LP@whiledo@i}{-1}%
+    }%
+    \setcounter{LP@whiledo@i}{#2}%
+    \whiledo{\arabic{LP@whiledo@i}>0}%
+    {%
+      \LP@trackC%
+      \addtocounter{LP@whiledo@i}{-1}%
+    }%
+    \hspace{\LP@length}%
+    \setcounter{LP@whiledo@i}{#3}%
+    \whiledo{\arabic{LP@whiledo@i}>0}%
+    {%
+      \LP@trackCR%
+      \addtocounter{LP@whiledo@i}{-1}%
+    }%
+  }%
+}%
+%
+\newcommand*\trackV[1]%
+{%
+  \LP@set@LP@columns{\LP@env@prefix}%
+  \setcounter{LP@counti}{\LP@columns}%
+  \stepcounter{LP@counti}%
+  \setcounter{LP@countii}{1}%
+  \foreach \LP@c@straight/\LP@c@curve/\LP@c@cross in {#1}%
+  {%
+    \node[anchor=west] at (\arabic{LP@counti},\arabic{LP@countii}.5) {\LP@trackline{\LP@c@straight}{\LP@c@curve}{\LP@c@cross}};%
+    \stepcounter{LP@countii}%
+  };%
+}%
+%
+\newcommand*\trackH[1]%
+{%
+  \setcounter{LP@counti}{1}%
+  \setcounter{LP@countii}{1}%
+  \foreach \LP@c@straight/\LP@c@curve/\LP@c@cross in {#1}%
+  {%
+    \node[anchor=west,rotate=-90] at (\arabic{LP@counti}.5,\arabic{LP@countii}) {\LP@trackline{\LP@c@straight}{\LP@c@curve}{\LP@c@cross}};%
+    \stepcounter{LP@counti}%
+  };%
+}%
+%
+\newcommand*\track[1]%
+{%
+  \LP@set@LP@scale{\LP@env@prefix}%
+  \LP@set@LP@bgcolor{\LP@env@prefix}%
+  \ifthenelse{\equal{\LP@bgcolor}{}}%
+  {\gdef\LP@c@bg@track{white}}%
+  {\gdef\LP@c@bg@track{\LP@bgcolor}}%
+  \bgroup%
+    \def\LP@rel@tikzpath{.5}%
+    \begin{pgfonlayer}{LPbackgroundtwo}%
+      \pgfsetcornersarced{\pgfpoint{4.9mm*\LP@scale}{4.9mm*\LP@scale}}%
+      \draw[decorate,decoration={show path construction,%
+        lineto code={%
+          \draw [\LP@c@bg@track,line width=0.15cm*\LP@scale,double=LP@c@track,double distance=.3cm*\LP@scale]%
+            (\tikzinputsegmentfirst) -- (\tikzinputsegmentlast);},%
+        curveto code={%
+          \draw [LP@c@track,line width=0.3cm*\LP@scale] (\tikzinputsegmentfirst) .. controls%
+            (\tikzinputsegmentsupporta) and (\tikzinputsegmentsupportb)%
+            ..(\tikzinputsegmentlast);}}] #1;%
+    \end{pgfonlayer}%
+  \egroup%
+}%
+%
+\newcommand*\link[2][]%
+{%
+  \LP@set@LP@color{\LP@env@prefix}%
+  \bgroup%
+    \def\LP@rel@tikzpath{.5}%
+    \LP@Line[color=\LP@color,#1]{#2}%
+  \egroup%
+}%
+%
+\newcommand*\mlline[1]%
+{%
+  \draw[color=black, line width=\LP@thicklines] #1;%
+}%
+%
+\newcommand*\MasyuW%
+{%
+  \begin{tikzpicture}[scale=0.7*\LP@scale]%
+    \draw[color=black,fill=white] (0.5,0.5) circle (0.5cm);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\MasyuB%
+{%
+  \begin{tikzpicture}[scale=0.7*\LP@scale]%
+    \fill[color=black] (0.5,0.5) circle (0.5cm);%
+  \end{tikzpicture}%
+}%
+%
+\newcommand*\masyuline[1]%
+{%
+  \LP@set@LP@color{\LP@env@prefix}%
+  \begin{puzzleforeground}%
+    \bgroup%
+      \def\LP@rel@tikzpath{.5}%
+      \draw[color=\LP@color, line width=\LP@thicklines] #1;%
+    \egroup%
+  \end{puzzleforeground}%
+}%
+%
+\newcommand*\PMH[1]%
+{%
+  \LP@set@LP@fontsize{\LP@env@prefix}%
+  \foreach \LP@fe@column/\LP@fe@row in {#1}%
+  {%
+    \setcounter{LP@counti}{\LP@fe@column}%
+    \setcounter{LP@countii}{\LP@fe@row}%
+    \draw[line width=\LP@thicklines,fill=white] (\arabic{LP@counti},\arabic{LP@countii}) rectangle ++(2,1);%
+    \node[font=\LP@fontsize\bfseries] at (\arabic{LP@counti}.5,\arabic{LP@countii}.5) {$+$};%
+    \stepcounter{LP@counti}
+    \node[font=\LP@fontsize\bfseries] at (\arabic{LP@counti}.5,\arabic{LP@countii}.5) {$-$};%
+  };%
+}%
+%
+\newcommand*\MPH[1]%
+{%
+  \LP@set@LP@fontsize{\LP@env@prefix}%
+  \foreach \LP@fe@column/\LP@fe@row in {#1}%
+  {%
+    \setcounter{LP@counti}{\LP@fe@column}%
+    \setcounter{LP@countii}{\LP@fe@row}%
+    \draw[line width=\LP@thicklines,fill=white] (\arabic{LP@counti},\arabic{LP@countii}) rectangle ++(2,1);%
+    \node[font=\LP@fontsize\bfseries] at (\arabic{LP@counti}.5,\arabic{LP@countii}.5) {$-$};%
+    \stepcounter{LP@counti}
+    \node[font=\LP@fontsize\bfseries] at (\arabic{LP@counti}.5,\arabic{LP@countii}.5) {$+$};%
+  };%
+}%
+%
+\newcommand*\PMV[1]%
+{%
+  \LP@set@LP@fontsize{\LP@env@prefix}%
+  \foreach \LP@fe@column/\LP@fe@row in {#1}%
+  {%
+    \setcounter{LP@counti}{\LP@fe@column}%
+    \setcounter{LP@countii}{\LP@fe@row}%
+    \draw[line width=\LP@thicklines,fill=white] (\arabic{LP@counti},\arabic{LP@countii}) rectangle ++(1,2);%
+    \node[font=\LP@fontsize\bfseries] at (\arabic{LP@counti}.5,\arabic{LP@countii}.5) {$+$};%
+    \stepcounter{LP@countii}
+    \node[font=\LP@fontsize\bfseries] at (\arabic{LP@counti}.5,\arabic{LP@countii}.5) {$-$};%
+  };%
+}%
+%
+\newcommand*\MPV[1]%
+{%
+  \LP@set@LP@fontsize{\LP@env@prefix}%
+  \foreach \LP@fe@column/\LP@fe@row in {#1}%
+  {%
+    \setcounter{LP@counti}{\LP@fe@column}%
+    \setcounter{LP@countii}{\LP@fe@row}%
+    \draw[line width=\LP@thicklines,fill=white] (\arabic{LP@counti},\arabic{LP@countii}) rectangle ++(1,2);%
+    \node[font=\LP@fontsize\bfseries] at (\arabic{LP@counti}.5,\arabic{LP@countii}.5) {$-$};%
+    \stepcounter{LP@countii}
+    \node[font=\LP@fontsize\bfseries] at (\arabic{LP@counti}.5,\arabic{LP@countii}.5) {$+$};%
+  };%
+}%
+%
+\newcommand*\magnetsH[1]%
+{%
+  \foreach \LP@fe@column/\LP@fe@row in {#1}%
+  {%
+    \draw[line width=\LP@thicklines,fill=white] (\LP@fe@column,\LP@fe@row) rectangle ++(2,1);%
+  };%
+}%
+%
+\newcommand*\magnetsV[1]%
+{%
+  \foreach \LP@fe@column/\LP@fe@row in {#1}%
+  {%
+    \draw[line width=\LP@thicklines,fill=white] (\LP@fe@column,\LP@fe@row) rectangle ++(1,2);%
+  };%
+}%
+%
+% get package options with prefix
+%
+\newcommand*\LP@set@LP@scale[1]%
+{%
+  \expandafter\xdef\expandafter\LP@scale{\csname #1@scale\endcsname}%
+}%
+%
+\newcommand*\LP@set@LP@color[1]%
+{%
+  \expandafter\xdef\expandafter\LP@color{\csname #1@color\endcsname}%
+}%
+%
+\newcommand*\LP@set@LP@rows[1]%
+{%
+  \expandafter\xdef\expandafter\LP@rows{\csname #1@rows\endcsname}%
+}%
+%
+\newcommand*\LP@set@LP@columns[1]%
+{%
+  \expandafter\xdef\expandafter\LP@columns{\csname #1@columns\endcsname}%
+}%
+%
+\newcommand*\LP@set@LP@cvoffset[1]%
+{%
+  \expandafter\xdef\expandafter\LP@cvoffset{\csname #1@cvoffset\endcsname}%
+}%
+%
+\newcommand*\LP@set@LP@bgcolor[1]%
+{%
+  \expandafter\xdef\expandafter\LP@bgcolor{\csname #1@bgcolor\endcsname}%
+}%
+%
+\newcommand*\LP@set@LP@fontsize[1]%
+{%
+  % can't expand \Large
+  \expandafter\gdef\expandafter\LP@fontsize{\csname #1@fontsize\endcsname}%
+}%
+%
+\newcommand*\LP@set@env@prefix[1]%
+{%
+  \gdef\LP@env@prefix{#1}%
+}%
+%
+\newcommand*\LP@set@package[1]%
+{%
+  \gdef\LP@package{#1}%
+}%
+%
+\newcommand*\setgridlinestyle[1]%
+{%
+  \def\LP@grid@linestyle{#1}%
+}%
+%
+\newcommand*\setnormallinewidth[1]%
+{%
+  \def\LP@normallines{#1}%
+}%
+%
+\newcommand*\setthicklinewidth[1]%
+{%
+  \def\LP@thicklines{#1}%
+}%
+%
+% generic logicpuzzle environment and options
+%
+\newcommand*\LP@LP@init@prefix{LP@LP}%
+\newcommand*\LP@LP@init@package{logicpuzzle}%
+%
+\LP@define@key{\LP@LP@init@prefix}{\LP@LP@init@package}{rows}{5}%
+\LP@define@key{\LP@LP@init@prefix}{\LP@LP@init@package}{columns}{5}%
+\LP@define@key{\LP@LP@init@prefix}{\LP@LP@init@package}{scale}{1}%
+\LP@define@key{\LP@LP@init@prefix}{\LP@LP@init@package}{counterstyle}{none}%
+\LP@define@key{\LP@LP@init@prefix}{\LP@LP@init@package}{color}{}%
+\LP@define@key{\LP@LP@init@prefix}{\LP@LP@init@package}{bgcolor}{}%
+\LP@define@key{\LP@LP@init@prefix}{\LP@LP@init@package}{width}{5.1cm}%
+\LP@define@key{\LP@LP@init@prefix}{\LP@LP@init@package}{cvoffset}{-23pt}%
+\LP@define@key{\LP@LP@init@prefix}{\LP@LP@init@package}{title}{}%
+\LP@define@key{\LP@LP@init@prefix}{\LP@LP@init@package}{titleindent}{0cm}%
+\LP@define@key{\LP@LP@init@prefix}{\LP@LP@init@package}{titlewidth}{5.1cm}%
+\LP@define@choicekey@fontsize{\LP@LP@init@prefix}{\LP@LP@init@package}{Large}%
+%
+\ExecuteOptionsX{rows,columns,width,fontsize,scale,bgcolor,cvoffset,counterstyle,title,titleindent,titlewidth}%
+%
+\ProcessOptionsX\relax%
+%
+\let\logicpuzzlecell\setcell%
+%
+\newcommand*\logicpuzzlesetup[1]%
+{%
+  \setkeys{logicpuzzle.sty}{#1}%
+}%
+%
+\newenvironment{logicpuzzle}[1][]%
+{%
+  \setkeys{logicpuzzle}{#1}%
+  \LP@set@package{logicpuzzle}%
+  \LP@set@env@prefix{LP@LP}%
+  \setcounter{LP@rows}{\LP@LP@rows}%
+  \setcounter{LP@columns}{\LP@LP@columns}%
+  \stepcounter{LP@rows}%
+  \stepcounter{LP@columns}%
+  \begin{minipage}[t]{\LP@LP@width}%
+    \ifthenelse{\equal{\LP@LP@title}{}}%
+    {\par\enspace\par}% empty
+    {\enspace\par\noindent\hspace{\LP@LP@titleindent}\parbox{\LP@LP@titlewidth}{\strut\LP@titleformat\LP@LP@title}\vspace{3mm}\par}%
+    \begin{tikzpicture}[scale=\LP@LP@scale]%
+      \LP@drawbackground{1}{1}{\LP@LP@columns}{\LP@LP@rows}{\LP@LP@bgcolor}%
+      \LP@drawgrid{1}{1}{\LP@LP@columns}{\LP@LP@rows}{1cm}%
+}%
+{%
+    \end{tikzpicture}%
+    \LP@drawcounter{\LP@LP@counterstyle}%
+    \stepcounter{LP@puzzlecounter}%
+  \end{minipage}%
+}%
+%
+\RequirePackage{lpenv}%
+%
+\endinput%

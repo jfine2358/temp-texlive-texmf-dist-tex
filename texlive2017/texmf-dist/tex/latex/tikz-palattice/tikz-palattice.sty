@@ -1,0 +1,713 @@
+%% tikz-palattice.sty
+%% Copyright 2017 J. Schmidt
+%% tikz-palattice LaTeX package
+% 
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+% http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+% 
+% This work has the LPPL maintenance status `maintained'.
+% 
+% The Current Maintainer of this work is J. Schmidt.
+% 
+% This work consists of the files tikz-palattice.sty and tikz-palattice_documentation.tex
+% and the 5 example files example1_linear.tex, example2_circular.tex,
+% example3_coordinates.tex, example4_labels.tex and elsa.tex
+
+\ProvidesPackage{tikz-palattice}[2017/03/09 v2.3]
+\RequirePackage{tikz}
+\RequirePackage{ifthen}
+\RequirePackage{siunitx}
+\RequirePackage{xargs}
+\RequirePackage{etoolbox}
+\RequirePackage{iflang}
+\usetikzlibrary{calc,positioning,fit,chains}
+\usetikzlibrary{scopes}
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+
+
+
+
+%---lattice environment---
+\newenvironmentx{lattice}[2][1=1, 2=]{%
+%begin
+\tikzpicture[node distance=0mm, remember picture, #2]
+\newdimen\labeldist
+\newdimen\savelabeldist
+\newdimen\corners;
+\newdimen\elementheight;
+\newdimen\elementwidth;
+\newdimen\markerlen;
+\pgfmathsetmacro{\scal}{#1*0.1};
+\def\labelfont{\normalsize};
+\def\labelcolor{black};
+\def\labelang{-90};
+\def\marklabelang{+90};
+\def\labelrot{0};
+\providetoggle{userlabelanchor}
+\settoggle{userlabelanchor}{false}
+\pgfmathsetlength{\labeldist}{\scal*20cm*0.35};
+\pgfmathsetlength{\savelabeldist}{\scal*20cm*0.35};
+\pgfmathtruncatemacro{\i}{0};
+\pgfmathtruncatemacro{\j}{0};
+\global\def\angle{0}
+\node (nodeeast0) [start] at (0,0) {};
+\coordinate (east\j) at (nodeeast\j.center); %\declarecoords ("east" only
+\global\providetoggle{dip} \global\settoggle{dip}{false}
+\global\providetoggle{quad} \global\settoggle{quad}{false}
+\global\providetoggle{sext} \global\settoggle{sext}{false}
+\global\providetoggle{kick} \global\settoggle{kick}{false}
+\global\providetoggle{correct} \global\settoggle{correct}{false}
+\global\providetoggle{sol} \global\settoggle{sol}{false}
+\global\providetoggle{cav} \global\settoggle{cav}{false}
+\global\providetoggle{sourc} \global\settoggle{sourc}{false}
+\global\providetoggle{scree} \global\settoggle{scree}{false}
+\global\providetoggle{valv} \global\settoggle{valv}{false}
+% custom legend
+\pgfkeys{/pal/customlegendkeys/.initial = {nix}}
+\def\emptycustomlegendkeys{nix}
+}{%
+%end
+\endtikzpicture
+}
+
+
+
+%---general settings---
+\newcommand{\rotate}[1]{\pgfmathparse{\angle+#1} \global\let\angle\pgfmathresult}
+\newcommand{\setangle}[1]{\pgfmathparse{#1} \global\let\angle\pgfmathresult}
+\newcommand{\start}[1]{%
+  \tikzset{x=2cm,y=2cm}
+  \node (nodeeast0) [start] at #1 {};
+  \coordinate (east\j) at (nodeeast\j.center);
+  \tikzset{x=1cm,y=1cm}
+}
+
+\newcommandx{\savecoordinate}[2][2=east]{%
+\global\csedef{angle#1}{\angle}
+\coordinate (#1) at (#2\i);
+}
+
+\newcommand{\goto}[1]{%
+\coordinate (east\j) at (#1);
+%\node[fill=yellow] at (Septum) {\csuse{angle#1}};
+\pgfmathparse{\csuse{angle#1}} \global\let\angle\pgfmathresult
+%\expandafter\global\csname angle#1\endcsname{\angle}
+}
+
+
+
+%---color settings---
+\newcommandx{\setelementcolor}[3][3=white]{%
+\tikzset{#1/.append style={bottom color=#2, top color=#3, fadeElement}}}
+\newcommand{\resetelementcolor}[1]{\tikzset{#1/.style={default_#1}}}
+\newcommand{\setlinecolor}[2]{\tikzset{#1/.append style={#2, faded}}}
+\newcommand{\resetlinecolor}[1]{\tikzset{#1/.style={default_#1}}}
+
+\newenvironmentx{fade}[1][1=0.25]{%
+\tikzset{faded/.style={opacity=#1, color=gray}}
+\tikzset{fadeElement/.style={faded, color=gray,bottom color=gray,top color=white}}
+}{%
+\tikzset{faded/.style={opacity=1.0}} % color not set
+\tikzset{fadeElement/.style={faded}}
+}
+
+
+%---label settings---
+\newenvironment{labeldistance}[1]{%
+  \pgfmathsetlength{\savelabeldist}{\labeldist}
+  \pgfmathsetlength{\labeldist}{\scal*20cm*#1};
+}{%
+  \pgfmathsetlength{\labeldist}{\savelabeldist};
+}
+
+\newcommand{\setlabeldistance}[1]{%
+\pgfmathsetlength{\savelabeldist}{\labeldist}
+\pgfmathsetlength{\labeldist}{\scal*20cm*#1};}
+\newcommand{\resetlabeldistance}{\pgfmathsetlength{\labeldist}{\savelabeldist};}
+\newcommand{\setlabelfont}[1]{\def\labelfont{#1}}
+\newcommand{\setlabelcolor}[1]{\def\labelcolor{#1}}
+
+\newcommand{\turnlabels}{%
+\ifthenelse{\labelang = -90}{%
+\def\labelang{+90} \def\marklabelang{-90}}{%
+\def\labelang{-90} \def\marklabelang{+90}}}
+
+\newcommand{\southlabels}{\def\labelang{-90} \def\marklabelang{+90}}
+\newcommand{\northlabels}{\def\labelang{+90} \def\marklabelang{-90}}
+
+\newcommandx{\rotatelabels}[2][2=notset]{%
+  \def\labelrot{#1}
+  \ifthenelse{\equal{#2}{notset}}{%
+    \settoggle{userlabelanchor}{false}
+  }{%
+    \settoggle{userlabelanchor}{true}
+    \def\labelanchor{#2}}
+}
+
+
+
+% rule (maßstab)
+\newcommandx{\drawrule}[4][2=1, 3=1, 4=0.06]{%
+  \coordinate (rule0) at ($(0,0)!\scal*20!#1$);
+  \tikzset{rule/.append style={line width=20pt*#4*10*\scal}}
+  \draw[rule] (rule0) --++(#2*20cm*\scal,0) coordinate (rule1) --++(0,#4*20cm*\scal)
+  --++(-#2*20cm*\scal,0) --++(0,-#4*20cm*\scal);
+ \draw[rule,fill=white] (rule1) --++(#2*20cm*\scal,0) coordinate (rule2) --++(0,#4*20cm*\scal)
+  --++(-#2*20cm*\scal,0) --++(0,-#4*20cm*\scal);
+  \draw[rule] (rule2) --++(#2*20cm*\scal,0) coordinate (rule3) --++(0,#4*20cm*\scal)
+  --++(-#2*20cm*\scal,0) --++(0,-#4*20cm*\scal);
+  \foreach \x in {0,1,2,3} {%
+    \pgfmathsetmacro{\len}{#2*\x}
+    \path [draw=none] (rule\x) --+ (-90:0.06*\labeldist/\scal) node[label, black, scale=#3, anchor=north]
+    {\SI[zero-decimal-to-integer, round-mode=places, round-precision=1]{\len}{\meter}};
+    \draw [black,line width=30pt*#4*10*\scal] (rule\x) --+ (-90:1mm);
+    \draw [black,line width=30pt*#4*10*\scal] (rule\x) --+ (90:#4*20cm*\scal+1mm);
+  }
+}
+
+
+
+% legend text defaults
+\IfLanguageName{ngerman}{%
+\pgfkeyssetvalue{/pal/legendtxt/dipole}{Dipol}
+\pgfkeyssetvalue{/pal/legendtxt/quadrupole}{Quadrupol}
+\pgfkeyssetvalue{/pal/legendtxt/sextupole}{Sextupol}
+\pgfkeyssetvalue{/pal/legendtxt/kicker}{Kicker}
+\pgfkeyssetvalue{/pal/legendtxt/corrector}{Korrektor}
+\pgfkeyssetvalue{/pal/legendtxt/solenoid}{Solenoid}
+\pgfkeyssetvalue{/pal/legendtxt/cavity}{Hochfrequenz}
+\pgfkeyssetvalue{/pal/legendtxt/source}{Quelle}
+\pgfkeyssetvalue{/pal/legendtxt/screen}{Schirm}
+\pgfkeyssetvalue{/pal/legendtxt/valve}{Ventil}
+}{%
+\pgfkeyssetvalue{/pal/legendtxt/dipole}{Dipole}
+\pgfkeyssetvalue{/pal/legendtxt/quadrupole}{Quadrupole}
+\pgfkeyssetvalue{/pal/legendtxt/sextupole}{Sextupole}
+\pgfkeyssetvalue{/pal/legendtxt/kicker}{Kicker}
+\pgfkeyssetvalue{/pal/legendtxt/corrector}{Corrector}
+\pgfkeyssetvalue{/pal/legendtxt/solenoid}{Solenoid}
+\pgfkeyssetvalue{/pal/legendtxt/cavity}{Cavity}
+\pgfkeyssetvalue{/pal/legendtxt/source}{Source}
+\pgfkeyssetvalue{/pal/legendtxt/screen}{Screen}
+\pgfkeyssetvalue{/pal/legendtxt/valve}{Valve}
+}
+
+% change legend text
+\newcommand{\setlegendtext}[2]{%
+  \pgfkeys{/pal/legendtxt/#1=#2}
+}
+
+
+% add custom legend entry
+\newcommand{\addlegendentry}[2]{%
+  \pgfkeys{/pal/customlegendkeys/.get = \lktemp}
+  \ifdefequal{\lktemp}{\emptycustomlegendkeys}{%
+    \pgfkeyssetvalue{/pal/customlegendkeys}{#1}%
+  }{%
+    \pgfkeys{/pal/customlegendkeys/.append = {,#1}}%
+  }%
+  \pgfkeys{/pal/customlegendimg/#1/.style = {#2}}%
+}
+
+
+%legend (types that occured in the lattice before this command)
+\newcommandx{\legend}[2][2=1]{%
+\coordinate (legendstart) at ($(0,0)!\scal*20!#1$);
+\pgfmathsetmacro{\savescal}{\scal}
+\pgfmathsetmacro{\saveang}{\angle}
+\pgfmathsetmacro{\scal}{0.05}
+\pgfmathsetmacro{\angle}{-90}
+\def\h{0.4}
+\def\l{0.3}
+\def\dist{0.18}
+\savecoordinate{_here_}
+\coordinate (east\j) at (legendstart);
+\coordinate (legendstart') at ($(legendstart) + (-\h*\scal*15*#2,\dist*\scal*15*#2)$);
+\coordinate (legendstart'') at ($(legendstart) + (\h*\scal*15*#2,\dist*\scal*15*#2)$);
+\edef\points{(legendstart') (legendstart'')}
+\begin{scope}[scale=#2, every node/.style={scale=#2}]
+\tikzset{drift/.append style={draw=none}}
+\northlabels%
+\setlabelcolor{black}%
+\setlabeldistance{\h}%
+\setlabelfont{\normalsize}%
+  \iftoggle{dip}{\dipole{\pgfkeysvalueof{/pal/legendtxt/dipole}}{\l}{0}[r][\h]\xdef\points{(elementlabel\j)
+      \points}\drift{\dist}}{}%
+  \iftoggle{quad}{\quadrupole{\pgfkeysvalueof{/pal/legendtxt/quadrupole}}{\l}[\h]\xdef\points{(elementlabel\j)
+      \points}\drift{\dist}}{}%
+  \iftoggle{sext}{\sextupole{\pgfkeysvalueof{/pal/legendtxt/sextupole}}{\l}[\h]\xdef\points{(elementlabel\j)
+      \points}\drift{\dist}}{}%
+  \iftoggle{correct}{\corrector{\pgfkeysvalueof{/pal/legendtxt/corrector}}{\l}[\h]\xdef\points{(elementlabel\j)
+      \points}\drift{\dist}}{}%
+  \iftoggle{kick}{\kicker{\pgfkeysvalueof{/pal/legendtxt/kicker}}{\l}[\h]\xdef\points{(elementlabel\j)
+      \points}\drift{\dist}}{}%
+  \iftoggle{cav}{\cavity{\pgfkeysvalueof{/pal/legendtxt/cavity}}{\l}[\h]\xdef\points{(elementlabel\j)
+      \points}\drift{\dist}}{}%
+  \iftoggle{sol}{\solenoid{\pgfkeysvalueof{/pal/legendtxt/solenoid}}{\l}[\h]\xdef\points{(elementlabel\j)
+      \points}\drift{\dist}}{}%
+  \iftoggle{sourc}{\source{\pgfkeysvalueof{/pal/legendtxt/source}}{\l}[\h]\xdef\points{(elementlabel\j)
+      \points}\drift{\dist}}{}%
+  \iftoggle{scree}{\screen{\pgfkeysvalueof{/pal/legendtxt/screen}}[\l]\xdef\points{(elementlabel\j)
+      \points}\drift{\dist}}{}%
+  \iftoggle{valv}{\drift{\dist}\valve{\pgfkeysvalueof{/pal/legendtxt/valve}}\xdef\points{(elementlabel\j)
+      \points}\drift{\dist}\drift{\dist}}{}%
+\end{scope}
+  % custom entries (addlegendentry)
+  \edef\mylist{\pgfkeysvalueof{/pal/customlegendkeys}}%
+  \ifdefequal{\mylist}{\emptycustomlegendkeys}{}{%
+    \node[anchor=north west,inner sep=0,outer sep=0,xshift=#2*-2mm] at (east\j) {
+      \begin{tikzpicture}[start chain=going below,node distance=2mm,scale=#2,transform shape]
+        \foreach \ele in \mylist {%
+          \node[on chain, draw, thin,/pal/customlegendimg/\ele, minimum width=\h*10mm, minimum height=\l*10mm] (n) {};%
+          \node[anchor=west,xshift=5.15mm] (ntxt) at (n.center) {\ele};%
+          \xdef\points{($(ntxt.south east)+#2*(2mm,-2mm)$)\points}%
+        }
+      \end{tikzpicture}
+    };
+  }
+\node[draw=black, rounded corners, fit=\points] {};
+\pgfmathsetmacro{\scal}{\savescal}
+\pgfmathsetmacro{\angle}{\saveang}
+%\tikzset{drift/.append style={draw=black}}
+\coordinate (east\j) at (_here_);
+}
+
+%complete legend (all types)
+\newcommandx{\completelegend}[2][2=1]{%
+ \settoggle{dip}{true}
+ \settoggle{quad}{true}
+ \settoggle{sext}{true}
+ \settoggle{kick}{true}
+ \settoggle{correct}{true}
+ \settoggle{sol}{true}
+ \settoggle{cav}{true}
+ \settoggle{sourc}{true}
+ \settoggle{scree}{true}
+ \settoggle{valv}{true}
+ \legend{#1}[#2]
+}
+
+
+%---commands for internal use---
+\newcommand{\updatelabelanchor}{%
+  \pgfmathtruncatemacro\iang{\angle}
+  % handle angle not in [0,360] ([-720,+1080] handled)
+  \ifthenelse{\iang<0}{\pgfmathtruncatemacro\iang{\iang+360}}{}
+  \ifthenelse{\iang<0}{\pgfmathtruncatemacro\iang{\iang+360}}{}
+  \ifthenelse{\iang>360}{\pgfmathtruncatemacro\iang{\iang-360}}{}
+  \ifthenelse{\iang>360}{\pgfmathtruncatemacro\iang{\iang-360}}{}
+  % set label anchor according to angle
+  \iftoggle{userlabelanchor}{}{%  %if labelanchor is set by user just use the set value
+    \ifthenelse{\labelang = -90}{%
+      \def\labelanchor{north};
+      \ifthenelse{\iang > 30}{\def\labelanchor{west}}{}
+      \ifthenelse{\iang > 150}{\def\labelanchor{south}}{}
+      \ifthenelse{\iang > 210}{\def\labelanchor{east}}{}
+      \ifthenelse{\iang > 330}{\def\labelanchor{north}}{}
+    }{%
+      \def\labelanchor{south};
+      \ifthenelse{\iang > 30}{\def\labelanchor{east}}{}
+      \ifthenelse{\iang > 150}{\def\labelanchor{north}}{}
+      \ifthenelse{\iang > 210}{\def\labelanchor{west}}{}
+      \ifthenelse{\iang > 330}{\def\labelanchor{south}}{}
+    }
+  }
+}
+
+\newcommand{\updatemarkerlabelanchor}{%
+  \pgfmathtruncatemacro\iang{\angle}
+  % handle angle not in [0,360] ([-720,+1080] handled)
+  \ifthenelse{\iang<0}{\pgfmathtruncatemacro\iang{\iang+360}}{}
+  \ifthenelse{\iang<0}{\pgfmathtruncatemacro\iang{\iang+360}}{}
+  \ifthenelse{\iang>360}{\pgfmathtruncatemacro\iang{\iang-360}}{}
+  \ifthenelse{\iang>360}{\pgfmathtruncatemacro\iang{\iang-360}}{}
+  % set label anchor according to angle
+  \ifthenelse{\marklabelang = +90}{%
+    \def\labelanchor{south};
+    \ifthenelse{\iang > 30}{\def\labelanchor{east}}{}
+    \ifthenelse{\iang > 150}{\def\labelanchor{north}}{}
+    \ifthenelse{\iang > 210}{\def\labelanchor{west}}{}
+    \ifthenelse{\iang > 330}{\def\labelanchor{south}}{}
+  }{%
+    \def\labelanchor{north};
+    \ifthenelse{\iang > 30}{\def\labelanchor{west}}{}
+    \ifthenelse{\iang > 150}{\def\labelanchor{south}}{}
+    \ifthenelse{\iang > 210}{\def\labelanchor{east}}{}
+    \ifthenelse{\iang > 330}{\def\labelanchor{north}}{}
+  }
+}
+
+
+\newcommand{\elementlabel}[1]{%
+  \updatelabelanchor
+  \path [draw=none] (center\j) --+ (\angle\labelang:\labeldist) node[label] (elementlabel\j) {#1};
+}
+
+\newcommand{\jinc}{\pgfmathparse{int(\i+1)} \global\let\j\pgfmathresult}
+\newcommand{\iinc}{\global\let\i\j}
+\newcommand{\angleinc}[1]{\pgfmathparse{\angle+#1} \global\let\angle\pgfmathresult}
+\newcommand{\declarecoords}{\coordinate (east\j) at (nodeeast\j.center); \coordinate (center\j) at (nodecenter\j.center);}
+
+
+
+
+
+% ----- element commands -----
+% drift
+\newcommandx{\drift}[2][2=]{%
+\jinc
+\begin{pgfonlayer}{background}
+  \draw[drift] (east\i) --++ (\angle:#1*10cm*\scal) node[] (nodecenter\j) {} --++
+  (\angle:#1*10cm*\scal) node[] (nodeeast\j) {};
+\end{pgfonlayer}{background}
+\declarecoords
+\elementlabel{#2};
+\iinc;
+}
+
+%rectangle-element (used for quad,sext,kicker,cavity,...)
+\newcommandx{\rectangleelement}[4]{%
+\pgfmathsetlength{\corners}{(#2)>=0.4 ? (1mm*10*\scal) : 0mm};
+\pgfmathsetlength{\elementheight}{#3*20cm*\scal};
+\draw[drift] (east\i) --++ (\angle:#2*10cm*\scal) node[] (nodecenter\j) {} --++
+(\angle:#2*10cm*\scal) node[] (nodeeast\j) {};
+\draw[#4] (east\i) --++ (0,\elementheight/2) --++ (#2*20cm*\scal,0) --++
+(0,-\elementheight) --++ (-#2*20cm*\scal,0) --++ (0,\elementheight/2);
+}
+
+
+%dipole (br,r,s)
+\newcommandx{\dipole}[5][4=s, 5=0.6]{%
+\jinc
+\pgfmathsetlength{\corners}{(#2)>=0.4 ? (1mm*10*\scal) : 0mm};
+\pgfmathsetlength{\elementheight}{#5*20cm*\scal};
+\def\winkel{#3}
+\ifthenelse{\equal{#3}{0}}{
+  \rectangleelement{#1}{#2}{#5}{dipole}
+}{
+  \newdimen\radius
+  \newdimen\ri
+  \newdimen\ra
+  \pgfmathsetlength{\radius}{(#2*20cm*\scal)/rad(\winkel)}; % bogenlänge
+  \pgfmathsetlength{\ri}{\radius-0.5*\elementheight}
+  \pgfmathsetlength{\ra}{\radius+0.5*\elementheight}
+
+  % draw bend beampipe
+  \draw[drift,rotate=\angle] (east\i) arc (-90:(-90+\winkel/2):\radius) node[] (nodecenter\j) {};
+  \draw[drift,rotate=\angle] (nodecenter\j) arc ((-90+\winkel/2):(-90+\winkel):\radius) node[] (nodeeast\j) {};
+  
+  % [r]ectangle
+  \ifthenelse{\equal{#4}{r}}{
+    \angleinc{0.5*#3}
+    \newdimen\straightlength
+    \pgfmathsetlength{\straightlength}{sin(\winkel/2)*2*\radius} % sekante des kreisbogens
+    \draw[dipole] (east\i) --++ (0,-\elementheight/2) --++ (\straightlength,0) --++
+    (0,\elementheight) --++ (-\straightlength,0) --++ (0,-\elementheight/2);
+  }{
+    % [s]ector
+    \ifthenelse{\equal{#4}{s}}{%
+      \draw[dipole] (east\i) -- ++
+      (0,-\elementheight/2) arc (-90:(-90+\winkel):\ra) -- ++(\winkel+90:\elementheight) arc
+      ((-90+\winkel):-90:\ri) -- cycle;
+      \angleinc{0.5*\winkel}
+    }{
+      % [b]end[r]ectangle
+      \angleinc{0.5*#3}
+      \draw[dipole] (east\i) -- ++
+      (0,-\elementheight/2) arc (-90-\winkel/2:-90+\winkel/2:\radius) -- ++(0,\elementheight) arc
+      (-90+\winkel/2:-90-\winkel/2:\radius) -- cycle;
+    }
+  }
+}
+
+\declarecoords
+\elementlabel{#1};
+\iinc
+\global\settoggle{dip}{true}
+\angleinc{0.5*\winkel}
+}
+
+
+%quadrupole
+\newcommandx{\quadrupole}[3][3=0.5]{%
+\jinc
+\rectangleelement{#1}{#2}{#3}{quadrupole}
+\declarecoords
+\elementlabel{#1}
+\iinc
+\global\settoggle{quad}{true}
+}
+
+%sextupole
+\newcommandx{\sextupole}[3][3=0.3]{%
+\jinc
+\rectangleelement{#1}{#2}{#3}{sextupole}
+\declarecoords
+\elementlabel{#1}
+\iinc
+\global\settoggle{sext}{true}
+}
+
+%kicker
+\newcommandx{\kicker}[3][3=0.25]{%
+\jinc
+\rectangleelement{#1}{#2}{#3}{kicker}
+\declarecoords
+\elementlabel{#1}
+\iinc
+\global\settoggle{kick}{true}
+}
+
+% corrector
+\newcommandx{\corrector}[3][3=0.25]{%
+\jinc
+\rectangleelement{#1}{#2}{#3}{corrector}
+\declarecoords
+\elementlabel{#1}
+\iinc
+\global\settoggle{correct}{true}
+}
+
+%cavity
+\newcommandx{\cavity}[3][3=0.45]{%
+\jinc
+\rectangleelement{#1}{#2}{#3}{cavity}
+\declarecoords
+\elementlabel{#1}
+\iinc
+\global\settoggle{cav}{true}
+}
+
+%solenoid
+\newcommandx{\solenoid}[3][3=0.2]{%
+\jinc
+\rectangleelement{#1}{#2}{#3}{solenoid}
+\declarecoords
+\elementlabel{#1}
+\iinc
+\global\settoggle{sol}{true}
+}
+
+%beamdump
+\newcommandx{\beamdump}[3][3=0.5]{%
+\jinc
+\rectangleelement{#1}{#2}{#3}{beamdump}
+\declarecoords
+\elementlabel{#1}
+\iinc
+%\global\settoggle{}{true} no legend for beamdump
+}
+
+%source
+\newcommandx{\source}[3][3=0.5]{%
+\jinc
+\pgfmathsetlength{\corners}{(#2)>=0.4 ? (1mm*10*\scal) : 0mm};
+\pgfmathsetlength{\elementheight}{#3*20cm*\scal};
+\draw[drift] (east\i) --++ (\angle:#2*10cm*\scal) node[] (nodecenter\j) {} --++
+(\angle:#2*10cm*\scal) node[] (nodeeast\j) {};
+\draw[source] (east\i) --++ (0,\elementheight/2) --++ (#2*20cm*\scal,-\elementheight/2)
+--++ (-#2*20cm*\scal,-\elementheight/2) --++ (0,\elementheight/2);
+\declarecoords
+\elementlabel{#1}
+\iinc
+\global\settoggle{sourc}{true}
+}
+
+%screen
+\newcommandx{\screen}[2][2=0.2]{%
+\jinc
+\pgfmathsetlength{\corners}{(#2)>=0.4 ? (1mm*10*\scal) : 0mm};
+\newdimen\radius
+\pgfmathsetlength{\radius}{#2*20cm*\scal/2};
+\draw[drift] (east\i) --++ (\angle:#2*10cm*\scal) node[] (nodecenter\j) {} --++
+(\angle:#2*10cm*\scal) node[] (nodeeast\j) {};
+\draw[screen] (nodecenter\j.center) circle (\radius);
+\draw[screen] (nodecenter\j.center) --++ (45:\radius);
+\draw[screen] (nodecenter\j.center) --++ (45+180:\radius);
+\declarecoords
+\elementlabel{#1}
+\iinc
+\global\settoggle{scree}{true}
+}
+
+%valve
+\newcommandx{\valve}[2][2=0.01]{%
+\jinc
+\rectangleelement{#1}{#2}{0.15}{valve}
+\declarecoords
+\elementlabel{#1}
+\iinc
+\global\settoggle{valv}{true}
+}
+
+
+%marker
+\newcommandx{\marker}[2][2=0.35]{%
+\pgfmathsetlength{\markerlen}{#2*20cm*\scal};
+\updatemarkerlabelanchor
+\draw [marker] (east\i) --+ (\angle-90:\markerlen); % half length (=> 10cm)
+\draw [marker] (east\i) --+ (\angle+90:\markerlen);
+\draw [draw=none] (east\i) --+ (\angle\marklabelang:\markerlen+0.5*\labeldist) node[label] {#1};
+}
+
+
+
+
+
+% ----- styles -----
+%faded (for global fade setting)
+\tikzset{faded/.style={
+opacity=1
+}}
+\tikzset{fadeElement/.style={
+faded
+}}
+
+%element (for all, except drift)
+\tikzset{element/.style={
+rounded corners=\corners,
+line width=0.8pt*10*\scal, draw=black,
+top color=white,
+anchor=west,
+rotate=\angle,
+fadeElement  %must be last to overwrite other settings
+}}
+
+%dipole
+\tikzset{default_dipole/.style={
+bottom color=blue,
+element,
+},
+dipole/.style={default_dipole}
+}
+
+
+%quadrupole
+\tikzset{default_quadrupole/.style={
+bottom color=yellow, 
+element
+},
+quadrupole/.style={default_quadrupole}
+}
+
+%sextupole
+\tikzset{default_sextupole/.style={
+bottom color=violet!70!black, 
+element
+},
+sextupole/.style={default_sextupole}
+}
+
+%kicker
+\tikzset{default_kicker/.style={
+bottom color=red!90!black, 
+element
+},
+kicker/.style={default_kicker}
+}
+
+%corrector
+\tikzset{default_corrector/.style={
+bottom color=orange!90!black, 
+element
+},
+corrector/.style={default_corrector}
+}
+
+%cavity
+\tikzset{default_cavity/.style={
+bottom color=brown!80!black, 
+element
+},
+cavity/.style={default_cavity}
+}
+
+%solenoid
+\tikzset{default_solenoid/.style={
+bottom color=green!70!black, 
+element
+},
+solenoid/.style={default_solenoid}
+}
+
+%beamdump
+\tikzset{default_beamdump/.style={
+bottom color=gray, 
+element
+},
+beamdump/.style={default_beamdump}
+}
+
+%source
+\tikzset{default_source/.style={
+bottom color=gray, 
+element
+},
+source/.style={default_source}
+}
+
+%screen
+\tikzset{default_screen/.style={
+bottom color=white, 
+element
+},
+screen/.style={default_screen}
+}
+
+%valve
+\tikzset{default_valve/.style={
+bottom color=gray, 
+element,
+top color=gray,
+draw=none
+},
+valve/.style={default_valve}
+}
+
+
+
+%drift
+\tikzset{default_drift/.style={
+line width=0.8pt*10*\scal, draw=black,
+faded  %must be last to overwrite other settings
+},
+drift/.style={default_drift}
+}
+
+%text label
+\tikzset{label/.style={
+text=\labelcolor,
+font=\labelfont,
+rotate=\labelrot,
+anchor=\labelanchor,
+faded  %must be last to overwrite other settings
+}}
+
+%marker (line)
+\tikzset{default_marker/.style={
+red, densely dashed,
+faded  %must be last to overwrite other settings
+},
+marker/.style={default_marker}
+}
+
+%rule
+\tikzset{rule/.style={
+draw=black,
+fill=black,
+faded  %must be last to overwrite other settings
+}}
+
+%start
+\tikzset{start/.style={%
+draw=none,
+anchor=center,
+scale=0.1,
+faded  %must be last to overwrite other settings
+}}

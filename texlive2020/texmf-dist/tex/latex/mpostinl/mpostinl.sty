@@ -1,0 +1,663 @@
+%%
+%% This is file `mpostinl.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% mpostinl.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2010-2018 Niklas Beisert
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1996/12/01]
+\ProvidesPackage{mpostinl}[2018/12/30 v1.5 metapost inline figures]
+
+\RequirePackage{verbatim}
+\RequirePackage{graphicx}
+\RequirePackage{keyval}
+
+\def\mpostfilename{\jobname}
+\def\mpi@nowname{\jobname-tmp}
+\def\mpi@extension{mps}
+\def\mpi@template#1{\mpostfilename-#1%
+  \ifx\mpi@extension\mpi@empty\else.\fi\mpi@extension}
+
+\newcounter{mpi@count}
+\def\thempi@count{\arabic{mpi@count}}
+
+\newif\ifmpi@draft\mpi@draftfalse
+\newif\ifmpi@latex\mpi@latextrue
+\newif\ifmpi@fonts\mpi@fontsfalse
+\newif\ifmpi@write\mpi@writetrue
+\newif\ifmpi@compile\mpi@compiletrue
+\newif\ifmpi@twice\mpi@twicefalse
+\newif\ifmpi@clean\mpi@cleantrue
+\newif\ifmpi@checksum\mpi@checksumfalse
+\newif\ifmpi@lineno\mpi@linenofalse
+\newif\ifmpi@labelnames\mpi@labelnamesfalse
+\newif\ifmpi@nowactive\mpi@nowactivefalse
+\newif\ifmpi@now\mpi@nowfalse
+\newif\ifmpi@nowkeep\mpi@nowkeepfalse
+\newif\ifmpi@include\mpi@includefalse
+\newif\ifmpi@defglobal\mpi@defglobalfalse
+\newif\ifmpi@texdual\mpi@texdualfalse
+\newif\ifmpi@warnunused\mpi@warnunusedtrue
+\newif\ifmpi@beamer\mpi@beamertrue
+
+\def\mpi@mpostmem{}
+\def\mpi@mpostcompiler{}
+\def\mpi@latexclass{article}
+\def\mpi@latexoptions{}
+\def\mpi@documentclass{\@backslashchar documentclass%
+  \mpi@latexoptions{\mpi@latexclass}}
+
+\def\mpi@warncompile{\ifmpi@compile\ifeof18%
+  \PackageWarning{mpostinl}{write18 disabled, %
+    manual metapost compiling required}{}%
+  \global\mpi@compilefalse\fi\fi}
+
+\def\mpi@group{mpi@}
+\DeclareOption{final}{\mpi@draftfalse}
+\define@key{\mpi@group}{draft}[true]{\csname mpi@draft#1\endcsname}
+\define@key{\mpi@group}{write}[true]{\csname mpi@write#1\endcsname}
+\define@key{\mpi@group}{latex}[true]{\csname mpi@latex#1\endcsname}
+\define@key{\mpi@group}{compile}[true]{\csname mpi@compile#1\endcsname}
+\define@key{\mpi@group}{twice}[true]{\csname mpi@twice#1\endcsname}
+\define@key{\mpi@group}{clean}[true]{\csname mpi@clean#1\endcsname}
+\define@key{\mpi@group}{checksum}[true]{\csname mpi@checksum#1\endcsname}
+\define@key{\mpi@group}{fonts}[true]{\csname mpi@fonts#1\endcsname}
+\define@key{\mpi@group}{prologues}[]{\def\mpi@prologues{#1}}
+\define@key{\mpi@group}{lineno}[true]{\csname mpi@lineno#1\endcsname}
+\define@key{\mpi@group}{labelnames}[true]{\csname mpi@labelnames#1\endcsname}
+\define@key{\mpi@group}{compiler}[]{\def\mpi@texcompiler{#1}}
+\define@key{\mpi@group}{format}[]{\def\mpi@texformat{#1}}
+\define@key{\mpi@group}{mem}[]{\def\mpi@mpostmem{#1}}
+\define@key{\mpi@group}{command}[]{\def\mpi@mpostcompiler{#1}}
+\define@key{\mpi@group}{class}{\def\mpi@latexclass{#1}}
+\define@key{\mpi@group}{classopt}[]{\def\mpi@latexoptions{[#1]}}
+\define@key{\mpi@group}{beamer}[true]{\csname mpi@beamer#1\endcsname}
+\define@key{\mpi@group}{warnunused}[true]{\csname mpi@warnunused#1\endcsname}
+\define@key{\mpi@group}{now}[true]{\csname mpi@nowactive#1\endcsname}
+\define@key{\mpi@group}{nowall}[true]{\csname mpi@now#1\endcsname}
+\define@key{\mpi@group}{nowkeep}[true]{\csname mpi@nowkeep#1\endcsname}
+\define@key{\mpi@group}{globaldef}[true]{\csname mpi@defglobal#1\endcsname}
+\define@key{\mpi@group}{extension}[]{\def\mpi@extension{#1}}
+\define@key{\mpi@group}{template}{\def\mpi@template##1{#1}}
+\define@key{\mpi@group}{numberwithin}{%
+  \@addtoreset{mpi@count}{#1}%
+  \def\thempi@count{\arabic{#1}-\arabic{mpi@count}}%
+}
+
+\DeclareOption*{\expandafter\setkeys\expandafter\mpi@group%
+  \expandafter{\CurrentOption}}
+
+\ProcessOptions
+\mpi@warncompile
+\ifdefined\pdfmdfivesum\else\mpi@checksumfalse\fi
+
+\def\mpi@empty{}
+
+\def\mpi@unusedlist{}
+
+\begingroup\catcode`\"=12\relax\gdef\mpi@dblquotchar{"}\endgroup
+
+\newif\ifmpi@infile\mpi@infilefalse
+\newif\ifmpi@inbody\mpi@inbodyfalse
+
+\newif\ifmpi@inclmod\mpi@inclmodfalse
+\newif\ifmpi@filemod
+
+\newif\ifmpi@warnmod\mpi@warnmodfalse
+\newif\ifmpi@showinfile
+
+\newwrite\mpi@out
+\newwrite\mpi@outnow
+
+\def\mpi@writebuf{\ifmpi@write\immediate\write\mpi@out{\the\mpi@buf}\fi}
+
+\def\mpi@writenow{\ifmpi@nowactive\mpi@addtoexp\mpi@nowbuf{\the\mpi@buf^^J}\fi}
+
+\newtoks\mpi@buf
+\newtoks\mpi@defbuf
+\newtoks\mpi@nowbuf
+\newtoks\mpi@verbbuf
+\mpi@defbuf={}
+
+\def\mpi@addto#1#2{\global#1=\expandafter{\the#1#2}}
+\def\mpi@addtoexp#1#2{\expandafter\mpi@addto\expandafter#1\expandafter{#2}}
+
+\def\mpi@clearbuf{\global\mpi@buf={}}
+\def\mpi@addbufexp#1{\mpi@addtoexp\mpi@buf{#1^^J}}
+\def\mpi@addbufbuf#1{\mpi@addtoexp\mpi@buf{\the#1}}
+\def\mpi@addbuf#1{{\protected@edef\mpi@tmp{#1}\mpi@addbufexp\mpi@tmp}}
+
+\def\mpi@stripext#1{\edef\mpi@tmp{#1}\expandafter%
+  \mpi@stripstart\expandafter{\mpi@tmp}}
+\def\mpi@ifeq#1#2#3#4{\def\mpi@tmpa{#1}\def\mpi@tmpb{#2}%
+  \ifx\mpi@tmpa\mpi@tmpb#3\else#4\fi}
+\def\mpi@stripstart#1{\mpi@stripfor{\@gobble}#1.\@@.}
+\def\mpi@stripfor#1#2.#3.{%
+  \begingroup%
+  \mpi@ifeq{#3}{\@@}{%
+    \def\mpi@tmp{\def\mpi@stripped{#1.#2}}%
+    \mpi@ifeq{#1}{\@gobble}{}{%
+      \mpi@ifeq{#2}{eps}{\def\mpi@tmp{\def\mpi@stripped{#1}}}{}%
+      \mpi@ifeq{#2}{mps}{\def\mpi@tmp{\def\mpi@stripped{#1}}}{}%
+      \ifx\mpi@extension\mpi@empty\else%
+        \expandafter\mpi@ifeq\expandafter{\mpi@extension}{#2}%
+          {\def\mpi@tmp{\def\mpi@stripped{#1}}}{}%
+      \fi%
+    }%
+  }{\def\mpi@tmp{\mpi@stripfor{#1.#2}#3.}}%
+  \expandafter\endgroup\mpi@tmp%
+}
+
+\newcommand{\mpi@warnmod}{%
+  \ifmpi@checksum\ifmpi@warnmod%
+    \PackageWarning{mpostinl}{figure(s) may have changed. %
+      Rerun to update figures}{}%
+  \fi\fi%
+}
+
+\def\mpi@warnunused#1{%
+  \begingroup\def\mpi@tmp{#1}\ifx\mpi@tmp\mpi@empty\else%
+    \ifcsname mpi@lu@#1\endcsname\else
+      \PackageWarning{mpostinl}{figure label `#1' not used}{}%
+    \fi%
+    \def\mpi@tmp{\mpi@warnunused}%
+  \fi\expandafter\endgroup\mpi@tmp%
+}
+\AtEndDocument{\expandafter\mpi@warnunused\mpi@unusedlist{}}
+
+\newcommand{\mpostdisplaylabel}[1]{{%
+  \catcode`\_=11\catcode`\^=11\catcode`\&=11%
+  \edef\mpi@tmp{#1}\expandafter\scantokens\expandafter{\mpi@tmp}}}
+
+\newcommand{\mpostplaceholder}[2][]{\parbox[c]{1in}{%
+  \hrule\vrule\hfill%
+  \parbox[c]{0pt}{\rule{0cm}{0.6in}}%
+    \makebox[0pt][c]{\scriptsize\tt\mpostdisplaylabel{#2}}%
+  \hfill\vrule\hrule}}
+
+\newcommand{\mpi@graphics}[2][]{%
+  \IfFileExists{#2}%
+    {\edef\mpi@tmp{#2}\includegraphics[#1]{\mpi@tmp}}%
+    {\typeout{graphics file `#2' missing}\mpostplaceholder[file]{#2}}%
+}
+
+\newcommand{\mpi@verbatim}{%
+  \begingroup%
+  \@bsphack%
+  \let\do\@makeother\dospecials%
+  \catcode`\^^M\active%
+  \global\mpi@verbbuf={}%
+  \def\verbatim@processline{\mpi@addtoexp\mpi@verbbuf{\the\verbatim@line^^J}}%
+  \verbatim@start%
+}
+
+\newcommand{\mpi@endverbatim}{%
+  \@esphack%
+  \endgroup%
+}
+
+\def\mpi@scanblock#1{%
+  \@ifnextchar\par{\mpi@scanblock@par{#1}}{\mpi@scanblock@sel{#1}}}
+\long\def\mpi@scanblock@par#1\par{\mpi@scanblock@sel{#1}[]}
+\def\mpi@scanblock@sel#1{\@ifnextchar[{\mpi@scanblock@opt{#1}}%
+  {\@ifnextchar\end{\mpi@scanblock@end{#1}}{\mpi@scanblock@noopt{#1}}}}
+\def\mpi@scanblock@end#1\end#2{%
+  \def\mpi@tmp{#2}\ifx\mpi@tmp\@currenvir%
+    \def\mpi@verbatim{\global\mpi@verbbuf={}}\def\mpi@endverbatim{}%
+  \fi%
+  #1{}{\scantokens{\end{#2}}}}
+\def\mpi@scanblock@noopt#1#2{#1{}{\scantokens#2}}
+\def\mpi@scanblock@opt#1[#2]{#1{#2}{}}
+
+\newcommand{\mpi@putlineno}{%
+  \ifmpi@lineno%
+    \mpi@addbuf{\@percentchar---------------------------------------}%
+    \mpi@addbuf{\@percentchar%
+      \ifx\currfilename\@undefined\else\currfilename\space\fi%
+      l.\the\inputlineno}%
+  \fi%
+}
+
+\newcommand{\mpi@beginfig}[1]{%
+  \mpi@addbuf{filenametemplate \mpi@dblquotchar#1\mpi@dblquotchar;}%
+  \mpi@addbuf{beginfig(\arabic{mpi@count})}%
+}
+
+\newcommand{\mpi@endfig}{%
+  \mpi@addbuf{endfig;}%
+}
+
+\newcommand{\mpi@declaredoc}{%
+  \ifmpi@latex%
+    \mpi@addbuf{verbatimtex}%
+    \mpi@addbuf{\mpi@documentclass}%
+    \mpi@addbuf{etex}%
+    \mpi@addbuf{}%
+  \fi%
+}
+
+\newcommand{\mpi@begindoc}{%
+  \ifmpi@latex%
+    \mpi@putlineno%
+    \mpi@addbuf{verbatimtex}%
+    \mpi@addbuf{\@backslashchar begin{document}}%
+    \mpi@addbuf{etex}%
+  \fi%
+}
+
+\newcommand{\mpi@enddoc}{%
+  \ifmpi@latex%
+    \mpi@putlineno%
+    \mpi@addbuf{verbatimtex}%
+    \mpi@addbuf{\@backslashchar end{document}}%
+    \mpi@addbuf{etex}%
+  \fi%
+}
+
+\newcommand{\mpi@declareformat}{%
+  \let\mpi@tmp\mpi@texformat%
+  \ifx\mpi@tmp\@undefined\def\mpi@tmp{\ifmpi@latex latex\else tex\fi}\fi%
+  \ifx\mpi@tmp\mpi@empty\else%
+    \mpi@addbuf{verbatimtex}%
+    \mpi@addbuf{\@percentchar &\mpi@tmp}%
+    \mpi@addbuf{etex}%
+    \mpi@addbuf{}%
+  \fi%
+}
+
+\newcommand{\mpi@composehead}{%
+  \mpi@putlineno%
+  \let\mpi@tmp\mpi@prologues%
+  \ifx\mpi@tmp\@undefined\def\mpi@tmp{\ifmpi@fonts 3\else 2\fi}\fi%
+  \ifx\mpi@tmp\mpi@empty\else%
+    \mpi@addbuf{prologues:=\mpi@tmp;}%
+  \fi%
+  \ifmpi@draft\mpi@addbuf{draft:=1;}\fi%
+  \mpi@addbuf{}%
+  \mpi@declareformat%
+  \mpi@declaredoc%
+}
+
+\newcommand{\mpi@beginfile}{%
+  \ifx\mpi@mpostmem\mpi@empty\else%
+    \mpi@addbuf{\@percentchar &\mpi@mpostmem}%
+  \fi%
+  \mpi@addbuf{\@percentchar generated from file `\jobname' by mpostinl.sty}%
+  \ifmpi@include\else%
+    \mpi@composehead%
+    \mpi@addbufbuf{\mpi@defbuf}%
+  \fi%
+}
+
+\newcommand{\mpi@endfile}{%
+  \mpi@putlineno%
+  \ifmpi@include\else%
+    \mpi@addbuf{end}%
+  \fi%
+}
+
+\newcommand{\mpi@getchecksum}[3]{%
+  \IfFileExists{#3}{#1\edef#2{\pdfmdfivesum file{#3}}}{#1\let#2=\@undefined}%
+}
+
+\newcommand{\mpi@startfile}{%
+  \ifmpi@infile\else%
+    \ifx\mpostfilename\mpi@empty%
+      \PackageError{mpostinl}{no filename provided to write to}{}%
+    \fi%
+    \ifmpi@checksum\ifmpi@inclmod\else%
+      \mpi@getchecksum{\global}{\mpi@checksum@before}{\mpostfilename.mp}%
+    \fi\fi%
+    \ifmpi@checksum\global\mpi@filemodfalse\else\global\mpi@filemodtrue\fi%
+    \ifmpi@inclmod\global\mpi@filemodtrue\fi%
+    \global\mpi@infiletrue%
+    \global\mpi@showinfilefalse%
+    \gdef\mpi@filelist{}%
+    \ifmpi@write\immediate\openout\mpi@out\mpostfilename.mp\fi%
+    \mpi@clearbuf%
+    \mpi@beginfile%
+    \mpi@writebuf%
+    \ifmpi@include%
+      \mpi@clearbuf%
+      \mpi@putlineno%
+      \mpi@addbuf{input \mpostfilename}%
+      \mpi@addtoexp\mpi@defbuf{\the\mpi@buf^^J}%
+    \else%
+      \global\mpi@nowbuf={}%
+      \mpi@writenow%
+    \fi%
+  \fi%
+}
+
+\newcommand{\mpi@startcontent}{%
+  \mpi@startfile%
+  \ifmpi@inbody\else%
+    \global\mpi@inbodytrue%
+    \mpi@clearbuf%
+    \mpi@begindoc%
+    \mpi@writebuf%
+    \mpi@writenow%
+  \fi%
+}
+
+\newcommand{\mpi@compile}[1]{%
+  \ifmpi@write\ifmpi@compile%
+    \ifx\mpi@mpostcompiler\mpi@empty%
+      \def\mpi@imode{}%
+      \ifcase\the\interactionmode%
+        \def\mpi@imode{-interaction=batchmode}\or%
+        \def\mpi@imode{-interaction=nonstopmode}\or%
+        \def\mpi@imode{-interaction=scrollmode}\or%
+        \def\mpi@imode{-interaction=errorstopmode}\fi%
+      \let\mpi@texswitch\mpi@texcompiler%
+      \ifx\mpi@texswitch\@undefined%
+        \def\mpi@texswitch{\ifmpi@latex latex\else tex\fi}%
+      \fi%
+      \def\mpi@execute{mpost\space%
+        \mpi@imode\space%
+        \ifx\mpi@mpostmem\mpi@empty\else -mem=\mpi@mpostmem\space\fi%
+        \ifx\mpi@texswitch\mpi@empty\else -tex=\mpi@texswitch\space\fi%
+        #1}%
+    \else%
+      \def\mpi@execute{\mpi@mpostcompiler\space#1}%
+    \fi%
+    \immediate\write18{\mpi@execute}%
+    \ifmpi@twice%
+      \immediate\write18{\mpi@execute}%
+    \fi%
+  \fi\fi%
+}
+
+\newcommand{\mpi@cleanfile}[1]{%
+  \immediate\openout\mpi@outnow#1%
+  \immediate\write\mpi@outnow{%
+    \@percentchar!PS-Adobe-3.0 EPSF-3.0^^J%
+    \@percentchar\@percentchar Title: missing figure file^^J%
+    \@percentchar\@percentchar Creator: mpostinl.sty^^J%
+    \@percentchar\@percentchar BoundingBox: -36 -22 36 22^^J%
+    \@percentchar\@percentchar EndComments^^J%
+    \@percentchar\@percentchar Page: 1 1^^J%
+    0 setgray 0 1.5 dtransform truncate idtransform setlinewidth pop^^J%
+    [] 0 setdash 1 setlinecap 1 setlinejoin 10 setmiterlimit^^J%
+    newpath -35 21 moveto 35 -21 lineto stroke^^J%
+    newpath -35 -21 moveto 35 21 lineto stroke^^J%
+    \@percentchar\@percentchar EOF}%
+  \immediate\closeout\mpi@outnow%
+}
+
+\newcommand{\mpi@cleanfiles}[1]{%
+  \begingroup\def\mpi@tmp{#1}%
+  \ifx\mpi@tmp\mpi@empty\else\def\mpi@tmp{\mpi@cleanfiles}%
+    \mpi@cleanfile{#1}\fi%
+  \expandafter\endgroup\mpi@tmp%
+}
+
+\newcommand{\mpi@closefile}{%
+  \ifmpi@infile%
+    \mpi@clearbuf%
+    \ifmpi@inbody%
+      \mpi@enddoc%
+      \mpi@addbuf{}%
+    \fi%
+    \mpi@endfile%
+    \mpi@writebuf%
+    \ifmpi@write\immediate\closeout\mpi@out\fi%
+    \ifmpi@filemod\else%
+      \mpi@getchecksum{}{\mpi@checksum@after}{\mpostfilename.mp}%
+      \ifx\mpi@checksum@before\mpi@checksum@after\else\mpi@filemodtrue\fi%
+    \fi%
+    \ifmpi@include\ifmpi@filemod\global\mpi@inclmodtrue\fi\fi%
+    \ifmpi@filemod\ifmpi@inbody%
+      \ifmpi@clean\ifmpi@write\ifmpi@compile%
+        \expandafter\mpi@cleanfiles\mpi@filelist{}\fi\fi\fi%
+      \mpi@compile{\mpostfilename.mp}%
+    \fi\fi%
+    \ifmpi@filemod\ifmpi@showinfile\global\mpi@warnmodtrue\fi\fi%
+    \global\mpi@infilefalse%
+    \global\let\mpostfilename\mpi@empty%
+    \global\mpi@inbodyfalse%
+    \setcounter{mpi@count}{0}%
+  \fi%
+}
+
+\newcommand{\mpi@processnow}{%
+  \ifmpi@nowactive\ifmpi@write\ifmpi@compile%
+    \ifmpi@nowkeep%
+      \mpi@stripext{\mpi@figfile}%
+      \edef\mpi@nowname{\mpi@stripped}%
+    \fi%
+    \immediate\openout\mpi@outnow\mpi@nowname.mp%
+    \immediate\write\mpi@outnow{\the\mpi@nowbuf}%
+    \immediate\write\mpi@outnow{\the\mpi@buf}%
+    \mpi@clearbuf%
+    \mpi@enddoc%
+    \mpi@addbuf{}%
+    \mpi@endfile%
+    \immediate\write\mpi@outnow{\the\mpi@buf}%
+    \immediate\closeout\mpi@outnow%
+    \ifmpi@clean\mpi@cleanfile{\mpi@figfile}\fi%
+    \mpi@compile{\mpi@nowname.mp}%
+  \fi\fi\fi%
+}
+
+\AtEndDocument{\mpi@closefile}
+\AtEndDocument{\mpi@warnmod}
+
+\newcommand{\mpostsetup}[1]{%
+  \setkeys\mpi@group{#1}%
+  \mpi@warncompile%
+  \ifdefined\pdfmdfivesum\else\mpi@checksumfalse\fi%
+}
+
+\newif\ifmpi@deftex
+\define@key{mpi@def}{tex}[true]{\csname mpi@deftex#1\endcsname}
+\define@key{mpi@def}{global}[true]{\csname mpi@defglobal#1\endcsname}
+
+\def\mpostdef{\mpi@scanblock{\mpi@mpostdef}}
+\def\mpi@mpostdef#1#2{%
+  \mpi@deftexfalse%
+  \setkeys{mpi@def}{#1}%
+  \ifmpi@defglobal\else\ifmpi@deftex\ifmpi@include%
+    \PackageWarning{mpostinl}{tex definitions within an include file %
+      will be ignored by mpost; switching to global definition}{}%
+    \mpi@defglobaltrue%
+  \fi\fi\fi%
+  \ifmpi@defglobal\else%
+    \mpi@startfile%
+  \fi%
+  \mpi@clearbuf%
+  \mpi@putlineno%
+  \ifmpi@deftex%
+    \mpi@addbuf{verbatimtex}%
+  \fi%
+  \mpi@verbatim#2%
+}
+\def\endmpostdef
+{%
+  \mpi@endverbatim%
+  \mpi@addbufbuf{\mpi@verbbuf}%
+  \ifmpi@deftex%
+    \mpi@addbuf{etex}%
+  \fi%
+  \ifmpi@defglobal%
+    \mpi@addtoexp\mpi@defbuf{\the\mpi@buf^^J}%
+    \ifmpi@include\else\ifmpi@infile%
+      \mpi@writebuf%
+      \mpi@writenow%
+    \fi\fi%
+  \else%
+    \mpi@writebuf%
+    \ifmpi@include\else\mpi@writenow\fi%
+  \fi%
+}
+
+\newif\ifmpi@deftex
+\define@key{mpi@tex}{dual}[true]{\csname mpi@texdual#1\endcsname}
+\define@key{mpi@tex}{global}[true]{\csname mpi@defglobal#1\endcsname}
+
+\def\mposttex{\mpi@scanblock{\mpi@mposttex}}
+\def\mpi@mposttex#1#2{%
+  \mpi@texdualfalse%
+  \setkeys{mpi@tex}{#1}%
+  \ifmpi@defglobal\else\ifmpi@include%
+    \PackageWarning{mpostinl}{tex definitions within an include file %
+      will be ignored by mpost; switching to global definition}{}%
+    \mpi@defglobaltrue%
+  \fi\fi%
+  \ifmpi@defglobal\else%
+    \mpi@startfile%
+  \fi%
+  \mpi@clearbuf%
+  \mpi@putlineno%
+  \mpi@addbuf{verbatimtex}%
+  \mpi@verbatim#2%
+}
+\def\endmposttex
+{%
+  \mpi@endverbatim%
+  \mpi@addbufbuf{\mpi@verbbuf}%
+  \mpi@addbuf{etex}%
+  \ifmpi@defglobal%
+    \mpi@addtoexp\mpi@defbuf{\the\mpi@buf^^J}%
+    \ifmpi@include\else\ifmpi@infile%
+      \mpi@writebuf%
+      \mpi@writenow%
+    \fi\fi%
+  \else%
+    \mpi@writebuf%
+    \ifmpi@include\else\mpi@writenow\fi%
+  \fi%
+  \ifmpi@texdual%
+    \ignorespacesafterend%
+    \global\let\mpi@ignorespaces\ignorespaces%
+    \gdef\ignorespaces{\expandafter\scantokens\expandafter{\the\mpi@verbbuf}%
+      \global\let\ignorespaces\mpi@ignorespaces}%
+  \fi%
+}
+
+\newif\ifmpi@figshow
+\define@key{mpi@fig}{show}[true]{\csname mpi@figshow#1\endcsname}
+\define@key{mpi@fig}{twice}[true]{\csname mpi@twice#1\endcsname}
+\define@key{mpi@fig}{file}{\def\mpi@figfile{#1}}
+\define@key{mpi@fig}{label}{\def\mpi@figlabel{#1}}
+\define@key{mpi@fig}{opt}{\def\mpi@figopt{[#1]}}
+\define@key{mpi@fig}{now}[true]{\csname mpi@now#1\endcsname}
+
+\def\mpostfig{\mpi@scanblock{\mpi@mpostfig}}
+\def\mpi@mpostfig#1#2{%
+  \ifmpi@include%
+    \PackageError{mpostinl}{cannot write figure to include file}{}%
+  \fi%
+  \def\mpi@figfile{}%
+  \def\mpi@figlabel{}%
+  \def\mpi@figopt{}%
+  \mpi@figshowfalse%
+  \setkeys{mpi@fig}{#1}%
+  \ifx\mpi@figlabel\mpi@empty\ifx\mpi@figfile\mpi@empty\mpi@figshowtrue\fi\fi%
+  \ifmpi@labelnames\ifx\mpi@figfile\mpi@empty\ifx\mpi@figlabel\mpi@empty\else%
+    \edef\mpi@figfile{\mpi@template{\mpi@figlabel}}%
+  \fi\fi\fi%
+  \ifx\mpi@figfile\mpi@empty%
+    \addtocounter{mpi@count}{1}%
+    \edef\mpi@figfile{\mpi@template{\thempi@count}}%
+  \fi%
+  \ifx\mpi@figlabel\mpi@empty\else%
+    \expandafter\ifx\csname mpi@l@\mpi@figlabel\endcsname\relax\else%
+      \PackageWarning{mpostinl}{label `\mpi@figlabel' already defined; %
+        overwriting}{}%
+    \fi%
+    \expandafter\xdef\csname mpi@l@\mpi@figlabel\endcsname{\mpi@figfile}%
+    \ifmpi@warnunused\ifmpi@figshow\else%
+      \xdef\mpi@unusedlist{\mpi@unusedlist{\mpi@figlabel}}%
+    \fi\fi%
+  \fi%
+  \mpi@startcontent%
+  \mpi@clearbuf%
+  \mpi@putlineno%
+  \mpi@beginfig{\mpi@figfile}%
+  \mpi@verbatim#2%
+}
+\def\endmpostfig
+{%
+  \mpi@endverbatim%
+  \mpi@addbufbuf{\mpi@verbbuf}%
+  \mpi@endfig%
+  \mpi@writebuf%
+  \xdef\mpi@filelist{\mpi@filelist{\mpi@figfile}}%
+  \ifmpi@now%
+    \mpi@processnow%
+  \fi%
+  \ifmpi@filemod\else%
+    \mpi@getchecksum{}{\mpi@tmpa}{\mpi@figfile}%
+    \ifdefined\mpi@tmpa%
+      \edef\mpi@tmpa{\scantokens\expandafter{\mpi@tmpa\noexpand}}%
+      \def\mpi@tmpb{965DFFE32ABB43CC14C58E254B4D660E}%
+      \ifx\mpi@tmpa\mpi@tmpb\global\mpi@filemodtrue\fi%
+      \def\mpi@tmpb{D78A5F2EE4B244260ECD6A0E89ADC9CE}%
+      \ifx\mpi@tmpa\mpi@tmpb\global\mpi@filemodtrue\fi%
+      \def\mpi@tmpb{D41D8CD98F00B204E9800998ECF8427E}%
+      \ifx\mpi@tmpa\mpi@tmpb\global\mpi@filemodtrue\fi%
+    \else%
+      \global\mpi@filemodtrue%
+    \fi
+  \fi%
+  \ifmpi@figshow%
+    \expandafter\mpi@graphics\mpi@figopt{\mpi@figfile}%
+    \ifmpi@now\else\global\mpi@showinfiletrue\fi%
+  \fi%
+}
+
+\newcommand{\mpostuse}[2][]{%
+  \expandafter\ifx\csname mpi@l@#2\endcsname\relax%
+    \PackageWarning{mpostinl}{unknown label `#2'}{}%
+    \mpostplaceholder[label]{#2}%
+  \else%
+    \ifmpi@warnunused\expandafter\gdef\csname mpi@lu@#2\endcsname{}\fi%
+    \mpi@graphics[#1]{\csname mpi@l@#2\endcsname}%
+    \ifmpi@infile\global\mpi@showinfiletrue\fi%
+  \fi%
+}
+
+\newcommand{\mpostgetname}[1]{%
+  \expandafter\ifx\csname mpi@l@#1\endcsname\relax%
+    \PackageWarning{mpostinl}{unknown label `#1'}{}%
+    \let\mpostfigurename\relax%
+  \else%
+    \ifmpi@warnunused\expandafter\gdef\csname mpi@lu@#1\endcsname{}\fi%
+    \edef\mpostfigurename{\csname mpi@l@#1\endcsname}%
+  \fi%
+}
+
+\define@key{mpi@file}{include}[true]{\csname mpi@include#1\endcsname}
+
+\newcommand{\mpostfile}[2][]{%
+  \mpi@closefile%
+  \mpi@includefalse%
+  \setkeys{mpi@file}{#1}%
+  \xdef\mpostfilename{#2}%
+}
+
+\newcommand{\mpostdone}{\mpi@closefile}
+
+\ifmpi@beamer\@ifclassloaded{beamer}{
+  \let\mpi@plain@mpostuse\mpostuse%
+  \newcommand<>{\mpostuse}[2][]{\begingroup%
+    \expandafter\def\expandafter\includegraphics\expandafter%
+      {\includegraphics#3}%
+    \mpi@plain@mpostuse[#1]{#2}\endgroup}%
+}{}\fi
+
+\endinput
+%%
+%% End of file `mpostinl.sty'.

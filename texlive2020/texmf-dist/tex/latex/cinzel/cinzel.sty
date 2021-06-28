@@ -1,0 +1,90 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{cinzel}
+    [2019/10/15  (Bob Tennent)  Supports Cinzel and CinzelDecorative for all LaTeX engines.]
+
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+
+\newif\ifcinzel@ttf 
+\ifxetex
+  \cinzel@ttftrue
+\else\ifluatex
+  \cinzel@ttftrue
+\else  % [pdf]LaTeX
+  \cinzel@ttffalse
+\fi\fi
+
+\newif\ifcinzel@black \cinzel@blackfalse
+\newif\ifcinzel@default \cinzel@defaultfalse
+
+\DeclareOptionX{type1}{\cinzel@ttffalse}
+\DeclareOptionX{black}{\cinzel@blacktrue}
+\DeclareOptionX{default}{\cinzel@defaulttrue}
+\ProcessOptionsX\relax
+
+\ifcinzel@ttf
+  \def\cinzel@boldstyle{Bold}
+  \ifcinzel@black\def\cinzel@boldstyle{Black}\fi
+
+\else % type1
+  \def\bfseries@rm{b}
+  \ifcinzel@black\def\bfseries@rm{eb}\fi
+
+\fi
+
+\ifcinzel@ttf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes,mweights}
+\fi
+
+
+\ifcinzel@ttf
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+        Ligatures = TeX ,
+        Extension = .ttf }
+  \ifcinzel@default
+      \setmainfont
+      [ UprightFont    = *-Regular ,
+        ItalicFont     = *Decorative-Regular ,
+        BoldFont       = *-\cinzel@boldstyle , 
+        BoldItalicFont = *Decorative-\cinzel@boldstyle ]
+      {Cinzel}
+  \fi
+  \newfontfamily\cinzel
+      [ UprightFont    = *-Regular ,
+        ItalicFont     = *Decorative-Regular ,
+        BoldFont       = *-\cinzel@boldstyle , 
+        BoldItalicFont = *Decorative-\cinzel@boldstyle ]
+      {Cinzel}
+  \newfontfamily\cinzelblack
+      [ UprightFont    = *-Black ,
+        ItalicFont     = *Decorative-Black ]
+      {Cinzel}
+
+\else % type1
+  \def\cinzelfamily{Cinzel-LF}
+  \newcommand*\cinzel{%
+    \fontfamily{\cinzelfamily}\selectfont
+    \def\itshape{\ifx\f@family\cinzelfamily\fontfamily{CinzelDecorative-LF}\fontshape{n}\else\fontshape{\itdefault}\fi\selectfont}
+  }
+  \ifcinzel@default
+     \def\rmdefault{\cinzelfamily}
+     \def\itshape{\ifx\f@family\cinzelfamily\fontfamily{CinzelDecorative-LF}\fontshape{n}\else\fontshape{\itdefault}\fi\selectfont}
+  \fi
+  \newcommand*\cinzelblack{%
+    \fontfamily{\cinzelfamily}\fontseries{eb}\selectfont
+    \def\itshape{\ifx\f@family\cinzelfamily\fontfamily{CinzelDecorative-LF}\fontseries{eb}\else\fontshape{\itdefault}\fi\selectfont}
+  }
+
+\fi
+
+\DeclareTextFontCommand{\textcinzel}{\cinzel}
+\DeclareTextFontCommand{\textcinzelblack}{\cinzelblack}
+
+\ifcinzel@ttf
+% turn off defaults in case other fonts are selected:
+  \defaultfontfeatures{}
+\fi
+
+\endinput

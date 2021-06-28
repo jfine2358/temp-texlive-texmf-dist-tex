@@ -1,0 +1,178 @@
+%% Copyright (c) 2010 by Martin Scharrer <martin@scharrer-online.de>
+%% -----------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%
+%%   http://www.latex-project.org/lppl.txt
+%%
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2008/05/04 or later.
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The Current Maintainer of this work is Martin Scharrer.
+%%
+%% This work consists of the files filehook.dtx, filehook.ins
+%% and the derived file filehook.sty.
+%%
+%% $Id: standalone.dtx 1803 2010-04-03 13:59:44Z martin $
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{filehook}
+    [2010/04/08 v0.1 Hooks for input files]
+\let\filehook@orig@@input@\@input@
+\let\filehook@orig@@iinput\@iinput
+\def\@input@#1{%
+  \@ifnextchar\clearpage
+    {\filehook@include@atbegin{#1}%
+     \filehook@orig@@input@{#1}%
+     \filehook@include@atend{#1}%
+     \clearpage
+     \filehook@include@after{#1}%
+     \@gobble
+    }%
+    {\filehook@orig@@input@{#1}}%
+}
+\def\@iinput#1{%
+  \filehook@input@atbegin{#1}%
+  \filehook@orig@@iinput{#1}%
+  \filehook@input@atend{#1}%
+}
+\ifcase0%
+  \ifx\fink@input\@undefined 1\else
+  \ifx\fink@input\relax 1\fi\fi
+\relax
+\long\def\InputIfFileExists#1#2{%
+  \IfFileExists{#1}{%
+    #2\@addtofilelist{#1}%
+    \fink@prepare{#1}%
+    \filehook@atbegin{#1}%
+    \expandafter\fink@input%
+    \expandafter\fink@restore\expandafter{\finkpath}%
+    \filehook@atend{#1}%
+  }%
+}
+\else
+\long\def\InputIfFileExists#1#2{%
+  \IfFileExists{#1}%
+    {#2\@addtofilelist{#1}%
+     \filehook@atbegin{#1}%
+     \@@input\@filef@und
+     \filehook@atend{#1}%
+    }%
+}
+\fi
+\def\filehook@include@atbegin#1{%
+  \@nameuse{\filehook@include@atbegin@#1}%
+}
+\def\filehook@include@atend#1{%
+  \@nameuse{\filehook@include@atend@#1}%
+}
+\def\filehook@include@after#1{%
+  \@nameuse{\filehook@include@after@#1}%
+}
+\def\filehook@input@atbegin#1{%
+  \@nameuse{\filehook@input@atbegin@#1}%
+}
+\def\filehook@input@atend#1{%
+  \@nameuse{\filehook@input@atend@#1}%
+}
+\def\filehook@atbegin#1{%
+  \@nameuse{\filehook@atbegin@#1}%
+}
+\def\filehook@atend#1{%
+  \@nameuse{\filehook@atend@#1}%
+}
+\def\filehook@include@atbegin@{filehook@include@atbegin@}
+\def\filehook@include@atend@{filehook@include@atend@}
+\def\filehook@include@after@{filehook@include@after@}
+\def\filehook@input@atbegin@{filehook@input@atbegin@}
+\def\filehook@input@atend@{filehook@input@atend@}
+\def\filehook@input@after@{filehook@input@after@}
+\def\filehook@atbegin@{filehook@atbegin@}
+\def\filehook@atend@{filehook@atend@}
+\def\filehook@after@{filehook@after@}
+\def\filehook@append{\g@addto@macro}
+\long\def\filehook@appendwarg#1#2{%
+  \begingroup
+    \toks@\expandafter{#1{##1}#2}%
+    \edef\@tempa{\the\toks@}%
+    \expandafter\gdef\expandafter#1\expandafter##\expandafter1\expandafter{\@tempa}%
+  \endgroup
+}
+\long\def\filehook@prefix#1#2{%
+  \begingroup
+    \@temptokena{#2}%
+    \toks@\expandafter{#1}%
+    \xdef#1{\the\@temptokena\the\toks@}%
+  \endgroup
+}
+\long\def\filehook@prefixwarg#1#2{%
+  \begingroup
+    \@temptokena{#2}%
+    \toks@\expandafter{#1{##1}}%
+    \edef\@tempa{\the\@temptokena\the\toks@}%
+    \expandafter\gdef\expandafter#1\expandafter##\expandafter1\expandafter{\@tempa}%
+  \endgroup
+}
+\newcommand*\AtBeginOfIncludes{%
+  \filehook@appendwarg\filehook@include@atbegin
+}
+\newcommand*\AtEndOfIncludes{%
+  \filehook@prefixwarg\filehook@include@atend
+}
+\newcommand*\AfterIncludes{%
+  \filehook@prefixwarg\filehook@include@after
+}
+\newcommand*\AtBeginOfIncludeFile[1]{%
+  \@ifundefined{\filehook@include@atbegin@#1.tex}%
+    {\long\global\@namedef{\filehook@include@atbegin@#1.tex}}%
+    {\expandafter\filehook@append\csname\filehook@include@atbegin@#1.tex\endcsname}%
+}
+\newcommand*\AtEndOfIncludeFile[1]{%
+  \@ifundefined{\filehook@include@atend@#1.tex}%
+    {\long\global\@namedef{\filehook@include@atend@#1.tex}}%
+    {\expandafter\filehook@prefix\csname\filehook@include@atend@#1.tex\endcsname}%
+}
+\newcommand*\AfterOfIncludeFile[1]{%
+  \@ifundefined{\filehook@include@after@#1.tex}%
+    {\long\global\@namedef{\filehook@include@after@#1.tex}}%
+    {\expandafter\filehook@prefix\csname\filehook@include@after@#1.tex\endcsname}%
+}
+\newcommand*\AtBeginOfInputs{%
+  \filehook@appendwarg\filehook@input@atbegin
+}
+\newcommand*\AtEndOfInputs{%
+  \filehook@prefixwarg\filehook@input@atend
+}
+\newcommand*\AtBeginOfInputFile[1]{%
+  \@ifundefined{\filehook@input@atbegin@#1}%
+    {\long\global\@namedef{\filehook@input@atbegin@#1}}%
+    {\expandafter\filehook@append\csname\filehook@input@atbegin@#1\endcsname}%
+}
+\newcommand*\AtEndOfInputFile[1]{%
+  \@ifundefined{\filehook@input@atend@#1}%
+    {\long\global\@namedef{\filehook@input@atend@#1}}%
+    {\expandafter\filehook@prefix\csname\filehook@input@atend@#1\endcsname}%
+}
+\newcommand*\AtBeginOfFiles{%
+  \filehook@appendwarg\filehook@atbegin
+}
+\newcommand*\AtEndOfFiles{%
+  \filehook@prefixwarg\filehook@atend
+}
+\newcommand*\AtBeginOfFile[1]{%
+  \@ifundefined{\filehook@atbegin@#1}%
+    {\long\global\@namedef{\filehook@atbegin@#1}}%
+    {\expandafter\filehook@append\csname\filehook@atbegin@#1\endcsname}%
+}
+\newcommand*\AtEndOfFile[1]{%
+  \@ifundefined{\filehook@atend@#1}%
+    {\long\global\@namedef{\filehook@atend@#1}}%
+    {\expandafter\filehook@prefix\csname\filehook@atend@#1\endcsname}%
+}
+\endinput
+%%
+%% End of file `filehook.sty'.

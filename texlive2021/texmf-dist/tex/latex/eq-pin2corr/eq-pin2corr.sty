@@ -1,0 +1,108 @@
+%%
+%% This is file `eq-pin2corr.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% eq-pin2corr.dtx  (with options: `copyright,package')
+%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% eq-pin2corr.sty package,                              %%
+%% Copyright (C) 2021  D. P. Story                       %%
+%%   dpstory@uakron.edu  dpstory@acrotex.net             %%
+%%                                                       %%
+%% This program can redistributed and/or modified under  %%
+%% the terms of the LaTeX Project Public License         %%
+%% Distributed from CTAN archives in directory           %%
+%% macros/latex/base/lppl.txt; either version 1.2 of the %%
+%% License, or (at your option) any later version.       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{eq-pin2corr}
+ [2021/02/20 v1.0 Applies PIN security to quizzes]
+\newif\ifPINshowScore \PINshowScorefalse
+\DeclareOption{showscore}{\PINshowScoretrue}
+\DeclareOption{!showscore}{\PINshowScorefalse}
+\ProcessOptions\relax
+\RequirePackage{exerquiz}[2021/02/17]
+\RequirePackage{eq-save}[2021/02/17]
+\def\showScoreOn{\PINshowScoretrue}
+\def\showScoreOff{\PINshowScorefalse}
+\flJSStr[noquotes]{\SaveAndSendMsg}{Success! %
+Now save and send to the instructor}
+\begin{defineJS*}[\makeesc\@\makecmt\%]{\postSubmitQuiz}
+// Begin post submit quiz code%
+@ifPINSecurity%
+@ifPINshowScore@else
+    var f = this.getField("ScoreField.@oField");
+    if ( f!=null ) {
+      f.textSize=0;
+      f.value = "@SaveAndSendMsg";
+    } else {
+      var f = this.getField("PointsField.@oField");
+      if (f!=null) {
+        f.textSize=0;
+        f.value = "Success! Now save and send to instructor";
+      }
+    }@fi@fi
+    oRecordOfQuizData["ScoreData.@oField"]=%
+[1*Score,1*NQuestions,1*ptScore,1*NPointTotal];
+    oRecordOfQuizData["RightWrong.@oField"]=%
+eval(RightWrong.toSource());
+    oRecordOfQuizData["ProbDist.@oField"]=%
+eval(ProbDist.toSource());
+    cntCorrectResponses();
+\end{defineJS*}
+\let\eQzBtnActnsSave\eQzBtnActns
+\def\eQzBtnActns{\ifPINshowScore\else
+  var bDisplaySilent=true;\r\fi
+  \eQzBtnActnsSave
+}
+\let\CorrBtnActionsJSSave\CorrBtnActionsJS
+\newif\ifPINSecurity \PINSecurityfalse
+\def\usePINCorrBtn{\PINSecuritytrue
+  \let\CorrBtnActionsJS\CorrBtnActionsPwdJS}
+\def\restoreCorrBtn{\PINshowScoretrue\PINSecurityfalse
+  \let\CorrBtnActionsJS\CorrBtnActionsJSSave}
+\def\classPINVar#1{\def\PINclassPV{#1}}
+\let\PINclassPV\@empty
+\begin{defineJS*}[\makeesc\!\makecmt\%]{\CorrBtnActionsPwdJS}
+!ifx!PINclassPV!@empty%
+var userPIN = "";!else%
+var userPIN = "!PINclassPV";!fi
+if (userPIN == "" ) userPIN = undefined;
+try {
+  if ( typeof eval(userPIN) == "undefined") userPIN = undefined;
+} catch(e) { userPIN = undefined; }
+if (typeof userPIN == "undefined") {
+  var resp=app.response({
+    cQuestion: "Enter the PIN number",
+    cTitle: "View Answers",
+    bPassword: true
+  });
+  var _resp=Collab.hashString(resp);
+  var _bQzResults = ( _resp ==_PinCode );
+} else var _bQzResults = ( eval(userPIN) ==_PinCode );
+if (_bQzResults) {
+  RightWrong=eval("RightWrong.!currQuiz");
+  ProbDist=eval("ProbDist.!currQuiz");
+  correctQuiz("!currQuiz",3);
+  DisplayQuizResults("!currQuiz",3,3);
+  if (typeof correctSumryTbl == "function")
+    correctSumryTbl("!currQuiz",3);
+} else {
+  console.println("Something went wrong, \\
+you entered an incorrect PIN Id, \\
+or the class PIN Id (\\\\classPINVar) was incorrect or undefined");
+  console.show();
+}
+\end{defineJS*}
+\def\declPINId#1#2{\def\numPINId{#1}\def\hashPINId{#2}}
+\@onlypreamble\declPINId
+\declPINId{5243}{02JRVZdRgYgCA-Rtje8VkD} % PIN Id, hash-str
+\begin{insDLJS}{pin}{Pin Code}
+var _PinCode = "\hashPINId";
+\end{insDLJS}
+\endinput
+%%
+%% End of file `eq-pin2corr.sty'.

@@ -1,0 +1,860 @@
+%%
+%% This is file `graph35.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% graph35.dtx  (with options: `package')
+%% Copyright 2018 Louis Paternault
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% 
+%% This work has the LPPL maintenance status `maintained'.
+%% 
+%% The Current Maintainer of this work is Louis Paternault
+%% 
+%% This work consists of the files graph35.dtx and graph35.ins
+%% and the derived file graph35.sty.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{graph35}
+    [2018/04/18 v0.1.1 Paquet permettant de dessiner des touches et menus de calculatrices CASIO.]
+\RequirePackage{etoolbox}
+
+\RequirePackage{pixelart}
+\RequirePackage{tikz}
+\usetikzlibrary{calc}
+\RequirePackage{pgfkeys}
+\RequirePackage{etoolbox}
+\RequirePackage{amssymb}
+\RequirePackage{amsbsy}
+\RequirePackage{sansmath}
+\RequirePackage{letterspace}
+\RequirePackage{pgfopts}
+
+\RequirePackage{graph35-pixelart}
+\RequirePackage{graph35-keys}
+\pgfkeys{
+  % color option
+  /GRAPH35/.cd,
+  color/.is choice,
+  color/real/.code={\def\graph@color{real}},
+  color/blackandwhite/.code={\def\graph@color{blackandwhite}},
+  color/.value required,
+  color={real},
+}
+\ProcessPgfPackageOptions{/GRAPH35}
+\newcommand{\setgraphcolor@default}{}
+\newcommand{\setgraphcolor@blackandwhite}{
+  \colorlet{graph35ACON}{white}
+  \colorlet{graph35ACONBORDER}{black}
+  \colorlet{graph35SHIFT}{white}
+  \colorlet{graph35SHIFTTEXT}{black}
+  \colorlet{graph35SHIFTBORDER}{black}
+  \colorlet{graph35CASE}{white}
+  \colorlet{graph35CASEBORDER}{black}
+  \colorlet{graph35ALPHA}{white}
+  \colorlet{graph35ALPHATEXT}{black}
+  \colorlet{graph35ALPHABORDER}{black}
+  \colorlet{graph35EXE}{white}
+  \colorlet{graph35EXEBORDER}{black}
+  \colorlet{graph35WHITE}{white}
+  \colorlet{graph35KEYTEXT}{black}
+  \colorlet{graph35SCREEN}{black}
+  \colorlet{graph35NUMBER}{white}
+  \colorlet{graph35NUMBERBORDER}{black}
+  \colorlet{graph35SCREENBG}{white}
+}
+\newcommand{\setgraphcolor@real}{
+  \colorlet{graph35KEYTEXT}{white}
+  \definecolor{graph35ACON}{RGB}{99, 95, 110}
+  \colorlet{graph35ACONBORDER}{graph35ACON}
+  \definecolor{graph35SHIFT}{RGB}{209, 164, 11}
+  \definecolor{graph35SHIFTTEXT}{RGB}{209, 164, 11}
+  \colorlet{graph35SHIFTBORDER}{graph35SHIFT}
+  \definecolor{graph35CASE}{RGB}{236, 236, 236}
+  \definecolor{graph35CASEBORDER}{RGB}{43, 108, 130}
+  \definecolor{graph35ALPHA}{RGB}{220, 89, 1}
+  \definecolor{graph35ALPHATEXT}{RGB}{220, 89, 1}
+  \colorlet{graph35ALPHABORDER}{graph35ALPHA}
+  \definecolor{graph35EXE}{RGB}{86, 78, 177}
+  \colorlet{graph35EXEBORDER}{graph35EXE}
+  \definecolor{graph35WHITE}{RGB}{255, 255, 255}
+  \definecolor{graph35SCREEN}{RGB}{0, 0, 0}
+  \definecolor{graph35NUMBER}{RGB}{44, 44, 54}
+  \colorlet{graph35NUMBERBORDER}{graph35NUMBER}
+  \definecolor{graph35SCREENBG}{RGB}{234,240,241}
+}
+
+\csuse{setgraphcolor@\graph@color}
+\newcommand{\setgraphcolor}[1]{
+  \csuse{setgraphcolor@#1}%
+}
+\newcommand{\menu}[2]{%
+    \begin{tikzpicture}[baseline=-2.7ex]%
+      \tikzmenu[scale=.03]{#1}{#2}{(0, 0)}
+    \end{tikzpicture}%
+}
+\newcommand{\tikzmenu}[4][]{%
+  \ifcsdef{tikzmenu@#2}{%
+    \csuse{tikzmenu@#2}[#1]{#3}{#4}
+  }{%
+    \ClassError{graph35}{Unknown menu '#2'}{Look for the list of available menus in the package documentation.}%
+  }%
+}
+\newcommand{\battery}[1]{%
+    \begin{tikzpicture}[baseline=-1.3ex]%
+      \tikzbattery[scale=.03]{#1}{(0, 0)}
+    \end{tikzpicture}%
+}
+\newcommand{\tikzbattery}[3][]{%
+  \ifcsdef{tikzbattery@#2}{%
+    \csuse{tikzbattery@#2}[#1]{#3}
+  }{%
+    \ClassError{graph35}{Unknown battery status '#2'}{Look for the list of available battery status in the package documentation.}%
+  }%
+}
+\newcommand{\function}[1]{%
+    \begin{tikzpicture}[baseline=-1.3ex]%
+      \tikzfunction[scale=.03]{#1}{(0, 0)}
+    \end{tikzpicture}%
+}
+\newcommand{\tikzfunction}[3][]{%
+  \ifcsdef{tikzfunction@#2}{%
+    \csuse{tikzfunction@#2}[#1]{#3}%
+  }{%
+    \ClassError{graph35}{Unknown function menu '#2'}{Look for the list of available function menus in the package documentation.}%
+  }%
+}
+\newif\ifshow@shift
+\newif\ifshow@alpha
+\newcommand{\boolvalue}[1]{\csuse{if#1}true\else false\fi}
+\pgfkeys{
+  /GRAPH35/KEY/.is family,
+  /GRAPH35/KEY,
+  prefix/.code={\pgfkeyssetvalue{/GRAPH35/KEY/prefix}{#1}},
+  prefix/.value required,
+  prefix={key},
+  suffix/.code={\pgfkeyssetvalue{/GRAPH35/KEY/suffix}{#1}},
+  suffix/.value required,
+  suffix={},
+  name/.code={\pgfkeyssetvalue{/GRAPH35/KEY/name}{#1}},
+  name/.value required,
+  name={},
+  scale/.code={\pgfkeyssetvalue{/GRAPH35/KEY/scale}{#1}},
+  scale/.value required,
+  scale=1,
+  type/.is choice,
+  type/text/.code={\def\graph@type{text}},
+  type/formula/.code={\def\graph@type{formula}},
+  type/.value required,
+  content/.code={\pgfkeyssetvalue{/GRAPH35/KEY/content}{#1}},
+  content/.value required,
+  content={},
+  shift/.is if=show@shift,
+  shift=false,
+  shift type/.code={\pgfkeyssetvalue{/GRAPH35/KEY/shift type}{#1}},
+  shift type/.value required,
+  shift type={text},
+  shift content/.code={\pgfkeyssetvalue{/GRAPH35/KEY/shift content}{#1}},
+  shift content/.value required,
+  shift content={},
+  shift position/.code={\pgfkeyssetvalue{/GRAPH35/KEY/shift position}{#1}},
+  shift position/.value required,
+  shift position=left,
+  alpha/.is if=show@alpha,
+  alpha=false,
+  alpha type/.code={\pgfkeyssetvalue{/GRAPH35/KEY/alpha type}{#1}},
+  alpha type/.value required,
+  alpha type={text},
+  alpha content/.code={\pgfkeyssetvalue{/GRAPH35/KEY/alpha content}{#1}},
+  alpha content/.value required,
+  alpha content={},
+  alpha position/.code={\pgfkeyssetvalue{/GRAPH35/KEY/alpha position}{#1}},
+  alpha position/.value required,
+  alpha position=right,
+  color/.is choice,
+  color/real/.code={\def\graph@tempcolor{real}},
+  color/blackandwhite/.code={\def\graph@tempcolor{blackandwhite}},
+  color/default/.code={\def\graph@tempcolor{default}},
+  color/.value required,
+  color={default},
+}
+
+\newif\if@show
+\pgfkeys{
+  /GRAPH35/SHIFTALPHA/.is family,
+  /GRAPH35/SHIFTALPHA,
+  show/.is if=@show,
+  show=false,
+  name/.code={\pgfkeyssetvalue{/GRAPH35/SHIFTALPHA/name}{#1}},
+  name/.value required,
+  name={graph35@tempname},
+  type/.is choice,
+  type/text/.code={\def\graph@type{text}},
+  type/formula/.code={\def\graph@type{formula}},
+  type/.value required,
+  content/.code={\pgfkeyssetvalue{/GRAPH35/SHIFTALPHA/content}{#1}},
+  content/.value required,
+  content={},
+  style/.code={\pgfkeyssetvalue{/GRAPH35/SHIFTALPHA/style}{#1}},
+  style/.value required,
+  style={},
+  position/.is choice,
+  position/left/.code={\def\temp@position{left}},
+  position/right/.code={\def\temp@position{right}},
+  position/center/.code={\def\temp@position{center}},
+  node/.code={\pgfkeyssetvalue{/GRAPH35/SHIFTALPHA/node}{#1}},
+  node/.value required,
+  color/.code={\pgfkeyssetvalue{/GRAPH35/SHIFTALPHA/color}{#1}},
+  color/.value required,
+  color=graph35SCREEN,
+}
+\newcommand{\key}[2][]{%
+    \begin{tikzpicture}[baseline=(@origin.base), scale=.5, transform shape, every node/.style={transform shape}]%
+      \node (@origin) at (0, 0) {\strut};
+      \tikzkey[#1]{#2}{(0, 0)}%
+    \end{tikzpicture}%
+}
+\newcommand{\tikzkey}[3][]{%
+  \ifcsdef{tikzkey@#2}{%
+    \csuse{tikzkey@#2}[#1]{#3}%
+  }{%
+    \ClassError{graph35}{Unknown key '#2'}{Look for the list of available keys in the package documentation.}
+  }%
+}
+
+\newcommand{\graph@tikzshiftalpha}[1]{{
+  \pgfkeys{/GRAPH35/SHIFTALPHA, #1}
+  \if@show
+    \ifdefstring{\temp@position}{left}{
+      \def\graph@anchor{south west}
+      \coordinate (graph@node) at (\pgfkeysvalueof{/GRAPH35/SHIFTALPHA/node}.north west);
+    }{}
+    \ifdefstring{\temp@position}{right}{
+      \def\graph@anchor{south east}
+      \coordinate (graph@node) at (\pgfkeysvalueof{/GRAPH35/SHIFTALPHA/node}.north east);
+    }{}
+    \ifdefstring{\temp@position}{center}{
+      \def\graph@anchor{south}
+      \coordinate (graph@node) at (\pgfkeysvalueof{/GRAPH35/SHIFTALPHA/node}.north);
+    }{}
+    \ifdefstring{\graph@type}{text}{
+      \node[inner sep=1pt, color=\pgfkeysvalueof{/GRAPH35/SHIFTALPHA/color}, anchor=\graph@anchor] (\pgfkeysvalueof{/GRAPH35/SHIFTALPHA/name}) at (graph@node) {\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/SHIFTALPHA/style}\pgfkeysvalueof{/GRAPH35/SHIFTALPHA/content}};
+    }{
+      \node[inner sep=1pt, color=\pgfkeysvalueof{/GRAPH35/SHIFTALPHA/color}, anchor=\graph@anchor] (\pgfkeysvalueof{/GRAPH35/SHIFTALPHA/name}) at (graph@node) {\pgfkeysvalueof{/GRAPH35/SHIFTALPHA/style}$\boldsymbol{\pgfkeysvalueof{/GRAPH35/SHIFTALPHA/content}}$};
+    }
+    \else\fi
+}}
+\newcommand{\graph@tikzgenerickeynumber}[2][]{{
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35NUMBERBORDER, fill=graph35NUMBER] plot [smooth cycle] coordinates {
+      (-.43, .25)
+      (.43, .25)
+      (.43, -.25)
+      (-.43, -.25)
+    };
+    \node[minimum width=1.03cm, minimum height=.59cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (0, 0) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=\pgfkeysvalueof{/GRAPH35/KEY/shift position},
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@alpha},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}alpha},
+      position=\pgfkeysvalueof{/GRAPH35/KEY/alpha position},
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35ALPHATEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/alpha type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/alpha content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeyACON}[2][]{{
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35ACONBORDER, fill=graph35ACON] plot [smooth cycle] coordinates {
+      (-.43, .25)
+      (.43, .25)
+      (.43, -.25)
+      (-.43, -.25)
+    };
+    \node[minimum width=1.03cm, minimum height=.59cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (0, 0) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=\pgfkeysvalueof{/GRAPH35/KEY/shift position},
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@alpha},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}alpha},
+      position=\pgfkeysvalueof{/GRAPH35/KEY/alpha position},
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35ALPHATEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/alpha type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/alpha content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeyexe}[2][]{{
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35EXEBORDER, fill=graph35EXE] plot [smooth cycle] coordinates {
+      (-.43, .25)
+      (.43, .25)
+      (.43, -.25)
+      (-.43, -.25)
+    };
+    \node[minimum width=1.03cm, minimum height=.59cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (0, 0) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=\pgfkeysvalueof{/GRAPH35/KEY/shift position},
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeyshift}[2][]{{
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35SHIFTBORDER, fill=graph35SHIFT] plot [smooth cycle] coordinates {
+      (-.34, .19)
+      (.34, .19)
+      (.34, -.19)
+      (-.34, -.19)
+    };
+    \node[minimum width=0.8cm, minimum height=.45cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (0, 0) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\scriptsize\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {\scriptsize$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeyreplay}[2][]{{
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35ACONBORDER, fill=graph35ACON] (0, 0) ellipse (.95 and .80);
+    \node[minimum width=0pt, minimum height=0pt, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}left) at (-.64, 0) {};
+    \node[minimum width=0pt, minimum height=0pt, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}right) at (.64, 0) {};
+    \node[minimum width=0pt, minimum height=0pt, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}up) at (0, .48) {};
+    \node[minimum width=0pt, minimum height=0pt, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}down) at (0, -.48) {};
+    \node[minimum width=1.9cm, minimum height=1.6cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (0, 0) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\tiny\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {\tiny$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+    \begin{scope}[rounded corners=1pt, color=graph35KEYTEXT]
+      \fill (.58, .09) -- (.58, -.08) -- (.78, 0) -- cycle;
+      \fill (-.58, .09) -- (-.58, -.08) -- (-.78, 0) -- cycle;
+      \fill (-.08, .41) -- (.09, .41) -- (0, .62) -- cycle;
+      \fill (-.08, -.41) -- (.09, -.41) -- (0, -.62) -- cycle;
+    \end{scope}
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeyalpha}[2][]{{
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35ALPHABORDER, fill=graph35ALPHA] plot [smooth cycle] coordinates {
+      (-.34, .19)
+      (.34, .19)
+      (.34, -.19)
+      (-.34, -.19)
+    };
+    \node[minimum width=0.8cm, minimum height=.45cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (0, 0) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\scriptsize\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {\scriptsize$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=\pgfkeysvalueof{/GRAPH35/KEY/shift position},
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeymenu}[2][]{{
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35ACONBORDER, fill=graph35ACON] plot [smooth cycle] coordinates {
+      (-.34, .19)
+      (.34, .19)
+      (.34, -.19)
+      (-.34, -.19)
+    };
+    \node[minimum width=.8cm, minimum height=.45cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (0, 0) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\scriptsize\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {\scriptsize$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=\pgfkeysvalueof{/GRAPH35/KEY/shift position},
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@alpha},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}alpha},
+      position=\pgfkeysvalueof{/GRAPH35/KEY/alpha position},
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35ALPHATEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/alpha type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/alpha content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeymisc}[2][]{{
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35NUMBERBORDER, fill=graph35NUMBER] plot [smooth cycle] coordinates {
+      (-.34, .19)
+      (.34, .19)
+      (.34, -.19)
+      (-.34, -.19)
+    };
+    \node[minimum width=0.8cm, minimum height=.45cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (0, 0) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\scriptsize\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {\scriptsize$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=\pgfkeysvalueof{/GRAPH35/KEY/shift position},
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@alpha},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}alpha},
+      position=\pgfkeysvalueof{/GRAPH35/KEY/alpha position},
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35ALPHATEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/alpha type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/alpha content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeyfone}[2][]{{%
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35ACONBORDER, fill=graph35ACON] plot [smooth cycle] coordinates {
+      (-.3, .25)
+      (.2, .20)
+      (.25, -.18)
+      (.1, -.45)
+      (-.20, -.15)
+    };
+    \node[minimum width=.56cm, minimum height=.70cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (-.03, -.09) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\small\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {\small$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=center,
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeyftwo}[2][]{{%
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35ACONBORDER, fill=graph35ACON] plot [smooth cycle] coordinates {
+      (-.25, .25)
+      (.2, .25)
+      (.25, -.20)
+      (.05, -.46)
+      (-.20, -.20)
+    };
+    \node[minimum width=.52cm, minimum height=.74cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (-.005, -.08) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\small\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {\small$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=center,
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeyfthree}[2][]{{%
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35ACONBORDER, fill=graph35ACON] plot [smooth cycle] coordinates {
+      (.15, .25)
+      (-.25, .25)
+      (-.25, -.20)
+      (.03, -.47)
+      (.20, -.20)
+    };
+    \node[minimum width=.48cm, minimum height=.75cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (-.04, -.085) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\small\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {\small$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=center,
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeyffour}[2][]{{%
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35ACONBORDER, fill=graph35ACON] plot [smooth cycle] coordinates {
+      (-.15, .25)
+      (.25, .25)
+      (.25, -.20)
+      (-.03, -.47)
+      (-.20, -.20)
+    };
+    \node[minimum width=.48cm, minimum height=.75cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (.04, -.085) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\small\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {\small$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=center,
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeyffive}[2][]{{%
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35ACONBORDER, fill=graph35ACON] plot [smooth cycle] coordinates {
+      (.25, .25)
+      (-.2, .25)
+      (-.25, -.20)
+      (-.05, -.46)
+      (.20, -.20)
+    };
+    \node[minimum width=.52cm, minimum height=.74cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (.005, -.08) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\small\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {\small$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=center,
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\graph@tikzgenerickeyfsix}[2][]{{%
+  \pgfkeys{/GRAPH35/KEY, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{scope}[shift={#2}, scale=\pgfkeysvalueof{/GRAPH35/KEY/scale}, transform shape, every node/.style={transform shape}]
+    \draw[very thick, color=graph35ACONBORDER, fill=graph35ACON] plot [smooth cycle] coordinates {
+      (.3, .25)
+      (-.2, .20)
+      (-.25, -.18)
+      (-.1, -.45)
+      (.20, -.15)
+    };
+    \node[minimum width=.56cm, minimum height=.70cm, inner sep=0pt] (\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}) at (.03, -.09) {};
+    \ifdefstring{\graph@type}{text}{
+      \node[color=graph35KEYTEXT] {\small\bfseries\sffamily{}\pgfkeysvalueof{/GRAPH35/KEY/content}};
+    }{
+      \node[color=graph35KEYTEXT] {\small$\boldsymbol{\pgfkeysvalueof{/GRAPH35/KEY/content}}$};
+    }
+
+    \graph@tikzshiftalpha{,
+      show=\boolvalue{show@shift},
+      name={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}shift},
+      position=center,
+      node={\pgfkeysvalueof{/GRAPH35/KEY/prefix}\pgfkeysvalueof{/GRAPH35/KEY/name}\pgfkeysvalueof{/GRAPH35/KEY/suffix}},
+      color=graph35SHIFTTEXT,
+      type={\pgfkeysvalueof{/GRAPH35/KEY/shift type}},
+      content={\pgfkeysvalueof{/GRAPH35/KEY/shift content}},
+      style={\tiny},
+    }
+  \end{scope}
+  \setgraphcolor{\graph@color}%
+}}
+\pgfkeys{
+  /GRAPH35/CALCULATOR/.is family,
+  /GRAPH35/CALCULATOR,
+  scale/.value required,
+  scale/.code={\pgfkeyssetvalue{/GRAPH35/CALCULATOR/scale}{#1}},
+  scale=1,
+  color/.is choice,
+  color/real/.code={\def\graph@tempcolor{real}},
+  color/blackandwhite/.code={\def\graph@tempcolor{blackandwhite}},
+  color/default/.code={\def\graph@tempcolor{default}},
+  color/.value required,
+  color={default},
+}
+\newcommand{\calculator}[2][]{{%
+  \pgfkeys{/GRAPH35/CALCULATOR, #1}%
+  \setgraphcolor{\graph@tempcolor}%
+  \begin{tikzpicture}[scale=\pgfkeysvalueof{/GRAPH35/CALCULATOR/scale}, transform shape]%
+    \tikzcalculator{#2}
+  \end{tikzpicture}%
+  \setgraphcolor{\graph@color}%
+}}
+\newcommand{\tikzcalculator}[1]{%
+  \ifcsdef{tikzcalculator@#1}{%
+    \csuse{tikzcalculator@#1}%
+  }{%
+    \ClassError{graph35}{Unknown calculator '#1'}{Look for the list of available calculators in the package documentation.}%
+  }%
+}
+\csdef{tikzcalculator@graph35+E}{%
+  %\node{\includegraphics[scale=.59]{graph35-original}};
+    \draw[color=graph35CASEBORDER, fill=graph35CASE, line width=2pt] plot [smooth cycle] coordinates {
+      (-3.2, 0)
+      (-3.35, 5.5)
+      (-3.2, 7.0)
+      (-2.5, 7.3)
+      (0, 7.4)
+      (2.5, 7.3)
+      (3.2, 7.0)
+      (3.35, 5.5)
+      (3.2, 0)
+      (3.1, -5)
+      (3.0, -6.6)
+      (2.3, -7.3)
+      (0, -7.4)
+      (-2.3, -7.3)
+      (-3.0, -6.6)
+      (-3.1, -5)
+    };
+    \node[minimum width=6.7cm, minimum height=14.8cm, inner sep=0pt] (case) at (0, 0) {};
+    \draw[draw=graph35SCREEN, line width=1.5pt, fill=graph35SCREENBG, rounded corners=5](-2.64, 3) rectangle (2.58, 6.035);
+    \node[minimum width=5.22cm, minimum height=3.035cm, inner sep=0pt] (screen) at (-.003, 4.5175) {};
+    \begin{scope}[shift={(-2.5, 5.8)}, scale=.039]
+      \foreach \i in {0, 3, ..., 33, 94, 97, ..., 103, 121, 124, ..., 127} {
+        \foreach \j in {1, 4, 7} {
+          \fill (\i, {-\j}) rectangle ++(1, 1);
+        }
+      }
+      \foreach \i in {2, 5, ..., 32, 96, 99, ..., 105, 123, 126, ..., 126} {
+        \foreach \j in {2, 5} {
+          \fill (\i, {-\j}) rectangle ++(1, 1);
+        }
+      }
+      \foreach \i in {1, 4, ..., 31, 95, 98, ..., 104, 122, 125, ..., 125} {
+        \foreach \j in {3, 6} {
+          \fill (\i, {-\j}) rectangle ++(1, 1);
+        }
+      }
+      \tikzbwpixelart{(38, 0)}{%
+        1000100111000111001000100000010001011111010001010001
+        1101101000100010001000100000011011010000010001010001
+        1010101000100010001100100000010101010000011001010001
+        1010101111100010001010100000010101011110010101010001
+        1000101000100010001001100000010001010000010011010001
+        1000101000100010001000100000010001010000010001010001
+        1000101000100111001000100000010001011111010001001110
+      }
+      \tikzbattery{high}{(107, 0)}
+    % Row 1
+      \tikzmenu{RUNMAT}{1}{(0, -8)}
+      \tikzmenu{STAT}{2}{(30, -8)}
+      \tikzmenu{GRAPH}{3}{(60, -8)}
+      \tikzmenu{DYNA}{4}{(90, -8)}
+    % Row 2
+      \tikzmenu{TABLE}{5}{(0, -27)}
+      \tikzmenu{RECUR}{6}{(30, -27)}
+      \tikzmenu{CONICS}{7}{(60, -27)}
+      \tikzmenu{EQUA}{8}{(90, -27)}
+    % Row 3
+      \tikzmenu{PRGM}{9}{(0, -46)}
+      \tikzmenu{TVM}{A}{(30, -46)}
+      \tikzmenu{ECON2}{B}{(60, -46)}
+      \tikzmenu{LINK}{C}{(90, -46)}
+    % Right arrow
+      \tikzbwpixelart{(121, -58)}{%
+        00100
+        00100
+        00100
+        00100
+        10101
+        01110
+        00100
+      }
+    \end{scope}
+
+    \tikzkey[shift, alpha]{REPLAY}{(1.97, -.055)}
+
+    \tikzkey[shift, alpha]{SHIFT}{(-2.39, .23)}
+    \tikzkey[shift, alpha]{OPTN}{(-1.43, .23)}
+    \tikzkey[shift, alpha]{VARS}{(-.47, .23)}
+    \tikzkey[shift, alpha]{MENU}{(.47, .23)}
+    \tikzkey[shift, alpha]{ALPHA}{(-2.39, -.61)}
+    \tikzkey[shift, alpha]{square}{(-1.43, -.61)}
+    \tikzkey[shift, alpha]{power}{(-.47, -.61)}
+    \tikzkey[shift, alpha]{EXIT}{(.47, -.61)}
+    \tikzkey[shift, alpha]{XthetaT}{(-2.39, -1.43)}
+    \tikzkey[shift, alpha]{log}{(-1.43, -1.43)}
+    \tikzkey[shift, alpha]{ln}{(-.47, -1.43)}
+    \tikzkey[shift, alpha]{sin}{(.47, -1.43)}
+    \tikzkey[shift, alpha]{cos}{(1.43, -1.43)}
+    \tikzkey[shift, alpha]{tan}{(2.39, -1.43)}
+    \tikzkey[shift, alpha]{fraction}{(-2.39, -2.25)}
+    \tikzkey[shift, alpha]{FD}{(-1.43, -2.25)}
+    \tikzkey[shift, alpha]{openparen}{(-.47, -2.25)}
+    \tikzkey[shift, alpha]{closeparen}{(.47, -2.25)}
+    \tikzkey[shift, alpha]{comma}{(1.43, -2.25)}
+    \tikzkey[shift, alpha]{rightarrow}{(2.39, -2.25)}
+
+    \tikzkey[shift, alpha]{DEL}{(1.16, -3.25)}
+    \tikzkey[shift, alpha]{ACON}{(2.32, -3.25)}
+    \tikzkey[shift, alpha]{times}{(1.16, -4.22)}
+    \tikzkey[shift, alpha]{divide}{(2.32, -4.22)}
+    \tikzkey[shift, alpha]{plus}{(1.16, -5.19)}
+    \tikzkey[shift, alpha]{minus}{(2.32, -5.19)}
+    \tikzkey[shift, alpha]{dot}{(-1.15, -6.159)}
+    \tikzkey[shift, alpha]{opposite}{(1.16, -6.159)}
+    \tikzkey[shift, alpha]{zero}{(-2.294, -6.159)}
+    \tikzkey[shift, alpha]{1}{(-2.294, -5.19)}
+    \tikzkey[shift, alpha]{2}{(-1.15, -5.19)}
+    \tikzkey[shift, alpha]{3}{(.01, -5.19)}
+    \tikzkey[shift, alpha]{4}{(-2.294, -4.22)}
+    \tikzkey[shift, alpha]{5}{(-1.15, -4.22)}
+    \tikzkey[shift, alpha]{6}{(.01, -4.22)}
+    \tikzkey[shift, alpha]{7}{(-2.294, -3.25)}
+    \tikzkey[shift, alpha]{8}{(-1.15, -3.25)}
+    \tikzkey[shift, alpha]{9}{(.01, -3.25)}
+    \tikzkey[shift, alpha]{10}{(.01, -6.159)}
+    \tikzkey[shift, alpha]{EXE}{(2.32, -6.159)}
+
+    \tikzkey[shift, alpha]{F1}{(-2.37, 1.5)}
+    \tikzkey[shift, alpha]{F2}{(-1.43, 1.42)}
+    \tikzkey[shift, alpha]{F3}{(-.45, 1.38)}
+    \tikzkey[shift, alpha]{F4}{(.45, 1.38)}
+    \tikzkey[shift, alpha]{F5}{(1.43, 1.42)}
+    \tikzkey[shift, alpha]{F6}{(2.37, 1.5)}
+}
+\endinput
+%%
+%% End of file `graph35.sty'.

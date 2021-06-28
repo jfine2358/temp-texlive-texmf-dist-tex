@@ -1,0 +1,1283 @@
+% biblatex-ext v0.7a (2019-04-04)
+% Maintainer:  Moritz Wemheuer
+% Licence:     LaTeX Project Public License v1.3c or later
+%
+\ProvidesFile{ext-standard.bbx}
+  [2019/04/04 v0.7a extended biblatex standard style (MW)]
+
+\blx@inputonce{ext-biblatex-aux.def}{auxiliary code for ext-biblatex}
+  {}{}{}{}
+
+\RequireBibliographyStyle{standard}
+
+\providecommand*{\mkibid}[1]{#1}
+
+\newtoggle{bbx:citexref}
+\newtoggle{bbx:innamebeforetitle}
+\newtoggle{bbx:innameidem}
+\newtoggle{bbx:articlein}
+\newtoggle{bbx:maintitleaftertitle}
+\newtoggle{bbx:introcite:plain:keeprelated}
+
+\extblx@DeclareBTEOption[boolean]{citexref}[true]{%
+  \settoggle{bbx:citexref}{#1}}
+\extblx@DeclareBTEOption[boolean]{citeinxref}[true]{%
+  \blx@warning{The option 'citeinxref' is deprecated.\MessageBreak
+    Use 'citexref' (without in) instead.\MessageBreak
+    Setting 'citexref' now}%
+  \settoggle{bbx:citexref}{#1}}
+\extblx@DeclareBTEOption[boolean]{innamebeforetitle}[true]{%
+  \settoggle{bbx:innamebeforetitle}{#1}}
+\extblx@DeclareBTEOption[boolean]{innameidem}[true]{%
+  \settoggle{bbx:innameidem}{#1}}
+\extblx@DeclareBTEOption[boolean]{articlein}[true]{%
+  \settoggle{bbx:articlein}{#1}}
+\extblx@DeclareBTEOption[boolean]{maintitleaftertitle}[true]{%
+  \settoggle{bbx:maintitleaftertitle}{#1}}
+
+\def\extblx@opt@introcite@false{0}
+\def\extblx@opt@introcite@label{1}
+\def\extblx@opt@introcite@plain{2}
+
+\def\extblx@opthandler@introcite#1{%
+  \ifcsdef{extblx@opt@introcite@#1}
+    {\letcs\extblx@introcite{extblx@opt@introcite@#1}}
+    {\extblx@warning@noline{%
+       Invalid value '#1' for option 'introcite'.\MessageBreak
+       Possible values are 'false', 'label', 'plain'.\MessageBreak
+       Falling back to 'introcite=false'}%
+     \letcs\extblx@introcite{extblx@opt@introcite@false}}}
+
+% {<per-...>}{<option value>}
+\protected\def\extblx@specialopthandler@introcite#1#2{%
+  \ifstrequal{#2}{label}
+    {\ifcsundef{extblx@warn@introcitelabel@#1}
+       {\extblx@warning@noline{%
+          Value 'introcite=label' not officially supported\MessageBreak
+          on per-#1 level.\MessageBreak
+          It requires setup changes for a complete\MessageBreak
+          bibliography environment,  which can only happen\MessageBreak
+          globally or per bibliography.\MessageBreak
+          Using 'introcite=label' anyway, the result might\MessageBreak
+          be off. You have been warned}%
+        \global\cslet{extblx@warn@introcitelabel@#1}\@empty}
+       {}}}
+
+\DeclareBibliographyOption[string]{introcite}[label]{%
+  \extblx@opthandler@introcite{#1}}
+\DeclareTypeOption[string]{introcite}[label]{%
+  \extblx@opthandler@introcite{#1}%
+  \extblx@specialopthandler@introcite{type}{#1}}
+\DeclareEntryOption[string]{introcite}[label]{%
+  \extblx@opthandler@introcite{#1}%
+  \extblx@specialopthandler@introcite{entry}{#1}}
+
+\ExecuteBibliographyOptions{%
+  citexref            = false,
+  innamebeforetitle   = false,
+  innameidem          = false,
+  articlein           = true,
+  maintitleaftertitle = false,
+  introcite           = false,
+% maxbibnames         = 999,
+}
+
+
+\newbibmacro*{bbx:introcite}{\usebibmacro{cite}}
+
+\RegisterCiteDelims{inner}{bbx@introcite}
+\DeclareInnerCiteDelimsAlias{bbx@introcite}{cite}
+\DeclareFieldFormat{bbx@introcite}{#1}
+\newcommand*{\introcitepunct}{\addcolon\space}
+\newcommand*{\introcitebreak}{\leavevmode\newline}
+
+\newlength{\extbl@this@introcitewidth}
+\newlength{\introcitewidth}
+\setlength{\introcitewidth}{8\biblabelsep}
+\newlength{\introcitesep}
+\setlength{\introcitesep}{\biblabelsep}
+
+\newbibmacro{introcite:typeset}{%
+  \begingroup
+    \iftoggle{blx@citation}
+      {}
+      {\togglefalse{blx@bibliography}%
+       \toggletrue{blx@citation}}%
+    \delimcontext{bbx@introcite}%
+    \csuse{blx@hook@cite}%
+    \csuse{blx@hook@citekey}%
+    \DeclareFieldFormat{bibhyperref}{##1}%
+    \undef\cbx@lasthash
+    \undef\cbx@lastyear
+    \citetrackerfalse\pagetrackerfalse\backtrackerfalse
+    \defcounter{maxnames}{\blx@maxcitenames}%
+    \defcounter{minnames}{\blx@mincitenames}%
+    \printtext[bbx@introcite]{\usebibmacro{bbx:introcite}}%
+  \endgroup
+}
+
+\newbibmacro{introcite:plain}{%
+  \ifcsequal{extblx@introcite}{extblx@opt@introcite@plain}
+    {\usebibmacro{introcite:typeset}%
+     \printunit*{\introcitepunct}}
+    {}}
+
+% This macro is used in \defbibenvironment
+\newbibmacro*{introcite:break}{%
+  \settowidth{\extbl@this@introcitewidth}
+    {\usebibmacro{introcite:typeset}}%
+  \ifdimgreater{\extbl@this@introcitewidth}{\introcitewidth}
+    {\introcitebreak}
+    {}}
+
+
+\newbibmacro*{bbx:inxrefcite}{\usebibmacro{cite}}
+
+\DeclareCiteCommand{\bbx@xrefcite}[\mkouterbbx@xrefcitedelims]
+  {\boolfalse{citetracker}%
+   \boolfalse{pagetracker}%
+   \boolfalse{backtracker}}
+  {\usebibmacro{bbx:inxrefcite}}
+  {}
+  {}
+
+\RegisterCiteDelims{outer}{bbx@xrefcite}
+\DeclareOuterCiteDelimsAlias{bbx@xrefcite}{cite}
+\RegisterCiteDelims{inner}{bbx@xrefcite}
+\DeclareInnerCiteDelimsAlias{bbx@xrefcite}{cite}
+\DeclareDelimcontextAlias{bbx@xrefcite}{cite}
+
+
+\newbibmacro*{crosscite}[1]{%
+  \iftoggle{bbx:citexref}
+    {\iffieldundef{crossref}
+       {\iffieldundef{xref}
+          {\usebibmacro{#1}}
+          {\printtext{\bbx@xrefcite{\thefield{xref}}}}}
+       {\printtext{\bbx@xrefcite{\thefield{crossref}}}}}
+    {\usebibmacro{#1}}}
+
+\DeclareDelimAlias{innametitledelim}{nametitledelim}
+\DeclareDelimAlias*[bib,biblist]{innametitledelim}{nametitledelim}
+
+\newcommand*{\titleaddonpunct}{\newunitpunct}
+
+\DeclareBibliographyDriver{article}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/translator+others}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{bytranslator+others}%
+  \newunit\newblock
+  \usebibmacro{version}%
+  \newunit\newblock
+  \iftoggle{bbx:articlein}{\usebibmacro{in:}}{}%
+  \usebibmacro{journal+issuetitle}%
+  \newunit
+  \usebibmacro{byeditor+others}%
+  \newunit
+  \usebibmacro{note+pages}%
+  \newunit\newblock
+  \usebibmacro{issn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{book}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/editor+others/translator+others}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{maintitle+title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \usebibmacro{edition}%
+  \newunit
+  \usebibmacro{barevolume+volumes}%
+  \newunit\newblock
+  \usebibmacro{series+number}%
+  \newunit\newblock
+  \usebibmacro{note}%
+  \newunit\newblock
+  \usebibmacro{publisher+location+date}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit
+  \usebibmacro{pagetotal}%
+  \newunit\newblock
+  \usebibmacro{isbn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{inbook}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/translator+others}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{in:}%
+  \usebibmacro{crosscite}{inbook:parent}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit\newblock
+  \usebibmacro{isbn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  % with default inheritance 'related' is not inherited,
+  % so the test is not actually necessary
+  \ifboolexpr{togl {bbx:related} and not test {\iffieldxref{related}}}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+\newbibmacro*{inbook:parent}{%
+  \usebibmacro{bybookauthor}%
+  \setunit{\printdelim{innametitledelim}}\newblock
+  \usebibmacro{maintitle+booktitle}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \usebibmacro{edition}%
+  \newunit
+  \usebibmacro{barevolume+volumes}%
+  \newunit\newblock
+  \usebibmacro{series+number}%
+  \newunit\newblock
+  \usebibmacro{note}%
+  \newunit\newblock
+  \usebibmacro{publisher+location+date}}
+
+
+\DeclareBibliographyDriver{collection}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{editor+others}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{maintitle+title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \usebibmacro{edition}%
+  \newunit
+  \usebibmacro{barevolume+volumes}%
+  \newunit\newblock
+  \usebibmacro{series+number}%
+  \newunit\newblock
+  \usebibmacro{note}%
+  \newunit\newblock
+  \usebibmacro{publisher+location+date}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit
+  \usebibmacro{pagetotal}%
+  \newunit\newblock
+  \usebibmacro{isbn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{incollection}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/translator+others}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{in:}%
+  \usebibmacro{crosscite}{incollection:parent}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit\newblock
+  \usebibmacro{isbn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  % with default inheritance 'related' is not inherited,
+  % so the test is not actually necessary
+  \ifboolexpr{togl {bbx:related} and not test {\iffieldxref{related}}}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+\newbibmacro*{incollection:parent}{%
+  \iftoggle{bbx:innamebeforetitle}
+    {\usebibmacro{in:editor+others}%
+     \setunit{\printdelim{innametitledelim}}\newblock}
+    {}%
+  \usebibmacro{maintitle+booktitle}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \usebibmacro{edition}%
+  \newunit
+  \usebibmacro{barevolume+volumes}%
+  \newunit\newblock
+  \usebibmacro{series+number}%
+  \newunit\newblock
+  \usebibmacro{note}%
+  \newunit\newblock
+  \usebibmacro{publisher+location+date}}
+
+
+\DeclareBibliographyDriver{proceedings}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{editor+others}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{maintitle+title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{event+venue+date}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \usebibmacro{edition}%
+  \newunit
+  \usebibmacro{barevolume+volumes}%
+  \newunit\newblock
+  \usebibmacro{series+number}%
+  \newunit\newblock
+  \usebibmacro{note}%
+  \newunit\newblock
+  \printlist{organization}%
+  \newunit
+  \usebibmacro{publisher+location+date}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit
+  \usebibmacro{pagetotal}%
+  \newunit\newblock
+  \usebibmacro{isbn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{inproceedings}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/translator+others}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{in:}%
+  \usebibmacro{crosscite}{inproceedings:parent}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit\newblock
+  \usebibmacro{isbn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  % with default inheritance 'related' is not inherited,
+  % so the test is not actually necessary
+  \ifboolexpr{togl {bbx:related} and not test {\iffieldxref{related}}}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+\newbibmacro*{inproceedings:parent}{%
+  \iftoggle{bbx:innamebeforetitle}
+    {\usebibmacro{in:editor+others}%
+     \setunit{\printdelim{innametitledelim}}\newblock}
+    {}%
+  \usebibmacro{maintitle+booktitle}%
+  \newunit\newblock
+  \usebibmacro{event+venue+date}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \usebibmacro{edition}%
+  \newunit
+  \usebibmacro{barevolume+volumes}%
+  \newunit\newblock
+  \usebibmacro{series+number}%
+  \newunit\newblock
+  \usebibmacro{note}%
+  \newunit\newblock
+  \printlist{organization}%
+  \newunit
+  \usebibmacro{publisher+location+date}}
+
+
+\DeclareBibliographyDriver{booklet}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/editor+others/translator+others}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \printfield{howpublished}%
+  \newunit\newblock
+  \printfield{type}%
+  \newunit\newblock
+  \usebibmacro{note}%
+  \newunit\newblock
+  \usebibmacro{location+date}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit
+  \usebibmacro{pagetotal}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{manual}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/editor}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{byeditor}%
+  \newunit\newblock
+  \usebibmacro{edition}%
+  \newunit\newblock
+  \usebibmacro{series+number}%
+  \newunit\newblock
+  \printfield{type}%
+  \newunit
+  \usebibmacro{version}%
+  \newunit
+  \usebibmacro{note}%
+  \newunit\newblock
+  \printlist{organization}%
+  \newunit
+  \usebibmacro{publisher+location+date}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit
+  \usebibmacro{pagetotal}%
+  \newunit\newblock
+  \usebibmacro{isbn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{online}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/editor+others/translator+others}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \usebibmacro{version}%
+  \newunit
+  \usebibmacro{note}%
+  \newunit\newblock
+  \usebibmacro{organization+location+date}%
+  \newunit\newblock
+  \iftoggle{bbx:eprint}
+    {\usebibmacro{eprint}}
+    {}%
+  \newunit\newblock
+  \usebibmacro{url+urldate}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+    \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{misc}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/editor+others/translator+others}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \printfield{howpublished}%
+  \newunit\newblock
+  \printfield{type}%
+  \newunit
+  \usebibmacro{version}%
+  \newunit
+  \usebibmacro{note}%
+  \newunit\newblock
+  \usebibmacro{organization+location+date}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{patent}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{type+number}%
+  \iflistundef{location}
+    {}
+    {\setunit*{\addspace}%
+     \printtext[parens]{%
+       \printlist[][-\value{listtotal}]{location}}}%
+  \newunit\newblock
+  \usebibmacro{byholder}%
+  \newunit\newblock
+  \usebibmacro{note}%
+  \newunit\newblock
+  \usebibmacro{date}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{periodical}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{editor}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title+issuetitle}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byeditor}%
+  \newunit\newblock
+  \usebibmacro{note}%
+  \newunit\newblock
+  \usebibmacro{issn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{report}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{type+number}%
+  \newunit\newblock
+  \usebibmacro{version}%
+  \newunit
+  \usebibmacro{note}%
+  \newunit\newblock
+  \usebibmacro{institution+location+date}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit
+  \usebibmacro{pagetotal}%
+  \newunit\newblock
+  \usebibmacro{isrn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{thesis}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{note}%
+  \newunit\newblock
+  \printfield{type}%
+  \newunit
+  \usebibmacro{institution+location+date}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit
+  \usebibmacro{pagetotal}%
+  \newunit\newblock
+  \usebibmacro{isbn}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareBibliographyDriver{unpublished}{%
+  \usebibmacro{introcite:plain}%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author}%
+  \setunit{\printdelim{nametitledelim}}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \usebibmacro{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \printfield{howpublished}%
+  \newunit\newblock
+  \printfield{type}%
+  \newunit\newblock
+  \usebibmacro{event+venue+date}%
+  \newunit\newblock
+  \usebibmacro{note}%
+  \newunit\newblock
+  \usebibmacro{location+date}%
+  \newunit\newblock
+  \iftoggle{bbx:url}
+    {\usebibmacro{url+urldate}}
+    {}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+
+\DeclareFieldAlias{titlecase:title}{titlecase}
+\renewbibmacro*{title}{%
+  \ifboolexpr{
+    test {\iffieldundef{title}}
+    and
+    test {\iffieldundef{subtitle}}
+  }
+    {}
+    {\printtext[title]{%
+       \printfield[titlecase:title]{title}%
+       \setunit{\subtitlepunct}%
+       \printfield[titlecase:title]{subtitle}}%
+     \setunit{\titleaddonpunct}}%
+  \printfield{titleaddon}}
+
+\DeclareFieldAlias{titlecase:booktitle}{titlecase}
+\renewbibmacro*{booktitle}{%
+  \ifboolexpr{
+    test {\iffieldundef{booktitle}}
+    and
+    test {\iffieldundef{booksubtitle}}
+  }
+    {}
+    {\printtext[booktitle]{%
+       \printfield[titlecase:booktitle]{booktitle}%
+       \setunit{\subtitlepunct}%
+       \printfield[titlecase:booktitle]{booksubtitle}}%
+     \setunit{\titleaddonpunct}}%
+  \printfield{booktitleaddon}}
+
+\DeclareFieldAlias{titlecase:maintitle}{titlecase}
+\renewbibmacro*{maintitle}{%
+  \ifboolexpr{
+    test {\iffieldundef{maintitle}}
+    and
+    test {\iffieldundef{mainsubtitle}}
+  }
+    {}
+    {\printtext[maintitle]{%
+       \printfield[titlecase:maintitle]{maintitle}%
+       \setunit{\subtitlepunct}%
+       \printfield[titlecase:maintitle]{mainsubtitle}}%
+     \setunit{\titleaddonpunct}}%
+  \printfield{maintitleaddon}}
+
+\DeclareFieldAlias{titlecase:journaltitle}{titlecase}
+\renewbibmacro*{journal}{%
+  \ifboolexpr{
+    test {\iffieldundef{journaltitle}}
+    and
+    test {\iffieldundef{journalsubtitle}}
+  }
+    {}
+    {\printtext[journaltitle]{%
+       \printfield[titlecase:journaltitle]{journaltitle}%
+       \setunit{\subtitlepunct}%
+       \printfield[titlecase:journaltitle]{journalsubtitle}}}}
+
+\renewbibmacro*{periodical}{%
+  \ifboolexpr{
+    test {\iffieldundef{title}}
+    and
+    test {\iffieldundef{subtitle}}
+  }
+    {}
+    {\printtext[title]{%
+       \printfield[titlecase:title]{title}%
+       \setunit{\subtitlepunct}%
+       \printfield[titlecase:title]{subtitle}}}}
+
+\DeclareFieldAlias{titlecase:issuetitle}{titlecase}
+\renewbibmacro*{issue}{%
+  \ifboolexpr{
+    test {\iffieldundef{issuetitle}}
+    and
+    test {\iffieldundef{issuesubtitle}}
+  }
+    {}
+    {\printtext[issuetitle]{%
+       \printfield[titlecase:issuetitle]{issuetitle}%
+       \setunit{\subtitlepunct}%
+       \printfield[titlecase:issuetitle]{issuesubtitle}}}}
+
+\DeclareFieldFormat{volumeof}{\bibstring{volume}~#1}
+\newcommand*{\titlemaintitledelim}{\newunitpunct}
+\newcommand*{\maintitletitledelim}{\newunitpunct}
+\newcommand*{\voltitledelim}{\addcolon\space}
+\renewbibmacro*{maintitle+title}{%
+  \iftoggle{bbx:maintitleaftertitle}
+    {}
+    {\iffieldsequal{maintitle}{title}
+       {\clearfield{maintitle}%
+        \clearfield{mainsubtitle}%
+        \clearfield{maintitleaddon}}
+       {\iffieldundef{maintitle}
+          {}
+          {\usebibmacro{maintitle}%
+           \setunit{\maintitletitledelim}\newblock
+           \iffieldundef{volume}
+             {}
+             {\printfield{volume}%
+              \printfield{part}%
+              \setunit{\voltitledelim}}}}}%
+  \usebibmacro{title}%
+  \iftoggle{bbx:maintitleaftertitle}
+    {\iffieldsequal{maintitle}{title}
+       {\clearfield{maintitle}%
+        \clearfield{mainsubtitle}%
+        \clearfield{maintitleaddon}}
+       {\iffieldundef{maintitle}
+          {}
+          {\setunit{\titlemaintitledelim}%
+           \iffieldundef{volume}
+             {}
+             {\printfield[volumeof]{volume}%
+              \printfield{part}%
+              \setunit{\addspace}%
+              \bibstring{ofseries}%
+              \setunit{\addspace}}%
+           \usebibmacro{maintitle}}}}
+    {}%
+  \newunit}
+
+\renewbibmacro*{maintitle+booktitle}{%
+  \iftoggle{bbx:maintitleaftertitle}
+    {}
+    {\iffieldundef{maintitle}
+       {}
+       {\usebibmacro{maintitle}%
+        \setunit{\maintitletitledelim}\newblock
+        \iffieldundef{volume}
+          {}
+          {\printfield{volume}%
+           \printfield{part}%
+           \setunit{\voltitledelim}}}}%
+  \usebibmacro{booktitle}%
+  \iftoggle{bbx:maintitleaftertitle}
+    {\iffieldundef{maintitle}
+       {}
+       {\setunit{\titlemaintitledelim}%
+        \iffieldundef{volume}
+          {}
+          {\printfield[volumeof]{volume}%
+           \printfield{part}%
+           \setunit{\addspace}%
+           \bibstring{ofseries}%
+           \setunit{\addspace}}%
+        \usebibmacro{maintitle}}}
+    {}%
+  \newunit}
+
+\renewbibmacro*{event+venue+date}{%
+  \printfield{eventtitle}%
+  \setunit{\titleaddonpunct}%
+  \printfield{eventtitleaddon}%
+  \ifboolexpr{
+    test {\iffieldundef{venue}}
+    and
+    test {\iffieldundef{eventyear}}
+  }
+    {}
+    {\setunit{\addspace}%
+     \printtext[parens]{%
+       \printfield{venue}%
+       \setunit*{\addcomma\space}%
+       \printeventdate}}%
+  \newunit}
+
+\renewbibmacro*{bybookauthor}{%
+  \ifnamesequal{author}{bookauthor}
+    {\iftoggle{bbx:innameidem}
+       {\bibstring[\mkibid]{idem\thefield{gender}}}
+       {}}
+    {\printnames{bookauthor}}}
+
+\DeclareNameAlias{ineditor}{default}
+
+% we assume {author/translator+others}
+\newcommand*{\bbx@ineditoridem}{%
+  \ifboolexpr{
+    ((test \ifuseauthor and not test {\ifnameundef{author}})
+     and test {\ifnamesequal{editor}{author}})
+    or
+    ((test \ifusetranslator and not test {\ifnameundef{translator}})
+     and test {\ifnamesequal{editor}{translator}})
+  }}
+
+\newbibmacro*{bbx:in:editor}[1]{%
+  \ifboolexpr{
+    test \ifuseeditor
+    and
+    not test {\ifnameundef{editor}}
+  }
+    {\ifboolexpr{togl {bbx:innameidem} and test {\bbx@ineditoridem}}
+       {\bibstring[\mkibid]{idem\thefield{gender}}}
+       {\printnames[ineditor]{editor}}%
+     \setunit{\printdelim{editortypedelim}}%
+     \usebibmacro{#1}%
+     \clearname{editor}}
+    {}}
+
+\newbibmacro*{in:editor}{%
+  \usebibmacro{bbx:in:editor}{editorstrg}}
+\newbibmacro*{in:editor+others}{%
+  \usebibmacro{bbx:in:editor}{editor+othersstrg}}
+
+
+\newbibmacro*{edition}{\printfield{edition}}
+\newbibmacro*{version}{\printfield{version}}
+\newbibmacro*{pagetotal}{\printfield{pagetotal}}
+
+\newcommand*{\jourvoldelim}{\addspace}
+\newcommand*{\jourserdelim}{\newunitpunct}
+\newcommand*{\servoldelim}{\addspace}
+\newcommand*{\volnumdatedelim}{\addspace}
+
+\renewbibmacro*{journal+issuetitle}{%
+  \usebibmacro{journal}%
+  \setunit*{\jourvoldelim}%
+  \iffieldundef{series}
+    {}
+    {\setunit*{\jourserdelim}%
+     \printfield{series}%
+     \setunit{\servoldelim}}%
+  \usebibmacro{volume+number+eid}%
+  \setunit{\volnumdatedelim}%
+  \usebibmacro{issue+date}%
+  \setunit{\addcolon\space}%
+  \usebibmacro{issue}%
+  \newunit}
+
+\newcommand*{\volnumdelim}{\adddot}
+
+\renewbibmacro*{volume+number+eid}{%
+  \printfield{volume}%
+  \setunit*{\volnumdelim}%
+  \printfield{number}%
+  \setunit{\addcomma\space}%
+  \printfield{eid}}
+
+\newbibmacro*{barevolume+volumes}{%
+  \iffieldundef{maintitle}
+    {\printfield{volume}%
+     \printfield{part}}
+    {}%
+  \newunit
+  \printfield{volumes}}
+
+\newcommand*{\sernumdelim}{\addspace}
+
+\renewbibmacro*{series+number}{%
+  \printfield{series}%
+  \setunit*{\sernumdelim}%
+  \printfield{number}%
+  \newunit}
+
+\newcommand*{\locdatedelim}{\addcomma\space}
+\newcommand*{\locpubdelim}{\addcolon\space}
+\newcommand*{\publocdelim}{\addcomma\space}
+\newcommand*{\pubdatedelim}{\addcomma\space}
+
+\newbibmacro*{pubinstorg+location+date}[1]{%
+  \printlist{location}%
+  \iflistundef{#1}
+    {\setunit*{\locdatedelim}}
+    {\setunit*{\locpubdelim}}%
+  \printlist{#1}%
+  \setunit*{\pubdatedelim}%
+  \usebibmacro{date}%
+  \newunit}
+
+\renewbibmacro*{publisher+location+date}{%
+  \usebibmacro{pubinstorg+location+date}{publisher}}
+
+\renewbibmacro*{institution+location+date}{%
+  \usebibmacro{pubinstorg+location+date}{institution}}
+
+\renewbibmacro*{organization+location+date}{%
+  \usebibmacro{pubinstorg+location+date}{organization}}
+
+\renewbibmacro*{location+date}{%
+  \printlist{location}%
+  \setunit*{\locdatedelim}%
+  \usebibmacro{date}%
+  \newunit}
+
+\renewbibmacro*{doi+eprint+url}{%
+  \ifboolexpr{togl {bbx:doi} and not test {\iffieldxref{doi}}}
+    {\printfield{doi}}
+    {}%
+  \newunit\newblock
+  \ifboolexpr{togl {bbx:eprint} and not test {\iffieldxref{eprint}}}
+    {\usebibmacro{eprint}}
+    {}%
+  \newunit\newblock
+  \ifboolexpr{togl {bbx:url} and not test {\iffieldxref{url}}}
+    {\usebibmacro{url+urldate}}
+    {}}
+
+\newbibmacro*{isbn}{%
+  \ifboolexpr{togl {bbx:isbn} and not test {\iffieldxref{isbn}}}
+    {\printfield{isbn}}
+    {}}
+
+\newbibmacro*{issn}{%
+  \ifboolexpr{togl {bbx:isbn} and not test {\iffieldxref{issn}}}
+    {\printfield{issn}}
+    {}}
+
+\newbibmacro*{isrn}{%
+  \iftoggle{bbx:isbn}
+    {\printfield{isrn}}
+    {}}
+
+\DeclareFieldFormat{issuedate}{\mkbibparens{#1}}
+\renewbibmacro*{issue+date}{%
+  \ifboolexpr{
+    test {\iffieldundef{issue}}
+    and
+    test {\iffieldundef{year}}
+  }
+    {}
+    {\printtext[issuedate]{%
+       \printfield{issue}%
+       \setunit*{\addspace}%
+       \usebibmacro{date}}}%
+  \newunit}
+
+\newbibmacro*{language}{%
+  \printlist{language}}
+
+\newbibmacro*{type+number}{%
+  \printfield{type}%
+  \setunit*{\addspace}%
+  \printfield{number}}
+
+\newbibmacro*{note}{%
+  \printfield{note}}
+
+\renewbibmacro*{addendum+pubstate}{%
+  \iffieldxref{addendum}
+    {}
+    {\printfield{addendum}}%
+  \newunit\newblock
+  \iffieldxref{pubstate}
+    {}
+    {\printfield{pubstate}}}
+
+\renewbibmacro*{related:init}{%
+  \csundef{bbx:relatedloop}%
+  \iftoggle{bbx:introcite:plain:keeprelated}
+    {}
+    {\renewbibmacro{introcite:plain}{}}}
+
+\renewbibmacro*{related:bytranslator}[1]{%
+  \entrydata{#1}{%
+    \renewbibmacro*{name:hook}[1]{%
+      \ifnumequal{\value{listcount}}{1}
+        {\begingroup
+         \mkrelatedstring%
+         \lbx@initnamehook{#1}%
+         \endgroup}
+        {}}%
+    \printnames[bytranslator]{translator}%
+    \setunit*{\addspace\bibstring[\mkrelatedstring]{astitle}\space}%
+    \usebibmacro{title}%
+    \setunit{\addspace}%
+    \printtext[parens]{%
+      \printlist{location}%
+      \iflistundef{publisher}
+        {\setunit*{\locdatedelim}}
+        {\setunit*{\locpubdelim}}%
+      \printlist{publisher}%
+      \setunit*{\pubdatedelim}%
+      \printdate}}}
+
+\endinput
+
+% Copyright 2017-2019 Moritz Wemheuer
+%
+% This work consists of the `.bbx`, `.cbx`, `.def`, `.sty` and `.lua`
+% files
+%
+% ext-standard.bbx
+% ext-biblatex-aux.def
+% ext-dashed-common.bbx
+% ext-authortitle-common.bbx
+% ext-authoryear-common.bbx
+% ext-alphabetic.bbx            ext-alphabetic.cbx
+% ext-alphabetic-verb.bbx       ext-alphabetic-verb.cbx
+% ext-authortitle.bbx           ext-authortitle.cbx
+% ext-authortitle-comp.bbx      ext-authortitle-comp.cbx
+% ext-authortitle-ibid.bbx      ext-authortitle-ibid.cbx
+% ext-authortitle-icomp.bbx     ext-authortitle-icomp.cbx
+% ext-authortitle-terse.bbx     ext-authortitle-terse.cbx
+% ext-authortitle-tcomp.bbx     ext-authortitle-tcomp.cbx
+% ext-authortitle-ticomp.bbx    ext-authortitle-ticomp.cbx
+% ext-authoryear.bbx            ext-authoryear.cbx
+% ext-authoryear-comp.bbx       ext-authoryear-comp.cbx
+% ext-authoryear-ecomp.bbx      ext-authoryear-ecomp.cbx
+% ext-authoryear-ibid.bbx       ext-authoryear-ibid.cbx
+% ext-authoryear-icomp.bbx      ext-authoryear-icomp.cbx
+% ext-authoryear-iecomp.bbx     ext-authoryear-iecomp.cbx
+% ext-authoryear-terse.bbx      ext-authoryear-terse.cbx
+% ext-authoryear-tcomp.bbx      ext-authoryear-tcomp.cbx
+% ext-authoryear-tecomp.bbx     ext-authoryear-tecomp.cbx
+% ext-authoryear-ticomp.bbx     ext-authoryear-ticomp.cbx
+% ext-authoryear-tiecomp.bbx    ext-authoryear-tiecomp.cbx
+% ext-numeric.bbx               ext-numeric.cbx
+% ext-numeric-comp.bbx          ext-numeric-comp.cbx
+% ext-numeric-verb.bbx          ext-numeric-verb.cbx
+% ext-verbose.bbx               ext-verbose.cbx
+% ext-verbose-ibid.bbx          ext-verbose-ibid.cbx
+% ext-verbose-note.bbx          ext-verbose-note.cbx
+% ext-verbose-inote.bbx         ext-verbose-inote.cbx
+% ext-verbose-trad1.bbx         ext-verbose-trad1.cbx
+% ext-verbose-trad2.bbx         ext-verbose-trad2.cbx
+% ext-verbose-trad3.bbx         ext-verbose-trad3.cbx
+% biblatex-ext-tabular.sty
+% biblatex-ext-oa.sty
+% biblatex-ext-oa-doiapi.sty
+% blxextdoiapi.lua
+% biblatex-ext-oasymb-pict2e.sty
+% biblatex-ext-oasymb-tikz.sty
+% biblatex-ext-oasymb-l3draw.sty
+%
+% Refer also to README.md.
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License (LPPL), either
+% version 1.3c of this license or (at your option) any later
+% version. The latest version of this license is at
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status 'maintained'.
+%
+% The Current Maintainer of the work is Moritz Wemheuer
+% <mwemheu@gmail.com>.
+%
+% Please report bugs at https://github.com/moewew/biblatex-ext or
+% via email.
+% Suggestions for improvements and feature request are also very
+% welcome.
+%
+% The bundle is available on CTAN
+%   https://www.ctan.org/pkg/biblatex-ext
+% and is included in MikTeX and TeX live 2018 or later.
+% The development version can be found on GitHub
+%   https://github.com/moewew/biblatex-ext

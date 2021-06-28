@@ -1,0 +1,311 @@
+%D \module
+%D   [      file=s-system-tokens.mkxl,
+%D        version=2020.06.02,
+%D          title=\CONTEXT\ Style File,
+%D       subtitle=System Tokens Checking,
+%D         author=Hans Hagen,
+%D           date=\currentdate,
+%D      copyright={PRAGMA ADE \& \CONTEXT\ Development Team}]
+%C
+%C This module is part of the \CONTEXT\ macro||package and is
+%C therefore copyrighted by \PRAGMA. See mreadme.pdf for
+%C details.
+
+%D This file is for Wolfgang and Hans and it's used in the transition from \MKIV\
+%D to the more robust \LMTX.
+
+% todo:  \permanent\protected\let\select\directselect : same value (add ref)
+%
+% todo: when mutable, remove immutable, decide on how immutable it really is
+%
+% todo: just for the fun of it we can compare the table generated here to mkiv but it
+% needs the same hash exposure as we use in luametatex so i'll do that after all lmtx
+% macros are checked (maybe i need to backport some more but it has a low priority)
+%
+% todo: do we need something similar for lua functions etc (problem: performance hit)
+%
+% todo: and how about metapost ... i need a mp.hashtokens in order to do that and I also
+% need to think about protection there (tricky as we use an avl hash there)
+%
+% public undefined : SmallCaps scitebuffer sciteinlinebuffer
+% single todos     : \ \- \\ \_
+
+\enablemode[texmacros]
+\enablemode[metapostmacros]
+% \enablemode[notmarked]
+\enablemode[everything]
+
+\startmodule[system-macros]
+
+\continueifinputfile{s-system-macros.mkxl}
+
+% \usemodule[article-basic] \setuplayout[tight] \setupbodyfont[7pt,tt]
+\usemodule[article-basic] \setuplayout[tight] \setupbodyfont[5pt,tt]
+
+\setupbackgrounds[page][background=color,backgroundcolor=darkgray] \setupcolors[textcolor=white]
+
+\setuppapersize
+  [A4,landscape]
+  [A4,landscape]
+
+\starttext
+
+\startluacode
+
+    if tex.modes.texmacros then
+
+        local context  = context
+        local ctx_NC   = context.NC
+        local ctx_NR   = context.NR
+        local ctx_bold = context.bold
+        local ctx_verb = context.verbatim
+
+        local find     = string.find
+        local gsub     = string.gsub
+        local create   = token.create
+
+        local crap     = "[$>%|%&%#" .. string.char(0xEF) .. "]"
+
+        local basefile  = resolvers.findfile("context.mkxl")
+        local swapnames = { }
+
+        local pattern   = file.join(file.pathpart(basefile),"/*.mk*")
+        local filenames = dir.glob(pattern)
+        for i=1,#filenames do
+            swapnames[file.basename(filenames[i])] = true
+        end
+
+        local pattern   = file.join(file.pathpart(basefile),"/*.l**")
+        local filenames = dir.glob(pattern)
+        for i=1,#filenames do
+            swapnames[file.basename(filenames[i])] = true
+        end
+
+        local hashnames = table.setmetatableindex(function(t,k)
+            local s = file.suffix(k)
+            local v = k
+            if s == "mkiv" then
+                local n = file.replacesuffix(k,"mkxl")
+                if swapnames[n] then
+                    v = n
+                end
+            elseif s == "mkvi" then
+                local n = file.replacesuffix(k,"mklx")
+                if swapnames[n] then
+                    v = n
+                end
+            elseif s == "lua" then
+                local n = file.replacesuffix(k,"lmt")
+                if swapnames[n] then
+                    v = n
+                end
+            end
+            t[k] = v
+            return v
+        end)
+
+        require("mtx-interface")
+
+        local data       = scripts.interface.editor("data")
+        local files      = data and data.common and data.common.filenames or { }
+        local flagged    = 0
+        local total      = 0
+        local list       = tex.hashtokens()
+        local all        = not tex.modes.notmarked
+        local everything = tex.modes.everything
+
+        table.sort(list)
+
+        local function show(visible, check)
+         -- context.starttabulate { "|l|l|l|lj2|l|l|l|l|l|l|l|l|" }
+            context.starttabulate { "|l|l|l|lj2|l|l|l|l|l|l|l|l|" }
+            for i=1,#list do
+                local k = list[i]
+                if check(k) then
+                    local v = create(k)
+                    local mutable    = v.mutable    and "mutable"
+                    local immutable  = v.immutable  and "immutable"
+                    local frozen     = v.frozen     and "frozen"
+                    local permanent  = v.permanent  and "permanent"
+                    local primitive  = v.primitive  and "primitive"
+                    local instance   = v.instance   and "instance"
+                    local dealtwith  = mutable or immutable or mutable or frozen or permanent or primitive -- beware: we can have combinations
+                    local whatever   = find(k,"^[a-z][a-z][a-z]+_")
+                    local cscommand  = gsub(v.cmdname or "","_"," ")
+                    local undefined  = cscommand == "undefined cs"
+                    local marked     = (dealtwith and "+") or (whatever and "-") or (instance and "!")
+                    if everything or ((all or not marked) and not find(k,"^[pvm]_") and not find(k,"^![tT]")) then
+                        local parameters = v.parameters
+                        local noaligned  = v.noaligned  and "noaligned"
+                        local filename   = files[k]
+                        local csname     = context.escape(k)
+                        if undefined then
+                            marked = "?"
+                        end
+                        ctx_NC() if marked     then context(marked)     end
+                        ctx_NC() if primitive  then ctx_bold(csname)    else
+                                                    ctx_verb(csname)    end
+                        ctx_NC() if parameters then context(parameters > 0 and parameters or "-") end
+                        ctx_NC() if undefined  then context.red(false) end
+                                                    context(cscommand)
+                        ctx_NC() if primitive  then context(primitive)  end
+                        ctx_NC() if permanent  then context(permanent)  end
+                        ctx_NC() if immutable  then context(immutable)  end
+                        ctx_NC() if frozen     then context(frozen)     end
+                        ctx_NC() if mutable    then context(mutable)    end
+                        ctx_NC() if instance   then context(instance)   end
+                        ctx_NC() if noaligned  then context(noaligned)  end
+                        ctx_NC() if filename   then context(hashnames[filename]) end
+                        ctx_NC() ctx_NR()
+                    end
+                    if visible then
+                        total = total + 1
+                        if dealtwith then
+                            flagged = flagged + 1
+                        end
+                    end
+                end
+            end
+            context.stoptabulate()
+        end
+
+        context.starttitle { title = "Public \\TEX\\ commands" }
+            show(true, function(k) return find(k,"^[a-zA-Z]+$") end)
+        context.stoptitle()
+
+        context.starttitle { title = "Private \\TEX\\ commands" }
+            show(false, function(k) return not find(k,"^[a-zA-Z]+$") and not find(k,crap) end)
+        context.stoptitle()
+
+        tokens.setters.macro("NumberOfVisible", total)
+        tokens.setters.macro("NumberOfFlagged", flagged)
+
+    end
+
+\stopluacode
+
+\startmode[texmacros]
+
+    \page
+
+    \starttabulate[|c|l|]
+    \HL
+    \NC \type {+}   \NC mutable, immutable, frozen, permanent, primitive \NC \NR
+    \NC \type {-}   \NC protected by obscurity (underscores) \NC \NR
+    \NC \type {!}   \NC instance (can be frozen) \NC \NR
+    \NC \type {0-9} \NC the number of arguments (argument grabbing can be delegated) \NC \NR
+    \HL
+    \stoptabulate
+
+    \start \hsize 15cm \veryraggedright
+    Often frozen commands are redefined on demand and they can be overloaded. Mutable
+    doesn't mean that a user can change it without consequences, for instance the
+    \type {\current...} ones. Primitives come with the engine, permanent macros are
+    the core of \CONTEXT. Noaligned macros are special and dealt deep down when
+    scanning for alignment specific primitives.
+    \par \stop
+
+    \starttabulate[||r|]
+    \BC number of visible macros  \NC \NumberOfVisible \NC \NR
+    \BC number of flagged macros  \NC \NumberOfFlagged \NC \NR
+    \stoptabulate
+
+\stopmode
+
+\page
+
+\startluacode
+
+    if tex.modes.metapostmacros then
+
+        local context  = context
+     -- local ctx_NC   = context.NC
+     -- local ctx_NR   = context.NR
+     -- local ctx_bold = context.bold
+
+        local find     = string.find
+        local gsub     = string.gsub
+        local create   = token.create
+
+        context.starttitle { title = "\\METAFUN\\ commands" }
+
+            metapost.simple("prestine")
+
+            local mptotal    = 0
+            local codes      = metapost.codes
+            local types      = metapost.types
+            local parameters = metapost.knownparameters
+            local procodes   = mplib.propertycodes
+            local everything = tex.modes.everything
+
+            context.startcolumns { n = 5, distance = "1em" }
+                context.nohyphens(false)
+                context.obeyspaces(false)
+                local t = metapost.gethashentries("prestine",true) -- prestine:1
+                if t then
+                    table.sort(t,function(a,b) return a[3] < b[3] end)
+                    mptotal = #t
+                    for i=1,mptotal do
+                        local ti       = t[i]
+                        local code     = codes[ti[1]]
+                        local property = procodes[ti[2]]
+                        local name     = ti[3]
+                        local vtype    = ti[4]
+                        local vardef   = vtype and types[vtype] == "unsuffixedmacro"
+                        context.bgroup()
+                     -- context("%-15s\\quad",vardef and "(vardef) tag" or code)
+                        context("%s %-15s\\quad",parameters[name] and "+" or "\\nbsp",vardef and "(vardef) tag" or code)
+                        if property == "primitive" then
+                            context.bf(false)
+                            context.blue(false)
+                        elseif property == "permanent"  then
+                            context.bf(false)
+                            context.lightgreen(false)
+                        elseif property == "immutable"  then
+                            context.bf(false)
+                            context.lightcyan(false)
+                        elseif property == "mutable"  then
+                            context.bf(false)
+                            context.lightmagenta(false)
+                        elseif everything or not find(name,"^%a+_") then
+                            -- todo:
+                            if vardef then
+                                context.bf(false)
+                                context.lightred(false)
+                            end
+                        end
+                        context.verbatim(name)
+                        context.egroup()
+                        context.par()
+                    end
+                end
+            context.stopcolumns()
+
+        context.stoptitle()
+
+        tokens.setters.macro("NumberOfMetafun", mptotal)
+
+    end
+\stopluacode
+
+\startmode [metapostmacros]
+
+    \page
+
+    \starttabulate[|c|l|]
+    \HL
+    \NC \type {-3} \NC \bf \lightmagenta mutable   \NC \NR
+    \NC \type  {1} \NC \bf \blue         primitive \NC \NR
+    \NC \type  {2} \NC \bf \lightgreen   permanent \NC \NR
+    \NC \type  {3} \NC \bf \lightcyan    immutable \NC \NR
+    \NC \type  {+} \NC \bf (also) used as key      \NC \NR
+    \HL
+    \stoptabulate
+
+    \starttabulate[||r|]
+    \BC number of metafun entries \NC \NumberOfMetafun \NC \NR
+    \stoptabulate
+
+\stopmode
+
+\stopmodule

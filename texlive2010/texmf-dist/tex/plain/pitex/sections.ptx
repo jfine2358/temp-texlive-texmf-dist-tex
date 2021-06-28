@@ -1,0 +1,92 @@
+\newcount\ptx@section_skip % A count, since vertical skips are expressed in number of lines.
+\newcount\ptx@section_link
+\def\sectioncommand#1#2#3{%
+  \par\penalty0
+  \ifvalue #1 : clear = true 
+           {\vfil\penalty-10000}% Clear the page...
+           {% Or skip some lines. The "beforeskip" attribute is the number of blank lines one wants before a section
+            % title and "minimum" is the minimum number of lines it must be possible to have after the section title.
+            \ifdim\dimexpr(\pagegoal-\pagetotal) < \numexpr(\usevalueor #1 : beforeskip 0+\usevalueor #1 : minimum 0) \baselineskip
+              \vfil\penalty-10000 % Not enough room.
+            \else
+              \vskip\usevalueor #1 : beforeskip 0 \baselineskip
+            \fi}%
+%
+% Sections have an internal count, incremented here.
+  \storevalueor\ptx@tempsectioncount #1 : internalcount {\def\ptx@tempsectioncount{0}}%
+  \esetattribute #1 : internalcount = {\the\numexpr(\ptx@tempsectioncount+1)}
+  \resetbelow{#1}% Resets all internal counts of sections which depend on the current one (i.e. "section" depends on "chapter", etc.).
+%
+%
+  \ifvalue #1 : link = true {%
+    \global\advance\ptx@section_link 1
+    \pdfdest num \ptx@section_link xyz
+    \pdfoutline attr {/Border [0 0 0]} goto num \ptx@section_link {\detokenize{#2}}}{}%
+  \noindent
+  \hskip\usevalueor #1 : indent {0pt}%
+  \bgroup
+    \ifattribute #1 : color {\pdfcolorstack0 push {\usevalueand #1 : color { rg}{} \usevalueand #1 : color { RG}{}}}{}%
+    \usevalue #1 : font
+    \ifvalue #1 : number = none {}{%
+      \usevalue #1 : beforenumber
+      \ifcasevalue #1 : number
+        \val roman  \makeroman
+        \val arabic \unbrace
+      \endval{\usevalue #1 : internalcount }%
+      \usevalue #1 : afternumber
+      }%
+    #3%
+    \ifattribute #1 : color {\pdfcolorstack0 pop}{}
+  \egroup
+  \ifvalue #1 : inline = true
+           {}
+           {\vskip\usevalueor #1:afterskip 0\baselineskip}%
+  }
+\newwhile\resetbelow1{}{%
+  \ifattribute #1 : below
+               {\storevalue\tempbelow #1 : below
+                \esetattribute\tempbelow : internalcount = 0
+                \passvalue{\changewhile} #1 : below
+                }{\breakwhile{}}%
+  }
+\def\makeroman#1{%
+  \uppercase\expandafter{\romannumeral#1\relax}%
+  }
+
+\setparameter metasection :
+  clear        = false
+  minimum      = 3
+  inline       = false
+  number       = arabic
+  link         = true
+	afternumber  = "\kern.3em"
+
+\setparameter chapter section subsection :
+  meta = metasection
+
+\setparameter chapter :
+  clear        = true
+  number       = arabic
+  below        = section
+  afterskip    = 3
+  indent       = "0pt plus 1fill"
+  beforenumber = "chapitre "
+  afternumber  = {\par\hfill}
+  
+\setparameter section :
+  beforeskip = 2
+  below      = subsection
+
+\setparameter subsection :
+  font         = \it
+  beforeskip   = 1
+  beforenumber = "\usevalue section:internalcount ."
+  minimum      = 3
+
+\def\chaptertitle{}%
+\def\chapter#1{%
+  \def\chaptertitle{#1}%
+  \sectioncommand{chapter}{#1}{#1}%	
+  }
+\def\section#1{\sectioncommand{section}{#1}{#1}}
+\def\subsection#1{\sectioncommand{subsection}{#1}{#1}}

@@ -1,0 +1,611 @@
+%%
+%% This is file `euxunicode.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% euenc.dtx  (with options: `euxunicode')
+%% 
+%%   _____________________________________
+%%   The EUENC bundle
+%%   Will Robertson, Elie Roux, Khaled Hosny
+%% 
+%%   EUXUNICODE is based on the XUNICODE package version 0.91
+%%   dated 2008/02/08 and copyright 2004-2007 Ross Moore.
+%% 
+%%   License information appended.
+%% 
+\ProvidesFile{euxunicode.sty}
+    [2010/05/27 v0.1g Experimental Unicode font encodings]
+\csname ifeuxunicodeloaded\endcsname
+\let\ifeuxunicodeloaded\endinput
+\def\notUnicodeEngine{%
+  \@latex@error{*** this package currently works only with XeTeX or LuaTeX ***^^J
+   You are not using XeTeX or LuaTeX, so we are exiting cleanly!^^J
+   Continuing may lead to 'unavailable font metrics' errors!^^J}\@ehc
+  \endgroup\endinput}
+\expandafter\ifx\csname XeTeXrevision\endcsname\relax
+  \expandafter\ifx\csname directlua\endcsname\relax
+    \notUnicodeEngine
+  \else
+    \def\@Engine{LuaTeX}
+  \fi
+\else
+  \def\@Engine{XeTeX}
+\fi
+\def\@TestForWongPackage{%
+ \@ifpackageloaded{inputenc}{\@dontuse@inputenc}{}%
+ \@ifpackageloaded{luainputenc}{\@dontuse@inputenc}{}%
+ \@ifpackageloaded{xunicode}{\@dontuse@xunicode}{}%
+}
+\def\@dontuse@inputenc{%
+  \typeout{*** You should *not* be loading inputenc nor luainputenc}%
+  \typeout{*** with the \UTFencname\space encoding. Your engine}%
+  \typeout{*** expects the source to be in UTF-8 encoding.}%
+  \typeout{*** Some features of other encodings may conflict,
+ resulting in poor output.}%
+}
+\def\@dontuse@xunicode{%
+  \typeout{*** xunicode is deprecated, please use only the fontspec package,}%
+  \typeout{*** it will automatically load the relevant packages.}%
+}
+\def\@cleanupaftertest{%
+ \let\@TestForWongPackage\relax
+ \let\@dontuse@inputenc\relax
+ \let\@dontuse@xunicode\relax
+}
+\@TestForWongPackage
+\AtBeginDocument{\@TestForWongPackage}
+\AtBeginDocument{\@cleanupaftertest}
+\newcommand{\DeclareUTFcharacter}[3][\UTFencname]{%
+  \let\add@flag\@ne % ==> add support in this encoding
+  \check@hexcom@digits #2@@@@@!@{#1}{#2}{#3}%
+}
+\newcommand{\UndeclareUTFcharacter}[3][\UTFencname]{%
+  \let\add@flag\z@ % ==> remove support in this encoding
+  \check@hexcom@digits #2@@@@@!@{#1}{#2}{#3}%
+}
+\def\check@hexcom@digits#1#2@!@#3#4#5{%
+ \ifx x#1\relax
+  \check@hexcom@digits@#2@!@{#3}{#4}{#5}%
+ \else
+  \UTFacc@warning@{code #4 for #3-\string#5 fails to start with 'x'}%
+ \fi
+}
+\newcommand{\DeclareUTFcomposite}[4][\UTFencname]{{%
+  \let\add@flag\@ne % ==> add support in this encoding
+  \check@hex@digits #2@@@@@!@{#1}{#2}{#3}{#4}%
+}}
+\newcommand{\DeclareUTFmulticomposite}[4][\UTFencname]{{%
+  \let\add@flag\@ne % ==> add support in this encoding
+  \check@hex@digits #2@@@@@!@{#1}{#2}{#3}{#4}%
+}}
+\newcommand{\UndeclareUTFcomposite}[4][\UTFencname]{{%
+  \let\add@flag\z@ % ==> remove support in this encoding
+  \check@hex@digits #2@@@@@!@{#1}{#2}{#3}{#4}%
+}}
+\def\check@hex@digits#1#2@!@#3#4#5#6{%
+ \ifx x#1\relax
+   \check@hex@digits@#2@!@{#3}{#4}{#5}{#6}%
+ \else
+  \UTFacc@warning@{code #4 for #3-\string#5#6 fails to start with 'x'}%
+ \fi
+}
+\def\UTF@ignore#1{\iffalse}
+\def\UTF@doit#1{\iftrue}
+{\catcode`\"=12
+\gdef\check@hexcom@digits@#1#2#3#4#5@!@#6#7#8{%
+ \ifx @#4\relax
+  \UTFacc@warning@{insufficient hex digits #7 for #6-\string#8}%
+ \else
+  \ifcat \active\noexpand#8%
+   \ifx\add@flag\@ne %
+    \expandafter\def\csname\UTFencname\string#8\endcsname{\char"#1#2#3#4\relax}%
+    \ifx\unDeFiNed@#8%
+     \ifx\cf@encoding\UTFencname
+      \DeclareTextCommand{#8}{OT1}{\undefined}%
+     \else
+      \DeclareTextCommand{#8}{\cf@encoding}{\undefined}%
+     \fi
+    \else {% macro #8 exists already ...
+      \let\protect\noexpand
+      \edef\UTF@testi{#8}\def\UTF@testii{#8}%
+      \ifx\UTF@testi\UTF@testii\aftergroup\UTF@ignore
+      \else\aftergroup\UTF@doit\fi
+     }%
+     \iffalse
+      % ... but when it isn't robust, make it so
+      \expandafter\let\csname?-\string#8\endcsname#8\relax
+      \edef\next@UTF@{{\cf@encoding}%
+        {\expandafter\noexpand\csname?-\string#8\endcsname}}%
+      \expandafter\DeclareTextCommand\expandafter
+         {\expandafter#8\expandafter}\next@UTF@
+     \fi
+    \fi %
+   \else % \add@flag \z@
+    \expandafter\global\expandafter
+      \let\csname\UTFencname\string#8\endcsname\relax
+   \fi % end of \add@flag switch
+  \else % not active catcode --- shouldn't happen
+  % \typeout{*** did you really mean #8 ? ***}%
+   \ifx\add@flag\@ne %
+    \edef\tmp@name{\expandafter\string\csname\UTFencname\endcsname
+      \expandafter\string\csname#8\endcsname}%
+    \expandafter\def\csname\tmp@name\endcsname{\char"#1#2#3#4\relax}%
+    \ifx\cf@encoding\UTFencname
+     \expandafter\DeclareTextCommand\expandafter
+       {\csname#8\endcsname}{OT1}{\undefined}%
+    \else
+     \expandafter\DeclareTextCommand\expandafter
+       {\csname#8\endcsname}{\cf@encoding}{\undefined}%
+    \fi
+   \else % \add@flag \z@
+    \expandafter\global\expandafter\let\csname#8\endcsname\relax
+   \fi % end of \add@flag switch
+  \fi % end of \ifcat
+ \fi}
+\gdef\check@hex@digits@#1#2#3#4#5@!@#6#7#8#9{%
+ \ifx @#4\relax
+  \UTFacc@warning@{insufficient hex digits #7 for #6-\string#8#9}%
+ \else
+  \def\UTFchar{\char"#1#2#3#4\relax}%
+  \expandafter\expandafter\expandafter\declare@utf@composite
+  \expandafter\expandafter\expandafter
+   {\expandafter\csname#6\endcsname}{\UTFchar}{#8}{#9}\relax
+ \fi}
+\gdef\add@UTF@accent#1#2#3{\ifx\relax#2\relax\char"#3\else
+ \ifx\ #2\relax\char"#3\else
+ \expandafter\ifx\UTF@space#2\relax\char"#3\else
+ \ifx~#2\char"#3\else#2\char"#1\fi\fi\fi\fi\relax}
+\gdef\add@UTF@accents#1#2#3{#2\char"#1\char"#3\relax}
+\gdef\add@set@accentCOMP#1#2#3{\add@accent{"#1}{#2}}
+\gdef\add@set@accentMOD#1#2#3{\add@accent{"#3}{#2}}
+\gdef\declare@hex@command#1#2{\gdef#2{#1}}%
+}%  end of \catcode`\"=12
+
+{\catcode`\ =10\relax%
+\gdef\UTF@@space{ }}%
+\edef\UTF@space{\UTF@@space}
+
+\def\declare@utf@composite#1#2#3#4{%
+ \expandafter\ifcat\expandafter A\string#4\relax
+  {\ifx\add@flag\@ne %
+   \expandafter\xdef\csname\string#1\string#3-#4\endcsname{#2}%
+  \else
+   \expandafter\global\expandafter
+    \let\csname\string#1\string#3-#4\endcsname\relax
+  \fi}%
+ \else
+  {\ifx\add@flag\@ne %
+   \expandafter\xdef\csname\string#1\string#3-\string#4\endcsname{#2}%
+  \else
+   \expandafter\global\expandafter
+    \let\csname\string#1\string#3-\string#4\endcsname\relax
+  \fi}%
+ \fi
+}
+\newcommand{\DeclareEncodedCompositeCharacter}[4]{%
+  \expandafter\def\csname #1\string#2\endcsname##1{%
+    \expandafter\@text@composite \csname #1\string#2\endcsname##1\@empty
+    \@text@composite{\add@encoded@accent{#3}{##1}{#4}}}%
+}
+\newcommand{\DeclareEncodedCompositeAccents}[4]{%
+  \expandafter\def\csname #1\string#2\endcsname##1{%
+    \expandafter\@text@composite \csname #1\string#2\endcsname##1\@empty
+    \@text@composite{\add@encoded@accents{#4}{##1}{#3}}}%
+}
+\let\add@encoded@accent\add@UTF@accent
+\let\add@encoded@accents\add@UTF@accents
+\DeclareEncodedCompositeCharacter{\UTFencname}{\`}{0300}{02CB}  % Combining grave accent
+\@ifundefined{capitalgrave}{\DeclareTextAccent{\capitalgrave}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitalgrave}{0300}{02CB}  % textcomp grave accent
+\DeclareEncodedCompositeCharacter{\UTFencname}{\'}{0301}{02CA}  % Combining acute accent
+\@ifundefined{capitalacute}{\DeclareTextAccent{\capitalacute}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitalacute}{0301}{02CA}  % textcomp acute accent
+\DeclareEncodedCompositeCharacter{\UTFencname}{\^}{0302}{02C6}  % Combining circumflex accent
+\@ifundefined{capitalcircumflex}{\DeclareTextAccent{\capitalcircumflex}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitalcircumflex}{0302}{02C6}  % textcomp circumflex accent
+\DeclareEncodedCompositeCharacter{\UTFencname}{\~}{0303}{02DC}  % Combining tilde
+\@ifundefined{capitaltilde}{\DeclareTextAccent{\capitaltilde}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitaltilde}{0303}{02DC}  % textcomp tilde
+\DeclareEncodedCompositeCharacter{\UTFencname}{\=}{0304}{02C9}  % Combining macron
+\@ifundefined{capitalmacron}{\DeclareTextAccent{\capitalmacron}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitalmacron}{0304}{02C9}  % textcomp macron
+\DeclareTextAccent{\textoverline}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textoverline}{0305}{203E}  % Combining overline
+\DeclareEncodedCompositeCharacter{\UTFencname}{\u}{0306}{02D8}  % Combining breve
+\@ifundefined{capitalbreve}{\DeclareTextAccent{\capitalbreve}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitalbreve}{0306}{02D8}  % textcomp breve
+\DeclareEncodedCompositeCharacter{\UTFencname}{\.}{0307}{02D9}  % Combining dot above
+\@ifundefined{capitaldotaccent}{\DeclareTextAccent{\capitaldotaccent}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitaldotaccent}{0307}{02D9}  % textcomp dot above
+\DeclareEncodedCompositeCharacter{\UTFencname}{\"}{0308}{00A8}  % Combining diaeresis
+\@ifundefined{capitaldieresis}{\DeclareTextAccent{\capitaldieresis}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitaldieresis}{0308}{00A8}  % textcomp diaeresis
+\@ifundefined{m}{\DeclareTextAccent{\m}{OT1}{999}}{} % miscellaneous IPA symbols
+\DeclareEncodedCompositeCharacter{\UTFencname}{\m}{0309}{0309}  % (Combining hook above)
+\DeclareTextAccent{\texthookabove}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\texthookabove}{0309}{0309}  % Combining hook above
+\DeclareEncodedCompositeCharacter{\UTFencname}{\r}{030A}{02DA}  % Combining ring above
+\@ifundefined{capitalring}{\DeclareTextAccent{\capitalring}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitalring}{030A}{02DA}  % textcomp ring above
+\DeclareEncodedCompositeCharacter{\UTFencname}{\H}{030B}{02DD}  % Combining double acute
+\@ifundefined{capitalhungarumlaut}{\DeclareTextAccent{\capitalhungarumlaut}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitalhungarumlaut}{030B}{02DD}  % textcomp double acute
+\DeclareEncodedCompositeCharacter{\UTFencname}{\v}{030C}{02C7}  % Combining caron
+\@ifundefined{capitalcaron}{\DeclareTextAccent{\capitalcaron}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitalcaron}{030C}{02C7}  % textcomp caron
+\@ifundefined{textvbaraccent}{\DeclareTextAccent{\textvbaraccent}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textvbaraccent}{030D}{02C8}  % Combining vertical line above
+\@ifundefined{textdoublevbaraccent}{\DeclareTextAccent{\textdoublevbaraccent}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textdoublevbaraccent}{030E}{030E}  % Combining double vertical line above
+\@ifundefined{U}{\DeclareTextAccent{\U}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\U}{030E}{}  % Combining double vertical line above
+\@ifundefined{textdoublegrave}{\DeclareTextAccent{\textdoublegrave}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textdoublegrave}{030F}{02F5}  % Combining double grave accent
+\@ifundefined{G}{\DeclareTextAccent{\G}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\G}{030F}{02F5}  % Combining double grave accent
+\@ifundefined{textdotbreve}{\DeclareTextAccent{\textdotbreve}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textdotbreve}{0310}{0310}  % Combining candrabindu
+\@ifundefined{textroundcap}{\DeclareTextAccent{\textroundcap}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textroundcap}{0311}{0311}  % Combining inverted breve
+\@ifundefined{newtie}{\DeclareTextAccent{\newtie}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\newtie}{0311}{0311}  % Combining inverted breve
+\@ifundefined{capitalnewtie}{\DeclareTextAccent{\capitalnewtie}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitalnewtie}{0311}{0311}  % Combining inverted breve
+\@ifundefined{t}{\DeclareTextAccent{\t}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\t}{0311}{0311}  % Combining inverted breve
+\@ifundefined{capitaltie}{\DeclareTextAccent{\capitaltie}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitaltie}{0311}{0311}  % Combining inverted breve
+\DeclareTextAccent{\textturncommaabove}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textturncommaabove}{0312}{02BB}  % Combining turned comma above
+\DeclareTextAccent{\textcommaabove}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textcommaabove}{0313}{02BC}  % Combining comma above
+\DeclareTextAccent{\textrevcommaabove}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textrevcommaabove}{0314}{02BD}  % Combining reversed comma above
+\DeclareTextAccent{\textcommaabover}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textcommaabover}{0315}{02BC}  % Combining comma above right
+\@ifundefined{textsubgrave}{\DeclareTextAccent{\textsubgrave}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubgrave}{0316}{02CE}  % Combining grave accent below
+\@ifundefined{textsubacute}{\DeclareTextAccent{\textsubacute}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubacute}{0317}{02CF}  % Combining acute accent below
+\@ifundefined{textadvancing}{\DeclareTextAccent{\textadvancing}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textadvancing}{0318}{0318}  % Combining left tack below
+\@ifundefined{textretracting}{\DeclareTextAccent{\textretracting}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textretracting}{0319}{0319}  % Combining right tack below
+\DeclareTextAccent{\textlangleabove}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textlangleabove}{031A}{031A}  % Combining left angle above
+\DeclareTextAccent{\textrighthorn}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textrighthorn}{031B}{031B}  % Combining horn
+\@ifundefined{textsublhalfring}{\DeclareTextAccent{\textsublhalfring}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsublhalfring}{031C}{02D3}  % Combining left half ring below
+\@ifundefined{textraising}{\DeclareTextAccent{\textraising}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textraising}{031D}{02D4}  % Combining up tack below
+\@ifundefined{textlowering}{\DeclareTextAccent{\textlowering}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textlowering}{031E}{02D5}  % Combining down tack below
+\@ifundefined{textsubplus}{\DeclareTextAccent{\textsubplus}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubplus}{031F}{02D6}  % Combining plus sign below
+\@ifundefined{textsubminus}{\DeclareTextAccent{\textsubminus}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubminus}{0320}{02D7}  % Combining minus sign below
+\DeclareTextAccent{\textpalhookbelow}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textpalhookbelow}{0321}{0321}  % Combining palatalized hook below
+\@ifundefined{M}{\DeclareTextAccent{\M}{OT1}{999}}{} % more Miscellaneous IPA characters
+\DeclareEncodedCompositeCharacter{\UTFencname}{\M}{0322}{0322}  % (Combining retroflex hook below)
+\DeclareTextAccent{\textrethookbelow}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textrethookbelow}{0322}{0322}  % Combining retroflex hook below
+\DeclareEncodedCompositeCharacter{\UTFencname}{\d}{0323}{0323}  % Combining dot below
+\@ifundefined{textsubdot}{\DeclareTextAccent{\textsubdot}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubdot}{0323}{0323}  % Combining dot below
+\@ifundefined{textsubumlaut}{\DeclareTextAccent{\textsubumlaut}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubumlaut}{0324}{0324}  % Combining diaeresis below
+\@ifundefined{textsubring}{\DeclareTextAccent{\textsubring}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubring}{0325}{02F3}  % Combining ring below
+\DeclareTextAccent{\textcommabelow}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textcommabelow}{0326}{0326}  % Combining comma below
+\DeclareEncodedCompositeCharacter{\UTFencname}{\c}{0327}{00B8}  % Combining cedilla
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitalcedilla}{0327}{00B8}  % Combining cedilla
+\DeclareEncodedCompositeCharacter{\UTFencname}{\k}{0328}{02DB}  % Combining ogonek
+\DeclareEncodedCompositeCharacter{\UTFencname}{\capitalogonek}{0328}{02DB}  % Combining ogonek
+\@ifundefined{textpolhook}{\DeclareTextAccent{\textpolhook}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textpolhook}{0328}{02DB}  % Combining ogonek
+\@ifundefined{textsyllabic}{\DeclareTextAccent{\textsyllabic}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsyllabic}{0329}{02CC}  % Combining vertical line below
+\@ifundefined{textsubbridge}{\DeclareTextAccent{\textsubbridge}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubbridge}{032A}{032A}  % Combining bridge below
+\let\dental\textsubbridge
+\@ifundefined{textsubw}{\DeclareTextAccent{\textsubw}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubw}{032B}{032B}  % Combining inverted double arch below
+\@ifundefined{textsubwedge}{\DeclareTextAccent{\textsubwedge}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubwedge}{032C}{032C}  % Combining caron below
+\@ifundefined{textsubcircum}{\DeclareTextAccent{\textsubcircum}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubcircum}{032D}{032D}  % Combining circumflex accent below
+\@ifundefined{textundertie}{\DeclareTextAccent{\textundertie}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textundertie}{032E}{203F}  % Combining breve below
+\@ifundefined{textsubarch}{\DeclareTextAccent{\textsubarch}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubarch}{032F}{032F}  % Combining inverted breve below
+\let\underarch\textsubarch
+\@ifundefined{textsubtilde}{\DeclareTextAccent{\textsubtilde}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubtilde}{0330}{02F7}  % Combining tilde below
+\@ifundefined{textsubbar}{\DeclareTextAccent{\textsubbar}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubbar}{0331}{02CD}  % Combining macron below
+\DeclareEncodedCompositeCharacter{\UTFencname}{\b}{0332}{005F}  % Combining low line
+\@ifundefined{subdoublebar}{\DeclareTextAccent{\subdoublebar}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\subdoublebar}{0333}{0333}  % ??? see x0347
+\DeclareTextAccent{\textsuperimposetilde}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsuperimposetilde}{0334}{007E}  % Combining tilde overlay,  x02DC ?
+\@ifundefined{B}{\DeclareTextAccent{\B}{OT1}{999}}{} % barred variants for TIPA
+\DeclareEncodedCompositeCharacter{\UTFencname}{\B}{0335}{02D7}  % (Combining short stroke overlay)
+\DeclareTextAccent{\textsstrokethru}{OT1}{999} % stroke thru lowercase letters
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsstrokethru}{0335}{00AF}  % Combining short stroke overlay,  x02D7 ?
+\DeclareTextAccent{\textlstrokethru}{OT1}{999} % stroke thru Uppercase letters
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textlstrokethru}{0336}{0336}  % Combining long stroke overlay
+\DeclareTextAccent{\textsstrikethru}{OT1}{999} % strike out lowercase letters
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsstrikethru}{0337}{0337}  % Combining short solidus overlay
+\DeclareTextAccent{\textlstrikethru}{OT1}{999} % strike out Uppercase letters
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textlstrikethru}{0338}{0338}  % Combining long solidus overlay
+\@ifundefined{textsubrhalfring}{\DeclareTextAccent{\textsubrhalfring}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubrhalfring}{0339}{02D2}  % Combining right half ring below
+\@ifundefined{textinvsubbridge}{\DeclareTextAccent{\textinvsubbridge}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textinvsubbridge}{033A}{033A}  % Combining inverted bridge below
+\@ifundefined{textsubsquare}{\DeclareTextAccent{\textsubsquare}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textsubsquare}{033B}{033B}  % Combining square below
+\@ifundefined{textseagull}{\DeclareTextAccent{\textseagull}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textseagull}{033C}{033C}  % Combining seagull below
+\@ifundefined{textovercross}{\DeclareTextAccent{\textovercross}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textovercross}{033D}{033D}  % Combining x above
+\@ifundefined{overbridge}{\DeclareTextAccent{\overbridge}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\overbridge}{0346}{0346}  % Combining bridge above
+\@ifundefined{subdoublevert}{\DeclareTextAccent{\subdoublevert}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\subdoublevert}{0348}{0348}  % Combining double vertical line below
+\@ifundefined{subcorner}{\DeclareTextAccent{\subcorner}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\subcorner}{0349}{0349}  % Combining left angle below
+\@ifundefined{textoverw}{\DeclareTextAccent{\textoverw}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textoverw}{034A}{034A} % ??? Combining not tilde above
+\@ifundefined{crtilde}{\DeclareTextAccent{\crtilde}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\crtilde}{034A}{034A} % Combining not tilde above
+\@ifundefined{dottedtilde}{\DeclareTextAccent{\dottedtilde}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\dottedtilde}{034B}{034B}  % Combining homothetic above
+\@ifundefined{doubletilde}{\DeclareTextAccent{\doubletilde}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\doubletilde}{034C}{034C}  % Combining almost equal to above
+\@ifundefined{spreadlips}{\DeclareTextAccent{\spreadlips}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\spreadlips}{034D}{034D}  % Combining left right arrow below
+\@ifundefined{whistle}{\DeclareTextAccent{\whistle}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\whistle}{034E}{02F0}  % Combining upwards arrow below
+\DeclareTextAccent{\textgraphemejoin}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textgraphemejoin}{034F}{034F}  % Combining grapheme joiner
+\DeclareTextAccent{\textrightarrowhead}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textrightarrowhead}{0350}{0350}  % Combining right arrowhead above
+\DeclareTextAccent{\textlefthalfring}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textlefthalfring}{0351}{02D3}  % Combining left half ring above
+\@ifundefined{sublptr}{\DeclareTextAccent{\sublptr}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\sublptr}{0354}{02F1}  % Combining left arrowhead below
+\@ifundefined{subrptr}{\DeclareTextAccent{\subrptr}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\subrptr}{0355}{02F2}  % Combining right arrowhead below
+\DeclareTextAccent{\textrightuparrowhead}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textrightuparrowhead}{0356}{0356}  % Combining right arrowhead and up
+\DeclareTextAccent{\textrighthalfring}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textrighthalfring}{0357}{02D2}  % Combining right half ring above
+\DeclareTextAccent{\textdoublebreve}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textdoublebreve}{035D}{035D}  % Combining double breve
+\DeclareTextAccent{\textdoublemacron}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textdoublemacron}{035E}{035E}  % Combining double macron
+\DeclareTextAccent{\textdoublemacronbelow}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textdoublemacronbelow}{035F}{035F}  % Combining double macron below
+\DeclareTextAccent{\textdoubletilde}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textdoubletilde}{0360}{0360}  % Combining double tilde
+\@ifundefined{texttoptiebar}{\DeclareTextAccent{\texttoptiebar}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\texttoptiebar}{0361}{0361}  % Combining double inverted breve
+\@ifundefined{sliding}{\DeclareTextAccent{\sliding}{OT1}{999}}{}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\sliding}{0362}{0362}  % Combining double rightwards arrow
+
+\@ifundefined{bibridge}{\DeclareTextAccent{\bibridge}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\bibridge}{032A}{0346}  % IPA bi-bridge
+\@ifundefined{textmidacute}{\DeclareTextAccent{\textmidacute}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textmidacute}{0304}{0301}  % macron-acute ligature
+\@ifundefined{textgravemid}{\DeclareTextAccent{\textgravemid}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textgravemid}{0300}{0304}  % grave-macron ligature
+\@ifundefined{textgravecircum}{\DeclareTextAccent{\textgravecircum}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textgravecircum}{0300}{0302}  % grave-circumflex ligature
+\@ifundefined{textcircumacute}{\DeclareTextAccent{\textcircumacute}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textcircumacute}{0301}{0302}  % circumflex-acute ligature
+\@ifundefined{textgravedot}{\DeclareTextAccent{\textgravedot}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textgravedot}{0300}{0307}  % grave-dot ligature
+\@ifundefined{textdotacute}{\DeclareTextAccent{\textdotacute}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textdotacute}{0307}{0301}  % dot-acute ligature
+\@ifundefined{textacutemacron}{\DeclareTextAccent{\textacutemacron}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textacutemacron}{0301}{0304}  % acute-macron ligature
+\@ifundefined{textgravemacron}{\DeclareTextAccent{\textgravemacron}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textgravemacron}{0300}{0304}  % grave-macron ligature
+\@ifundefined{textacutewedge}{\DeclareTextAccent{\textacutewedge}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textacutewedge}{0301}{030C}  % acute-wedge ligature
+\@ifundefined{textcircumdot}{\DeclareTextAccent{\textcircumdot}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textcircumdot}{0302}{0307}  % circumflex-dot ligature
+\@ifundefined{texttildedot}{\DeclareTextAccent{\texttildedot}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\texttildedot}{0303}{0307}  % tilde-dot ligature
+\@ifundefined{textringmacron}{\DeclareTextAccent{\textringmacron}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textringmacron}{030A}{0304}  % ring-macron ligature
+\@ifundefined{textbrevemacron}{\DeclareTextAccent{\textbrevemacron}{OT1}{999}}{}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textbrevemacron}{0306}{0304}  % breve-macron ligature
+
+\DeclareTextAccent{\texthookcircum}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\texthookcircum}{0309}{0302}
+\DeclareTextAccent{\texttildecircum}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\texttildecircum}{0303}{0302}
+\DeclareTextAccent{\textdieresisoverline}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textdieresisoverline}{0304}{0308}
+\DeclareTextAccent{\textdieresisacute}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textdieresisacute}{0301}{0308}
+\DeclareTextAccent{\textdieresisgrave}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textdieresisgrave}{0300}{0308}
+\DeclareTextAccent{\textdieresiscaron}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textdieresiscaron}{030C}{0308}
+\DeclareTextAccent{\texttildeoverline}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\texttildeoverline}{0303}{0304}
+\DeclareTextAccent{\textdotoverline}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textdotoverline}{0304}{0307}
+\DeclareTextAccent{\textringacute}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textringacute}{0301}{030A}
+\DeclareTextAccent{\textcircumdotbelow}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textcircumdotbelow}{0302}{0323}
+\DeclareTextAccent{\textbreveacute}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textbreveacute}{0301}{0306}
+\DeclareTextAccent{\textbrevegrave}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textbrevegrave}{0300}{0306}
+\DeclareTextAccent{\textbrevehook}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textbrevehook}{0309}{0306}
+\DeclareTextAccent{\textbrevetilde}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textbrevetilde}{0303}{0306}
+\DeclareTextAccent{\textbrevedotbelow}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textbrevedotbelow}{0323}{0306}
+\DeclareTextAccent{\textacutehorn}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textacutehorn}{0301}{031B}
+\DeclareTextAccent{\textgravehorn}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textgravehorn}{0300}{031B}
+\DeclareTextAccent{\texthookhorn}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\texthookhorn}{0309}{031B}
+\DeclareTextAccent{\texttildehorn}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\texttildehorn}{0303}{031B}
+\DeclareTextAccent{\textdotbelowhorn}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textdotbelowhorn}{0323}{031B}
+\DeclareTextAccent{\textogonekoverline}{OT1}{999}
+\DeclareEncodedCompositeAccents{\UTFencname}{\textogonekoverline}{0328}{0304}
+
+\DeclareTextAccent{\textmiddledot}{OT1}{999}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textmiddledot}{05BC}{05BC}
+\DeclareUTFcharacter[\UTFencname]{x3008}{\textlangle}
+\DeclareUTFcharacter[\UTFencname]{x3009}{\textrangle}
+\DeclareUTFcharacter[\UTFencname]{x301A}{\textlbrackdbl}
+\DeclareUTFcharacter[\UTFencname]{x301B}{\textrbrackdbl}
+\DeclareUTFcharacter[\UTFencname]{xFF10}{\textzerooldstyle}
+\DeclareUTFcharacter[\UTFencname]{xFF11}{\textoneoldstyle}
+\DeclareUTFcharacter[\UTFencname]{xFF12}{\texttwooldstyle}
+\DeclareUTFcharacter[\UTFencname]{xFF13}{\textthreeoldstyle}
+\DeclareUTFcharacter[\UTFencname]{xFF14}{\textfouroldstyle}
+\DeclareUTFcharacter[\UTFencname]{xFF15}{\textfiveoldstyle}
+\DeclareUTFcharacter[\UTFencname]{xFF16}{\textsixoldstyle}
+\DeclareUTFcharacter[\UTFencname]{xFF17}{\textsevenoldstyle}
+\DeclareUTFcharacter[\UTFencname]{xFF18}{\texteightoldstyle}
+\DeclareUTFcharacter[\UTFencname]{xFF19}{\textnineoldstyle}
+\DeclareEncodedCompositeCharacter{\UTFencname}{\textcircled}{20DD}{25EF}
+\DeclareUTFcomposite[\UTFencname]{x2460}{\textcircled}{1}
+\DeclareUTFcomposite[\UTFencname]{x2461}{\textcircled}{2}
+\DeclareUTFcomposite[\UTFencname]{x2462}{\textcircled}{3}
+\DeclareUTFcomposite[\UTFencname]{x2463}{\textcircled}{4}
+\DeclareUTFcomposite[\UTFencname]{x2464}{\textcircled}{5}
+\DeclareUTFcomposite[\UTFencname]{x2465}{\textcircled}{6}
+\DeclareUTFcomposite[\UTFencname]{x2466}{\textcircled}{7}
+\DeclareUTFcomposite[\UTFencname]{x2467}{\textcircled}{8}
+\DeclareUTFcomposite[\UTFencname]{x2468}{\textcircled}{9}
+\DeclareUTFcomposite[\UTFencname]{x2469}{\textcircled}{10}
+\DeclareUTFcomposite[\UTFencname]{x246A}{\textcircled}{11}
+\DeclareUTFcomposite[\UTFencname]{x246B}{\textcircled}{12}
+\DeclareUTFcomposite[\UTFencname]{x246C}{\textcircled}{13}
+\DeclareUTFcomposite[\UTFencname]{x246D}{\textcircled}{14}
+\DeclareUTFcomposite[\UTFencname]{x246E}{\textcircled}{15}
+\DeclareUTFcomposite[\UTFencname]{x246F}{\textcircled}{16}
+\DeclareUTFcomposite[\UTFencname]{x2470}{\textcircled}{17}
+\DeclareUTFcomposite[\UTFencname]{x2471}{\textcircled}{18}
+\DeclareUTFcomposite[\UTFencname]{x2472}{\textcircled}{19}
+\DeclareUTFcomposite[\UTFencname]{x2473}{\textcircled}{20}
+
+\DeclareUTFcomposite[\UTFencname]{x24B6}{\textcircled}{A}
+\DeclareUTFcomposite[\UTFencname]{x24B7}{\textcircled}{B}
+\DeclareUTFcomposite[\UTFencname]{x24B8}{\textcircled}{C}
+\DeclareUTFcomposite[\UTFencname]{x24B9}{\textcircled}{D}
+\DeclareUTFcomposite[\UTFencname]{x24BA}{\textcircled}{E}
+\DeclareUTFcomposite[\UTFencname]{x24BB}{\textcircled}{F}
+\DeclareUTFcomposite[\UTFencname]{x24BC}{\textcircled}{G}
+\DeclareUTFcomposite[\UTFencname]{x24BD}{\textcircled}{H}
+\DeclareUTFcomposite[\UTFencname]{x24BE}{\textcircled}{I}
+\DeclareUTFcomposite[\UTFencname]{x24BF}{\textcircled}{J}
+\DeclareUTFcomposite[\UTFencname]{x24C0}{\textcircled}{K}
+\DeclareUTFcomposite[\UTFencname]{x24C1}{\textcircled}{L}
+\DeclareUTFcomposite[\UTFencname]{x24C2}{\textcircled}{M}
+\DeclareUTFcomposite[\UTFencname]{x24C3}{\textcircled}{N}
+\DeclareUTFcomposite[\UTFencname]{x24C4}{\textcircled}{O}
+\DeclareUTFcomposite[\UTFencname]{x24C5}{\textcircled}{P}
+\DeclareUTFcomposite[\UTFencname]{x24C6}{\textcircled}{Q}
+\DeclareUTFcomposite[\UTFencname]{x24C7}{\textcircled}{R}
+\DeclareUTFcomposite[\UTFencname]{x24C8}{\textcircled}{S}
+\DeclareUTFcomposite[\UTFencname]{x24C9}{\textcircled}{T}
+\DeclareUTFcomposite[\UTFencname]{x24CA}{\textcircled}{U}
+\DeclareUTFcomposite[\UTFencname]{x24CB}{\textcircled}{V}
+\DeclareUTFcomposite[\UTFencname]{x24CC}{\textcircled}{W}
+\DeclareUTFcomposite[\UTFencname]{x24CD}{\textcircled}{X}
+\DeclareUTFcomposite[\UTFencname]{x24CE}{\textcircled}{Y}
+\DeclareUTFcomposite[\UTFencname]{x24CF}{\textcircled}{Z}
+\DeclareUTFcomposite[\UTFencname]{x24D0}{\textcircled}{a}
+\DeclareUTFcomposite[\UTFencname]{x24D1}{\textcircled}{b}
+\DeclareUTFcomposite[\UTFencname]{x24D2}{\textcircled}{c}
+\DeclareUTFcomposite[\UTFencname]{x24D3}{\textcircled}{d}
+\DeclareUTFcomposite[\UTFencname]{x24D4}{\textcircled}{e}
+\DeclareUTFcomposite[\UTFencname]{x24D5}{\textcircled}{f}
+\DeclareUTFcomposite[\UTFencname]{x24D6}{\textcircled}{g}
+\DeclareUTFcomposite[\UTFencname]{x24D7}{\textcircled}{h}
+\DeclareUTFcomposite[\UTFencname]{x24D8}{\textcircled}{i}
+\DeclareUTFcomposite[\UTFencname]{x24D9}{\textcircled}{j}
+\DeclareUTFcomposite[\UTFencname]{x24DA}{\textcircled}{k}
+\DeclareUTFcomposite[\UTFencname]{x24DB}{\textcircled}{l}
+\DeclareUTFcomposite[\UTFencname]{x24DC}{\textcircled}{m}
+\DeclareUTFcomposite[\UTFencname]{x24DD}{\textcircled}{n}
+\DeclareUTFcomposite[\UTFencname]{x24DE}{\textcircled}{o}
+\DeclareUTFcomposite[\UTFencname]{x24DF}{\textcircled}{p}
+\DeclareUTFcomposite[\UTFencname]{x24E0}{\textcircled}{q}
+\DeclareUTFcomposite[\UTFencname]{x24E1}{\textcircled}{r}
+\DeclareUTFcomposite[\UTFencname]{x24E2}{\textcircled}{s}
+\DeclareUTFcomposite[\UTFencname]{x24E3}{\textcircled}{t}
+\DeclareUTFcomposite[\UTFencname]{x24E4}{\textcircled}{u}
+\DeclareUTFcomposite[\UTFencname]{x24E5}{\textcircled}{v}
+\DeclareUTFcomposite[\UTFencname]{x24E6}{\textcircled}{w}
+\DeclareUTFcomposite[\UTFencname]{x24E7}{\textcircled}{x}
+\DeclareUTFcomposite[\UTFencname]{x24E8}{\textcircled}{y}
+\DeclareUTFcomposite[\UTFencname]{x24E9}{\textcircled}{z}
+\DeclareUTFcomposite[\UTFencname]{x24EA}{\textcircled}{0}
+
+\DeclareUTFcomposite[\UTFencname]{x3251}{\textcircled}{21}
+\DeclareUTFcomposite[\UTFencname]{x3252}{\textcircled}{22}
+\DeclareUTFcomposite[\UTFencname]{x3253}{\textcircled}{23}
+\DeclareUTFcomposite[\UTFencname]{x3254}{\textcircled}{24}
+\DeclareUTFcomposite[\UTFencname]{x3255}{\textcircled}{25}
+\DeclareUTFcomposite[\UTFencname]{x3256}{\textcircled}{26}
+\DeclareUTFcomposite[\UTFencname]{x3257}{\textcircled}{27}
+\DeclareUTFcomposite[\UTFencname]{x3258}{\textcircled}{28}
+\DeclareUTFcomposite[\UTFencname]{x3259}{\textcircled}{29}
+\DeclareUTFcomposite[\UTFencname]{x325A}{\textcircled}{30}
+\DeclareUTFcomposite[\UTFencname]{x325B}{\textcircled}{31}
+\DeclareUTFcomposite[\UTFencname]{x325C}{\textcircled}{32}
+\DeclareUTFcomposite[\UTFencname]{x325D}{\textcircled}{33}
+\DeclareUTFcomposite[\UTFencname]{x325E}{\textcircled}{34}
+\DeclareUTFcomposite[\UTFencname]{x325F}{\textcircled}{35}
+
+\DeclareUTFcomposite[\UTFencname]{x32B1}{\textcircled}{36}
+\DeclareUTFcomposite[\UTFencname]{x32B2}{\textcircled}{37}
+\DeclareUTFcomposite[\UTFencname]{x32B3}{\textcircled}{38}
+\DeclareUTFcomposite[\UTFencname]{x32B4}{\textcircled}{39}
+\DeclareUTFcomposite[\UTFencname]{x32B5}{\textcircled}{40}
+\DeclareUTFcomposite[\UTFencname]{x32B6}{\textcircled}{41}
+\DeclareUTFcomposite[\UTFencname]{x32B7}{\textcircled}{42}
+\DeclareUTFcomposite[\UTFencname]{x32B8}{\textcircled}{43}
+\DeclareUTFcomposite[\UTFencname]{x32B9}{\textcircled}{44}
+\DeclareUTFcomposite[\UTFencname]{x32BA}{\textcircled}{45}
+\DeclareUTFcomposite[\UTFencname]{x32BB}{\textcircled}{46}
+\DeclareUTFcomposite[\UTFencname]{x32BC}{\textcircled}{47}
+\DeclareUTFcomposite[\UTFencname]{x32BD}{\textcircled}{48}
+\DeclareUTFcomposite[\UTFencname]{x32BE}{\textcircled}{49}
+\DeclareUTFcomposite[\UTFencname]{x32BF}{\textcircled}{50}
+%% 
+%% Copyright 2006-2010 Will Robertson <wspr81@gmail.com>
+%% Copyright 2009-2010 Elie Roux <elie.roux@telecom-bretagne.eu>
+%% Copyright 2009-2010 Khaled Hosny <khaledhosny@eglug.org>
+%% 
+%% Distributable under the LaTeX Project Public License,
+%% version 1.3c or higher (your choice). The latest version of
+%% this license is at: http://www.latex-project.org/lppl.txt
+%% 
+%% This work is "maintained" (as per LPPL maintenance status)
+%% by Will Robertson.
+%% 
+%% This work consists of the file  euenc.dtx and various derived files.
+%% 
+%%
+%% End of file `euxunicode.sty'.

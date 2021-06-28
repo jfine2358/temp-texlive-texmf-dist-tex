@@ -1,0 +1,97 @@
+%%
+%% This is file `xespotcolor.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% xespotcolor.dtx  (with options: `xespotcolor')
+%% 
+%%  (c) Copyright 2014-2015 Apostolos Syropoulos
+%%  This program can be redistributed and/or modified under the
+%%  terms of the LaTeX Project Public License Distributed from
+%%  http://www.latex-project.org/lppl.txt; either
+%%  version 1.3c of the License, or any later version.
+%% 
+%%  This work has the LPPL maintenance status `maintained'.
+%% 
+%%  Please report errors or suggestions for improvement to
+%% 
+%%     Apostolos Syropoulos  (asyropoulos@yahoo.com)
+%% 
+%% 
+%% \CharacterTable
+%%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%%   Digits        \0\1\2\3\4\5\6\7\8\9
+%%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%%   Dollar        \$     Percent       \%     Ampersand     \&
+%%   Acute accent  \'     Left paren    \(     Right paren   \)
+%%   Asterisk      \*     Plus          \+     Comma         \,
+%%   Minus         \-     Point         \.     Solidus       \/
+%%   Colon         \:     Semicolon     \;     Less than     \<
+%%   Equals        \=     Greater than  \>     Question mark \?
+%%   Commercial at \@     Left bracket  \[     Backslash     \\
+%%   Right bracket \]     Circumflex    \^     Underscore    \_
+%%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%%   Right brace   \}     Tilde         \~}
+%%
+\ProvidesFile{xesporcolor.sty}
+ [2015/03/21 v1.2 Package `xespotcolor.sty' (bug fix release)]
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{xespotcolor}
+          [2015/03/21 v.1.2, Package for adding Spot Color support to LaTeX/XeLaTeX.]
+\RequirePackage{ifxetex}
+\ifxetex
+   \RequirePackage[xetex]{graphics}
+   \RequirePackage[xetex]{color}
+\else
+   \RequirePackage[dvipdfmx]{graphics}
+   \RequirePackage{color}
+\fi
+\RequirePackage{everypage}
+\newif\ifhks\hksfalse
+\newif\ifpantone\pantonefalse
+\DeclareOption{hks}{\hkstrue}
+\DeclareOption{pantone}{\pantonetrue}
+\ProcessOptions
+\def\NewSpotColorSpace#1{%
+  \expandafter\newtoks\csname #1\endcsname%
+  \csname #1\endcsname{}%
+}
+\catcode`\#=12%
+\def\SpotSpace{#20}
+\catcode`\#=6%
+\gdef\csgrab#1#2{#2\expandafter{\the#2 #1}}%
+\newcount\colorprofilecnt
+\newtoks\mycolorprofilename
+\def\AddSpotColor#1#2#3#4{%
+  \mycolorprofilename={@mycolorprofile\the\colorprofilecnt}%
+  \edef\mycolorprofile{\the\mycolorprofilename
+          <</C0[0 0 0 0]/FunctionType 2/C1[#4]/Domain[0 1]/N 1>>}%
+  \edef\mycolor{[/Separation/#3 /DeviceCMYK \the\mycolorprofilename]}%
+  \edef\tempcs{/#2 \mycolor}%
+  \expandafter\csgrab\expandafter{\tempcs}{\csname #1\endcsname}%
+  \special{pdf:obj \mycolorprofile}%
+  \special{pdf:obj @myowncolor\the\colorprofilecnt \mycolor}%
+  \advance\colorprofilecnt by1%
+}
+\def\SetPageColorResource#1{%
+  \AddEverypageHook{\special{pdf:put @resources <</ColorSpace <<#1>>>>}}%
+}%
+\def\SetPageColorSpace#1{%
+\expandafter\SetPageColorResource\expandafter{\the\csname #1\endcsname}%
+}%
+\def\SpotColor#1#2{%
+\special{pdf:literal /#1 cs /#1 CS #2 sc #2 SC}%
+        \aftergroup\reset@color%
+}%
+\def\color@spotcolor#1#2{\c@lor@@spotcolor#2\@@#1}
+\def\c@lor@@spotcolor#1,#2\@@#3{%
+  \c@lor@arg{#2}%
+  \edef#3{spot #1 #2}%
+}
+\ifhks\input{spotcolorhks}\fi
+\ifpantone\input{spotcolorpantone}\fi
+\endinput
+%%
+%% End of file `xespotcolor.sty'.

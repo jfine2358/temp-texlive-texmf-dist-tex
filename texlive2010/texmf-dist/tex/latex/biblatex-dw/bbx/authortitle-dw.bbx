@@ -1,0 +1,832 @@
+% authortitle-dw.bbx, Dominik Waßenhoven 2010
+
+\ProvidesFile{authortitle-dw.bbx}[2010/03/11 v1.3 biblatex bibliography style]
+
+\@ifpackagelater{biblatex}{2010/02/14}
+  {}
+  {\PackageError{biblatex}
+    {Outdated 'biblatex' package}
+    {The version of the 'authortitle-dw' style you are using\MessageBreak
+     requires biblatex v0.9 or later.\MessageBreak
+     You are using: '\csuse{ver@biblatex.sty}'.\MessageBreak
+     This is a fatal error. I'm aborting now.}%
+    \endinput}
+  
+\RequireBibliographyStyle{standard-dw}
+
+\newbool{bbx:annotation}
+\newbool{bbx:edbyidem}
+\newbool{bbx:edsuper}
+\newbool{bbx:idembib}
+\newbool{bbx:library}
+\newbool{bbx:nolocation}
+\newbool{bbx:nopublisher}
+\newbool{bbx:oldauthor}
+\newbool{bbx:origfields}
+\newbool{bbx:pseudoauthor}
+\newbool{oldauthor}
+\newbool{pseudoauthor}
+
+\DeclareEntryOption{oldauthor}[true]{%
+  \csuse{bool#1}{oldauthor}}
+\DeclareEntryOption{pseudoauthor}[true]{%
+  \csuse{bool#1}{pseudoauthor}}
+
+\DeclareBibliographyOption{annotation}[true]{%
+  \csuse{bool#1}{bbx:annotation}}
+\DeclareBibliographyOption{edbyidem}[true]{%
+  \csuse{bool#1}{bbx:edbyidem}}
+\DeclareBibliographyOption{edsuper}[true]{%
+  \csuse{bool#1}{bbx:edsuper}}
+\DeclareBibliographyOption{idembib}[true]{%
+  \csuse{bool#1}{bbx:idembib}}
+\DeclareBibliographyOption{library}[true]{%
+  \csuse{bool#1}{bbx:library}}
+\DeclareBibliographyOption{nolocation}[true]{%
+  \csuse{bool#1}{bbx:nolocation}}
+\DeclareBibliographyOption{nopublisher}[true]{%
+  \csuse{bool#1}{bbx:nopublisher}}
+\DeclareBibliographyOption{oldauthor}[true]{%
+  \csuse{bool#1}{bbx:oldauthor}}
+\DeclareBibliographyOption{origfields}[true]{%
+  \csuse{bool#1}{bbx:origfields}}
+\DeclareBibliographyOption{pseudoauthor}[true]{%
+  \csuse{bool#1}{bbx:pseudoauthor}}
+
+\newcommand{\bbx@idembibformat}{}
+\newcommand{\bbx@option@editorstring}{}
+\newcommand{\bbx@option@firstnamefont}{}
+\newcommand{\bbx@option@namefont}{}
+\newcommand{\bbx@option@ibidemfont}{}
+\newcommand{\bbx@option@idemfont}{empty}% wichtig zur Überprüfung wegen Paket-Warnung bei falscher Option
+\newcommand{\bbx@origfieldsformat}{}
+
+\DeclareBibliographyOption{editorstring}{%
+  \renewcommand{\bbx@option@editorstring}{#1}}
+\DeclareBibliographyOption{firstnamefont}{%
+  \renewcommand{\bbx@option@firstnamefont}{#1}}
+\DeclareBibliographyOption{ibidemfont}{%
+  \renewcommand{\bbx@option@ibidemfont}{#1}}
+\DeclareBibliographyOption{idembibformat}{%
+  \renewcommand{\bbx@idembibformat}{#1}}
+\DeclareBibliographyOption{idemfont}{%
+  \renewcommand{\bbx@option@idemfont}{#1}}
+\DeclareBibliographyOption{namefont}{%
+  \renewcommand{\bbx@option@namefont}{#1}}
+\DeclareBibliographyOption{origfieldsformat}{%
+  \renewcommand{\bbx@origfieldsformat}{#1}}
+
+\ExecuteBibliographyOptions{%
+  edbyidem=true,
+  editorstring=parens,
+  firstnamefont=normal,
+  ibidemfont=normal,
+  idembib=true,
+  idembibformat=idem,
+  namefont=normal,
+  nolocation=false,
+  nopublisher=true,
+  oldauthor=true,
+  origfields=true,
+  origfieldsformat=punct,
+  pseudoauthor=true
+}
+
+%% Autoren, Herausgeber und Übersetzter in der Bibliographie
+\DeclareNameAlias{author}{sortname}
+\DeclareNameAlias{editor}{sortname}
+\DeclareNameAlias{translator}{sortname}
+
+%% Komma statt Punkt nach einzelnen Elementen der Literaturangaben
+\renewcommand*{\newunitpunct}{\addcomma\space}
+
+%% Punkt zwischen Titel und Untertitel
+\renewcommand*{\subtitlepunct}{\addperiod\space}
+
+%% Punkt zwischen Untertitel und Titelzusatz ([book|main]titleaddon)
+\newcommand*{\titleaddonpunct}{\addperiod\space}
+
+%% Doppelpunkt nach Autoren/Editoren
+\renewcommand*{\labelnamepunct}{\addcolon\space}
+
+%% Zeichensetzung zwischen Ort und Jahr
+\newcommand*{\locationdatepunct}{\addspace}
+
+%% Zeichensetzung zwischen Ort und Verlag
+\newcommand*{\locationpublisherpunct}{\addcolon\space}
+
+%% Zeichensetzung zwischen Verlag und Jahr
+\newcommand*{\publisherdatepunct}{\addcomma\space}
+
+%% Zeichen vor 'Nachdruck' bei Benutzung von 'origfields'
+\newcommand*{\origfieldspunct}{\addcomma\space}
+
+%% Zeichen für pseudoauthor=true
+\newcommand*{\bibleftpseudo}{}
+\newcommand*{\bibrightpseudo}{}
+
+%% Zeichen zw. Autoren/Editoren in der Bibliographie
+\newcommand*{\bibrevsdnamedelim}{\addspace}
+\newcommand*{\bibmultinamedelim}{\addcomma\space}
+\newcommand*{\bibfinalnamedelim}{%
+  \ifnum\value{liststop}>2 \finalandcomma\fi
+  \addspace\bibstring{and}\space}%
+
+\AtBeginBibliography{%
+  \let\revsdnamedelim\bibrevsdnamedelim%
+  \let\multinamedelim\bibmultinamedelim%
+  \let\finalnamedelim\bibfinalnamedelim%
+%
+%% 'Ders.' statt '--' in der Bibliographie
+	\ifdefstring{\bbx@idembibformat}{idem}
+    {\renewcommand*{\bibnamedash}{\bibsentence\bibstring[\mkidem]{idem\thefield{gender}}}}%
+    {}%
+}
+
+%% Formate in der Bibliographie
+\DeclareFieldFormat{booktitle}{#1}
+\DeclareFieldFormat{journaltitle}{#1}
+\DeclareFieldFormat{issuetitle}{#1}
+\DeclareFieldFormat{maintitle}{#1}
+\DeclareFieldFormat{title}{#1}
+\DeclareFieldFormat[article]{title}{#1}
+\DeclareFieldFormat[inbook]{title}{#1}
+\DeclareFieldFormat[incollection]{title}{#1}
+\DeclareFieldFormat[inreference]{title}{%
+  \bibstring{inrefstring}%
+  \enquote{#1}}
+\DeclareFieldFormat[inproceedings]{title}{#1}
+\DeclareFieldFormat[patent]{title}{#1}
+\DeclareFieldFormat[thesis]{title}{#1}
+\DeclareFieldFormat[unpublished]{title}{#1}
+\DeclareFieldFormat[inreference]{volume}{#1}% volume of an inreference entry
+\DeclareFieldFormat{type}{\ifbibstring{#1}{\bibstring{#1}}{#1}}
+\DeclareFieldFormat{url}{\textsc{url}\addcolon\space\url{#1}}
+\DeclareFieldFormat{edition:super}{% für Option 'edsuper'
+  \ifinteger{#1}
+    {\textsuperscript{#1}}
+    {\blxdw@warning@noline{%
+      The 'edition' field of entry\MessageBreak
+      '\abx@field@entrykey' is not an integer.\MessageBreak
+      The edition will not be printed as\MessageBreak
+      superscript. Instead, the 'edition'\MessageBreak
+      field is printed completely}}}
+\DeclareFieldFormat{edition}{%
+  \ifinteger{#1}
+    {\mkbibordedition{#1}~\bibstring{edition}}
+    {#1\isdot}}
+\DeclareFieldFormat{shorthand}{%
+  \ifbool{bbx:shorthandacro}
+    {\ifbool{bbx:acronym}
+      {\mkbibacro{#1}\isdot}
+      {#1\isdot}}
+    {#1\isdot}} 
+\DeclareFieldFormat{shorthandwidth}{%
+  \ifbool{bbx:shorthandacro}
+    {\ifbool{bbx:acronym}
+      {\mkbibacro{#1}\isdot}
+      {#1\isdot}}
+    {#1\isdot}} 
+\DeclareFieldFormat{shortjournal}{%
+  \ifbool{bbx:shorthandacro}
+    {\ifbool{bbx:acronym}
+      {\mkbibacro{#1}\isdot}
+      {#1\isdot}}
+    {#1\isdot}} 
+
+\newcommand{\annotationfont}{\small\itshape}
+\newcommand{\libraryfont}{\small\sffamily}
+\DeclareFieldFormat{annotation}{%
+  \annotationfont #1\addperiod}
+\DeclareFieldFormat{library}{%
+  \libraryfont #1\addperiod}
+
+\newbibmacro*{finentry:annotation}{%
+  \iffieldundef{annotation}
+    {\finentry}%
+    {\setunit{\addperiod\par}
+     \printfield{annotation}}%
+}
+
+\newbibmacro*{finentry:library}{%
+  \iffieldundef{library}
+    {\finentry}%
+    {\setunit{\addperiod\par}
+     \printfield{library}}%
+}
+
+\renewbibmacro*{finentry}{%
+  \ifbool{bbx:annotation}
+    {\ifbool{bbx:library}% BEIDE true
+      {\iffieldundef{annotation}
+        {}% kein \finentry!
+        {\setunit{\addperiod\par}
+         \printfield{annotation}}%
+       \usebibmacro{finentry:library}}
+      {\usebibmacro{finentry:annotation}}}% nur annotation=true    
+    {\ifbool{bbx:library}% nur library=true
+      {\usebibmacro{finentry:library}}
+      {\finentry}}}% BEIDE false
+
+% Ausschalten von annotation und library für die List of Shorthands
+\AtEveryLositem{%
+  \boolfalse{bbx:annotation}%
+  \boolfalse{bbx:library}%
+}
+
+%% Wichtig für die Herausgebernamen in der List of Shorthands
+\InitializeBibliographyStyle{%
+  \let\bbx@lasthash\undefined}
+
+% Formatierung der Nachnamen entsprechend der Option 'namefont'
+% Nachnamen von Einträgen mit 'options = {oldauthor=true}' oder 'options = {oldauthor}'
+% werden nicht in der Schrift von 'namefont' gesetzt
+\renewcommand*{\mkbibnamelast}[1]{%
+ \ifbool{bbx:oldauthor}% bei globaler Option oldauthor=true
+ {\ifthenelse{%
+  \boolean{oldauthor}\AND
+  \(\ifcurrentname{author}
+    \OR
+    \(\ifcurrentname{labelname}\AND\NOT\ifnameundef{author}\)
+  \)}
+  {#1}
+  {\ifdefstring{\bbx@option@namefont}{smallcaps}%
+	  {\textsc{#1}}%
+	  {\ifdefstring{\bbx@option@namefont}{italic}%
+	    {\textit{#1}}
+	    {\ifdefstring{\bbx@option@namefont}{bold}%
+	      {\textbf{#1}}
+	      {#1}}}}}
+ {% bei globaler Option oldauthor=false
+   {\ifdefstring{\bbx@option@namefont}{smallcaps}%
+	  {\textsc{#1}}%
+	  {\ifdefstring{\bbx@option@namefont}{italic}%
+	    {\textit{#1}}
+	    {\ifdefstring{\bbx@option@namefont}{bold}%
+	      {\textbf{#1}}
+	      {#1}}}}}}
+	      
+% Formatierung der Vornamen entsprechend der Option 'firstnamefont'
+\renewcommand*{\mkbibnamefirst}[1]{%
+ \ifbool{bbx:oldauthor}% bei globaler Option oldauthor=true
+ {\ifthenelse{%
+  \boolean{oldauthor}\AND
+  \(\ifcurrentname{author}
+    \OR
+    \(\ifcurrentname{labelname}\AND\NOT\ifnameundef{author}\)
+  \)}
+  {#1}
+  {\ifdefstring{\bbx@option@firstnamefont}{smallcaps}%
+	  {\textsc{#1}}%
+	  {\ifdefstring{\bbx@option@firstnamefont}{italic}%
+	    {\textit{#1}}
+	    {\ifdefstring{\bbx@option@firstnamefont}{bold}%
+	      {\textbf{#1}}
+	      {#1}}}}}
+ {% bei globaler Option oldauthor=false
+   {\ifdefstring{\bbx@option@firstnamefont}{smallcaps}%
+	  {\textsc{#1}}%
+	  {\ifdefstring{\bbx@option@firstnamefont}{italic}%
+	    {\textit{#1}}
+	    {\ifdefstring{\bbx@option@firstnamefont}{bold}%
+	      {\textbf{#1}}
+	      {#1}}}}}}
+
+% Wenn 'firstnamefont' gesetzt ist, muss auch prefix angepasst werden
+\renewcommand*{\mkbibnameprefix}[1]{%
+ \ifuseprefix{% bei useprefix=true
+	 \ifbool{bbx:oldauthor}% bei globaler Option oldauthor=true
+	 {\ifthenelse{%
+	  \boolean{oldauthor}\AND
+	  \(\ifcurrentname{author}
+	    \OR
+	    \(\ifcurrentname{labelname}\AND\NOT\ifnameundef{author}\)
+	  \)}
+	  {#1}
+	  {\ifdefstring{\bbx@option@namefont}{smallcaps}%
+		  {\textsc{#1}}%
+		  {\ifdefstring{\bbx@option@namefont}{italic}%
+		    {\textit{#1}}
+		    {\ifdefstring{\bbx@option@namefont}{bold}%
+		      {\textbf{#1}}
+		      {#1}}}}}
+	 {% bei globaler Option oldauthor=false
+	   {\ifdefstring{\bbx@option@namefont}{smallcaps}%
+		  {\textsc{#1}}%
+		  {\ifdefstring{\bbx@option@namefont}{italic}%
+		    {\textit{#1}}
+		    {\ifdefstring{\bbx@option@namefont}{bold}%
+		      {\textbf{#1}}
+		      {#1}}}}}}
+  {% bei useprefix=false richtet es sich nach der Option firstname
+	  \ifdefstring{\bbx@option@firstnamefont}{smallcaps}%
+		  {\textsc{#1}}%
+		  {\ifdefstring{\bbx@option@firstnamefont}{italic}%
+		    {\textit{#1}}
+		    {\ifdefstring{\bbx@option@firstnamefont}{bold}%
+		      {\textbf{#1}}
+		      {#1}}}}}
+
+% Wenn 'firstnamefont' gesetzt ist, muss auch suffix angepasst werden
+\renewcommand*{\mkbibnameaffix}[1]{%
+  \ifbool{bbx:oldauthor}% bei globaler Option oldauthor=true
+	 {\ifthenelse{%
+	  \boolean{oldauthor}\AND
+	  \(\ifcurrentname{author}
+	    \OR
+	    \(\ifcurrentname{labelname}\AND\NOT\ifnameundef{author}\)
+	  \)}
+  	  {#1}
+	    {\ifdefstring{\bbx@option@firstnamefont}{smallcaps}%
+		    {\textsc{#1}}%
+		    {\ifdefstring{\bbx@option@firstnamefont}{italic}%
+		      {\textit{#1}}
+		      {\ifdefstring{\bbx@option@firstnamefont}{bold}%
+		        {\textbf{#1}}
+		        {#1}}}}}
+	 {% bei globaler Option oldauthor=false
+	   {\ifdefstring{\bbx@option@firstnamefont}{smallcaps}%
+		  {\textsc{#1}}%
+		  {\ifdefstring{\bbx@option@firstnamefont}{italic}%
+		    {\textit{#1}}
+		    {\ifdefstring{\bbx@option@firstnamefont}{bold}%
+		      {\textbf{#1}}
+		      {#1}}}}}}
+
+%% \mkidem:
+% wenn im Feld 'options' 'oldauthor=true' oder 'oldauthor' steht,
+% werden keine Kapitälchen o.ä. bei Wiederholungszitaten ('Ders.') gesetzt
+% ansonsten Formatierung der Vornamen entsprechend der Option 'idemfont',
+% falls diese nicht vorhanden ist, wird der Wert von 'namefont' übernommen
+\newcommand*{\mkidem}[1]{% 
+ \ifbool{bbx:oldauthor}% bei globaler Option oldauthor=true
+	{\ifbool{oldauthor}
+	  {#1}
+	  {\ifdefstring{\bbx@option@idemfont}{smallcaps}%
+		  {\textsc{#1}}%
+		  {\ifdefstring{\bbx@option@idemfont}{italic}%
+		    {\textit{#1}}
+		    {\ifdefstring{\bbx@option@idemfont}{bold}%
+		      {\textbf{#1}}
+		      {\ifdefstring{\bbx@option@idemfont}{normal}%
+		        {#1}
+		        {% falls idemfont nicht gesetzt ist, wird von namefont 'geerbt':
+             \ifdefstring{\bbx@option@namefont}{smallcaps}%
+               {\textsc{#1}}%
+               {\ifdefstring{\bbx@option@namefont}{italic}%
+                 {\textit{#1}}
+                 {\ifdefstring{\bbx@option@namefont}{bold}%
+                   {\textbf{#1}}
+                   {#1}}}}}}}}}%
+	{% bei globaler Option oldauthor=false
+   \ifdefstring{\bbx@option@idemfont}{smallcaps}%
+	  {\textsc{#1}}%
+	  {\ifdefstring{\bbx@option@idemfont}{italic}%
+	    {\textit{#1}}
+	    {\ifdefstring{\bbx@option@idemfont}{bold}%
+	      {\textbf{#1}}
+	      {\ifdefstring{\bbx@option@idemfont}{normal}%
+	        {#1}
+	        {% falls idemfont nicht gesetzt ist, wird von namefont 'geerbt':
+           \ifdefstring{\bbx@option@namefont}{smallcaps}%
+             {\textsc{#1}}%
+             {\ifdefstring{\bbx@option@namefont}{italic}%
+               {\textit{#1}}
+               {\ifdefstring{\bbx@option@namefont}{bold}%
+                 {\textbf{#1}}
+                 {#1}}}}}}}}}
+		      
+%% Punkt zwischen Untertitel und Titelzusatz ([book|main]titleaddon)
+\renewbibmacro*{title}{%
+  \iffieldundef{title}
+    {}
+    {\printtext[title]{%
+       \printfield[titlecase]{title}%
+       \setunit{\subtitlepunct}%
+       \printfield[titlecase]{subtitle}}%
+     \setunit{\titleaddonpunct}%
+     \printfield{titleaddon}}}
+
+\renewbibmacro*{booktitle}{%
+  \iffieldundef{booktitle}
+    {}
+    {\printtext[booktitle]{%
+       \printfield[titlecase]{booktitle}%
+       \setunit{\subtitlepunct}%
+       \printfield[titlecase]{booksubtitle}}%
+     \setunit{\titleaddonpunct}%
+     \printfield{booktitleaddon}}}
+
+\renewbibmacro*{maintitle}{%
+  \iffieldundef{maintitle}
+    {}
+    {\printtext[maintitle]{%
+       \printfield[titlecase]{maintitle}%
+       \setunit{\subtitlepunct}%
+       \printfield[titlecase]{mainsubtitle}}%
+     \setunit{\titleaddonpunct}%
+     \printfield{maintitleaddon}}}
+
+%% Ort, Verlag, Jahr:
+%% - mit 'origfields=true' werden origlocation, origpublisher
+%%   und origyear gesetzt, der Rest als 'reprint' angehängt
+%% - der Verlag ist optional (nopublisher=true|false)
+%% - die Edition kann hochgestellt werden (edsuper=true|false)
+\newbibmacro*{origdate}{\printorigdate}
+
+\renewbibmacro*{publisher+location+date}{%
+  \ifbool{bbx:origfields}
+    {\ifbool{bbx:nolocation}
+      {\iffieldundef{origyear}
+        {\usebibmacro{loc+pub+year}}
+        {\usebibmacro{origloc+origpub+origyear}}}
+      {\iflistundef{origlocation}
+        {\iffieldundef{origyear}
+          {\usebibmacro{loc+pub+year}}
+          {\usebibmacro{origloc+origpub+origyear}}}
+        {\iffieldundef{origyear}
+          {\blxdw@warning{%
+             Field 'origlocation' is set, but 'origdate' is 
+             \MessageBreak%
+             empty at entry '\abx@field@entrykey'.
+             The 'orig' fields \MessageBreak are omitted
+             for this entry}%
+           \usebibmacro{loc+pub+year}}
+          {\usebibmacro{origloc+origpub+origyear}}}}}
+    {\usebibmacro{loc+pub+year}}}
+
+\newbibmacro{loc+pub+year}{%
+  \ifbool{bbx:nolocation}
+    {}
+    {\printlist{location}%
+     \ifbool{bbx:nopublisher}
+       {\setunit*{\locationdatepunct}}%
+       {\iflistundef{publisher}
+         {\setunit*{\locationdatepunct}}
+         {\setunit*{\locationpublisherpunct}%
+          \printlist{publisher}%
+          \setunit*{\publisherdatepunct}}}}%
+  \ifbool{bbx:edsuper}
+    {\printfield[edition:super]{edition}}
+    {}%
+  \usebibmacro{date}%
+  \newunit}
+
+\newbibmacro{origloc+origpub+origyear}{%
+  \ifbool{bbx:nolocation}
+    {}
+    {\printlist{origlocation}%
+     \ifbool{bbx:nopublisher}
+       {\setunit*{\locationdatepunct}}%
+       {\iflistundef{origpublisher}
+         {\setunit*{\locationdatepunct}}
+         {\setunit*{\locationpublisherpunct}%
+          \printlist{origpublisher}%
+          \setunit*{\publisherdatepunct}}}}%
+  \ifbool{bbx:edsuper}
+    {\printfield[edition:super]{edition}}
+    {}%
+  \usebibmacro{origdate}%
+  \ifdefstring{\bbx@origfieldsformat}{punct}
+    {\setunit*{\origfieldspunct}%
+     \usebibmacro{origfields:loc+pub+year}}
+    {\ifdefstring{\bbx@origfieldsformat}{parens}
+      {\setunit*{\addspace}%
+       \printtext[parens]{%
+         \usebibmacro{origfields:loc+pub+year}}}
+      {\ifdefstring{\bbx@origfieldsformat}{brackets}
+        {\setunit*{\addspace}%
+         \printtext[brackets]{%
+           \usebibmacro{origfields:loc+pub+year}}}
+        {\setunit*{\origfieldspunct}%
+         \usebibmacro{origfields:loc+pub+year}}}}
+  \newunit}
+
+\newbibmacro{origfields:loc+pub+year}{%
+  \bibstring{reprint}%
+  \setunit{\addspace}%
+  \ifbool{bbx:nolocation}
+    {}
+    {\printlist{location}%
+     \ifbool{bbx:nopublisher}
+       {\setunit*{\locationdatepunct}}%
+       {\iflistundef{publisher}
+         {\setunit*{\locationdatepunct}}
+         {\setunit*{\locationpublisherpunct}%
+          \printlist{publisher}%
+          \setunit*{\publisherdatepunct}}}}%
+  \usebibmacro{date}}
+
+%% Test, ob ein Feld nur eine Zahl beinhaltet
+\newcommand{\bbx@iffieldinteger}[1]{%
+  \iffieldundef{#1}
+    {\@secondoftwo}
+    {\edef\@tempa{\strfield{#1}}%
+     \expandafter\ifinteger\expandafter{\@tempa}}}
+
+%% Edition nur ausgeben, wenn Option 'edsuper=false'
+\newbibmacro*{edition}{%
+  \ifbool{bbx:edsuper}
+    {\bbx@iffieldinteger{edition}
+       {}% falls 'edition' eine Zahl ist, wird hochgestellt
+       {\printfield{edition}%
+        \newunit}}% ansonsten wird komplett ausgegeben
+    {\printfield{edition}%
+     \newunit}}
+          
+%% Herausgeber ('Hrsg.') je nach Option editorstring
+\renewbibmacro*{editorstrg}{%
+  \iffieldundef{editortype}
+    {\ifthenelse{\value{editor}>1\OR\ifandothers{editor}}
+      {\ifdefstring{\bbx@option@editorstring}{parens}%
+        {\mkbibparens{\bibstring{editors}}}%
+        {\ifdefstring{\bbx@option@editorstring}{brackets}%
+          {\mkbibbrackets{\bibstring{editors}}}%
+          {\bibstring{editors}}}}%
+      {\ifdefstring{\bbx@option@editorstring}{parens}%
+        {\mkbibparens{\bibstring{editor}}}%
+        {\ifdefstring{\bbx@option@editorstring}{brackets}%
+          {\mkbibbrackets{\bibstring{editor}}}%
+          {\bibstring{editor}}}}}%
+    {\ifthenelse{\value{editor}>1\OR\ifandothers{editor}}
+      {\ifdefstring{\bbx@option@editorstring}{parens}%
+        {\mkbibparens{\bibstring{\thefield{editortype}s}}}%
+        {\ifdefstring{\bbx@option@editorstring}{brackets}%
+          {\mkbibbrackets{\bibstring{\thefield{editortype}s}}}%
+          {\bibstring{\thefield{editortype}s}}}}%
+      {\ifdefstring{\bbx@option@editorstring}{parens}%
+        {\mkbibparens{\bibstring{\thefield{editortype}}}}%
+        {\ifdefstring{\bbx@option@editorstring}{brackets}%
+          {\mkbibbrackets{\bibstring{\thefield{editortype}}}}%
+          {\bibstring{\thefield{editortype}}}}}}}%
+
+\renewbibmacro*{editor+othersstrg}{%
+  \ifthenelse{\value{editor}>1\OR\ifandothers{editor}}
+    {\def\@tempa{editors}}
+    {\def\@tempa{editor}}%
+  \ifnamesequal{editor}{translator}
+    {\appto\@tempa{tr}%
+     \clearname{translator}}
+    {}%
+  \ifnamesequal{editor}{commentator}
+    {\appto\@tempa{co}%
+     \clearname{commentator}}
+    {\ifnamesequal{editor}{annotator}
+       {\appto\@tempa{an}%
+	\clearname{annotator}}
+       {}}%
+  \ifnamesequal{editor}{introduction}
+    {\appto\@tempa{in}%
+     \clearname{introduction}}
+    {\ifnamesequal{editor}{foreword}
+       {\appto\@tempa{fo}%
+	\clearname{foreword}}
+       {\ifnamesequal{editor}{afterword}
+          {\appto\@tempa{af}%
+           \clearname{afterword}}
+          {}}}%
+  \ifdefstring{\bbx@option@editorstring}{parens}
+    {\mkbibparens{\bibstring{\@tempa}}}
+    {\ifdefstring{\bbx@option@editorstring}{brackets}
+      {\mkbibbrackets{\bibstring{\@tempa}}}
+      {\bibstring{\@tempa}}}}
+
+%% Übersetzer ('Übers.') je nach Option editorstring
+\renewbibmacro*{translatorstrg}{%
+  \ifthenelse{\value{translator}>1\OR\ifandothers{translator}}
+    {\ifdefstring{\bbx@option@editorstring}{parens}%
+      {\mkbibparens{\bibstring{translators}}}%
+      {\ifdefstring{\bbx@option@editorstring}{brackets}%
+        {\mkbibbrackets{\bibstring{translators}}}%
+        {\bibstring{translators}}}}%
+    {\ifdefstring{\bbx@option@editorstring}{parens}%
+      {\mkbibparens{\bibstring{translator}}}%
+      {\ifdefstring{\bbx@option@editorstring}{brackets}%
+        {\mkbibbrackets{\bibstring{translator}}}%
+        {\bibstring{translator}}}}}
+
+\renewbibmacro*{translator+othersstrg}{%
+  \ifthenelse{\value{translator}>1\OR\ifandothers{translator}}
+    {\def\abx@tempa{translators}}
+    {\def\abx@tempa{translator}}%
+  \ifnamesequal{translator}{commentator}
+    {\appto\abx@tempa{co}%
+     \clearname{commentator}}
+    {\ifnamesequal{translator}{annotator}
+       {\appto\abx@tempa{an}%
+	\clearname{annotator}}
+       {}}%
+  \ifnamesequal{translator}{introduction}
+    {\appto\abx@tempa{in}%
+     \clearname{introduction}}
+    {\ifnamesequal{translator}{foreword}
+       {\appto\abx@tempa{fo}%
+	\clearname{foreword}}
+       {\ifnamesequal{translator}{afterword}
+          {\appto\abx@tempa{af}%
+           \clearname{afterword}}
+          {}}}%
+  \ifdefstring{\bbx@option@editorstring}{parens}
+    {\mkbibparens{\bibstring{\abx@tempa}}}
+    {\ifdefstring{\bbx@option@editorstring}{brackets}
+      {\mkbibbrackets{\bibstring{\abx@tempa}}}
+      {\bibstring{\abx@tempa}}}}
+        
+%% Option 'editorstring=brackets|parens|normal'
+%% Option 'idembib=true|false'
+\renewbibmacro*{editor}{%
+  \ifthenelse{\ifuseeditor\AND\NOT\ifnameundef{editor}}
+    {\ifbool{bbx:idembib}
+      {\ifthenelse{\iffieldequals{namehash}{\bbx@lasthash}\AND
+                   \NOT\iffirstonpage}
+         {\bibnamedash}
+         {\printnames{editor}%
+          \savefield{namehash}{\bbx@lasthash}}}%
+      {\printnames{editor}}%
+     \ifdefstring{\bbx@option@editorstring}{brackets}%
+       {\addspace}%
+       {\ifdefstring{\bbx@option@editorstring}{parens}%
+         {\addspace}%
+         {\addcomma\space}}%
+     \usebibmacro{editorstrg}%
+     \ifbool{bbx:idembib}
+       {}
+       {\labelnamepunct}%
+     \clearname{editor}}
+    {\global\undef\bbx@lasthash}}
+
+\renewbibmacro*{editor+others}{%
+  \ifthenelse{\ifuseeditor\AND\NOT\ifnameundef{editor}}
+    {\ifbool{bbx:idembib}
+      {\ifthenelse{\iffieldequals{namehash}{\bbx@lasthash}\AND
+                   \NOT\iffirstonpage}
+         {\bibnamedash}
+         {\printnames{editor}%
+          \savefield{namehash}{\bbx@lasthash}}}%
+      {\printnames{editor}}%
+     \ifdefstring{\bbx@option@editorstring}{brackets}%
+       {\addspace}%
+       {\ifdefstring{\bbx@option@editorstring}{parens}%
+         {\addspace}%
+         {\addcomma\space}}%
+     \usebibmacro{editor+othersstrg}%
+     \ifbool{bbx:idembib}
+       {}
+       {\labelnamepunct}%
+     \clearname{editor}}
+    {\global\undef\bbx@lasthash}}
+
+\renewbibmacro*{translator}{%
+  \ifthenelse{\ifusetranslator\AND\NOT\ifnameundef{translator}}
+    {\ifbool{bbx:idembib}
+      {\ifthenelse{\iffieldequals{namehash}{\bbx@lasthash}\AND
+                   \NOT\iffirstonpage}
+         {\bibnamedash}
+         {\printnames{translator}%
+          \savefield{namehash}{\bbx@lasthash}}}%
+      {\printnames{translator}}%
+     \ifdefstring{\bbx@option@editorstring}{brackets}%
+       {\addspace}%
+       {\ifdefstring{\bbx@option@editorstring}{parens}%
+         {\addspace}%
+         {\addcomma\space}}%
+     \usebibmacro{translatorstrg}%
+     \ifbool{bbx:idembib}
+       {}
+       {\labelnamepunct}%
+     \clearname{translator}}
+    {\global\undef\bbx@lasthash}}
+
+\renewbibmacro*{translator+others}{%
+  \ifthenelse{\ifusetranslator\AND\NOT\ifnameundef{translator}}
+    {\ifbool{bbx:idembib}
+      {\ifthenelse{\iffieldequals{namehash}{\bbx@lasthash}\AND
+                   \NOT\iffirstonpage}
+         {\bibnamedash}
+         {\printnames{translator}%
+          \savefield{namehash}{\bbx@lasthash}}}%
+      {\printnames{translator}}%
+     \ifdefstring{\bbx@option@editorstring}{brackets}%
+       {\addspace}%
+       {\ifdefstring{\bbx@option@editorstring}{parens}%
+         {\addspace}%
+         {\addcomma\space}}%
+     \usebibmacro{translator+othersstrg}%
+     \ifbool{bbx:idembib}
+       {}
+       {\labelnamepunct}%
+     \clearname{translator}}
+    {\global\undef\bbx@lasthash}}
+
+%% Option 'idembib=true|false'
+\renewbibmacro*{author}{%
+  \ifbool{bbx:pseudoauthor}
+    {\usebibmacro{author:pseudotrue}}
+    {\usebibmacro{author:pseudofalse}}}
+
+\newbibmacro*{author:pseudotrue}{%
+  \ifbool{pseudoauthor}
+    {\printtext{\bibleftpseudo}}
+    {}%
+  \ifthenelse{\ifuseauthor\AND\NOT\ifnameundef{author}}
+    {\ifbool{bbx:idembib}
+      {\ifthenelse{\iffieldequals{namehash}{\bbx@lasthash}\AND
+                   \NOT\iffirstonpage}
+        {\bibnamedash}
+        {\printnames{author}%
+         \savefield{namehash}{\bbx@lasthash}}}
+      {\printnames{author}}}
+    {\global\undef\bbx@lasthash}%
+  \iffieldundef{authortype}
+    {}
+    {\addcomma\space
+     \usebibmacro{authorstrg}}%
+  \ifbool{pseudoauthor}
+    {\printtext{\bibrightpseudo}}
+    {}}
+
+\newbibmacro*{author:pseudofalse}{%
+  \ifbool{pseudoauthor}
+    {}
+    {\ifthenelse{\ifuseauthor\AND\NOT\ifnameundef{author}}
+      {\ifbool{bbx:idembib}
+        {\ifthenelse{\iffieldequals{namehash}{\bbx@lasthash}\AND
+                     \NOT\iffirstonpage}
+          {\bibnamedash}
+          {\printnames{author}%
+           \savefield{namehash}{\bbx@lasthash}}}
+        {\printnames{author}}}
+      {\global\undef\bbx@lasthash}%
+    \iffieldundef{authortype}
+      {}
+      {\addcomma\space
+       \usebibmacro{authorstrg}}}}
+    
+%% 'Ders.' bei inbook, wenn gleicher Autor
+\renewbibmacro*{bybookauthor}{%
+  \ifnamesequal{author}{bookauthor}
+    {\ifbool{bbx:edbyidem}
+      {\midsentence*\bibstring[\mkidem]{idem\thefield{gender}}\addcolon}
+      {\printnames{bookauthor}%
+       \newunit\newblock}}
+    {\printnames{bookauthor}%
+     \newunit\newblock}}
+
+%% Wenn Autor und Hrsg. gleich --> hg. v. dems./ders./dens.:
+\renewbibmacro*{byeditor+others}{%
+  \ifthenelse{\NOT\ifnameundef{editor}\AND
+              \(\iffieldundef{editortype}\OR
+	        \iffieldequalstr{editortype}{editor}\)}
+    {\def\abx@tempa{byeditor}%
+     \ifnamesequal{editor}{translator}
+       {\appto\abx@tempa{tr}%
+        \clearname{translator}}
+       {}%
+     \ifnamesequal{editor}{commentator}
+       {\appto\abx@tempa{co}%
+        \clearname{commentator}}
+       {\ifnamesequal{editor}{annotator}
+          {\appto\abx@tempa{an}%
+           \clearname{annotator}}
+          {}}%
+     \ifnamesequal{editor}{introduction}
+       {\appto\abx@tempa{in}%
+        \clearname{introduction}}
+       {\ifnamesequal{editor}{foreword}
+          {\appto\abx@tempa{fo}%
+           \clearname{foreword}}
+          {\ifnamesequal{editor}{afterword}
+             {\appto\abx@tempa{af}%
+              \clearname{afterword}}
+             {}}}%
+     \bibstring{\abx@tempa}%
+     \setunit{\addspace}%
+     \printnames[byeditor]{editor}%
+     \clearname{editor}%
+     \newunit
+     \usebibmacro{byeditorx}}%
+    {\ifnamesequal{editor}{author}
+	     {\ifbool{bbx:edbyidem}
+	        {\bibstring{byeditor}\addspace\bibstring[\mkidem]{idemdat\thefield{gender}}}
+	        {\usebibmacro{byeditor}}}%
+	     {\usebibmacro{byeditor}}}%
+  \usebibmacro{bytranslator+others}}
+
+%%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%%
+%%%%% Makros aus authortitle.bbx (unverändert)  %%%%% 
+%%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%% 
+
+\renewcommand*{\thebibitem}{\item}
+\renewcommand*{\thelositem}{\item}
+\setlength{\bibitemsep}{0pt}
+
+\renewenvironment*{thebibliography}
+  {\list
+     {}
+     {\setlength{\leftmargin}{\bibhang}%
+      \setlength{\itemindent}{-\leftmargin}%
+      \setlength{\itemsep}{\bibitemsep}%
+      \setlength{\parsep}{\bibparsep}}}
+  {\endlist}
+
+\endinput

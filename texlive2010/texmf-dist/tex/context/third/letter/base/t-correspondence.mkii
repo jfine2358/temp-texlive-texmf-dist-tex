@@ -1,0 +1,454 @@
+%D \module
+%D   [       file=t-correspondence,
+%D        version=2010.04.04,
+%D          title=\CONTEXT\ User Module,
+%D       subtitle=Correspondence,
+%D         author=Wolfgang Schuster,
+%D           date=\currentdate,
+%D      copyright=Wolfgang Schuster,
+%D          email=schuster.wolfgang@googlemail.com,
+%D        license=Public Domain]
+
+\unprotect
+
+\startmodule[correspondence]
+
+% Placeholders for the messages:
+%
+% 1: letter|resume / interface|style|extension / filename
+% 2: letter|resume / interface|style|extension / filename
+% 3: ‹number› / ‹number›
+% 4: ‹file› / ‹version›
+
+\definemessageconstant {correspondence}
+
+\startinterface all
+  \setinterfacemessage{correspondence}{title}{correspondence}
+  \setinterfacemessage{correspondence}{1}    {loading -- -- --}
+  \setinterfacemessage{correspondence}{2}    {-- -- -- not found}
+  \setinterfacemessage{correspondence}{3}    {correspage set -- processed (size --)}
+  \setinterfacemessage{correspondence}{4}    {--: --}
+  \setinterfacemessage{correspondence}{5}    {your context is too old, you use you need at last version '--'} % not used in mkii
+\stopinterface
+
+%D Page numbering
+
+\def\????cn{@@@@cn}
+
+\definesystemconstant {correspage}
+
+\definetwopasslist\s!correspage
+
+\definenumber[\s!correspage]
+
+\newcount\correspageno
+\newif\ifresettingcorrespagenumber
+
+\def\newnofcorrespages{0}
+\def\nofcorrespages   {0}
+
+\def\savenofcorrespages
+  {\showmessage\m!correspondence{3}{\newnofcorrespages,\the\correspageno}%
+   \immediatesavetwopassdata{\s!correspage}{\newnofcorrespages}{\the\correspageno}}
+
+\def\numberofcorrespages
+  {\nofcorrespages}
+
+\def\correspagenumber
+  {\the\correspageno}
+
+\appendtoks\savenofcorrespages\to\everybye
+
+\def\setupcorrespagenumber
+  {\dosingleargument\dosetupcorrespagenumber}
+
+\def\dosetupcorrespagenumber[#1]%
+  {\doifelse{#1}\v!reset
+     {\resetcorrespagenumber}
+     {\getparameters[\????cn][#1]}}
+
+\def\resetcorrespagenumber
+  {\global\resettingcorrespagenumbertrue}
+
+\def\setcorrespagenumbers
+  {\iftwopassdatafound
+     \xdef\nofcorrespages{\twopassdata}%
+   \else
+     \xdef\nofcorrespages{0}%
+   \fi}
+
+\def\gotonextcorrespage
+  {\ifresettingcorrespagenumber
+     \resetnumber[\s!correspage]%
+     \global\resettingcorrespagenumberfalse
+   \fi
+   \xdef\oldcorrespage{\the\correspageno}%
+   \incrementnumber[\s!correspage]%
+   \global\correspageno\rawnumber[\s!correspage]\relax
+   \ifnum\correspageno=\plusone
+     \gettwopassdata\s!correspage
+     \setcorrespagenumbers
+     \ifnum\oldcorrespage>\zerocount
+       \showmessage\m!correspondence{3}{\newnofcorrespages,\oldcorrespage}%
+       \immediatesavetwopassdata{\s!correspage}{\newnofcorrespages}{\oldcorrespage}%
+     \fi
+     \doglobal\increment\newnofcorrespages\relax
+   \fi}
+
+\appendtoks\gotonextcorrespage\to\beforeeverypage
+
+%D Setup command for the styles
+
+\def\definecorrespondencesetup[#1][#2][#3]%
+  {\setvalue{\e!setup#1\e!endsetup}{\doquintupleempty\dosetupcorrespondencestyle[#2][#3]}}
+
+\def\dosetupcorrespondencestyle[#1][#2][#3][#4][#5]%
+  {\iffifthargument
+     \dodosetupcorrespondencelayer[#1][#2][#3][#4][#5]%
+   \else\iffourthargument
+     \dodosetupcorrespondencestyle[#1][#2][#3][#4]%
+   \else
+     \dosetupcorrespondenceoption[][#2][\v!option][#3]%
+   \fi\fi}
+
+\def\dodosetupcorrespondencestyle[#1][#2][#3][#4]%
+  {\def\dododosetupcorrespondencestyle##1%
+     {\csname dosetupcorrespondence\ifcsname#1:#2:##1\endcsname
+        \csname#1:#2:##1\endcsname
+      \else
+        \v!option
+      \fi\endcsname[#1][#2][##1][#4]}%
+   \processcommalist[#3]\dododosetupcorrespondencestyle}
+
+\def\dosetupcorrespondenceoption[#1][#2][#3][#4]%
+  {\getparameters[#2#3][#4]}
+
+\def\dosetupcorrespondencelayout[#1][#2][#3][#4]%
+  {\definelayout[#1#3][#4]}
+
+\def\dosetupcorrespondencesection[#1][#2][#3][#4]%
+  {\getparameters[#2#3][#4]}
+
+\def\dosetupcorrespondencedescription[#1][#2][#3][#4]%
+  {\getparameters[#2#3][#4]}
+
+\def\dosetupcorrespondencelayer[#1][#2][#3][#4]%
+  {\dodosetupcorrespondencelayer[#1][#2][#3][\v!layer,\v!frame,\v!option][#4]}
+
+\def\dodosetupcorrespondencelayer[#1][#2][#3][#4][#5]%
+  {\def\dododosetupcorrespondencelayer##1%
+     {\def\dodododosetupcorrespondencelayer####1%
+        {\ifcsname dosetupcorrespondencelayer####1\endcsname
+           \@EAEA\csname dosetupcorrespondencelayer####1\endcsname
+         \else
+           \@EA\dosetupcorrespondencelayeroption
+         \fi[#1][#2][##1][#5]}%
+      \processcommalist[#4]\dodododosetupcorrespondencelayer}%
+   \processcommalist[#3]\dododosetupcorrespondencelayer}
+
+\def\dosetupcorrespondencelayerlayer[#1][#2][#3][#4]%
+  {\setuplayer[#1:#3][#4]%
+   \getparameters[#2#3\v!layer][#4]}
+
+\def\dosetupcorrespondencelayerframe[#1][#2][#3][#4]%
+  {\setuplocalframed[#2#3\v!frame][#4]}
+
+\def\dosetupcorrespondencelayeroption[#1][#2][#3][#4]%
+  {\getparameters[#2#3][#4]}
+
+%D Setup command for the values
+
+\def\definecorrespondencevalue
+  {\dodoubleargument\dodefinecorrespondencevalue}
+
+\def\dodefinecorrespondencevalue[#1][#2]%
+  {\setvalue{\e!setup#1\e!endsetup}{\dotripleempty\docorrespondencesetupvalue[#2]}%
+   \setvalue{\e!set#1\e!value}##1{\doquadrupleempty\docorrespondencesetvalue[#1][#2][##1]}}
+
+\def\docorrespondencesetupvalue[#1][#2][#3]%
+  {\doifelsenothing{#3}
+     {\getparameters[#1][#2]}
+     {\def\dodocorrespondencesetupvalue##1%
+        {\getparameters[#1##1][#3]}%
+      \processcommalist[#2]\dodocorrespondencesetupvalue}}
+
+\def\docorrespondencesetvalue[#1][#2][#3][#4]#5%
+  {\iffourthargument
+     \setuplabeltext[\currentmainlanguage][#1:#3=#4]%
+   \fi
+   \setvalue{#2#3}{#5}}
+
+%D Tests
+
+\def\correspondencevalue       #1#2{\csname\ifcsname  #1#2\endcsname  #1#2\else\s!empty\fi\endcsname}
+\def\correspondencestylevalue#1#2#3{\csname\ifcsname#1#2#3\endcsname#1#2#3\else\s!empty\fi\endcsname}
+
+\long\def\doifcorrespondencevalue           #1#2{\doifsomething    {\correspondencevalue         {#1}{#2}}}
+\long\def\doifelsecorrespondencevalue       #1#2{\doifsomethingelse{\correspondencevalue         {#1}{#2}}}
+\long\def\doifcorrespondencestylevalue    #1#2#3{\doifsomething    {\correspondencestylevalue{#1}{#2}{#3}}}
+\long\def\doifelsecorrespondencestylevalue#1#2#3{\doifsomethingelse{\correspondencestylevalue{#1}{#2}{#3}}}
+
+%D External files
+
+\def\definecorrespondencefile[#1][#2][#3]%
+  {\setvalue{\e!use#1#2}[##1]{\usecorrespondencefile[#1][#2][#3][##1]}}
+
+\def\usecorrespondencefile[#1][#2][#3][#4]%
+  {\def\dousecorrespondencefile##1%
+     {\readfile{##1.#3}
+        {\showmessage\m!correspondence{1}{#1,#2,##1.#3}}
+        {\showmessage\m!correspondence{2}{#1,#2,##1.#3}}}%
+   \processcommacommand[#4]\dousecorrespondencefile}
+
+%D Layers
+
+\def\definecorrespondencelayer[#1][#2]%
+  {\setvalue{\s!do\e!define#1\v!layer}{\dodefinecorrespondencelayer[#1][#2]}%
+   \setvalue{\s!do\e!set   #1\v!layer}{\dosetcorrespondencelayer   [#1][#2]}}
+
+\def\dodefinecorrespondencelayer[#1][#2][#3]%
+  {\def\dodododefinecorrespondencelayer##1{\dododefinecorrespondencelayer[#1][#2][##1]}%
+   \processaction
+     [#3]
+     [\v!foldmark=>{\processcommacommand[\csname#1!list!marking\endcsname]\dodododefinecorrespondencelayer},
+        \v!header=>{\processcommacommand[\csname#1!list!header\endcsname ]\dodododefinecorrespondencelayer},
+        \v!footer=>{\processcommacommand[\csname#1!list!footer\endcsname ]\dodododefinecorrespondencelayer},
+       \s!unknown=>{\dododefinecorrespondencelayer[#1][#2][#3]}]}
+
+\def\dododefinecorrespondencelayer[#1][#2][#3]%
+  {\letvalue{#2\v!option#3}\v!yes
+   \doifundefined{#1:#2:#3}
+     {\letvalue{#1:#2:#3}\v!layer
+      \addvalue{#1!list!layers}{#3}}%
+   \presetlocalframed[#2#3\v!frame]%
+   \definelayer
+     [#1:#3]
+     [\c!width=\paperwidth,
+      \c!height=\paperheight]%
+   \dodosetupcorrespondencelayer
+     [#1][#2][#3][\v!option]%
+     [\c!state=\v!start,
+      \c!symbol=,
+      \c!list=,
+      \c!alternative=\v!a,
+      \c!rule=\v!off,
+      \c!rulethickness=\linewidth,
+      \c!separator=\crlf,
+      \c!offset=\zeropoint,
+      \c!spacebefore=\zeropoint,
+      \c!spaceafter=\zeropoint,
+      \c!leftmargin=\zeropoint,
+      \c!rightmargin=\zeropoint]%
+   \dodosetupcorrespondencelayer
+     [#1][#2][#3][\v!frame]%
+     [\c!frame=\v!off,
+      \c!align=\v!right,
+      \c!offset=\zeropoint,
+      \c!strut=\v!yes]%
+   \dodosetupcorrespondencelayer
+     [#1][#2][#3][\v!layer]%
+     [\c!state=\v!start,
+      \c!offset=\zeropoint,
+      \c!preset=\v!left\v!top]}
+
+% \def\dosetheaderfooterlayer[#1][#2][#3]%
+%   {\!!doneafalse % first page
+%    \!!donebfalse % even numbered pages
+%    \!!donecfalse % odd numbered pages
+%    \!!donedfalse % real pagenumber
+%    \processcommacommand[\csname#2#3\c!state\endcsname]\dodosetheaderfooterlayer
+%    \doifnotvalue{#2#3\v!layer\c!state}\v!stop{\setuplayer[#1:#3][\c!state=\v!start]}%
+%    \ifnum\if!!doned\pagenumber\else\subpagenumber\fi=\plusone
+%      \if!!donea\dosetcorrespondencelayer[#1][#2][#3]\fi
+%    \else
+%      \ifodd\if!!doned\pagenumber\else\subpagenumber\fi
+%        \if!!donec\dosetcorrespondencelayer[#1][#2][#3]\fi
+%      \else
+%        \if!!doneb\dosetcorrespondencelayer[#1][#2][#3]\fi
+%    \fi\fi}
+
+% Alternative version of the macro above for the experimental
+% interface because \subpagenumber can't be used in \ifnum.
+
+\def\dosetcorrespondencelayer[#1][#2][#3]%
+  {\!!doneafalse % first page
+   \!!donebfalse % even numbered pages
+   \!!donecfalse % odd numbered pages
+   \!!donedfalse % real pagenumber
+   \processcommacommand[\csname#2#3\c!state\endcsname]\docorrespondencelayerstate
+   \doifnotvalue{#2#3\v!layer\c!state}\v!stop{\setuplayer[#1:#3][\c!state=\v!start]}%
+   \ifnum\if!!doned\pagenumber\else\correspagenumber\fi=\plusone
+     \if!!donea\dodosetcorrespondencelayer[#1][#2][#3]\fi
+   \else
+     \ifodd\if!!doned\pagenumber\else\correspagenumber\fi
+       \if!!donec\dodosetcorrespondencelayer[#1][#2][#3]\fi
+     \else
+       \if!!doneb\dodosetcorrespondencelayer[#1][#2][#3]\fi
+   \fi\fi}
+
+\def\dodosetcorrespondencelayer[#1][#2][#3]%
+  {\doifelsecorrespondencestylevalue{#2}{#3}\c!symbol
+     {\dododosetcorrespondencelayer[#1][#2][#3][\correspondencestylevalue{#2}{#3}\c!symbol]}
+     {\dododosetcorrespondencelayer[#1][#2][#3][\directsetup{#1:#3}]}}
+
+\def\dododosetcorrespondencelayer[#1][#2][#3][#4]%
+  {\setlayer[#1:#3]
+     {\localframed[#2#3\v!frame]
+        {\edef\currentcorrespondenceelement{#3}%
+         \doadaptleftskip {\correspondencestylevalue{#2}{#3}\c!leftmargin }%
+         \doadaptrightskip{\correspondencestylevalue{#2}{#3}\c!rightmargin}%
+         \doattributes{#2#3}\c!style\c!color{#4}}}}
+
+\def\docorrespondencelayerstate#1{\csname @@headfoot@@#1\endcsname}
+
+\setvalue{@@headfoot@@\v!start    }{\!!doneatrue                           }
+\setvalue{@@headfoot@@\v!stop     }{\!!doneafalse\!!donebfalse\!!donecfalse}
+\setvalue{@@headfoot@@\v!first    }{\!!doneatrue                           }
+\setvalue{@@headfoot@@\v!next     }{\!!donebtrue\!!donectrue               }
+\setvalue{@@headfoot@@\v!continue }{\!!donebtrue\!!donectrue               }
+\setvalue{@@headfoot@@\v!repeat   }{\!!doneatrue\!!donebtrue\!!donectrue   }
+\setvalue{@@headfoot@@\v!left     }{\!!donebtrue                           }
+\setvalue{@@headfoot@@\v!right    }{\!!donectrue                           }
+\setvalue{@@headfoot@@\v!leftpage }{\!!donebtrue                           }
+\setvalue{@@headfoot@@\v!rightpage}{\!!donectrue                           }
+\setvalue{@@headfoot@@\v!page     }{\!!donedtrue                           }
+\setvalue{@@headfoot@@\v!subpage  }{\!!donedfalse                          }
+
+%D Sections
+
+\def\definecorrespondencesection[#1][#2]%
+  {\setvalue{\s!do\e!define#1\v!section}{\dodefinecorrespondencesection[#1][#2]}%
+   \setvalue{\s!do\e!set   #1\v!section}{\dosetcorrespondencesection   [#1][#2]}}
+
+\def\dodefinecorrespondencesection[#1][#2][#3]%
+  {\letvalue{#2\v!option#3}\v!yes
+   \doifundefined{#1:#2:#3}
+     {\letvalue{#1:#2:#3}\v!section
+      \addvalue{#1!list!sections}{#3}}%
+   \getparameters
+     [#2#3]
+     [\c!before=,
+      \c!after=,
+      \c!inbetween=,
+      \c!align=,
+      \c!leftmargin=\zeropoint,
+      \c!rightmargin=\zeropoint,
+      \c!alternative=\v!a,
+      \c!separator=\crlf,
+      \c!optimize=\v!no,
+      \c!command=,
+      \c!style=,
+      \c!color=]}
+
+\def\dosetcorrespondencesection[#1][#2][#3]%
+  {\begingroup
+   \edef\currentcorrespondenceelement{#3}%
+   \doifelsecorrespondencestylevalue{#2}{#3}\c!before
+     {\correspondencestylevalue{#2}{#3}\c!before}
+      \endgraf
+   \doadaptleftskip {\correspondencestylevalue{#2}{#3}\c!leftmargin }%
+   \doadaptrightskip{\correspondencestylevalue{#2}{#3}\c!rightmargin}%
+   \doifcorrespondencestylevalue{#2}{#3}\c!align
+     {\setupalign[\correspondencestylevalue{#2}{#3}\c!align]}%
+   \dostartattributes{#2#3}\c!style\c!color\empty
+     \correspondencestylevalue{#2}{#3}\c!command{\directsetup{#1:#3}}%
+   \dostopattributes
+   \doifcorrespondencestylevalue{#2}{#3}\c!after
+     {\endgraf\correspondencestylevalue{#2}{#3}\c!after}
+      \endgraf
+   \endgroup}
+
+%D Descriptions
+
+\def\definecorrespondencedescription[#1][#2]%
+  {\setvalue{\s!do\e!define#1\v!description}{\dodefinecorrespondencedescription[#1][#2]}%
+   \setvalue{\s!do\e!set   #1\v!description}{\dosetcorrespondencedescription   [#1][#2]}%
+   \setvalue{\s!do\e!flush #1\v!description}{\doflushcorrespondencedescription [#1][#2]}}
+
+\def\dodefinecorrespondencedescription[#1][#2][#3]%
+  {\letvalue{#2\v!option#3}\v!yes
+   \doifundefined{#1:#2:#3}{\letvalue{#1:#2:#3}\v!description}%
+   \getparameters
+     [#2#3]
+     [\c!location=\v!left,
+      \c!inbetween={\blank[\v!nowhite]},
+      \c!before=\blank,
+      \c!after=\blank,
+      \c!width=\v!broad,
+      \c!headstyle=,
+      \c!headcolor=,
+      \c!distance=\zeropoint]}
+
+\def\dosetcorrespondencedescription[#1][#2][#3]%
+  {\bgroup
+   \doifelsecorrespondencestylevalue{#2}{#3}\c!before
+     {\correspondencestylevalue{#2}{#3}\c!before}
+      \endgraf
+   \scratchdimen\zeropoint
+   \setbox\scratchbox\hbox{\doattributes{#2#3}\c!headstyle\c!headcolor{\labeltext{#1:#3}}}%
+   \doifelse{\correspondencestylevalue{#2}{#3}\c!width}\v!broad
+     {\ifdim\wd\scratchbox>\zeropoint
+        \scratchdimen\dimexpr\wd\scratchbox+1em\relax
+      \fi}
+     {\doifelse{\correspondencestylevalue{#2}{#3}\c!width}\v!fit
+        {\if\wd\scratchbox>\zeropoint
+           \scratchdimen\dimexpr\wd\scratchbox+\correspondencestylevalue{#2}{#3}\c!distance\relax
+         \fi}
+        {\scratchdimen\dimexpr\correspondencestylevalue{#2}{#3}\c!width+\correspondencestylevalue{#2}{#3}\c!distance\relax}}%
+   \executeifdefined{@@description@@\correspondencestylevalue{#2}{#3}\c!location}\gobblethreearguments{#1}{#2}{#3}%
+   \doifelsecorrespondencestylevalue{#2}{#3}\c!after
+     {\endgraf\correspondencestylevalue{#2}{#3}\c!after}
+      \endgraf
+   \egroup}
+
+\setvalue{@@description@@\v!left}#1#2#3%
+  {\EveryPar{\hangindent\scratchdimen\hangafter\zerocount}%
+   \setbox\scratchbox\hbox\!!to\scratchdimen{\box\scratchbox\hss}%
+   \noindent\llap{\box\scratchbox}\directsetup{#1:#3}}
+
+\setvalue{@@description@@\v!right}#1#2#3%
+  {\EveryPar{\hangindent-\scratchdimen\hangafter\zerocount}%
+   \setbox\scratchbox\hbox\!!to\scratchdimen{\hss\box\scratchbox}%
+   \setbox\scratchbox\hbox\!!to\!!zeropoint {\hskip\dimexpr\hsize-\scratchdimen\relax\box\scratchbox\hss}%
+   \noindent\rlap{\box\scratchbox}\directsetup{#1:#3}}
+
+\setvalue{@@description@@\v!top}#1#2#3%
+  {\box\scratchbox\par
+   \nobreak
+   \doifcorrespondencestylevalue{#2}{#3}\c!inbetween{\correspondencestylevalue{#2}{#3}\c!inbetween}%
+   \nobreak
+   \directsetup{#1:#3}}
+
+\setvalue{@@description@@\v!text}#1#2#3%
+  {\noindent\box\scratchbox\directsetup{#1:#3}}
+
+\def\doflushcorrespondencedescription[#1][#2]%
+  {\def\dodoflushcorrespondencedescription##1%
+     {\doif{\correspondencestylevalue{#2}\v!option{##1}}\v!yes{\dosetcorrespondencedescription[#1][#2][##1]}}%
+   \processcommacommand[\csname#1!list!descriptions\endcsname]\dodoflushcorrespondencedescription}
+
+%D Commands to define named elements for header, footer etc. and use them,
+%D clone them or delete their content.
+
+\def\definecorrespondenceelement{\dotripleargument\dodefinecorrespondenceelement }
+\def\resetcorrespondenceelement {\dotripleargument\doresetcorrespondenceelement  }
+\def\copycorrespondenceelement  {\doquintupleempty\docopycorrespondenceelement   }
+\def\correspondenceelement      {\dotripleargument\docorrespondenceelement       }
+
+\def\dodefinecorrespondenceelement[#1][#2][#3]#4{\setvalue{#1:#2:#3}{#4}}
+\def\doresetcorrespondenceelement   [#1][#2][#3]{\resetvalue{#1:#2:#3}}
+
+\def\docopycorrespondenceelement[#1][#2][#3][#4][#5]%
+  {\iffifthargument
+     \copycsname#1:#2:#3\endcsname\csname#1:#4:#5\endcsname
+   \else
+     \copycsname#1:#2:#3\endcsname\csname#1:#2:#4\endcsname
+   \fi}
+
+\def\docorrespondenceelement[#1][#2][#3]%
+  {\edef\currentcorrespondenceelement{#2}%
+   \csname#1:#2:#3\endcsname}
+
+\stopmodule
+
+\protect \endinput

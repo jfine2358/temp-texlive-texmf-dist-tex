@@ -1,0 +1,431 @@
+%D \module
+%D   [       file=anch-pos, % was core-pos
+%D        version=1999.08.01,
+%D          title=\CONTEXT\ Anchoring Macros,
+%D       subtitle=Positioning Support,
+%D         author=Hans Hagen,
+%D           date=\currentdate,
+%D      copyright={PRAGMA ADE \& \CONTEXT\ Development Team}]
+%C
+%C This module is part of the \CONTEXT\ macro||package and is
+%C therefore copyrighted by \PRAGMA. See mreadme.pdf for
+%C details.
+
+\writestatus{loading}{ConTeXt Anchoring Macros / Positioning}
+
+%D In \MKIV\ there was already a different housekeeping model for positions quite
+%D early, but starting in 2012 more dramatic changes started to happen, especially
+%D in relation to background graphics. It will probably take some time to settle.
+
+\registerctxluafile{anch-pos}{1.001}
+
+\unprotect
+
+%D The first application of positional information was embedded graphics. Since we
+%D are interacting with text, it made sense to take the current line height and
+%D depth into account too. This is why we have position macros for simple positions
+%D and one boxes.
+%D
+%D \starttyping
+%D \dosetposition          {identifier}
+%D \dosetpositionwhd       {identifier} {width} {height} {depth}
+%D \dosetpositionplus      {identifier} {width} {height} {depth} {list}
+%D \stoptyping
+
+\def\dosaveposition            #1#2#3#4{\ctxcommand{setpos("#1",\number#2,\number\dimexpr#3,\number\dimexpr#4)}}
+\def\dosavepositionwhd   #1#2#3#4#5#6#7{\ctxcommand{setpos("#1",\number#2,\number\dimexpr#3,\number\dimexpr#4,\number\dimexpr#5,\number\dimexpr#6,\number\dimexpr#7)}}
+\def\dosavepositionplus#1#2#3#4#5#6#7#8{\ctxcommand{setpos("#1",\number#2,\number\dimexpr#3,\number\dimexpr#4,\number\dimexpr#5,\number\dimexpr#6,\number\dimexpr#7,"#8")}}
+
+\def\dosetposition            #1{\ctxcommand{posxy("#1")}}
+\def\dosetpositionwhd   #1#2#3#4{\ctxcommand{poswhd("#1",\number\dimexpr#2,\number\dimexpr#3,\number\dimexpr#4)}}
+\def\dosetpositionplus#1#2#3#4#5{\ctxcommand{posplus("#1",\number\dimexpr#2,\number\dimexpr#3,\number\dimexpr#4,"#5")}}
+\def\dosetpositionbox       #1#2{\ctxcommand{poswhd("#1",\number\wd#2,\number\ht#2,\number\dp#2)}}
+\def\dosetpositionstrut       #1{\ctxcommand{posstrut("#1")}}
+
+\newbox\b_anch_position
+\newif \ifpositioning   % sort of public
+
+%D Sometimes we want to trick the position handler a bit:
+
+\def\replacepospxywhd#1#2#3#4#5#6#7% when used we can better make a helper
+  {\ctxcommand{replacepospxywhd('#1',\number#2,\number\dimexpr#3,\number\dimexpr#4,\number\dimexpr#5,\number\dimexpr#6,\number\dimexpr#7)}}
+
+%D \macros
+%D   {MPp, MPx, MPy, MPw, MPh, MPd, MPxy, MPll, MPlr, MPur, MPul, MPpos, MPanchor}
+%D
+%D Access to the positional information is provided by macros with short names
+%S that are clearly meant for \METAPOST\ but nowadays also used for other purposes.
+
+\def\MPp      #1{\ctxcommand{MPp("#1")}}     \let\MPpage     \MPp
+\def\MPr      #1{\ctxcommand{MPr("#1")}}     \let\MPregion   \MPr
+\def\MPc      #1{\ctxcommand{MPc("#1")}}     \let\MPcolumn   \MPc
+\def\MPn      #1{\ctxcommand{MPn("#1")}}     \let\MPparagraph\MPn
+\def\MPx      #1{\ctxcommand{MPx("#1")}}
+\def\MPy      #1{\ctxcommand{MPy("#1")}}
+\def\MPw      #1{\ctxcommand{MPw("#1")}}     % first we need to replace \MPwidth etc
+\def\MPh      #1{\ctxcommand{MPh("#1")}}
+\def\MPd      #1{\ctxcommand{MPd("#1")}}
+\def\MPxy     #1{\ctxcommand{MPxy("#1")}}
+\def\MPll     #1{\ctxcommand{MPll("#1")}}
+\def\MPlr     #1{\ctxcommand{MPlr("#1")}}
+\def\MPur     #1{\ctxcommand{MPur("#1")}}
+\def\MPul     #1{\ctxcommand{MPul("#1")}}
+\def\MPpos    #1{\ctxcommand{MPpos("#1")}}    \let\MPanchor\MPpos  % overloaded locally when needed
+\def\MPe      #1{\ctxcommand{MPe("#1")}}
+
+\def\MPls     #1{\ctxcommand{MPls("#1")}}     \let\MPleftskip\MPls % compatible feature
+\def\MPrs     #1{\ctxcommand{MPrs("#1")}}     \let\MPrightkip\MPrs % compatible feature
+
+\def\MPpardata#1{\ctxcommand{MPpardata("#1")}}
+\def\MPxywhd  #1{\ctxcommand{MPxywhd("#1")}}
+
+%D \macros
+%D  {MPplus, MPrest, MPv, MPvv}
+%D
+%D Since we will probably keep on extending, we provide a general extension
+%D macro. The plus alternative takes an extra argument, denoting what additional
+%D parameter to pick up. So, the third extra is fetched with,
+%D
+%D \starttyping
+%D \MPplus{identifier}{3}{default}
+%D \stoptyping
+%D
+%D All extras (comma separated) are fetched with:
+%D
+%D \starttyping
+%D \MPrest{identifier}
+%D \stoptyping
+%D
+%D The extra parameters are not treated.
+
+\def\MPplus#1#2#3{\ctxcommand{MPplus("#1",#2,"#3")}}  \let\MPv \MPplus
+\def\MPrest  #1#2{\ctxcommand{MPrest("#1","#2")}}     \let\MPvv\MPrest
+
+%D There are two low level positioning macros. Both store the position as well
+%D as execute an action associated with that position.
+
+\let\dopositionaction\gobbleoneargument % implemented later
+
+\def\anch_positions_initialize
+  {\ifpositioning \else
+     \global\positioningtrue
+   \fi}
+
+\unexpanded\def\setpositiononly
+  {\iftrialtypesetting
+     \expandafter\gobbleoneargument
+   \else
+     \expandafter\anch_positions_set_only_indeed
+   \fi}
+
+\def\anch_positions_set_only_indeed#1%
+  {\anch_positions_initialize
+   \edef\currentposition{#1}%
+   \dosetposition\currentposition}
+
+\unexpanded\def\setposition
+  {\iftrialtypesetting
+     \expandafter\gobbleoneargument
+   \else
+     \expandafter\anch_positions_set_indeed
+   \fi}
+
+\def\anch_positions_set_indeed#1%
+  {\anch_positions_initialize
+   \edef\currentposition{#1}%
+   \dosetposition\currentposition
+   \anch_positions_trace_left
+   \dopositionaction\currentposition}
+
+\unexpanded\def\setpositiondata
+  {\iftrialtypesetting
+     \expandafter\gobblefourarguments
+   \else
+     \expandafter\anch_positions_set_data_indeed
+   \fi}
+
+\def\anch_positions_set_data_indeed#1#2#3#4%
+  {\anch_positions_initialize
+   \hbox
+     {\edef\currentposition{#1}%
+      \dosetpositionwhd\currentposition{#2}{#3}{#4}% already \the\dimexpr
+      \anch_positions_trace_left
+      \dopositionaction\currentposition
+      \hss}}
+
+\unexpanded\def\setpositionbox
+  {\iftrialtypesetting
+     \expandafter\anch_positions_set_box_nop
+   \else
+     \expandafter\anch_positions_set_box_yes
+   \fi}
+
+\def\anch_positions_set_box_nop#1%
+  {\dowithnextboxcs\flushnextbox}
+
+\def\anch_positions_set_box_yes#1%
+  {\dowithnextbox{\anch_positions_set_box_finish{#1}}}
+
+\def\anch_positions_set_box_finish#1%
+  {\anch_positions_initialize
+   \hbox to \wd\nextbox
+     {\edef\currentposition{#1}%
+      \dosetpositionbox\currentposition\nextbox
+      \anch_positions_trace_left
+      \setbox\b_anch_position\box\nextbox
+      \dopositionaction\currentposition
+      \box\b_anch_position
+      \hss}}
+
+\unexpanded\def\setpositionstrut
+  {\iftrialtypesetting
+     \expandafter\anch_positions_set_strut_nop
+   \else
+     \expandafter\anch_positions_set_strut_yes
+   \fi}
+
+\def\anch_positions_set_strut_nop#1%
+  {\strut}
+
+\def\anch_positions_set_strut_yes#1%
+  {\anch_positions_initialize
+   \hbox to \zeropoint
+     {\edef\currentposition{#1}%
+      \dosetpositionstrut\currentposition
+      \anch_positions_trace_left
+      \dopositionaction\currentposition
+      \strut
+      \hss}}
+
+\unexpanded\def\setpositiondataplus
+  {\iftrialtypesetting
+     \expandafter\gobblefivearguments
+   \else
+     \expandafter\anch_positions_set_plus_indeed
+   \fi}
+
+\def\anch_positions_set_plus_indeed#1#2#3#4#5%
+  {\anch_positions_initialize
+   \hbox % just package
+     {\edef\currentposition{#1}%
+      \dosetpositionplus\currentposition{#2}{#3}{#4}{#5}% already \the\dimexpr
+      \anch_positions_trace_right
+      \dopositionaction\currentposition
+      \hss}}
+
+\unexpanded\def\setpositionplus
+  {\iftrialtypesetting
+     \expandafter\anch_positions_set_plus_nop
+   \else
+     \expandafter\anch_positions_set_plus_yes
+   \fi}
+
+\def\anch_positions_set_plus_nop#1#2%
+  {\dowithnextboxcs\flushnextbox}
+
+\def\anch_positions_set_plus_yes#1#2%
+  {\dowithnextbox{\anch_positions_set_plus_yes_finish{#1}{#2}}}
+
+\def\anch_positions_set_plus_yes_finish#1#2%
+  {\anch_positions_initialize
+   \hbox to \nextboxwd
+     {\edef\currentposition{#1}%
+      \dosetpositionplus\currentposition{\wd\nextbox}{\ht\nextbox}{\dp\nextbox}{#2}%
+      \anch_positions_trace_right
+      \setbox\b_anch_position\flushnextbox
+      \dopositionaction\currentposition
+      \box\b_anch_position
+      \hss}}
+
+\let\currentposition\s!unknown
+
+%D A few special ones .. will be cleaned up
+
+\def\pageanchor  {page:\the\realpageno} % for the moment only one pagesize
+\def\textanchor  {text:\the\realpageno}
+\def\regionanchor{region:0}
+
+\newcount\c_anch_column % will be delegated to lua
+\newcount\c_anch_text   % will be delegated to lua
+
+\unexpanded\def\anch_mark_column_box#1%
+  {\global\advance\c_anch_column\plusone
+   \ctxcommand{markregionbox(\number#1,"columnarea:\the\c_anch_column")}} % extra height
+
+\unexpanded\def\anch_mark_region_box
+  {\iftrialtypesetting
+     \singleexpandafter\gobbleoneargument
+   \else\ifpositioning
+     \doubleexpandafter\anch_mark_region_box_indeed
+   \else
+     \doubleexpandafter\gobbleoneargument
+   \fi\fi}
+
+\unexpanded\def\anch_mark_region_box_indeed#1%
+  {\ctxcommand{markregionbox(\number#1)}}
+
+\unexpanded\def\anch_mark_flow_box#1% will be extended / renamed
+  {\hbox\bgroup
+   \global\advance\c_anch_text\plusone
+   \ctxcommand{markregionbox(\number#1,"textarea:\the\c_anch_text")}%
+   \box#1%
+   \egroup}
+
+\unexpanded\def\anch_mark_flow_only#1% will be extended / renamed
+  {\global\advance\c_anch_text\plusone
+   \ctxcommand{markregionbox(\number#1,"textarea:\the\c_anch_text",true)}}
+
+\unexpanded\def\anch_make_page_box#1% maybe like text
+  {\ctxcommand{markregionbox(\number#1,"\pageanchor")}} % needs an hbox
+
+\unexpanded\def\anch_mark_text_box#1%
+  {\ctxcommand{markregionbox(\number#1,"\textanchor")}} % needs an hbox
+
+%D We can copy a position with:
+%D
+%D \starttyping
+%D \copyposition {to} {from}
+%D \stoptyping
+%D
+%D Again, this is a global operation.
+
+\def\copyposition#1#2{\ctxcommand{copyposition('#1','#2')}}
+
+%D The fact that handling positions is a two pass operation, is one of the
+%D reasons why we need to be able to test for existence, using:
+%D
+%D \starttyping
+%D \doifpositionelse {identifier} {found action} {not found action}
+%D \stoptyping
+
+\def\doifpositionelse#1{\ctxcommand{doifpositionelse('#1')}}
+\def\doifposition    #1{\ctxcommand{doifposition('#1')}}
+
+%D \macros
+%D   {xypos}
+%D
+%D We have several macros available to save positions. Later we will see
+%D applications.
+%D
+%D \starttabulate[|l|l||]
+%D \NC \type {\xypos} \NC    \NC simple position with no dimensions \NC \NR
+%D \NC \type {\hpos}  \NC    \NC position and characteristics of a \type {\hbox} \NC \NR
+%D \NC \type {\vpos}  \NC    \NC position and characteristics of a \type {\vbox} \NC \NR
+%D \NC \type {\bpos}  \NC b: \NC begin point in a line \NC \NR
+%D \NC \type {\epos}  \NC e: \NC end point in a line \NC \NR
+%D \stoptabulate
+%D
+%D Each macro takes an identifier as argument, and the \type
+%D {\hpos} and \type {\vpos} also expect box content.
+
+\let\xypos\setpositiononly
+
+\unexpanded\def\hpos#1{\dontleavehmode\setpositionbox{#1}\hbox}
+\unexpanded\def\vpos#1{\setpositionbox{#1}\vbox}
+\unexpanded\def\bpos#1{\dontleavehmode      \setpositionstrut{b:#1}\ignorespaces}
+\unexpanded\def\epos#1{\removeunwantedspaces\setpositionstrut{e:#1}}
+
+%D When we want to calculate more complex backgrounds, we need to know what the
+%D current indentation scheme is. At the cost of many positions and memory, we
+%D can keep track of them. This mechanism is activated automatically based on
+%D information collected in the previous pass.
+
+\newtoks \t_anch_positions_tracers
+\newcount\c_anch_positions_paragraph
+
+\unexpanded\def\tracepositions
+  {\the\t_anch_positions_tracers}
+
+\unexpanded\def\enableparpositions % global
+  {\global\let\registerparoptions\doregisterparoptions
+   \global\positioningtrue}
+
+\let\disableparpositions\relax
+
+\let\registerparoptions\relax
+
+\unexpanded\def\doregisterparoptions
+  {\iftrialtypesetting \else
+     \ifinpagebody \else \ifmmode \else \ifinformula \else
+       \anch_positions_register_par_options
+     \fi \fi \fi
+   \fi}
+
+\def\anch_positions_register_par_options_normal
+  {\dontleavehmode\ctxcommand{parpos()}}
+
+\def\anch_positions_register_par_options_traced
+  {\anch_positions_register_par_options_normal
+   \smashedhbox to \zeropoint
+     {\hss
+      \startcolor[blue]%
+      \llap{\infofont\number\c_anch_positions_paragraph}%
+      \vrule
+        \!!width 4\onepoint
+        \!!height2\onepoint
+        \!!depth 2\onepoint
+      \stopcolor
+      \hss}}
+
+\let\anch_positions_register_par_options\anch_positions_register_par_options_normal
+
+\appendtoks
+    \let\anch_positions_register_par_options\anch_positions_register_par_options_traced
+\to \t_anch_positions_tracers
+
+\unexpanded\def\anch_positions_trace#1#2#3%
+  {\smashedhbox
+     {#1{\infofont#2#3}%
+      \kern-\onepoint
+      \vrule\!!width2\onepoint\!!height\halfapoint\!!depth\halfapoint}}
+
+\unexpanded\def\anch_positions_trace_left_indeed
+  {\anch_positions_trace\llap\darkmagenta{\currentposition>}}
+
+\unexpanded\def\anch_positions_trace_right_indeed
+  {\anch_positions_trace\rlap\darkcyan{<\currentposition}}
+
+\let\anch_positions_trace_left \relax
+\let\anch_positions_trace_right\relax
+
+\appendtoks
+    \let\anch_positions_trace_left  \anch_positions_trace_left_indeed
+    \let\anch_positions_trace_right \anch_positions_trace_right_indeed
+\to \t_anch_positions_tracers
+
+% \appendtoks \registerparoptions \to \everypar
+
+%D \macros
+%D   {doifoverlappingelse}
+%D
+%D A first application of positional information, is to determine if two
+%D boxes do overlap:
+%D
+%D \starttyping
+%D \doifoverlappingelse{point a}{point b}
+%D   {action when overlapping}
+%D   {action when not overlapping}
+%D \stoptyping
+
+\def\doifoverlappingelse#1#2{\ctxcommand{doifoverlappingelse("#1","#2")}}
+
+%D \macros
+%D   {doifpositionsonsamepageelse,
+%D    doifpositionsonthispageelse}
+%D
+%D Instead of letting the user handle fuzzy expansion, we provide a simple test on
+%D positions being on the same page.
+%D
+%D \starttyping
+%D \doifpositionsonsamepageelse{point a}{point b}
+%D   {action when on same page}
+%D   {action when not on same page}
+%D \doifpositionsonthispageelse{point a}{point b}
+%D   {action when on this page}
+%D   {action when not on this page}
+%D \stoptyping
+
+\def\doifpositionsonsamepageelse#1{\ctxcommand{doifpositionsonsamepageelse("#1")}}
+\def\doifpositionsonthispageelse#1{\ctxcommand{doifpositionsonthispageelse("#1")}}
+
+\protect \endinput

@@ -1,0 +1,186 @@
+%%
+%% This is file `pgfmolbio.chromatogram.tex',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% pgfmolbio.dtx  (with options: `pmb-chr-tex')
+%% 
+%% Copyright (C) 2013 by Wolfgang Skala
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% 
+\ProvidesFile{pgfmolbio.chromatogram.tex}[2013/08/01 v0.21 SCF chromatograms]
+
+
+\ifluatex
+  \RequireLuaModule{pgfmolbio.chromatogram}
+\fi
+
+\definecolor{pmbTraceGreen}{RGB}{34,114,46}
+\definecolor{pmbTraceBlue}{RGB}{48,37,199}
+\definecolor{pmbTraceBlack}{RGB}{0,0,0}
+\definecolor{pmbTraceRed}{RGB}{191,27,27}
+\definecolor{pmbTraceYellow}{RGB}{233,230,0}
+
+\def\@pmb@chr@keydef#1#2{%
+  \pgfkeyssetvalue{/pgfmolbio/chromatogram/#1}{#2}%
+}
+\def\@pmb@chr@stylekeydef#1#2{%
+  \pgfkeys{/pgfmolbio/chromatogram/#1/.style={#2}}%
+}
+\def\@pmb@chr@getkey#1{%
+  \pgfkeysvalueof{/pgfmolbio/chromatogram/#1}%
+}
+
+\@pmb@chr@keydef{sample range}{1-500 step 1}
+
+\@pmb@chr@keydef{x unit}{0.2mm}
+\@pmb@chr@keydef{y unit}{0.01mm}
+\@pmb@chr@keydef{samples per line}{500}
+\@pmb@chr@keydef{baseline skip}{3cm}
+\@pmb@chr@stylekeydef{canvas style}{draw=none, fill=none}
+\@pmb@chr@keydef{canvas height}{2cm}
+
+\@pmb@chr@stylekeydef{trace A style}{pmbTraceGreen}
+\@pmb@chr@stylekeydef{trace C style}{pmbTraceBlue}
+\@pmb@chr@stylekeydef{trace G style}{pmbTraceBlack}
+\@pmb@chr@stylekeydef{trace T style}{pmbTraceRed}
+\pgfmolbioset[chromatogram]{%
+  trace style/.code=\pgfkeysalso{
+    trace A style/.style={#1},
+    trace C style/.style={#1},
+    trace G style/.style={#1},
+    trace T style/.style={#1}
+  }%
+}
+\@pmb@chr@keydef{traces drawn}{}
+
+\@pmb@chr@stylekeydef{tick A style}{thin, pmbTraceGreen}
+\@pmb@chr@stylekeydef{tick C style}{thin, pmbTraceBlue}
+\@pmb@chr@stylekeydef{tick G style}{thin, pmbTraceBlack}
+\@pmb@chr@stylekeydef{tick T style}{thin, pmbTraceRed}
+\pgfmolbioset[chromatogram]{%
+  tick style/.code=\pgfkeysalso{
+    tick A style/.style={#1},
+    tick C style/.style={#1},
+    tick G style/.style={#1},
+    tick T style/.style={#1}
+  }%
+}
+\@pmb@chr@keydef{tick length}{1mm}
+\@pmb@chr@keydef{ticks drawn}{}
+
+\@pmb@chr@keydef{base label A text}{\strut A}
+\@pmb@chr@keydef{base label C text}{\strut C}
+\@pmb@chr@keydef{base label G text}{\strut G}
+\@pmb@chr@keydef{base label T text}{\strut T}
+\@pmb@chr@stylekeydef{base label A style}%
+  {below=4pt, font=\ttfamily\footnotesize, pmbTraceGreen}
+\@pmb@chr@stylekeydef{base label C style}%
+  {below=4pt, font=\ttfamily\footnotesize, pmbTraceBlue}
+\@pmb@chr@stylekeydef{base label G style}%
+  {below=4pt, font=\ttfamily\footnotesize, pmbTraceBlack}
+\@pmb@chr@stylekeydef{base label T style}%
+  {below=4pt, font=\ttfamily\footnotesize, pmbTraceRed}
+\pgfmolbioset[chromatogram]{%
+  base label style/.code=\pgfkeysalso{
+    base label A style/.style={#1},
+    base label C style/.style={#1},
+    base label G style/.style={#1},
+    base label T style/.style={#1}
+  }%
+}
+\@pmb@chr@keydef{base labels drawn}{}
+
+\newif\ifpmb@chr@showbasenumbers
+\pgfmolbioset[chromatogram]{%
+  show base numbers/.is if=pmb@chr@showbasenumbers,
+  show base numbers
+}
+\@pmb@chr@stylekeydef{base number style}%
+  {pmbTraceBlack, below=-3pt, font=\sffamily\tiny}
+\@pmb@chr@keydef{base number range}{auto-auto step 10}
+
+\@pmb@chr@keydef{probability distance}{0.8cm}
+\@pmb@chr@keydef{probabilities drawn}{}
+\@pmb@chr@keydef{probability style function}{nil}
+
+\pgfmolbioset[chromatogram]{
+  bases drawn/.code=\pgfkeysalso{
+    traces drawn=#1,
+    ticks drawn=#1,
+    base labels drawn=#1,
+    probabilities drawn=#1
+  },
+  bases drawn=ACGT
+}
+
+\ifluatex\else\expandafter\endinput\fi
+
+\newif\ifpmb@chr@tikzpicture
+
+\newcommand\pmbchromatogram[2][]{%
+  \@ifundefined{useasboundingbox}%
+    {\pmb@chr@tikzpicturefalse\begin{tikzpicture}}%
+    {\pmb@chr@tikzpicturetrue\begingroup}%
+  \pgfmolbioset[chromatogram]{#1}%
+  \directlua{
+    pmbChromatogram = pgfmolbio.chromatogram.Chromatogram:new()
+    pmbChromatogram:readScfFile("#2")
+    pmbChromatogram:setParameters{
+      sampleRange = "\@pmb@chr@getkey{sample range}",
+      xUnit = "\@pmb@chr@getkey{x unit}",
+      yUnit = "\@pmb@chr@getkey{y unit}",
+      samplesPerLine = "\@pmb@chr@getkey{samples per line}",
+      baselineSkip = "\@pmb@chr@getkey{baseline skip}",
+      canvasHeight = "\@pmb@chr@getkey{canvas height}",
+      tracesDrawn = "\@pmb@chr@getkey{traces drawn}",
+      tickLength = "\@pmb@chr@getkey{tick length}",
+      ticksDrawn = "\@pmb@chr@getkey{ticks drawn}",
+      baseLabelsDrawn = "\@pmb@chr@getkey{base labels drawn}",
+      showBaseNumbers = "\ifpmb@chr@showbasenumbers true\else false\fi",
+      probDistance = "\@pmb@chr@getkey{probability distance}",
+      probabilitiesDrawn = "\@pmb@chr@getkey{probabilities drawn}",
+      probStyle = \@pmb@chr@getkey{probability style function}
+    }
+    pmbChromatogram:setParameters{
+      baseNumberRange = "\@pmb@chr@getkey{base number range}",
+    }
+    pgfmolbio.setCoordinateFormat(
+      "\pgfkeysvalueof{/pgfmolbio/coordinate unit}",
+      "\pgfkeysvalueof{/pgfmolbio/coordinate format string}"
+    )
+    \ifpmb@loadmodule@convert
+      local filename =
+        "\pgfkeysvalueof{/pgfmolbio/convert/output file name}"
+      if filename == "(auto)" then
+        filename = "pmbconverted" .. pgfmolbio.outputFileId
+      end
+      filename = filename ..
+        ".\pgfkeysvalueof{/pgfmolbio/convert/output file extension}"
+      outputFile, ioError = io.open(filename, "w")
+      if ioError then
+        tex.error(ioError)
+      end
+      tex.sprint = function (a) outputFile:write(a) end
+      tex.sprint("\string\\begin{tikzpicture}")
+      pmbChromatogram:printTikzChromatogram()
+      tex.sprint("\string\n\string\\end{tikzpicture}")
+      outputFile:close()
+      pgfmolbio.outputFileId = pgfmolbio.outputFileId + 1
+    \else
+      pmbChromatogram:printTikzChromatogram()
+    \fi
+  }%
+  \ifpmb@chr@tikzpicture\endgroup\else\end{tikzpicture}\fi%
+}
+\endinput
+%%
+%% End of file `pgfmolbio.chromatogram.tex'.

@@ -1,0 +1,178 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{tikz-opm}[2014/01/23 v0.1.1 OPM Digrams]
+
+
+\RequirePackage{tikz}
+\usetikzlibrary{shapes.geometric}
+\usetikzlibrary{calc, positioning}
+\usepgflibrary{shapes.multipart, arrows}
+
+\RequirePackage{makeshape}
+\RequirePackage{amsmath}
+
+% Keys for tikzopm triangles
+%
+% /pgf/tikzopmGeneralization : side length (of the triangle)
+\pgfkeys{/opm/.cd,
+  side length/.code=#1,
+  side length/.default=15pt,
+  side length/.initial=15pt}
+%\pgfkeys{/opm/side length=12pt}
+
+\def\defaulttriangleanchors{%
+  \savedanchor{\upper}{%
+    \pgfpoint{0pt}{.5\pgf@ya}%
+    \mincorrect{\pgf@y}{\pgfshapeminheight}%
+    \advance\pgf@y by -2\pgfshapeouterysep%
+  }%
+  
+  \anchor{north}{\upper}%
+  \anchor{north west}{\upper}%
+  \anchor{north east}{\upper}%
+  \anchor{south west}{\pgfpoint{-7.5pt}{-.5\pgf@ya}}%
+  \anchor{south}{\pgfpoint{0pt}{-.5\pgf@ya}}%
+  \anchor{west}{\pgfpoint{-7.5pt}{-.5\pgf@ya}}%
+  \anchor{south east}{\pgfpoint{7.5pt}{-.5\pgf@ya}}%
+  \anchor{east}{\pgfpoint{7.5pt}{-.5\pgf@ya}}%
+  \anchor{center}{\pgfpointorigin}%
+}
+
+\def\defaulttrianglelengths{%
+  \pgfmathsetlength{\pgf@xa}{15pt}%\pgfkeysvalueof{/opm/side length}}%
+  \pgfmathsetlength{\pgf@ya}{ sqrt(3) * \pgf@xa / 2 }%
+}
+
+\def\trianglepath{%
+    \defaulttrianglelengths%
+    \pgfpathmoveto{\pgfpoint{0pt}{\pgf@ya}}%
+    \pgfpathlineto{\pgfpoint{-.5\pgf@xa}{0}}%
+    \pgfpathlineto{\pgfpoint{.5\pgf@xa}{0}}%
+    \pgfpathclose%
+  }
+  
+\pgfdeclareshape{tikzopmGeneralization}%
+{ \nodeparts{}% this is a symbol only
+  %% xa: length
+  %% ya: height
+  \defaulttrianglelengths%
+  \defaulttriangleanchors%
+  
+  %% draw the triangle
+  \backgroundpath{
+    \trianglepath%
+    \pgfusepath{stroke}%
+  }%
+}
+
+\pgfdeclareshape{tikzopmAggregation}%
+{ \nodeparts{}%
+  \defaulttrianglelengths%
+  \defaulttriangleanchors%
+  
+  \backgroundpath{%
+    \trianglepath%
+    \pgfusepath{fill}}
+}
+  
+\pgfdeclareshape{tikzopmExhibition}{%
+  \nodeparts{}%
+  \defaulttrianglelengths%
+  \defaulttriangleanchors%
+
+  \backgroundpath{%
+    \defaulttrianglelengths%
+    \trianglepath\pgfusepath{stroke}%
+    \pgfpathmoveto{\pgfpoint{0pt}{.7\pgf@ya}}%
+    \pgfpathlineto{\pgfpoint{-4pt}{.15\pgf@ya}}%
+    \pgfpathlineto{\pgfpoint{4pt}{.15\pgf@ya}}%
+    \pgfpathclose\pgfusepath{fill}%
+  }%
+}
+
+\pgfdeclareshape{tikzopmInstantiation}{%
+  \nodeparts{}%
+  \defaulttrianglelengths%
+  \defaulttriangleanchors%
+
+  \backgroundpath{%
+    \defaulttrianglelengths%
+    \trianglepath\pgfusepath{stroke}%
+    \pgfpathmoveto{\pgfpoint{0pt}{0pt}}%
+    \pgfpathlineto{\pgfpoint{-4pt}{.5\pgf@ya}}%
+    \pgfpathlineto{\pgfpoint{4pt}{.5\pgf@ya}}%
+    \pgfpathclose\pgfusepath{fill}%
+  }%
+}
+
+% \pgfdeclareshap{tikzopmInstance}{%
+%   \nodeparts{text,instanceof}%
+%   %
+%   % Anchors
+%   %
+%   \savedanchor\centerpoint{%
+%     \pgf@x=.5\wd\gpfnodeparttextbox%
+%     \pgfmathsetlength{\pgf@y}{\pgfkeysvalueof{/pgf/inner ysep}}%
+%     \pgf@y=-\pgf@y%
+%     \advance\pgf@y by-\dp\pgfnodeparttextbox%
+%     \advance\pgf@y by-.5\pgflinewidth%
+%   }%
+
+% \newcommand{\opmInstance}[4]{%
+%   \node [shape=rectangle, draw, font=\scriptsize, #4] (#1-inner) {#3};%
+%   \node [shape=rectangle, draw, minimum height=25pt,
+%   at=(#1-inner.northwest] (#1) {#2};%
+%   }
+
+\newcommand{\opmInstance}[2]{%
+  \ensuremath{\genfrac{}{}{0pt}{}{\text{#1}}{\text{\tiny #2}}}}
+
+\tikzset{every edge/.style={draw, thick}}
+\tikzset{opmentity/.style={draw, thick}}
+
+
+\tikzset{opminstance/.style={shape=rectangle, draw}}
+\tikzset{opmobject/.style={shape=rectangle, opmentity}}
+%\tikzset{opmobjectwithstate/.style={shape=rectangle, opmentity,text depth=8ex}}
+
+\tikzset{opmstate/.style={opmentity, shape=rectangle, rounded corners=6pt}}
+\tikzset{opmprocess/.style={shape=ellipse, opmentity}}
+\tikzset{opmgeneralization/.style={shape=tikzopmGeneralization, draw, yshift=15pt}}
+\tikzset{opmaggregation/.style={shape=tikzopmAggregation, draw, yshift=15pt}}
+\tikzset{opmexhibition/.style={shape=tikzopmExhibition, draw, yshift=15pt}}
+\tikzset{opminstantiation/.style={shape=tikzopmInstantiation, draw, yshift=15pt}}
+
+%% edge styles
+\tikzset{opmrelatesto/.style={-angle 45, draw, thick}}
+\tikzset{opmbidirrelate/.style={left to-left to, draw, thick}}
+
+%% the requires version allows for a more DSL like style
+\tikzset{opminstrument/.style={-o, thick}}
+\tikzset{opmrequires/.style={o-, thick}}
+
+%% the handles version allows for a more DSL like style
+\tikzset{opmagent/.style={-*, thick}}
+\tikzset{opmhandles/.style={-*, thick}}
+
+\tikzset{opminput/.style={-open triangle 45, thick}}
+
+\tikzset{opmoutput/.style={-open triangle 45,thick}}
+
+%% the consumes version allows for a more DSL like style
+\tikzset{opmconsumption/.style={-open triangle 45, thick}}
+\tikzset{opmconsumes/.style={open triangle 45-, thick}}
+
+%% the yields version allows for a more DSL like style
+\tikzset{opmresult/.style={-open triangle 45, thick}}
+\tikzset{opmyields/.style={-open triangle 45, thick}}
+
+%% the affects version allows for a more DSL like style
+\tikzset{opmeffect/.style={open triangle 45-open triangle 45, thick}}
+\tikzset{opmaffects/.style={open triangle 45-open triangle 45, thick}}
+
+\pgfarrowsdeclarecombine*{twoopentriang}{twoopentriang}%
+{open triangle 45}{open triangle 45}
+{open triangle 45}{open triangle  45}
+\tikzset{dbla/.style={postaction={draw,shorten >=-1pt, -open triangle 45}}}
+%% the invkoes version allows for a more DSL like style
+\tikzset{opminvocation/.style={-twoopentriang, thick}}
+\tikzset{opminvokes/.style={-twoopentriang, thick}}

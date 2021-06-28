@@ -1,0 +1,118 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{librefranklin}
+    [2019/10/13 (Bob Tennent)  Supports LibreFranklin fonts for all LaTeX engines.]
+
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+
+\newif\iflibrefranklin@otf 
+\ifxetex
+  \librefranklin@otftrue
+\else\ifluatex
+  \librefranklin@otftrue
+\else  % [pdf]LaTeX
+  \librefranklin@otffalse
+\fi\fi
+
+\newif\iflibrefranklin@default \librefranklin@defaultfalse
+\newif\iflibrefranklin@semibold \librefranklin@semiboldfalse
+\newif\iflibrefranklin@extrabold \librefranklin@extraboldfalse
+\newif\iflibrefranklin@black \librefranklin@blackfalse
+\newif\iflibrefranklin@medium  \librefranklin@mediumfalse
+\newif\iflibrefranklin@light  \librefranklin@lightfalse
+\newif\iflibrefranklin@extralight  \librefranklin@extralightfalse
+\newif\iflibrefranklin@thin  \librefranklin@thinfalse
+
+\newcommand*{\LibreFranklin@scale}{1}
+\DeclareOptionX{scaled}{\renewcommand*{\LibreFranklin@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\LibreFranklin@scale}{#1}}
+
+\DeclareOptionX{default}{\librefranklin@defaulttrue}
+\DeclareOptionX{sfdefault}{\librefranklin@defaulttrue}
+\DeclareOptionX{type1}{\librefranklin@otffalse}
+\DeclareOptionX{semibold}{\librefranklin@semiboldtrue}
+\DeclareOptionX{extrabold}{\librefranklin@extraboldtrue}
+\DeclareOptionX{black}{\librefranklin@blacktrue}
+\DeclareOptionX{bold}{\librefranklin@semiboldfalse}
+\DeclareOptionX{medium}{\librefranklin@mediumtrue}
+\DeclareOptionX{regular}{\librefranklin@mediumfalse}
+\DeclareOptionX{light}{\librefranklin@lightfalse}
+\DeclareOptionX{extralight}{\librefranklin@extralightfalse}
+\DeclareOptionX{thin}{\librefranklin@thinfalse}
+
+\ExecuteOptionsX{bold,regular}
+\ProcessOptionsX\relax
+
+\iflibrefranklin@otf
+  \def\librefranklin@boldstyle{Bold}
+  \iflibrefranklin@semibold\def\librefranklin@boldstyle{SemiBold}\fi
+  \iflibrefranklin@extrabold\def\librefranklin@boldstyle{ExtraBold}\fi
+  \iflibrefranklin@black\def\librefranklin@boldstyle{Black}\fi
+  \def\librefranklin@regstyle{Regular}
+  \iflibrefranklin@medium\def\librefranklin@regstyle{Medium}\fi
+  \iflibrefranklin@light\def\librefranklin@regstyle{Light}\fi
+  \iflibrefranklin@extralight\def\librefranklin@regstyle{ExtraLight}\fi
+  \iflibrefranklin@thin\def\librefranklin@regstyle{Thin}\fi
+
+\else % type1
+
+  \def\bfseries@sf{b}
+  \iflibrefranklin@semibold\def\bfseries@sf{sb}\fi
+  \iflibrefranklin@extrabold\def\bfseries@sf{eb}\fi
+  \iflibrefranklin@black\def\bfseries@sf{ub}\fi
+  \def\mdseries@sf{m}
+  \iflibrefranklin@medium\def\mdseries@sf{medium}\fi
+  \iflibrefranklin@light\def\mdseries@sf{l}\fi
+  \iflibrefranklin@extralight\def\mdseries@sf{el}\fi
+  \iflibrefranklin@thin\def\mdseries@sf{ul}\fi
+
+
+
+\fi
+
+\iflibrefranklin@otf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes,mweights}
+\fi
+
+\iflibrefranklin@otf
+  \def\librefranklin@regular{Regular}
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+        Ligatures = TeX ,
+        Scale     = \LibreFranklin@scale ,
+        Extension = .otf }
+    \setsansfont
+        [ UprightFont    = *-\librefranklin@regstyle ,
+          ItalicFont     = *-\ifx\librefranklin@regstyle\librefranklin@regular Italic\else\librefranklin@regstyle Italic\fi ,
+          BoldFont       = *-\librefranklin@boldstyle , 
+          BoldItalicFont = *-\librefranklin@boldstyle Italic ]
+        {LibreFranklin}
+  % grab current family in case of subsequent change:
+  \let\librefranklinfamily\sfdefault  
+  \iflibrefranklin@default\renewcommand*\familydefault{\librefranklinfamily}\fi
+  \providecommand\sufigures{\addfontfeatures{VerticalPosition=Superior}}
+  \newfontfamily\librefranklin
+        [ UprightFont    = *-\librefranklin@regstyle ,
+          ItalicFont     = *-\ifx\librefranklin@regstyle\librefranklin@regular Italic\else\librefranklin@regstyle Italic\fi ,
+          BoldFont       = *-\librefranklin@boldstyle , 
+          BoldItalicFont = *-\librefranklin@boldstyle Italic ]
+        {LibreFranklin}
+\else % type1
+  \fa@naming@exception{figures}{{superior}{tabular}}{Sup}
+  \def\sufigures{\@nomath\sufigures
+      \fontfigurestyle{superior}\selectfont}
+  \DeclareTextFontCommand{\textsu}{\sufigures}
+  \let\textsuperior\textsu
+  \def\librefranklinfamily{LibreFranklin-TLF}
+  \newcommand*\librefranklin{\fontfamily{\librefranklinfamily}\selectfont}
+  \def\sfdefault{\librefranklinfamily}
+  \iflibrefranklin@default\edef\familydefault{\sfdefault}\edef\seriesdefault{\mdseries@sf}\fi
+\fi
+
+\iflibrefranklin@otf
+% turn off defaults in case other fonts are selected:
+  \defaultfontfeatures{}
+\fi
+
+\endinput

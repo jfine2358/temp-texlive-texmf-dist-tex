@@ -1,0 +1,109 @@
+%
+% plextarray.sty
+% written by Hironobu Yamashita (@aminophen)
+%
+% This package is part of the platex-tools bundle.
+% https://github.com/aminophen/platex-tools
+%
+% This package `plextarray.sty' is based on:
+%   * array.sty in latex-tools (2016/10/06 v2.4d)
+%   * plext.sty in platex (2016/08/20 v1.2a)
+% and lltjext.sty from LuaTeX-ja project.
+%
+
+\NeedsTeXFormat{pLaTeX2e}
+\ProvidesPackage{plextarray}
+  [2016/10/23 v1.0g Tabular extension package for plext and array]
+\RequirePackage{plext}
+\RequirePackage{array}
+
+%% save definitions from array.sty
+\def\array{\col@sep\arraycolsep
+  \def\d@llarbegin{$}\let\d@llarend\d@llarbegin\def\@halignto{}%
+  \@tabarray}
+\def\tabular{\def\@halignto{}\@tabular}
+\expandafter\def\csname tabular*\endcsname#1{%
+       \setlength\dimen@{#1}%
+       \edef\@halignto{to\the\dimen@}\@tabular}
+
+%% patching internal code for array.sty and plext.sty
+%
+\def\@startpbox#1{\bgroup
+  \box@dir\adjustbaseline %% added
+  \hsize=#1\@arrayparboxrestore
+   \everypar{%
+      \vrule \@height \ht\@arstrutbox \@width \z@
+      \everypar{}}%
+   }
+%
+\def\@tabarray{\@ifnextchar<\p@tabarray{\p@tabarray<Z>}}
+%
+%% merged \@array (from array.sty) and \p@array (from plext.sty)
+\def\p@array<#1>[#2]#3{%
+  %%%%% new code for box direction
+  \let\box@dir\relax
+  \iftdir
+    \if #1y\relax
+      \let\box@dir\yoko
+      \@tempcnta=\z@    % \(y)strutbox
+    \else\if #1z\relax
+      \@rotswtrue
+      \let\box@dir\tate
+      \@tempcnta=\tw@   % \zstrutbox
+    \else
+      \let\box@dir\tate
+      \@tempcnta=\@ne   % \tstrutbox
+    \fi\fi
+  \else
+    \if #1t\relax
+      \let\box@dir\tate
+      \@tempcnta=\@ne   % \tstrutbox
+    \else
+      \let\box@dir\yoko
+      \@tempcnta=\z@    % \(y)strutbox
+    \fi
+  \fi
+  %%%%% new code end
+  \setbox \@arstrutbox \hbox{\box@dir %% add \box@dir
+      % the behavior of \strutbox may be changed
+      % (box resister -> conditional macro) in the future;
+      % so, \strutbox should appear after \box@dir is applied.
+      \@tempcntb=\ifcase\@tempcnta\strutbox
+                 \or\tstrutbox\or\zstrutbox\or\@ctrerr\fi
+      \@tempdima \ht \@tempcntb
+      \advance \@tempdima by\extrarowheight
+      \vrule \@height \arraystretch \@tempdima
+             \@depth \arraystretch \dp \@tempcntb
+             \@width \z@}%
+  \fork@array@option<#1>[#2]%  %% merged from plext
+  \begingroup
+  \@mkpream{#3}%
+  % following definition of \@preamble is from plext (\edef -> \xdef),
+  % but it's not the same as the one in array; why?
+  \xdef\@preamble{\ialign \noexpand \@halignto
+                  \bgroup \tabskip \z@skip \@arstrut \@preamble
+                          \tabskip \z@skip \cr}%
+  \endgroup
+  \@arrayleft
+  \@begin@alignbox %% defined inside \fork@array@option
+  \bgroup
+  \box@dir\adjustbaseline
+  \let\par\@empty
+  \let\@sharp##\let\protect\relax
+  \let\\\@arraycr\let\tabularnewline\\
+  \lineskip\z@skip\baselineskip\z@skip\@preamble}
+%
+\def\endarray{\crcr \egroup \egroup \@end@alignbox \@arrayright \gdef\@preamble{}}
+\def\endtabular{\endarray $\egroup\null}
+\expandafter \let \csname endtabular*\endcsname = \endtabular
+%
+%% done
+
+%% support for other packages
+\@ifpackageloaded{colortbl}{% --- colortbl.sty 2012/06/21 v1.0b
+  \PackageInfo{plextarray}{Package colortbl detected}%
+  \def\endarray{\crcr \egroup \egroup \@end@alignbox \@arrayright \gdef\@preamble{}\CT@end}%
+}{}
+%% all done
+
+\endinput

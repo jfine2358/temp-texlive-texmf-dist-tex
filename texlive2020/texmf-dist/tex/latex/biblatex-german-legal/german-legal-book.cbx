@@ -1,0 +1,299 @@
+\ProvidesFile{german-legal-book.cbx}[2020/03/13 v001]
+%%% license: LPPL
+%%% author-maintainer: Dominik Brodowski, dominik.brodowski@uni-saarland.de
+
+
+%%%%%%%%%%%%%%%%
+%%% Vorspann %%%
+%%%%%%%%%%%%%%%%
+
+%%% Dieser Zitierstil basiert auf ext-authortitle, verwendet aber kein
+%%% ibidem (Geschmacksfrage!)
+\RequireCitationStyle{ext-authortitle}%
+
+%%% Um die Änderungen so klein wie möglich zu halten, wird das Paket
+%%% xpatch verwendet, mit dem sich existierende Makros verändern lassen,
+%%% ohne sie gänzlich neu definieren zu müssen.
+\RequirePackage{xpatch}%
+
+%%% Mit der Option "edsuper" wird angegeben, ob die Auflagennummer bei
+%%% Büchern und Kommentaren mit abgedruckt werden soll. Der Standard ist
+%%% "true", d.h. um dies zu unterbinden, muss "edsuper=false" als Option
+%%% gesetzt werden.
+\newbool{book:edition:super}
+\setboolean{book:edition:super}{true}
+\DeclareBibliographyOption[boolean]{edsuper}[true]{%
+  \setboolean{book:edition:super}{#1}%
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Allgemeiner Teil %%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Mehrere Autorennamen werden durch einen Schrägstrich getrennt. Dieser
+%%% ist -- wie die Autorennamen selbst (siehe bbx) -- kursiv zu setzen.
+\AtEveryCite{%
+  \renewcommand*{\multinamedelim}{\mkbibemph{\addslash}}%
+  \renewcommand*{\finalnamedelim}{\mkbibemph{\addslash}}%
+}
+
+%%% cite:title wird normalerweise verwendet, um alles ab dem Beitragstitel
+%%% (d.h. nach dem Autorennamen) auszugeben. Mit dieser "Weiche" kann
+%%% hierfür, abhängig vom Beitragstyp, ein eigenes Makro definiert werden.
+\renewbibmacro*{cite:title}{%
+  \printtext[bibhyperref]{%
+    \ifbibmacroundef{cite:\strfield{entrytype}}%
+    {%%% default, from authortitle.cbx %%%
+      \printfield[citetitle]{labeltitle}%
+    }{%%% use custom override %%%
+      \usebibmacro*{cite:\strfield{entrytype}}%
+    }%
+  }%
+}
+
+%%% Mit diesem Makro wird standardmäßig die Startseite ausgegeben, wenn
+%%% es einer genauen Fundstelle ("pinpoint citation") als postnote fehlt.
+\newbibmacro*{startingpage}{%
+  \iffieldundef{postnote}%
+    {\iffieldundef{pages}{}%
+      {\addcomma\addspace\printfield{pages}}}%
+    {}%
+}
+
+%%% Die Formatdefintion "edition:super" und das Makro "printsuperedition"
+%%% werden genutzt, um -- falls book:edition:super auf "true" gesetzt ist
+%%% (Option "edsuper", siehe oben) die Auflagennummer (!) hochgestellt
+%%% auszugeben.
+\DeclareFieldFormat{edition:super}{%
+  \ifinteger{#1}{%
+    \textsuperscript{\tiny{#1}}%
+  }{}%
+}
+
+\newbibmacro*{printsuperedition}{%
+  \ifbool{book:edition:super}{\printfield[edition:super]{edition}}{}%
+}
+
+
+%%%%%%%%%%%%%%%
+%%% article %%%
+%%%%%%%%%%%%%%%
+
+%%% In Fußnoten soll nicht die Seitenspanne des Aufsatzes, sondern nur die
+%%% Startseite ausgegeben werden.
+\AtEveryCite{%
+  \DeclareFieldFormat[article]{pages}{\mkfirstpage{#1}}%
+}
+
+%%% Gibt es eine genaue Fundstelle ("pinpoint citation") als sog. postnote,
+%%% so soll zunächst die Startseite und danach die genaue Fundstelle in
+%%% einer Klammer ausgegeben werden.
+\DeclareFieldFormat[article]{postnote}{\addspace\printfield{pages}\addspace\mkbibparens{#1}}
+
+%%% Nachfolgend ist der Fußnoten-Zitierstil für Aufsätze definiert, die
+%%% in Zeitschriften erschienen sind, welche nach Erscheinungsjahr (und
+%%% nicht Band, dann @periodical) zitiert werden:
+\newbibmacro*{cite:article}{%
+  %%%
+  %%% Zeitschriftenname...
+  \usebibmacro{journal}%
+  %%%
+  %%% Leerzeichen...
+  \setunit*{\addspace}%
+  %%%
+  %%% ggf. Angabe der Ausgabe (wenn Feld "issue" definiert ist)
+  \iffieldundef{issue}{}{\printfield{issue}\slash}%
+  %%%
+  %%% Jahr...
+  \printfield{year}%
+  %%%
+  %%% und dann die Startseite bzw. pinpoint citation
+  \usebibmacro{startingpage}%
+}
+
+
+%%%%%%%%%%%%%%%%%%
+%%% periodical %%%
+%%%%%%%%%%%%%%%%%%
+
+%%% In Fußnoten soll nicht die Seitenspanne des Aufsatzes, sondern nur die
+%%% Startseite ausgegeben werden.
+\AtEveryCite{%
+  \DeclareFieldFormat[periodical]{pages}{\mkfirstpage{#1}}%
+}
+
+%%% Gibt es eine genaue Fundstelle ("pinpoint citation") als sog. postnote,
+%%% so soll zunächst die Startseite und danach die genaue Fundstelle in
+%%% einer Klammer ausgegeben werden.
+\DeclareFieldFormat[periodical]{postnote}{\printfield{pages} \mkbibparens{#1}}
+
+%%% Nachfolgend ist der Fußnoten-Zitierstil für Aufsätze definiert, die
+%%% in Zeitschriften erschienen sind, welche nach Band (und nicht nach
+%%% Erscheinungsjahr, dann @article) zitiert werden:
+\newbibmacro*{cite:periodical}{%
+  %%%
+  %%% Zeitschriftenname...
+  \usebibmacro{journal}%
+  %%%
+  %%% Leerzeichen...
+  \setunit*{\addspace}%
+  %%%
+  %%% Band...
+  \printfield{volume}%
+  %%%
+  %%% Leerzeichen...
+  \addspace%
+  %%%
+  %%% Jahr (in Klammern)...
+  \mkbibparens{\printfield{year}}%
+  %%%
+  %%% Komma...
+  \addcomma%
+  %%%
+  %%% Leerzeichen...
+  \addspace%
+  %%%
+  %%% und dann die Startseite bzw. pinpoint citation
+  \usebibmacro{startingpage}%
+}
+
+
+%%%%%%%%%%%%
+%%% book %%%
+%%%%%%%%%%%%
+
+%%% In der Fußnoten interessiert uns nur die Auflagenzahl (ohne "Aufl.")
+\AtEveryCite{%
+  \DeclareFieldFormat[book]{edition}{#1}%
+}
+
+%%% Nachfolgend ist der Fußnoten-Zitierstil für Bücher definiert:
+\newbibmacro*{cite:book}{%
+  \printfield[citetitle]{labeltitle}%
+  \usebibmacro{printsuperedition}%
+}
+
+
+%%%%%%%%%%%%%%
+%%% inbook %%%
+%%%%%%%%%%%%%%
+
+%%% In Fußnoten soll nicht die Seitenspanne des Aufsatzes, sondern nur die
+%%% Startseite ausgegeben werden.
+\AtEveryCite{%
+  \DeclareFieldFormat[inbook]{pages}{\mkfirstpage{#1}}%
+}
+
+%%% Gibt es eine genaue Fundstelle ("pinpoint citation") als sog. postnote,
+%%% so soll zunächst die Startseite und danach die genaue Fundstelle in
+%%% einer Klammer ausgegeben werden.
+\DeclareFieldFormat[inbook]{postnote}{\printfield{pages} \mkbibparens{#1}}
+
+%%% Herausgebernamen in der Fußnote dürfen abgekürzt werden
+\AtEveryCite{%
+   \DeclareNameAlias[inbook]{byeditor}{labelname}%
+}
+
+%%% Nachfolgend ist der Fußnoten-Zitierstil für Buchbeiträge definiert:
+\newbibmacro*{cite:inbook}{%
+  %%%
+  %%% in:
+  \usebibmacro{in:}%
+  %%%
+  %%% Hrsg. ...
+  \usebibmacro{byeditor+others}%
+  %%%
+  %%% Leerzeichen...
+  \newunit\newblock%
+  %%%
+  %%% dann der Buchtitel...
+  \iffieldundef{shorttitle}%
+     {\printfield{booktitle}}%
+     {\printfield{shorttitle}}%
+  \usebibmacro{printsuperedition}%
+  %%%
+  %%% Leerzeichen...
+  \newunit\newblock%
+  %%%
+  %%% und dann die Startseite bzw. pinpoint citation
+  \usebibmacro{startingpage}%
+}
+
+
+%%%%%%%%%%%%%%%%%%%%
+%%% incollection %%%
+%%%%%%%%%%%%%%%%%%%%
+
+%%% In Fußnoten soll nicht die Seitenspanne des Aufsatzes, sondern nur die
+%%% Startseite ausgegeben werden.
+\AtEveryCite{%
+  \DeclareFieldFormat[incollection]{pages}{\mkfirstpage{#1}}%
+}
+
+%%% Gibt es eine genaue Fundstelle ("pinpoint citation") als sog. postnote,
+%%% so soll zunächst die Startseite und danach die genaue Fundstelle in
+%%% einer Klammer ausgegeben werden.
+\DeclareFieldFormat[incollection]{postnote}{\printfield{pages} \mkbibparens{#1}}
+
+%%% Nachfolgend ist der Fußnoten-Zitierstil für Festschriftenbeiträge definiert:
+\newbibmacro*{cite:incollection}{%
+  %%%
+  %%% in:
+  \usebibmacro{in:}%
+  %%%
+  %%% Festschriftentitel...
+  \iffieldundef{shorttitle}%
+     {\printfield{booktitle}}%
+     {\printfield{shorttitle}}%
+}
+
+
+%%%%%%%%%%%%%%%%%%
+%%% commentary %%%
+%%%%%%%%%%%%%%%%%%
+
+%%% Der Bearbeiter wird im prenote-Feld angegeben und kursiv gesetzt, danach
+%%% folgt ein Komma
+\DeclareFieldFormat[commentary]{prenote}{\mkbibemph{#1}\addcomma}%
+
+%%% Falls bei einem Kommentar "shorthand" angegeben ist, werden die
+%%% Herausgeber nicht (!) genannt. Hierzu wird der Befehl
+%%% \printnames{labelname} im allgemeinen Makro "textcite" unter die
+%%% Bedingung gestellt, dass es sich um einen Kommentar handelt und ein
+%%% "shorthand" definiert ist.
+\xpatchbibmacro{textcite}{%
+  \printnames{labelname}%
+}{%
+  \ifentrytype{commentary}{%
+    \iffieldundef{shorthand}{%
+      \printnames{labelname}%
+    }{}%
+  }{%
+    \printnames{labelname}%
+  }%
+}{}{}
+
+%%% Falls bei einem Kommentar "shorthand" angegeben ist, muss trotzdem das
+%%% "in:" vorangestellt und die Auflagennummer nachgeschoben werden. Hierzu
+%%% wird das allgemeine Makro "cite:shorthand" entsprechend modifiziert.
+\xpatchbibmacro{cite:shorthand}{%
+  \printfield{shorthand}%
+}{%
+  \usebibmacro{in:}%
+  \printfield{shorthand}%
+  \usebibmacro{printsuperedition}%
+}{}{}
+
+%%% Nachfolgend ist der Fußnoten-Zitierstil für Kommentare definiert. Dieser
+%%% wird indes nur verwendet, falls "shorthand" nicht definiert ist;
+%%% andernfalls erledigen die oben modifizierten Makros "textcite" und
+%%% "cite:shorthand" die ganze Arbeit.
+\newbibmacro*{cite:commentary}{%
+  \usebibmacro{in:}%
+  \iffieldundef{shorttitle}%
+     {\printfield{booktitle}}%
+     {\printfield{shorttitle}}%
+}
+
+\endinput

@@ -1,0 +1,1030 @@
+% Source (with comments) can be found at https://github.com/Strauman/exercisebank/
+%% The LaTeX package exercisebank - version v0.3.0 (2019/03/18) - build 137
+%% exercisebank.sty: Exercise bank
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2018 by Andreas Storvik Strauman <andreas dot s dot strauman at uit dot no>
+%% -------------------------------------------------------------------------------------------
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2008/05/04 or later.
+%% This work has the LPPL maintenance status `author-maintained'.
+%% This work consists of all files listed in README
+\ProvidesPackage{exercisebank}[2019/03/18 v0.3.0 Creates a setup that gives freedom in making sets and exercises.]
+\xdef\exbank@quiet{1}
+\def\exercisebankversion{v0.3.0 - Build 137}
+\PackageWarningNoLine{exercisebank-v0.3.0}{This package is in the beta stage, and if something unexpected happens please, oh pretty please, report it to https://github.com/Strauman/exercisebank. Thank you!}
+\@ifundefined{ownLineNoSpacesGotIt}{\@latex@warning{Compilation wont work unless \string\end{problem} and \string\end{solution} are on their own lines and without any spaces. This warning can be removed by doing \string\def\string\ownLineNoSpacesGotIt{} before \@backslashchar usepackage{exercisebank}}
+}{}
+\ifcsname pdfstrcmp\endcsname\else
+\PackageError{exercisebank-v0.3.0}{Exercisebank currently only works with pdfLaTeX}{}\stop
+\fi
+\gdef\setExercisesDir#1{\@latex@error{\string\setExercisesDir is deprecated. Use \string\exercisebanksetup{exercise directory=#1} instead}{}\stop\bye
+}
+\@ifundefined{exercisesDir}{\gdef\@exercisesDir{.}
+}{}
+\global\let\incl = \input
+\def\exb@rememberCC#1{%
+	\edef\exbtmp@charcode{\the\numexpr#1}%
+	\expandafter\xdef\csname exb@remcc@\exbtmp@charcode\endcsname{\the\catcode#1}%
+}
+\def\exb@ignoreCC#1{%
+	\edef\exbtmp@charcode{\the\numexpr#1}
+	\exb@rememberCC{\exbtmp@charcode}%
+	\catcode\exbtmp@charcode=9%
+}
+\def\exb@resetCC#1{	\catcode#1=\csname exb@remcc@\the\numexpr#1\endcsname
+}
+\def\ignoreOutlineSpaces{%
+	\exb@ignoreCC{10}%
+	\exb@ignoreCC{11}%
+	\exb@ignoreCC{12}%
+	\exb@ignoreCC{13}%
+}
+\def\obeyOutlineSpaces{%
+	\exb@resetCC{10}%
+	\exb@resetCC{11}%
+	\exb@resetCC{12}%
+	\exb@resetCC{13}\ignorespaces%
+}
+\let\ignoreOutlineSpaces\relax
+\let\obeyOutlineSpaces\relax
+\def\g@newif#1{%
+  \count@\escapechar\escapechar\m@ne
+    \global\let#1\iffalse%
+    \g@if#1\iftrue%
+    \g@if#1\iffalse%
+\escapechar\count@}
+\def\g@if#1#2{%
+  \expandafter\def\csname\expandafter\@gobbletwo\string#1%
+  \expandafter\@gobbletwo\string#2\endcsname%
+  {\global\let#1#2}%
+}
+\global\newif\ifexbset@nextprob@header
+\global\exbset@nextprob@headertrue
+\newif\ifexb@opthides
+\g@newif\ifexb@b@nextprob@header
+\g@newif\ifexb@solutionsonly
+\g@newif\ifexb@isFirstProblem
+\g@newif\ifexb@opt@tightenparagraphs
+\g@newif\ifexb@DisplaySolutions
+\g@newif\ifexb@DisplayCurrentSolution
+\g@newif\ifexb@DisplayCurrentProblem
+\g@newif\ifexbank@if@needspace
+\g@newif\ifexb@opt@partProblems
+\g@newif\ifexb@opt@doMargins
+\g@newif\ifexb@CountIntros
+\g@newif\ifexb@noheadArg
+\g@newif\ifexb@showtags
+\g@newif\ifexb@showCurrent@PPHeader
+\g@newif\ifexb@showLonelyPartProblems
+\global\exb@showLonelyPartProblemsfalse
+\global\exb@showCurrent@PPHeadertrue
+\exb@b@nextprob@headerfalse
+\exbank@if@needspacetrue
+\usepackage{xstring}
+\usepackage{pgffor}
+\usepackage{scrextend}
+\usepackage{comment}
+\usepackage{calc}
+\usepackage{pgfpages}
+\usepackage{geometry}
+\usepackage{listofitems}
+\ignoreemptyitems
+\usepackage{trimspaces}
+\usepackage{needspace}
+\edef\@isTrue{1}
+\edef\@isFalse{0}
+\gdef\exb@int@isin#1#2#3#4{%
+	\def\needle{#1}
+	\def\haystack{#2}
+	\ifx\haystack\empty\relax#4\else%
+		\def\isFalse{0}%
+		\let\isInList = \isFalse%
+		\IfInteger{\needle}{}{\@latex@error{ISIN: Can't look for part problem that is not numeric: `\needle' in `\haystack'!}{}\bye\stop}%
+		\IfInteger{\haystack}{			\ifnum\haystack=\needle\relax%
+				#3%
+			\else%
+				#4%
+			\fi%
+}{			\foreach\pp in #2{%
+					\ifnum\pp=\needle\relax%
+						\gdef\isInList{1}%
+						#3%
+					\fi%
+}%
+			\if\isInList\isFalse%
+				#4%
+			\fi%
+}%
+	\fi}
+\gdef\exb@warn{\PackageWarningNoLine{exercisebank-v0.3.0}}
+\gdef\exb@err#1{\PackageError{exercisebank}{#1}{}}
+\newif\ifexb@isInList
+\newcounter{exb@isin@dots}
+\gdef\exb@isin#1#2#3#4{\@dinfo{running isin}
+	\global\exb@isInListfalse
+	\xdef\needle{#1}
+	\xdef\haystack{#2}
+	\def\whenfalse{#4}
+	\def\whentrue{#3}
+	\ifx\haystack\empty\relax#4\else%
+		\readlist*\items\haystack%
+		\foreachitem\itm\in\items{%
+			\ifnum\pdfstrcmp{\needle}{\itm}=\z@\relax%
+				\global\exb@isInListtrue%
+				#3\fi%
+}%
+		\ifexb@isInList\else%
+			#4
+		\fi\fi%
+}
+\gdef\strif#1#2{%
+	\ifnum\pdfstrcmp{#1}{#2}=\z@\relax%
+}
+\let\ea = \expandafter
+\begingroup\lccode`\|=`\\
+\lowercase{\endgroup\def\removebs#1{\if#1|\else#1\fi}}
+\gdef\exbank@macroname#1{\expandafter\removebs\string#1}
+\gdef\@noneofone#1{}
+\gdef\@noneoftwo#1#2{}
+{\globaldefs=1\newcommand\@opt@gobble[2][]{}}
+\@ifundefined{exbank@verbose}{	\global\let\@dinfo\@gobble
+	\global\let\@dinfomode\@opt@gobble
+}{	\bgroup
+	\globaldefs=1\newcommand\@dinfo[2][]{%
+			\@latex@warning{--INFO:#2}%
+}%
+	\egroup%
+}
+\@ifundefined{exbank@quiet}{	\gdef\@dlog#1{\@latex@warning{::DEBUG:#1}}%
+}{	\global\let\@dlog\@noneofone%
+}
+\gdef\shownextchar#1{\@latex@warning{NEXT:\string#1}#1}
+\newcommand\ex@before[2]{	\edef #1{\unexpanded{#2}\unexpanded\expandafter{#1}}
+}
+\newcommand{\exb@lmargin}[2]{\strut\vadjust{\exb@domark{#1}{#2}}}
+\newcommand{\exb@domark}[2]{%
+	\hbox to #2{		\vbox to 0pt{				\kern-\dp\strutbox
+				\smash{\llap{#1}}
+				\vss
+}%
+}
+}
+\newif\ifexb@isintersection
+\def\exb@intersection@any#1#2#3#4{%
+	\global\exb@isintersectionfalse%
+	\edef\listarg{#1}%
+	\ifx\listarg\empty\@dlog{RELAX}#4\else%
+	\readlist*\needlelist{#1}%
+		\foreachitem\needle\in\needlelist{%
+			\exb@isin{\needle}{#2}{\global\exb@isintersectiontrue}{}%
+}%
+		\ifexb@isintersection#3\else#4\fi%
+		\fi%
+}
+\gdef\@makespacesignored{%
+\global\let\@oldtilde~%
+\gdef~{}%
+\global\catcode`\^^M=9\relax%
+\global\catcode`\^^J=9\relax%
+\global\catcode`\ =9\relax%
+}
+\gdef\@makespacesnormal{%
+\global\let~\@oldtilde%
+\global\catcode`\^^M=5\relax%
+\global\catcode`\^^J=12\relax%
+\global\catcode`\ =10\relax%
+}
+\def\@AtNextParHook{}
+\let\oldep\everypar
+\oldep{\the\everypar}
+\newtoks\everypar
+\oldep{\the\everypar\@AtNextParHook\relax\gdef\@AtNextParHook{}}
+\def\AtNextPar#1{\g@addto@macro\@AtNextParHook{#1}}
+\gdef\exercisebankversion{\PackageWarningNoLine{exercisebank}{Version v0.3.0b137}}
+\gdef\exercisebankbuild{\PackageWarningNoLine{exercisebank}{Build 137}}
+\edef\@isTrue{1}
+\edef\@isFalse{0}
+\gdef\ShowNumbers{\gdef\@displayMetaCounter{\isTrue}}
+\global\exb@showtagsfalse
+\gdef\ShowTags{\global\exb@showtagstrue}
+\gdef\exb@printCurrentTags{Tags: \exb@currentTags~}
+\gdef\ShowFilenames{\At\InputExerciseFile{File: {\ttfamily \@exercisesDir/\exerciseFile}\par}}
+\global\exb@DisplaySolutionsfalse
+\gdef\DisplaySolutions{\global\exb@DisplaySolutionstrue\@latex@warning{Showing solutions}}
+\gdef\SolutionsOnly{\DisplaySolutions\global\exb@solutionsonlytrue}
+\gdef\exb@currentPoints{0}
+\pgfkeys{/exbanksetup/.is family, /exbanksetup,
+default/.style = {  part problems = true,
+  tighten paragraphs = true,
+  problem header={\Large\bfseries\@tr{Problem}~\theproblemcounter},
+  part problem header={\large\textbf{(\theproblemcounter\alph{partproblemcounter})}},
+  part problem header suffix={},
+  solution header={\large{\textbf{\@tr{Solution}:}}},
+  exercise directory=.,
+  figure root directory=\@exercisesDir,
+  style margins=true,
+  problem needs space=0.2\paperheight,
+  needspace/.is if={exbank@if@needspace},
+  no needspace/.code = {\global\ifexbank@if@needspacefalse},
+  show lonely part problems/.is if={exb@showLonelyPartProblems}
+},
+exercise directory/.estore in = \@exercisesDir, %
+figure root directory/.estore in = \@figrootDir, %
+front page/.estore in = \exb@frontpage,
+front page=\@isFalse,
+problem header/.store in = \exbank@opt@problemHeader,
+part problem header/.store in = \exbank@opt@partProblemHeader,
+solution header/.store in = \exbank@opt@solutionHeader,
+problem needs space/.store in = \exbank@opt@problemneedspace,
+part problem header suffix/.store in=\exb@partproblem@header@suffix,
+part problems/.is if = {exb@opt@partProblems},
+tighten paragraphs/.is if = {exb@opt@tightenparagraphs},
+style margins/.is if ={exb@opt@doMargins},
+switches/.cd,
+  On/.initial = \@isTrue,
+  on/.initial = \@isTrue,
+  T/.initial =  \@isTrue,
+  True/.initial =  \@isTrue,
+  Off/.initial = \@isFalse,
+  off/.initial = \@isFalse,
+  F/.initial = \@isFalse,
+  False/.initial = \@isFalse,
+}
+\newcommand\exercisebanksetup[1]{  \pgfkeys{/exbanksetup, #1}%
+}
+\exercisebanksetup{default}
+\AtBeginDocument{\xdef\tpd{\the\prevdepth}}
+\gdef\tighten@paragraph{%
+\ifexb@opt@tightenparagraphs\relax%
+  \filbreak%
+\fi%
+}
+\gdef\tighten@paragraph@solutions{%
+\ifexb@opt@tightenparagraphs%
+  \ifexb@DisplaySolutions%
+    \filbreak%
+  \fi
+\fi%
+}
+\gdef\tighten@paragraph@always{%
+\ifexb@opt@tightenparagraphs%
+\filbreak%
+\fi%
+}
+\@dlog{unfilbreak@exercisebank}
+\@ifdefinable\@My@filbreak@counter{\newcount\@My@filbreak@counter}
+\global \@My@filbreak@counter = 0
+\@ifdefinable\@My@filbreak@mark{\newmarks\@My@filbreak@mark}
+\renewcommand*\filbreak{%
+    \par
+    \global\advance \@My@filbreak@counter \@ne
+    \marks\@My@filbreak@mark{\number\@My@filbreak@counter}%
+    \vfil
+    \penalty -200
+    \vfilneg
+}
+\newcommand*\@My@finish@stopfilbreak{}
+\newcommand*\stopfilbreak{%
+    \par
+    \ifnum\prevdepth >\@m \else\prevdepth \z@ \fi
+    \nobreak\null
+    \nobreak\vskip -\baselineskip
+    \penalty\z@
+    \begingroup
+        \output{%
+            \typeout{t: \the\pagetotal, g: \the\pagegoal}%
+            \unvbox\@cclv
+            \ifnum 0\topmarks\@My@filbreak@mark <\@My@filbreak@counter
+                \gdef\@My@finish@stopfilbreak{%
+                    \penalty\z@%
+}%
+            \else
+                \gdef\@My@finish@stopfilbreak{%
+                    \penalty\z@ %
+}%
+            \fi
+}%
+        \break
+    \endgroup
+    \@My@finish@stopfilbreak
+}
+\pgfkeys{ /exbanki18n/.is family, /exbanki18n,
+  default/.style = {Problem = Problem, Solution = Solution},
+  Problem/.estore in = \@tr@Problem,
+  Solution/.estore in = \@tr@Solution
+}
+\newcommand{\translateExBank}[1]{  \pgfkeys{/exbanki18n, default, #1}%
+}
+\translateExBank{}
+\gdef\@tr#1{%
+\@ifundefined{@tr@#1}{#1}{%
+  \csname @tr@#1\endcsname%
+}%
+}
+\newif\ifat@isrigid
+\let\ea = \expandafter
+\begingroup\lccode`\|=`\\
+\lowercase{\endgroup\def\removebs#1{\if#1|\else#1\fi}}
+\ifcsname at@verbose\endcsname
+	\global\def\@triggerLog#1{\@latex@warning{--\string\TRIGGER: #1}}%
+\else
+	\global\let\@triggerLog\@gobble%
+\fi
+\newcommand{\At}[2]{%
+	\edef\mname{\exbank@macroname{#1}}%
+	\ifcsname At@\mname\endcsname%
+		\ea\g@addto@macro\csname At@\mname\endcsname{#2}%
+	\else%
+    \ifat@isrigid
+      \ea\gdef\csname Rigid@At@\mname\endcsname{#2}%
+    \else
+      \ea\gdef\csname At@\mname\endcsname{#2}%
+    \fi%
+	\fi%
+	\global\at@isrigidfalse%
+}
+\let\@rigid\at@isrigidtrue
+\newcommand{\Trigger}[1]{%
+	\edef\mname{\exbank@macroname{#1}}%
+  \ea\@ifundefined{Rigid@At@\mname}{}{%
+		\@triggerLog{\mname}\csname Rigid@At@\mname\endcsname%
+}%
+	\ea\@ifundefined{At@\mname}{}{%
+		\@triggerLog{\mname}\csname At@\mname\endcsname%
+}%
+}
+\newcommand{\exb@ClearHook}[1]{%
+	\edef\mname{\exbank@macroname{#1}}%
+	\expandafter\let\csname At@\mname\endcsname\relax%
+  \ifat@isrigid
+    \expandafter\let\csname Rigid@At@\mname\endcsname\relax%
+  \fi
+	\global\at@isrigidfalse%
+}
+\xdef\figuresPath{\@figrootDir/}
+\gdef\fileInputPath{}
+\gdef\thisfilepath{} %
+\gdef\fileInputBase{}
+\@ifundefined{input@path}{\gdef\input@path{}}{}
+\AtBeginDocument{%
+\providecommand*{\input@path}{}
+\providecommand*{\Ginput@path}{}
+\g@addto@macro\input@path{{\fileInputBase}{\fileInputPath}}%
+\g@addto@macro\Ginput@path{{\fileInputBase}{\fileInputPath}}%
+}
+\At\PathControl{  \xdef\figuresPath{\@figrootDir/}
+  \edef\exfile{\exerciseFile}
+  \expandafter\filename@parse{\exfile}
+  \xdef\thisfilepath{\@exercisesDir/\filename@area}
+  \xdef\fileInputPath{\figuresPath\filename@area}
+  \xdef\fileInputBase{\figuresPath\filename@area\filename@base/}
+}
+\newlength{\pMarginBelow}
+\newlength{\pMarginAbove}
+\newlength{\pMarginLeft}
+\newlength{\ppMarginBelow}
+\newlength{\ppMarginAbove}
+\newlength{\ppMargin}
+\newlength{\introOutdent}
+\newlength{\solutionMarginAbove}
+\setlength\parindent{0pt}
+\setlength{\pMarginLeft}{-\ppMargin-2.5em}
+\setlength{\pMarginBelow}{1.5em \@plus .5em \@minus .5em}
+\setlength{\pMarginAbove}{0pt}
+\setlength{\ppMargin}{0.5em}
+\setlength{\ppMarginBelow}{0em}
+\setlength{\ppMarginAbove}{0.5\baselineskip}
+\setlength{\introOutdent}{1em}
+\setlength{\solutionMarginAbove}{1em}
+\newcounter{problemcounter}
+\setcounter{problemcounter}{0}
+\newcounter{partproblemcounter}
+\At\VeryBeginProblem{%
+	\ifexb@opt@tightenparagraphs%
+	\ifexbank@if@needspace\needspace{\exbank@opt@problemneedspace}\fi%
+	\fi%
+	\stepcounter{problemcounter}%
+	\setcounter{partproblemcounter}{0}%
+	\vspace\pMarginAbove%
+  \strut\vadjust{\vbox to 0pt{\ifexb@opt@doMargins\relax\hskip\pMarginLeft\fi{\exbank@opt@problemHeader}\vss}}\par%
+	\vspace\pMarginBelow\relax%
+}
+\At\EndProblem{%
+\tighten@paragraph%
+}%
+\At\BeginPartproblem{%
+\vspace\ppMarginAbove\relax%
+}
+\At\VeryBeginPartproblem{%
+\@dinfo{Triggered Beginning Part Problem (\string\VeryBeginPartproblem)}%
+	\stepcounter{partproblemcounter}%
+	\@dinfo{Generating title for part problem}%
+	\gdef\exb@prePPHead{}%
+	\gdef\exb@postPPHead{}%
+	\if\@displayMetaCounter\@isTrue\relax%
+		\gdef\exb@prePPHead{{\Large\themetacounter}:}%
+	\fi%
+	\ifexb@showtags%
+		\g@addto@macro\exb@postPPHead{\exb@printCurrentTags}%
+	\fi%
+\ifexb@opt@doMargins%
+\let\exb@partProblemHeader\exbank@opt@partProblemHeader%
+\ifexb@b@nextprob@header\relax%
+	\global\exb@b@nextprob@headerfalse%
+	\addtocounter{partproblemcounter}{-1}%
+	\let\exb@partProblemHeader\exb@nextprob@header%
+\fi%
+\gdef\exb@pp@lefttag{\leavevmode{\smash{\llap{{\exb@prePPHead\exb@partProblemHeader\Trigger\PartProblemHeaderSuffix}\hskip\ppMargin}\exb@postPPHead}}}%
+\else%
+\gdef\exb@pp@lefttag{{\exb@partProblemHeader\Trigger\PartProblemHeaderSuffix}}%
+\fi%
+\ifexb@showCurrent@PPHeader%
+\AtNextPar{\exb@pp@lefttag\global\let\exb@pp@lefttag\relax\Trigger\AfterPPHeader}\par%
+\else%
+\par%
+\fi\ignorespaces}%
+\At\EndPartproblem{%
+	\vspace\ppMarginBelow\relax%
+	\tighten@paragraph%
+	\global\exb@showCurrent@PPHeadertrue
+}
+\At\BeginSolution{\ifexb@solutionsonly\else\hfill\break\vspace{\solutionMarginAbove}\fi{\exbank@opt@solutionHeader}}
+\At\EndSolution{}
+\newcounter{numppInFile}
+\At\BeginPartproblem{%
+	\ifcsname exb@numexercises@\the\numexpr\the\c@problemcounter\endcsname%
+	\edef\numppex{\csname exb@numexercises@\the\numexpr\the\c@problemcounter\endcsname}%
+	\ifnum\numppex=\@ne%
+		\ifexb@showLonelyPartProblems\else%
+		\global\exb@showCurrent@PPHeaderfalse%
+		\fi
+	\fi%
+	\fi%
+	\stepcounter{numppInFile}%
+}
+\At\EndProblem{%
+	\immediate\write\@auxout{\string\expandafter\string\gdef\string\csname\space exb@numexercises@\the\numexpr\the\c@problemcounter\endcsname{\the\c@numppInFile}}%
+	\setcounter{numppInFile}{0}%
+}
+\providecommand\exb@currentTags{}
+\providecommand\exb@nextprob@header{}
+\pgfkeys{/exbank/problems/.cd,%
+initial style/.style={hide=false,tag=\relax,reset pp head},%
+default/.style={initial style},
+hide/.is if={exb@opthides},%
+tags/.estore in=\exb@currentTags,%
+tag/.code={\pgfkeysalso{tags={#1}}},
+head/.code={\global\exb@b@nextprob@headertrue\gdef\exb@nextprob@header{#1}},%
+reset pp head/.code={\global\exb@b@nextprob@headerfalse},
+solution only/.code={\ifexb@DisplaySolutions\else\pgfkeysalso{/exbank/problems/hide=true}\fi},
+reset to default/.code=\pgfkeysalso{/exbank/problems/default/.style={initial style}}
+}
+\def\nextproblem{\pgfqkeys{/exbank/problems}}
+\def\resetnextproblems{\nextproblem{reset to default}}
+\def\nextproblems#1{%
+\edef\nextprobargs{{default/.style={#1}}}%
+\expandafter\nextproblem\nextprobargs%
+}
+\newcounter{exb@cutfilecounter}
+\global\let\do@ProcessCutFile = \ProcessCutFile
+\At\EndProblem{%
+	\ifexb@opt@tightenparagraphs\relax%
+		\ifexb@DisplaySolutions%
+			\penalty-300%
+		\fi%
+	\fi%
+}
+\@ifundefined{figure}{}{	\edef\figure{\unexpanded{\tighten@paragraph@always}\unexpanded\expandafter{\figure}}
+}
+\@ifundefined{endfigure}{}{	\g@addto@macro\endfigure{\tighten@paragraph@always}
+}
+\gdef\isFalse{0}
+\gdef\isTrue{1}
+\global\exb@DisplayCurrentProblemtrue
+\gdef\@displayMetaCounter{\isFalse}
+\AtBeginDocument{	\ifexb@DisplaySolutions\else
+		\@latex@warning{Hiding solutions. Show them with \string\DisplaySolutions}
+	\fi
+}
+\newif\ifexb@isdisplaying
+\long\gdef\exb@ifshowproblem#1#2{%
+	\exb@isdisplayingfalse%
+	\ifexb@DisplayCurrentProblem%
+		\ifexb@opthides\else\exb@isdisplayingtrue\fi\fi%
+	\ifexb@isdisplaying#1\else#2\fi%
+}
+\long\gdef\showhideproblem#1{%
+	\exb@ifshowproblem{\let\ProcessCutFile\do@ProcessCutFile#1\global\exb@DisplayCurrentSolutiontrue}{\def\ProcessCutFile{}\global\exb@DisplayCurrentSolutionfalse}%
+}
+\generalcomment{problem}{%
+	\ifexb@DisplaySolutions
+		\global\exb@DisplayCurrentSolutiontrue\else\global\exb@DisplayCurrentSolutionfalse
+	\fi
+	\stepcounter{metacounter}%
+	\@dinfo{problem: Triggering \string\DecideProblemDisplay}%
+	\Trigger\DecideProblemDisplay%
+	\@dinfo{problem:Executing - \string\showhideproblem - \the\c@problemcounter}%
+	\showhideproblem{%
+		\ifexb@opt@partProblems%
+			\ifexb@solutionsonly\else
+				\Trigger\BeginPartproblem%
+				\Trigger\VeryBeginPartproblem%
+			\fi
+		\else%
+			\Trigger\BeginProblem%
+			\Trigger\VeryBeginProblem%
+		\fi%
+}%
+	\ifexb@solutionsonly\def\ProcessCutFile{}\ifexb@DisplayCurrentProblem\relax\stepcounter{partproblemcounter}\fi\fi
+}{%
+	\@dinfo{Ending problem env \the\c@problemcounter}%
+	\ifexb@DisplayCurrentProblem\relax%
+		\ifexb@opt@partProblems\relax%
+			\Trigger\EndPartproblem%
+			\tighten@paragraph
+		\else
+			\Trigger\EndProblem%
+		\fi%
+	\fi%
+	\@dinfo{Ended problem env}%
+}
+\g@addto@macro\AfterproblemComment{\nextproblem{default}\ignorespaces}%
+\generalcomment{solution}{%
+	\@dinfo{START solution ENV}%
+	\Trigger\AtBeginSolutionHard
+	\begingroup
+	\ifexb@DisplaySolutions%
+		\ifexb@DisplayCurrentProblem\else%
+			\global\exb@DisplayCurrentSolutionfalse
+		\fi
+	\else
+		\global\exb@DisplayCurrentSolutionfalse
+	\fi
+	\ifexb@DisplayCurrentSolution%
+		\let\ProcessCutFile\do@ProcessCutFile%
+		\ifexb@solutionsonly\AtNextPar{\leavevmode\smash{\llap{\exbank@opt@partProblemHeader}}\Trigger\AfterPPHeader}\fi%
+		\ifexb@DisplayCurrentSolution\Trigger\BeginSolution\fi%
+	\else
+		\def\ProcessCutFile{}%
+	\fi
+}{%
+	\ifexb@DisplayCurrentSolution%
+		\Trigger\EndSolution
+		\tighten@paragraph@solutions
+		\vspace{0.5em}
+	\fi
+	\endgroup
+	\Trigger\EndSolutionHard\@dinfo{END solution ENV}%
+}
+\g@addto@macro\AftersolutionComment{\ignorespaces}
+\def\exb@intromargin{%
+	\ifexb@opt@doMargins\relax%
+		\gdef\exb@endintromargin{\endlist\endgroup}%
+		\begingroup\list{}{\leftmargin-\introOutdent}\item[]%
+	\else%
+		\relax\global\let\exb@endintromargin=\relax\fi%
+}
+\generalcomment{intro}{\@dinfo{START intro ENV}%
+	\ifexb@CountIntros%
+		\stepcounter{metacounter}%
+		\Trigger\DecideProblemDisplay%
+		\gdef\exb@pre@intro{}%
+		\gdef\exb@post@intro{}%
+		\if\@displayMetaCounter\isTrue\relax%
+			\gdef\exb@pre@intro{{\leavevmode{\llap{{\Large\themetacounter}:\hspace*{-\pMarginLeft}}}}\ignorespaces}%
+		\fi%
+		\ifexb@showtags%
+			\xdef\exb@post@intro{\exb@printCurrentTags}%
+		\fi%
+		\if\@spriteMode\@isTrue%
+			\if\introarg\@isTrue%
+				\stepcounter{partproblemcounter}%
+			\fi%
+		\fi%
+		\gdef\@displayIntro{\@isFalse}%
+		\showhideproblem{%
+			\tighten@paragraph%
+			\Trigger\BeginIntro\exb@pre@intro\exb@post@intro%
+			\gdef\@displayIntro{\@isTrue}%
+}%
+		\exb@ifshowproblem{\exb@intromargin}{}%
+	\else%
+		\exb@intromargin%
+	\fi%
+	\ifexb@solutionsonly\def\ProcessCutFile{}\fi
+}{	\ifexb@CountIntros%
+		\Trigger\EndIntro%
+		\exb@ifshowproblem{\exb@endintromargin}{}
+	\else
+		\exb@endintromargin
+	\fi%
+	\@dinfo{END intro ENV}\ignorespaces%
+}
+\g@addto@macro\AfterintroComment{\nextproblem{default}\ignorespaces}
+\def\squeeze{  \newlength{\marginw}
+  \setlength{\marginw}{1.5cm}
+  \newgeometry{margin=\marginw}
+  \renewcommand{\topfraction}{0.85}
+  \renewcommand{\bottomfraction}{0.85}
+  \renewcommand{\textfraction}{0.1}
+  \renewcommand{\floatpagefraction}{0.85}
+  \renewcommand{\dbltopfraction}{0.85}
+  \renewcommand{\dblfloatpagefraction}{.85}
+  \setcounter{topnumber}{25}
+  \setcounter{bottomnumber}{25}
+  \setcounter{totalnumber}{25}
+  \setcounter{dbltopnumber}{25}
+  \renewcommand{\baselinestretch}{0.9}
+  \let\markeverypar\everypar
+  \newtoks\everypar
+  \everypar\markeverypar
+  \markeverypar{\the\everypar\looseness=-1\relax}
+  \g@addto@macro\define@newfont{%
+    \fontdimen2\font@name=0.8\fontdimen2\font@name
+}%
+  \fontdimen2\font@name=0.8\fontdimen2\font@name
+    \thinmuskip=0mu plus 3mu
+    \medmuskip=1mu plus 4mu
+    \thickmuskip=2mu plus 5mu
+    \abovedisplayskip=0pt plus 3pt
+    \belowdisplayskip=0pt plus 3pt
+    \abovedisplayshortskip=0pt plus 3pt
+    \belowdisplayshortskip=0pt plus 3pt
+}
+\let\ea = \expandafter
+\newcounter{metacounter}
+\setcounter{metacounter}{0}
+\gdef\exb@emptyList{0}
+\newif\ifexb@tagbuildmode
+\global\exb@tagbuildmodefalse
+\global\let\emptyList\exb@emptyList
+\global\let\exb@tagList\exb@emptyList
+\gdef\ifppMode#1{	\def\mname{\exbank@macroname{#1}}
+	\strif\mname\ppMode
+}
+	\gdef\isppMode#1#2{	\edef\mname{\exbank@macroname{#1}}
+	\strif{\exbank@macroname{#1}}{\ppMode}\relax#2\fi
+}
+\gdef\@ifppMode#1{%
+	\ifnum\pdfstrcmp{\exbank@macroname{#1}}{\ppMode}=\z@%
+		\expandafter\@firstofone%
+	\else%
+		\expandafter\@noneofone%
+	\fi%
+}%
+\def\pm@Exclude{exclude}
+\def\pm@Select{select}
+\def\pm@Normal{normal}
+\let\ipm\@ifppMode
+\let\T@\isTrue
+\let\F@\isFalse
+\def\exb@DPT{\global\exb@DisplayCurrentProblemtrue}
+\def\exb@DPF{\global\exb@DisplayCurrentProblemfalse}
+\At\DecideProblemDisplay{%
+	\ifnum\pdfstrcmp{\ppList}{\emptyList}=\z@\relax%
+		\ipm\exclude\exb@DPT\ipm\select\exb@DPF
+	\fi
+	\exb@int@isin{\themetacounter}{\ppList}{		\ipm\exclude\exb@DPF\ipm\select\exb@DPT\ipm\normal\exb@DPT
+}{		\ipm\exclude\exb@DPT\ipm\select\exb@DPF\ipm\normal\exb@DPT
+}
+	\ifexb@tagbuildmode
+		\ifexb@DisplayCurrentProblem\relax%
+			\exb@intersection@any{\exb@currentTags}{\exb@tagList}{\global\exb@opthidesfalse}{\global\exb@opthidestrue\global\exb@DisplayCurrentProblemfalse}%
+		\fi
+	\fi
+}
+\gdef\introarg{\@isFalse}
+\pgfkeys{	/makeset/.is family, /makeset,
+	default/.style = {noheadarg=false},
+	intro/.style = {introarg=\@isTrue},
+	nointro/.style = {introarg=\@isFalse},
+	nohead/.style = {noheadarg=true},
+	head/.style = {noheadarg=false},
+	introarg/.estore in = \introarg,
+	noheadarg/.is if = {exb@noheadArg},
+}
+\gdef\makesetdefaults#1{%
+	\edef\exb@setpgfkeys{{\unexpanded\expandafter{/makeset/default/.style = {#1}}}}%
+	\expandafter\pgfkeys\exb@setpgfkeys%
+}
+\pgfkeys{/makeset/override/.cd,
+	intro/.code = {\gdef\introarg{\@isTrue}\ea\gdef\csname setlist@\exb@currentSetID @intro\endcsname{\@isTrue}},
+	nointro/.code = {\gdef\introarg{\@isFalse}\ea\gdef\csname setlist@\exb@currentSetID @intro\endcsname{\@isFalse}},
+	nohead/.code = {\exb@noheadArgtrue\ea\gdef\csname setlist@\exb@currentSetID @nohead\endcsname{\@isTrue}}
+}
+\gdef\@listOfSets{}
+\gdef\@spriteMode{\isFalse}
+\gdef\exbank@spriteSets{\emptyList}
+\long\gdef\spritesets#1{	\gdef\exbank@spriteSets{#1}
+}
+\gdef\exb@listofsetnames{}
+\global\let\exlist@protect\unexpanded
+\newcommand\makeset[3][]{	\xdef\thissetid{#2}
+	\xdef\exb@listofsetnames{\unexpanded\expandafter{\exb@listofsetnames}\thissetid,}
+	\ea\xdef\csname setkeys@\thissetid\endcsname{#1}
+	\pgfkeys{/makeset, default, #1}%
+	\if\introarg\isTrue%
+		\gdef\introarg{\isTrue}
+		\ea\gdef\csname setlist@#2@intro\endcsname{\isTrue}
+	\fi
+	\ifexb@noheadArg%
+		\ea\gdef\csname setlist@#2@nohead\endcsname{\isTrue}
+	\fi
+	\ea\gdef\csname setlist@#2\endcsname{\exlist@protect{#3}}
+	\def\setmacro{\unexpanded\expandafter{\csname setlist@#2\endcsname}}
+	\g@addto@macro\@listOfSets{,#2}
+}
+\long\gdef\about#1{}
+\newcommand\buildall{%
+\edef\tmpargs{{\exb@listofsetnames}}
+\dlog{\tmpargs}
+\expandafter\buildsets\tmpargs
+}
+\newcommand\sprite[1][4]{\squeeze
+\gdef\@spriteMode{\isTrue}
+\long\def\about##1{{\Large\textbf{About}:\\[1.1em]##1\\[1.5em]}}
+\pgfpagesuselayout{#1 on 1}[a4paper,border shrink=5mm]
+\ifnum\pdfstrcmp{\exbank@spriteSets}{\emptyList}=\z@\relax%
+	\edef\sprite@setlist{\ea\@secondoftwo\@listOfSets}
+	\readlist*\list@sprite@setlist\sprite@setlist
+	\foreachitem\set\in\list@sprite@setlist{		\edef\theset{{\set}}
+		\if\theset\empty\relax\else%
+			\buildset{\set}%
+		\fi%
+}
+\else
+	\edef\sprite@setlist{\exbank@spriteSets}
+	\readlist*\list@sprite@setlist\sprite@setlist
+	\foreachitem\set\in\list@sprite@setlist{		\edef\theset{{\set}}
+		\if\theset\empty\relax\else%
+			\buildex{\set}%
+		\fi%
+}
+\fi
+}
+\gdef\exbank@setEnv@normal#1{\exbank@setEnv{#1}{normal}
+}
+\gdef\exerciseFile{}%
+\newcommand{\exbank@setEnv}[3][{-1}]{  \if\@spriteMode\isFalse%
+    \gdef\ppList{#1}
+    \gdef\exerciseFile{#2}
+    \gdef\ppMode{#3}
+  \else
+    \gdef\ppList{\emptyList}
+    \gdef\exerciseFile{#2}
+    \gdef\ppMode{\pm@Normal}
+  \fi
+}
+\global\let\exb@execChar\relax
+\global\let\ex@protect\noexpand
+\long\gdef\exec#1{\exb@execChar\ex@protect{#1}}
+\long\gdef\exb@def@makeset@cmd#1{\@ifnextchar[{\@exb@def@makeset@cmd{#1}}{\@exb@def@makeset@cmd{#1}[0]}}
+\long\gdef\@exb@def@makeset@cmd#1[#2]#3{\def\ncArgs{#1[#2]}%
+\bgroup\globaldefs=1\ea\newcommand\ncArgs{\exec{#3}}\egroup%
+}
+\def\exbank@def@makeset@command{\exb@warn{\string\exbank@def@makeset@command\space is deprecated and will be removed in versions >= 0.3.0. Use \string\exb@def@makeset@cmd\space(or \string\DeclareExerciseCommand where applicable)}\exb@def@makeset@cmd}
+\let\DeclareExerciseCommand\exb@def@makeset@cmd
+\newcommand{\exclude}[2]{[{#2}]{#1}{exclude}}
+\newcommand{\select}[2]{[{#2}]{#1}{select}}
+\newcommand{\orderedselect}[2]{%
+}
+\exb@isFirstProblemtrue
+\exb@def@makeset@cmd{\phead}{%
+  \ifexb@isFirstProblem%
+    \global\exb@isFirstProblemfalse%
+  \else%
+    \Trigger\EndProblem%
+  \fi%
+\par%
+  \Trigger\BeginProblem%
+  \Trigger\VeryBeginProblem%
+}
+\exb@def@makeset@cmd{\pheadarg}[1]{  \ifexb@isFirstProblem%
+    \global\exb@isFirstProblemfalse%
+  \else%
+    \Trigger\EndProblem%
+  \fi%
+  \Trigger\BeginProblem%
+  \bgroup\def\theproblemcounter{#1}\Trigger\VeryBeginProblem\egroup%
+}
+\exb@def@makeset@cmd{\pbreak}{\clearpage}
+\gdef\buildex#1{	\makeset{#1}{#1}
+	\buildset{#1}
+}
+\exb@CountIntrosfalse
+\gdef\exb@setpgf#1{%
+	\edef\keystring{{/makeset,default,#1}}%
+	\ea\pgfkeys\keystring}
+\long\def\exb@getnextchar#1#2\endstr{\gdef\exb@nextchar{#1}\gdef\exb@restchars{#2}}
+\long\gdef\@execute@makeset@command#1{%
+	\@dinfo{Executing macro \@backslashchar\@gobble##1}%
+	\csname #1\endcsname%
+	\def\continueLoop{\isFalse}%
+}
+\long\def\@execute@exec#1{%
+	\def\continueLoop{\isFalse}\@dinfo{Executing custom (\string\exec) command}{#1}%
+}
+\long\gdef\X@exb@setEnv#1{%
+	\def\continueLoop{\isTrue}%
+	\@dinfo{Processing normal file "\exerciseFileInfo.tex"}%
+	\exbank@setEnv@normal{#1}%
+}
+\long\gdef\exb@setEnv@withOptargs#1{%
+	\def\continueLoop{\isTrue}
+	\edef\firstarg{#1}
+	\expandafter\exbank@setEnv\firstarg%
+}
+\def\set@charcode#1{\edef\testcode{\unexpanded{\the\numexpr`}#1}}
+\long\def\@delegateFileInfo#1{%
+	\expandafter\exb@getnextchar#1\endstr%
+  \set@charcode\exb@nextchar\relax
+	\ifnum\testcode=\the\numexpr`?\relax
+		\relax\@execute@makeset@command\exb@restchars%
+	\else\ifnum\testcode = \the\numexpr`:\relax%
+			\@execute@exec\exb@restchars
+		\else\ifnum\testcode = \the\numexpr`[\relax%
+				\exb@setEnv@withOptargs{\exb@nextchar\exb@restchars}
+			\else%
+				\X@exb@setEnv{\exb@nextchar\exb@restchars}
+			\fi
+		\fi
+	\fi
+}
+\newcommand\buildset[2][]{%
+	\xdef\exb@currentSetID{#2}%
+	\pgfkeys{/makeset/override/.cd, #1}
+	\global\let\setName\exb@currentSetID%
+	\gdef\exb@buildset@oarg{#1}
+	\@ifundefined{setlist@#2@intro}{\exb@CountIntrosfalse}{\exb@CountIntrostrue}%
+	\@ifundefined{setlist@#2@nohead}{\gdef\nohead{\isFalse}}{\gdef\nohead{\isTrue}}%
+	\ifcsname setkeys@\setName\endcsname%
+		\xdef\skeys{\csname setkeys@#2\endcsname}%
+		\exb@setpgf\skeys%
+	\fi%
+	\@ifundefined{setlist@#2}{%
+		\exb@err{Couldn't find set #2. Did you remember to do \string\makeset{#2}{}?}
+		\stop\bye
+}{}
+	\let\exlist@protect\unexpanded%
+	\edef\exbank@setlist{\csname setlist@#2\endcsname}%
+	\let\exlist@protect\unexpanded%
+	\if\@spriteMode\isFalse%
+		\if\exb@frontpage\@isFalse\else\input{\exb@frontpage}\fi
+		\Trigger\StartBuildset%
+	\fi%
+	\readlist*\setlist\exbank@setlist%
+	\foreachitem\exerciseFileInfo\in\setlist{%
+		\def\continueLoop{\isTrue}%
+		\gdef\ppList{\emptyList}%
+		\setcounter{metacounter}{0}%
+		\let\ex@protect\unexpanded%
+		\edef\exb@execChar{:}%
+		\edef\exerciseFileInfo{\exerciseFileInfo}%
+		\@delegateFileInfo\exerciseFileInfo%
+		\Trigger\InputExercise%
+		\if\continueLoop\isTrue%
+			\let\ex@protect\noexpand%
+			\Trigger\PathControl%
+			\if\nohead\isFalse%
+				\if\@spriteMode\isFalse%
+					\Trigger\BeginProblem%
+				\fi%
+			\fi%
+			\if\nohead\isFalse\Trigger\VeryBeginProblem\fi%
+			\if\@spriteMode\isTrue\textbf{\exerciseFile.tex\\}\fi%
+			\IfFileExists{\@exercisesDir/\exerciseFile}{%
+				\Trigger\InputExerciseFile
+				\let\exb@execChar\relax
+				\incl{\@exercisesDir/\exerciseFile}%
+				\if\@spriteMode\isTrue%
+					\setcounter{partproblemcounter}{0}%
+				\fi%
+}{				\@latex@error{Could not find \@exercisesDir/\exerciseFile. Maybe it is because the default exercise directory is now changed to the same directory that your main file is in. To set default exercise directory to exercises, do \string\exercisebanksetup{exercise directory=exercises}}{}
+				\stop\bye
+}
+			\if\nohead\isFalse\Trigger\EndProblem\fi%
+		\fi%
+}
+	\if\@spriteMode\isFalse%
+		\Trigger\EndBuildset%
+	\fi%
+	\setcounter{problemcounter}{0}%
+	\setcounter{partproblemcounter}{0}%
+	\clearpage%
+}
+\newcommand\buildsets[2][]{%
+	\xdef\csvlist{#2}%
+	\readlist*\items\csvlist%
+	\foreachitem\set\in\items{%
+		\buildset[#1]{\set}%
+}
+}
+\newcommand\buildtags[2]{%
+	\global\exb@tagbuildmodetrue
+	\xdef\csvtags{#1}%
+	\xdef\csvlist{#2}
+	\xdef\csvsets{#2}%
+	\readlist*\tagsItems\csvtags%
+	\readlist*\setsItems\csvsets%
+	\foreachitem\set\in\setsItems{%
+		\xdef\exb@tagList{\csvtags}
+		\buildset{\set}%
+}
+	\global\exb@tagbuildmodefalse
+}
+\def\buildsprite#1{\squeeze%
+\gdef\@spriteMode{\isTrue}
+\pgfpagesuselayout{4 on 1}[a4paper,border shrink=5mm]%
+\buildsets{#1}%
+}
+\providecommand\refcounter[1]{\edef\@currentlabel{#1}%
+}
+\DeclareRobustCommand{\pplabel}[1]{	\refcounter{\theproblemcounter}\label{pr:\exerciseFile:#1}\label{pr:global:#1}
+	\refcounter{\alph{partproblemcounter}}\label{pp:\exerciseFile:#1}\label{pp:global:#1}
+}
+\let\pptag = \pplabel
+\newcommand\pppref[1]{%
+(\ea\@alph\ref{pp:\exerciseFile:#1})\relax%
+}
+\newcommand\ppref[1]{%
+(\ref{pr:\exerciseFile:#1}\ref{pp:\exerciseFile:#1})\relax%
+}
+\newcommand\ppgref[1]{%
+(\ref{pr:global:#1}\ref{pp:global:#1})\relax%
+}
+\newcommand\pref[1]{%
+\ref{pr:\exerciseFile:#1}\relax%
+}
+\newcommand\pgref[1]{%
+\ref{pr:global:#1}\relax%
+}
+\gdef\exb@currentPoints{0}
+\gdef\exb@currentPointsStyle{}
+\newif\ifexb@enablepoints\global\exb@enablepointstrue
+\exercisebanksetup{%
+	current points style/.store in=\exb@currentPointsStyle,
+	current points style={\ifnum\exb@currentPoints=\z@\ifnum\totalpoints=\z@\else\phantom{0p}\fi\else\exb@currentPoints p\fi\ignorespaces},
+	disable points/.is if={exb@enablepoints}
+}
+\ifexb@enablepoints
+	\AtEndDocument{%
+		\immediate\write\@auxout{\string\gdef\string\totalpoints{\the\c@exb@points}}%
+}
+	\At\PartProblemHeaderSuffix{\exb@currentPointsStyle}
+\fi
+\newcounter{exb@points}
+\setcounter{exb@points}{0}
+\providecommand\totalpoints{}
+\nextproblem{points/.store in=\exb@currentPoints}
+\At\BeginPartproblem{%
+\addtocounter{exb@points}{\exb@currentPoints}%
+}
+\At\EndPartproblem{\gdef\exb@currentPoints{0}}
+\providecommand\exercisepoints{}
+\newcounter{exb@tmp@exercisepoints}
+\setcounter{exb@tmp@exercisepoints}{0}
+\At\VeryBeginProblem{	\xdef\exb@expoints@macname{exb@exercisepoints@\the\c@problemcounter}
+	\ifcsname\exb@expoints@macname\endcsname%
+		\xdef\exercisepoints{\csname\exb@expoints@macname\endcsname}
+	\else%
+		\gdef\exercisepoints{}
+	\fi
+	\setcounter{exb@tmp@exercisepoints}{0}
+}
+\At\BeginPartproblem{%
+\addtocounter{exb@tmp@exercisepoints}{\exb@currentPoints}%
+}
+\At\EndProblem{%
+\immediate\write\@auxout{\string\expandafter\string\gdef\string\csname\space exb@exercisepoints@\the\numexpr\the\c@problemcounter\endcsname{\the\c@exb@tmp@exercisepoints}}%
+}
+\def\exb@hidetaglist{}
+\At\DecideProblemDisplay{\ifexb@DisplayCurrentProblem\relax%
+\ifx\exb@hidetaglist\empty\relax\else
+\exb@intersection@any{\exb@currentTags}{\exb@hidetaglist}{\global\exb@opthidestrue}{}%
+\fi
+\fi
+}
+\gdef\HideTags#1{\xdef\exb@hidetaglist{\unexpanded\expandafter{\exb@hidetaglist},#1}}
+\gdef\ShowAllTags{\gdef\exb@hidetaglist{}}
+\global\let\@exercisenote\@nil%
+\gdef\@addExercisenote#1{%
+	\ifx\@exercisenote\@@nil%
+	\gdef\@exercisenote{#1}%
+	\else
+	\g@addto@macro{\@exercisenote}{\par#1}
+\fi
+}
+\At\VeryBeginProblem{%
+\ifx\@exercisenote\@@nil\else%
+\begingroup\list{}{\leftmargin-\introOutdent}\item[]%
+\@exercisenote%
+\endlist\endgroup%
+\global\let\@exercisenote\nil%
+\fi%
+}
+\DeclareExerciseCommand\exercisenote[1]{\@addExercisenote{#1}}

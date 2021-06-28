@@ -1,0 +1,45 @@
+%% $Id: pstricks-add.sty 726 2018-02-05 13:52:25Z herbert $
+%
+\RequirePackage{pstricks}
+\RequirePackage{pst-plot}
+\RequirePackage{pst-node}
+\RequirePackage{pst-3d}
+\RequirePackage{pst-math}
+\RequirePackage{multido}
+
+\ProvidesPackage{pstricks-add}[2018/02/04 v. 0.16 package wrapper for 
+  pstricks-add.tex (hv)]
+\input{pstricks-add.tex}
+\ProvidesFile{pstricks-add.tex}
+  [\filedate\space v\fileversion\space `PSTricks-add' (hv)]
+\IfFileExists{pstricks-add.pro}{%
+  \ProvidesFile{pstricks-add.pro}
+    [2009/12/17 v. 0.23,  PostScript prologue file (hv)]
+    \@addtofilelist{pstricks-add.pro}}{}%
+
+\RequirePackage{pst-calculate}
+
+\def\psRiemannSum(#1,#2)#3#4{%    (x0,x1) n f(#1)
+  \def\psFunction@##1{#4}%
+  \edef\ps@@dx{\pscalculate{(#2-#1)/#3}}%
+  \edef\ps@@dxHalf{\pscalculate{\ps@@dx/2}}%
+%  \typeout{dx=\ps@dx}%
+  \def\psRightSumValue{0}%
+  \def\psLeftSumValue{0}%
+  \def\psMiddleSumValue{0}%
+  \def\psDiffSumValue{0}%
+  \Multido{\rA=#1+\ps@@dx,\rB=\ps@@dx+\ps@@dx,\rC=\ps@@dxHalf+\ps@@dx}{#3}{%
+  	\def\ps@rightY{\pscalculate{\psFunction@{\rB}}}%
+  	\def\ps@leftY{\pscalculate{\psFunction@{\rA}}}%
+  	\def\ps@middleY{\pscalculate{\psFunction@{\rC}}}%
+%  	\typeout{\ps@leftY, \ps@rightY }%
+  	\edef\psLeftSumValue{\pscalculate{\psLeftSumValue+\ps@@dx*\ps@leftY}}%
+  	\edef\psRightSumValue{\pscalculate{\psRightSumValue+\ps@@dx*\ps@rightY}}%
+  	\edef\psMiddleSumValue{\pscalculate{\psMiddleSumValue+\ps@@dx*\ps@middleY}}%
+  	\edef\psDiffSumValue{\pscalculate{\psDiffSumValue+abs(\ps@@dx*(\ps@rightY-\ps@leftY))}}%
+%  	\typeout{\psLeftSumValue , \psRightSumValue }%
+  }% end \Multido
+}
+
+
+\endinput

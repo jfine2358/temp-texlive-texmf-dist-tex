@@ -1,0 +1,279 @@
+\ProvidesFile{german-legal-book.bbx}[2020/03/13 v001]
+%%% license: LPPL 1.3c or later
+%%% author-maintainer: Dominik Brodowski, dominik.brodowski@uni-saarland.de
+
+
+%%%%%%%%%%%%%%%%
+%%% Vorspann %%%
+%%%%%%%%%%%%%%%%
+
+%%% Dieser Zitierstil basiert auf ext-authortitle, verwendet aber kein
+%%% ibidem (Geschmacksfrage!)
+\RequireBibliographyStyle{ext-authortitle}%
+
+%%% Um die Änderungen so klein wie möglich zu halten, wird das Paket
+%%% xpatch verwendet, mit dem sich existierende Makros verändern lassen,
+%%% ohne sie gänzlich neu definieren zu müssen.
+\RequirePackage{xpatch}%
+
+%%% Die nachfolgenden Optionen für ext-authortitle werden hier
+%%% standardmäßig gesetzt, können aber beim Einbinden dieses Zitierstils
+%%% überschrieben werden.
+\ExecuteBibliographyOptions{%
+  %%%
+  %%% Sortierung nach Name, dann Titel, dann Jahr,
+  sorting   = nty,%
+  %%%
+  %%% Maximale Anzahl der in einer Fußnoten-Zitation wiedergegebenen Namen
+  maxcitenames = 4,%
+  %%%
+  %%% Anzahl der Namen, die vor "u.a." angegeben werden
+  mincitenames = 4,%
+  %%%
+  %%% Sollen "klickbare" Querverweise gesetzt werden?
+  hyperref = true,%
+  %%%
+  %%% Sollen für "Ausgabe" und "Herausgeber" Abkürzungen verwendet werden?
+  abbreviate = true,%
+  %%%
+  %%% Siehe oben
+  idemtracker = false,%
+  %%%
+  %%% Füge bei Sammelwerken u.ä. ein "in:" vor dem Buchtitel hinzu
+  innamebeforetitle = true,%
+  %%%
+  %%% Bei Artikeln folgt die Zeitschrift unmittelbar und wird nicht durch
+  %%% ein "in:" abgetrennt.
+  articlein = false,%
+  %%%
+  %%% Im Literaturverzeichnis erfolgen vollständige Angaben, keine
+  %%% Querverweise auf andere Einträge im Literaturverzeichnis.
+  citexref = false,%
+  %%%
+  %%% "van Beethoven" soll unter "B" und nicht unter "v" einsortiert werden.
+  useprefix = false,%
+  %%%
+  %%% im Literaturverzeichnis soll die ISBN nicht ausgegeben werden.
+  isbn      = false,%
+  %%%
+  %%% im Literaturverzeichnis soll allerdings die DOI angegeben werden.
+  doi       = true,%
+  %%%
+  %%% Finden sich im Literaturverzeichnis mehrere Werke desselben Autors
+  %%% bzw. derselben Autorenkombination, wird die wiederholte Angabe des
+  %%% Autors durch einen Gedankenstrich ersetzt.
+  dashed    = true,%
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Allgemeiner Teil %%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Autorennamen werden kursiv gesetzt
+\renewcommand*{\mkbibnamefamily}[1]{\mkbibemph{#1}}
+\renewcommand*{\mkbibnamegiven}[1]{\mkbibemph{#1}}
+\renewcommand*{\mkbibnameprefix}[1]{\mkbibemph{#1}}
+\renewcommand*{\mkbibnamesuffix}[1]{\mkbibemph{#1}}
+
+%%% Mehrere Autorennamen werden durch einen Schrägstrich getrennt. Dieser
+%%% ist -- wie die Autorennamen selbst (siehe soeben) -- kursiv zu setzen.
+%%% Achtung: dieser muss hier als \slash ausgegeben werden (und nicht als
+%%% \addslash), weil andernfalls \unspace mit aufgerufen wird und das
+%%% vorherige \addspace rückgängig macht...
+\AtBeginBibliography{
+  \renewcommand*{\multinamedelim}{\addspace\mkbibemph{\slash}\addspace}%
+  \renewcommand*{\finalnamedelim}{\addspace\mkbibemph{\slash}\addspace}%
+}
+
+%%% Sämtliche Namen sollen in der Reihenfolge "Nachname, Vorname" ausgegeben
+%%% werden
+\DeclareNameAlias{default}{family-given}
+\DeclareNameAlias{sortname}{family-given}
+
+%%% Buch- und Beitragstitel usw. sind aufrecht zu setzen
+\DeclareFieldFormat{title}{\normalfont{#1}}
+\DeclareFieldFormat{citetitle}{\normalfont{#1}}
+
+%%% Einzelne Blöcke werden mit Kommata (und nicht mit Punkt) abgetrennt,
+%%% nur Titel und Untertitel mit Punkt.
+\renewcommand*{\newunitpunct}{\addcomma\addspace}
+\renewcommand*{\subtitlepunct}{\addperiod\addspace}
+
+%%% Einige Felder sollen standardmäßig nicht abgedruckt werden
+\AtEveryBibitem{%
+  \clearlist{publisher}%
+  \clearfield{note}%
+}
+
+%%% "Hrsg." soll in Klammern abgedruckt werden. Hierzu wird der Texttrenner
+%%% entfernt und das Makro, dass "Hrsg." ausgibt, durch die Befehle
+%%% \bibopenparen und \bibopenclose umrandet.
+\DeclareDelimFormat[bib]{editortypedelim}{}
+\xpretobibmacro{editorstrg}{\addspace\bibopenparen}{}{}
+\xapptobibmacro{editorstrg}{\bibcloseparen}{}{}
+
+%%% ... gleiches für "Hrsg. u.a."
+\xpretobibmacro{editor+othersstrg}{\addspace\bibopenparen}{}{}
+\xapptobibmacro{editor+othersstrg}{\bibcloseparen}{}{}
+
+%%% ... gleiches für "Übers."
+\DeclareDelimFormat[bib]{translatortypedelim}{}
+\xpretobibmacro{translatorstrg}{\addspace\bibopenparen}{}{}
+\xapptobibmacro{translatorstrg}{\bibcloseparen}{}{}
+
+%%% .. gleiches für "Übers. u.a."
+\xpretobibmacro{translator+othersstrg}{\addspace\bibopenparen}{}{}
+\xapptobibmacro{translator+othersstrg}{\bibcloseparen}{}{}
+
+%%% Bei @article und @periodical soll bevorzugt das Feld "shortjournal"
+%%% statt "journaltitle" oder "journal" verwendet werden.
+\renewbibmacro*{journal}{%
+  \iffieldundef{shortjournal}%
+   {\printtext[journaltitle]{%
+     \printfield[titlecase]{journaltitle}%
+     \setunit{\subtitlepunct}%
+        \printfield[titlecase]{journalsubtitle}%
+     }%
+   }%
+   {\printfield[journaltitle]{shortjournal}}%
+}
+
+%%% Eine URL kann als solche angegeben werden
+\DeclareFieldFormat{url}{\url{#1}}
+
+
+%%%%%%%%%%%%%%%
+%%% article %%%
+%%%%%%%%%%%%%%%
+
+%%% Der Zeitschriftentitel soll aufrecht gesetzt werden
+\DeclareFieldFormat[article]{journaltitle}{\normalfont{#1}}
+
+%%% Die Seitenspanne soll (im Literaturverzeichnis) komplett und ohne
+%%% führendes "S." ausgegeben werden.
+\DeclareFieldFormat[article]{pages}{#1}
+
+%%% Der Aufsatztitel soll ohne Anführungszeichen gesetzt werden
+\DeclareFieldFormat[article]{title}{#1}
+
+%%% Das Jahr soll nicht in Klammern gesetzt werden 
+\DeclareFieldFormat[article]{issuedate}{#1}
+
+%%% Bei Angabe einer Heftnummer ist diese mit einem Schrägstrich abzutrennen
+\renewbibmacro*{issue+date}{%
+  % Gibt nach der Ausgabennummer noch einen Slash dazu...  
+  \iffieldundef{issue}{}{\printfield{issue}\slash}%
+  % Setze das Datum
+  \iffieldundef{volume}{\printdate}{%
+    \printtext[parens]{\printdate}%
+  }%
+}
+
+
+%%%%%%%%%%%%%%%%%%
+%%% periodical %%%
+%%%%%%%%%%%%%%%%%%
+
+%%% Der Zeitschriftentitel soll aufrecht gesetzt werden
+\DeclareFieldFormat[periodical]{journaltitle}{\normalfont{#1}}
+
+%%% Die Seitenspanne soll (im Literaturverzeichnis) komplett und ohne
+%%% führendes "S." ausgegeben werden.
+\DeclareFieldFormat[periodical]{pages}{#1}
+
+%%% Das Jahr soll in Klammern gesetzt werden 
+\DeclareFieldFormat[periodical]{issuedate}{\mkbibparens{#1}}
+
+%%% Wird wie article definiert; keine Änderungen!
+\DeclareBibliographyAlias{periodical}{article}
+
+
+%%%%%%%%%%%%
+%%% book %%%
+%%%%%%%%%%%%
+
+%%% Der Buchtitel soll aufrecht gesetzt werden
+\DeclareFieldFormat[book]{citetitle}{\normalfont{#1}}
+
+%%% Zwischen Ort und Jahr stehe kein Trenner
+\renewcommand*{\locdatedelim}{\addspace}
+
+
+%%%%%%%%%%%%%%
+%%% inbook %%%
+%%%%%%%%%%%%%%
+
+%%% Der Beitrags- und Buchtitel soll aufrecht gesetzt werden
+\DeclareFieldFormat[inbook]{title}{\normalfont{#1}}
+\DeclareFieldFormat[inbook]{booktitle}{\normalfont{#1}}
+\DeclareFieldFormat[inbook]{shorttitle}{\normalfont{#1}}
+
+%%% Der shortitle des Buchs soll übernommen werden
+\DeclareDataInheritance{book}{inbook}{
+  \inherit{shorttitle}{shorttitle}
+}
+
+%%% Anders als beim Standardmakro "byeditor+others" soll der Herausgebername
+%%% zuerst (und mit der Kursivsetzung wieder rückgängig gemacht), die Angabe
+%%% "Hrsg." erst danach ausgegeben werden
+\xpatchbibmacro{byeditor+others}{%
+  \usebibmacro{byeditor+othersstrg}%
+  \setunit{\addspace}%
+  \printnames[byeditor]{editor}%
+}{%
+  \setunit{\addspace}%
+  \mkbibemph{\printnames[byeditor]{editor}}%
+  \addspace%
+  \usebibmacro{editor+othersstrg}%
+}{}{}
+
+%%% Anders als beim Standardmakro "inbook:parent" aus "ext-standard.bbx"
+%%% sollen der Buchtitel ("maintitle") und die Herausgeberangabe
+%%% ("byeditor+others") umgekehrt gereiht ausgegeben werden
+\xpatchbibmacro{inbook:parent}{%
+  \usebibmacro{maintitle+booktitle}%
+  \newunit\newblock%
+  \usebibmacro{byeditor+others}%
+}{%
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \usebibmacro{maintitle+booktitle}%
+}{}{}
+
+
+%%%%%%%%%%%%%%%%%%%%
+%%% incollection %%%
+%%%%%%%%%%%%%%%%%%%%
+
+%%% Der Beitrags- und Buchtitel soll aufrecht gesetzt werden
+\DeclareFieldFormat[incollection]{title}{\normalfont{#1}}
+\DeclareFieldFormat[incollection]{booktitle}{\normalfont{#1}}
+
+%%% Die Festschrift soll sowohl als "book" oder als "collection" definiert
+%%% werden können, wobei neben title,subtitle und titeladdon auch shorttitle
+%%% als ebensolcher übernommen werden soll
+\DeclareDataInheritance{book,collection}{incollection}{
+  \inherit{title}{booktitle}
+  \inherit{subtitle}{booksubtitle}
+  \inherit{titleaddon}{booktitleaddon}
+  \inherit{shorttitle}{shorttitle}
+}
+
+%%% Wird wie inbook definiert; keine Änderungen!
+\DeclareBibliographyAlias{incollection}{inbook}
+
+
+%%%%%%%%%%%%%%%%%%
+%%% commentary %%%
+%%%%%%%%%%%%%%%%%%
+
+%%% Der Titel und Untertitel soll aufrecht gesetzt werden
+\DeclareFieldFormat[commentary]{subtitle}{\normalfont{#1}}
+
+%%% Wird wie book definiert; keine Änderungen!
+\DeclareBibliographyAlias{commentary}{book}
+
+
+\endinput
+

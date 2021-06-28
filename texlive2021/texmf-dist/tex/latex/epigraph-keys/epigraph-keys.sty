@@ -1,0 +1,145 @@
+% Benjamin McKay 
+% b.mckay@ucc.ie
+% see epigraph-keys.pdf or epigraph-keys.tex for more information.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{epigraph-keys}[2020/04/22 v1.0 Epigraphs using key values]
+\RequirePackage{enumitem}
+\RequirePackage{pgfkeys}
+\RequirePackage{conditionals}
+\RequirePackage{microtype}
+
+\ProcessOptions\relax
+
+\makeatletter
+{\catcode`\!=8 % funny catcode so ! will be a delimiter
+ \catcode`\Q=3 % funny catcode so Q will be a delimiter
+\long\gdef\given#1{88\fi\Ifbl@nk#1QQQ\empty!}
+\long\gdef\blank#1{88\fi\Ifbl@nk#1QQ..!}% if null or spaces
+\long\gdef\nil#1{\IfN@Ught#1* {#1}!}% if null
+\long\gdef\IfN@Ught#1 #2!{\blank{#2}}
+\long\gdef\Ifbl@nk#1#2Q#3!{\ifx#3}% same as above
+}
+\makeatother
+
+% The expression \if\expblank{...} x \else y \if gives x when ... expands out to be blank space.
+\def\expblank{\expandafter\blank\expandafter}
+\def\expgiven{\expandafter\given\expandafter}
+\def\expnil{\expandafter\nil\expandafter}
+\def\beforeepigraphskip{0pt}
+\def\afterepigraphskip{\baselineskip}
+\def\epigraphtextindent{2cm}
+\def\epigraphauthorsourceindent{1.5cm}
+\def\epigraphtextwidth{\linewidth}
+\def\epigraphstyle{\small}
+\def\epigraphdash{---}
+\def\epigraphquotefont{\itshape}
+\def\epigraphtranslationfont{}
+
+\pgfkeys{
+	/epigraph/.is family, 
+	/epigraph,
+	default/.style = {
+		author = {}, 
+		source = {}, 
+		etc = {}, 
+		translation = {},
+		},
+	author/.store in = \epigraphauthor,
+	source/.store in = \epigraphsource,
+	etc/.store in = \epigraphetc,
+	translation/.store in = \epigraphtranslation,
+	before skip/.store in = \beforeepigraphskip,
+	before skip/.default = 0pt,
+	after skip/.store in = \afterepigraphskip,
+	after skip/.default = \baselineskip,
+	text indent/.store in = \epigraphtextindent,
+	text indent/.default = 2cm,
+	author and source indent/.store in = \epigraphauthorsourceindent,
+	author and source indent/.default = 1.5cm,
+	width/.store in = \epigraphtextwidth,
+	width/.default = \linewidth,
+	style/.store in = \epigraphstyle,
+	style/.default = \small,
+	dash/.store in = \epigraphdash,
+	dash/.default = ---,
+	quote style/.store in = \epigraphquotefont,
+	quote style/.default = {},
+	translation style/.store in = \epigraphtranslationfont,
+	translation style/.default = {},
+}
+
+\ifdefined\epigraph\else\xdef\epigraph{}\fi
+\renewcommand{\epigraph}[2][]{
+	\pgfkeys{/epigraph,default,#1}
+	\epigraphstyle\vspace{\beforeepigraphskip}
+	\begin{enumerate}[leftmargin=\epigraphtextindent]
+		\item[]
+		{%%
+		\epigraphquotefont{}%
+		\begin{minipage}{\epigraphtextwidth}%
+			#2%
+		\end{minipage}%
+		}%%
+		\if\expblank{\epigraphtranslation}
+		\else
+  			\item[]
+			{%
+			\epigraphtranslationfont%
+			{%%%%
+			\begin{minipage}{\epigraphtextwidth}%
+				\epigraphtranslation%
+			\end{minipage}
+			}%%%%
+			}%
+		\fi
+		\if\expblank{\epigraphauthor}
+			\if\expblank{\epigraphsource}
+				\if\expblank{\epigraphetc}
+				\else\epigraphetc
+				\fi
+			\else
+				\begin{enumerate}[leftmargin=\epigraphauthorsourceindent]%
+					\item[\epigraphdash]%
+					{%%
+					\smallerSmallCapsTracking{}\textsc{\epigraphsource}
+					}%%
+					\if\expblank{\epigraphetc}%
+					\else{}, \epigraphetc
+					\fi
+				\end{enumerate}
+			\fi
+		\else
+			\begin{enumerate}[leftmargin=\epigraphauthorsourceindent]%
+				\item[\epigraphdash] \epigraphauthor \\
+				\if\expblank{\epigraphsource}%
+					\if\expblank{\epigraphetc}%
+					\else\epigraphetc%
+					\fi%
+				\else%
+					\begingroup
+      				\smallerSmallCapsTracking{}\textsc{\epigraphsource}%
+					\endgroup
+			      	\if\expblank{\epigraphetc}%
+			      	\else%
+			      		\begingroup%
+			      		, \epigraphetc
+			      		\endgroup
+      				\fi
+				\fi
+			\end{enumerate}
+		\fi
+	\end{enumerate}
+	\vspace{\afterepigraphskip}
+	\par\noindent
+}
+
+\newcommand{\smallerSmallCapsTracking}%
+{%
+\SetTracking{encoding={*}, shape=sc}{20}%
+}%
+
+\ifdefined\epigraphs\else\xdef\epigraphs{}\fi
+\renewenvironment{epigraphs}{\begin{enumerate}}{\end{enumerate}}
+\ifdefined\qitem\else\xdef\qitem{}\fi
+\renewcommand{\qitem}[2][]{\item[]\epigraph[#1]{#2}}
+

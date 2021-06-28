@@ -1,0 +1,659 @@
+%% $Id: plex-otf.sty 755 2018-04-13 11:33:43Z herbert $
+%%
+%% This file is distributed under the terms of the LaTeX Project Public
+%% License from CTAN archives in directory  macros/latex/base/lppl.txt.
+%% Either version 1.3 or, at your option, any later version.
+%%
+% Copyright 2017- Herbert Voss hvoss@tug.org
+%%
+\ProvidesPackage{plex-otf}[%
+  2018/04/13 v. 0.07a (Herbert Voss) Supports plex OpenType for lualatex/xelatex.] 
+%
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+\RequirePackage{fontspec} 
+
+\newif\ifPlex@usefilenames \Plex@usefilenamestrue
+\DeclareOptionX{usefilenames}[true]{\@nameuse{Plex@usefilenames#1}}
+
+\newif\ifPlex@mono  \Plex@monotrue
+\newif\ifPlex@serif \Plex@seriftrue
+\newif\ifPlex@sans  \Plex@sanstrue
+%
+\DeclareOptionX{mono}[true]{\@nameuse{Plex@mono#1}}
+\DeclareOptionX{sans}[true]{\@nameuse{Plex@sans#1}}
+\DeclareOptionX{serif}[true]{\@nameuse{Plex@serif#1}}
+%
+%Possible Styles = ExtraLight : Upright, Italic   
+%                  Light      : Upright, Italic   
+%                  Thin       : Upright, Italic   
+%                  Medium     : Upright, Italic   
+%                  Text       : Upright, Italic   
+%                  SemiBold   : Bold, BoldItalic  
+\def\Plex@RMstyle{}
+\def\Plex@SSstyle{}
+\def\Plex@SSconstyle{}
+\def\Plex@TTstyle{}
+\DeclareOptionX{RMstyle}{\def\Plex@RMstyle{#1}}
+\DeclareOptionX{SSstyle}{\def\Plex@SSstyle{#1}}
+\DeclareOptionX{SSconstyle}{\def\Plex@SSconstyle{#1}}
+\DeclareOptionX{TTstyle}{\def\Plex@TTstyle{#1}}
+\DeclareOptionX{Style}{%
+  \def\Plex@RMstyle{#1}%
+  \def\Plex@SSstyle{#1}%
+  \def\Plex@SSConstyle{#1}%
+  \def\Plex@TTstyle{#1}%
+}
+%
+\def\PlexRM@SCfont{}%  {texgyretermes}
+\DeclareOptionX{RMSCfont}{\renewcommand*\PlexRM@SCfont{#1}}
+\def\PlexSS@SCfont{}%  {texgyreheros}
+\DeclareOptionX{SSSCfont}{\renewcommand*\PlexSS@SCfont{#1}}
+
+\providecommand\PlexRM@features{}%  Roman
+\providecommand\PlexSS@features{}%  SansSerif
+\providecommand\PlexSScon@features{}%  SansSerif Condensed
+\providecommand\PlexTT@features{}%     Scale=MatchLowercase,FakeStretch=0.9}%  Typewriter
+\providecommand\Plex@DefaultFeatures{}
+%
+\DeclareOptionX{RM}{\renewcommand*\PlexRM@features{#1}}
+\DeclareOptionX{SS}{\renewcommand*\PlexSS@features{#1}}
+\DeclareOptionX{SScon}{\renewcommand*\PlexSScon@features{#1}}
+\DeclareOptionX{TT}{\renewcommand*\PlexTT@features{#1}}
+\DeclareOptionX{DefaultFeatures}{\def\Plex@DefaultFeatures{#1}}
+
+\ProcessOptionsX\relax
+
+
+\def\Plex@test#1#2\@nil{%
+  \ifx S#1 \gdef\Plex@boldstyle{SemiBold}%
+  \else   \gdef\Plex@style{#1#2}%
+  \fi
+}
+
+\def\Plex@style{}
+\def\Plex@boldstyle{Bold}
+\expandafter\@for\expandafter\next\expandafter:\expandafter=\Plex@RMstyle\do{%
+  \expandafter\Plex@test\next\@nil
+}
+\edef\Plex@RMboldstyle{\Plex@boldstyle}
+\edef\Plex@RMstyle{\Plex@style}
+\typeout{RM: \Plex@RMstyle; \Plex@RMboldstyle}%
+
+\def\Plex@style{}
+\def\Plex@boldstyle{Bold}
+\expandafter\@for\expandafter\next\expandafter:\expandafter=\Plex@SSstyle\do{%
+  \expandafter\Plex@test\next\@nil
+}
+\edef\Plex@SSboldstyle{\Plex@boldstyle}
+\edef\Plex@SSstyle{\Plex@style}
+\typeout{SS: \Plex@SSstyle; \Plex@SSboldstyle}%
+\edef\Plex@SSconboldstyle{\Plex@boldstyle}
+\edef\Plex@SSconstyle{\Plex@style}
+\typeout{SS: \Plex@SSconstyle; \Plex@SSconboldstyle}%
+
+\def\Plex@style{}
+\def\Plex@boldstyle{Bold}
+\expandafter\@for\expandafter\next\expandafter:\expandafter=\Plex@TTstyle\do{%
+  \expandafter\Plex@test\next\@nil
+}
+\let\Plex@TTboldstyle\Plex@boldstyle
+\let\Plex@TTstyle\Plex@style
+\typeout{TT: \Plex@TTstyle; \Plex@TTboldstyle}%
+
+\defaultfontfeatures{Ligatures=TeX,\Plex@DefaultFeatures}% default in fontspec
+%
+\ifluatex
+  \def\Plex@@Renderer{Renderer=Basic}%
+\else
+  \def\Plex@@Renderer{}
+\fi
+%
+\ifx\@empty\PlexRM@SCfont\else
+  \g@addto@macro{\PlexRM@features}{,%
+         SmallCapsFont = \PlexRM@SCfont-regular,
+     SmallCapsFeatures = {Letters=SmallCaps,
+                          \Plex@@Renderer,
+                          Scale=MatchUppercase},
+          BoldFeatures = { SmallCapsFont=\PlexRM@SCfont-bold},
+        ItalicFeatures = { SmallCapsFont=\PlexRM@SCfont-italic},
+     BoldItalicFeatures= { SmallCapsFont=\PlexRM@SCfont-bolditalic}
+    }%
+\fi
+\ifx\@empty\PlexSS@SCfont\else
+    \g@addto@macro{\PlexSS@features}{,%
+         SmallCapsFont = \PlexSS@SCfont-regular,
+     SmallCapsFeatures = {Letters=SmallCaps,
+                          \Plex@@Renderer,
+                          Scale=MatchUppercase},
+          BoldFeatures = { SmallCapsFont=\PlexSS@SCfont-bold},
+        ItalicFeatures = { SmallCapsFont=\PlexSS@SCfont-italic},
+     BoldItalicFeatures= { SmallCapsFont=\PlexSS@SCfont-bolditalic}
+    }%
+\fi
+
+%\DeclareTextCommand{\SS}{TU}{\char"1E9E}
+
+\ifPlex@usefilenames%%%%%%%%%%%%%%%%%%% DATEINAMEN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\typeout {Using file names for the Plex font}%
+%
+  \ifPlex@serif
+    \edef\Plex@@Weight{\ifx\@empty\Plex@RMstyle Regular\else\Plex@RMstyle\fi}
+%
+  \setmainfont{IBMPlexSerif}[% main rm
+           Extension = .otf,
+          UprightFont= *-\Plex@@Weight,
+            BoldFont = *-\Plex@RMboldstyle,
+          ItalicFont = *-\Plex@RMstyle Italic,
+      BoldItalicFont = *-\Plex@RMboldstyle Italic,
+         SlantedFont = *-\Plex@RMstyle Italic,
+%               Scale = 0.92,
+      \PlexRM@features,
+  ]
+  \newfontfamily\slshapeRM{IBMPlexSerif}[%
+           Extension = .otf,
+           FakeSlant = 0.2,
+         UprightFont = *-\Plex@@Weight,
+            BoldFont = *-\Plex@RMboldstyle,
+      \PlexRM@features,
+    ] 
+%
+  \newfontfamily\PlexExtraLightRM{IBMPlexSerif}[% 
+      \PlexRM@features,
+           Extension = .otf,
+          UprightFont= *-ExtraLight,
+          ItalicFont = *-ExtraLightItalic,
+    ]
+  \newfontfamily\PlexLightRM{IBMPlexSerif}[% 
+      \PlexRM@features,
+           Extension = .otf,
+          UprightFont= *-Light,
+          ItalicFont = *-LightItalic,
+    ]
+  \newfontfamily\PlexThinRM{IBMPlexSerif}[% 
+      \PlexRM@features,
+           Extension = .otf,
+          UprightFont= *-Thin,
+          ItalicFont = *-ThinItalic,
+    ]
+  \newfontfamily\PlexMediumRM{IBMPlexSerif}[% 
+      \PlexRM@features,
+           Extension = .otf,
+          UprightFont= *-Medium,
+          ItalicFont = *-MediumItalic,
+    ]
+  \newfontfamily\PlexTextRM{IBMPlexSerif}[% 
+      \PlexRM@features,
+           Extension = .otf,
+          UprightFont= *-Text,
+          ItalicFont = *-TextItalic,
+    ]
+  \newfontfamily\PlexSemiBoldRM{IBMPlexSerif}[% 
+      \PlexRM@features,
+           Extension = .otf,
+          UprightFont= *-\Plex@@Weight,
+            BoldFont = *-SemiBold,
+      BoldItalicFont = *-SemiBoldItalic,
+    ]
+  \fi
+%
+  \ifPlex@sans
+    \edef\Plex@@Weight{\ifx\Plex@SSstyle\@empty Regular\else\Plex@SSstyle\fi}
+    \setsansfont{IBMPlexSans}[% main sans
+           Extension = .otf,
+          UprightFont= *-\Plex@@Weight,
+            BoldFont = *-\Plex@SSboldstyle,
+          ItalicFont = *-\Plex@SSstyle Italic,
+      BoldItalicFont = *-\Plex@SSboldstyle Italic,
+         SlantedFont = *-\Plex@SSstyle Italic,
+%               Scale = 0.92,
+      \PlexSS@features,
+  ]
+%
+  \newfontfamily\slshapeSS{IBMPlexSans}[%
+           Extension = .otf,
+           FakeSlant = 0.2,
+         UprightFont = *-\Plex@@Weight,
+            BoldFont = *-\Plex@SSboldstyle,
+      \PlexSS@features,
+  ]
+%
+  \newfontfamily\PlexExtraLightSS{IBMPlexSans}[% 
+      \PlexSS@features,
+           Extension = .otf,
+          UprightFont= *-ExtraLight,
+          ItalicFont = *-ExtraLightItalic,
+    ]
+  \newfontfamily\PlexLightSS{IBMPlexSans}[% 
+      \PlexSS@features,
+           Extension = .otf,
+          UprightFont= *-Light,
+          ItalicFont = *-LightItalic,
+    ]
+  \newfontfamily\PlexThinSS{IBMPlexSans}[% 
+      \PlexSS@features,
+           Extension = .otf,
+          UprightFont= *-Thin,
+          ItalicFont = *-ThinItalic,
+    ]
+  \newfontfamily\PlexMediumSS{IBMPlexSans}[% 
+      \PlexSS@features,
+           Extension = .otf,
+          UprightFont= *-Medium,
+          ItalicFont = *-MediumItalic,
+    ]
+  \newfontfamily\PlexTextSS{IBMPlexSans}[% 
+      \PlexSS@features,
+           Extension = .otf,
+          UprightFont= *-Text,
+          ItalicFont = *-TextItalic,
+    ]
+  \newfontfamily\PlexSemiBoldSS{IBMPlexSans}[% 
+      \PlexRM@features,
+           Extension = .otf,
+          UprightFont= *-\Plex@@Weight,
+            BoldFont = *-SemiBold,
+      BoldItalicFont = *-SemiBoldItalic,
+    ]
+%
+%  Sans Serif COndensed
+%
+  \edef\Plex@@Weight{\ifx\Plex@SSconstyle\@empty Regular\else\Plex@SSconstyle\fi}
+  \newfontfamily\sffamilyCon{IBMPlexSansCondensed}[% main sans condensed
+           Extension = .otf,
+          UprightFont= *-\Plex@@Weight,
+            BoldFont = *-\Plex@SSconboldstyle,
+          ItalicFont = *-\Plex@SSconstyle Italic,
+      BoldItalicFont = *-\Plex@SSconboldstyle Italic,
+         SlantedFont = *-\Plex@SSconstyle Italic,
+%               Scale = 0.92,
+      \PlexSScon@features,
+  ]
+%
+  \newfontfamily\slshapeSScon{IBMPlexSansCondensed}[%
+           Extension = .otf,
+           FakeSlant = 0.2,
+         UprightFont = *-\Plex@@Weight,
+            BoldFont = *-\Plex@SSconboldstyle,
+      \PlexSScon@features,
+  ]
+%
+  \newfontfamily\PlexExtraLightSScon{IBMPlexSansCondensed}[% 
+      \PlexSScon@features,
+           Extension = .otf,
+          UprightFont= *-ExtraLight,
+          ItalicFont = *-ExtraLightItalic,
+    ]
+  \newfontfamily\PlexLightSScon{IBMPlexSansCondensed}[% 
+      \PlexSScon@features,
+           Extension = .otf,
+          UprightFont= *-Light,
+          ItalicFont = *-LightItalic,
+    ]
+  \newfontfamily\PlexThinSScon{IBMPlexSansCondensed}[% 
+      \PlexSScon@features,
+           Extension = .otf,
+          UprightFont= *-Thin,
+          ItalicFont = *-ThinItalic,
+    ]
+  \newfontfamily\PlexMediumSScon{IBMPlexSansCondensed}[% 
+      \PlexSScon@features,
+           Extension = .otf,
+          UprightFont= *-Medium,
+          ItalicFont = *-MediumItalic,
+    ]
+  \newfontfamily\PlexTextSScon{IBMPlexSansCondensed}[% 
+      \PlexSScon@features,
+           Extension = .otf,
+          UprightFont= *-Text,
+          ItalicFont = *-TextItalic,
+    ]
+  \newfontfamily\PlexSemiBoldSScon{IBMPlexSansCondensed}[% 
+      \PlexRM@features,
+           Extension = .otf,
+          UprightFont= *-\Plex@@Weight,
+            BoldFont = *-SemiBold,
+      BoldItalicFont = *-SemiBoldItalic,
+    ]
+  \fi
+%
+  \ifPlex@mono
+    \edef\Plex@@Weight{\ifx\Plex@TTstyle\@empty Regular\else\Plex@TTstyle\fi}
+    \setmonofont{IBMPlexMono}[% main typewriter
+           Extension = .otf,
+          UprightFont= *-\Plex@@Weight,
+            BoldFont = *-\Plex@TTboldstyle,
+          ItalicFont = *-\Plex@TTstyle Italic,
+      BoldItalicFont = *-\Plex@TTboldstyle Italic,
+         SlantedFont = *-\Plex@TTstyle Italic,
+      \PlexTT@features,
+    ]
+  \newfontfamily\slshapeTT{IBMPlexMono}[%
+           Extension = .otf,
+           FakeSlant = 0.2,
+         UprightFont = *-\Plex@@Weight,
+            BoldFont = *-\Plex@TTboldstyle,
+      \PlexTT@features,
+  ]
+  \newfontfamily\PlexExtraLightTT{IBMPlexMono}[% 
+           Extension = .otf,
+          UprightFont= *-ExtraLight,
+          ItalicFont = *-ExtraLightItalic,
+      \PlexTT@features,
+    ]
+  \newfontfamily\PlexLightTT{IBMPlexMono}[% 
+           Extension = .otf,
+          UprightFont= *-Light,
+          ItalicFont = *-LightItalic,
+      \PlexTT@features,
+    ]
+  \newfontfamily\PlexThinTT{IBMPlexMono}[% 
+           Extension = .otf,
+          UprightFont= *-Thin,
+          ItalicFont = *-ThinItalic,
+      \PlexTT@features,
+    ]
+  \newfontfamily\PlexMediumTT{IBMPlexMono}[% 
+           Extension = .otf,
+          UprightFont= *-Medium,
+          ItalicFont = *-MediumItalic,
+      \PlexTT@features,
+    ]
+  \newfontfamily\PlexTextTT{IBMPlexMono}[% 
+           Extension = .otf,
+          UprightFont= *-Text,
+          ItalicFont = *-TextItalic,
+      \PlexTT@features,
+    ]
+  \newfontfamily\PlexSemiBoldTT{IBMPlexMono}[% 
+           Extension = .otf,
+          UprightFont= *-\Plex@@Weight,
+            BoldFont = *-SemiBold,
+      BoldItalicFont = *-SemiBoldItalic,
+      \PlexRM@features,
+    ]
+  \fi % End PlexMono
+%
+\else%%%%%%%%%%%%%%%%%%% Ende DATEINAMEN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     %%%%%%%%%%%%%%%%%%% Symbolische NAMEN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\typeout {Using symbolic names for the Plex font}%
+\ifPlex@serif
+  \edef\Plex@@Weight{\ifx\Plex@RMstyle\@empty \else\Plex@RMstyle\fi}
+%
+  \setmainfont{IBM Plex Serif}[% main rm
+          UprightFont= * \Plex@@Weight,
+            BoldFont = * \Plex@RMboldstyle,
+          ItalicFont = * \Plex@RMstyle Italic,
+      BoldItalicFont = * \Plex@RMboldstyle Italic,
+         SlantedFont = * \Plex@RMstyle Italic,
+%               Scale = 0.92,
+      \PlexRM@features,
+  ]
+  \newfontfamily\slshapeRM{IBMPlexSans}[%
+           FakeSlant = 0.2,
+         UprightFont = * \Plex@@Weight,
+            BoldFont = * \Plex@RMboldstyle,
+      \PlexRM@features,
+  ]
+  \newfontfamily\PlexExtraLightRM{IBM Plex Serif}[%
+          UprightFont= *-ExtraLight,
+          ItalicFont = *-ExtraLightItalic,
+      \PlexRM@features,
+    ]
+  \newfontfamily\PlexLightRM{IBM Plex Serif}[% 
+          UprightFont= * Light,
+          ItalicFont = * LightItalic,
+      \PlexRM@features,
+    ]
+  \newfontfamily\PlexThinRM{IBM Plex Serif}[% 
+          UprightFont= * Thin,
+          ItalicFont = * ThinItalic,
+      \PlexRM@features,
+    ]
+  \newfontfamily\PlexMediumRM{IBM Plex Serif}[%
+          UprightFont= * Medium,
+          ItalicFont = * MediumItalic,
+      \PlexRM@features,
+    ]
+  \newfontfamily\PlexTextRM{IBM Plex Serif}[%
+          UprightFont= * Text,
+          ItalicFont = * TextItalic,
+      \PlexRM@features,
+    ]
+  \newfontfamily\PlexSemiBoldRM{IBM Plex Serif}[% 
+          UprightFont= * \Plex@@Weight,
+            BoldFont = * SemiBold,
+      BoldItalicFont = * SemiBoldItalic,
+      \PlexRM@features,
+    ]
+\fi
+%
+\ifPlex@sans
+  \edef\Plex@@Weight{\ifx\Plex@SSstyle\@empty\else\Plex@SSstyle\fi}
+%
+  \setsansfont{IBM Plex Sans}[% 
+          UprightFont= * \Plex@@Weight,
+            BoldFont = * \Plex@SSboldstyle,
+          ItalicFont = * \Plex@SSstyle Italic,
+      BoldItalicFont = * \Plex@SSboldstyle Italic,
+         SlantedFont = * \Plex@SSstyle Italic,
+%               Scale = 0.92,
+      \PlexSS@features,
+  ]
+  \newfontfamily\slshapeSS{IBMPlexSans}[%
+           FakeSlant = 0.2,
+         UprightFont = * \Plex@@Weight,
+            BoldFont = * \Plex@SSboldstyle,
+      \PlexSS@features,
+  ]
+  \newfontfamily\PlexExtraLightSS{IBM Plex Sans}[% 
+          UprightFont= * ExtraLight,
+          ItalicFont = * ExtraLightItalic,
+      \PlexSS@features,
+    ]
+  \newfontfamily\PlexLightSS{IBM Plex Sans}[% 
+          UprightFont= * Light,
+          ItalicFont = * LightItalic,
+      \PlexSS@features,
+    ]
+  \newfontfamily\PlexThinSS{IBM Plex Sans}[% 
+          UprightFont= * Thin,
+          ItalicFont = * ThinItalic,
+      \PlexSS@features,
+    ]
+  \newfontfamily\PlexMediumSS{IBM Plex Sans}[% 
+          UprightFont= * Medium,
+          ItalicFont = * MediumItalic,
+      \PlexSS@features,
+    ]
+  \newfontfamily\PlexTextSS{IBM Plex Sans}[% 
+          UprightFont= * Text,
+          ItalicFont = * TextItalic,
+      \PlexSS@features,
+    ]
+  \newfontfamily\PlexSemiBoldSS{IBM Plex Sans}[%
+          UprightFont= * \Plex@@Weight,
+            BoldFont = * SemiBold,
+      BoldItalicFont = * SemiBoldItalic,
+      \PlexRM@features,
+    ]
+%%
+%%  Snas Serif Condensed
+%%
+  \edef\Plex@@Weight{\ifx\Plex@SSconstyle\@empty\else\Plex@SSconstyle\fi}
+%
+  \newfontfamily\sffamilyCon{IBM Plex Sans Condensed}[% 
+          UprightFont= * \Plex@@Weight,
+            BoldFont = * \Plex@SSconboldstyle,
+          ItalicFont = * \Plex@SSconstyle Italic,
+      BoldItalicFont = * \Plex@SSconboldstyle Italic,
+         SlantedFont = * \Plex@SSconstyle Italic,
+%               Scale = 0.92,
+      \PlexSScon@features,
+  ]
+  \newfontfamily\slshapeSScon{IBMPlexSans}[%
+           FakeSlant = 0.2,
+         UprightFont = * \Plex@@Weight,
+            BoldFont = * \Plex@SSconboldstyle,
+      \PlexSScon@features,
+  ]
+  \newfontfamily\PlexExtraLightSScon{IBM Plex Sans}[% 
+          UprightFont= * ExtraLight,
+          ItalicFont = * ExtraLightItalic,
+      \PlexSScon@features,
+    ]
+  \newfontfamily\PlexLightSScon{IBM Plex Sans}[% 
+          UprightFont= * Light,
+          ItalicFont = * LightItalic,
+      \PlexSScon@features,
+    ]
+  \newfontfamily\PlexThinSScon{IBM Plex Sans}[% 
+          UprightFont= * Thin,
+          ItalicFont = * ThinItalic,
+      \PlexSScon@features,
+    ]
+  \newfontfamily\PlexMediumSScon{IBM Plex Sans}[% 
+          UprightFont= * Medium,
+          ItalicFont = * MediumItalic,
+      \PlexSScon@features,
+    ]
+  \newfontfamily\PlexTextSScon{IBM Plex Sans}[% 
+          UprightFont= * Text,
+          ItalicFont = * TextItalic,
+      \PlexSScon@features,
+    ]
+  \newfontfamily\PlexSemiBoldSScon{IBM Plex Sans}[%
+          UprightFont= * \Plex@@Weight,
+            BoldFont = * SemiBold,
+      BoldItalicFont = * SemiBoldItalic,
+      \PlexRM@features,
+    ]
+\fi
+%
+\ifPlex@mono
+  \edef\Plex@@Weight{\ifx\Plex@TTstyle\@empty\else\Plex@TTstyle\fi}
+%
+  \setmonofont{IBM Plex Mono}[% 
+          UprightFont= * \Plex@@Weight,
+            BoldFont = * \Plex@TTboldstyle,
+          ItalicFont = * \Plex@TTstyle Italic,
+      BoldItalicFont = * \Plex@TTboldstyle Italic,
+         SlantedFont = *-\Plex@TTstyle Italic,
+%               Scale = 0.92,
+      \PlexTT@features,
+  ]
+  \newfontfamily\slshapeTT{IBMPlexMono}[%
+           FakeSlant = 0.2,
+         UprightFont = * \Plex@@Weight,
+            BoldFont = * \Plex@TTboldstyle,
+      \PlexTT@features,
+  ]
+  \newfontfamily\PlexExtraLightTT{IBM Plex Mono}[% 
+          UprightFont= * ExtraLight,
+          ItalicFont = * ExtraLightItalic,
+      \PlexTT@features,
+    ]
+  \newfontfamily\PlexLightTT{IBM Plex Mono}[% 
+          UprightFont= * Light,
+          ItalicFont = * LightItalic,
+      \PlexTT@features,
+    ]
+  \newfontfamily\PlexThinTT{IBM Plex Mono}[% 
+          UprightFont= * Thin,
+          ItalicFont = * ThinItalic,
+      \PlexTT@features,
+    ]
+  \newfontfamily\PlexMediumTT{IBM Plex Mono}[% 
+          UprightFont= * Medium,
+          ItalicFont = * MediumItalic,
+      \PlexTT@features,
+    ]
+  \newfontfamily\PlexTextTT{IBM Plex Mono}[% 
+          UprightFont= * Text,
+          ItalicFont = * TextItalic,
+      \PlexTT@features,
+    ]
+  \newfontfamily\PlexSemiBoldTT{IBM Plex Mono}[% 
+          UprightFont= * \Plex@@Weight,
+            BoldFont = * SemiBold,
+      BoldItalicFont = * SemiBoldItalic,
+      \PlexRM@features,
+    ]
+\fi
+%
+\fi% end \ifPlex@usefilenames
+
+\DeclareTextFontCommand{\textsl}{\ifx\f@family\rmdefault\slshapeRM\else\slshapeSS\fi}
+\DeclareRobustCommand\slshape
+        {\not@math@alphabet\slshape\relax
+         \ifx\f@family\rmdefault\slshapeRM\else\ifx\f@family\sfdefault\slshapeSS\else\slshapeTT\fi\fi}
+%Define some special Characters
+\providecommand\IBM{%[1][0]{\ifcase#1
+%  \symbol{"EBE1}\or
+%  \symbol{"EBE3}\or
+%  \textsf{\symbol{"EBE4}}\or
+%  \textsf{\symbol{"EBE6}}\or
+  \symbol{"EBE7}%\fi
+}
+\providecommand\CE{\symbol{"ECE0}}
+\providecommand\FCC{\symbol{"EFCC}}
+\providecommand\upleftarrow{\symbol{"21B0}}
+\providecommand\uprightarrow{\symbol{"21B1}}
+\providecommand\downleftarrow{\symbol{"21B2}}
+\providecommand\downrightarrow{\symbol{"21B3}}
+\providecommand\leftturn{\symbol{"21B6}}
+\providecommand\rightturn{\symbol{"21B7}}
+\providecommand\fullleftturn{\symbol{"21BA}}
+\providecommand\fullrightturn{\symbol{"21BB}}
+
+\endinput
+
+
+insgesamt 4448
+-rwxr-xr-x 1 voss voss  94936 Okt 27 11:06 IBMPlexMono-BoldItalic.ttf
+-rwxr-xr-x 1 voss voss  90024 Okt 27 11:06 IBMPlexMono-Bold.ttf
+-rwxr-xr-x 1 voss voss  95436 Okt 27 11:06 IBMPlexMono-ExtraLightItalic.ttf
+-rwxr-xr-x 1 voss voss  89652 Okt 27 11:06 IBMPlexMono-ExtraLight.ttf
+-rwxr-xr-x 1 voss voss  94656 Okt 27 11:06 IBMPlexMono-Italic.ttf
+-rwxr-xr-x 1 voss voss  94300 Okt 27 11:06 IBMPlexMono-LightItalic.ttf
+-rwxr-xr-x 1 voss voss  88860 Okt 27 11:06 IBMPlexMono-Light.ttf
+-rwxr-xr-x 1 voss voss  94648 Okt 27 11:06 IBMPlexMono-MediumItalic.ttf
+-rwxr-xr-x 1 voss voss  89708 Okt 27 11:06 IBMPlexMono-Medium.ttf
+-rwxr-xr-x 1 voss voss  88848 Okt 27 11:06 IBMPlexMono-Regular.ttf
+-rwxr-xr-x 1 voss voss  97780 Okt 27 11:06 IBMPlexMono-SemiBoldItalic.ttf
+-rwxr-xr-x 1 voss voss  92972 Okt 27 11:06 IBMPlexMono-SemiBold.ttf
+-rwxr-xr-x 1 voss voss  94088 Okt 27 11:06 IBMPlexMono-TextItalic.ttf
+-rwxr-xr-x 1 voss voss  88784 Okt 27 11:06 IBMPlexMono-Text.ttf
+-rwxr-xr-x 1 voss voss  95496 Okt 27 11:06 IBMPlexMono-ThinItalic.ttf
+-rwxr-xr-x 1 voss voss  90092 Okt 27 11:06 IBMPlexMono-Thin.ttf
+-rwxr-xr-x 1 voss voss 112200 Okt 27 11:06 IBMPlexSans-BoldItalic.ttf
+-rwxr-xr-x 1 voss voss 107732 Okt 27 11:06 IBMPlexSans-Bold.ttf
+-rwxr-xr-x 1 voss voss 115848 Okt 27 11:06 IBMPlexSans-ExtraLightItalic.ttf
+-rwxr-xr-x 1 voss voss 111220 Okt 27 11:06 IBMPlexSans-ExtraLight.ttf
+-rwxr-xr-x 1 voss voss 112848 Okt 27 11:06 IBMPlexSans-Italic.ttf
+-rwxr-xr-x 1 voss voss 114144 Okt 27 11:06 IBMPlexSans-LightItalic.ttf
+-rwxr-xr-x 1 voss voss 109512 Okt 27 11:06 IBMPlexSans-Light.ttf
+-rwxr-xr-x 1 voss voss 112056 Okt 27 11:06 IBMPlexSans-MediumItalic.ttf
+-rwxr-xr-x 1 voss voss 107940 Okt 27 11:06 IBMPlexSans-Medium.ttf
+-rwxr-xr-x 1 voss voss 107988 Okt 27 11:06 IBMPlexSans-Regular.ttf
+-rwxr-xr-x 1 voss voss 112528 Okt 27 11:06 IBMPlexSans-SemiBoldItalic.ttf
+-rwxr-xr-x 1 voss voss 107856 Okt 27 11:06 IBMPlexSans-SemiBold.ttf
+-rwxr-xr-x 1 voss voss 112400 Okt 27 11:06 IBMPlexSans-TextItalic.ttf
+-rwxr-xr-x 1 voss voss 108168 Okt 27 11:06 IBMPlexSans-Text.ttf
+-rwxr-xr-x 1 voss voss 116628 Okt 27 11:06 IBMPlexSans-ThinItalic.ttf
+-rwxr-xr-x 1 voss voss 112228 Okt 27 11:06 IBMPlexSans-Thin.ttf
+-rwxr-xr-x 1 voss voss  76056 Okt 27 11:06 IBMPlexSerif-BoldItalic.otf
+-rwxr-xr-x 1 voss voss  74492 Okt 27 11:06 IBMPlexSerif-Bold.otf
+-rwxr-xr-x 1 voss voss  74184 Okt 27 11:06 IBMPlexSerif-ExtraLightItalic.otf
+-rwxr-xr-x 1 voss voss  73836 Okt 27 11:06 IBMPlexSerif-ExtraLight.otf
+-rwxr-xr-x 1 voss voss  74204 Okt 27 11:06 IBMPlexSerif-Italic.otf
+-rwxr-xr-x 1 voss voss  75128 Okt 27 11:06 IBMPlexSerif-LightItalic.otf
+-rwxr-xr-x 1 voss voss  73504 Okt 27 11:06 IBMPlexSerif-Light.otf
+-rwxr-xr-x 1 voss voss  76528 Okt 27 11:06 IBMPlexSerif-MediumItalic.otf
+-rwxr-xr-x 1 voss voss  74620 Okt 27 11:06 IBMPlexSerif-Medium.otf
+-rwxr-xr-x 1 voss voss  72560 Okt 27 11:06 IBMPlexSerif-Regular.otf
+-rwxr-xr-x 1 voss voss  76672 Okt 27 11:06 IBMPlexSerif-SemiBoldItalic.otf
+-rwxr-xr-x 1 voss voss  75356 Okt 27 11:06 IBMPlexSerif-SemiBold.otf
+-rwxr-xr-x 1 voss voss  77172 Okt 27 11:06 IBMPlexSerif-TextItalic.otf
+-rwxr-xr-x 1 voss voss  74388 Okt 27 11:06 IBMPlexSerif-Text.otf
+-rwxr-xr-x 1 voss voss  72308 Okt 27 11:06 IBMPlexSerif-ThinItalic.otf
+-rwxr-xr-x 1 voss voss  71116 Okt 27 11:06 IBMPlexSerif-Thin.otf

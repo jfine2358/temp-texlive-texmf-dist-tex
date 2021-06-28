@@ -1,0 +1,56 @@
+% Global Vars
+%
+% (c) Charles Baynham 2019
+%
+% License: LaTeX Project Public License 1.3c
+%
+% This package allow the user to declare a variable which can then be used
+% anywhere else in a document, including before it was declared. This is done
+% by putting the definitions into the .aux files, therefore requiring two runs
+% to get it right.
+%
+% It implements two commands: \defVal{<value>} and \useVal{<value>}. \defVal
+% sets up a global variable and \useVal recalls it.
+%
+% Using \defVal twice will result in an error. Using \useVal for an undefined
+% value will output the text "??"
+%
+
+\NeedsTeXFormat{LaTeX2e}
+\def\@globalvalsPkgName{globalvals}
+\ProvidesPackage{\@globalvalsPkgName}
+  [2019/02/06 v1.1 Define and use global variables throughout a document, including before their definition]
+
+
+
+% useVal@#1 will hold the value of the variable: it's defined by an .aux file
+% somewhere
+\newcommand{\useVal}[1]{%
+  \ifcsname useVal@#1\endcsname
+    \csname useVal@#1\endcsname
+  \else
+    ??%
+    \PackageWarning{\@globalvalsPkgName}{Value "#1" has not yet been defined. This may be fine, you may need to recompile. If you keep getting this message it's because you haven't defined it yet. }
+  \fi
+}
+
+% useVal@#1 is defined in the .aux file to be used on the next run.
+% useVal@#1@defined is defined immediately to mark that useVal@#1 has already
+% been used and cannot be used again
+\newcommand{\defVal}[2]{%
+\ifcsname useVal@#1@defined\endcsname
+  \PackageError{\@globalvalsPkgName}{Value "#1" already defined}%
+    {You have two defVal commands which have the same parameter name. This error is occurring on the 2nd (or 3rd, or 4th...).}%
+\else%
+  \write\@auxout{%
+    \unexpanded{\global\@namedef{useVal@#1}{#2}}%
+  }%
+  \global\@namedef{useVal@#1@defined}{}%
+  \global\@namedef{useVal@#1}{#2}%
+  \PackageInfo{\@globalvalsPkgName}{Defining new variable "#1" with value "#2"}%
+\fi%
+}
+
+\endinput
+%%
+%% End of file `globalvals.sty'.

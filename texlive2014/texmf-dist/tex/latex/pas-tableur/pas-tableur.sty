@@ -1,0 +1,245 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                               %
+%    	pas-tableur.sty  v1.06     encodage : UTF8     	        %
+%                                                               %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                               %
+%           	Créé par Stéphane PASQUET 		          		%
+%                                                               %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% V1.02 : 12/05/2012 -> Modification de la macro \tableur : on peut désormais écrire \tableur{A,B,C,D} ou \tableur{A-D}
+% V1.03 : 13/05/2012 -> Modification de la macro \celtxt : on peut désormais insérer l'accent circonflexe dans du texte et si le texte est plus large que la cellule, le trait gris de séparation des cellules n'est plus visible (le texte s'écrit par dessus).
+% V1.04 : 13/05/2012 -> Amélioration de la macro \celtxt : le texte est réduit pour ne pas effacer les traits de cellule
+% V1.05 : 25/03/2014 -> Amélioration de la macro \celtxt : conflit avec "$" et "^"
+% V1.06 : 17/04/2014 -> correction du bug sur la macro \celtxt : les options [c] et [r] fonctionnent
+
+% Informations générales
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{pas-tableur}[2014/04/17]
+
+\RequirePackage{tikz}
+\usetikzlibrary{calc}
+\RequirePackage{xstring}
+\RequirePackage{multido}
+
+% Définition des couleurs
+
+\definecolor{grayTopCell}{cmyk}{0.08,0.05,0.06,0}
+\definecolor{grayBottomCell}{cmyk}{0.1,0.07,0.08,0}
+\definecolor{graySepCell}{cmyk}{0.29,0.21,0.21,0}
+\definecolor{blueSelecCellTop}{cmyk}{0.52,0.17,0,0}
+\definecolor{blueSelecCellBottom}{cmyk}{0.75,0.34,0,0}
+\definecolor{blueSelec}{cmyk}{0.23,0.06,0,0}
+
+% Définition des dimensions lignes/colonnes
+\def\colminwidth{7em}
+\def\lineminheight{1.57em}
+
+% Définition des polices de caractères
+\newcommand{\helvbx}{\usefont{T1}{phv}{m}{n}}
+\newcommand{\helv}{\usefont{T1}{phv}{l}{n}}
+
+% Définition des compteurs
+\newcounter{celnumber}
+\newcounter{tmp}
+\newcounter{nbcolselected}
+\newcounter{nblineselected}
+\newcount\cntcol
+
+% Macros auxiliaires pour mémoriser les lettres désignant les colonnes
+\newcommand*\defcolumns{\cntcol\z@\valheadcols}
+\newcommand*\valheadcols[1]{\expandafter\valheadcols@#1,\valheadcols@,}
+\newcommand*\defcolumnsB{\cntcol\z@\valheadcolsB}
+\newcommand*\valheadcolsB[1]{\valheadcols@#1,\valheadcols@,}
+\def\valheadcols@#1,{%
+   \ifx\valheadcols@#1%
+   \else
+      \advance\cntcol\@ne
+	  \expandafter\xdef\csname ValCol#1\endcsname{\number\cntcol}
+      \expandafter\valheadcols@
+   \fi
+}
+\newcommand*\ValCol[1]{\@nameuse{ValCol#1}}
+
+% Macros auxiliaires pour mémoriser les lettres désignant les colonnes sélectionnées
+\newcommand*\defcolselected{\cntcol\z@\valcolselected}
+\newcommand*\valcolselected[1]{\expandafter\valcolselected@#1,\valcolselected@,}
+\def\valcolselected@#1,{%
+   \ifx\valcolselected@#1%
+   \else
+      \advance\cntcol\@ne
+	  \expandafter\xdef\csname ValColSelected\number\cntcol\endcsname{#1}
+      \expandafter\valcolselected@
+   \fi
+}
+\newcommand*\ValColSelected[1]{\@nameuse{ValColSelected#1}}
+
+% Macros auxiliaires pour mémoriser les lettres désignant les lignes sélectionnées
+\newcommand*\deflineselected{\cntcol\z@\vallineselected}
+\newcommand*\vallineselected[1]{\vallineselected@#1,\vallineselected@,}
+\def\vallineselected@#1,{%
+   \ifx\vallineselected@#1%
+   \else
+      \advance\cntcol\@ne
+	  \expandafter\xdef\csname ValLineSelected\number\cntcol\endcsname{#1}
+      \expandafter\vallineselected@
+   \fi
+}
+\newcommand*\ValLineSelected[1]{\@nameuse{ValLineSelected#1}}
+
+%----------> Liste des noms de colonnes <----------
+\global\def\col@names{ABCDEFGHIJKLMNOPQRSTUVWXYZ}
+
+%----------> Construction du tableur <-----------
+\newcommand{\tableur}[2][1] % [#1] -> nombre de lignes (par défaut, "1"), #2 -> A,B,...,Z
+{%
+% On mémorise les lettres des colonnes
+% \ValCol{A} sera égal à "1" si la 1ère colonne porte la lettre "A"
+\setcounter{celnumber}{0}
+\IfSubStr{#2}{-}
+{%
+	\StrBefore{#2}{-}[\str@start] % 1ère lettre, par ex. "G"
+	\StrBehind{#2}{-}[\str@end]	  % 2ème lettre, par ex. "L"
+	\StrBetween{\col@names}{\str@start}{\str@end}[\str@col] %  retourne par exemple "HIJK"
+	\edef\str@col{\str@start\str@col\str@end}
+	\StrLen{\str@col}[\nb@columns]
+	\StrChar{\str@col}{1}[\lettre]
+	\xdef\chaine{\lettre}
+	\multido{\i=2+1}{\nb@columns}
+	{
+	\StrChar{\str@col}{\i}[\lettre]
+	\xdef\chaine{\chaine,\lettre}
+	} % ici, \chaine = "H,I,J,K,"
+	\StrGobbleRight{\chaine}{1}[\chaine] %  retire la dernière virgule : \chaine -> "H,I,J,K"
+	\defcolumns{\chaine}
+	\multido{\i=1+1}{\nb@columns}
+	{
+	\StrChar{\str@col}{\i}[\lettre]
+	\node[below right,inner xsep=1ex,minimum width=\colminwidth,minimum height=\lineminheight] (c\thecelnumber) at ({\thecelnumber*\colminwidth},0) {\helvbx\lettre};
+	\fill[grayTopCell] (c\thecelnumber.north west) -- (c\thecelnumber.north east) -- ($0.5*(c\thecelnumber.north east)+0.5*(c\thecelnumber.south east)$) -- ($0.5*(c\thecelnumber.south west)+0.5*(c\thecelnumber.north west)$) -- cycle;
+	\fill[grayBottomCell] (c\thecelnumber.south west) -- (c\thecelnumber.south east) -- ($0.5*(c\thecelnumber.south east)+0.5*(c\thecelnumber.north east)$) -- ($0.5*(c\thecelnumber.south west)+0.5*(c\thecelnumber.north west)$) -- cycle;
+	\node[below right,inner sep=1ex,minimum width=\colminwidth,minimum height=\lineminheight] at (c\thecelnumber.north west) {\helvbx\lettre};
+	\stepcounter{celnumber}
+	}
+}
+{
+	\defcolumnsB{#2}
+	\foreach \i in {#2}
+	{
+	\node[below right,inner xsep=1ex,minimum width=\colminwidth,minimum height=\lineminheight] (c\thecelnumber) at ({\thecelnumber*\colminwidth},0) {\helvbx\i};
+	\fill[grayTopCell] (c\thecelnumber.north west) -- (c\thecelnumber.north east) -- ($0.5*(c\thecelnumber.north east)+0.5*(c\thecelnumber.south east)$) -- ($0.5*(c\thecelnumber.south west)+0.5*(c\thecelnumber.north west)$) -- cycle;
+	\fill[grayBottomCell] (c\thecelnumber.south west) -- (c\thecelnumber.south east) -- ($0.5*(c\thecelnumber.south east)+0.5*(c\thecelnumber.north east)$) -- ($0.5*(c\thecelnumber.south west)+0.5*(c\thecelnumber.north west)$) -- cycle;
+	\node[below right,inner sep=1ex,minimum width=\colminwidth,minimum height=\lineminheight] at (c\thecelnumber.north west) {\helvbx\i};
+	\stepcounter{celnumber}
+	}
+}
+
+% Placement des numéros de lignes
+\foreach \i in {1,...,#1}
+{
+	\node[below left,inner xsep=1ex,minimum width=3em,minimum height=\lineminheight,draw,very thin] (nb) at (0,{-\i*\lineminheight}) {\helvbx\i};
+	\fill[grayTopCell] (nb.north west) -- (nb.north east) -- ($0.5*(nb.north east)+0.5*(nb.south east)$) -- ($0.5*(nb.south west)+0.5*(nb.north west)$) -- cycle;
+	\fill[grayBottomCell] (nb.south west) -- (nb.south east) -- ($0.5*(nb.south east)+0.5*(nb.north east)$) -- ($0.5*(nb.south west)+0.5*(nb.north west)$) -- cycle;
+	\node[below left,inner xsep=1ex,minimum width=3em,minimum height=\lineminheight,draw,very thin] (nb) at (0,{-\i*\lineminheight}) {\helvbx\i};
+}
+\addtocounter{celnumber}{-1}
+
+% Tracé de la grille
+\draw[black,very thin] (0,0) grid[xstep=\colminwidth] (c\thecelnumber.south east);
+\foreach \i in {1,...,#1}
+{
+	\draw[graySepCell,very thin] (0,{-(\i+1)*\lineminheight}) -- ({(\thecelnumber+1)*\colminwidth},{-(\i+1)*\lineminheight});
+}
+\addtocounter{celnumber}{1}
+\foreach \x in {0,...,\thecelnumber}
+{
+	\draw[graySepCell] ({\x*\colminwidth},-\lineminheight) -- ({\x*\colminwidth},{-(#1+1)*\lineminheight});
+}	
+\addtocounter{celnumber}{-1}
+\draw (c0.south west) -- (c\thecelnumber.south east);
+\draw (c0.south west) -- ($(c0.south west)+(0,{-\lineminheight*#1})$);
+}
+
+%-----------> Insérer un texte dans une cellule <---------------
+
+\newcommand\celtxt[3][l]{%
+   \begingroup
+   \@makeother\^%
+   \@makeother\$%
+   \@celtxt@{#1}{#2}{#3}%
+}
+\newcommand\@celtxt@[4]{%
+   \endgroup
+   \StrPosition{#4}{=}[\@equalPos]
+   \ifnum\@equalPos=1
+      \def\@scale{1}%
+      \let\@style\texttt
+   \else
+      \def\@scale{0.9}%
+      \let\@style\@empty
+   \fi
+   \node[below right] at ($(c0.south west)+({(\ValCol{#2}-1)*\colminwidth},{-(#3-1)*\lineminheight})$) {\makebox[\colminwidth][#1]{\@style{#4}\phantom{-.}}};
+}
+
+%\newsavebox{\tmp@txt}
+%\newlength{\tmp@ltxt}
+
+% Macro auxiliaire : colorie en-tête colonne
+\newcommand*\colorHead[2]
+{
+	\fill[blueSelecCellTop] (c#1.north west) -- (c#1.north east) -- ($0.5*(c#1.north east)+0.5*(c#1.south east)$) -- ($0.5*(c#1.south west)+0.5*(c#1.north west)$) -- cycle;
+	\fill[blueSelecCellBottom] (c#1.south west) -- (c#1.south east) -- ($0.5*(c#1.south east)+0.5*(c#1.north east)$) -- ($0.5*(c#1.south west)+0.5*(c#1.north west)$) -- cycle;
+	\node[below right,inner sep=1ex,minimum width=\colminwidth,minimum height=\lineminheight] at (c#1.north west) {\helvbx#2};
+	\draw[black,very thin] (0,0) grid[xstep=\colminwidth] (c\thecelnumber.south east);
+	\draw (c0.south west) -- (c\thecelnumber.south east);
+}
+% Macro auxiliaire : colorie en-tête ligne
+\newcommand*\colorLine[1]
+{
+	\node[below left,inner xsep=1ex,minimum width=3em,minimum height=\lineminheight,draw,very thin] (nb) at (0,{-#1*\lineminheight}) {\helvbx#1};
+	\fill[blueSelecCellTop] (nb.north west) -- (nb.north east) -- ($0.5*(nb.north east)+0.5*(nb.south east)$) -- ($0.5*(nb.south west)+0.5*(nb.north west)$) -- cycle;
+	\fill[blueSelecCellBottom] (nb.south west) -- (nb.south east) -- ($0.5*(nb.south east)+0.5*(nb.north east)$) -- ($0.5*(nb.south west)+0.5*(nb.north west)$) -- cycle;
+	\node[below left,inner xsep=1ex,minimum width=3em,minimum height=\lineminheight,draw,very thin] (nb) at (0,{-#1*\lineminheight}) {\helvbx#1};
+}
+
+\newcommand{\selecCell}[2] % #1 = colonne, #2 = ligne
+{
+	\setcounter{tmp}{\ValCol{#1}}
+	\addtocounter{tmp}{-1}
+	\colorHead{\thetmp}{#1}
+	\colorLine{#2}
+	\draw[very thick,black] ($(c0.south west)+({\thetmp*\colminwidth},{-(#2-1)*\lineminheight+0.5pt})$) rectangle +(\colminwidth,-\lineminheight);
+	\fill[black] ($(c0.south west)+({(\thetmp+1)*\colminwidth},{-(#2-1)*\lineminheight-\lineminheight})+(-1pt,1.5pt)$) rectangle+(3pt,-3pt);
+}
+
+\newcommand{\multiSelec}[2] % #1 : colonnes (B,C,D) par exemple, #2 : lignes (2,3,4)
+{
+	\defcolselected{#1} % on mémorise les noms des colonnes sélectionnées - \ValColSelected{1} = lettre de la première colonne
+	%\xdef\firstlettercol\ValColSelected{1}
+	
+	\deflineselected{#2} % on mémorise les noms des lignes sélectionnées - \ValLineSelected{1} = numéro de la première ligne
+	%\def\firstline{\ValLineSelected{1}}
+	
+	\setcounter{nbcolselected}{0}
+	
+	\foreach \c in {#1}
+	{
+		\stepcounter{nbcolselected}
+		\setcounter{tmp}{\ValCol\c}
+		\addtocounter{tmp}{-1}
+		\colorHead{\thetmp}{\c}
+	}
+	
+	\setcounter{nblineselected}{0}
+	\foreach \l in {#2}
+	{
+		\stepcounter{nblineselected}
+		\colorLine{\l}
+	}
+	
+	\fill[blueSelec,opacity=.5] ($(c0.south west)+({(\ValCol{\ValColSelected{1}}-1)*\colminwidth},{-(\ValLineSelected{1}-1)*\lineminheight})$) rectangle +({\thenbcolselected*\colminwidth},{-\thenblineselected*\lineminheight});
+	
+	\draw[very thick,black] ($(c0.south west)+({(\ValCol{\ValColSelected{1}}-1)*\colminwidth},{-(\ValLineSelected{1}-1)*\lineminheight+0.5pt})$) rectangle +(\colminwidth,-\lineminheight);
+	\fill[black] ($(c0.south west)+({(\ValCol{\ValColSelected{1}}-1)*\colminwidth+\thenbcolselected*\colminwidth-1pt},{-(\ValLineSelected{1}-1)*\lineminheight-\thenblineselected*\lineminheight+1.5pt})$) rectangle+(3pt,-3pt);
+}
+\endinput

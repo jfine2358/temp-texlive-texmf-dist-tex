@@ -1,0 +1,98 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{overlock}
+    [2014/05/25 (Bob Tennent)  Supports Overlock fonts for all LaTeX engines.]
+
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+
+\newif\ifoverlock@ttf 
+\ifxetex
+  \overlock@ttftrue
+\else\ifluatex
+  \overlock@ttftrue
+\else  % [pdf]LaTeX
+  \overlock@ttffalse
+\fi\fi
+
+\newif\ifoverlock@default \overlock@defaultfalse
+\newif\ifoverlock@black \overlock@blackfalse
+
+\newcommand*{\Overlock@scale}{1}
+\DeclareOptionX{scaled}{\renewcommand*{\Overlock@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\Overlock@scale}{#1}}
+
+\DeclareOptionX{default}{\overlock@defaulttrue}
+\DeclareOptionX{sfdefault}{\overlock@defaulttrue}
+\DeclareOptionX{type1}{\overlock@ttffalse}
+\DeclareOptionX{black}{\overlock@blacktrue}
+
+\ProcessOptionsX\relax
+
+\ifoverlock@ttf
+  \def\overlock@boldstyle{Bold}
+  \ifoverlock@black\def\overlock@boldstyle{Black}\fi
+
+\else % type1
+
+  \def\bfseries@sf{b}
+  \ifoverlock@black\def\bfseries@sf{k}\fi
+\fi
+
+\ifoverlock@ttf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes,mweights}
+\fi
+
+\ifoverlock@ttf
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+        Ligatures = TeX ,
+        Scale     = \Overlock@scale ,
+        Extension = .ttf }
+  \setsansfont
+      [ UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-\overlock@boldstyle , 
+        BoldItalicFont = *-\overlock@boldstyle Italic ]
+      {Overlock}
+  % grab current family in case of subsequent change:
+  \let\overlockfamily\sfdefault  
+  \newfontfamily\overlock
+      [ UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-\overlock@boldstyle , 
+        BoldItalicFont = *-\overlock@boldstyle Italic ]
+      {Overlock}
+  \newfontfamily\overlockBlack
+      [ UprightFont    = *-Black ,
+        ItalicFont     = *-BlackItalic ,
+        BoldFont       = *-Black , 
+        BoldItalicFont = *-BlackItalic ]
+      {Overlock}
+  \newfontface\overlocksc{OverlockSC-Regular}
+  \def\sffamily{\overlock\def\scshape{\overlocksc}}
+  \ifoverlock@default
+    \edef\familydefault{\overlockfamily}
+    \def\scshape{\overlocksc}
+  \fi
+\else % type1
+  \def\overlockfamily{Overlock-LF}
+  \def\overlockscfamily{OverlockSC-LF}
+  \def\sfdefault{\overlockfamily}
+  \def\sffamily{\fontfamily{\overlockfamily}\selectfont\def\scshape{\fontfamily{\overlockscfamily}\selectfont}}
+  \def\overlock{\fontfamily{\overlockfamily}\selectfont\def\scshape{\fontfamily{\overlockscfamily}\selectfont}}
+  \def\overlockBlack{\fontfamily{\overlockfamily}\fontseries{k}\selectfont\def\scshape{\fontfamily{\overlockscfamily}\selectfont}}
+  \ifoverlock@default
+    \def\familydefault{\sfdefault}
+    \renewcommand\scshape{\fontfamily{\overlockscfamily}\selectfont}
+  \fi
+  
+\fi
+
+
+\ifoverlock@ttf
+% turn off defaults in case other fonts are selected:
+  \defaultfontfeatures{}
+\fi
+
+\endinput

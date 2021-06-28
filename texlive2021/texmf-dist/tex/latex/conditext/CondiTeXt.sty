@@ -1,0 +1,813 @@
+%////////////////////////////////////////////////////////////////////////////////
+%//// IDENTIFICATION ////////////////////////////////////////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{conditext}[2020/06/01 Extension personnelle, V1.5%
+    (Jean-Louis Brabant), released under the LaTeX Project Public License %
+     v1.3c or later]
+
+%////////////////////////////////////////////////////////////////////////////////
+%//// CODE PRÉLIMINAIRE /////////////////////////////////////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+\RequirePackage{simplekv}                                                           % Gestion des options clé-valeur
+\setKVdefault[display]{%
+    defaultdisplayall=false,%
+    condispaceenabled=false}
+\setKVdefault[icf]{%
+    icf=none}
+
+%////////////////////////////////////////////////////////////////////////////////
+%//// DECLARATION DES OPTIONS ///////////////////////////////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+\DeclareOption{defaultdisplayall}{%
+    \setKV[display]{defaultdisplayall=true}}
+
+%////////////////////////////////////////////////////////////////////////////////
+%//// EXÉCUTION DES OPTIONS /////////////////////////////////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+\ProcessOptions
+
+%////////////////////////////////////////////////////////////////////////////////
+%//// CHARGEMENT DES PAQUETS ////////////////////////////////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+\RequirePackage{xifthen}                                                            % Gestion des conditions
+\RequirePackage{xparse}
+
+%////////////////////////////////////////////////////////////////////////////////
+%//// COMMANDES /////////////////////////////////////////////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+
+%////////////////////////////////////////////////////////////////////////////////
+%//// Commandes : gestion conditionnelle ////////////////////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+
+%//// Commandes : gestion conditionnelle : domaine de condition implicite ///////
+%////////////////////////////////////////////////////////////////////////////////
+\NewDocumentCommand\setimplicitcondifield{m}{%                                      % Interface pour définir un domaine de condition implicite
+    \ifcfemptythenelse{#1}                                                                  % dc renseigné ?
+        {\errorifcfempty{setimplicitcondifield}}                                                % non : message d'erreur sur dc
+        {\ifcfokthenelse{#1}                                                                    % oui : dc valide [créé] ?
+            {\setKV[icf]{icf=#1} \edef\icf{\useKV[icf]{icf}}}                                       % oui : définit le dc comme dc implicite
+            {\errorifcfnoncreated{setimplicitcondifield}{#1}}}}                                     % non : message d'erreur sur dc
+
+%//// Commandes : gestion conditionnelle : domaines de condition ////////////////
+%////////////////////////////////////////////////////////////////////////////////
+\NewDocumentCommand\newcondifield{s m}{%                                            % Interface pour créer un domaine de condition
+    \ifcfemptythenelse{#2}                                                                  % dc renseigné ?
+        {\errorifcfempty{newcondifield}}                                                        % non : message d'erreur sur dc
+        {\ifcfalreadycreatedthenelse{#2}                                                        % oui : dc déjà créé ?
+            {\errorifcfalreadycreated{newcondifield}{#2}}                                               % oui : message d'erreur sur dc
+            {\setKVdefault[cf#2]{cf=#2}%                                                                % non : crée le dc
+             \IfBooleanTF{#1}                                                                                   % étoile ?
+                {\ifcpalreadycreatedthenelse{#2}{#2}                                                                % oui : pc de même nom déjà créée pour le même dc ?
+                    {\errorifcpalreadycreated{newcondifield*}{#2}}                                                      % oui : message d'erreur sur pc
+                    {\setKVdefault[cp#2#2]{cp=#2#2}}}                                                                   % non : crée la pc
+                {}}}}                                                                                               % non : ne fait rien
+
+%//// Commandes : gestion conditionnelle : domaines de condition : tests ////////
+\NewDocumentCommand\ifcfalreadycreatedthenelse{m m m}{%                             Teste si le domaine de condition existe déjà
+    \ifthenelse{\equal{\useKV[cf#1]{cf}}{#1}}
+        {#2}
+        {#3}}
+
+\NewDocumentCommand\ifcfokthenelse{m m m}{%                                         % Teste si le domaine de condition est valide
+    \ifthenelse{\equal{\useKV[cf#1]{cf}}{#1}}%
+        {#2}
+        {#3}}
+
+\NewDocumentCommand\ifcfemptythenelse{m m m}{%                                      % Teste si le domaine de condition est renseigné
+    \ifthenelse{\equal{#1}{}}
+        {#2}
+        {#3}}
+
+%//// Commandes : gestion conditionnelle : propriétés de condition //////////////
+%////////////////////////////////////////////////////////////////////////////////
+\NewDocumentCommand\newcondiprop{m m}{%                                             % Interface pour créer une propriété de condition
+    \ifcfemptythenelse{#1}                                                                  % dc renseigné ?
+        {\errorifcfempty{newcondiprop}}                                                         % non : message d'erreur sur dc
+        {\ifcfokthenelse{#1}                                                                    % oui : dc valide [créé] ?
+            {\ifcpemptythenelse{#2}                                                                 % oui : pc renseignée ?
+                {\errorifcpempty{newcondiprop}}                                                         % non : message d'erreur sur pc
+                {\ifcpalreadycreatedthenelse{#1}{#2}                                                    % oui : pc déjà créée ?
+                    {\errorifcpalreadycreated{newcondiprop}{#2}}                                           % oui : message d'erreur sur pc
+                    {\setKVdefault[cp#1#2]{cp=#1#2}}}}                                                     % non : crée la pc
+            {\errorifcfnoncreated{newcondiprop}{#1}}}}                                              % non : message d'erreur sur dc
+
+%//// Commandes : gestion conditionnelle : propriétés de condition : tests //////
+\NewDocumentCommand\ifcpalreadycreatedthenelse{m m m m}{%                           % Teste si la propriété de condition existe déjà
+    \ifthenelse{\equal{\useKV[cp#1#2]{cp}}{#1#2}}
+        {#3}
+        {#4}}
+
+\NewDocumentCommand\ifcpokthenelse{m m m m}{%                                       % Teste si la propriété de condition est valide
+    \ifthenelse{\equal{\useKV[cp#1#2]{cp}}{#1#2}}%
+        {#3}
+        {#4}}
+
+\NewDocumentCommand\ifcpemptythenelse{m m m}{%                                      % Teste si la propriété de condition est renseignée
+    \ifthenelse{\equal{#1}{}}
+        {#2}
+        {#3}}
+
+%//// Commandes : gestion conditionnelle : espaces de condition /////////////////
+%////////////////////////////////////////////////////////////////////////////////
+\NewDocumentCommand\setcondispace{s O{} m}{%                                          % Interface pour définir un espace de condition
+    \ifcfemptythenelse{#2}%                                                                 % dc renseigné ?
+        {\ifcpemptythenelse{#3}                                                                 % non : pc renseignée ?
+            {\errorifcpempty{setcondispace}}                                                        % non : message d'erreur sur pc
+            {\ifcpokthenelse{\icf}{#3}                                                              % oui : (dc implicite) pc valide ?
+                {\ifcsalreadydefinedthenelse{\icf}{#3}                                                  % oui : ec déjà défini ?
+                    {\errorifcsalreadydefined{setcondispace}{\icf}{#3}}                                     % oui : message d'erreur sur ec
+                    {\setKVdefault[cs\icf#3]{cs=\icf#3}%                                                    % non : définit l'ec
+                     \setKV[display]{condispaceenabled=true}                                                        % indique qu'un ec est défini
+                     \IfBooleanT{#1}                                                                                % étoile ?
+                         {\ifthenelse{\equal{\icf}{language}}                                                           % oui : contexte de sémantique linguistique ?
+                            {\setminicondispace{#3}}                                                                        % oui : définit un mini-ec correspondant à la langue
+                            {}}}}                                                                                           % non : ne fait rien
+                {\errorifcpnonok{setcondispace}{#3}}}}                                                  % non : message d'erreur sur pc
+        {\ifcfokthenelse{#2}                                                                    % oui : dc valide [créé] ?
+            {\ifcpemptythenelse{#3}                                                                % oui : pc renseignée ?
+                {\ifcsalreadydefinedthenelse{#2}{all}                                                   % non : ec global déjà défini ?
+                    {\errorifcsalreadydefined{setcondispace}{#2}{all}}                                      % oui : message d'erreur sur ec
+                    {\setKVdefault[cs#2all]{cs=#2all}                                                       % non : définit l'ec global
+                        \setKV[display]{condispaceenabled=true}}}                                                   % indique qu'un ec est défini
+                {\ifcpokthenelse{#2}{#3}                                                                % oui : pc valide ?
+                    {\ifcsalreadydefinedthenelse{#2}{#3}                                                    % oui : ec déjà défini ?
+                        {\errorifcsalreadydefined{conditext}{#2}{#3}}                                           % oui : message d'erreur sur ec
+                        {\setKVdefault[cs#2#3]{cs=#2#3}%                                                        % non : définit l'ec
+                         \setKV[display]{condispaceenabled=true}                                                        % indique qu'un ec est défini
+                         \IfBooleanT{#1}                                                                                % étoile ?
+                             {\ifthenelse{\equal{\#2}{language}}                                                            % oui : contexte de sémantique linguistique ?
+                                {\setminicondispace{#3}}                                                                        % oui : définit un mini-ec correspondant à la langue
+                                {}}}}                                                                                           % non : ne fait rien
+                    {\errorifcpnonok{setcondispace}{#3}}}}                                                  % non : message d'erreur sur pc
+            {\errorifcfnoncreated{setcondispace}{#2}}}}                                             % non : message d'erreur sur dc
+
+%//// Commandes : gestion conditionnelle : espaces de condition : tests /////////
+\NewDocumentCommand\ifcsalreadydefinedthenelse{m m m m}{%                           % Teste si l'espace de condition est déjà défini
+    \ifthenelse{\equal{\useKV[cs#1#2]{cs}}{#1#2}}
+        {#3}
+        {#4}}
+
+\NewDocumentCommand\ifmatchingcsthenelse{m m m m}{%                                 % Teste s'il existe un espace de condition correspondant au domaine de condition et à la propriété de condition renseignés
+    \ifthenelse{\equal{\useKV[cs#1#2]{cs}}{#1#2}}
+        {#3}
+        {#4}}
+
+%//// Commandes : gestion conditionnelle : contenu conditionnel /////////////////
+%////////////////////////////////////////////////////////////////////////////////
+\NewDocumentEnvironment{conditext}{O{} m s +b}{%                                    % Interface pour contenu conditionnel
+    \ifthenelse{\equal{\useKV[display]{condispaceenabled}}{true}}                           % Au moins un ec défini ?
+        {\ifcfemptythenelse{#1}                                                                 % oui : dc renseigné ?
+            {\ifcpemptythenelse{#2}                                                                 % non : pc renseignée ?
+                {\errorifcpempty{conditext}}                                                            % non : message d'erreur sur pc
+                {\ifcpokthenelse{\icf}{#2}                                                              % oui : (dc implicite) pc valide ?
+                    {\ifmatchingcsthenelse{\icf}{all}                                                       % oui : ec global correspondant ?
+                        {\IfBooleanTF{#3}                                                                       % oui : étoile ?
+                            {}                                                                                      % oui : n'affiche rien
+                            {\textdisplay{\icf}{#2}{#4}}}                                                           % non : affiche le contenu
+                        {\ifmatchingcsthenelse{\icf}{#2}                                                        % non : ec correspondant ?
+                            {\IfBooleanTF{#3}                                                                       % oui : étoile ?
+                                {}                                                                                      % oui : n'affiche rien
+                                {\textdisplay{\icf}{#2}{#4}}}                                                           % non : affiche le contenu
+                            {\IfBooleanTF{#3}                                                                       % non : étoile ?
+                                {\textdisplay{\icf}{#2}{#4}}                                                            % oui : affiche le contenu
+                                {}}}}                                                                                   % non : n'affiche rien
+                    {\errorifcpnonok{conditext}{#2}}}}                                                        % non : message d'erreur sur pc
+            {\ifcfokthenelse{#1}                                                                    % oui : dc valide ?
+                {\ifcpemptythenelse{#2}                                                                 % oui : pc renseignée ?
+                    {\errorifcpempty{conditext}}                                                            % non : message d'erreur sur pc
+                    {\ifcpokthenelse{#1}{#2}                                                                % oui : pc valide ?
+                        {\ifmatchingcsthenelse{#1}{all}                                                         % oui : ec global correspondant ?
+                            {\IfBooleanTF{#3}                                                                       % oui : étoile ?
+                                {}                                                                                      % oui : n'affiche rien
+                                {\textdisplay{#1}{#2}{#4}}}                                                             % non : affiche le contenu
+                            {\ifmatchingcsthenelse{#1}{#2}                                                          % non : ec correspondant ?
+                                {\IfBooleanTF{#3}                                                                       % oui : étoile ?
+                                    {}                                                                                      % oui : n'affiche rien
+                                    {\textdisplay{#1}{#2}{#4}}}                                                             % non : affiche le contenu
+                                {\IfBooleanTF{#3}                                                                       % non : étoile ?
+                                    {\textdisplay{#1}{#2}{#4}}                                                              % oui : affiche le contenu
+                                    {}}}}                                                                                   % non : n'affiche rien
+                        {\errorifcpnonok{conditext}{#2}}}}                                                       % non : message d'erreur sur pc
+                {\errorifcfnoncreated{conditext}{#1}}}}                                                 % non : message d'erreur sur dc
+        {\ifthenelse{\equal{\useKV[display]{defaultdisplayall}}{true}}                          % non : affichage total par défaut ?
+            {\ifcfemptythenelse{#1}                                                                 % oui : dc renseigné ?
+                {\ifcpemptythenelse{#2}                                                                 % non : pc renseignée ?
+                    {\errorifcpempty{conditext}}                                                            % non : message d'erreur sur pc
+                    {\ifcpokthenelse{\icf}{#2}                                                              % oui : (dc implicite) pc valide ?
+                        {\IfBooleanTF{#3}                                                                       % oui : étoile ?
+                            {}                                                                                      % oui : n'affiche rien
+                            {\textdisplay{\icf}{#2}{#4}}}                                                           % non : affiche le contenu
+                        {\errorifcpnonok{conditext}{#2}}}}                                                       % non : message d'erreur sur pc
+                {\ifcfokthenelse{#1}                                                                    % oui : dc valide ?
+                    {\ifcpemptythenelse{#2}                                                                 % oui : pc renseignée ?
+                        {\errorifcpempty{conditext}}                                                            % non : message d'erreur sur pc
+                        {\ifcpokthenelse{#1}{#2}                                                                % oui : pc valide ?
+                            {\IfBooleanTF{#3}                                                                       % oui : étoile ?
+                                {}                                                                                      % oui : n'affiche rien
+                                {\textdisplay{#1}{#2}{#4}}}                                                             % non : affiche le contenu
+                            {\errorifcpnonok{conditext}{#2}}}}                                                      % non : message d'erreur sur pc
+                    {\errorifcfnoncreated{conditext}{#1}}}}                                                % non : message d'erreur sur dc
+            {\ifcfemptythenelse{#1}                                                                 % non : dc renseigné ?
+                {\ifcpemptythenelse{#2}                                                                 % non : pc renseignée ?
+                    {\errorifcpempty{conditext}}                                                            % non : message d'erreur sur pc
+                    {\ifcpokthenelse{\icf}{#2}                                                              % oui : (dc implicite) pc valide ?
+                        {\IfBooleanTF{#3}                                                                       % oui : étoile ?
+                            {\textdisplay{\icf}{#2}{#4}}                                                            % oui : affiche le contenu
+                            {}}                                                                                     % non : n'affiche rien
+                        {\errorifcpnonok{conditext}{#2}}}}                                                      % non : message d'erreur sur pc
+                {\ifcfokthenelse{#1}                                                                    % oui : dc valide ?
+                    {\ifcpemptythenelse{#2}                                                                 % oui : pc renseignée ?
+                        {\errorifcpempty{conditext}}                                                            % non : message d'erreur sur pc
+                        {\ifcpokthenelse{#1}{#2}                                                                % oui : pc valide ?
+                            {\IfBooleanTF{#3}                                                                       % oui : étoile ?
+                                {\textdisplay{#1}{#2}{#4}}                                                              % oui : affiche le contenu
+                                {}}                                                                                     % non : n'affiche rien
+                            {\errorifcpnonok{conditext}{#2}}}}                                                      % non : message d'erreur sur pc
+                    {\errorifcfnoncreated{conditext}{#1}}}}}}                                                % non : message d'erreur sur dc
+
+
+\NewDocumentCommand\textdisplay{m m m}{%                                            % Affiche une forme substituable selon que le domaine de condition est linguistique ou autre
+    \ifthenelse{\equal{#1}{language}}%
+        {\begin{otherlanguage}{#2}#3\end{otherlanguage}}%
+        {#3}}
+
+%////////////////////////////////////////////////////////////////////////////////
+%//// Commandes : mini-gestion conditionnelle ///////////////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+
+%//// Commandes : mini-gestion conditionnelle : propriétés de condition /////////
+%////////////////////////////////////////////////////////////////////////////////
+\setKVdefault[mncpi]{mncpi=french}
+\setKVdefault[mncpii]{mncpii=english}
+\setKVdefault[mncpiii]{mncpiii=german}
+\setKVdefault[mncpiv]{mncpiv=spanish}
+\setKVdefault[mncpv]{mncpv=italian}
+\setKVdefault[mncpvi]{mncpvi=portuguese}
+\setKVdefault[mncpvii]{mncpvii=dutch}
+\setKVdefault[mncpviii]{mncpviii=danish}
+\setKVdefault[mncpix]{mncpix=norsk}
+\setKVdefault[mncplanguage]{mncplanguage=true}
+\setKVdefault[mncpreset]{mncpreset=false}
+
+\NewDocumentCommand\resettingminicondiprops{s}{%                                    % Interface pour réinitialiser les propriétés de condition
+    \IfBooleanTF{#1}
+        {\setKV[mncpi]{mncpi=french}
+         \setKV[mncpii]{mncpii=english}
+         \setKV[mncpiii]{mncpiii=german}
+         \setKV[mncpiv]{mncpiv=spanish}
+         \setKV[mncpv]{mncpv=italian}
+         \setKV[mncpvi]{mncpvi=portuguese}
+         \setKV[mncpvii]{mncpvii=dutch}
+         \setKV[mncpviii]{mncpviii=danish}
+         \setKV[mncpix]{mncpix=norsk}
+         \setKV[mncplanguage]{mncplanguage=true}
+         \setKV[mncpreset]{mncpreset=true}}
+        {\setKV[mncpi]{mncpi=none}
+         \setKV[mncpii]{mncpii=none}
+         \setKV[mncpiii]{mncpiii=none}
+         \setKV[mncpiv]{mncpiv=none}
+         \setKV[mncpv]{mncpv=none}
+         \setKV[mncpvi]{mncpvi=none}
+         \setKV[mncpvii]{mncpvii=none}
+         \setKV[mncpviii]{mncpviii=none}
+         \setKV[mncpix]{mncpix=none}
+         \setKV[mncplanguage]{mncplanguage=false}
+         \setKV[mncpreset]{mncpreset=true}}}
+
+\NewDocumentCommand\setminicondiprop{m m}{%                                         % Interface générale pour redéfinir une propriété de condition pour mini-gestion conditionnelle
+    \ifmncpnoresettingthenelse                                                              % réinitialisation préalable ?
+        {\errorifmncpnoresetting{setminicondiprop-}}                                            % non : message d'erreur
+        {\ifmncpemptythenelse{#2}                                                               % oui : pc renseignée ?
+            {\errorifmncpempty{setminicondiprop#1}}                                                 % non : message d'erreur sur pc
+            {\ifmncpalreadyredefinedthenelse{#1}{#2}                                                % oui : pc déjà redéfinie ?
+                {\errorifmncpalreadyredefined{setminicondiprop#1}{#2}}                                  % oui : message d'erreur sur pc
+                {\setKV[mncp#1]{mncp#1=#2}}}}}                                                          % non : redéfinit la pc
+
+\NewDocumentCommand\setminicondipropi{m}{%                                          % Interface pour redéfinir une propriété de condition pour la forme substituable n° 1 de la mini-gestion conditionnelle
+    \setminicondiprop{i}{#1}}
+\NewDocumentCommand\setminicondipropii{m}{%                                         % Interface pour redéfinir une propriété de condition pour la forme substituable n° 2 de la mini-gestion conditionnelle
+    \setminicondiprop{ii}{#1}}
+\NewDocumentCommand\setminicondipropiii{m}{%                                        % Interface pour redéfinir une propriété de condition pour la forme substituable n° 3 de la mini-gestion conditionnelle
+    \setminicondiprop{iii}{#1}}
+\NewDocumentCommand\setminicondipropiv{m}{%                                         % Interface pour redéfinir une propriété de condition pour la forme substituable n° 4 de la mini-gestion conditionnelle
+    \setminicondiprop{iv}{#1}}
+\NewDocumentCommand\setminicondipropv{m}{%                                          % Interface pour redéfinir une propriété de condition pour la forme substituable n° 5 de la mini-gestion conditionnelle
+    \setminicondiprop{v}{#1}}
+\NewDocumentCommand\setminicondipropvi{m}{%                                         % Interface pour redéfinir une propriété de condition pour la forme substituable n° 6 de la mini-gestion conditionnelle
+    \setminicondiprop{vi}{#1}}
+\NewDocumentCommand\setminicondipropvii{m}{%                                        % Interface pour redéfinir une propriété de condition pour la forme substituable n° 7 de la mini-gestion conditionnelle
+    \setminicondiprop{vii}{#1}}
+\NewDocumentCommand\setminicondipropviii{m}{%                                       % Interface pour redéfinir une propriété de condition pour la forme substituable n° 8 de la mini-gestion conditionnelle
+    \setminicondiprop{viii}{#1}}
+\NewDocumentCommand\setminicondipropix{m}{%                                         % Interface pour redéfinir une propriété de condition pour la forme substituable n° 9 de la mini-gestion conditionnelle
+   \setminicondiprop{ix}{#1}}
+
+%//// Commandes : mini-gestion conditionnelle : propriétés de condition : tests /
+\NewDocumentCommand\ifmncpnoresettingthenelse{m m}{%                                % Teste s'il y a eu réinitialisation des propriétés de condition
+    \ifthenelse{\equal{\useKV[mncpreset]{mncpreset}}{false}}
+        {#1}
+        {#2}}
+
+\NewDocumentCommand\ifmncpemptythenelse{m m m}{%                                    % Teste si la propriété de condition est renseignée
+    \ifthenelse{\equal{#1}{}}
+        {#2}
+        {#3}}
+
+\NewDocumentCommand\ifmncpnonethenelse{m m m}{%                                     % Teste si la propriété de condition est neutre
+    \ifthenelse{\equal{\useKV[mncp#1]{mncp#1}}{none}}
+        {#2 \errmsgifmncpnone{#1}}
+        {#3}}
+
+\NewDocumentCommand\ifmncpokthenelse{m m m}{%                                       % Teste si la propriété de condition est valide
+    \ifthenelse{\equal{\useKV[mncpi]{mncpi}}{#1}
+                \AND \not\equal{\useKV[mncpi]{mncpi}}{none}}
+        {#2}
+        {\ifthenelse{\equal{\useKV[mncpii]{mncpii}}{#1}
+                     \AND \not\equal{\useKV[mncpii]{mncpii}}{none}}
+            {#2}
+            {\ifthenelse{\equal{\useKV[mncpiii]{mncpiii}}{#1}
+                         \AND \not\equal{\useKV[mncpiii]{mncpiii}}{none}}
+                {#2}
+                {\ifthenelse{\equal{\useKV[mncpiv]{mncpiv}}{#1}
+                             \AND \not\equal{\useKV[mncpiv]{mncpiv}}{none}}
+                    {#2}
+                    {\ifthenelse{\equal{\useKV[mncpv]{mncpv}}{#1}
+                                 \AND \not\equal{\useKV[mncpv]{mncpv}}{none}}
+                        {#2}
+                        {\ifthenelse{\equal{\useKV[mncpvi]{mncpvi}}{#1}
+                                     \AND \not\equal{\useKV[mncpvi]{mncpvi}}{none}}
+                            {#2}
+                            {\ifthenelse{\equal{\useKV[mncpvii]{mncpvii}}{#1}
+                                         \AND \not\equal{\useKV[mncpvii]{mncpvii}}{none}}
+                                {#2}
+                                {\ifthenelse{\equal{\useKV[mncpviii]{mncpviii}}{#1}
+                                             \AND \not\equal{\useKV[mncpviii]{mncpviii}}{none}}
+                                    {#2}
+                                    {\ifthenelse{\equal{\useKV[mncpix]{mncpix}}{#1}
+                                                 \AND \not\equal{\useKV[mncpix]{mncpix}}{none}}
+                                        {#2}
+                                        {#3}}}}}}}}}}
+
+\NewDocumentCommand\ifmncpalreadyredefinedthenelse{m m m m}{%                       % Teste si une propriété de condition de même nom existe déjà
+    \ifthenelse{\equal{#1}{i}}
+        {\ifthenelse{%
+         \equal{\useKV[mncpii]{mncpii}}{#2} \OR%
+         \equal{\useKV[mncpiii]{mncpiii}}{#2} \OR%
+         \equal{\useKV[mncpiv]{mncpiv}}{#2} \OR%
+         \equal{\useKV[mncpv]{mncpv}}{#2} \OR%
+         \equal{\useKV[mncpvi]{mncpvi}}{#2} \OR%
+         \equal{\useKV[mncpvii]{mncpvii}}{#2} \OR%
+         \equal{\useKV[mncpviii]{mncpviii}}{#2} \OR%
+         \equal{\useKV[mncpix]{mncpix}}{#2}}
+            {#3}
+            {#4}}
+        {\ifthenelse{\equal{#1}{ii}}
+            {\ifthenelse{%
+             \equal{\useKV[mncpi]{mncpi}}{#2} \OR%
+             \equal{\useKV[mncpiii]{mncpiii}}{#2} \OR%
+             \equal{\useKV[mncpiv]{mncpiv}}{#2} \OR%
+             \equal{\useKV[mncpv]{mncpv}}{#2} \OR%
+             \equal{\useKV[mncpvi]{mncpvi}}{#2} \OR%
+             \equal{\useKV[mncpvii]{mncpvii}}{#2} \OR%
+             \equal{\useKV[mncpviii]{mncpviii}}{#2} \OR%
+             \equal{\useKV[mncpix]{mncpix}}{#2}}
+                {#3}
+                {#4}}
+            {\ifthenelse{\equal{#1}{iii}}
+                {\ifthenelse{%
+                 \equal{\useKV[mncpi]{mncpi}}{#2} \OR%
+                 \equal{\useKV[mncpii]{mncpii}}{#2} \OR%
+                 \equal{\useKV[mncpiv]{mncpiv}}{#2} \OR%
+                 \equal{\useKV[mncpv]{mncpv}}{#2} \OR%
+                 \equal{\useKV[mncpvi]{mncpvi}}{#2} \OR%
+                 \equal{\useKV[mncpvii]{mncpvii}}{#2} \OR%
+                 \equal{\useKV[mncpviii]{mncpviii}}{#2} \OR%
+                 \equal{\useKV[mncpix]{mncpix}}{#2}}
+                    {#3}
+                    {#4}}
+                {\ifthenelse{\equal{#1}{iv}}
+                    {\ifthenelse{%
+                     \equal{\useKV[mncpi]{mncpi}}{#2} \OR%
+                     \equal{\useKV[mncpii]{mncpii}}{#2} \OR%
+                     \equal{\useKV[mncpiii]{mncpiii}}{#2} \OR%
+                     \equal{\useKV[mncpv]{mncpv}}{#2} \OR%
+                     \equal{\useKV[mncpvi]{mncpvi}}{#2} \OR%
+                     \equal{\useKV[mncpvii]{mncpvii}}{#2} \OR%
+                     \equal{\useKV[mncpviii]{mncpviii}}{#2} \OR%
+                     \equal{\useKV[mncpix]{mncpix}}{#2}}
+                        {#3}
+                        {#4}}
+                    {\ifthenelse{\equal{#1}{v}}
+                        {\ifthenelse{%
+                         \equal{\useKV[mncpi]{mncpi}}{#2} \OR%
+                         \equal{\useKV[mncpii]{mncpii}}{#2} \OR%
+                         \equal{\useKV[mncpiii]{mncpiii}}{#2} \OR%
+                         \equal{\useKV[mncpiv]{mncpiv}}{#2} \OR%
+                         \equal{\useKV[mncpvi]{mncpvi}}{#2} \OR%
+                         \equal{\useKV[mncpvii]{mncpvii}}{#2} \OR%
+                         \equal{\useKV[mncpviii]{mncpviii}}{#2} \OR%
+                         \equal{\useKV[mncpix]{mncpix}}{#2}}
+                            {#3}
+                            {#4}}
+                        {\ifthenelse{\equal{#1}{vi}}
+                            {\ifthenelse{%
+                             \equal{\useKV[mncpi]{mncpi}}{#2} \OR%
+                             \equal{\useKV[mncpii]{mncpii}}{#2} \OR%
+                             \equal{\useKV[mncpiii]{mncpiii}}{#2} \OR%
+                             \equal{\useKV[mncpiv]{mncpiv}}{#2} \OR%
+                             \equal{\useKV[mncpv]{mncpv}}{#2} \OR%
+                             \equal{\useKV[mncpvii]{mncpvii}}{#2} \OR%
+                             \equal{\useKV[mncpviii]{mncpviii}}{#2} \OR%
+                             \equal{\useKV[mncpix]{mncpix}}{#2}}
+                                {#3}
+                                {#4}}
+                            {\ifthenelse{\equal{#1}{vii}}
+                                {\ifthenelse{%
+                                 \equal{\useKV[mncpi]{mncpi}}{#2} \OR%
+                                 \equal{\useKV[mncpii]{mncpii}}{#2} \OR%
+                                 \equal{\useKV[mncpiii]{mncpiii}}{#2} \OR%
+                                 \equal{\useKV[mncpiv]{mncpiv}}{#2} \OR%
+                                 \equal{\useKV[mncpv]{mncpv}}{#2} \OR%
+                                 \equal{\useKV[mncpvi]{mncpvi}}{#2} \OR%
+                                 \equal{\useKV[mncpviii]{mncpviii}}{#2} \OR%
+                                 \equal{\useKV[mncpix]{mncpix}}{#2}}
+                                    {#3}
+                                    {#4}}
+                                {\ifthenelse{\equal{#1}{viii}}
+                                    {\ifthenelse{%
+                                     \equal{\useKV[mncpi]{mncpi}}{#2} \OR%
+                                     \equal{\useKV[mncpii]{mncpii}}{#2} \OR%
+                                     \equal{\useKV[mncpiii]{mncpiii}}{#2} \OR%
+                                     \equal{\useKV[mncpiv]{mncpiv}}{#2} \OR%
+                                     \equal{\useKV[mncpv]{mncpv}}{#2} \OR%
+                                     \equal{\useKV[mncpvi]{mncpvi}}{#2} \OR%
+                                     \equal{\useKV[mncpviii]{mncpvii}}{#2} \OR%
+                                     \equal{\useKV[mncpix]{mncpix}}{#2}}
+                                        {#3}
+                                        {#4}}
+                                    {\ifthenelse{\equal{#1}{ix}}
+                                        {\ifthenelse{%
+                                         \equal{\useKV[mncpi]{mncpi}}{#2} \OR%
+                                         \equal{\useKV[mncpii]{mncpii}}{#2} \OR%
+                                         \equal{\useKV[mncpiii]{mncpiii}}{#2} \OR%
+                                         \equal{\useKV[mncpiv]{mncpiv}}{#2} \OR%
+                                         \equal{\useKV[mncpv]{mncpv}}{#2} \OR%
+                                         \equal{\useKV[mncpvi]{mncpvi}}{#2} \OR%
+                                         \equal{\useKV[mncpvii]{mncpvii}}{#2} \OR%
+                                         \equal{\useKV[mncpviii]{mncpvii}}{#2}}
+                                            {#3}
+                                            {#4}}
+                                        {}}}}}}}}}}
+
+%//// Commandes : mini-gestion conditionnelle : espaces de condition ////////////
+%////////////////////////////////////////////////////////////////////////////////
+\NewDocumentCommand\setminicondispace{m}{%                                          % Interface pour définir l'espace de condition relatif à la mini-gestion conditionnelle
+    \ifmncsemptythenelse{#1}                                                                % pc renseignée ?
+        {\errorifmncsempty{setminicondispace}}                                                  % non : message d'erreur sur ec
+        {\ifmncpokthenelse{#1}                                                                  % oui : pc valide ?
+            {\ifmncsalreadydefinedthenelse{#1}                                                      % oui : ec déjà défini ?
+                {\errorifmncsalreadydefined{setminicondispace}{#1}}                                     % oui : message d'erreur sur ec
+                {\setKVdefault[mncs]{cs=#1}}}                                                           % non : définit l'ec
+            {\errorifmncpnonok{setminicondispace}}}}                                                % non : message d'erreur sur pc
+
+\NewDocumentCommand\ifmncsemptythenelse{m m m}{%                                    % Teste si l'espace de condition relatif à la mini-gestion conditionnelle est renseigné
+    \ifthenelse{\equal{#1}{}}
+        {#2 \errmsgifmncsempty{}}
+        {#3}}
+
+%//// Commandes : mini-gestion conditionnelle : espaces de condition : test /////
+\NewDocumentCommand\ifmncsalreadydefinedthenelse{m m m}{%                           % Teste si l'espace de condition relatif à la mini-gestion conditionnelle est déjà défini
+    \ifthenelse{\equal{\useKV[mncs]{cs}}{#1}}
+        {#2}
+        {#3}}
+
+%//// Commandes : mini-gestion conditionnelle : formes substituables ////////////
+%////////////////////////////////////////////////////////////////////////////////
+\NewDocumentCommand\minidisplay{m m m}{%                                            % Affiche une forme substituable en mini-gestion conditionnelle
+    \ifmncpnonethenelse{#1}                                                                 % pc neutre ?
+        {}                                                                                      % oui : n'affiche rien
+        {\ifmatchingmncsthenelse{#1}                                                            % non : ec correspondant ?
+            {#2}                                                                                    % oui
+            {#3}}}                                                                                  % non
+
+\NewDocumentCommand\ifmatchingmncsthenelse{m m m}{%                                 % Teste s'il existe un espace de condition pour mini-gestion condit. correspondant à la propriété de condition renseignée
+    \ifthenelse{\equal{\useKV[mncs]{cs}}{\useKV[mncp#1]{mncp#1}}}
+        {#2}
+        {#3}}
+
+\NewDocumentCommand\minidisplayi{m m}{\minidisplay{i}{#1}{#2}}                      % Affiche la forme substituable n° 1 de la mini-gestion conditionnelle
+\NewDocumentCommand\minidisplayii{m m}{\minidisplay{ii}{#1}{#2}}                    % Affiche la forme substituable n° 2 de la mini-gestion conditionnelle
+\NewDocumentCommand\minidisplayiii{m m}{\minidisplay{iii}{#1}{#2}}                  % Affiche la forme substituable n° 3 de la mini-gestion conditionnelle
+\NewDocumentCommand\minidisplayiv{m m}{\minidisplay{iv}{#1}{#2}}                    % Affiche la forme substituable n° 4 de la mini-gestion conditionnelle
+\NewDocumentCommand\minidisplayv{m m}{\minidisplay{v}{#1}{#2}}                      % Affiche la forme substituable n° 5 de la mini-gestion conditionnelle
+\NewDocumentCommand\minidisplayvi{m m}{\minidisplay{vi}{#1}{#2}}                    % Affiche la forme substituable n° 6 de la mini-gestion conditionnelle
+\NewDocumentCommand\minidisplayvii{m m}{\minidisplay{vii}{#1}{#2}}                  % Affiche la forme substituable n° 7 de la mini-gestion conditionnelle
+\NewDocumentCommand\minidisplayviii{m m}{\minidisplay{viii}{#1}{#2}}                % Affiche la forme substituable n° 8 de la mini-gestion conditionnelle
+\NewDocumentCommand\minidisplayix{m m}{\minidisplay{xi}{#1}{#2}}                    % Affiche la forme substituable n° 9 de la mini-gestion conditionnelle
+
+\NewDocumentCommand\miniconditext{m  O{}  O{}  O{}  O{}  O{}  O{}  O{}  O{}}{%      % Interface pour contenus substituables en mini-gestion conditionnelle
+    \minidisplayi{#1}{%
+        \minidisplayii{#2}{%
+            \minidisplayiii{#3}{%
+                \minidisplayiv{#4}{%
+                    \minidisplayv{#5}{%
+                        \minidisplayvi{#6}{%
+                            \minidisplayvii{#7}{%
+                                \minidisplayviii{#8}{%
+                                    \minidisplayix{#9}{}}}}}}}}}}
+
+%////////////////////////////////////////////////////////////////////////////////
+%//// MESSAGES D'ERREUR /////////////////////////////////////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+
+%////////////////////////////////////////////////////////////////////////////////
+%//// Messages d'erreur : gestion conditionnelle ////////////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+
+%//// Messages d'erreur : gestion conditionnelle : domaines de condition ////////
+%////////////////////////////////////////////////////////////////////////////////
+
+%//// Messages d'erreur : gestion conditionnelle : domaines de condition : non renseigné
+\edef\errtxtifcfempty{no condition field entered}                                   % Message d'erreur en cas de domaine de condition non renseigné
+\edef\hlptxtifcfempty{You must not leave the argument empty : %                     % Message d'aide en cas de domaine de condition non renseigné
+                      a condition field must be entered}
+
+\NewDocumentCommand\errorifcfempty{m}{%                                             % Erreur déclenchée en cas de domaine de condition non renseigné
+    \PackageError{conditext}%
+        {#1 statement failed --> \errtxtifcfempty}%
+        {\hlptxtifcfempty.}}
+
+%//// Messages d'erreur : gestion conditionnelle : domaines de condition : non créé
+\edef\errtxtifcfnoncreated{condition field not created}                             % Message d'erreur en cas de domaine de condition non créé
+\edef\hlptxtifcfnoncreated{You may not have created the condition field %           % Message d'aide en cas de domaine de condition non créé
+                           whose name is entered : use a newcondifield %
+                           statement to make it}
+
+\NewDocumentCommand\errorifcfnoncreated{m m}{%                                      % Erreur déclenchée en cas de domaine de condition non créé
+    \PackageError{conditext}%
+        {#1 statement with "#2" failed --> \errtxtifcfnoncreated}%
+        {\hlptxtifcfnoncreated.}}
+
+%//// Messages d'erreur : gestion conditionnelle : domaines de condition : déjà créé
+\edef\errtxtifcfalreadycreated{condition field already created}                     % Message d'erreur en cas de domaine de condition déjà créé
+\edef\hlptxtifcfalreadycreated{There must not be two condition fields with %        % Message d'aide en cas de domaine de condition déjà créé
+                               the same name : you should check in the preamble %
+                               if there is not another newcondifield statement %
+                               already defined with the same name as argument}
+
+\NewDocumentCommand\errorifcfalreadycreated{m m}{%                                  % Erreur déclenchée en cas de domaine de condition déjà créé
+    \PackageError{conditext}%
+        {#1 statement with "#2" failed --> \errtxtifcfalreadycreated}%
+        {\hlptxtifcfalreadycreated.}}
+
+%//// Messages d'erreur : gestion conditionnelle : propriétés de condition //////
+%////////////////////////////////////////////////////////////////////////////////
+
+%//// Messages d'erreur : gestion conditionnelle : propriétés de condition : non renseignée
+\edef\errtxtifcpempty{no condition property entered}                                % Message d'erreur en cas de propriété de condition non renseignée
+\edef\hlptxtifcpempty{You must not leave the argument empty : %                     % Message d'aide en cas de propriété de condition non renseignée
+                      a condition property must be entered}
+
+\NewDocumentCommand\errorifcpempty{m}{%                                             % Erreur déclenchée en cas de propriété de condition non renseignée
+    \PackageError{conditext}%
+        {#1 statement failed --> \errtxtifcpempty}%
+        {\hlptxtifcpempty.}}
+
+%//// Messages d'erreur : gestion conditionnelle : propriétés de condition : non créée
+\edef\errtxtifcpnoncreated{condition property non created}                          % Message d'erreur en cas de propriété de condition non créée
+\edef\hlptxtifcpnoncreated{You may not have created the condition property %        % Message d'aide en cas de propriété de condition non créée
+                           whose name you have entered : use a newcondiprop %
+                           statement to make it}
+
+\NewDocumentCommand\errorifcpnoncreated{m m}{%                                      % Erreur déclenchée en cas de propriété de condition non créée
+    \PackageError{conditext}%
+        {#1 statement with "#2" failed --> \errtxtifcpnoncreated}%
+        {\hlptxtifcpnoncreated.}}
+
+%//// Messages d'erreur : gestion conditionnelle : propriétés de condition : non créée ou inapproprié
+\edef\errtxtifcpnonok{\errtxtifcpnoncreated, or unsuitable}                         % Message d'erreur en cas de propriété de condition non créée ou inappropriée
+\edef\hlptxtifcpnonok{\hlptxtifcpnoncreated. Or maybe, you should look for %        % Message d'aide en cas de propriété de condition non créée ou inappropriée
+                       a suitable condition property among the ones created %
+                       with link to the condition field entered in the first argument}
+
+\NewDocumentCommand\errorifcpnonok{m m}{%                                           % Erreur déclenchée en cas de propriété de condition non créée ou inappropriée
+    \PackageError{conditext}%
+        {#1 statement with "#2" failed --> \errtxtifcpnonok}%
+        {\hlptxtifcpnonok.}}
+
+%//// Messages d'erreur : gestion conditionnelle : propriétés de condition : déjà créée
+\edef\errtxtifcpalreadycreated{condition property already created}                  % Message d'erreur en cas de propriété de condition déjà créée
+\edef\hlptxtifcpalreadycreated{There must not be two condition properties with %    % Message d'aide en cas de propriété de condition déjà créée
+                               the same name when linked to the same condition field : %
+                               you should check in the preamble if there is not %
+                               another newcondiprop statement already defined %
+                               with the same names of condition field and %
+                               condition property as arguments}
+
+\NewDocumentCommand\errorifcpalreadycreated{m m}{%                                  % Erreur déclenchée en cas de propriété de condition déjà créée
+    \PackageError{conditext}%
+        {#1 statement with "#2" failed --> \errtxtifcpalreadycreated}%
+        {\hlptxtifcpalreadycreated.}}
+
+%//// Messages d'erreur : gestion conditionnelle : espaces de condition /////////
+%////////////////////////////////////////////////////////////////////////////////
+
+%//// Messages d'erreur : gestion conditionnelle : espaces de condition : déjà défini
+\edef\errtxtifcsalreadydefined{condition space already defined}                     % Message d'erreur en cas d'espace de condition déjà défini
+\edef\hlptxtifcsalreadydefined{You should check if there is not another %           % Message d'aide en cas d'espace de condition déjà défini
+                               setcondispace statement already defined %
+                               with the same names of condition field and %
+                               condition property as arguments}
+
+\NewDocumentCommand\errorifcsalreadydefined{m m m}{%                                % Erreur déclenchée en cas d'espace de condition déjà défini
+    \PackageError{conditext}%
+        {#1 statement with "#2" et "#3" failed --> \errtxtifcsalreadydefined}%
+        {\hlptxtifcsalreadydefined.}}
+
+%////////////////////////////////////////////////////////////////////////////////
+%//// Messages d'erreur : mini-gestion conditionnelle ///////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+
+%//// Messages d'erreur : mini-gestion conditionnelle : propriétés de condition /
+%////////////////////////////////////////////////////////////////////////////////
+
+%//// Messages d'erreur : mini-gestion conditionnelle : propriétés de condition : non réinitialisation
+\edef\errtxtifmncpnoresetting{no resetting of the condition properties %            % Message d'erreur en cas de non réinitialisation
+                              has been made}
+\edef\hlptxtifmncpnoresetting{You must use a resettingminicondiprops statement %    % Message d'aide en cas de propriété de non réinitialisation
+                              before redefining the condition properties}
+
+\NewDocumentCommand\errorifmncpnoresetting{m}{%                                     % Erreur déclenchée en cas de propriété de non réinitialisation
+    \PackageError{conditext}%
+        {#1 statement failed --> \errtxtifmncpnoresetting}%
+        {\hlptxtifmncpnoresetting.}}
+
+%//// Messages d'erreur : mini-gestion conditionnelle : propriétés de condition : non renseignée
+\edef\errtxtifmncpempty{no condition property entered}                              % Message d'erreur en cas de propriété de condition non renseignée
+\edef\hlptxtifmncpempty{You must not leave the argument empty : %                   % Message d'aide en cas de propriété de condition non renseignée
+                        a condition property must be entered}
+
+\NewDocumentCommand\errorifmncpempty{m}{%                                           % Erreur déclenchée en cas de propriété de condition non renseignée
+    \PackageError{conditext}%
+        {#1 statement failed --> \errtxtifmncpempty}%
+        {\hlptxtifmncpempty.}}
+
+%//// Messages d'erreur : mini-gestion conditionnelle : propriétés de condition : déjà redéfinie
+\edef\errtxtifmncpalreadyredefined{condition property already redefined}            % Message d'erreur en cas de propriété de condition déjà redéfinie
+\edef\hlptxtifmncpalreadyredefined{There must not be two condition properties %     % Message d'aide en cas de propriété de condition déjà redéfinie
+                                   with the same name in a mini conditional management : %
+                                   you should check in the preamble if there is not %
+                                   another setminicondiprop- statement already defined %
+                                   with the same name as argument}
+
+\NewDocumentCommand\errorifmncpalreadyredefined{m m}{%                              % Erreur déclenchée en cas de propriété de condition déjà redéfinie
+    \PackageError{conditext}%
+        {#1 statement with "#2" failed --> \errtxtifmncpalreadyredefined}%
+        {\hlptxtifmncpalreadyredefined.}}
+
+%//// Messages d'erreur : mini-gestion conditionnelle : propriétés de condition : neutre
+\edef\errtxtifmncpnone{condition property with "none" status}                       % Message d'erreur en cas de propriété de condition neutre
+\edef\hlptxtifmncpnone{You must not use a condition property with a "none" status : % Message d'aide en cas de propriété de condition neutre
+                       redefine it using a setminicondiprop- statement}
+
+\NewDocumentCommand\errorifmncpnone{m m}{%                                          % Erreur déclenchée en cas de propriété de condition neutre
+    \PackageError{conditext}%
+        {#1 statement failed --> \errtxtifmncpalreadyredefined}%
+        {\hlptxtifmncpalreadyredefined.}}
+
+%//// Messages d'erreur : mini-gestion conditionnelle : propriétés de condition : valide
+\edef\errtxtifmncpnonok{\errtxtifmncpnone, or unknown}                              % Message d'erreur en cas de propriété de condition neutre ou saisie erronément
+\edef\hlptxtifmncpnonok{\hlptxtifmncpnone. Or you should check if %                 % Message d'aide en cas de propriété de condition neutre ou saisie erronément
+                        the condition property is correctly entered}
+
+\NewDocumentCommand\errorifmncpnonok{m}{%                                           % Erreur déclenchée en cas de propriété de condition neutre ou saisie erronément
+    \PackageError{conditext}%
+        {#1 statement failed --> \errtxtifmncpnonok}%
+        {\hlptxtifmncpnonok.}}
+
+%//// Messages d'erreur : mini-gestion conditionnelle : espaces de condition ////
+%////////////////////////////////////////////////////////////////////////////////
+
+%//// Messages d'erreur : mini-gestion conditionnelle : espaces de condition : non renseigné
+\edef\errtxtifmncsempty{no condition space entered}                                 % Message d'erreur en cas d'espace de condition non renseigné
+\edef\hlptxtifmncsempty{You must not leave the argument empty : %                   % Message d'aide en cas d'espace de condition non renseigné
+                        a condition space must be entered}
+
+\NewDocumentCommand\errorifmncsempty{m}{%                                           % Erreur déclenchée en cas d'espace de condition non renseigné
+    \PackageError{conditext}%
+        {#1 statement failed --> \errtxtifmncsempty}%
+        {\hlptxtifmncsempty.}}
+
+%//// Messages d'erreur : mini-gestion conditionnelle : espaces de condition : déjà défini
+\edef\errtxtifmncsalreadydefined{condition space already defined}                   % Message d'erreur en cas d'espace de condition déjà défini
+\edef\hlptxtifmncsalreadydefined{You should check if there is not %                 % Message d'aide en cas d'espace de condition déjà défini
+                                 another setminicondispace statement already defined %
+                                 with the same name as argument}
+
+\NewDocumentCommand\errorifmncsalreadydefined{m m}{%                                % Erreur déclenchée en cas d'espace de condition déjà défini
+    \PackageError{conditext}%
+        {#1 statement with "#2" failed --> \errtxtifmncsalreadydefined}%
+        {\hlptxtifmncsalreadydefined.}}
+
+%////////////////////////////////////////////////////////////////////////////////
+%//// Valeurs d'éléments prédéfinis /////////////////////////////////////////////
+%////////////////////////////////////////////////////////////////////////////////
+
+%//// Valeurs d'éléments prédéfinis : domaine de condition linguistique /////////
+%////////////////////////////////////////////////////////////////////////////////
+\newcondifield{language}
+
+%//// Valeurs d'éléments prédéfinis : domaine de condition implicite ////////////
+%////////////////////////////////////////////////////////////////////////////////
+\setimplicitcondifield{language}
+
+%//// Valeurs d'éléments prédéfinis : domaines de condition génériques //////////
+%////////////////////////////////////////////////////////////////////////////////
+\newcondifield{fieldi}
+\newcondifield{fieldii}
+\newcondifield{fieldiii}
+
+%//// Valeurs d'éléments prédéfinis : propriétés de condition linguistiques /////
+%////////////////////////////////////////////////////////////////////////////////
+\newcondiprop{language}{albanian}
+\newcondiprop{language}{american}
+\newcondiprop{language}{arabic}
+\newcondiprop{language}{armenian}
+\newcondiprop{language}{bosnian}
+\newcondiprop{language}{brazilian}
+\newcondiprop{language}{breton}
+\newcondiprop{language}{canadian}
+\newcondiprop{language}{cantonese}
+\newcondiprop{language}{catalan}
+\newcondiprop{language}{chinese}
+\newcondiprop{language}{croatian}
+\newcondiprop{language}{czech}
+\newcondiprop{language}{danish}
+\newcondiprop{language}{dutch}
+\newcondiprop{language}{english}
+\newcondiprop{language}{esperanto}
+\newcondiprop{language}{estonian}
+\newcondiprop{language}{finnish}
+\newcondiprop{language}{french}
+\newcondiprop{language}{georgian}
+\newcondiprop{language}{german}
+\newcondiprop{language}{greek}
+\newcondiprop{language}{hebrew}
+\newcondiprop{language}{hungarian}
+\newcondiprop{language}{icelandic}
+\newcondiprop{language}{irish}
+\newcondiprop{language}{italian}
+\newcondiprop{language}{japanese}
+\newcondiprop{language}{lithuanian}
+\newcondiprop{language}{luxemburgish}
+\newcondiprop{language}{macedonian}
+\newcondiprop{language}{mexican}
+\newcondiprop{language}{norsk}
+\newcondiprop{language}{occitan}
+\newcondiprop{language}{portuguese}
+\newcondiprop{language}{romanian}
+\newcondiprop{language}{romansh}
+\newcondiprop{language}{russian}
+\newcondiprop{language}{sanskrit}
+\newcondiprop{language}{serbian}
+\newcondiprop{language}{slovenian}
+\newcondiprop{language}{spanish}
+\newcondiprop{language}{swedish}
+\newcondiprop{language}{tibetan}
+\newcondiprop{language}{turkish}
+\newcondiprop{language}{ukrainian}
+\newcondiprop{language}{vietnamese}
+
+%//// Valeurs d'éléments prédéfinis : propriétés de condition génériques ////////
+%////////////////////////////////////////////////////////////////////////////////
+\newcondiprop{fieldi}{propa}
+\newcondiprop{fieldi}{propb}
+\newcondiprop{fieldi}{propc}
+\newcondiprop{fieldi}{propd}
+\newcondiprop{fieldi}{prope}
+\newcondiprop{fieldi}{propf}
+\newcondiprop{fieldi}{propg}
+\newcondiprop{fieldi}{proph}
+\newcondiprop{fieldi}{propi}
+
+\newcondiprop{fieldii}{propaa}
+\newcondiprop{fieldii}{propbb}
+\newcondiprop{fieldii}{propcc}
+\newcondiprop{fieldii}{propdd}
+\newcondiprop{fieldii}{propee}
+\newcondiprop{fieldii}{propff}
+\newcondiprop{fieldii}{propgg}
+\newcondiprop{fieldii}{prophh}
+\newcondiprop{fieldii}{propii}
+
+\newcondiprop{fieldiii}{propaaa}
+\newcondiprop{fieldiii}{propbbb}
+\newcondiprop{fieldiii}{propccc}
+\newcondiprop{fieldiii}{propddd}
+\newcondiprop{fieldiii}{propeee}
+\newcondiprop{fieldiii}{propfff}
+\newcondiprop{fieldiii}{propggg}
+\newcondiprop{fieldiii}{prophhh}
+\newcondiprop{fieldiii}{propiii}

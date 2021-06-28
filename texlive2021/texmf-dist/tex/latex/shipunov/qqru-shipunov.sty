@@ -1,0 +1,56 @@
+% Author: Alexey B. Shipunov (dactylorhiza@gmail.com)
+% Companion Perl script: txt2qq.pl
+
+\ProvidesPackage{qqru}%
+        [2019/10/04 v0.32 Universal quotes for Russian and English]
+
+\newif\if@QQRU
+\DeclareOption{ru}{\@QQRUtrue}
+\DeclareOption{en}{\@QQRUfalse}
+\newif\if@CONVERT
+\DeclareOption{convert}{\@CONVERTtrue}
+\DeclareOption{noconvert}{\@CONVERTfalse}
+
+\ExecuteOptions{ru,nconvert}
+\ProcessOptions
+
+\if@QQRU
+
+ \def\<{<<}
+ \def\>{>>}
+
+\else
+
+ \def\<{``}
+ \def\>{''}
+
+\fi
+
+\if@CONVERT
+
+{%
+\catcode`\"=\active
+\catcode`\@=11
+\gdef\beginconvertquotes{%
+ \global\catcode`\"=\active
+ \global\chardef\dq=`\"
+ \global\let\dblqu@te=L
+ }
+\gdef"{%
+ \ifinner\else\ifvmode\let\dblqu@te=L\fi\fi
+ \if L\dblqu@te\<\global\let\dblqu@te=R%
+ \else
+  \let\xxx=\spacefactor
+  \>\global\let\dblqu@te=L%
+  \spacefactor\xxx
+ \fi
+ }
+}
+
+\gdef\endconvertquotes{%
+ \catcode`\"=12
+ }
+
+\AtBeginDocument{\beginconvertquotes}
+
+\else\fi

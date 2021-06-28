@@ -1,0 +1,298 @@
+\NeedsTeXFormat{LaTeX2e}[2011/11/11]
+\ProvidesPackage{schule}[2018/08/22 v0.8.1 %
+                         Kommandos fuer die Schule]
+
+% ********************************************************************
+% * Paketoptionen                                                    *
+% ********************************************************************
+
+% Abhängigkeiten
+% ********************************************************************
+\RequirePackage{pgfopts}
+\RequirePackage{xifthen}
+
+% Boolesche Optionen
+% ********************************************************************
+%\newboolean{schule@boolwert}
+\newboolean{schule@debug}
+
+% Standardwerte
+% ********************************************************************
+%\newcommand{\schule@wert}{Standard}
+\newcommand{\schule@typ}{schuleALT} % Für Kompatibilitätsmoduss
+\newcommand{\schule@fach}{ohne} % Keine Fachspezifika
+\newcommand{\schule@weitereFaecher}{}
+\newcommand{\schule@module}{}
+\newcommand{\schule@sprache}{}
+
+% Definition der Paketoptionen
+% ********************************************************************
+\pgfkeys{
+	/schule/.cd,
+	fach/.store in=\schule@fach,
+	weitereFaecher/.store in=\schule@weitereFaecher,
+	module/.store in=\schule@module,
+	typ/.store in=\schule@typ,
+	sprache/.store in=\schule@sprache,
+	debug/.value forbidden,
+	debug/.code=\setboolean{schule@debug}{true},
+	.unknown/.code={}, % Unbekannte Optionen ignorieren.
+}
+
+% Frühe Paketoptionen verarbeiten (etwa die zu ladenden Module und den
+% Typ des Dokuments)
+% ********************************************************************
+\ProcessPgfPackageOptions{/schule}
+
+
+% ********************************************************************
+% * Basisfunktionen und deren Abhängigkeiten                         *
+% ********************************************************************
+
+% Fehlerbehandlung und -ausgabe
+% ********************************************************************
+\newcommand{\swarnung}[1]{\PackageWarning{schule}{#1}}
+\newcommand{\sfehler}[1]{\PackageError{schule}{#1}}
+\newcommand{\sinfo}[1]{\PackageInfo{schule}{#1}}
+
+% Debugvarianten
+\newcommand{\sdwarnung}[1]{
+	\ifthenelse{\boolean{schule@debug}}{
+		\swarnung{#1}
+	}{
+		% stillschweigend ignorieren
+	}
+}
+\newcommand{\sdinfo}[1]{
+	\ifthenelse{\boolean{schule@debug}}{
+		\sinfo{#1}
+	}{
+		% stillschweigend ignorieren
+	}
+}
+
+
+% unschädliche Warnungen im Normalbetrieb unterdrücken
+\ifthenelse{\boolean{schule@debug}}{}{
+	\usepackage{silence}
+
+	% Kompatiblität von ctable zu TikZ
+	\WarningFilter{ctable}{Transp}
+}
+
+% Laden von Dokumenttypen
+% ********************************************************************
+% Laden der jeweiligen Dokumenttyp-Definition. Falls keine gefunden
+% wurde und das Paket nicht eingebettet verwendet wird, wird die
+% Definition für Arbeitsblätter geladen.
+
+% \schule@typDateiLaden{Dokumenttyp}{Abschnitt}
+\newcommand{\schule@typDateiLaden}[2]{
+	\ifthenelse{\equal{\schule@typ}{ohne}}{
+		\sdinfo{Eingebetteter Modus. Es wird kein Dokumenttyp geladen!}
+	}{
+		\IfFileExists{schule.typ.#1.#2.tex}{
+			% Wenn die Datei existiert
+			\input{schule.typ.#1.#2.tex}
+			\sdinfo{Dokumenttyp schule.typ.#1.#2 geladen!}
+		}{
+			% Wenn die Datei nicht existiert, lade Arbeitsblatt.
+			\sdwarnung{Dokumenttyp schule.typ.#1.#2 nicht gefunden, %
+				lade Arbeitsblatt!}
+			\IfFileExists{schule.typ.ab.#2.tex}{
+				% Wenn die Datei existiert
+				\input{schule.typ.ab.#2.tex}
+				\sdinfo{Dokumenttyp schule.typ.ab.#2 geladen!}
+			}{
+				% Wenn die Datei nicht existiert, lade Arbeitsblatt.
+				\sdwarnung{Dokumenttyp schule.typ.ab.#2 nicht gefunden!}
+			}
+		}
+	}
+}
+
+% Modullader
+% ********************************************************************
+% Um Kollisionen zu vermeiden muss gespeichert werden, ob eine Datei
+% bereits geladen wurde. So können Module auch mehrfach angegeben
+% und von anderen Modulen verwendet werden.
+
+% \schule@modulDateiLaden{Kategorie}{Modulname}{Abschnitt}
+\newcommand{\schule@modulDateiLaden}[3]{
+	\IfFileExists{schule.#1.#2.#3.tex}{
+		% Wenn die Datei existiert
+		\ifcsname schule@geladen#1#2#3\endcsname
+			% Wenn die Datei bereits geladen wurde
+			\sdwarnung{Moduldatei schule.#1.#2.#3 war bereits geladen!}
+		\else
+			% Wenn die Datei nicht bereits geladen wurde
+			\input{schule.#1.#2.#3.tex}
+			\expandafter\def
+				\csname schule@geladen#1#2#3\endcsname{true}
+			\expandafter\def
+				\csname schule@geladen#1#2\endcsname{true}
+			\sdinfo{Moduldatei schule.#1.#2.#3 geladen!}
+		\fi
+	}{
+		% Wenn die Datei nicht existiert
+		\sdwarnung{Moduldatei schule.#1.#2.#3 nicht gefunden!}
+	}
+}
+
+
+% \schule@modulNachladen{Modulname}
+% Lädt ein Modul mit allen Abschnitten. Interne Hilfsfunktion für
+% Erfüllung von Abhängigkeiten in Modulen. Die Verwendung zu anderen
+% Zwecken wird nicht empfohlen.
+\newcommand{\schule@modulNachladen}[1]{
+	\schule@modulDateiLaden{mod}{#1}{optionen}
+	\ProcessPgfPackageOptions{/schule}
+	\schule@modulDateiLaden{mod}{#1}{pakete}
+	\schule@modulDateiLaden{mod}{#1}{code}
+}
+
+% Modulliste
+% ********************************************************************
+\RequirePackage{forarray}
+% Standardmodule laden und um optionale Module ergänzen
+\ifthenelse{\equal{\schule@typ}{ohne}}{
+	\edef\schule@ladeModule{%
+		Metadaten, %
+		Format, %
+		\schule@module
+	}
+}{
+	\edef\schule@ladeModule{%
+		Metadaten, %
+		Format, %
+		Aufgaben, %
+		\schule@module
+	}
+}
+
+% ********************************************************************
+% * Paketoptionen der Module                                         *
+% ********************************************************************
+
+% Definitionen der Paketoptionen der Module laden
+% ********************************************************************
+\ForEachX{,}{
+	\schule@modulDateiLaden{mod}{\thislevelitem}{optionen}
+}{\schule@ladeModule}
+
+% Definitionen der Paketabhängigkeiten der Fächer laden
+% ********************************************************************
+\schule@modulDateiLaden{fach}{\schule@fach}{optionen}
+
+% Weitere Fächer
+\ForEachX{,}{
+	\schule@modulDateiLaden{fach}{\thislevelitem}{optionen}
+}{\schule@weitereFaecher}
+
+% Definitionen der Paketabhängigkeiten des Dokumenttyps laden
+% ********************************************************************
+\schule@typDateiLaden{\schule@typ}{optionen}
+
+% Paketoptionen verarbeiten
+% ********************************************************************
+% Zurücksetzen der unbekannten Optionen
+%\def\schule@unbekannteOptionen{}
+% TODO: Evtl. Warnung, falls unbekannte Option gesetzt.
+% Erneutes Verarbeiten der Optionen
+\ProcessPgfPackageOptions{/schule}
+
+% ********************************************************************
+% * Kompatibilitätsmodus BEGINN                                      *
+% ********************************************************************
+
+\ifthenelse{\equal{\schule@typ}{schuleALT}}{
+	\RequirePackage{schulealt}
+}{
+
+% ********************************************************************
+% * Paketabhängigkeiten                                              *
+% ********************************************************************
+
+% Allgemeine Paketabhängigkeiten
+% ********************************************************************
+
+% Eingabe und Sprache
+\RequirePackage[\schule@sprache,ngerman]{babel}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[TS1,T1]{fontenc}
+
+% Makros
+\RequirePackage{xparse}
+\RequirePackage{xstring}
+\RequirePackage{environ}
+
+% Referenzen
+
+% Mathematisches
+\RequirePackage{amsmath}
+
+% Grafik
+\PassOptionsToPackage{table,dvipsnames}{xcolor}
+\RequirePackage{xcolor}
+\RequirePackage{tikz}
+\RequirePackage{graphicx}
+
+
+% Paketabhängigkeiten der Module
+% ********************************************************************
+\ForEachX{,}{
+	\schule@modulDateiLaden{mod}{\thislevelitem}{pakete}
+}{\schule@ladeModule}
+
+% Paketabhängigkeiten der Fächer
+% ********************************************************************
+% Fachspezifische Paketabhängigkeiten
+\schule@modulDateiLaden{fach}{\schule@fach}{pakete}
+
+% Weitere Fächer
+\ForEachX{,}{
+	\schule@modulDateiLaden{fach}{\thislevelitem}{pakete}
+}{\schule@weitereFaecher}
+
+% Paketabhängigkeiten des Dokumenttyps
+% ********************************************************************
+\schule@typDateiLaden{\schule@typ}{pakete}
+
+%Hyperref nach allen anderen Paketen laden um möglichen Problemen aus dem Weg zu gehen.
+\RequirePackage{hyperref}
+
+
+% ********************************************************************
+% * Module laden                                                     *
+% ********************************************************************
+
+\ForEachX{,}{
+	\schule@modulDateiLaden{mod}{\thislevelitem}{code}
+}{\schule@ladeModule}
+
+
+% ********************************************************************
+% * Fachspezifischen Code einbinden                                  *
+% ********************************************************************
+
+% Einbinden der fachspezifischen Module
+\schule@modulDateiLaden{fach}{\schule@fach}{code}
+
+\schule@modulDateiLaden{fach}{\schule@fach}{standalone}
+
+% Weitere Fächer
+\ForEachX{,}{
+	\schule@modulDateiLaden{fach}{\thislevelitem}{code}
+}{\schule@weitereFaecher}
+
+% ********************************************************************
+% * Code des Dokumenttyps einbinden                                  *
+% ********************************************************************
+\schule@typDateiLaden{\schule@typ}{code}
+
+
+% ********************************************************************
+% * Kompatibilitätsmodus ENDE                                      *
+% ********************************************************************
+
+}

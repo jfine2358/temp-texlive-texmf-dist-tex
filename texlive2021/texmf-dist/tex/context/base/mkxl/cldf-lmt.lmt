@@ -1,0 +1,949 @@
+if not modules then modules = { } end modules ['cldf-lmt'] = {
+    version   = 1.001,
+    comment   = "companion to toks-scn.mkiv",
+    author    = "Hans Hagen, PRAGMA-ADE, Hasselt NL",
+    copyright = "PRAGMA ADE / ConTeXt Development Team",
+    license   = "see context related readme files"
+}
+
+local next, load = next, load
+local gmatch, gsub, byte = string.gmatch, string.gsub, string.byte
+
+local setmetatableindex    = table.setmetatableindex
+local setmetatablenewindex = table.setmetatablenewindex
+local serialize            = table.serialize
+local concat               = table.concat
+
+local random            = math.random
+local randomseed        = math.randomseed
+local round             = math.round
+local abs               = math.abs
+
+local implement         = interfaces.implement
+
+local scanners          = tokens.scanners
+local scanword          = scanners.word
+local scanstring        = scanners.string
+local scanboolean       = scanners.boolean
+local scandimen         = scanners.dimen
+local scanfloat         = scanners.float
+local scaninteger       = scanners.integer
+local scancardinal      = scanners.cardinal
+local scannumber        = scanners.luanumber
+local scanluainteger    = scanners.luainteger
+local scanluacardinal   = scanners.luacardinal
+local scanluanumber     = scanners.luanumber
+local scanargument      = scanners.argument
+local scantoken         = scanners.token
+local scancsname        = scanners.csname
+local scankeyword       = scanners.keyword
+
+local peekchar          = scanners.peekchar
+local skipnext          = scanners.skip
+
+local getindex          = token.get_index
+
+local texsetdimen       = tex.setdimen
+local texsetcount       = tex.setcount
+local texgetcount       = tex.getcount
+local texget            = tex.get
+
+local values            = tokens.values
+local none_code         = values.none
+local integer_code      = values.integer
+local cardinal_code     = values.cardinal
+local dimension_code    = values.dimension
+local skip_code         = values.skip
+local boolean_code      = values.boolean
+local float_code        = values.float
+
+local global_code      = tex.flagcodes.global
+
+local context           = context
+
+-- variables --
+
+local floats    = { }
+local integers  = { }
+local cardinals = { }
+local numbers   = { }
+
+implement {
+    name    = "luafloat",
+    public  = true,
+    usage   = "value",
+    actions = function(b)
+        local n = scanword()
+        if b == "value" then
+            context("%.99g",floats[n] or 0)
+        else
+            floats[n] = scanluanumber(true)
+         -- floats[n] = scanfloat(true)
+        end
+    end,
+}
+
+implement {
+    name    = "luainteger",
+    public  = true,
+    usage   = "value",
+    actions = function(b)
+        local n = scanword()
+        if b == "value" then
+            context("%i",integers[n] or 0)
+        else
+            integers[n] = scanluainteger(true)
+        end
+    end,
+}
+
+implement {
+    name    = "luacount",
+    public  = true,
+    usage   = "value",
+    actions = function(b)
+        local n = scanword()
+        if b == "value" then
+            return integer_code, integers[n] or 0
+        else
+            integers[n] = scaninteger(true)
+        end
+    end,
+}
+
+implement {
+    name    = "luadimen",
+    public  = true,
+    usage   = "value",
+    actions = function(b)
+        local n = scanword()
+        if b == "value" then
+            return dimension_code, integers[n] or 0
+        else
+            integers[n] = scandimen(false,false,true)
+        end
+    end,
+}
+
+implement {
+    name    = "luacardinal",
+    public  = true,
+    usage   = "value",
+    actions = function(b)
+        local n = scanword()
+        if b == "value" then
+            context("%1.0f",cardinals[n] or 0)
+        else
+            cardinals[n] = scanluacardinal(true)
+        end
+    end,
+}
+
+implement {
+    name    = "luanumber",
+    public  = true,
+    usage   = "value",
+    actions = function(b)
+        local n = scanword()
+        if b == "value" then
+            context("%N",floats[n] or integers[n] or cardinals[n] or 0) -- maybe %N
+        else
+         -- floats[n] = scanfloat(true)
+            floats[n] = scanluanumber(true)
+        end
+    end,
+}
+
+implement {
+    name    = "luarandom",
+    public  = true,
+    usage   = "value",
+    actions = function(b)
+        if b == "value" then
+            return integer_code, random(scanluainteger(),scanluainteger())
+        else
+            randomseed(scanluainteger(true))
+        end
+    end,
+}
+
+interfaces.floats    = floats
+interfaces.integers  = integers
+interfaces.cardinals = cardinals
+
+interfaces.numbers   = table.setmetatableindex(function(t,k)
+    return floats[k] or integers[k] or cardinals[k]
+end)
+
+-- arrays --
+
+local arrays = { }
+
+interfaces.arrays = arrays
+
+local newindex = lua.newindex
+
+implement {
+    name      = "newarray",
+    public    = true,
+    protected = true,
+    arguments = { {
+        { "name", "string"  },
+        { "nx",   "integer" },
+        { "ny",   "integer" },
+        { "type", "string"  },
+    } },
+    actions   = function(t)
+        local name = t.name
+        if t.name then
+            local nx = t.nx
+            local ny = t.ny
+            local ty = t.type or "integer"
+            local df = nil
+            if ty == "integer" or ty == "float" or ty == "dimension" then
+                df = 0
+            elseif ty == "boolean" then
+                df = false
+            else
+                ty = nil
+            end
+            if nx and ty ~= nil then
+                local data
+                if ny then
+                    data = newindex(t.ny)
+                    for i=1,ny do
+                        data[i] = newindex(nx,df)
+                    end
+                else
+                    data = newindex(nx,df)
+                end
+                arrays[name] = data
+                data.nx      = nx
+                data.ny      = ny
+                data.type    = ty
+                if ty == "integer" then
+                    data.scanner = scaninteger
+                elseif ty == "boolean" then
+                    data.scanner = scanboolean
+                elseif ty == "dimension" then
+                    data.scanner = scandimen
+                elseif ty == "float" then
+                    data.scanner = scanfloat
+                end
+                if ty == "integer" then
+                    data.code = integer_code
+                elseif ty == "boolean" then
+                    data.code = boolean_code
+                elseif ty == "dimension" then
+                    data.code = dimension_code
+                elseif ty == "float" then
+                    data.code = float_code
+                end
+            end
+        end
+    end,
+}
+
+implement {
+    name    = "arrayvalue",
+    public  = true,
+    usage   = "value",
+    actions = function(b)
+        local name = scanstring()
+        if name then
+            local a = arrays[name]
+            if a then
+                local nx = a.nx
+                local ny = a.ny
+                local d  = a
+                if ny then
+                    d = d[scaninteger()]
+                end
+                local x = scaninteger()
+                if b == "value" then
+                    local code = a.code
+                    if code == float_code then
+                        context("%.99g",d[x])
+                    else
+                        return code, d[x]
+                    end
+                else
+                    d[x] = a.scanner()
+                end
+            end
+        end
+    end,
+}
+
+implement {
+    name    = "arrayequals",
+    public  = true,
+    usage   = "value",
+    actions = function(b)
+        local name = scanstring()
+        if name then
+            local a = arrays[name]
+            if a then
+                local nx = a.nx
+                local ny = a.ny
+                local d  = a
+                if ny then
+                    d = d[scaninteger()]
+                end
+                local x = scaninteger()
+                if b == "value" then
+                    return boolean_code, a.scanner() == d[x]
+                end
+            end
+        end
+    end,
+}
+
+implement {
+    name    = "arraycompare",
+    public  = true,
+    usage   = "value",
+    actions = function(b)
+        local name = scanstring()
+        if name then
+            local a = arrays[name]
+            if a then
+                local nx = a.nx
+                local ny = a.ny
+                local d  = a
+                if ny then
+                    d = d[scaninteger()]
+                end
+                local x = scaninteger()
+                if b == "value" then
+                    local v = a.scanner()
+                    local d = d[x]
+                    if d < v then
+                        return integer_code, 0
+                    elseif d == v then
+                        return integer_code, 1
+                    else
+                        return integer_code, 2
+                    end
+                end
+            end
+        end
+    end,
+}
+
+implement {
+    name      = "showarray",
+    public    = true,
+    protected = true,
+    actions   = function()
+        local name = scanstring()
+        if name then
+            inspect(arrays[name])
+        end
+    end,
+}
+
+-- expressions --
+
+local cache = table.setmetatableindex(function(t,k)
+    local code = "return function() local n = interfaces.numbers local a = interfaces.arrays return " .. k .. " end"
+    code = loadstring(code)
+    if code then
+        code = code()
+    end
+    t[k] = code or false
+    return code
+end)
+
+table.makeweak(cache)
+
+implement {
+    name    = "luaexpression",
+    public  = true,
+    actions = function()
+        local how  = scanword()
+        local code = cache[scanargument()]
+        if code then
+            local result = code()
+            if result then
+                if not how then
+                    context(tostring(code()))
+                elseif how == "float" then
+                    context("%.99g",result)
+                elseif how == "integer" then
+                    context("%i",round(result))
+                elseif how == "cardinal" then
+                    context("%d",abs(round(result)))
+                elseif how == "dimen" then
+                    context("%p",result)
+                elseif how == "boolean" then
+                    context("%d",result and 1 or 0)
+                elseif how == "lua" then
+                    context("%q",result)
+                else
+                    context(tostring(code()))
+                end
+            end
+        end
+    end
+}
+
+local dimenfactors = number.dimenfactors
+
+implement {
+    name    = "nodimen",
+    public  = true,
+    usage   = "value",
+    actions = function(b)
+        if b == "value" then
+            local how  = scanword()
+            local what = scandimen()
+            if how then
+                local factor = dimenfactors[how]
+                if factor then
+                    context("%.6N%s",factor*what,how)
+                else
+                    return dimension_code, what
+                end
+            else
+                return dimension_code, what
+            end
+        else
+            local t = scantoken()
+            if t then
+                local i = getindex(t)
+                if i then
+                    local d = scandimen(false,false,true)
+                    texsetdimen(i,d)
+                end
+            end
+        end
+    end,
+}
+
+-- experimental:
+
+local grouped    = { }
+local slots      = { }
+local nofslots   = 0
+local nofgrouped = 0
+
+local getinteger = tokens.getinteger
+local setinteger = tokens.setinteger
+
+local report = logs.reporter("lua table")
+
+local ctxsprint = context.sprint
+
+-- we could have an extra one that collects all end of grouped actions
+-- so that we dispose more in one go but it doesn's pay off
+
+local function newluatable(name,mt,dispose)
+    local g = { }
+    local t = slots[nofslots]
+    slots[nofslots] = false
+    nofslots = nofslots - 1
+    if not t then
+        nofgrouped = nofgrouped + 1
+        t = nofgrouped
+    end
+    if mt then
+        mt = getinteger(name)
+        if mt then
+            mt = grouped[mt]
+            if mt then
+                setmetatableindex(g,mt)
+            end
+        end
+    end
+    grouped[t] = g
+    setinteger(name,t)
+    -- This is the slow part. Doing this at the TeX end saved 10% runtime. I'll
+    -- think of something that we can set it at the Lua end.
+    if dispose then
+        ctxsprint("\\atendofgrouped{\\disposeluatable\\" .. name .. "}")
+    end
+end
+
+local function disposeluatable(name)
+    local t = getinteger(name)
+    local g = grouped[t]
+    if g then
+        grouped[t] = false
+        nofslots = nofslots + 1
+        slots[nofslots] = t
+    end
+end
+
+local function setluatable(name,kv)
+    local t = getinteger(name)
+    local g = grouped[t]
+    if g and kv then
+        for k, v in next, kv do
+            g[k] = v
+        end
+    end
+end
+
+local function getfromluatable(name,k)
+    local t = getinteger(name)
+    local g = grouped[t]
+    if g then
+        local v = g[k]
+        if v then
+            context(v)
+        else
+            local n = tonumber(k)
+            if n then
+                local v = g[n]
+                if v then
+                    context(v)
+                end
+            end
+        end
+    end
+end
+
+local function idxfromluatable(name,k)
+    local t = getinteger(name)
+    local g = grouped[t]
+    if g then
+        local v = g[k]
+        if v then
+            context(v)
+        end
+    end
+end
+
+local function getluatable(name,k)
+    local t = getinteger(name)
+    local g = grouped[t]
+    if g then
+        return g
+    end
+end
+
+local function inspectluatable(name)
+    local t = getinteger(name)
+    local g = grouped[t]
+    if g then
+        report("%s", serialize(g,'[grouped slot ' .. t .. ']'))
+    end
+end
+
+local function showluatables()
+    report("nofgrouped %i, nofslots %i",nofgrouped,nofslots)
+    for t=1,nofgrouped do
+        local g = grouped[t]
+        if g then
+            report("%s", serialize(g,'[grouped slot ' .. t .. ']'))
+        end
+    end
+end
+
+implement {
+    name      = "newluatable",
+    protected = true,
+    arguments = "csname",
+    actions   = newluatable,
+}
+
+implement {
+    name      = "useluatable",
+    protected = true,
+    arguments = { "csname", true },
+    actions   = newluatable,
+}
+
+implement {
+    name      = "disposeluatable",
+    protected = true,
+    public    = true,
+    arguments = "csname",
+    actions   = disposeluatable,
+}
+
+implement {
+    name      = "inspectluatable",
+    protected = true,
+    public    = true,
+    arguments = "csname",
+    actions   = inspectluatable,
+}
+
+implement {
+    name      = "showluatables",
+    protected = true,
+    public    = true,
+    actions   = showluatables,
+}
+
+implement {
+    name      = "setluatable",
+    protected = true,
+    public    = true,
+    arguments = { "csname", "argument" },
+    actions   = function(name,data)
+        data = load("return {" .. data .. "}")
+        if data then
+            data = data()
+            if data then
+                setluatable(name,data)
+            end
+        end
+    end
+}
+
+implement {
+    name      = "getfromluatable",
+    protected = false,
+    public    = true,
+    arguments = { "csname", "argument" },
+    actions   = getfromluatable,
+}
+
+implement {
+    name      = "idxfromluatable",
+    protected = false,
+    public    = true,
+    arguments = { "csname", "integer" },
+    actions   = idxfromluatable,
+}
+
+context.luatables = {
+    new     = function(name) newluatable(name,false,true) end,
+    use     = function(name) useluatable(name,true, true) end,
+    dispose = disposeluatable,
+    set     = setluatable,
+    get     = getluatable,
+    getfrom = getfromluatable,
+    idxfrom = idxfromluatable,
+    inspect = inspectluatable,
+    show    = showluatables,
+}
+
+-- Here's another mechanism ...
+
+local tables = { }
+local stack  = setmetatableindex("table")
+
+interfaces.implement {
+    name      = "droptablegroup",
+    public    = true,
+    actions   = function()
+        local g = texget("currentgrouplevel") -- todo: tex.getgrouplevel()
+        local s = stack[g]
+        if s then
+            for t, data in next, s do
+                for k, v in next, data do
+                    t[k] = v
+                end
+            end
+            stack[g] = { }
+        end
+    end,
+}
+
+local ctx_atendofgroup   = context.core.cs.atendofgroup
+local ctx_droptablegroup = context.core.cs.droptablegroup
+
+local function handletable(t,b,array)
+    if b == "value" then
+        local k = array and scaninteger() or scanargument()
+        local v = t[k]
+        if v then
+            context(v)
+        end
+    else
+        local data = scanargument()
+        data = load("return {" .. data .. "}")
+        if data then
+            data = data()
+            if data then
+                local l = t.level
+                local g = texget("currentgrouplevel") -- todo: tex.getgrouplevel()
+                local s = stack[g]
+                local d = s[t]
+                if not d then
+                    d = { }
+                    s[t] = d
+                    ctx_atendofgroup()
+                    ctx_droptablegroup()
+                end
+                for k, v in next, data do
+                    if not d[k] then
+                        d[k] = t[k]
+                    end
+                    t[k] = v
+                end
+            --  if b == "global" then
+                if b and (b & 0x04) ~= 0 then -- or just band(b,0x04)
+                    for k, v in next, stack do
+                        local t = s[t]
+                        if t then
+                            for k, v in next, data do
+                                if t[k] then
+                                    t[k] = nil
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function newtable(array)
+    local name = scancsname(true)
+    if not tables[name] then
+        local t = { }
+        tables[name] = t
+        interfaces.implement {
+            name    = name,
+            public  = true,
+            usage   = "value",
+            actions = function(b)
+                handletable(t,b,array)
+            end,
+        }
+    else
+        -- already defined
+    end
+end
+
+implement {
+    name      = "newhashedtable",
+    protected = true,
+    public    = true,
+    actions   = newtable,
+}
+
+implement {
+    name      = "newindexedtable",
+    protected = true,
+    public    = true,
+    actions   = function() newtable(true) end,
+}
+
+context.hashedtables  = setmetatableindex(function(t,k) return tables[k] end)
+context.indexedtables = context.hashedtables
+
+-- I played with adding bitwise operator to the expr scanners but in the end didn't
+-- keep the code ... the problem is in what symbols ... so for now a more verbose
+-- and/or/xor is okay. Extending the expression scanner would add a little overhead
+-- to all expressions while an logical operator would gain less that 50% so for now
+-- we don't bother. Providing \ifbitwiseand makes sense for performance reasons as
+-- if a bit beter than testing the bitwise and with an \ifcase.
+
+local reporterror = logs.texerrormessage
+
+local function youcant(cmd)
+    reporterror("you can't use \\%s this way, it's an integer value", cmd)
+end
+
+implement {
+    name    = "bitwiseset",
+    public  = true,
+    usage   = "value",
+    actions = function(what)
+        local a = scancardinal()
+        if what == "value" then
+            return cardinal_code, a
+        else
+            youcant("bitwiseset")
+        end
+    end
+}
+
+implement {
+    name    = "bitwiseand",
+    public  = true,
+    usage   = "value",
+    actions = function(what)
+        local a = scancardinal()
+        scankeyword("with")
+        local b = scancardinal()
+        if what == "value" then
+            return cardinal_code, a & b
+        else
+            youcant("bitwiseand")
+        end
+    end
+}
+
+implement {
+    name    = "bitwiseor",
+    public  = true,
+    usage   = "value",
+    actions = function(what)
+        local a = scancardinal()
+        scankeyword("with")
+        local b = scancardinal()
+        if what == "value" then
+            return cardinal_code, a | b
+        else
+            youcant("bitwiseor")
+        end
+    end
+}
+
+implement {
+    name    = "bitwisexor",
+    public  = true,
+    usage   = "value",
+    actions = function(what)
+        local a = scancardinal()
+        scankeyword("with")
+        local b = scancardinal()
+        if what == "value" then
+            return cardinal_code, a ~ b
+        else
+            youcant("bitwisexor")
+        end
+    end
+}
+
+implement {
+    name    = "bitwisenot",
+    public  = true,
+    usage   = "value",
+    actions = function(what)
+        local a = scancardinal()
+        if what == "value" then
+            return cardinal_code, ~a & 0xFFFFFFFF
+        else
+            youcant("bitwisenot")
+        end
+    end
+}
+
+implement {
+    name    = "bitwisenil",
+    public  = true,
+    usage   = "value",
+    actions = function(what)
+        local a = scancardinal()
+        scankeyword("with")
+        local b = scancardinal()
+        if what == "value" then
+            return cardinal_code, a & (~b & 0xFFFFFFFF)
+        else
+            youcant("bitwisenil")
+        end
+    end
+}
+
+implement {
+    name    = "bitwiseshift",
+    public  = true,
+    usage   = "value",
+    actions = function(what)
+        local a = scancardinal()
+        scankeyword("by")
+        local b = scaninteger()
+        if what == "value" then
+            return cardinal_code, (b < 0) and (a << -b) or (a >> b)
+        else
+            youcant("bitwiseshift")
+        end
+    end
+}
+
+implement {
+    name    = "bitwiseflip",
+    public  = true,
+    usage   = "value",
+    actions = function(what)
+        local t = scancsname()
+        local b = scaninteger()
+        local c = texgetcount(t)
+        if c then
+            if b > 0 then
+                c = c | b
+            elseif b < 0 then
+                c = c & (~(-b) & 0xFFFFFFFF)
+            end
+            if what == "value" then
+                return cardinal_code, c
+            elseif what and (what & global_code) ~= 0 then
+                texsetcount("global",t,c)
+            else
+                texsetcount(t,c)
+            end
+        end
+    end
+}
+
+implement {
+    name      = "ifbitwiseand",
+    public    = true,
+    usage     = "condition",
+    actions   = function(what)
+        local a = scancardinal()
+        local b = scancardinal()
+        return boolean_code, (a & b) ~= 0
+    end
+}
+
+interfaces.implement {
+    name      = "bitwise",
+    public    = true,
+    usage     = "value",
+    actions   = function(what)
+        if what == "value" then
+            local b = 0
+            while true do
+                local c = peekchar()
+                if c == 48 or c == 49 then
+                    skipnext()
+                    b = (b << 1) + (c - 48)
+                    if b == 0xFFFFFFFF then
+                        break
+                    end
+                else
+                    break
+                end
+            end
+            return 1, b
+        else
+            local b = scancardinal()
+            local t = nil
+            local n = 0
+            for i=1,32 do
+                if (b & (0x100000000 >> i)) == 0 then
+                    if n > 0 then
+                        n = n + 1
+                        t[n] = "0"
+                    end
+                elseif t then
+                    n = n + 1
+                    t[n] = "1"
+                else
+                    n = 1
+                    t = { "1" }
+                end
+            end
+            context(n > 0 and table.concat(t) or "0")
+        end
+    end,
+}
+
+-- something to play with, this might move to syst-aux.lmt when we have that
+
+local escape = function(s) return "\\" .. byte(s) end
+
+interfaces.implement {
+    name    = "ctxluamatch",
+    public  = true,
+    usage   = "value",
+    actions = function()
+        local command = context[scancsname()]
+        local pattern = gsub(scanstring(),"\\.",escape)
+        local input   = gsub(scanstring(),"\\.",escape)
+        for a, b, c, d, e, f, g, h, i in gmatch(input,pattern) do
+            command(a, b or "", c or "", d or "", e or "", f or "", g or "", h or "", i or "")
+        end
+        return none_code
+    end,
+}

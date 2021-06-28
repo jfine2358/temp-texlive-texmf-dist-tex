@@ -1,0 +1,205 @@
+% !TeX encoding = ISO-8859-1
+% Ce fichier contient le code commenté de l'extension "simplekv"
+%
+% IMPORTANT : pour que les commentaires s'affichent correctement,
+%             ouvrir ce fichier avec l'encodage ISO-8859-1
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                    %
+\def\skvname                  {simplekv}                             %
+\def\skvver                     {0.2}                                %
+%                                                                    %
+\def\skvdate                 {2020/04/27}                            %
+%                                                                    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% --------------------------------------------------------------------
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%
+% %     http://www.latex-project.org/lppl.txt
+%
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+% --------------------------------------------------------------------
+% This work has the LPPL maintenance status `maintained'.
+%
+% The Current Maintainer of this work is Christian Tellechea
+% email: unbonpetit@netc.fr
+%        Commentaires, suggestions et signalement de bugs bienvenus !
+%        Comments, bug reports and suggestions are welcome.
+% Copyright: Christian Tellechea 2017-2020
+% --------------------------------------------------------------------
+% L'extension simplekv est composée des 5 fichiers suivants :
+%   - code               : simplekv            (.tex et .sty)
+%   - manuel en français : simplekv-fr         (.tex et .pdf)
+%   - fichier lisezmoi   : README
+% --------------------------------------------------------------------
+
+%##########################################
+%################ Préalable ###############
+%##########################################
+\csname skvloadonce\endcsname
+\let\skvloadonce\endinput
+\ifdefined\skvfromSTY\else
+	\immediate\write -1 {%
+		Package: \skvname\space\skvdate\space v\skvver\space Simple keyval package (CT)%
+	}%
+\fi
+%##########################################
+%############ Gestion catcodes ############
+%##########################################
+\begingroup
+	\def\X#1{\catcode\number`#1=\number\catcode`#1\relax}
+	\expandafter\xdef\csname skv_restorecatcode\endcsname{\X\,\X\=\X\_}
+\endgroup
+\catcode`\_11
+\chardef\skv_other12
+\catcode`\,\skv_other\catcode`\=\skv_other
+%##########################################
+%############ Macros auxilaires ###########
+%##########################################
+\chardef\skv_stop 0
+\long\def\skv_first#1#2{#1}
+\long\def\skv_second#1#2{#2}
+\long\def\skv_gob#1{}
+\long\def\skv_exe#1{#1}
+\expandafter\def\expandafter\skv_gobspace\space{}% pour garder la compatibilité
+\long\def\skv_earg#1#2{\expandafter\skv_earg_i\expandafter{#2}{#1}}\let\skv_exparg\skv_earg
+\long\def\skv_eearg#1#2{\expandafter\expandafter\expandafter\skv_earg_i\expandafter\expandafter\expandafter{#2}{#1}}
+\long\def\skv_earg_i#1#2{#2{#1}}
+\long\def\skv_expafter#1#2{\expandafter\skv_expafter_i\expandafter{#2}{#1}}% {<a>}{<b>} devient <a><*b>
+\long\def\skv_expafter_i#1#2{#2#1}
+\def\skv_ifcsname#1{\ifcsname#1\endcsname\expandafter\skv_first\else\expandafter\skv_second\fi}
+\long\def\skv_ifx#1{\ifx#1\expandafter\skv_first\else\expandafter\skv_second\fi}
+\long\def\skv_ifempty#1{\skv_ifempty_i#1\_nil\_nil\skv_second\skv_first\__nil}%
+\long\def\skv_ifempty_i#1#2\_nil#3#4#5\__nil{#4}
+\def\skv_stripsp#1{%
+\long\def\skv_stripsp##1##2{\expanded{\skv_stripsp_i\_marksp##2\__nil\_marksp#1\_marksp\_nil{##1}}}%
+\long\def\skv_stripsp_i##1\_marksp#1##2\_marksp##3\_nil{\skv_stripsp_ii##3##1##2\__nil#1\__nil\_nil}%
+\long\def\skv_stripsp_ii##1#1\__nil##2\_nil{\skv_stripsp_iii##1##2\_nil}%
+\long\def\skv_stripsp_iii##1##2\__nil##3\_nil##4{\unexpanded{##4{##2}}}%
+}\skv_stripsp{ }
+%##########################################
+%########## Macros de définition ##########
+%##########################################
+\def\setKVdefault{\let\skv_find_kv_i\skv_find_kv_nocode\skv_readKV\skv_exe}
+\def\setKV       {\let\skv_find_kv_i\skv_find_kv_nocode\skv_readKV\skv_gob}
+\def\defKV       {\let\skv_find_kv_i\skv_find_kv_code  \skv_readKV\skv_gob}
+\def\skv_readKV{%
+	\edef\skv_restorecatcode{\catcode44=\the\catcode44 \relax\catcode61=\the\catcode61 \relax}%
+	\catcode44\skv_other\catcode61\skv_other
+	\skv_readKV_i
+}
+\long\def\skv_readKV_i#1[#2]#3{%
+	#1{\expandafter\def\csname skv_[#2]\endcsname{#3}}% exécute (si \defKV) ou pas
+	\def\skv_setname{#2}%
+	\skv_readKV_ii#3,\__,%
+	\skv_restorecatcode
+}
+\long\def\skv_readKV_ii#1,{\skv_readKV_iii\skv_find_kv#1=true=\_nil\skv_find_kv\__\__nil}% si #1=\__ ne rien faire sinon \skv_find_kv#1=true=\_nil
+\long\def\skv_readKV_iii#1\skv_find_kv\__#2\__nil{#1}
+
+\long\def\skv_find_kv#1=#2=#3\_nil{%
+	\edef\__key{_[\skv_setname]_\skv_stripsp\detokenize{#1}}%
+	\skv_stripsp\skv_find_kv_i{#2}%
+	\skv_readKV_ii
+}
+\long\def\skv_find_kv_nocode#1{%
+	\expandafter\def\csname skv\__key\endcsname{#1}%\__val% stocker la clé
+	\ifcsname skvcode\__key\endcsname% si le code correspondant existe
+		\csname skvcode\__key\endcsname{#1}% exécute le code
+	\fi
+}
+\long\def\skv_find_kv_code#1{%
+	\expandafter\def\csname skvcode\__key\endcsname##1{#1}%
+}
+
+\def\restoreKV[#1]{%
+	\skv_ifcsname{skv_[#1]}
+		{\skv_eearg{\setKV[#1]}{\csname skv_[#1]\endcsname}}
+		{\errmessage{Undefined or not saved set of keys "#1"}}%
+}
+\let\useKVdefault\restoreKV
+%##########################################
+%############## Macro \useKV ##############
+%##########################################
+\def\useKV[#1]#2{\expanded{\skv_stripsp{\useKV_i[#1]}{#2}}}
+\def\useKV_i[#1]#2{\expandafter\useKV_ii\csname skv_[#1]_#2\endcsname{#2}}
+\def\useKV_ii#1#2{%
+	\ifdefined#1\unexpanded\expandafter{#1}%
+	\else     \errmessage{Key "#2" not defined}%
+	\fi
+}
+%##########################################
+%############# Macros de test #############
+%##########################################
+\def\ifboolKV[#1]#2{\romannumeral\skv_stripsp{\ifboolKV_i[#1]}{#2}}
+\def\ifboolKV_i[#1]#2{%
+	\skv_ifempty{#2}
+		{\skv_stop\errmessage{Empty argument is not a valid boolean}\skv_second
+		}
+		{\skv_ifcsname{skv_[#1]_#2}
+			{\skv_eearg\ifboolKV_ii{\csname skv_[#1]_#2\endcsname}}
+			{\skv_stop\errmessage{Key "#2" not defined}\skv_second}%
+		}%
+}
+\def\ifboolKV_ii#1{%% Cette macro teste si #1, qui est une <valeur>, vaut "true" ou "false"
+	\skv_ifargtrue{#1}
+		{\expandafter\skv_stop\skv_first
+		}
+		{\skv_ifargfalse{#1}
+			{\expandafter\skv_stop\skv_second}
+			{\skv_stop\errmessage{Value "#1" is not a valid boolean}\skv_second}%
+		}%
+}
+
+\def\testboolKV#1{\romannumeral\skv_stripsp{\testboolKV_i}{#1}}% macro publique qui teste si #1 est <true> ou <false>, erreur sinon
+\def\testboolKV_i#1{%
+	\skv_ifempty{#1}
+		{\skv_stop\errmessage{Empty argument is not a valid boolean}\skv_second}
+		{\skv_stripsp{\ifboolKV_ii}{#1}}%
+}
+
+\def\skv_ifargtrue#1{\skv_ifargtrue_i#1true\_nil}
+\def\skv_ifargtrue_i#1true#2\_nil{\skv_ifempty{#1}{\skv_ifargtrue_ii#2\_nil}\skv_second}
+\def\skv_ifargtrue_ii#1true#2\_nil{\skv_ifempty{#1#2}}
+\def\skv_ifargfalse#1{\skv_ifargfalse_i#1false\_nil}
+\def\skv_ifargfalse_i#1false#2\_nil{\skv_ifempty{#1}{\skv_ifargfalse_ii#2\_nil}\skv_second}
+\def\skv_ifargfalse_ii#1false#2\_nil{\skv_ifempty{#1#2}}
+%##########################################
+%############# Macro \showKV ##############
+%##########################################
+\def\showKV[#1]#2{\expanded{\skv_stripsp{\showKV_i[#1]}{#2}}}
+\def\showKV_i[#1]#2{%
+	\immediate\write-1 {%
+		^^JKey\space\space[#1]#2=%
+			\skv_ifcsname{skv_[#1]_#2}
+				{\expandafter\expandafter\expandafter\skv_show\expandafter
+				\meaning\csname skv_[#1]_#2\endcsname
+				\skv_ifcsname{skvcode_[#1]_#2}
+					{^^JCode [#1]#2=\expandafter\expandafter\expandafter\skv_show\expandafter
+						\meaning\csname skvcode_[#1]_#2\endcsname
+					}
+					{}%
+				}
+				{not defined%
+				}%
+	^^J\relax}%
+}
+\def\skv_show#1->{}
+\skv_restorecatcode
+\endinput
+
+Versions :
+ _____________________________________________________________________________
+| Version |    Date    | Changements                                          |
+|-----------------------------------------------------------------------------|
+|   0.1   | 08/08/2017 | Première version                                     |
+|-----------------------------------------------------------------------------|
+|   0.2   | 27/04/2020 | - Un <code> peut être assigné à une <clé>            |
+|         |            | - Correction de bugs                                 |
+|         |            | - Optimisations                                      |
+|-----------------------------------------------------------------------------|

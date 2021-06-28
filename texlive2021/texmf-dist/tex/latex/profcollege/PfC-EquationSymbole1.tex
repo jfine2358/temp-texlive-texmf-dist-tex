@@ -1,0 +1,225 @@
+% Licence    : Released under the LaTeX Project Public License v1.3c
+% or later, see http://www.latex-project.org/lppl.txtf
+\newcommand{\EquaBaseSymbole}[5][]{%type ax=d ou b=cx
+  \useKVdefault[ClesEquation]%
+  \setKV[ClesEquation]{#1}%
+  \setKV[ClesEquation]{Fleches=false,FlecheDiv=false,Terme=false,Decomposition=false}
+  \ifx\bla#2\bla%on teste si le paramètre #2 est vide:
+  % si oui, on est dans le cas b=cx. Eh bien on échange :)
+  % Mais attention si les deux paramètres a et c sont vides...
+    \ifx\bla#4\bla
+  %% il manque un paramètre
+    \else
+      \EquaBaseSymbole[#1]{#4}{}{}{#3}
+    \fi
+  \else
+  % si non, on est dans le cas ax=d
+  \xintifboolexpr{#2=0}{%
+    \xintifboolexpr{#5=0}{%
+      L'équation $0\times\useKV[ClesEquation]{Lettre}=0$ a une infinité de solution.}{L'équation $0\times\useKV[ClesEquation]{Lettre}=\num{#5}$ n'a aucune solution.}%
+  }{%\else
+    \xintifboolexpr{#5=0}{L'équation $\num{#2}\times\useKV[ClesEquation]{Lettre}=0$ a une unique solution : $\useKV[ClesEquation]{Lettre}=0$.}{%\else
+      \begin{align*}%
+         \xintifboolexpr{#2=1}{\useKV[ClesEquation]{Lettre}}{\multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}}&=\num{#5}\\
+        \useKV[ClesEquation]{Lettre}&=\frac{\num{#5}}{\num{#2}}%\\
+        \ifboolKV[ClesEquation]{Entier}{%
+                \SSimpliTest{#5}{#2}%
+                \ifboolKV[ClesEquation]{Simplification}{%
+                \ifthenelse{\boolean{Simplification}}{\\\useKV[ClesEquation]{Lettre}&=\SSimplifie{#5}{#2}}{}%\\
+                }{}
+                }{}
+      \end{align*}
+    }
+  }
+  \fi
+}
+
+\newcommand{\EquaDeuxSymbole}[5][]{%type ax+b=d ou b=cx+d$
+  \useKVdefault[ClesEquation]%
+  \setKV[ClesEquation]{#1}%
+  \setKV[ClesEquation]{Fleches=false,FlecheDiv=false,Terme=false,Decomposition=false}
+  \ifx\bla#2\bla%On échange en faisant attention à ne pas boucler : c doit être non vide
+    \EquaDeuxSymbole[#1]{#4}{#5}{#2}{#3}
+  \else%cas ax+b=d
+    \xintifboolexpr{#2=0}{%
+      \xintifboolexpr{#3=#5}{%b=d
+        L'équation $\num{#3}=\num{#5}$ a une infinité de solution.}%
+      {%b<>d
+        L'équation $\num{#3}=\num{#5}$ n'a aucune solution.%
+      }%
+    }{%ELSE
+      \xintifboolexpr{#3=0}{%ax+b=d
+        \EquaBaseSymbole[#1]{#2}{}{}{#5}%
+      }{%ax+b=d$ Ici
+        \begin{align*}
+          \xintifboolexpr{#2=1}{\useKV[ClesEquation]{Lettre}}{\multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\num{#5}\\
+          \ifboolKV[ClesEquation]{Bloc}{\Fdash{$\xintifboolexpr{#2=1}{\useKV[ClesEquation]{Lettre}}{\multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}}$}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\num{#5}\\}{}%
+          \xdef\Coeffa{#2}\xdef\Coeffb{\fpeval{#5-#3}}\xintifboolexpr{\Coeffa=1}{\useKV[ClesEquation]{Lettre}}{\multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}}&=\num{\Coeffb}%\\
+          \xintifboolexpr{\Coeffa=1}{% 
+          }{%\ifnum\cmtd>1
+          \\
+          \useKV[ClesEquation]{Lettre}&=\frac{\num{\Coeffb}}{\num{\Coeffa}}%\\
+          \ifboolKV[ClesEquation]{Entier}{%
+          \SSimpliTest{\Coeffb}{\Coeffa}%
+          \ifboolKV[ClesEquation]{Simplification}{%
+          \ifthenelse{\boolean{Simplification}}{\\\useKV[ClesEquation]{Lettre}&=\SSimplifie{\Coeffb}{\Coeffa}}{}%\\
+          }{}
+          }{}
+          }
+        \end{align*}
+      }
+    }
+  \fi
+}
+
+\newcommand{\EquaTroisSymbole}[5][]{%ax+b=cx ou ax=cx+d
+  \useKVdefault[ClesEquation]%
+  \setKV[ClesEquation]{#1}%
+  \setKV[ClesEquation]{Fleches=false,FlecheDiv=false,Terme=false,Decomposition=false}
+  \ifx\bla#3\bla%on inverse en faisant attention à la boucle #3<->#5
+    \ifx\bla#5\bla%
+      %% paramètre oublié
+    \else
+      \EquaTroisSymbole[#1]{#4}{#5}{#2}{}%
+    \fi
+  \else
+  \xintifboolexpr{#2=0}{%b=cx
+    \EquaBaseSymbole[#1]{#4}{}{}{#3}
+  }{%
+    \xintifboolexpr{#4=0}{%ax+b=0
+      \EquaDeuxSymbole[#1]{#2}{#3}{}{0}
+      }{%ax+b=cx
+        \xintifboolexpr{#2=#4}{%
+          \xintifboolexpr{#3=0}{%ax=ax
+            L'équation $\multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}=\multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}$ a une infinité de solution.}%
+          {%ax+b=ax
+            L'équation $\multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}=\multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}$ n'a aucune solution.%
+          }%
+        }{%% Cas délicat
+          \xintifboolexpr{#2>#4}{%ax+b=cx avec a>c
+            \begin{align*}
+              \multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\multido{\i=1+1}{\fpeval{#4-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\\
+              \mathcolor{Csymbole}{\useKV[ClesEquation]{Lettre}\multido{\i=1+1}{\fpeval{#4-1}}{+\useKV[ClesEquation]{Lettre}}}\multido{\i=1+1}{\fpeval{#2-#4}}{+\useKV[ClesEquation]{Lettre}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Csymbole}{\multido{\i=1+1}{\fpeval{#4-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}}\\              
+              \xdef\Coeffa{\fpeval{#2-#4}}\multido{\i=1+1}{\fpeval{\Coeffa-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=0\\
+              \ifboolKV[ClesEquation]{Bloc}{\Fdash{\mathcolor{Csymbole!30}{$\multido{\i=1+1}{\fpeval{\Coeffa-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}$}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=0\\}{}
+              \xdef\Coeffb{\fpeval{0-#3}}\multido{\i=1+1}{\fpeval{\Coeffa-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}&=\num{\Coeffb}%\\
+              \xintifboolexpr{\Coeffa=1}{}{%\ifnum\cmtd>1
+              \\\useKV[ClesEquation]{Lettre}&=\frac{\num{\Coeffb}}{\num{\Coeffa}}%\\
+                \ifboolKV[ClesEquation]{Entier}{%
+                \SSimpliTest{\Coeffb}{\Coeffa}%
+                \ifboolKV[ClesEquation]{Simplification}{%
+                \ifthenelse{\boolean{Simplification}}{\\\useKV[ClesEquation]{Lettre}&=\SSimplifie{\Coeffb}{\Coeffa}}{}%\\
+                }{}
+                }{}
+                }
+              \end{align*}
+            }{%ax+b=cx+d avec a<c              % Autre cas délicat
+              \begin{align*}%
+                \multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\multido{\i=1+1}{\fpeval{#4-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\\
+                \mathcolor{Csymbole}{\useKV[ClesEquation]{Lettre}\multido{\i=1+1}{\fpeval{#2-1}}{+\useKV[ClesEquation]{Lettre}}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Csymbole}{\useKV[ClesEquation]{Lettre}\multido{\i=1+1}{\fpeval{#2-1}}{+\useKV[ClesEquation]{Lettre}}}\multido{\i=1+1}{\fpeval{#4-#2}}{+\useKV[ClesEquation]{Lettre}}\\
+                \xdef\Coeffb{#3}\xdef\Coeffa{\fpeval{#4-#2}}\xintifboolexpr{#3>0}{\num{#3}}{-\num{\fpeval{0-#3}}}&=\multido{\i=1+1}{\fpeval{\Coeffa-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}% \\
+                \xintifboolexpr{\Coeffa=1}{}{%\ifnum\cmtd>1
+                \\\frac{\num{\Coeffb}}{\num{\Coeffa}}&=\useKV[ClesEquation]{Lettre}%\\
+                \ifboolKV[ClesEquation]{Entier}{%
+                \SSimpliTest{\Coeffb}{\Coeffa}%
+                \ifboolKV[ClesEquation]{Simplification}{%
+                \ifthenelse{\boolean{Simplification}}{\\\SSimplifie{\Coeffb}{\Coeffa}&=\useKV[ClesEquation]{Lettre}}{}%\\
+                }{}
+                }{}
+                }
+              \end{align*}
+            }%
+          }%
+        }%
+      }%
+    \fi
+  }%
+
+
+\newcommand{\ResolEquationSymbole}[5][]{%
+  \useKVdefault[ClesEquation]%
+  \setKV[ClesEquation]{#1}%
+  \setKV[ClesEquation]{Fleches=false,FlecheDiv=false,Terme=false,Decomposition=false}
+  \xintifboolexpr{#2=0}{%
+    \xintifboolexpr{#4=0}{%
+      \xintifboolexpr{#3=#5}{%b=d
+        L'équation $\num{#3}=\num{#5}$ a une infinité de solution.}%
+      {%b<>d
+        L'équation $\num{#3}=\num{#5}$ n'a aucune solution.%
+      }%
+    }%
+    {%0x+b=cx+d$
+      \EquaDeuxSymbole[#1]{#4}{#5}{#2}{#3}%
+    }%
+  }{%
+    \xintifboolexpr{#4=0}{%ax+b=0x+d
+      \EquaDeuxSymbole[#1]{#2}{#3}{}{#5}%
+    }
+    {%ax+b=cx+d$
+      \xintifboolexpr{#3=0}{%
+        \xintifboolexpr{#5=0}{%ax=cx
+          \EquaTroisSymbole[#1]{#2}{0}{#4}{}%
+        }%
+        {%ax=cx+d
+          \EquaTroisSymbole[#1]{#4}{#5}{#2}{}%
+        }%
+      }%
+      {\xintifboolexpr{#5=0}{%ax+b=cx
+          \EquaTroisSymbole[#1]{#2}{#3}{#4}{}%
+        }%
+        {%ax+b=cx+d -- ici
+          \xintifboolexpr{#2=#4}{%
+            \xintifboolexpr{#3=#5}{%b=d
+              L'équation $\multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}=\multido{\i=1+1}{\fpeval{#4-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}$ a une infinité de solution.}%
+            {%b<>d
+              L'équation $\multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}=\multido{\i=1+1}{\fpeval{#4-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}$ n'a aucune solution.%
+            }%
+          }{
+            %% Cas délicat
+            \xintifboolexpr{#2>#4}{%ax+b=cx+d avec a>c
+              \begin{align*}
+                \multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\multido{\i=1+1}{\fpeval{#4-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\\
+                \mathcolor{Csymbole}{\useKV[ClesEquation]{Lettre}\multido{\i=1+1}{\fpeval{#4-1}}{+\useKV[ClesEquation]{Lettre}}}\multido{\i=1+1}{\fpeval{#2-#4}}{+\useKV[ClesEquation]{Lettre}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Csymbole}{\multido{\i=1+1}{\fpeval{#4-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\\
+                \xdef\Coeffa{\fpeval{#2-#4}}\useKV[ClesEquation]{Lettre}\multido{\i=1+1}{\fpeval{\Coeffa-1}}{+\useKV[ClesEquation]{Lettre}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\num{#5}\\
+                \ifboolKV[ClesEquation]{Bloc}{%
+                \Fdash{$\mathcolor{Csymbole!30}{\useKV[ClesEquation]{Lettre}\multido{\i=1+1}{\fpeval{\Coeffa-1}}{+\useKV[ClesEquation]{Lettre}}}$}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\num{#5}\\
+                }{}%
+                \xdef\Coeffb{\fpeval{#5-#3}}\useKV[ClesEquation]{Lettre}\multido{\i=1+1}{\fpeval{\Coeffa-1}}{+\useKV[ClesEquation]{Lettre}}&=\num{\Coeffb}%\\
+                \xintifboolexpr{\Coeffa=1}{}{%\ifnum\cmtd>1
+                \\\useKV[ClesEquation]{Lettre}&=\frac{\num{\Coeffb}}{\num{\Coeffa}}\tikzmark{H-\theNbequa}%\\
+                \ifboolKV[ClesEquation]{Entier}{%
+                \SSimpliTest{\Coeffb}{\Coeffa}%
+                \ifboolKV[ClesEquation]{Simplification}{%
+                \ifthenelse{\boolean{Simplification}}{\\\useKV[ClesEquation]{Lettre}&=\SSimplifie{\Coeffb}{\Coeffa}}{}%\\
+                }{}
+                }{}
+                }
+              \end{align*}
+            }{%ax+b=cx+d avec a<c              % Autre cas délicat
+              \begin{align*}%
+                \multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\multido{\i=1+1}{\fpeval{#4-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\\
+                \mathcolor{Csymbole}{\multido{\i=1+1}{\fpeval{#2-1}}{\useKV[ClesEquation]{Lettre}+}\useKV[ClesEquation]{Lettre}}\xintifboolexpr{#3>0}{+\num{#3}}{-\num{\fpeval{0-#3}}}&=\mathcolor{Csymbole}{\useKV[ClesEquation]{Lettre}\multido{\i=1+1}{\fpeval{#2-1}}{+\useKV[ClesEquation]{Lettre}}}\multido{\i=1+1}{\fpeval{#4-#2}}{+\useKV[ClesEquation]{Lettre}}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\\
+                \xdef\Coeffa{\fpeval{#4-#2}}\num{#3}&=\useKV[ClesEquation]{Lettre}\multido{\i=1+1}{\fpeval{\Coeffa-1}}{+\useKV[ClesEquation]{Lettre}}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\\
+                \ifboolKV[ClesEquation]{Bloc}{%
+                \num{#3}&=\Fdash{$\mathcolor{Csymbole!30}{\useKV[ClesEquation]{Lettre}\multido{\i=1+1}{\fpeval{\Coeffa-1}}{+\useKV[ClesEquation]{Lettre}}}$}\xintifboolexpr{#5>0}{+\num{#5}}{-\num{\fpeval{0-#5}}}\\
+                }{}%
+                \xdef\Coeffb{\fpeval{#3-#5}}\num{\Coeffb}&=\useKV[ClesEquation]{Lettre}\multido{\i=1+1}{\fpeval{\Coeffa-1}}{+\useKV[ClesEquation]{Lettre}}%\\
+                \xintifboolexpr{\Coeffa=1}{}{%\ifnum\cmtd>1
+                \\\frac{\num{\Coeffb}}{\num{\Coeffa}}&=\useKV[ClesEquation]{Lettre}%\\
+                \ifboolKV[ClesEquation]{Entier}{%
+                \SSimpliTest{\Coeffb}{\Coeffa}%
+                \ifboolKV[ClesEquation]{Simplification}{%
+                \ifthenelse{\boolean{Simplification}}{\\\SSimplifie{\Coeffb}{\Coeffa}&=\useKV[ClesEquation]{Lettre}}{}%\\
+                }{}
+                }{}
+                }
+              \end{align*}
+            }%
+          }%
+        }%
+      }%
+    }%
+  }%
+}%
+
+

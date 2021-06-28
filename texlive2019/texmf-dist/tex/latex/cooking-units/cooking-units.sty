@@ -1,0 +1,2926 @@
+%%
+%% This is file `cooking-units.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% cooking-units.dtx  (with options: `package')
+%% Copyright (C) 2016--2018 by Ben Vitecek (current Maintainer)
+%% 
+%% This file may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either
+%% version 1.3c of this license or (at your option) any later
+%% version. The latest version of this license is in:
+%% 
+%% https://ctan.org/license/lppl1.3c
+%% 
+%% and version 1.3c or later is part of all distributions of
+%% LaTeX version 2008-05-04 or later.
+%% 
+%% This work has the LPPL maintenance status `maintained'.
+%% 
+%% This work consists of the files README.md, cooking-units.dtx and cooking-units.ins
+%% and the derived file cooking-units.sty.
+%% 
+\@ifpackageloaded {xparse}
+  { }
+  { \RequirePackage {xparse} }
+\@ifpackageloaded {expl3}
+  { }
+  { \RequirePackage {expl3} }
+\ProvidesExplPackage
+  {cooking-units}
+  {2018/09/24}
+  {1.45}
+  {Ein Paket fuer Kocheinheiten}
+\@ifpackagelater { expl3 } { 2018/08/23 }
+  { }
+  {
+    \PackageError { cooking-units } { Support~package~expl3~too~old }
+      {
+        You~need~to~update~your~installation~of~the~bundles~'l3kernel'~and~
+        'l3packages'.\MessageBreak
+        Loading~cooking-units~will~abort!
+      }
+    \tex_endinput:D
+  }
+\@ifpackageloaded { translations } { } { \RequirePackage { translations } }
+\@ifpackageloaded { xfrac } { } { \RequirePackage { xfrac } }
+\@ifpackageloaded { l3keys2e } { } { \RequirePackage { l3keys2e } }
+\@ifpackagelater { translations } { 2017/08/31 }
+  { }
+  {
+    \PackageError { cooking-units } { Support~package~translations~too~old }
+      {
+        You~need~to~update~your~installation~of~the~package~'translations'.\MessageBreak
+        Loading~cooking-units~will~abort!
+      }
+    \tex_endinput:D
+  }
+\bool_new:N \g__cookingunits_opt_numeral_bool
+\keys_define:nn { cooking-units }
+  {
+    use-numerals .bool_gset:N = \g__cookingunits_opt_numeral_bool ,
+    use-numerals .default:n = { false },
+  }
+\ProcessKeysOptions { cooking-units }
+\bool_if:NT \g__cookingunits_opt_numeral_bool
+  {
+    \@ifpackageloaded { fmtcount } { } { \RequirePackage { fmtcount } }
+  }
+\keys_define:nn { cooking-units }
+  {
+    use-numerals .code:n = { \msg_error:nnn { cooking-units } { load-time-option } { fmtcount } } ,
+  }
+\cs_generate_variant:Nn \tl_replace_all:Nnn { NVn }
+\cs_generate_variant:Nn \tl_replace_once:Nnn { NVn }
+\cs_generate_variant:Nn \tl_if_in:nnTF { nV }
+\cs_generate_variant:Nn \tl_if_in:NnTF { NVTF  }
+\cs_generate_variant:Nn \tl_if_in:NnT { NVT }
+\cs_generate_variant:Nn \fp_compare:nNnT { vNnT }
+\cs_generate_variant:Nn \prop_get:NnN { cVc }
+\cs_generate_variant:Nn \tl_set_rescan:Nnn { NnV }
+\cs_generate_variant:Nn \msg_error:nnnn { nnnV }
+\cs_generate_variant:Nn \msg_error:nnn { nnV }
+\cs_generate_variant:Nn \msg_warning:nnn { nnV }
+\cs_new:Npn \__cookingunits_dim_horizontal:N #1 { \tex_kern:D #1 }
+\cs_new_eq:NN \__cookingunits_frac:nn \sfrac
+\cs_new_eq:NN \__cookingunits_set_amount:Nn \tl_set:Nn
+\cs_new_eq:NN \__cookingunits_set_unit:Nn \tl_set:Nn
+\cs_new:Npn \__cookingunits_print_numeral:n #1 { }
+\cs_new:Npn \__cookingunits_print_Numeral:n #1 { }
+\bool_if:NT \g__cookingunits_opt_numeral_bool
+  {
+    \cs_set_eq:NN \__cookingunits_print_numeral:n \numberstringnum
+    \cs_set_eq:NN \__cookingunits_print_Numeral:n \Numberstringnum
+  }
+\prop_new:N \l__cookingunits_change_unit_prop
+\tl_new:N \l__cookingunits_number_tmpa_tl
+\tl_new:N \l__cookingunits_number_tmpb_tl
+\tl_new:N \l__cookingunits_tmpa_tl
+\tl_new:N \l__cookingunits_tmpb_tl
+\tl_new:N \l__cookingunits_mixed_fraction_tl
+\tl_new:N \l__cookingunits_given_amount_tl
+\tl_new:N \l__cookingunits_given_unit_tl
+\tl_new:N \l__cookingunits_option_unit_tl
+\tl_new:N \l__cookingunits_language_tl
+\tl_new:N \l__cookingunits_cunum_range_sign_tl
+\tl_new:N \l__cookingunits_cutext_range_sign_tl
+\tl_new:N \l__cookingunits_value_unit_space_tl
+\tl_new:N \l__cookingunits_input_digits_tl
+\tl_new:N \l__cookingunits_input_decimal_mark_tl
+\tl_new:N \l__cookingunits_input_value_signs_tl
+\tl_new:N \l__cookingunits_input_allowed_special_signs_tl
+\tl_new:N \c__cookingunits_input_str_hash_one_tl
+\tl_new:N \l__cookingunits_input_range_sign_tl
+\tl_new:N \l__cookingunits_cutext_space_tl
+\tl_new:N \l__cookingunits_cuphrase_space_tl
+\tl_new:N \l__cookingunits_translation_tmpa_tl
+\tl_new:N \l__cookingunits_cutext_last_value_tl
+\tl_new:N \l__cookingunits_phantom_tl
+\tl_new:N \l__cookingunits_phrase_phrase_tl
+\tl_new:N \l__cookingunits_unit_letter_not_allowed_tl
+\tl_new:N \l__cookingunits_input_fraction_sign_tl
+\tl_new:N \l__cookingunits_input_mixed_fraction_sign_tl
+\tl_new:N \l__cookingunits_cunum_hook_tl
+\tl_new:N \l__cookingunits_cutext_hook_tl
+\tl_new:N \l__cookingunits_Cutext_hook_tl
+\tl_new:N \l__cookingunits_cuam_hook_tl
+\tl_set:Nn \l__cookingunits_input_digits_tl { 0123456789 }
+\tl_set:Nn \l__cookingunits_input_range_sign_tl { -- }
+\tl_set:Nn \l__cookingunits_input_fraction_sign_tl { / }
+\tl_set:Nn \l__cookingunits_input_mixed_fraction_sign_tl { _ }
+\tl_set:Nn \l__cookingunits_input_decimal_mark_tl { . , }
+\tl_set:Nn \l__cookingunits_input_value_signs_tl { + - }
+\tl_set:Nn \l__cookingunits_input_allowed_special_signs_tl { ? }
+\tl_set_rescan:Nnn \c__cookingunits_input_str_hash_one_tl
+  { \char_set_catcode_letter:N \# } {#1}
+\tl_set:Nn \l__cookingunits_cunum_range_sign_tl { -- }
+\tl_set:Nn \l__cookingunits_cutext_range_sign_tl {}
+\tl_set:Nn \l__cookingunits_value_unit_space_tl { \thinspace }
+\tl_set:Nn \l__cookingunits_cutext_space_tl { \space }
+\tl_set:Nn \l__cookingunits_cuphrase_space_tl { \space }
+\tl_set:Nn \l__cookingunits_unit_letter_not_allowed_tl { , / }
+\AtBeginDocument {
+  \cs_if_free:cT { T@TS1 }
+    {
+      \DeclareFontEncoding { TS1 } { } { }
+      \DeclareFontSubstitution { TS1 } { cmr } { m } { n }
+    }
+}
+\DeclareTextSymbolDefault \c__cookingunits_minus_tl { TS1 }
+\DeclareTextSymbol \c__cookingunits_minus_tl { TS1 } { 61 }
+\AtBeginDocument {
+  \@ifpackageloaded { fontspec }
+    {
+      \@ifpackageloaded { eulervm }
+        { }
+        {
+          \int_const:Nn \c__cookingunits_minus_int { 8722 }
+          \tl_set:Nn \c__cookingunits_minus_tl
+            { \tex_char:D \c__cookingunits_minus_int }
+        }
+    }
+    { }
+}
+\dim_new:N \l__cookingunits_mixed_frac_dim
+\dim_set:Nn \l__cookingunits_mixed_frac_dim { 0.1 em }
+\int_new:N \l__cookingunits_round_precision_int
+\int_set:Nn \l__cookingunits_round_precision_int { 2 }
+\int_new:N \l__cookingunits_print_numerals_below_int
+\int_set:Nn \l__cookingunits_print_numerals_below_int { 13 }
+\int_new:N \l__cookingunits_local_number_of_persons_int
+\int_new:N \l__cookingunits_wanted_number_of_persons_int
+\int_set:Nn \l__cookingunits_wanted_number_of_persons_int { 4 }
+\int_new:N \l__cookingunits_phrase_number_tl
+\seq_new:N \l__cookingunits_list_of_defined_keys_seq
+\seq_new:N \g__cookingunits_list_of_defined_units_seq
+\seq_new:N \g__cookingunits_allowed_special_keys_seq
+\seq_new:N \l__cookingunits_phrase_numbers_seq
+\seq_new:N \l__cookingunits_temperatures_to_check_seq
+\seq_new:N \l__cookingunits_curef_do_not_change_seq
+\prop_new:N \l__cookingunits_phrase_prop
+\bool_new:N \l__cookingunits_minus_bool
+\bool_new:N \l__cookingunits_round_number_bool
+\bool_new:N \l__cookingunits_error_bool
+\bool_new:N \l__cookingunits_eval_fractions_bool
+\bool_new:N \l__cookingunits_draft_bool
+\bool_new:N \l__cookingunits_round_to_int_bool
+\bool_new:N \l__cookingunits_special_sign_bool
+\bool_new:N \l__cookingunits_single_key_bool
+\bool_new:N \l__cookingunits_check_temperature_bool
+\bool_new:N \l__cookingunits_convert_to_eV_bool
+\bool_new:N \l__cookingunits_cutext_uppercase_word_bool
+\bool_new:N \l__cookingunits_error_for_unknown_value_bool
+\bool_new:N \l__cookingunits_using_cutext_bool
+\bool_new:N \l__cookingunits_cuam_old_bool
+\bool_new:N \l__cookingunits_change_number_of_persons_bool
+\bool_new:N \l__cookingunits_calc_because_ref_was_given_bool
+\bool_new:N \l__cookingunits_lokal_persons_bool
+\bool_new:N \l__cookingunits_cutext_to_cunum_bool
+\bool_new:N \l__cookingunits_cutext_old_bool
+\bool_new:N \l__cookingunits_cutext_keep_unit_bool
+\bool_new:N \l__cookingunits_round_commercial_bool
+\bool_new:N \l__cookingunits_use_phrases_bool
+\bool_new:N \l__cookingunits_lokal_phrase_bool
+\bool_new:N \l__cookingunits_print_numeral_bool
+\bool_new:N \l__cookingunits_lokal_numeral_bool
+\bool_new:N \l__cookingunits_round_precision_positive_bool
+\bool_new:N \l__cookingunits_fourty_two_bool
+\bool_new:N \l__cookingunits_phrase_negative_bool
+\bool_new:N \l__cookingunits_range_in_input_bool
+\bool_new:N \l__cookingunits_lokal_fraction_bool
+\bool_new:N \l__cookingunits_print_fraction_bool
+\bool_new:N \l__cookingunits_lokal_mixed_fraction_bool
+\bool_new:N \l__cookingunits_check_decimal_bool
+\bool_set_false:N \l__cookingunits_cutext_keep_unit_bool
+\bool_set_eq:NN \l__cookingunits_print_numeral_bool \g__cookingunits_opt_numeral_bool
+\quark_new:N \q__cookingunits_range
+\quark_new:N \q__cookingunits_no_translation
+\quark_new:N \q__cookingunits_decimal
+\quark_new:N \q__cookingunits_fraction
+\quark_new:N \q__cookingunits_mixed_fraction
+\fp_new:N \l__cookingunits_tmpa_fp
+\clist_new:N \l__cookingunits_tmpa_clist
+\prop_new:N \l__cookingunits_tmpa_prop
+\prop_new:N \l__cookingunits_tmpb_prop
+\seq_new:N \l__cookingunits_tmpa_seq
+\int_new:N \l__cookingunits_tmpa_int
+\int_new:N \l__cookingunits_tmpb_int
+\keys_define:nn { cooking-units }
+  {
+    add-unit-to-group .code:n =
+      {
+        \keyval_parse:NNn
+          \__cookingunits_unit_group_add_unit_error:n
+          \__cookingunits_unit_group_add_unit:nn
+          {#1}
+      } ,
+    add-unit-to-group .default:n = {} ,
+    set-option-for .code:n =
+      {
+        \keyval_parse:NNn
+          \__cookingunits_set_options_for_error:n
+          \__cookingunits_set_options_for:nn
+          {#1}
+      },
+    add-option-for .code:n =
+      {
+        \keyval_parse:NNn
+          \__cookingunits_add_options_for_error:n
+          \__cookingunits_add_options_for:nn
+          {#1}
+      },
+    erase-all-options .code:n =
+      {
+        \seq_map_inline:Nn \g__cookingunits_list_of_defined_units_seq
+          {
+            \clist_clear:c { l__cookingunits_predefined_option_ ##1 _clist }
+          }
+        },
+    erase-all-options .value_forbidden:n = { true } ,
+    erase-all-options-for .code:n =
+      {
+        \keyval_parse:NNn
+          \__cookingunits_erase_options_for:n
+          \__cookingunits_erase_options_for_error:nn
+          {#1}
+      },
+    erase-all-options-for  .value_required:n = { true } ,
+    cutext-to-cunum .bool_set:N = \l__cookingunits_cutext_to_cunum_bool ,
+    cutext-to-cunum .default:n = { false } ,
+    cutext-to-cunum .groups:n = { change-command } ,
+    cutext-change-unit .bool_set_inverse:N = \l__cookingunits_cutext_keep_unit_bool ,
+    cutext-change-unit .default:n = { true } ,
+    cutext-change-unit .groups:n = { change-unit } ,
+    cuam-version .choices:nn =
+      { new , old }
+      {
+        \int_case:nn { \l_keys_choice_int }
+          {
+            { 1 } { \bool_set_false:N \l__cookingunits_cuam_old_bool }
+            { 2 } { \bool_set_true:N \l__cookingunits_cuam_old_bool }
+          }
+      } ,
+    cuam-version .default:n = { new } ,
+    cutext-version .choices:nn =
+      { new , old }
+      {
+        \int_case:nn { \l_keys_choice_int }
+          {
+            { 1 } { \bool_set_false:N \l__cookingunits_cutext_old_bool }
+            { 2 } { \bool_set_true:N \l__cookingunits_cutext_old_bool }
+          }
+      } ,
+    cutext-version .default:n = { new } ,
+    expand-both .choices:nn =
+      { n , o , f , x }
+      {
+        \cs_set_eq:Nc \__cookingunits_set_unit:Nn { tl_set:N \l_keys_choice_tl }
+        \cs_set_eq:Nc \__cookingunits_set_amount:Nn { tl_set:N \l_keys_choice_tl }
+      } ,
+    expand-both .default:n = { n } ,
+    expand-amount .choices:nn =
+      { n , o , f , x }
+      {
+        \cs_set_eq:Nc \__cookingunits_set_amount:Nn { tl_set:N \l_keys_choice_tl }
+      } ,
+    expand-amount .default:n = { n } ,
+    expand-unit .choices:nn =
+      { n , o , f , x }
+      {
+        \cs_set_eq:Nc \__cookingunits_set_unit:Nn { tl_set:N \l_keys_choice_tl }
+      } ,
+    expand-unit .default:n = { n } ,
+    set-special-sign .code:n =
+      {
+        \tl_map_inline:nn {#1}
+          {
+            \str_if_eq:nnT {##1} { < }
+              {
+                \msg_error:nn { cooking-units } { <-not-allowed-as-special-sign }
+                \tl_map_break:n { \use_none:nn }
+              }
+          }
+        \use:n { \tl_set:Nn  \l__cookingunits_input_allowed_special_signs_tl {#1} }
+      } ,
+    add-special-sign .code:n =
+      {
+        \tl_map_inline:nn {#1}
+          {
+            \str_if_eq:nnTF {##1} { < }
+              {
+                \msg_error:nn { cooking-units } { <-not-allowed-as-special-sign }
+              }{
+                \tl_put_right:Nn  \l__cookingunits_input_allowed_special_signs_tl {##1}
+              }
+          }
+      } ,
+    add-special-sign .default:n = { } ,
+    set-unknown-message .choices:nn =
+      { error , warning , none }
+      {
+        \msg_redirect_name:nnn { cooking-units } { amount-not-known }
+          { \l_keys_choice_tl }
+      } ,
+    set-unknown-message .default:n = { warning } ,
+    set-cutext-translation-message .choices:nn =
+      { error , warning , none }
+      {
+        \msg_redirect_name:nnn { cooking-units } { cutext-no-translation-available }
+          { \l_keys_choice_tl }
+      } ,
+    set-cutext-translation-message .default:n = { warning } ,
+    print-numerals .bool_set:N = \l__cookingunits_print_numeral_bool ,
+    print-numerals .default:n = { true } ,
+    use-numerals-below .int_set:N = \l__cookingunits_print_numerals_below_int ,
+    use-numerals-below .default:n = { 13 } ,
+    parse-number .bool_set_inverse:N = \l__cookingunits_draft_bool ,
+    parse-number .default:n= { true } ,
+    range-sign .meta:n =
+      {
+        cunum-range-sign = {#1} ,
+        cutext-range-sign = {#1}
+      } ,
+    range-sign .default:n = { -- } ,
+    cunum-range-sign .tl_set:N = \l__cookingunits_cunum_range_sign_tl ,
+    cunum-range-sign .default:n = { -- } ,
+    cutext-range-sign .tl_set:N = \l__cookingunits_cutext_range_sign_tl ,
+    cutext-range-sign .default:n = { -- } ,
+    use-phrases .bool_set:N = \l__cookingunits_use_phrases_bool ,
+    use-phrases .default:n = { true } ,
+    round-precision .code:n =
+      {
+        \int_set:Nn \l__cookingunits_round_precision_int {#1}
+        \int_compare:nNnTF {#1} < { 0 }
+          { \bool_set_false:N \l__cookingunits_round_precision_positive_bool }
+          { \bool_set_true:N \l__cookingunits_round_precision_positive_bool }
+      } ,
+    round-precision .default:n = { 2 } ,
+    round-to-int .bool_set:N = \l__cookingunits_round_to_int_bool ,
+    round-to-int .default:n = { false } ,
+    round-half .choices:nn =
+      { default , commercial }
+      {
+        \int_case:nn { \l_keys_choice_int }
+          {
+            { 1 } { \bool_set_false:N \l__cookingunits_round_commercial_bool }
+            { 2 } { \bool_set_true:N \l__cookingunits_round_commercial_bool }
+          }
+      },
+    round-half .default:n = { default },
+    eval-fraction .bool_set:N = \l__cookingunits_eval_fractions_bool ,
+    eval-fraction .default:n = { false } ,
+    fraction-command .code:n = { \cs_set_eq:NN \__cookingunits_frac:nn #1 } ,
+    fraction-command .default:n = { \sfrac } ,
+    fraction-inline .code:n = { \cs_set:Npn \__cookingunits_frac:nn ##1##2 {#1} } ,
+    fraction-inline .default:n = { \sfrac {#1} {#2} } ,
+    mixed-fraction-space .dim_set:N = \l__cookingunits_mixed_frac_dim ,
+    mixed-fraction-space .default:n = { 0.1 em } ,
+    cutext-space .tl_set:N = \l__cookingunits_cutext_space_tl ,
+    cutext-space .default:n = { \space } ,
+    phrase-space .tl_set:N = \l__cookingunits_cuphrase_space_tl ,
+    phrase-space .default:n = { \space } ,
+    amount-unit-space .tl_set:N = \l__cookingunits_value_unit_space_tl ,
+    amount-unit-space .default:n = { \thinspace } ,
+    recalculate-amount .bool_set:N = \l__cookingunits_change_number_of_persons_bool ,
+    recalculate-amount .default:n = { false } ,
+    set-number-of-persons .int_set:N = \l__cookingunits_wanted_number_of_persons_int ,
+    set-number-of-persons .default:n = { 4 } ,
+    label .code:n = \__cookingunits_label_and_persons:n {#1} ,
+    label .value_required:n = { true } ,
+    get-label .code:n = \__cookingunits_curef:n {#1} ,
+    label .value_required:n = { true } ,
+    ref .code:n = \__cookingunits_reference_label_and_persons:n {#1} ,
+    ref .value_required:n = { true } ,
+    check-temperature .bool_set:N = \l__cookingunits_check_temperature_bool ,
+    check-temperature .default:n = { true } ,
+    add-temperature-to-check .code:n =
+      {
+        \keyval_parse:NNn
+          \__cookingunits_temperature_to_check_print_error:n
+          \__cookingunits_temperatures_to_check_define:nn
+          {#1}
+      } ,
+    temperature-to-check .value_required:n = { true } ,
+    convert-to-eV .bool_set:N = \l__cookingunits_convert_to_eV_bool ,
+    convert-to-eV .default:n = { true } ,
+    convert-to-eV .groups:n = { change-unit } ,
+    add-natural-unit .code:n =
+      {
+        \__cookingunits_error_if_unit_not_defined:n {#1}
+        \seq_set_from_clist:Nn \l__cookingunits_tmpa_seq {#1}
+        \seq_concat:NNN \g__cookingunits_natural_units_seq \g__cookingunits_natural_units_seq \l__cookingunits_tmpa_seq
+        \seq_remove_duplicates:N \g__cookingunits_natural_units_seq
+      } ,
+    add-natural-unit .value_required:n = { true } ,
+    42 .choice: ,
+    42 / true .code:n = { \bool_set_true:N \l__cookingunits_fourty_two_bool } ,
+    42 / false .code:n = { \msg_fatal:nnn { cooking-units } { 42-is-...-wrong? } } ,
+    42 .default:n = { true } ,
+    input-range-sign .tl_set:N = \l__cookingunits_input_range_sign_tl ,
+    input-range-sign .default:n = { -- } ,
+    numeral-function .code:n = { \cs_set_eq:NN \__cookingunits_print_numeral:n #1 } ,
+    Numeral-function .code:n = { \cs_set_eq:NN \__cookingunits_print_Numeral:n #1 } ,
+    commands-add-hook .meta:n =
+      {
+        cunum-add-hook =  {#1} ,
+        cutext-add-hook =  {#1} ,
+        Cutext-add-hook =  {#1} ,
+        cuam-add-hook =  {#1} ,
+      } ,
+    cunum-add-hook .code:n = { \tl_put_right:Nn \l__cookingunits_cunum_hook_tl {#1} } ,
+    cutext-add-hook .code:n = { \tl_put_right:Nn \l__cookingunits_cutext_hook_tl {#1} } ,
+    Cutext-add-hook .code:n = { \tl_put_right:Nn \l__cookingunits_Cutext_hook_tl {#1} } ,
+    cuam-add-hook .code:n = { \tl_put_right:Nn \l__cookingunits_cuam_hook_tl {#1} } ,
+  curef-add-forbidden-unit .code:n =
+    {
+      \seq_set_from_clist:Nn \l__cookingunits_tmpa_seq {#1}
+      \seq_map_inline:Nn \l__cookingunits_tmpa_seq
+        {
+          \seq_if_in:NnF \l__cookingunits_curef_do_not_change_seq {##1}
+            { \seq_put_right:Nn \l__cookingunits_curef_do_not_change_seq {##1} }
+        }
+    } ,
+  curef-add-forbidden-unit .default:n = { } ,
+  curef-remove-forbidden-unit .code:n =
+    {
+      \seq_set_from_clist:Nn \l__cookingunits_tmpa_seq {#1}
+      \seq_map_inline:Nn \l__cookingunits_tmpa_seq
+        {
+          \seq_if_in:NnTF \l__cookingunits_curef_do_not_change_seq {##1}
+            { \seq_remove_all:Nn \l__cookingunits_curef_do_not_change_seq {##1} }
+            {
+              \msg_warning:nnn { cooking-units } { curef-not-inside-list } {##1}
+                { \seq_use:Nnnn \l__cookingunits_curef_do_not_change_seq { ',~ ' } { ',~ ' } { ' ~ and ~ ' } }
+            }
+        }
+    } ,
+  curef-remove-forbidden-unit .default:n = { } ,
+  curef-clear-forbidden-units .choice: ,
+  curef-clear-forbidden-units/true .code:n = { \seq_clear:N \l__cookingunits_curef_do_not_change_seq } ,
+  curef-clear-forbidden-units/false .code:n = { } ,
+  curef-clear-forbidden-units .value_required:n = true,
+  }
+\msg_new:nnnn { cooking-units } { fraction-not-allowed-with-range }
+  {
+    You \ cannot \ use \ '/' \ ( and  \ '_' )\ in \ combination \
+    with \ '\l__cookingunits_input_range_sign_tl' \ in \  '#1'.
+  }{
+    You \ cannot \ use \ fractions \ with \ a \ range.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { missing-slash }
+  {
+    You \ cannot \ use \ '_'  \ without \
+    '/' \ in \  '#1'.
+  }{
+    You \ cannot \ have \ a \ mixed \ fraction \ ('_') \ without \
+    a \ normal \ fraction \ ('/').
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { fraction-wrong-order }
+  {
+    You \ cannot \ use \ '/'  \ before \ '_' \ in \ '#1'.
+  }{
+    You \ can \ only \ use \ '_' \ before \ '/'.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { unknown-unit }
+  {
+    The \ unit \ '#1' \ is \ not \ defined. \ Use \
+    \newcookingunit ~ (or \ one \ of \ the \ others) \ to \
+    define \ new \ units.
+  }{
+    Define \ units \ before \ using \ or \ check \ if \ the \
+    unit-key \ is \ written \ correctly.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { unit-already-defined }
+  { The\ unit \ '#1' \ is \ already \ defined. }
+  {
+    The \ unit-key \ is \ already \ defined. \ Please \ use \ a \ different \
+    key \ for \ a \ new \ unit.
+    \msg_see_documentation_text:n {cooking-units}
+  }
+\msg_new:nnnn { cooking-units } { character-not-allowed }
+  {
+    Unit-keys \ are \ not \ allowed \ to \ either \ contain \ ',' \ or \ '/' \
+    in \ '#1'.
+  }{
+    The \ unit-key \ is \ not \ allowed \ to \ contain \ ',' \ or \ '/'. \
+    Due \ to \ internal \ reasons.
+    \msg_see_documentation_text:n {cooking-units}
+  }
+\msg_new:nnnn { cooking-units } { missing-argument }
+  { There \ is \ a \ missing \ argument. }
+  {
+    You \ probably \ have \ forgotten \ a \ curly-brace \ pair.
+    \msg_see_documentation_text:n {cooking-units}
+  }
+\msg_new:nnnn { cooking-units } { Division-by-zero }
+  { Division\ by \ zero \ is \ not \ allowed \ in \ '#1'. }
+  { See \ a \ math \ book \ of \ your \ choice \ or \ for \ example \ Wikipedia. }
+\msg_new:nnnn { cooking-units } { Token-not-allowed }
+  { The \ token \ '#1' \ is \ not \ allowed \ in \ '#2'. }
+  {
+    The \ command \ accepts \ only \ a \ fixed \ number \ of \ tokens.
+    \msg_see_documentation_text:n {cooking-units}
+  }
+\msg_new:nnnn { cooking-units } { Second-decimal-sign-not-allowed }
+  { A \ second \ decimal \ sign \ is \ not \ allowed \ in \ '#1'. }
+  {
+    Perhaps \ you \ didn't \ type \ it \ correctly.
+    \msg_see_documentation_text:n {cooking-units}
+  }
+\msg_new:nnnn { cooking-units } { Second-fraction-sign-not-allowed }
+  { A \ second  \ fraction \ sign \ is \ not \ allowed \ in \ '#1'. }
+  {
+    Perhaps \ you \ didn't \ type \ it \ correctly.
+    \msg_see_documentation_text:n {cooking-units}
+  }
+\msg_new:nnnn { cooking-units } { Second-mixed-fraction-sign-not-allowed }
+  { A \ second  \ mixed \ fraction \ sign \ is \ not \ allowed \ in \ '#1'. }
+  {
+    Perhaps \ you \ didn't \ type \ it \ correctly.
+    \msg_see_documentation_text:n {cooking-units}
+  }
+\msg_new:nnnn { cooking-units } { Key-not-defined }
+  {
+    The \ key \ '#1' \ is \ not \ defined. \ Use \ \cudefinekeys ~ or \
+    \cudefinesinglekey ~ to \ define \ keys.
+  }
+  {
+    This \ key \ is \ not \ defined, \ perhaps \ you  \ misspelled \ it.
+    \msg_see_documentation_text:n {cooking-units}
+  }
+\msg_new:nnnn { cooking-units } { Temperature-too-low }
+  {
+    The \ temperature \ '#1' \ is \ too \ low.\ It \ cannot \ be \
+    below \ the \ absolute \ zero - point \ of \ '#2'. \ Note \ that \
+    the \ temperatures \
+    '\seq_use:Nnnn \l__cookingunits_temperatures_to_check_seq
+      { ', ~ ' } { ', ~ ' } { ' ~ and ~ ' }' \
+    are \ rounded \ to \ integers \ by \ default.
+    \\\\
+    You \ can \ disable \ the \ option \ 'check-temperature' \ to \
+    disable \ this \ error.
+  }
+  { See \ for \ example \ Wikipedia. }
+\msg_new:nnnn { cooking-units } { key-choice-unknown }
+  {
+    The \ key \ '#1' \ only \ accepts \ only \
+    '#3' \ as \ a \ set \ of \ choices \ and \ '#2' \ is \ non \ of \ these.
+  }{
+    The \ key \ accepts \ only \ a \ fixed \ set \ of \ choices. \
+    You \ can \ add \ new \ choices \ via \ \cuaddkeys, ~ \cuaddsinglekeys ~
+    and \ \cuaddtokeys.
+    \msg_see_documentation_text:n {cooking-units}
+  }
+\msg_new:nnnn { cooking-units } { group-choice-not-allowed }
+  {
+    The \ group \ key \ '#1' \ accepts \ only \
+    '#3' \ as \ a \ set \ of \ choices \ and \ '#2' \ is \ non \ of \ these.
+  }{
+    The \ key \ accepts\ only \ a \ fixed \ set \ of \ choices. \
+    You \ can \ add \ new \ choices \ via \ option \ 'add-unit-to-group'.
+    \msg_see_documentation_text:n {cooking-units}
+  }
+\msg_new:nnnn { cooking-units } { amount-not-known }
+  {
+    The \ amount \  '#1' \ is \ not \ known \ at \ line \
+    \msg_line_number: .
+  }
+  {
+    You \ used\  a\  special\  sign\  indicating\  that\  the\  true\  amount\  of\  the\
+    specific\  ingredient\  is\  (was) \ not\  known\  to\  you. This\  message\
+    reminds\  you\  about\  that\  fact.
+    \msg_see_documentation_text:n {cooking-units}
+  }
+\msg_new:nnnn { cooking-units } { group-key-unknown }
+  {
+    The \ group \ key \ '#1' \ is \ not \ defined. \ Perhaps
+    \ you \ misspelled \ it?
+  }{
+    The \ group \ key \ is \ not \ defined.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { load-time-option }
+  {
+    The \ option \ '#1' \ is \ only \ available \ as \ a \ load-time-option. \
+    Please \ set \ it \ as \ a \ package \ option.
+  }
+  {
+    You \ cannot \ set \ this \ option \ using \ \cusetup ~
+    but \ only \ as \ a \ package \ option.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { obsolete-command }
+  {
+    Command \ #1 is \ obsolete. \ Please \ use \ #2 instead.
+  }{
+    Don't \ use \ this \ old \ command \ ...
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { No-Value-given }
+  {
+    Please \ input \ a \ value \ for \ the \ key-value \ list \ in \ '#1'
+  }
+  {
+    Each \ element \ of \ the \ list \ needs \ a \ value.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { Value-not-allowed }
+  {
+    The \ key-list \ in \ '#1' \ does \ not \ take \ a \ value.
+  }
+  {
+    This \ key-list \ does \ not \ take \ a \ value. \ The \
+    given \ value \ will \ be \ ignored.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { Minimum-already-defined }
+  {
+    A \ minimum \ for \ '#1' \ has \ already \ been \  defined.
+  }{
+    You \ cannot \ redefine \ it.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { Number-of-persons-missing }
+  {
+    Please \ add \ the \ number \ of \ persons \ this \ recipe \ is \ for \ in \ '#1'. \
+    Note \ that\ the \ number \ must \ be \ given \ after \ a \ '*'.
+  }
+  {
+    Write \ 'Schweinsbraten*4' \ to \ create \ the \ label \ 'Schweinsbraten' \
+    which \ is \ initially \ for \ 4 \ persons.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { Number-of-persons-is-not-an-integer }
+  {
+    The \ number \ of \ persons \ the \ recipe \ is \ for \ must \ be \ an \
+    integer. \ '#1' \ is \ not \ allowed.
+  }
+  {
+    The \ number \ '#1' \ is \ not \ allowed.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { label-already-defined }
+  {
+    The \ label \ '#1' \ has \ already \ been \ defined.
+  }{
+    Each \ label \ must \ be \ unique.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { label-not-defined }
+  {
+    The \ label \ '#1' \ is \ not \ defined. \ Please \ note \ that \ a \ label
+    \ has \ to \ defined \ before \ it \ is \ referenced.
+  }{
+    Define \ the \ label \ before \ using \ it.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { redefine-unit }
+  {
+    The \ unit \ '#1' \ is \ redefined \ by \ \declarecookingunit ~ at \
+    \msg_line_context: .
+  }{
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { phrase-unit-not-an-integer }
+  {
+    A \ phrase \ must \ be \ an \ integer,  \ '#1' \ is \ not \ allowed.
+  }{
+    You \ can \ only \ use \ integers.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { cutext-no-translation-available }
+  {
+    For \ the \ unit \ '#1' \ there \ exists \ no \ translation \ to \ be \ used \
+    for \ \cutext ~ and \ \Cutext. \
+    You \ can \ define \ new \ translations \ for \ a \ given \ language \ using \
+    \cudefinename.
+  }
+  {
+    \cunum ~ is \ used \ instead.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { Translation-not-available }
+  {
+    The \ translation \ for \ #1 \ does \ not \ exist.
+    Please \ define \ it \ using \ \cudefinename.
+  }
+  {
+    And \ you \ may \ send \ me \ the \ translation \ as \ it \ is \
+    not \ available \ yet.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { <-not-allowed-as-special-sign }
+  {
+    Currently \ (and \ probably \ forever) \ the \ sign \ '<' \
+    is \ not \ allowed \ to \ be \ used \ as \ a \ special \ sign.
+  }
+  {
+    I \ apologize \ for \ the \ inconvenience.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { unknown-gender }
+  {
+    '#1' \ is \ not \ allowed \ to \ be \ used \ as \ a \ gender-specification.
+    Only \ 'm', \ 'f' \ or \ 'n' \ are \ allowed.
+  }{
+    Please \ remove \ spaces \ if \ there \ are \ some.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { curef-not-inside-list }
+  {
+   '#1' \ cannot \ be \ removed \ from \ the \ 'forbidden \ unit' \ list \ because
+   \ it \ is \ not \ inside \ the \ list.
+  }{
+    Currently \ the \ list\ contains \ '#2'.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { curef-forbidden-unit }
+  {
+   The \ amount \  of \ '#1' \ cannot \ be \ changed \ using \ cooking-units` \ label \ \& \ ref \ feature.
+  }{
+    You \ can \ remove \ the \ unit \ using \ 'curef-remove-forbidden-unit'.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { 42-is-...-wrong? }
+  {
+   You \ requested \ to \ set  \ 42 \ to \ 'false'. \ This \ doesn't \ make
+   \ any \ sense! \ It \ cannot \ be \ 'false', \ it \ is \ the \ answer \ to \ the
+   \ question \ of \ life, \ universe \ and \ everything. \ For \ the \ sake \ of \
+   the \ world \ I \ cannot \ allow \ you \ to \ set \ it \ to \ 'false', \ the \ universe
+   \ might \ explode \ otherwise. \\
+   The \ run \ will \ be \ aborted.
+  }{
+    Phew ... \ this \ might \ have \ ended \ disastrous.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\msg_new:nnnn { cooking-units } { internal-error }
+  {
+   This \ error \ shouldn't \ show. \ This \ means \ I
+   \ (the \ package \ author) \  screwed
+   \ up.
+  }{
+    Please \ send \ me \ a \ bug \ report.
+    \msg_see_documentation_text:n { cooking-units }
+  }
+\cs_new:Npn \__cookingunits_error_if_unit_not_defined:n #1
+  {
+    \seq_if_in:NnF \g__cookingunits_list_of_defined_units_seq {#1}
+      { \msg_error:nnn { cooking-units } { unknown-unit } {#1} }
+  }
+\cs_generate_variant:Nn \__cookingunits_error_if_unit_not_defined:n { V }
+\prg_new_protected_conditional:Npnn \__cookingunits_if_integer:n #1 { TF , F }
+  {
+    \tl_map_inline:nn {#1}
+      {
+        \tl_if_in:NnF \l__cookingunits_input_digits_tl {##1}
+          {
+            \tl_map_break:n { \use_iii:nnn }
+          }
+      }
+    \use_i:nn \prg_return_true: \prg_return_false:
+  }
+\cs_generate_variant:Nn \__cookingunits_if_integer:nTF { V }
+\cs_generate_variant:Nn \__cookingunits_if_integer:nF { V }
+\cs_new:Npn \__cookingunits_bool_set_if_integers:NNN #1#2#3
+  {
+    \__cookingunits_if_integer:VTF #2
+      { \bool_set_true:N #1 }
+      { \bool_set_false:N #1 }
+    \bool_lazy_and:nnT
+      { \l__cookingunits_range_in_input_bool } {#1}
+      {
+        \__cookingunits_if_integer:VF #3
+          { \bool_set_false:N #1 }
+      }
+  }
+\prg_new_conditional:Npnn \__cookingunits_fp_if_equal_one:n #1 { TF }
+  {
+    \fp_compare:nNnTF {#1} = { 1.0 }
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
+\prg_new_conditional:Npnn \__cookingunits_int_if_equal_one:n #1 { TF }
+  {
+    \int_compare:nNnTF {#1} = { 1 }
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
+\prg_new_conditional:Npnn \__cookingunits_change_cutext_to_cunum:n #1 { TF }
+  {
+    \keys_set_groups:nnn { cooking-units } { change-command } {#1}
+    \bool_if:NTF \l__cookingunits_cutext_to_cunum_bool
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
+\cs_new:Npn \__cookingunits_check_if_correct_gender_input:n #1
+  {
+    \str_case:nnF {#1}
+      {
+        { m } { }
+        { f } { }
+        { n } { }
+      } { \msg_error:nnn { cooking-units } { unknown-gender } {#1} }
+  }
+\cs_new:Npn \__cookingunits_define_unit_group:nn #1#2
+  {
+    \seq_new:c { l__cookingunits_group_ #1 _seq }
+    \seq_set_from_clist:cn { l__cookingunits_group_ #1 _seq } {#2}
+    \keys_define:nn { cooking-units }
+      {
+        #1 .code:n = { \__cookingunits_unit_group_convert_units:nn {#1} {##1} } ,
+        #1 .groups:n = { change-unit } ,
+      }
+  }
+\cs_new:Npn \__cookingunits_error_if_group_not_defined:n #1
+  {
+    \seq_if_exist:cF { l__cookingunits_group_ #1 _seq }
+      { \msg_error:nn { cooking-units} { group-key-unknown } }
+  }
+\cs_new:Npn \__cookingunits_unit_group_convert_units:nn #1#2
+  {
+    \__cookingunits_error_if_group_not_defined:n {#1}
+    \__cookingunits_error_if_unit_not_defined:n {#2}
+    \seq_if_in:cnTF { l__cookingunits_group_ #1 _seq } {#2}
+      {
+        \seq_map_inline:cn { l__cookingunits_group_ #1 _seq }
+          { \__cookingunits_keys_set:nnn { cooking-units } {##1} {#2} }
+      }{
+        \msg_error:nnxxx
+          { cooking-units }
+          { group-choice-not-allowed }
+          {#1}
+          {#2}
+          { \seq_use:cnnn { l__cookingunits_group_ #1 _seq } { ',~ ' } { ',~ ' } { ' ~ and ~ ' } }
+      }
+  }
+\__cookingunits_define_unit_group:nn { weight } { kg , dag, g, oz, lb, stick }
+\__cookingunits_define_unit_group:nn { length } { m , dm , cm , mm , in }
+\__cookingunits_define_unit_group:nn { volume } { l , dl , cl  , ml }
+\__cookingunits_define_unit_group:nn { temperature } { C , F , K , Re }
+\__cookingunits_define_unit_group:nn { energy } { cal, kcal , J , kJ , eV }
+\__cookingunits_define_unit_group:nn { time } { d , h , min , s }
+\cs_new:Npn \__cookingunits_unit_group_add_unit_error:n #1
+  {
+    \msg_error:nnn { cooking-units } { No-Value-given } { add-unit-to-group }
+  }
+\cs_new:Npn \__cookingunits_unit_group_add_unit:nn #1#2
+  {
+     \__cookingunits_error_if_group_not_defined:n {#1}
+     \clist_map_inline:nn {#2}
+       {
+         \__cookingunits_error_if_unit_not_defined:n {##1}
+         \seq_if_in:cnF { l__cookingunits_group_ #1 _seq } {##1}
+           { \seq_put_right:cn { l__cookingunits_group_ #1 _seq } {##1} }
+       }
+  }
+\seq_new:N \g__cookingunits_natural_units_seq
+\prop_new:N \g__cookingunits_convert_to_eV_remember_prop
+\seq_set_from_clist:Nn \g__cookingunits_natural_units_seq
+  {
+    eV ,
+    eVc-2 ,
+    hbareV-1 ,
+    chbareV-1 ,
+    (chbareV-1)3 ,
+  }
+\cs_new:Npn \__cookingunits_keys_set:nnn #1#2#3
+  {
+    \keys_set:nn {#1} { #2 = #3 }
+  }
+\cs_generate_variant:Nn \__cookingunits_keys_set:nnn { nVV , nVn }
+\cs_new:Npn \__cookingunits_convert_to_eV:
+  {
+    \prop_if_exist:cT { l__cookingunits_cukeys_ \l__cookingunits_given_unit_tl _prop }
+      {
+        \prop_get:NVNTF \g__cookingunits_convert_to_eV_remember_prop
+          \l__cookingunits_given_unit_tl \l__cookingunits_tmpa_tl
+          {
+            \__cookingunits_keys_set:nVV { cooking-units } \l__cookingunits_given_unit_tl \l__cookingunits_tmpa_tl
+          }{
+            \prop_get:cnNT { l__cookingunits_cukeys_ \l__cookingunits_given_unit_tl _prop } { Liste } \l__cookingunits_tmpa_seq
+              {
+                \seq_map_inline:Nn \g__cookingunits_natural_units_seq
+                  {
+                    \seq_if_in:NnT \l__cookingunits_tmpa_seq {##1}
+                      {
+                        \prop_gput:NVn \g__cookingunits_convert_to_eV_remember_prop
+                          \l__cookingunits_given_unit_tl {##1}
+                        \__cookingunits_keys_set:nVn { cooking-units } \l__cookingunits_given_unit_tl {##1}
+                        \seq_map_break:
+                      }
+                  }
+              }
+          }
+      }
+  }
+\cs_new:Npn \__cookingunits_tl_eval:Nn #1#2 { \tl_set:Nf #1 { \fp_eval:n {#2} } }
+\cs_generate_variant:Nn \__cookingunits_tl_eval:Nn { Nv }
+\prg_new_conditional:Npnn \__cookingunits_change_unit: { TF }
+  {
+    \bool_lazy_any:nTF
+      {
+        { \l__cookingunits_lokal_fraction_bool }
+        { \l__cookingunits_special_sign_bool }
+        { \l__cookingunits_draft_bool }
+      }
+      { \prg_return_false: }
+      { \prg_return_true: }
+  }
+\cs_new:Npn \__cookingunits_temperature_to_check_print_error:n #1
+  {
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \msg_error:nnn { cooking-units } { No-Value-given } { add-temperature-to-check }
+  }
+\cs_new:Npn \__cookingunits_temperatures_to_check_define:nn #1#2
+  {
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \fp_if_exist:cTF { c__cookingunits_ #1 _min_fp }
+      { \msg_warning:nnn { cooking-units } { Minimum-already-defined } {#1} }
+      {
+        \seq_put_right:Nn \l__cookingunits_temperatures_to_check_seq {#1}
+        \fp_const:cn { c__cookingunits_ #1 _min_fp } {#2}
+      }
+  }
+\cs_new:Npn \__cookingunits_erase_options_for:n #1
+  {
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \clist_clear:c { l__cookingunits_predefined_option_ ##1 _clist }
+  }
+\cs_new:Npn \__cookingunits_erase_options_for_error:nn #1#2
+  {
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \msg_error:nnn { cooking-units } { Value-not-allowed } { erase-all-options-for }
+  }
+\cs_new:Npn \__cookingunits_set_options_for_error:n  #1
+  {
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \msg_error:nnn { cooking-units } { No-Value-given } { set-option-for }
+  }
+\cs_new:Npn \__cookingunits_set_options_for:nn #1#2
+  {
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \clist_set:cn { l__cookingunits_predefined_option_#1_clist } {#2}
+  }
+\cs_new:Npn \__cookingunits_add_options_for_error:n #1
+  {
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \msg_error:nnn { cooking-units } { No-Value-given } { add-option-for }
+  }
+\cs_new:Npn \__cookingunits_add_options_for:nn #1#2
+  {
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \clist_put_right:cn { l__cookingunits_predefined_option_ #1 _clist } {#2}
+  }
+\cs_new:Npn \__cookingunits_rounding_function:n #1
+  {
+    #1
+      \bool_if:NTF \l__cookingunits_round_to_int_bool
+        { , 0 }
+        { , \l__cookingunits_round_precision_int }
+      \bool_if:NT \l__cookingunits_round_commercial_bool
+        { , #1 }
+  }
+\cs_new:Npn \__cookingunits_label_and_persons:n #1
+  {
+    \tl_if_in:nnTF {#1} { * }
+      {
+        \__cookingunits_label_and_persons_times_persons:ww #1 \q_stop
+      }{
+        \msg_error:nnn { cooking-units} { Number-of-persons-missing } {#1}
+      }
+  }
+\cs_new:Npn \__cookingunits_label_and_persons_times_persons:ww #1 * #2 \q_stop
+  {
+    \__cookingunits_culabel:nn {#1} {#2}
+  }
+\cs_new:Npn \__cookingunits_culabel:nn #1#2
+  {
+    \int_if_exist:cTF { g__cookingunits_number_of_persons_ #1 _int }
+      {
+        \msg_error:nnn { cooking-units } { label-already-defined } {#1}
+      }{
+        \__cookingunits_if_integer:nTF {#2}
+          {
+            \int_new:c { g__cookingunits_number_of_persons_ #1 _int }
+            \int_gset:cn { g__cookingunits_number_of_persons_ #1 _int } {#2}
+          }
+          { \msg_error:nnn { cooking-units } { Number-of-persons-is-not-an-integer } {#2} }
+      }
+  }
+\cs_new:Npn \__cookingunits_reference_label_and_persons:n #1
+  {
+    \int_if_exist:cTF { g__cookingunits_number_of_persons_ #1 _int }
+      {
+        \bool_set_true:N \l__cookingunits_calc_because_ref_was_given_bool
+        \int_set_eq:Nc \l__cookingunits_local_number_of_persons_int
+          { g__cookingunits_number_of_persons_ #1 _int }
+      }
+      { \msg_error:nnn { cooking-units } { label-not-defined } {#1} }
+  }
+\cs_new:Npn \__cookingunits_curef:n #1
+  {
+    \int_if_exist:cTF { g__cookingunits_number_of_persons_ #1 _int }
+      {
+        \bool_if:NTF \l__cookingunits_change_number_of_persons_bool
+          { \int_use:N \l__cookingunits_wanted_number_of_persons_int }
+          { \int_use:c { g__cookingunits_number_of_persons_ #1 _int } }
+      }{ \msg_error:nnn { cooking-units } { label-not-defined } {#1} }
+  }
+\NewDocumentCommand \culabel { m m } { \__cookingunits_culabel:nn {#1} {#2} }
+\NewExpandableDocumentCommand \curef { m } { \__cookingunits_curef:n {#1} }
+\cs_new:Npn \__cookingunits_tl_if_in_remove_and_set_bool:NnN #1#2#3
+  {
+    \tl_if_in:NnTF #1 {#2}
+      {
+        \bool_set_true:N #3
+        \tl_remove_once:Nn #1 {#2}
+      }
+      { \bool_set_false:N #3 }
+  }
+\cs_new:Npn \__cookingunits_tl_if_in_remove_and_reverse_bool:NnN #1#2#3
+  {
+    \tl_if_in:NnT #1 {#2}
+      {
+        \bool_if:NTF #3
+          { \bool_set_false:N #3 }
+          { \bool_set_true:N #3 }
+        \tl_remove_once:Nn #1 {#2}
+      }
+  }
+\tl_const:Nn \c__cookingunits_postfix_unit_tl { ( cu-unit ) }
+\tl_const:Nn \c__cookingunits_postfix_unit_pl_tl { ( cu-unit-pl ) }
+\tl_const:Nn \c__cookingunits_postfix_unitname_tl { ( cu-unitname ) }
+\tl_const:Nn \c__cookingunits_postfix_unitname_pl_tl { ( cu-unitname-pl ) }
+\tl_const:Nn \c__cookingunits_postfix_gender_tl { ( cu-unitgender ) }
+\tl_const:Nn \c__cookingunits_postfix_phrase_tl { ( cu-unitphrase ) }
+\cs_new:Npn \__cookingunits_deftranslation_base:nnn #1#2#3
+  {
+    \declaretranslationfallback { #1 #2 } {#3}
+  }
+\cs_new:Npn \__cookingunits_deftranslation_to:nnnn #1#2#3#4
+  {
+    \declaretranslation {#1} { #2 #3 } {#4}
+  }
+\cs_generate_variant:Nn \__cookingunits_deftranslation_base:nnn { xx , xxV }
+\cs_generate_variant:Nn \__cookingunits_deftranslation_to:nnnn { Vxxv, VxxV , Vxxn, Vxxx,Vxxo,Vxxf }
+\cs_new:Npn \__cookingunits_newtranslation_base:nnn #1#2#3
+  {
+    \definetranslationfallback { #1 #2 } {#3}
+  }
+\cs_new:Npn \__cookingunits_newtranslation_to:nnnn #1#2#3#4
+  {
+    \definetranslation {#1} { #2 #3 } {#4}
+  }
+\cs_generate_variant:Nn \__cookingunits_newtranslation_base:nnn { nVn }
+\cs_generate_variant:Nn \__cookingunits_newtranslation_to:nnnn { nnVn }
+\cs_new:Npn \__cookingunits_translate:nn #1#2
+  {
+    \GetTranslation { #1 #2 }
+  }
+\cs_new:Npn \__cookingunits_translate_let:Nnn #1#2#3
+  {
+    \SaveTranslation {#1} { #2 #3 }
+  }
+\cs_new:Npn \__cookingunits_translate_let:nNnn #1#2#3#4
+  {
+    \SaveTranslationFor {#2} {#1} { #3 #4 }
+  }
+\cs_generate_variant:Nn \__cookingunits_translate:nn { VV, nV }
+\cs_generate_variant:Nn \__cookingunits_translate_let:Nnn { NnV }
+\cs_generate_variant:Nn \__cookingunits_translate_let:nNnn { VNnV, nNnV }
+\prg_new_conditional:Npnn \__cookingunits_unitname_get:Nn #1#2 { F }
+  {
+    \__cookingunits_translate_let:NnV #1 {#2} \c__cookingunits_postfix_unitname_tl
+    \tl_if_eq:NNTF #1 \q__cookingunits_no_translation
+      { \prg_return_false: }
+      { \prg_return_true: }
+  }
+\cs_generate_variant:Nn \__cookingunits_unitname_get:NnF { Nx }
+\cs_new:Npn \__cookingunits_translate_one_and_check_existance:Nn #1#2
+  {
+    \__cookingunits_translate_let:NnV #1 {#2} \c__cookingunits_postfix_gender_tl
+    \__cookingunits_unitname_get:NxF #1 { one (#1) }
+      {
+        \__cookingunits_translate_let:NnV #1 {#2} \c__cookingunits_postfix_gender_tl
+        \msg_error:nnn { cooking-units } { Translation-not-available } { one (#1) }
+      }
+  }
+\cs_generate_variant:Nn \__cookingunits_translate_one_and_check_existance:Nn { Nx }
+\seq_gset_from_clist:Nn \g__cookingunits_allowed_special_keys_seq
+  {
+    decimal-mark ,
+    one (m) ,
+    one (f) ,
+    one (n)
+  }
+\__cookingunits_newtranslation_base:nVn { decimal-mark } \c__cookingunits_postfix_unitname_tl { . }
+\__cookingunits_newtranslation_base:nVn { decimal-mark } \c__cookingunits_postfix_unitname_pl_tl { \q__cookingunits_no_translation }
+\__cookingunits_newtranslation_to:nnVn { German } { decimal-mark } \c__cookingunits_postfix_unitname_tl { , }
+\__cookingunits_newtranslation_base:nVn { one (m) } \c__cookingunits_postfix_unitname_tl { \q__cookingunits_no_translation }
+\__cookingunits_newtranslation_base:nVn { one (f) } \c__cookingunits_postfix_unitname_tl { \q__cookingunits_no_translation }
+\__cookingunits_newtranslation_base:nVn { one (n) } \c__cookingunits_postfix_unitname_tl { \q__cookingunits_no_translation }
+\__cookingunits_newtranslation_base:nVn { one (m) } \c__cookingunits_postfix_unitname_pl_tl { \q__cookingunits_no_translation }
+\__cookingunits_newtranslation_base:nVn { one (f) } \c__cookingunits_postfix_unitname_pl_tl { \q__cookingunits_no_translation }
+\__cookingunits_newtranslation_base:nVn { one (n) } \c__cookingunits_postfix_unitname_pl_tl { \q__cookingunits_no_translation }
+\__cookingunits_newtranslation_to:nnVn { English } { one (m) } \c__cookingunits_postfix_unitname_tl { one }
+\__cookingunits_newtranslation_to:nnVn { English } { one (f) } \c__cookingunits_postfix_unitname_tl { one }
+\__cookingunits_newtranslation_to:nnVn { English } { one (n) } \c__cookingunits_postfix_unitname_tl { one }
+\__cookingunits_newtranslation_to:nnVn { German } { one (m) } \c__cookingunits_postfix_unitname_tl { ein }
+\__cookingunits_newtranslation_to:nnVn { German } { one (f) } \c__cookingunits_postfix_unitname_tl { eine }
+\__cookingunits_newtranslation_to:nnVn { German } { one (n) } \c__cookingunits_postfix_unitname_tl { ein }
+\__cookingunits_newtranslation_base:nVn { cutext-range-sign } \c__cookingunits_postfix_unitname_tl { -- }
+\__cookingunits_newtranslation_base:nVn { cutext-range-sign } \c__cookingunits_postfix_unitname_pl_tl { \q__cookingunits_no_translation }
+\__cookingunits_newtranslation_to:nnVn { German } { cutext-range-sign } \c__cookingunits_postfix_unitname_tl { ~bis~ }
+\__cookingunits_newtranslation_to:nnVn { English } { cutext-range-sign } \c__cookingunits_postfix_unitname_tl { ~to~ }
+\cs_new_protected:Npn \__cookingunits_initialise_default:n #1
+  {
+    \__cookingunits_set_unit:Nn \l__cookingunits_given_unit_tl {#1}
+    \__cookingunits_error_if_unit_not_defined:V \l__cookingunits_given_unit_tl
+    \bool_set_false:N \l__cookingunits_special_sign_bool
+    \bool_set_false:N \l__cookingunits_error_bool
+    \bool_set_false:N \l__cookingunits_range_in_input_bool
+    \bool_set_false:N \l__cookingunits_lokal_fraction_bool
+    \bool_set_false:N \l__cookingunits_lokal_mixed_fraction_bool
+  }
+\cs_new_protected:Npn \__cookingunits_initialise_unit_change:n #1
+  {
+    \tl_if_empty:nF {#1}
+      { \keys_set_groups:nnn { cooking-units } { change-unit } {#1} }
+    \bool_if:NT \l__cookingunits_convert_to_eV_bool
+      { \__cookingunits_convert_to_eV: }
+    \prop_get:NVNF \l__cookingunits_change_unit_prop \l__cookingunits_given_unit_tl \l__cookingunits_option_unit_tl
+      { \tl_set_eq:NN \l__cookingunits_option_unit_tl \l__cookingunits_given_unit_tl }
+  }
+\cs_new_protected:Npn \__cookingunits_initialise_after_unit_change:nn #1#2
+  {
+    \IfNoValueF {#1}
+      { \__cookingunits_reference_label_and_persons:n {#1} }
+    \clist_if_empty:cF { l__cookingunits_predefined_option_ \l__cookingunits_option_unit_tl _clist }
+      {
+        \keys_set_filter:nnv
+          { cooking-units }
+          { change-unit }
+          { l__cookingunits_predefined_option_ \l__cookingunits_option_unit_tl _clist }
+      }
+    \tl_if_empty:nF {#2}
+      { \keys_set_filter:nnn { cooking-units } { change-unit } {#2} }
+    \bool_lazy_and:nnTF
+      { \l__cookingunits_calc_because_ref_was_given_bool } { \l__cookingunits_change_number_of_persons_bool }
+      { \bool_set_true:N \l__cookingunits_lokal_persons_bool }
+      { \bool_set_false:N \l__cookingunits_lokal_persons_bool }
+    \bool_lazy_and:nnTF
+      { \g__cookingunits_opt_numeral_bool } { \l__cookingunits_print_numeral_bool }
+      { \bool_set_true:N \l__cookingunits_lokal_numeral_bool }
+      { \bool_set_false:N \l__cookingunits_lokal_numeral_bool }
+  }
+\cs_new_protected:Npn \__cookingunits_print_input:N #1 { }
+\cs_new_protected:Npn \__cookingunits_print_correct_unit: { }
+\cs_new_protected:Npn \__cookingunits_do_not_process_input:NN #1#2 { }
+\cs_new_eq:NN \__cookingunits_pre_process_input:NN \__cookingunits_do_not_process_input:NN
+\cs_new_eq:NN \__cookingunits_post_process_input:NN \__cookingunits_do_not_process_input:NN
+\cs_new_protected:Npn \__cookingunits_set_process_and_print_for_cunum:
+  {
+    \cs_set_eq:NN \__cookingunits_print_input:N \__cookingunits_print_numerical_input:N
+    \cs_set_eq:NN \__cookingunits_print_correct_unit: \__cookingunits_cunum_print_correct_unit:
+    \cs_set_eq:NN \__cookingunits_pre_process_input:NN \__cookingunits_do_not_process_input:NN
+    \cs_set_eq:NN \__cookingunits_post_process_input:NN \__cookingunits_do_not_process_input:NN
+  }
+\cs_new_protected:Npn \__cookingunits_set_process_and_print_for_cutext:
+  {
+    \cs_set_eq:NN \__cookingunits_print_input:N \__cookingunits_cutext_print_input:N
+    \cs_set_eq:NN \__cookingunits_print_correct_unit: \__cookingunits_cutext_print_correct_unitname:
+    \cs_set_eq:NN \__cookingunits_pre_process_input:NN \__cookingunits_cutext_pre_process_input:NN
+    \cs_set_eq:NN \__cookingunits_post_process_input:NN \__cookingunits_cutext_post_process_input:NN
+  }
+\cs_new_protected:Npn \__cookingunits_set_process_and_print_for_cuam:
+  {
+    \cs_set_eq:NN \__cookingunits_print_input:N \__cookingunits_cuam_print_numerical_input:N
+    \cs_set_eq:NN \__cookingunits_print_correct_unit: \__cookingunits_cuam_print_correct_unitphrase:
+    \cs_set_eq:NN \__cookingunits_pre_process_input:NN \__cookingunits_do_not_process_input:NN
+    \cs_set_eq:NN \__cookingunits_post_process_input:NN \__cookingunits_cuam_post_process_input:NN
+  }
+\cs_new_protected:Npn \__cookingunits_print_numerical_input:N #1
+  {
+    \tl_if_in:NnT #1 { . }
+      {
+        \__cookingunits_translate_let:NnV \l__cookingunits_translation_tmpa_tl
+          { decimal-mark } \c__cookingunits_postfix_unitname_tl
+        \tl_replace_once:Nnn #1 { . } { \l__cookingunits_translation_tmpa_tl }
+      }
+    \tl_replace_once:Nnn #1 { - } \c__cookingunits_minus_tl
+    #1
+  }
+\cs_new:Npn \__cookingunits_print_fractions:nnn #1#2#3
+  {
+    \bool_if:NT \l__cookingunits_minus_bool { \c__cookingunits_minus_tl }
+    \tl_if_empty:nF {#1}
+      {
+        #1
+        \__cookingunits_dim_horizontal:N \l__cookingunits_mixed_frac_dim
+      }
+    \__cookingunits_frac:nn {#2} {#3}
+  }
+\cs_new:Npn \__cookingunits_print_ranges:NN #1#2
+  {
+    \__cookingunits_print_input:N #1
+    \bool_if:NTF \l__cookingunits_using_cutext_bool
+      {
+        \tl_if_empty:NTF \l__cookingunits_cutext_range_sign_tl
+          { \__cookingunits_translate:nV { cutext-range-sign } \c__cookingunits_postfix_unitname_tl  }
+          { \tl_use:N \l__cookingunits_cutext_range_sign_tl }
+        \bool_set_false:N \l__cookingunits_cutext_uppercase_word_bool
+      }
+      { \tl_use:N \l__cookingunits_cunum_range_sign_tl }
+    \__cookingunits_print_input:N #2
+  }
+\cs_new:Npn \__cookingunits_create_error:n #1
+  {
+    \bool_set_true:N \l__cookingunits_error_bool
+    \msg_error:nnV { cooking-units } {#1} \l__cookingunits_given_amount_tl
+  }
+\cs_new:Npn \__cookingunits_create_error_and_stop:n #1
+  {
+    \bool_set_true:N \l__cookingunits_error_bool
+    \msg_error:nnV { cooking-units } {#1} \l__cookingunits_given_amount_tl
+    \use_none_delimit_by_q_nil:w
+  }
+\cs_new:Npn \__cookingunits_create_error:nn #1#2
+  {
+    \bool_set_true:N \l__cookingunits_error_bool
+    \msg_error:nnnV { cooking-units } {#1} {#2} \l__cookingunits_given_amount_tl
+  }
+\cs_new:Npn \__cookingunits_parse_input:n #1
+  {
+    \bool_if:NTF \l__cookingunits_fourty_two_bool
+      { \tl_clear:N \l__cookingunits_given_amount_tl  }
+      { \__cookingunits_set_amount:Nn \l__cookingunits_given_amount_tl {#1} }
+    \tl_set_rescan:NnV \l__cookingunits_given_amount_tl
+      {
+        \char_set_catcode_letter:N \_ %
+        \char_set_catcode_ignore:N \ %
+        \char_set_catcode_other:N ? %
+      } \l__cookingunits_given_amount_tl
+    \bool_lazy_or:nnTF
+      { \l__cookingunits_draft_bool }
+      { \tl_if_empty_p:N \l__cookingunits_given_amount_tl }
+      {
+        \bool_if:NTF \l__cookingunits_fourty_two_bool
+          { 42 }
+          { \l__cookingunits_given_amount_tl }
+      }{
+        \tl_set_eq:NN \l__cookingunits_tmpa_tl \l__cookingunits_given_amount_tl
+        \__cookingunits_split_input:N \l__cookingunits_tmpa_tl
+        \__cookingunits_process_and_print_input:
+      }
+  }
+\cs_new:Npn \__cookingunits_split_input:N #1
+  {
+    \tl_if_in:NVT #1 \l__cookingunits_input_range_sign_tl
+      {
+        \tl_replace_once:NVn #1 \l__cookingunits_input_range_sign_tl { \q__cookingunits_range }
+        \bool_set_true:N \l__cookingunits_range_in_input_bool
+      }
+    \tl_if_in:NnT #1 { / }
+      {
+        \bool_set_true:N \l__cookingunits_lokal_fraction_bool
+        \bool_if:NT \l__cookingunits_range_in_input_bool
+          { \__cookingunits_create_error_and_stop:n { fraction-not-allowed-with-range } }
+      }
+    \tl_if_in:NnT #1 { _ }
+      {
+        \bool_set_true:N \l__cookingunits_lokal_mixed_fraction_bool
+        \bool_if:NF \l__cookingunits_lokal_fraction_bool
+          { \__cookingunits_create_error_and_stop:n { missing-slash } }
+      }
+    \__cookingunits_split:N #1
+    \use_none_delimit_by_q_nil:w \q_nil
+  }
+\cs_new:Npn \__cookingunits_process_tmp: { }
+\cs_new:Npn \__cookingunits_process_and_print_input:
+  {
+    \bool_if:NTF \l__cookingunits_error_bool
+      { \l__cookingunits_given_amount_tl }
+      { \__cookingunits_process_tmp: }
+  }
+\cs_new:Npn \__cookingunits_split:N #1
+  {
+    \bool_if:NTF \l__cookingunits_lokal_fraction_bool
+      { \__cookingunits_split_fraction:V }
+      {
+        \bool_if:NTF \l__cookingunits_range_in_input_bool
+          { \__cookingunits_split_range:V }
+          { \__cookingunits_split_number:V }
+      }
+    #1
+  }
+\cs_new:Npn \__cookingunits_split_number:n #1
+  {
+    \cs_set_eq:NN \__cookingunits_process_tmp: \__cookingunits_process_number_in_input:
+    \__cookingunits_parse_input_and_safe_in:nN {#1} \l__cookingunits_number_tmpa_tl
+  }
+\cs_new:Npn \__cookingunits_split_range:n #1
+  {
+    \cs_set_eq:NN \__cookingunits_process_tmp: \__cookingunits_process_range_in_input:
+    \__cookingunits_split_range_aux:ww #1 \q_stop
+  }
+\cs_new:Npn \__cookingunits_split_range_aux:ww #1 \q__cookingunits_range #2 \q_stop
+  {
+    \__cookingunits_parse_input_and_safe_in:nN {#1} \l__cookingunits_number_tmpa_tl
+    \__cookingunits_parse_input_and_safe_in:nN {#2} \l__cookingunits_number_tmpb_tl
+  }
+\cs_new:Npn \__cookingunits_split_fraction:n #1
+  {
+    \bool_if:NTF \l__cookingunits_lokal_mixed_fraction_bool
+      {
+        \cs_set_eq:NN \__cookingunits_process_tmp: \__cookingunits_process_mixed_fraction_in_input:
+        \__cookingunits_split_fraction_mixed:ww
+      }{
+        \cs_set_eq:NN \__cookingunits_process_tmp: \__cookingunits_process_fraction_in_input:
+        \__cookingunits_split_fraction_frac:ww
+      }
+    #1 \q_stop / \q_recursion_tail \q_stop
+    \q_recursion_stop
+    \bool_lazy_or:nnT
+      { \l__cookingunits_lokal_persons_bool }{ \l__cookingunits_eval_fractions_bool }
+      { \bool_set_false:N \l__cookingunits_lokal_fraction_bool }
+  }
+\cs_new:Npn \__cookingunits_split_fraction_frac:ww #1 / #2 \q_stop
+  {
+    \quark_if_recursion_tail_stop_do:nn {#2}
+      { \__cookingunits_create_error:n { fraction-wrong-order } }
+    \__cookingunits_parse_input_and_safe_in:nN {#1} \l__cookingunits_number_tmpa_tl
+    \__cookingunits_parse_input_and_safe_in:nN {#2} \l__cookingunits_number_tmpb_tl
+    \use_none_delimit_by_q_recursion_stop:w
+  }
+\cs_new:Npn \__cookingunits_split_fraction_mixed:ww #1 _ #2 \q_stop
+  {
+    \__cookingunits_parse_input_and_safe_in:nN {#1} \l__cookingunits_mixed_fraction_tl
+    \__cookingunits_split_fraction_frac:ww #2 \q_stop
+  }
+\cs_generate_variant:Nn \__cookingunits_split_number:n { V }
+\cs_generate_variant:Nn \__cookingunits_split_range:n { V }
+\cs_generate_variant:Nn \__cookingunits_split_fraction:n { V }
+\cs_new:Npn \__cookingunits_parse_input_and_safe_in:nN #1 #2
+  {
+    \tl_clear:N \l__cookingunits_tmpa_tl
+    \bool_set_false:N \l__cookingunits_check_decimal_bool
+    \cs_set_eq:NN \__cookingunits_parse:N \__cookingunits_start_loop:N
+    \tl_map_function:nN {#1} \__cookingunits_parse:N
+    \bool_if:NTF \l__cookingunits_error_bool
+      { \use_none_delimit_by_q_nil:w }
+      { \tl_set_eq:NN #2 \l__cookingunits_tmpa_tl }
+  }
+\cs_new:Npn \__cookingunits_start_loop:N #1
+  {
+    \cs_set_eq:NN \__cookingunits_parse:N \__cookingunits_parse_input_loop_aux:N
+    \tl_if_in:NnTF \l__cookingunits_input_value_signs_tl {#1}
+      { \tl_put_right:Nn \l__cookingunits_tmpa_tl {#1} }
+      {
+        \tl_map_function:nN {#1} \__cookingunits_parse:N
+      }
+  }
+\cs_new:Npn \__cookingunits_parse_input_loop_aux:N #1
+  {
+    \tl_if_in:NnTF \l__cookingunits_input_digits_tl {#1}
+      { \tl_put_right:Nn \l__cookingunits_tmpa_tl {#1} }
+      {
+        \tl_if_in:NnTF \l__cookingunits_input_decimal_mark_tl {#1}
+          {
+            \__cookingunits_check_repitition:N \l__cookingunits_check_decimal_bool
+            \tl_put_right:Nn \l__cookingunits_tmpa_tl { . }
+          }{
+            \tl_if_in:NnTF \l__cookingunits_input_allowed_special_signs_tl {#1}
+              {
+                \bool_set_true:N \l__cookingunits_special_sign_bool
+                \tl_put_right:Nn \l__cookingunits_tmpa_tl {#1}
+              }{
+                \bool_set_true:N \l__cookingunits_error_bool
+                \__cookingunits_check_error:n {#1}
+              }
+          }
+      }
+  }
+\cs_new:Npn \__cookingunits_check_error:n #1
+  {
+    \tl_if_in:NnTF \l__cookingunits_input_fraction_sign_tl {#1}
+      { \__cookingunits_create_error:n { Second-fraction-sign-not-allowed } }
+      {
+        \tl_if_in:NnTF \l__cookingunits_input_mixed_fraction_sign_tl {#1}
+          { \__cookingunits_create_error:n { Second-mixed-fraction-sign-not-allowed } }
+          { \__cookingunits_create_error:nn { Token-not-allowed } {#1} }
+      }
+  }
+\cs_new:Npn \__cookingunits_check_repitition:N #1
+  {
+    \bool_if:NTF #1
+      { \__cookingunits_create_error:n { Second-decimal-sign-not-allowed } }
+      { \bool_set_true:N #1 }
+  }
+\cs_new:Npn \__cookingunits_process_number_in_input:
+  {
+    \__cookingunits_process_and_print_number_in_input:N \l__cookingunits_number_tmpa_tl
+  }
+\cs_new:Npn \__cookingunits_process_and_print_number_in_input:N #1
+  {
+    \__cookingunits_pre_process_input:NN #1 \q_no_value
+    \__cookingunits_calculate_and_store_in:N #1
+    \__cookingunits_post_process_input:NN #1 \q_no_value
+    \__cookingunits_print_input:N #1
+  }
+\cs_new:Npn \__cookingunits_process_range_in_input:
+  {
+    \__cookingunits_pre_process_input:NN \l__cookingunits_number_tmpa_tl \l__cookingunits_number_tmpb_tl
+    \__cookingunits_calculate_and_store_in:N \l__cookingunits_number_tmpa_tl
+    \__cookingunits_calculate_and_store_in:N \l__cookingunits_number_tmpb_tl
+    \__cookingunits_post_process_input:NN \l__cookingunits_number_tmpa_tl \l__cookingunits_number_tmpb_tl
+    \__cookingunits_print_ranges:NN \l__cookingunits_number_tmpa_tl \l__cookingunits_number_tmpb_tl
+  }
+\cs_new:Npn \__cookingunits_process_fraction_in_input:
+  {
+    \bool_lazy_or:nnTF
+      { \l__cookingunits_lokal_fraction_bool }
+      { \l__cookingunits_special_sign_bool }
+      {
+        \__cookingunits_tl_if_in_remove_and_set_bool:NnN \l__cookingunits_number_tmpa_tl { - } \l__cookingunits_minus_bool
+        \__cookingunits_tl_if_in_remove_and_reverse_bool:NnN \l__cookingunits_number_tmpb_tl { - } \l__cookingunits_minus_bool
+        \__cookingunits_print_fractions:nnn
+          { }
+          { \l__cookingunits_number_tmpa_tl }
+          { \l__cookingunits_number_tmpb_tl }
+      }{
+        \fp_compare:nNnT { \l__cookingunits_number_tmpb_tl } = { 0 }
+          { \msg_error:nnV { cooking-units } { Division-by-zero } \l__cookingunits_given_amount_tl }
+        \__cookingunits_tl_eval:Nn \l__cookingunits_number_tmpa_tl
+          { \l__cookingunits_number_tmpa_tl / \l__cookingunits_number_tmpb_tl }
+        \__cookingunits_process_and_print_number_in_input:N \l__cookingunits_number_tmpa_tl
+      }
+  }
+\cs_new:Npn \__cookingunits_process_mixed_fraction_in_input:
+  {
+    \__cookingunits_tl_if_in_remove_and_set_bool:NnN \l__cookingunits_mixed_fraction_tl { - } \l__cookingunits_minus_bool
+    \__cookingunits_tl_if_in_remove_and_reverse_bool:NnN \l__cookingunits_number_tmpa_tl { - } \l__cookingunits_minus_bool
+    \__cookingunits_tl_if_in_remove_and_reverse_bool:NnN \l__cookingunits_number_tmpb_tl { - } \l__cookingunits_minus_bool
+    \bool_lazy_or:nnTF
+      { \l__cookingunits_lokal_fraction_bool }
+      { \l__cookingunits_special_sign_bool }
+      {
+        \__cookingunits_print_fractions:nnn
+          { \l__cookingunits_mixed_fraction_tl }
+          { \l__cookingunits_number_tmpa_tl }
+          { \l__cookingunits_number_tmpb_tl }
+      }{
+        \fp_compare:nNnT { \l__cookingunits_number_tmpb_tl } = { 0 }
+          { \msg_error:nnV { cooking-units } { Division-by-zero } \l__cookingunits_given_amount_tl }
+        \__cookingunits_tl_eval:Nn \l__cookingunits_number_tmpa_tl
+          {
+            \bool_if:NTF \l__cookingunits_minus_bool
+              { - \l__cookingunits_mixed_fraction_tl - }
+              { \l__cookingunits_mixed_fraction_tl + }
+            \l__cookingunits_number_tmpa_tl / \l__cookingunits_number_tmpb_tl
+          }
+        \__cookingunits_process_and_print_number_in_input:N \l__cookingunits_number_tmpa_tl
+      }
+  }
+\cs_new:Npn \__cookingunits_calculate_and_store_in:N #1
+  {
+    \bool_if:NTF \l__cookingunits_special_sign_bool
+      {
+        \msg_warning:nnV { cooking-units } { amount-not-known } #1
+      }{
+        \bool_lazy_and:nnTF
+          { \l__cookingunits_using_cutext_bool } { \l__cookingunits_cutext_keep_unit_bool }
+          { \tl_set_eq:NN \l__cookingunits_tmpa_tl #1 }
+          { \__cookingunits_calculate_input_and_store_in:nN {#1} \l__cookingunits_tmpa_tl }
+        \__cookingunits_calc_references:NN \l__cookingunits_tmpa_tl \l__cookingunits_tmpa_tl
+        \__cookingunits_round_calculated_input:NV \l__cookingunits_tmpa_tl \l__cookingunits_tmpa_tl
+        \__cookingunits_check_temperature_limit:N \l__cookingunits_tmpa_tl
+        \tl_set_eq:NN #1 \l__cookingunits_tmpa_tl
+      }
+  }
+\cs_new:Npn \__cookingunits_calculate_input_and_store_in:nN #1#2
+  {
+    \fp_set:Nn \l__cookingunits_tmpa_fp {#1}
+    \tl_if_in:cnTF { l__cookingunits_unit_change_ \l__cookingunits_given_unit_tl _tl } { \l__cookingunits_tmpa_fp }
+      {
+        \__cookingunits_tl_eval:Nv #2 { l__cookingunits_unit_change_ \l__cookingunits_given_unit_tl _tl }
+      }{
+        \__cookingunits_tl_eval:Nn #2
+          { \l__cookingunits_tmpa_fp * \tl_use:c { l__cookingunits_unit_change_ \l__cookingunits_given_unit_tl _tl }  }
+      }
+  }
+\cs_new:Npn \__cookingunits_calc_references:NN #1#2
+  {
+    \bool_if:NT \l__cookingunits_lokal_persons_bool
+      {
+        \int_compare:nNnF
+          { \l__cookingunits_wanted_number_of_persons_int }
+          =
+          { \l__cookingunits_local_number_of_persons_int }
+          {
+            \tl_set_eq:NN \l__cookingunits_tmpb_tl \l__cookingunits_given_unit_tl
+            \seq_if_in:NVTF \l__cookingunits_curef_do_not_change_seq \l__cookingunits_tmpb_tl
+              { \msg_error:nnV { cooking-units } { curef-forbidden-unit } \l__cookingunits_tmpb_tl }
+              { \__cookingunits_calc_references_aux:NN #1 #2 }
+          }
+      }
+  }
+\cs_new:Npn \__cookingunits_calc_references_aux:NN #1#2
+  {
+    \__cookingunits_tl_eval:Nn #1
+      {
+        #2 *
+        \l__cookingunits_wanted_number_of_persons_int /
+        \l__cookingunits_local_number_of_persons_int
+      }
+  }
+\cs_new:Npn \__cookingunits_check_number_for_rounding:n #1
+  {
+    \bool_set_false:N \l__cookingunits_round_number_bool
+    \__cookingunits_check_number_after_dot_aux:ww #1 . \q_recursion_tail .
+    \q_recursion_stop
+  }
+\cs_new:Npn \__cookingunits_check_number_after_dot_aux:ww #1 . #2 .
+  {
+    \quark_if_recursion_tail_stop_do:nn {#2}
+      {
+        \bool_lazy_or:nnF
+          { \l__cookingunits_round_precision_positive_bool }
+          { \l__cookingunits_round_to_int_bool }
+          { \bool_set_true:N \l__cookingunits_round_number_bool }
+      }
+        \int_compare:nNnT
+          { \tl_count:n {#2} } >
+          {
+            \bool_if:NTF \l__cookingunits_round_to_int_bool
+              { 0 }
+              { \l__cookingunits_round_precision_int }
+          }
+          { \bool_set_true:N \l__cookingunits_round_number_bool }
+    \use_none_delimit_by_q_recursion_stop:w
+  }
+\cs_new:Npn \__cookingunits_round_calculated_input:Nn #1#2
+  {
+    \__cookingunits_check_number_for_rounding:n {#2}
+    \bool_if:NTF \l__cookingunits_round_number_bool
+      { \__cookingunits_tl_eval:Nn #1 { round ( \__cookingunits_rounding_function:n {#2} ) } }
+      { \tl_set:Nn #1 {#2} }
+  }
+\cs_generate_variant:Nn \__cookingunits_round_calculated_input:Nn { NV }
+\cs_new:Npn \__cookingunits_check_temperature_limit:N #1
+  {
+    \bool_if:NT \l__cookingunits_check_temperature_bool
+      {
+        \seq_if_in:NVT \l__cookingunits_temperatures_to_check_seq \l__cookingunits_option_unit_tl
+          {
+            \fp_compare:vNnT
+              { c__cookingunits_ \l__cookingunits_option_unit_tl _min_fp } > {#1}
+              {
+                \msg_error:nnxx { cooking-units }
+                  { Temperature-too-low }
+                  { #1 \space \l__cookingunits_option_unit_tl }
+                  {
+                    \fp_use:c { c__cookingunits_ \l__cookingunits_option_unit_tl _min_fp }
+                    \space \l__cookingunits_option_unit_tl
+                  }
+              }
+          }
+      }
+  }
+\cs_new_nopar:Npn \__cookingunits_grab_arrows_for_safety_do_afterwards:nN #1#2
+  {
+    \str_if_eq:nnTF {#2} { > }
+      {
+        \tl_put_right:Nx \l__cookingunits_tmpa_tl { \tl_to_str:N > }
+        \exp_last_unbraced:NV #1 \l__cookingunits_tmpa_tl
+      }{
+        \tl_put_right:Nn \l__cookingunits_tmpa_tl {#2}
+        \__cookingunits_grab_arrows_for_safety_do_afterwards:nN {#1}
+      }
+  }
+\cs_new_nopar:Npn \__cookingunits_if_arrow_grab_until_close_do:nnTF #1#2#3#4
+  {
+    \str_if_eq:nnTF {#1} { < }
+      {
+        \tl_if_in:NoT \l__cookingunits_input_allowed_special_signs_tl { < }
+          { \msg_error:nn { cooking-units } { <-not-allowed-as-special-sign } }
+        \tl_clear:N \l__cookingunits_tmpa_tl
+        \tl_put_right:Nx \l__cookingunits_tmpa_tl { \tl_to_str:N < }
+        \__cookingunits_grab_arrows_for_safety_do_afterwards:nN
+          {#3} #2
+      }
+      {#4}
+  }
+\NewDocumentCommand \cunum { d<> O{} m O{} m }
+  {
+    \__cookingunits_if_arrow_grab_until_close_do:nnTF {#3} {#5}
+      { \cunum }
+      {
+        \group_begin:
+        \__cookingunits_cunum:nnnnn {#1} {#2} {#3} {#4} {#5}
+        \group_end:
+      }
+  }
+\cs_new:Npn \__cookingunits_cunum:nnnnn #1#2#3#4#5
+  {
+    \__cookingunits_cunum_initialise:nnnnn {#1} {#2} {#3} {#4} {#5}
+    \l__cookingunits_cunum_hook_tl
+    \__cookingunits_parse_input:n {#3}
+    \__cookingunits_print_correct_unit:
+  }
+\cs_new_protected:Npn \__cookingunits_cunum_initialise:nnnnn #1#2#3#4#5
+  {
+    \__cookingunits_set_process_and_print_for_cunum:
+    \tl_set:Nn \l__cookingunits_phantom_tl {#4}
+    \__cookingunits_initialise_default:n {#5}
+    \__cookingunits_initialise_unit_change:n {#2}
+    \__cookingunits_initialise_after_unit_change:nn {#1} {#2}
+  }
+\cs_new:Npn \__cookingunits_cunum_print_correct_unit:
+  {
+    \tl_if_empty:NF \l__cookingunits_phantom_tl { \phantom { \l__cookingunits_phantom_tl } }
+    \tl_use:N \l__cookingunits_value_unit_space_tl
+    \__cookingunits_change_unit:TF
+      { \__cookingunits_translate:VV \l__cookingunits_option_unit_tl \c__cookingunits_postfix_unit_tl }
+      { \__cookingunits_translate:VV \l__cookingunits_given_unit_tl \c__cookingunits_postfix_unit_tl }
+  }
+\NewDocumentCommand \cutext { d<> O{} m m }
+  {
+    \__cookingunits_if_arrow_grab_until_close_do:nnTF {#3} {#4}
+      { \cutext }
+      {
+        \group_begin:
+        \__cookingunits_change_cutext_to_cunum:nTF {#2}
+          { \__cookingunits_cunum:nnnnn {#1} {#2} {#3} { } {#4} }
+          {
+            \bool_set_false:N \l__cookingunits_cutext_uppercase_word_bool
+            \__cookingunits_cutext:nnnn {#1} {#2} {#3} {#4}
+          }
+        \group_end:
+      }
+  }
+\NewDocumentCommand \Cutext { d<> O{} m m }
+  {
+    \__cookingunits_if_arrow_grab_until_close_do:nnTF {#3} {#4}
+      { \Cutext }
+      {
+        \group_begin:
+        \__cookingunits_change_cutext_to_cunum:nTF {#2}
+          { \__cookingunits_cunum:nnnnn {#1} {#2} {#3} { } {#4} }
+          {
+            \bool_set_true:N \l__cookingunits_cutext_uppercase_word_bool
+            \__cookingunits_cutext:nnnn {#1} {#2} {#3} {#4}
+          }
+        \group_end:
+      }
+  }
+\cs_new_protected:Npn \__cookingunits_cutext_initialise:nnn #1#2#3
+  {
+    \bool_set_true:N \l__cookingunits_using_cutext_bool
+    \__cookingunits_set_process_and_print_for_cutext:
+    \__cookingunits_initialise_default:n {#3}
+    \__cookingunits_initialise_unit_change:n {#2}
+    \bool_if:NT \l__cookingunits_cutext_keep_unit_bool
+      { \tl_set_eq:NN \l__cookingunits_option_unit_tl \l__cookingunits_given_unit_tl }
+    \__cookingunits_initialise_after_unit_change:nn {#1} {#2}
+    \bool_if:NT \l__cookingunits_fourty_two_bool
+      { \tl_set:Nn \l__cookingunits_cutext_last_value_tl { 42 } }
+  }
+\cs_new:Npn \__cookingunits_cutext:nnnn #1#2#3#4
+  {
+    \__cookingunits_cutext_initialise:nnn {#1} {#2} {#4}
+    \bool_if:NTF \l__cookingunits_cutext_uppercase_word_bool
+      { \l__cookingunits_Cutext_hook_tl }
+      { \l__cookingunits_cutext_hook_tl }
+    \bool_if:NTF \l__cookingunits_cutext_old_bool
+      { \__cookingunits_old_cutext:nnn {#2} {#3} {#4} }
+      { \__cookingunits_parse_input:n {#3} }
+    \__cookingunits_print_correct_unit:
+  }
+\cs_new_protected:Npn \__cookingunits_cutext_print_input:Nn #1#2
+  {
+    \bool_if:NTF \l__cookingunits_lokal_numeral_bool
+      {
+        \__cookingunits_int_if_equal_one:nTF {#1}
+          {
+            \__cookingunits_translate_one_and_check_existance:Nx \l__cookingunits_translation_tmpa_tl {#2}
+            \bool_if:NTF \l__cookingunits_cutext_uppercase_word_bool
+              {
+                \exp_args:Nx \tl_upper_case:n { \tl_head:V \l__cookingunits_translation_tmpa_tl }
+                \tl_tail:V \l__cookingunits_translation_tmpa_tl
+              }
+              { \l__cookingunits_translation_tmpa_tl }
+          }{
+            \bool_if:NTF \l__cookingunits_cutext_uppercase_word_bool
+              { \__cookingunits_print_Numeral:n {#1} }
+              { \__cookingunits_print_numeral:n {#1} }
+          }
+      }
+      { \__cookingunits_print_numerical_input:N #1 }
+  }
+\cs_generate_variant:Nn \__cookingunits_cutext_print_input:Nn { NV }
+\cs_new_protected:Npn \__cookingunits_cutext_print_input:N #1
+  {
+    \__cookingunits_change_unit:TF
+      { \__cookingunits_cutext_print_input:NV #1 \l__cookingunits_option_unit_tl }
+      { \__cookingunits_cutext_print_input:NV #1 \l__cookingunits_given_unit_tl }
+  }
+\cs_new:Npn \__cookingunits_cutext_print_correct_unitname:
+  {
+    \l__cookingunits_cutext_space_tl
+    \__cookingunits_change_unit:TF
+      {
+        \__cookingunits_fp_if_equal_one:nTF { \l__cookingunits_cutext_last_value_tl }
+          { \__cookingunits_translate:VV \l__cookingunits_option_unit_tl \c__cookingunits_postfix_unitname_tl }
+          { \__cookingunits_translate:VV \l__cookingunits_option_unit_tl \c__cookingunits_postfix_unitname_pl_tl }
+      }
+      { \__cookingunits_translate:VV \l__cookingunits_given_unit_tl \c__cookingunits_postfix_unitname_pl_tl }
+  }
+\cs_new:Npn \__cookingunits_cutext_pre_process_input:NN #1#2
+  {
+    \__cookingunits_change_unit:TF
+      { \tl_set_eq:NN \l__cookingunits_tmpb_tl \l__cookingunits_option_unit_tl }
+      { \tl_set_eq:NN \l__cookingunits_tmpb_tl \l__cookingunits_given_unit_tl }
+    \__cookingunits_unitname_get:NxF \l__cookingunits_tmpa_tl \l__cookingunits_tmpb_tl
+      {
+        \msg_warning:nnx
+          { cooking-units }
+          { cutext-no-translation-available }
+          \l__cookingunits_tmpb_tl
+        \bool_set_false:N \l__cookingunits_using_cutext_bool
+        \__cookingunits_set_process_and_print_for_cunum:
+      }
+  }
+\cs_new:Npn \__cookingunits_cutext_post_process_input:NN #1#2
+  {
+    \bool_if:NF \l__cookingunits_special_sign_bool
+      {
+        \__cookingunits_cutext_post_process_input_aux:NN #1#2
+      }
+  }
+\cs_new:Npn \__cookingunits_cutext_post_process_input_aux:NN #1#2
+  {
+    \bool_if:NTF \l__cookingunits_range_in_input_bool
+      { \tl_set_eq:NN \l__cookingunits_cutext_last_value_tl #2 }
+      { \tl_set_eq:NN \l__cookingunits_cutext_last_value_tl #1 }
+    \bool_if:NT \l__cookingunits_lokal_numeral_bool
+      { \__cookingunits_cutext_post_process_input_numerals:NN #1#2 }
+  }
+\cs_new:Npn \__cookingunits_cutext_post_process_input_numerals:NN #1#2
+  {
+    \__cookingunits_bool_set_if_integers:NNN \l__cookingunits_tmpa_bool #1 #2
+    \bool_if:NTF \l__cookingunits_tmpa_bool
+      {
+        \bool_if:NTF \l__cookingunits_range_in_input_bool
+          {
+            \bool_lazy_and:nnF
+              { \int_compare_p:nNn {#1} < { \l__cookingunits_print_numerals_below_int } }
+              { \int_compare_p:nNn {#2} < { \l__cookingunits_print_numerals_below_int } }
+              { \bool_set_false:N \l__cookingunits_lokal_numeral_bool }
+          }{
+            \int_compare:nNnF {#1} < { \l__cookingunits_print_numerals_below_int }
+              { \bool_set_false:N \l__cookingunits_lokal_numeral_bool }
+          }
+      }
+      { \bool_set_false:N \l__cookingunits_lokal_numeral_bool }
+  }
+\tl_const:Nn \c__cookingunits_cuam_marker_tl { __cookingunits_cunum }
+\tl_new:c { l__cookingunits_unit_change_ \c__cookingunits_cuam_marker_tl _tl }
+\tl_set:cn { l__cookingunits_unit_change_ \c__cookingunits_cuam_marker_tl _tl } { 1.0 }
+\clist_new:c { l__cookingunits_predefined_option_ \c__cookingunits_cuam_marker_tl _clist }
+\NewDocumentCommand \cuam { d<> O{} m }
+  {
+    \__cookingunits_if_arrow_grab_until_close_do:nnTF {#3} { }
+      { \cuam }
+      {
+        \group_begin:
+        \__cookingunits_cuam:nnn {#1} {#2} {#3}
+        \group_end:
+      }
+  }
+\cs_new:Npn \__cookingunits_cuam:nnn #1#2#3
+  {
+    \__cookingunits_cuam_initialise:nn {#1} {#2}
+    \l__cookingunits_cuam_hook_tl
+    \bool_if:NTF \l__cookingunits_cuam_old_bool
+      { \__cookingunits_cuam_old:n {#3} }
+      {
+        \__cookingunits_parse_input:n {#3}
+        \__cookingunits_print_correct_unit:
+      }
+  }
+\cs_new_protected:Npn \__cookingunits_cuam_initialise:nn #1#2
+  {
+    \__cookingunits_set_process_and_print_for_cuam:
+    \tl_set_eq:NN \l__cookingunits_given_unit_tl \c__cookingunits_cuam_marker_tl
+    \tl_set_eq:NN \l__cookingunits_option_unit_tl \c__cookingunits_cuam_marker_tl
+    \bool_set_false:N \l__cookingunits_lokal_phrase_bool
+    \__cookingunits_initialise_after_unit_change:nn {#1} {#2}
+  }
+\cs_new_protected:Npn \__cookingunits_cuam_post_process_input:NN #1#2
+  {
+    \bool_if:NF \l__cookingunits_special_sign_bool
+      { \__cookingunits_cuam_post_process_input_aux:NN #1 #2 }
+  }
+\cs_new:Npn \__cookingunits_cuam_post_process_input_aux:NN #1#2
+  {
+    \__cookingunits_bool_set_if_integers:NNN \l__cookingunits_tmpa_bool #1 #2
+    \bool_lazy_and:nnT
+      { \l__cookingunits_use_phrases_bool } { \l__cookingunits_tmpa_bool }
+      { \__cookingunits_cuam_post_process_input_phrases:NN #1#2 }
+    \bool_if:NT \l__cookingunits_lokal_numeral_bool
+      { \__cookingunits_cuam_post_process_input_numerals:NN #1#2 }
+  }
+\cs_new:Npn \__cookingunits_cuam_post_process_input_phrases:NN #1#2
+  {
+    \__cookingunits_get_phrase_for_current_langauge:NNT
+      \l__cookingunits_phrase_prop
+      \l__cookingunits_phrase_numbers_seq
+      {
+        \__cookingunits_cuam_post_process_input_phrases_aux:NNN
+          #1 \l__cookingunits_tmpa_int \l__cookingunits_phrase_number_tl
+        \bool_if:NT \l__cookingunits_lokal_phrase_bool
+          {
+            \bool_if:NTF \l__cookingunits_range_in_input_bool
+              {
+                \bool_if:NF \l__cookingunits_phrase_negative_bool
+                  {
+                    \__cookingunits_cuam_post_process_input_phrases_range:NN
+                      #2 \l__cookingunits_tmpb_int
+                    \bool_if:NT \l__cookingunits_lokal_phrase_bool
+                      {
+                        \tl_set:NV #1 \l__cookingunits_tmpa_int
+                        \tl_set:NV #2 \l__cookingunits_tmpb_int
+                        \__cookingunits_cuam_get_phrase_name:NVN
+                          \l__cookingunits_phrase_phrase_tl \l__cookingunits_phrase_number_tl \l__cookingunits_tmpb_int
+                      }
+                  }
+              }{
+                \tl_set:NV #1 \l__cookingunits_tmpa_int
+                \__cookingunits_cuam_get_phrase_name:NVN
+                  \l__cookingunits_phrase_phrase_tl \l__cookingunits_phrase_number_tl \l__cookingunits_tmpa_int
+              }
+          }
+      }
+  }
+\cs_new:Npn \__cookingunits_cuam_post_process_input_phrases_aux:NNN #1#2#3
+  {
+    \bool_set_false:N \l__cookingunits_lokal_phrase_bool
+    \seq_map_inline:Nn \l__cookingunits_phrase_numbers_seq
+      {
+        \int_compare:nNnF { \int_abs:n {##1} } > {#1}
+          {
+            \int_compare:nNnTF {##1} < { 0 }
+              {
+                \bool_set_true:N \l__cookingunits_phrase_negative_bool
+                \int_set:Nn \l_tmpa_int { 1 }
+              }
+              { \int_set:Nn \l_tmpa_int { \int_div_truncate:nn {#1} {##1} } }
+            \int_compare:nNnT { \int_abs:n {##1} * \l_tmpa_int } = {#1}
+              {
+                \int_set_eq:NN #2 \l_tmpa_int
+                \tl_set:Nn #3 {##1}
+                \bool_set_true:N \l__cookingunits_lokal_phrase_bool
+                \seq_map_break:
+              }
+          }
+      }
+  }
+\cs_new:Npn \__cookingunits_cuam_post_process_input_phrases_range:NN #1#2
+  {
+    \int_set:Nn \l_tmpa_int { \int_div_truncate:nn {#1} { \l__cookingunits_phrase_number_tl } }
+    \int_compare:nNnTF { \l__cookingunits_phrase_number_tl * \l_tmpa_int } = {#1}
+      {
+        \int_set_eq:NN #2 \l_tmpa_int
+        \bool_set_true:N \l__cookingunits_lokal_phrase_bool
+      }{
+        \bool_set_false:N \l__cookingunits_lokal_phrase_bool
+      }
+  }
+\cs_new:Npn \__cookingunits_cuam_get_phrase_name:NnN #1#2#3
+  {
+    \__cookingunits_int_if_equal_one:nTF {#3}
+      { \prop_get:NnN \l__cookingunits_phrase_prop {#2} #1 }
+      { \prop_get:NnN \l__cookingunits_phrase_prop { #2-pl } #1 }
+  }
+\cs_generate_variant:Nn \__cookingunits_cuam_get_phrase_name:NnN { NVN }
+\cs_new:Npn \__cookingunits_cuam_post_process_input_numerals:NN #1#2
+  {
+    \bool_if:NTF \l__cookingunits_tmpa_bool
+      {
+        \bool_if:NTF \l__cookingunits_range_in_input_bool
+          {
+            \bool_lazy_and:nnF
+              { \int_compare_p:nNn {#1} < { \l__cookingunits_print_numerals_below_int } }
+              { \int_compare_p:nNn {#2} < { \l__cookingunits_print_numerals_below_int } }
+              { \bool_set_false:N \l__cookingunits_lokal_numeral_bool }
+          }{
+            \int_compare:nNnF {#1} < { \l__cookingunits_print_numerals_below_int }
+              { \bool_set_false:N \l__cookingunits_lokal_numeral_bool }
+          }
+      }
+      { \bool_set_false:N \l__cookingunits_lokal_numeral_bool }
+  }
+\cs_new_protected:Npn \__cookingunits_cuam_print_numerical_input:N #1
+  {
+    \bool_lazy_and:nnTF
+      { \l__cookingunits_lokal_phrase_bool }
+      { \l__cookingunits_lokal_numeral_bool }
+      {
+        \__cookingunits_int_if_equal_one:nTF {#1}
+          {
+            \__cookingunits_translate_one_and_check_existance:Nx
+              \l__cookingunits_translation_tmpa_tl
+              { \l__cookingunits_phrase_number_tl -phrase-gender }
+            \l__cookingunits_translation_tmpa_tl
+          }
+          { \exp_args:NV \__cookingunits_print_numeral:n #1 }
+      }{ \__cookingunits_print_numerical_input:N #1 }
+  }
+\cs_new:Npn \__cookingunits_cuam_print_correct_unitphrase:
+  {
+    \bool_if:NT \l__cookingunits_lokal_phrase_bool
+      {
+        \l__cookingunits_cuphrase_space_tl
+        \l__cookingunits_phrase_phrase_tl
+      }
+  }
+\NewDocumentCommand \cudefinekeys { m m }
+  {
+    \bool_set_false:N \l__cookingunits_single_key_bool
+    \__cookingunits_cukeys_define_keys_and_single_keys:nn {#1} {#2}
+  }
+\NewDocumentCommand \cudefinesinglekey { m m }
+  {
+    \bool_set_true:N \l__cookingunits_single_key_bool
+    \__cookingunits_cukeys_define_keys_and_single_keys:nn {#1} {#2}
+  }
+\cs_new:Npn \__cookingunits_cukeys_define_keys_and_single_keys:nn #1#2
+  {
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \tl_if_blank:nF {#2}
+      {
+        \seq_clear:N \l__cookingunits_tmpa_seq
+        \prop_clear:N \l__cookingunits_tmpa_prop
+        \bool_if:NTF \l__cookingunits_single_key_bool
+          {
+            \__cookingunits_cukeys_parse_and_create_single_key:nn {#1} {#2}
+          }{
+            \fp_set:Nn \l__cookingunits_tmpa_fp { 1.0 }
+            \tl_set:Nn \l__cookingunits_given_unit_tl {#1}
+            \__cookingunits_cukeys_parse_and_create_keys:nn {#1}
+              {
+                {#1} { 1.0 } #2
+              }
+          }
+      }
+  }
+\cs_new:Npn \__cookingunits_cukeys_parse_and_create_keys:nn #1#2
+  {
+    \__cookingunits_cukeys_parse_input:nn #2
+    \q_recursion_tail \q_recursion_tail \q_recursion_stop
+    \__cookingunits_cukeys_create_key_prop:n {#1}
+    \clist_set_from_seq:NN \l__cookingunits_tmpa_clist \l__cookingunits_tmpa_seq
+    \__cookingunits_cukeys_define_keys:V \l__cookingunits_tmpa_clist
+  }
+\cs_new:Npn \__cookingunits_cukeys_parse_input:nn #1#2
+  {
+    \quark_if_recursion_tail_stop:n {#1}
+    \quark_if_recursion_tail_stop_do:nn {#2}
+      { \msg_error:nn { cooking-units } { missing-argument } }
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \seq_put_right:Nn \l__cookingunits_tmpa_seq {#1}
+    \prop_put:Nnx \l__cookingunits_tmpa_prop {#1} { \fp_eval:n { (#2) / \l__cookingunits_tmpa_fp } }
+    \__cookingunits_cukeys_parse_input:nn
+  }
+\cs_new:Npn \__cookingunits_cukeys_create_key_prop:n #1
+  {
+    \prop_clear:N \l__cookingunits_tmpb_prop
+    \prop_put:NnV \l__cookingunits_tmpb_prop { Liste } \l__cookingunits_tmpa_seq
+    \prop_put:NnV \l__cookingunits_tmpb_prop { prop } \l__cookingunits_tmpa_prop
+    \prop_put:NnV \l__cookingunits_tmpb_prop { Erstes Ding } \l__cookingunits_given_unit_tl
+    \seq_map_inline:Nn \l__cookingunits_tmpa_seq
+      {
+        \prop_set_eq:cN { l__cookingunits_cukeys_ ##1 _prop } \l__cookingunits_tmpb_prop
+        \tl_set:cn { l__cookingunits_unit_change_ ##1 _tl } { 1.0 }
+        \seq_map_inline:Nn \l__cookingunits_tmpa_seq
+          {
+            \prop_put:cnx { l__cookingunits_cukeys_ ##1 _prop }
+              {####1}
+              {
+                \fp_eval:n
+                  {
+                    ( \prop_item:Nn \l__cookingunits_tmpa_prop {####1} ) /
+                    ( \prop_item:Nn \l__cookingunits_tmpa_prop {##1} )
+                  }
+              }
+          }
+      }
+  }
+\cs_new:Npn \__cookingunits_cukeys_define_keys:n #1
+  {
+   \seq_map_inline:Nn \l__cookingunits_tmpa_seq
+     {
+       \seq_if_in:NnF \l__cookingunits_list_of_defined_keys_seq {##1}
+         { \seq_put_right:Nn \l__cookingunits_list_of_defined_keys_seq {##1} }
+       \keys_define:nn { cooking-units }
+         {
+           ##1 .choices:Vn =
+             \l__cookingunits_tmpa_clist
+             {
+               \__cookingunits_cukeys_define_keys_and_single_key_aux:n {##1}
+             } ,
+           ##1 / unknown .code:n=
+             {
+               \seq_set_split:Nnn \l_tmpa_seq { , } {#1}
+               \msg_error:nnxxx
+                 { cooking-units }
+                 { key-choice-unknown }
+                 {##1}
+                 {####1}
+                 { \seq_use:Nnnn \l_tmpa_seq { ',~ ' } { ',~ ' } { ' ~ and ~ ' } }
+             } ,
+           ##1 .default:n = {##1} ,
+           ##1 .groups:n = { change-unit }
+         }
+     }
+  }
+\cs_generate_variant:Nn \__cookingunits_cukeys_define_keys:n { V }
+\cs_new:Npn \__cookingunits_cukeys_define_keys_and_single_key_aux:n #1
+  {
+    \prop_get:cVc
+      { l__cookingunits_cukeys_#1_prop }
+      \l_keys_choice_tl
+      { l__cookingunits_unit_change_ #1_tl }
+    \prop_put:NnV \l__cookingunits_change_unit_prop {#1} \l_keys_choice_tl
+  }
+\cs_new:Npn \__cookingunits_cukeys_parse_and_create_single_key:nn #1#2
+  {
+    \tl_set_rescan:Nnn \l__cookingunits_tmpa_tl
+      {
+        \char_set_catcode_letter:N \# %
+        \char_set_catcode_ignore:N\ %
+      } { {#1} { 1.0 } #2 }
+    \__cookingunits_cusinglekeys_parse_input:V \l__cookingunits_tmpa_tl
+    \__cookingunits_cusinglekeys_create_key_prop:n {#1}
+    \clist_set_from_seq:NN \l__cookingunits_tmpa_clist \l__cookingunits_tmpa_seq
+    \__cookingunits_cukeys_define_singlekey:nV {#1} \l__cookingunits_tmpa_clist
+  }
+\cs_new:Npn \__cookingunits_cusinglekeys_parse_input:n #1
+  {
+    \__cookingunits_cusinglekeys_parse_input_aux:nn #1
+    \q_recursion_tail \q_recursion_tail \q_recursion_stop
+  }
+\cs_generate_variant:Nn \__cookingunits_cusinglekeys_parse_input:n { V }
+\cs_new:Npn \__cookingunits_cusinglekeys_parse_input_aux:nn #1#2
+  {
+    \quark_if_recursion_tail_stop:n {#1}
+    \quark_if_recursion_tail_stop_do:nn {#2}
+      { \msg_error:nn { cooking-units } { missing-argument } }
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \seq_put_right:Nn \l__cookingunits_tmpa_seq {#1}
+    \tl_set:Nn \l__cookingunits_tmpa_tl {#2}
+    \tl_replace_all:NVn \l__cookingunits_tmpa_tl \c__cookingunits_input_str_hash_one_tl { \l__cookingunits_tmpa_fp }
+    \prop_put:NnV \l__cookingunits_tmpa_prop {#1} \l__cookingunits_tmpa_tl
+    \__cookingunits_cusinglekeys_parse_input_aux:nn
+  }
+\cs_new:Npn \__cookingunits_cusinglekeys_create_key_prop:n #1
+  {
+    \tl_set:cn { l__cookingunits_unit_change_ #1 _tl } { 1.0 }
+    \prop_set_eq:cN { l__cookingunits_cukeys_ #1 _prop } \l__cookingunits_tmpa_prop
+    \prop_put:cnn { l__cookingunits_cukeys_ #1 _prop } { Erstes Ding } {#1}
+    \prop_put:cnV { l__cookingunits_cukeys_ #1 _prop } { Liste } \l__cookingunits_tmpa_seq
+    \prop_put:cnV { l__cookingunits_cukeys_ #1 _prop } { prop } \l__cookingunits_tmpa_prop
+  }
+\cs_new:Npn \__cookingunits_cukeys_define_singlekey:nn #1#2
+  {
+    \seq_if_in:NnF \l__cookingunits_list_of_defined_keys_seq {#1}
+      { \seq_put_right:Nn \l__cookingunits_list_of_defined_keys_seq {#1} }
+     \keys_define:nn { cooking-units }
+         {
+           #1 .choices:Vn =
+             \l__cookingunits_tmpa_clist
+               {
+                 \__cookingunits_cukeys_define_keys_and_single_key_aux:n {#1}
+               } ,
+           #1 / unknown .code:n=
+             {
+               \seq_set_split:Nnn \l_tmpa_seq { , } {#2}
+               \msg_error:nnxxx
+                 { cooking-units }
+                 { key-choice-unknown }
+                 {#1}
+                 {##1}
+                 { \seq_use:Nnnn \l_tmpa_seq { ',' } { ',' } { ' ~ and ~ ' } }
+             } ,
+           #1 .default:n = {#1} ,
+           #1 .groups:n = { change-unit } ,
+         }
+  }
+\cs_generate_variant:Nn \__cookingunits_cukeys_define_singlekey:nn { nV }
+\NewDocumentCommand \cuaddkeys { m m }
+  {
+    \bool_set_false:N \l__cookingunits_single_key_bool
+    \__cookingunits_cukeys_add_keys_or_single_keys:nn {#1} {#2}
+  }
+\NewDocumentCommand \cuaddsinglekeys { m m }
+  {
+    \bool_set_true:N \l__cookingunits_single_key_bool
+    \__cookingunits_cukeys_add_keys_or_single_keys:nn {#1} {#2}
+  }
+\NewDocumentCommand \cuaddtokeys { m m m }
+  {
+    \bool_set_false:N \l__cookingunits_single_key_bool
+    \tl_set:Nn \l__cookingunits_tmpb_tl { {#2} { \fp_eval:n { 1.0 / (#3) } } }
+    \__cookingunits_cukeys_add_keys_or_single_keys:nV {#1} \l__cookingunits_tmpb_tl
+  }
+\cs_new:Npn \__cookingunits_cukeys_add_keys_or_single_keys:nn #1#2
+  {
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \seq_if_in:NnF \l__cookingunits_list_of_defined_keys_seq {#1}
+      { \msg_error:nnn { cooking-units } { Key-not-defined } {#1} }
+    \tl_if_blank:nF {#2}
+      {
+        \__cookingunits_cukeys_add_keys_and_single_key_aux:n {#1}
+        \bool_if:NTF \l__cookingunits_single_key_bool
+          { \__cookingunits_cukeys_parse_and_create_single_key:nn {#1} {#2} }
+          { \__cookingunits_cukeys_parse_and_create_keys:nn {#1} {#2} }
+      }
+  }
+\cs_generate_variant:Nn \__cookingunits_cukeys_add_keys_or_single_keys:nn { nV }
+\cs_new:Npn \__cookingunits_cukeys_add_keys_and_single_key_aux:n #1
+  {
+    \prop_get:cnN { l__cookingunits_cukeys_ #1 _prop } { Liste } \l__cookingunits_tmpa_seq
+    \prop_get:cnN { l__cookingunits_cukeys_ #1 _prop } { prop } \l__cookingunits_tmpa_prop
+    \prop_get:cnN { l__cookingunits_cukeys_ #1 _prop } { Erstes Ding } \l__cookingunits_given_unit_tl
+    \prop_get:cVN { l__cookingunits_cukeys_ #1 _prop } \l__cookingunits_given_unit_tl \l__cookingunits_tmpa_fp
+  }
+\NewDocumentCommand \declarecookingunit { o m }
+  {
+    \seq_if_in:NnTF \g__cookingunits_list_of_defined_units_seq {#2}
+      { \msg_info:nnn { cooking-units } { redefine-unit } {#2} }
+      { \__cookingunits_new_cooking_unit:nn {#1} {#2} }
+    \__cookingunits_set_cooking_unit:nn {#1} {#2}
+  }
+\NewDocumentCommand \newcookingunit { o m }
+  {
+    \__cookingunits_new_cooking_unit:nn {#1} {#2}
+    \__cookingunits_set_cooking_unit:nn {#1} {#2}
+  }
+\NewDocumentCommand \providecookingunit { o m }
+  {
+    \seq_if_in:NnF \g__cookingunits_list_of_defined_units_seq {#2}
+      {
+        \__cookingunits_new_cooking_unit:nn {#1} {#2}
+        \__cookingunits_set_cooking_unit:nn {#1} {#2}
+      }
+  }
+\cs_new:Npn \__cookingunits_new_cooking_unit:nn #1#2
+  {
+    \seq_if_in:NnTF \g__cookingunits_list_of_defined_units_seq {#2}
+      { \msg_error:nnn { cooking-units } { unit-already-defined } {#2} }
+      {
+        \tl_map_inline:nn {#2}
+          {
+            \tl_if_in:NnT \l__cookingunits_unit_letter_not_allowed_tl {##1}
+              { \msg_error:nnn { cooking-units } { character-not-allowed } {#2} }
+          }
+        \seq_put_right:Nn \g__cookingunits_list_of_defined_units_seq {#2}
+        \tl_new:c { l__cookingunits_unit_change_ #2 _tl }
+        \tl_set:cn { l__cookingunits_unit_change_ #2 _tl } { 1.0 }
+        \clist_new:c { l__cookingunits_predefined_option_#2_clist }
+        \keys_define:nn { cooking-units }
+          {
+            set-option-for-#2 .clist_set:c = { l__cookingunits_predefined_option_#2_clist } ,
+            add-option-for-#2 .code:n =
+              { \clist_put_right:cn { l__cookingunits_predefined_option_#2_clist } {##1} },
+          }
+        \prop_new:c { l__cookingunits_cukeys_ #2 _prop }
+        \tl_new:c { l__cookingunits_default_unit_ #2 _tl }
+      }
+  }
+\cs_new:Npn \__cookingunits_set_cooking_unit:nn #1#2
+  {
+    \IfNoValueTF {#1}
+      {
+        \tl_set:cn { l__cookingunits_default_unit_ #2 _tl } {#2}
+        \__cookingunits_deftranslation_base:xxn {#2} \c__cookingunits_postfix_unit_tl {#2}
+      }{
+        \tl_set:cn { l__cookingunits_default_unit_ #2 _tl } {#1}
+        \__cookingunits_deftranslation_base:xxn {#2} \c__cookingunits_postfix_unit_tl {#1}
+      }
+    \__cookingunits_deftranslation_base:xxn {#2} \c__cookingunits_postfix_unitname_tl { \q__cookingunits_no_translation }
+    \__cookingunits_deftranslation_base:xxn {#2} \c__cookingunits_postfix_unitname_pl_tl { \q__cookingunits_no_translation }
+    \__cookingunits_deftranslation_base:xxn {#2} \c__cookingunits_postfix_gender_tl { m }
+  }
+\tl_new:N \l__cookingunits_sanitise_tl
+\cs_new_protected:Npn \__cookingunits_sanitise_aux:w #1 \q_mark
+  { \tl_set:Nn \l__cookingunits_sanitise_tl {#1} }
+\group_begin:
+  \char_set_catcode_active:n { `\< }
+  \char_set_catcode_active:n { `\> }
+  \cs_new:Npn \__cookingunits_sanitize_open_arrow:
+    {
+      \exp_after:wN \__cookingunits_sanitize_open_arrow_auxi:w \l__cookingunits_sanitise_tl
+        \q_mark < \q_nil <
+      \exp_after:wN \__cookingunits_sanitise_aux:w \l__cookingunits_sanitise_tl
+    }
+  \cs_new_protected:Npn \__cookingunits_sanitize_open_arrow_auxi:w #1 <
+    {
+      \tl_set:Nn \l__cookingunits_sanitise_tl {#1}
+      \__cookingunits_sanitize_open_arrow_auxii:w
+    }
+  \cs_new_protected:Npn \__cookingunits_sanitize_open_arrow_auxii:w #1 <
+    {
+      \quark_if_nil:nF {#1}
+        {
+          \tl_set:Nx \l__cookingunits_sanitise_tl
+            {
+              \exp_not:V \l__cookingunits_sanitise_tl
+              \token_to_str:N <
+              \exp_not:n {#1}
+            }
+          \exp_after:wN \__cookingunits_sanitize_open_arrow_auxii:w
+        }
+    }
+  \cs_new:Npn \__cookingunits_sanitize_close_arrow:
+    {
+      \exp_after:wN \__cookingunits_sanitize_close_arrow_auxi:w \l__cookingunits_sanitise_tl
+        \q_mark > \q_nil >
+      \exp_after:wN \__cookingunits_sanitise_aux:w \l__cookingunits_sanitise_tl
+    }
+  \cs_new_protected:Npn \__cookingunits_sanitize_close_arrow_auxi:w #1 >
+    {
+      \tl_set:Nn \l__cookingunits_sanitise_tl {#1}
+      \__cookingunits_sanitize_close_arrow_auxii:w
+    }
+  \cs_new_protected:Npn \__cookingunits_sanitize_close_arrow_auxii:w #1 >
+    {
+      \quark_if_nil:nF {#1}
+        {
+          \tl_set:Nx \l__cookingunits_sanitise_tl
+            {
+              \exp_not:V \l__cookingunits_sanitise_tl
+              \token_to_str:N >
+              \exp_not:n {#1}
+            }
+          \exp_after:wN \__cookingunits_sanitize_close_arrow_auxii:w
+        }
+    }
+\group_end:
+\cs_new_protected:Npn \__cookingunits_sanitize_arrows:n #1
+  {
+    \tl_set:Nn \l__cookingunits_sanitise_tl {#1}
+    \__cookingunits_sanitize_open_arrow:
+    \__cookingunits_sanitize_close_arrow:
+  }
+\NewDocumentCommand \cudefinename { m m }
+  {
+    \tl_set:Nn \l__cookingunits_language_tl {#1}
+    \__cookingunits_sanitize_arrows:n {#2}
+    \exp_last_unbraced:NV
+    \__cookingunits_cuname_parse_input:n \l__cookingunits_sanitise_tl
+    \q_recursion_tail \q_recursion_tail \q_recursion_stop
+  }
+\cs_new:Npn \__cookingunits_cuname_parse_input:n #1
+  {
+    \peek_meaning_ignore_spaces:NTF [
+      {
+        \__cookingunits_cuname_parse_unit_symbol:nw {#1}
+      }{
+        \seq_if_in:NnTF \g__cookingunits_allowed_special_keys_seq {#1}
+          { \__cookingunits_cuname_parse_input_aux:nn {#1} }
+          { \__cookingunits_cuname_parse_unit_symbol:nw {#1} [ \q_no_value ] }
+      }
+  }
+\cs_new:Npn \__cookingunits_cuname_parse_unit_symbol:nw #1 [#2]
+  {
+    \quark_if_recursion_tail_stop:n {#1}
+    \quark_if_recursion_tail_stop_do:nn {#2}
+      { \msg_error:nn { cooking-units } { missing-argument } }
+    \__cookingunits_error_if_unit_not_defined:n {#1}
+    \quark_if_no_value:nTF {#2}
+      {
+        \__cookingunits_deftranslation_to:Vxxv
+          \l__cookingunits_language_tl {#1}
+          \c__cookingunits_postfix_unit_tl
+          { l__cookingunits_default_unit_ #1 _tl }
+      }{
+        \__cookingunits_deftranslation_to:Vxxn
+          \l__cookingunits_language_tl {#1}
+          \c__cookingunits_postfix_unit_tl {#2}
+      }
+    \__cookingunits_cuname_parse_input_aux:nn {#1}
+  }
+\cs_new:Npn \__cookingunits_cuname_parse_input_aux:nn #1#2
+  {
+    \quark_if_recursion_tail_stop:n {#1}
+    \quark_if_recursion_tail_stop_do:nn {#2}
+      { \msg_error:nn { cooking-units } { missing-argument } }
+    \seq_if_in:NnF \g__cookingunits_allowed_special_keys_seq {#1}
+      { \__cookingunits_error_if_unit_not_defined:n {#1} }
+    \__cookingunits_deftranslation_to:Vxxn
+      \l__cookingunits_language_tl {#1}
+      \c__cookingunits_postfix_unitname_tl {#2}
+    \peek_meaning_ignore_spaces:NTF [
+      { \__cookingunits_cuname_parse_bracket:nw {#1} }
+      { \__cookingunits_cuname_parse_bracket:nw {#1} [#2] }
+  }
+\cs_new:Npn \__cookingunits_cuname_parse_bracket:nw #1 [#2]
+  {
+    \seq_if_in:NnF \g__cookingunits_allowed_special_keys_seq {#1}
+      {
+        \__cookingunits_deftranslation_to:Vxxn \l__cookingunits_language_tl {#1}
+          \c__cookingunits_postfix_unitname_pl_tl {#2}
+      }
+    \peek_meaning_ignore_spaces:NTF <
+      { \__cookingunits_cuname_parse_gender:nw {#1} }
+      { \__cookingunits_cuname_parse_gender:nw {#1} <m> }
+  }
+\cs_new:Npn \__cookingunits_cuname_parse_gender:nw #1 <#2>
+  {
+    \__cookingunits_check_if_correct_gender_input:n {#2}
+    \__cookingunits_deftranslation_to:Vxxn
+      \l__cookingunits_language_tl {#1}
+      \c__cookingunits_postfix_gender_tl {#2}
+    \__cookingunits_cuname_parse_input:n
+  }
+\NewDocumentCommand \cudefinesymbol { m m }
+  {
+    \tl_set:Nn \l__cookingunits_language_tl {#1}
+    \__cookingunits_cuprint_define_printed_unit:nn #2
+    \q_recursion_tail \q_recursion_tail \q_recursion_stop
+  }
+\cs_new:Npn \__cookingunits_cuprint_define_printed_unit:nn #1#2
+  {
+    \quark_if_recursion_tail_stop:n {#1}
+    \quark_if_recursion_tail_stop_do:nn {#2}
+      { \msg_error:nn { cooking-units } { missing-argument } }
+    \seq_if_in:NnTF \g__cookingunits_allowed_special_keys_seq {#1}
+      {
+        \__cookingunits_deftranslation_to:Vxxn \l__cookingunits_language_tl {#1}
+          \c__cookingunits_postfix_unitname_tl {#2}
+      }{
+        \__cookingunits_error_if_unit_not_defined:n {#1}
+        \__cookingunits_deftranslation_to:Vxxn
+          \l__cookingunits_language_tl {#1}
+          \c__cookingunits_postfix_unit_tl {#2}
+      }
+    \__cookingunits_cuprint_define_printed_unit:nn
+  }
+\__cookingunits_newtranslation_base:nVn { phrase-prop } \c__cookingunits_postfix_phrase_tl { \q__cookingunits_no_translation }
+\prg_new_conditional:Npnn \__cookingunits_phrase_list_get_for:NN #1#2 { TF }
+  {
+    \__cookingunits_translate_let:VNnV #2 #1 { phrase-prop } \c__cookingunits_postfix_phrase_tl
+    \tl_if_eq:NNTF #1 \q__cookingunits_no_translation
+      { \prg_return_false: }
+      { \prg_return_true: }
+  }
+\prg_new_conditional:Npnn \__cookingunits_get_phrase_for_current_langauge:NN #1#2 { T }
+  {
+    \__cookingunits_translate_let:NnV #1 { phrase-prop } \c__cookingunits_postfix_phrase_tl
+    \tl_if_eq:NNTF #1 \q__cookingunits_no_translation
+      { \prg_return_false: }
+      {
+        \__cookingunits_translate_let:NnV #2 { phrase-clist } \c__cookingunits_postfix_phrase_tl
+        \prg_return_true:
+      }
+  }
+\NewDocumentCommand \cudefinephrase { m m }
+  {
+    \__cookingunits_cuphrase:nn {#1} {#2}
+  }
+\cs_new:Npn \__cookingunits_cuphrase:nn #1#2
+  {
+    \tl_set:Nn \l__cookingunits_language_tl {#1}
+      \__cookingunits_phrase_list_get_for:NNTF \l__cookingunits_phrase_prop \l__cookingunits_language_tl
+        {
+          \__cookingunits_translate_let:VNnV \l__cookingunits_language_tl \l__cookingunits_phrase_numbers_seq
+            { phrase-clist } \c__cookingunits_postfix_phrase_tl
+        }{
+          \prop_clear:N \l__cookingunits_phrase_prop
+          \seq_clear:N \l__cookingunits_phrase_numbers_seq
+        }
+      \__cookingunits_sanitize_arrows:n {#2}
+      \exp_last_unbraced:NV
+      \__cookingunits_cuphrase_parse:n \l__cookingunits_sanitise_tl
+        \q_recursion_tail \q_recursion_tail \q_recursion_stop
+    \seq_sort:Nn \l__cookingunits_phrase_numbers_seq
+      {
+        \int_compare:nNnTF { \int_abs:n {##1} } < { \int_abs:n {##2} }
+          { \sort_return_swapped: }
+          {
+            \int_compare:nNnTF { \int_abs:n {##1} } = { \int_abs:n {##2} }
+              {
+                \int_compare:nNnTF {##1} < {##2}
+                  { \sort_return_same: }
+                  { \sort_return_swapped: }
+              }{ \sort_return_same: }
+          }
+      }
+    \__cookingunits_deftranslation_to:VxxV
+      \l__cookingunits_language_tl { phrase-prop }
+      \c__cookingunits_postfix_phrase_tl
+      \l__cookingunits_phrase_prop
+    \__cookingunits_deftranslation_to:VxxV
+      \l__cookingunits_language_tl { phrase-clist }
+      \c__cookingunits_postfix_phrase_tl \l__cookingunits_phrase_numbers_seq
+  }
+\cs_new:Npn \__cookingunits_cuphrase_parse:n #1
+  {
+    \quark_if_recursion_tail_stop:n {#1}
+    \__cookingunits_if_integer:nF {#1}
+      { \msg_error:nnn { cooking-units} { phrase-unit-not-an-integer } {#1} }
+    \peek_meaning_remove_ignore_spaces:NTF *
+      {
+        \int_set:Nn \l__cookingunits_tmpa_int {-#1}
+        \__cookingunits_cuphrase_parse_normal:Vn \l__cookingunits_tmpa_int
+      }{
+        \int_set:Nn \l__cookingunits_tmpa_int {#1}
+        \__cookingunits_cuphrase_parse_normal:Vn \l__cookingunits_tmpa_int
+      }
+  }
+\cs_new:Npn \__cookingunits_cuphrase_parse_normal:nn #1#2
+  {
+    \quark_if_recursion_tail_stop_do:nn {#2}
+      { \msg_error:nn { cooking-units } { missing-argument } }
+    \prop_put:Nnn \l__cookingunits_phrase_prop {#1} {#2}
+    \seq_if_in:NnF \l__cookingunits_phrase_numbers_seq {#1}
+      { \seq_push:Nn \l__cookingunits_phrase_numbers_seq {#1} }
+    \peek_meaning_ignore_spaces:NTF [
+      {
+        \__cookingunits_chuphrase_parse_plural:nw {#1}
+      }{
+        \__cookingunits_chuphrase_parse_plural:nw {#1} [#2]
+      }
+  }
+\cs_generate_variant:Nn \__cookingunits_cuphrase_parse_normal:nn { V }
+\cs_new:Npn \__cookingunits_chuphrase_parse_plural:nw #1 [#2]
+  {
+    \prop_put:Nnn \l__cookingunits_phrase_prop { #1-pl } {#2}
+    \peek_meaning_ignore_spaces:NTF <
+      {
+        \__cookingunits_chuphrase_parse_gender:nw {#1}
+      }{
+        \__cookingunits_chuphrase_parse_gender:nw {#1} < m >
+      }
+  }
+\cs_new:Npn \__cookingunits_chuphrase_parse_gender:nw #1 <#2>
+  {
+    \__cookingunits_check_if_correct_gender_input:n {#2}
+    \__cookingunits_deftranslation_to:Vxxn
+      \l__cookingunits_language_tl { #1-phrase-gender }
+      \c__cookingunits_postfix_gender_tl {#2}
+    \__cookingunits_cuphrase_parse:n
+  }
+\cs_new:Npn \__cookingunits_old_cutext:nnn #1#2#3
+  {
+    \tl_set_eq:NN \l__cookingunits_option_unit_tl \l__cookingunits_given_unit_tl
+    \__cookingunits_old_cutext_default:nnn {#1} {#2} {#3}
+  }
+\cs_new:Npn \__cookingunits_old_cutext_default:nnn #1#2#3
+  {
+    \bool_if:NTF \l__cookingunits_draft_bool
+      {#2}
+      {
+        \tl_set:Nn \l__cookingunits_cutext_last_value_tl {#2}
+        \tl_if_in:NVTF \l__cookingunits_cutext_last_value_tl \l__cookingunits_input_range_sign_tl
+          {
+            \tl_replace_once:NVn \l__cookingunits_cutext_last_value_tl
+              \l__cookingunits_input_range_sign_tl { \q__cookingunits_range }
+            \__cookingunits_old_cutext_parse_range:Vn \l__cookingunits_cutext_last_value_tl {#3}
+          }{
+            \__cookingunits_old_cutext_print_input:Nn \l__cookingunits_cutext_last_value_tl {#3}
+          }
+      }
+  }
+\cs_new_protected:Npn \__cookingunits_old_cutext_print_input:Nn #1#2
+  {
+    \__cookingunits_old_cutext_if_numeral_is_int_and_parse_and_smaller_then_print_numerals:NTF #1
+      {
+        \__cookingunits_int_if_equal_one:nTF {#1}
+          {
+            \__cookingunits_translate_one_and_check_existance:Nx \l__cookingunits_translation_tmpa_tl {#2}
+            \bool_if:NTF \l__cookingunits_cutext_uppercase_word_bool
+              {
+                \exp_args:Nx \tl_upper_case:n { \tl_head:V \l__cookingunits_translation_tmpa_tl }
+                \tl_tail:V \l__cookingunits_translation_tmpa_tl
+              }
+              { \l__cookingunits_translation_tmpa_tl }
+          }{
+            \bool_if:NTF \l__cookingunits_cutext_uppercase_word_bool
+              { \__cookingunits_print_Numeral:n {#1} }
+              { \__cookingunits_print_numeral:n {#1} }
+          }
+      }
+      { \__cookingunits_print_numerical_input:N #1 }
+  }
+\prg_new_conditional:Npnn \__cookingunits_old_cutext_if_numeral_is_int_and_parse_and_smaller_then_print_numerals:N #1 { TF }
+  {
+    \bool_if:NTF \l__cookingunits_lokal_numeral_bool
+      {
+        \__cookingunits_if_integer:VTF #1
+          {
+            \int_compare:nNnTF {#1} < { \l__cookingunits_print_numerals_below_int }
+              { \prg_return_true: }
+              { \prg_return_false: }
+          }{ \prg_return_false: }
+      }{ \prg_return_false: }
+  }
+\cs_new:Npn \__cookingunits_old_cutext_parse_range:nn #1 #2
+  {
+    \__cookingunits_old_cutext_parse_range_aux:nww {#2} #1 \q_stop
+  }
+\cs_generate_variant:Nn \__cookingunits_old_cutext_parse_range:nn { V }
+\cs_new:Npn \__cookingunits_old_cutext_parse_range_aux:nww #1 #2 \q__cookingunits_range #3 \q_stop
+  {
+    \tl_set:Nn \l__cookingunits_tmpa_tl {#2}
+    \tl_set:Nn \l__cookingunits_cutext_last_value_tl {#3}
+    \__cookingunits_old_cutext_print_input:Nn \l__cookingunits_tmpa_tl {#1}
+    \tl_use:N \l__cookingunits_cutext_range_sign_tl
+    \__cookingunits_old_cutext_print_input:Nn \l__cookingunits_cutext_last_value_tl {#1}
+  }
+\cs_new:Npn \__cookingunits_cuam_old:n #1
+  {
+    \tl_set_rescan:Nnn \l__cookingunits_tmpa_tl
+      {
+        \char_set_catcode_letter:N \_ %
+        \char_set_catcode_ignore:N\ %
+      } {#1}
+    \bool_if:NTF \l__cookingunits_draft_bool
+      { \l__cookingunits_tmpa_tl }
+      { \__cookingunits_cuam_old_parse:V \l__cookingunits_tmpa_tl }
+  }
+\cs_new_protected:Npn \__cookingunits_cuam_old_parse:n #1
+  {
+    \tl_if_in:nVTF {#1} \l__cookingunits_input_range_sign_tl
+      {
+        \tl_set:Nn \l__cookingunits_tmpa_tl {#1}
+        \tl_replace_once:NVn \l__cookingunits_tmpa_tl \l__cookingunits_input_range_sign_tl { \q__cookingunits_range }
+        \__cookingunits_cuam_old_parse_range:V \l__cookingunits_tmpa_tl
+      }{
+        \tl_if_in:nnTF {#1} { / }
+          {
+            \tl_if_in:nnTF {#1} { _ }
+              { \__cookingunits_cuam_old_parse_mixed_frac:www #1 \q_stop }
+              { \__cookingunits_cuam_old_parse_frac:ww #1 \q_stop }
+          }{
+            \tl_if_in:nnTF {#1} { _ }
+              { \msg_error:nnn { cooking-units } { missing-slash } {#1} }
+              { \__cookingunits_cuam_old_parse_scale:n {#1} }
+          }
+      }
+  }
+\cs_generate_variant:Nn \__cookingunits_cuam_old_parse:n { V }
+\cs_new:Npn \__cookingunits_cuam_old_parse_range:n #1
+  {
+    \__cookingunits_cuam_old_parse_range_aux:ww #1 \q_nil
+  }
+\cs_generate_variant:Nn \__cookingunits_cuam_old_parse_range:n { V }
+\cs_new:Npn \__cookingunits_cuam_old_parse_range_aux:ww #1 \q__cookingunits_range #2 \q_nil
+  {
+    #1 \l__cookingunits_cunum_range_sign_tl #2
+  }
+\cs_new:Npn \__cookingunits_cuam_old_parse_scale:n #1 {#1}
+\cs_new:Npn \__cookingunits_cuam_old_parse_frac:ww #1/#2 \q_stop
+  { \__cookingunits_frac:nn {#1} {#2} }
+\cs_new:Npn \__cookingunits_cuam_old_parse_mixed_frac:www #1_#2/#3 \q_stop
+  {
+    #1
+    \__cookingunits_dim_horizontal:N \l__cookingunits_mixed_frac_dim
+    \__cookingunits_frac:nn {#2} {#3}
+  }
+\NewDocumentCommand \cufrac { O{} m }
+  {
+    \msg_error:nnnn { cooking-units } { obsolete-command } { \cufrac } { \cuam }
+    \group_begin:
+    \tl_if_empty:nF {#1}
+      { \keys_set:nn { cooking-units } {#1} }
+    \__cookingunits_cufrac:n {#2}
+    \group_end:
+  }
+\cs_new:Npn \__cookingunits_cufrac:n #1
+  {
+    \tl_set_rescan:Nnn \l__cookingunits_tmpa_tl
+      {
+        \char_set_catcode_letter:N \_ %
+        \char_set_catcode_ignore:N\ %
+      } {#1}
+    \__cookingunits_cufrac_parse:V \l__cookingunits_tmpa_tl
+  }
+\cs_new:Npn \__cookingunits_cufrac_parse:n #1
+  {
+    \tl_if_in:nnTF {#1} { / }
+      {
+        \tl_if_in:nnTF {#1} { _ }
+          { \__cookingunits_cufrac_parse_mixed_frac:www #1 \q_stop }
+          { \__cookingunits_cufrac_parse_frac:ww #1 \q_stop }
+      }{
+        \tl_if_in:nnTF {#1} { _ }
+          { \msg_error:nnn { cooking-units } { missing-slash } {#1} }
+          { \__cookingunits_cufrac_parse_scale:n {#1} }
+      }
+  }
+\cs_generate_variant:Nn \__cookingunits_cufrac_parse:n { V }
+\cs_new:Npn \__cookingunits_cufrac_parse_scale:n #1 {#1}
+\cs_new:Npn \__cookingunits_cufrac_parse_frac:ww #1/#2 \q_stop
+  { \__cookingunits_frac:nn {#1} {#2} }
+\cs_new:Npn \__cookingunits_cufrac_parse_mixed_frac:www #1_#2/#3 \q_stop
+  {
+    #1
+    \__cookingunits_dim_horizontal:N \l__cookingunits_mixed_frac_dim
+    \__cookingunits_frac:nn {#2} {#3}
+  }
+\NewDocumentCommand \cusetup { m }
+  {
+    \keys_set:nn { cooking-units } {#1}
+  }
+\newcookingunit { kg }
+\newcookingunit { dag }
+\newcookingunit { g }
+\newcookingunit { oz }
+\newcookingunit { lb }
+\newcookingunit { stick }
+\newcookingunit [ \ensuremath{ \__cookingunits_frac:nn { eV } { c^2 } } ] { eVc-2 }
+\newcookingunit { K }
+\newcookingunit [ \ensuremath{ {} ^ { \circ } } \kern-\scriptspace C ]  { C }
+\newcookingunit [ \ensuremath{ {} ^ { \circ } } \kern-\scriptspace F ] { F }
+\newcookingunit [ \ensuremath{ {} ^ { \circ } } \kern-\scriptspace R\'{e} ] { Re }
+\newcookingunit { d }
+\newcookingunit { h }
+\newcookingunit { min }
+\newcookingunit { s }
+\newcookingunit [ \ensuremath{ \__cookingunits_frac:nn { \hbar } { eV } } ] { hbareV-1 }
+\newcookingunit { m }
+\newcookingunit { cm }
+\newcookingunit { dm }
+\newcookingunit { mm }
+\newcookingunit { in }
+\newcookingunit [ \ensuremath{ \__cookingunits_frac:nn { c\hbar } { eV } } ] { chbareV-1 }
+\newcookingunit { l }
+\newcookingunit { dl }
+\newcookingunit { cl }
+\newcookingunit { ml }
+\newcookingunit [ \ensuremath { \__cookingunits_frac:nn { c^3 \hbar^3 } { eV^3 } } ] { (chbareV-1)3 }
+\newcookingunit { cal }
+\newcookingunit { kcal }
+\newcookingunit { J }
+\newcookingunit { kJ }
+\newcookingunit { eV }
+\newcookingunit [ pinch ] { pn }
+\newcookingunit { EL }
+\newcookingunit { TL }
+\newcookingunit [ ssp. ] { ssp } %% saltspoonful
+\newcookingunit [ csp. ] { csp } %% coffeespoonful
+\newcookingunit [ dsp. ] { dsp }
+\newcookingunit [ Msp. ] { Msp }
+\DeclareLanguageAlias { AmericanEnglish } { American }
+\cudefinename { German }
+  {
+    { kg } { Kilogramm } < n >
+    { dag } { Dekagramm } < n >
+    { g } { Gramm } < n >
+    { oz } { Unze } < f >
+    { lb } { Pfund } < n >
+    { d } { Tag } [ Tage ]
+    { h } { Stunde } [ Stunden ] < f >
+    { min } { Minute } [ Minuten ] < f >
+    { s } { Sekunde } [ Sekunden ] < f >
+    { C } { Grad \space Celsius }
+    { K } { Kelvin } < n >
+    { F } { Grad \space Fahrenheit }
+    { Re } { Grad \space R\'{e}amur }
+    { m } { Meter } < n >
+    { dm } { Dezimeter } < n >
+    { cm } { Centimeter } < n >
+    { mm } { Millimeter } < n >
+    { in } { Zoll }
+    { l } [ l ] { Liter }
+    { dl } { Deziliter }
+    { cl } { Centiliter }
+    { ml } { Milliliter }
+    { cal } { Kalorie } [ Kalorien ] < f >
+    { kcal } { Kilokalorie } [ Kilokalorien ] < f >
+    { J } { Joule }
+    { kJ } { Kilojoule }
+    { eV } { Elektronenvolt } < n >
+    { Msp } [ Msp. ] { Messerspitze } [ Messerspitzen ] < f >
+    { pn } [ Prise ] { Prise } [ Prisen ] < f >
+    { EL } [ EL ] { Essl{\"o}ffel }
+    { TL } [ TL ] { Teel{\"o}ffel }
+    { csp } [ KL ] { Mokkal{\"o}ffel }
+    { decimal-mark } { , }
+    { one (m) } { ein }
+    { one (f) } { eine }
+    { one (n) } { ein }
+  }
+\cudefinename { English }
+  {
+    { kg } { kilogramme }
+    { dag } { decagramme }
+    { g } { gramme }
+    { oz } { ounce }
+    { lb } { pound } [ pounds ]
+    { stick } { stick } [ sticks ]
+    { d } { day } [ days ]
+    { h } { hour } [ hours ]
+    { min } { minute } [ minutes ]
+    { s } { second } [ seconds ]
+    { C } { degree \space Celsius }  [ degrees \space Celsius ]
+    { F } { degree \space Fahrenheit } [ degrees \space Fahrenheit ]
+    { K } { kelvin }
+    { Re } { degree \space R\'{e}aumur } [ degrees \space R\'{e}aumur ]
+    { m } { metre } [ metres ]
+    { dm } { decimetre } [ decimetres ]
+    { cm } { centimetre } [ centimetres ]
+    { mm } { millimitre } [ millimitres ]
+    { in } { inch } [ inches ]
+    { l } [ \ensuremath { \ell } ] { litre } [ litres ]
+    { dl } { decilitre } [ decilitres ]
+    { cl } { centilitre } [ centilitres ]
+    { ml } { millilitre } [ millilitres ]
+    { cal } { calorie } [ calories ]
+    { kcal } { kilocalorie } [ kilocalories ]
+    { J } { joule } [ joules ]
+    { kJ } { kilojoule } [ kilojoules ]
+    { eV } { electron \space volt }
+    { pn } [ pinch ] { pinch } [ pinches ]
+    { EL } [ tbsp. ] { tablespoon } [ tablespoons ]
+    { TL } [ tsp. ] { teaspoon } [ teaspoons ]
+    { dsp } { dessertspoonful }
+    { csp } { coffeespoonful }
+    { ssp } { saltspoonful }
+    { decimal-mark } { . }
+    { one (m) } { one }
+    { one (f) } { one }
+    { one (n) } { one }
+  }
+\cudefinename { AmericanEnglish }
+  {
+    { kg } { kilogram }
+    { dag } { decagram }
+    { g } { gram }
+    { oz } { ounce }
+    { m } { meter } [ meters ]
+    { dm } { decimeter } [ decimeters ]
+    { cm } { centimeter } [ centimeters ]
+    { mm } { millimiter } [ millimiters ]
+    { in } { inch } [ inches ]
+    { l } [ \ensuremath { \ell } ] { liter } [ liters ]
+    { dl } { deciliter } [ deciliters ]
+    { cl } { centiliter } [ centiliters ]
+    { ml } { milliliter } [ milliliters ]
+    { pn } [ pn. ] { pinch } [ pinches ]
+  }
+\cudefinename { French }
+  {
+    { kg } { kilogramme } [ kilogrammes ]
+    { dag } { d\'{e}cagramme } [ d\'{e}cagrammes]
+    { g } { gramme } [ gramme ]
+    { oz } { once } < f >
+    { lb } { livre } [ livres ] < f >
+    { d } { jour } [ jours ]
+    { h } { heure } [ heures ] < f >
+    { min } { minute } [ minutes ] < f >
+    { s } { seconde } [ secondes ] < f >
+    { C } { degr\'{e} \space Celsius }  [ degr\'{e}s \space Celsius ]
+    { K } { degr\'{e} \space Fahrenheit } [ degr\'{e}s \space Fahrenheit ]
+    { F } { kelvin } [ kelvins ]
+    { Re } { \'{e}chelle \space R\'{e}aumur } [ degr\'{e}s \space R\'{e}aumur ]
+    { m } { m\`{e}tre } [ m\`{e}tres ]
+    { dm } { d\'{e}cim\`{e}tre } [ d\'{e}cim\`{e}tres ]
+    { cm } { centim\`{e}tre } [ centim\`{e}tres ]
+    { mm } { millim\`{e}tre } [ millim\`{e}tres ]
+    { in } [ po ] { pouce } [ pouces ]
+    { l } [ L ] { litre } [ litres ]
+    { dl } [ dL ] { d\'{e}cilitre } [ d\'{e}cilitres ]
+    { cl } [ cL ] { centilitre } [ centilitres ]
+    { ml } [ mL ] { millilitre } [ millilitres ]
+    { cal } { calorie } [ calorie ]
+    { kcal } { kilocalorie } [ kilocalories ]
+    { J } { joule } [ joules ]
+    { kJ } { kilojoule } [ kilojoules ]
+    { eV } { \'{e}lectron-volt } [ \'{e}lectron-volts ]
+    { pn } { pinc\'{e}e } < f >
+    { EL } [c.\`{a}.s.] { cuill\`{e}re  \space \`{a} \space  soupe } < f >
+    { TL } [c.\`{a}.c.] { cuill\`{e}re  \space \`{a} \space  caf\'{e} } < f >
+    { decimal-mark } { . }
+    { one (m) } { un }
+    { one (f) } { une }
+    { one (n) } { un }
+  }
+\cudefinekeys { kg }
+  {
+    { dag }{ 100 }
+    { g }  { 1000 }
+    { oz } { 35.27399 }
+    { lb } { 2.2046226 } %% 2.204 622 6
+    { stick } { 8.81849 }
+    { eVc-2 } { 560958865.0e+27 } %% 560958865.0 +- 3.5 e+27
+  }
+\cudefinekeys { d }
+  {
+    { h }  { 24 }
+    { min }{ 1440 }
+    { s }  { 86400 }
+    { hbareV-1 } { 151926746.1e+7 * 86400 } %% 151926746.1 +- 2.1 e+7
+  }
+\cudefinekeys { m }
+  {
+    { dm } { 10 }
+    { cm } { 100 }
+    { mm } { 1000 }
+    { in } { 39.370079 }
+    { chbareV-1 } { 5067730.759 } %% 5067730.759 +- 0.070
+  }
+\cudefinekeys { l }
+  {
+    { dl } { 10 }
+    { cl } { 100 }
+    { ml }{ 1000 }
+    { (chbareV-1)3 } { 130148929.5e+12 * 1e-3 } %% (130148929.5 +- 5.4 e+12)*1e-3
+  }
+\cudefinekeys { J }
+  {
+    { kJ }{ 1e-3 }
+    { cal }{ 0.2388459 }
+    { kcal }{ 0.2388459e-3 }
+    { eV }{ 624150912.6e+10 } %% 624150912.6 +- 3.9 e+10
+  }
+\fp_const:Nn \c__cookingunits_kb_eV_fp {  8.617 330 3 e-5  }
+\cudefinesinglekey { C }
+  {
+    { K } { #1 + 273.15 }
+    { F } { #1 * 1.8 + 32 }
+    { Re } { #1 * 0.8 }
+    { eV } { ( #1 + 273.15 ) * \c__cookingunits_kb_eV_fp }
+  }
+\cudefinesinglekey { F }
+  {
+    { C } { ( #1 - 32 ) *  5/9 }
+    { K } { ( #1 + 459.67 ) *  5/9 }
+    { Re } { ( #1 - 32 ) * 4/9 }
+    { eV } {( #1 + 459.67 ) *  5/9 * \c__cookingunits_kb_eV_fp }
+  }
+\cudefinesinglekey { K }
+  {
+    { C } { #1 - 273.15 }
+    { F } { #1 * 1.8 - 459.67 }
+    { Re } { ( #1 - 273.15 ) * 0.8 }
+    { eV } { #1 * \c__cookingunits_kb_eV_fp }
+  }
+\cudefinesinglekey { Re }
+  {
+    { K } { #1 * 1.25 + 273.15 }
+    { C } { #1  * 1.25 }
+    { F } { #1 * 2.25 + 32 }
+    { eV } { ( #1 * 1.25 + 273.15 ) * \c__cookingunits_kb_eV_fp }
+  }
+\cudefinephrase { German }
+  {
+    { 12 } { Dutzend } < n >
+  }
+\cusetup
+  {
+    set-option-for-F = { round-to-int = true } ,
+    set-option-for-C = { round-to-int = true } ,
+    set-option-for-K = { round-to-int = true } ,
+    set-option-for-Re = { round-to-int = true } ,
+    curef-add-forbidden-unit = { F , C , K , Re } ,
+    add-temperature-to-check =
+      {
+        K = 0,
+        C = -273.15 ,
+        F = -459.67 ,
+        Re = -218.52
+      } ,
+    round-precision = 2 ,
+  }
+\endinput
+%%
+%% End of file `cooking-units.sty'.

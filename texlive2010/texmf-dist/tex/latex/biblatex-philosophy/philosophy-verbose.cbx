@@ -1,0 +1,140 @@
+% $Id: philosophy-verbose.cbx,v 0.7a 2010/04/03 17:00:00 15:42:33 valbusa beta $
+%	Copyright 2009-2010 Ivan Valbusa. This package is author-maintained. 
+%	Permission is granted to copy, distribute and/or modify this software under the 
+%	terms of the LaTeX Project Public License, version 1.3c 
+%	http://www.ctan.org/tex-archive/macros/latex/base/lppl.txt.
+
+\ProvidesFile{philosophy-verbose.cbx}
+[$Id: philosophy-verbose.cbx,v 0.7a 2010/04/03 17:00:00 15:42:33 valbusa beta $]
+
+\RequireCitationStyle{verbose-trad2}
+\DeclareLanguageMapping{italian}{italian-philosophy}
+
+\newbool{cbx:scauthorscite}
+\newbool{cbx:latinemph}
+\newbool{cbx:commacit}
+
+\DeclareBibliographyOption{scauthorscite}[true]{%
+  \csuse{bool#1}{cbx:scauthorscite}}
+\DeclareBibliographyOption{latinemph}[true]{%
+  \csuse{bool#1}{cbx:latinemph}}
+\DeclareBibliographyOption{commacit}[true]{%
+  \csuse{bool#1}{cbx:commacit}}
+
+
+\ExecuteBibliographyOptions{%
+idemtracker=false,
+loccittracker=strict,
+citetracker=true,
+scauthorscite=false,
+latinemph=false,
+commacit=false}
+
+\newbibmacro*{cite:loccit}{%
+  \printtext{%
+    \bibhyperlink{cite\csuse{cbx@lastcite@\thefield{entrykey}}}{%
+      \bibstring[\mkibid]{loccit}}}%
+  \global\booltrue{cbx:loccit}}
+
+
+\renewbibmacro*{cite:ibid}{%
+  \ifloccit
+    {\usebibmacro{cite:loccit}}
+    {\printtext{%
+    \bibhyperlink{cite\csuse{cbx@lastcite@\thefield{entrykey}}}{%
+      \bibstring[\mkibid]{ibidem}}}%
+    }}
+    
+ \renewbibmacro*{cite:title}{%
+  \printtext[bibhyperlink]{%
+    \printfield[citetitle]{labeltitle}%
+    \ifbool{cbx:commacit}{\setunit{\addcomma\space}}
+    {\setunit{\addspace\midsentence}}}%
+      \bibstring{opcit}}
+
+  
+\AtEveryCite{\boolfalse{bbx:annotation}}
+
+
+\DeclareNameFormat{scdefault}{%
+  \iffirstinits
+    {\usebibmacro{name:first-last}{\textsc{#1}}{\textsc{#4}}{\textsc{#5}}{\textsc{#7}}}
+    {\ifblank{#3}{\usebibmacro{name:first-last}{\textsc{#1}}{#3}{#5}{\textsc{#7}}}{\usebibmacro{name:first-last}{\textsc{#1}}{\textsc{#3}}{\textsc{#5}}{\textsc{#7}}}}%
+  \usebibmacro{name:andothers}}
+
+\renewbibmacro*{cite:full}{%
+  \printtext[bibhypertarget]{%
+    \usedriver
+      {\ifbool{cbx:scauthorscite}{\DeclareNameAlias{sortname}{scdefault}}{\DeclareNameAlias{sortname}{default}}}
+      {\thefield{entrytype}}}%
+  \usebibmacro{shorthandintro}}
+ 
+ \newbibmacro*{ccite}{% 
+  \global\boolfalse{cbx:loccit}% 
+  \bibhypertarget{cite\the\value{instcount}}{% 
+    \ifciteseen 
+      {\iffieldundef{shorthand} 
+         {\ifciteibid 
+            {\usebibmacro{cite:ibid}} 
+            {\usebibmacro{cite:title}}% 
+     \usebibmacro{cite:save}} 
+         {\usebibmacro{cite:shorthand}}} 
+      {\usebibmacro{ccite:full}% 
+       \usebibmacro{cite:save}}}} 
+
+\newbibmacro*{ccite:full}{% 
+  \renewbibmacro*{author}{}% 
+  \renewbibmacro*{editor}{}% 
+  \renewbibmacro*{translator}{}% 
+  \renewbibmacro*{editor+others}{}% 
+  \printtext[bibhypertarget]{% 
+    \usedriver 
+      {\DeclareNameAlias{sortname}{default}} 
+      {\thefield{entrytype}}}% 
+  \usebibmacro{shorthandintro}} 
+          
+\DeclareCiteCommand{\ccite} 
+  {\usebibmacro{prenote}} 
+  {\usebibmacro{citeindex}% 
+   \usebibmacro{ccite}} 
+  {\multicitedelim} 
+  {\usebibmacro{cite:postnote}} 
+  
+  \AtEveryCite{%
+  \ifbool{cbx:latinemph}{\renewcommand*{\mkibid}{\emph}}{}%
+ \ifbool{cbx:scauthorscite}{\DeclareNameFormat{labelname}{%
+  \ifcase\value{uniquename}%
+    \usebibmacro{name:last}{\textsc{#1}}{\textsc{#3}}{\textsc{#5}}{\textsc{#7}}%
+  \or
+    \ifuseprefix
+      {\usebibmacro{name:first-last}{\textsc{#1}}{\textsc{#4}}{\textsc{#5}}{\textsc{#8}}}
+      {\usebibmacro{name:first-last}{\textsc{#1}}{\textsc{#4}}{\textsc{#6}}{\textsc{#8}}}%
+  \or
+    \usebibmacro{name:first-last}{\textsc{#1}}{\textsc{#3}}{\textsc{#5}}{\textsc{#7}}%
+  \fi
+  \usebibmacro{name:andothers}}}{}}
+  
+
+
+\DeclareCiteCommand{\cbx@crossref}
+  {\let\scshape\normalfont}% per evitare il maiuscoletto all'interno della voce
+  {\ifciteseen{\usebibmacro{editor+others}%
+  \setunit*{\addcomma\space}\printtext[bibhyperlink]{%
+    \printfield[citetitle]{labeltitle}%
+    \setunit{\addspace}%
+    \bibstring{opcit}}}{\usebibmacro{incollection:full}}}%
+  {}%
+  {}%	
+
+
+\DeclareCiteCommand{\cbx@inbookcrossref}
+  {\let\scshape\normalfont}% per evitare il maiuscoletto all'interno della voce
+  {\ifciteseen{\usebibmacro{bybookauthor}%
+  \setunit*{\addcomma\space}\printtext[bibhyperlink]{%
+    \printfield[citetitle]{labeltitle}%
+    \setunit{\addspace}%
+    \bibstring{opcit}}}{\usebibmacro{inbook:full}}}%
+  {}%
+  {}%
+
+\endinput

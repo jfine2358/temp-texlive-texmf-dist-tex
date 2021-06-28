@@ -1,0 +1,109 @@
+package LaTeXML::Package::Pool;
+use strict;
+use LaTeXML::Package;
+use Cwd qw(cwd abs_path);
+DeclareOption('report','');
+DeclareOption('book','');
+DeclareOption('chapter','');
+DeclareOption('part','');
+DeclareOption('showignores','');
+DeclareOption('extrefs','');
+RequirePackage('sref');
+RequirePackage('omtext');
+DefEnvironment('{omgroup} OptionalKeyVals:omgroup {}',
+               "<omdoc:omgroup layout='sectioning'"
+               .   "?&KeyVal(#1,'id')(xml:id='&KeyVal(#1,'id')')()"
+               .   "?&KeyVal(#1,'type')(type='&KeyVal(#1,'type')')()>\n"
+          . "<dc:title ?#locator(stex:srcref='#locator')()>#2</dc:title>\n"
+       . "#body\n"
+     . "</omdoc:omgroup>");
+DefParameterType('IfBeginFollows', sub {
+   my ($gullet) = @_;
+   $gullet->skipSpaces;
+                   my $next = $gullet->readToken;
+                   $gullet->unread($next);
+                   $next = ToString($next);
+                   #Hm, falling back to regexp handling, the $gullet->ifNext approach didn't work properly
+                   return 1 unless ($next=~/^\\begin/);
+                   return;
+                 },
+ reversion=>'', optional=>1);#$
+Let('\group@item@maybe@unwrap','\relax');
+DefMacro('\group@item[] IfBeginFollows', sub {
+  my($gullet,$tag,$needswrapper)=@_;
+  ( T_CS('\group@item@maybe@unwrap'),
+    ($needswrapper ? (Invocation(T_CS('\group@item@wrap'),$tag)->unlist) : ()) ); });
+DefConstructor('\group@item@wrap {}',
+       "<omdoc:omtext>"
+       . "?#1(<dc:title>#1</dc:title>)()"
+               . "<omdoc:CMP><omdoc:p>",
+       beforeDigest=>sub {
+ Let('\group@item@maybe@unwrap','\group@item@unwrap');
+ #$_[0]->bgroup;
+ useCMPItemizations();
+ return; },
+       properties=>sub{ RefStepItemCounter(); });
+DefConstructor('\group@item@unwrap',
+               "",
+               beforeDigest=>sub {
+                 # $_[0]->egroup;#$
+                 Let('\group@item@maybe@unwrap','\relax'); },
+               beforeConstruct=>sub {
+                 $_[0]->maybeCloseElement('omdoc:p');
+                 $_[0]->maybeCloseElement('omdoc:CMP');
+                 $_[0]->maybeCloseElement('omdoc:omtext');
+               });
+Let('group@item@maybe@unwrap','\relax');
+Let('\itemize@item'=>'\group@item');
+Let('\enumerate@item'=>'\group@item');
+Let('\description@item'=>'\group@item');
+DefEnvironment('{itemize}',
+       "<omdoc:omgroup xml:id='#id' layout='itemize'>"
+              .  "#body"
+              ."</omdoc:omgroup>",
+       properties=>sub { beginItemize('itemize'); },
+       beforeDigestEnd=>sub { Digest(T_CS('\group@item@maybe@unwrap')); });
+DefEnvironment('{enumerate}',
+       "<omdoc:omgroup xml:id='#id' layout='enumerate'>#body</omdoc:omgroup>",
+       properties=>sub { beginItemize('enumerate'); },
+       beforeDigestEnd=>sub { Digest(T_CS('\group@item@maybe@unwrap')); });
+DefEnvironment('{description}',
+       "<omdoc:omgroup xml:id='#id' layout='description'>"
+              .  "#body"
+              ."</omdoc:omgroup>",
+       properties=>sub { beginItemize('description'); },
+       beforeDigestEnd=>sub { Digest(T_CS('\group@item@maybe@unwrap')); });
+DefKeyVal('ignore','type','Semiverbatim');
+DefKeyVal('ignore','comment','Semiverbatim');
+DefEnvironment('{ignore} OptionalKeyVals:ignore',
+               "<omdoc:ignore  %&KeyVals(#1)>#body</omdoc:ignore>");
+DefConstructor('\STRlabel{}{}', sub {
+  my($document,$label,$object)=@_;
+  $document->absorb($object);
+  $document->addAttribute('xml:id'=>ToString($label)) if $label; });
+DefConstructor('\STRcopy{}',"<omdoc:ref xref='##1'/>");
+DefConstructor('\STRsemantics[]{}{}', sub {
+  my($document,$label,$ignore,$object)=@_;
+  $document->absorb($object);
+  $document->addAttribute('xml:id'=>ToString($label)) if $label; });
+DefMacro('\STRlabeldef{}{}', "");
+sub omdocColorMacro {
+  my ($color, @args) = @_;
+  my $tok_color = TokenizeInternal($color);
+  (T_BEGIN, T_CS('\@omdoc@color'), T_BEGIN, $tok_color->unlist,
+   T_END, T_CS('\@omdoc@color@content'), T_OTHER('['), $tok_color->unlist, T_OTHER(']'),
+   T_BEGIN, $args[1]->unlist, T_END, T_END); }
+DefMacro('\@omdoc@color{}', sub { MergeFont(color=>$_[1]->toString); return; });#$
+DefConstructor('\@omdoc@color@content[]{}',
+   "?#isMath(#2)(<omdoc:phrase ?#1(style='color:#1')()>#2</omdoc:phrase>)");
+foreach my $color(qw(blue red green magenta cyan brown yellow)) {
+  DefMacro("\\".$color.'{}', sub { omdocColorMacro($color, @_); }); }#$
+DefConstructor('\newpage','');
+Tag('omdoc:ignore',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:ref',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+DefMacro('\baseURI []Semiverbatim', sub {
+    AssignValue('baselocal'=>abs_path(ToString(Expand($_[1]))));
+    AssignValue('baseuri'=>ToString(Expand($_[2])));});
+DefConstructor('\url Semiverbatim',"<omdoc:link href='#1'>#1</omdoc:link>");
+DefConstructor('\href Semiverbatim {}',"<omdoc:link href='#1'>#2</omdoc:link>");
+1;

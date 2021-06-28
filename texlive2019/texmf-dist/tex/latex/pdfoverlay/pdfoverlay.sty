@@ -1,0 +1,241 @@
+%%
+%% This is file `pdfoverlay.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% pdfoverlay.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (c) 2018 David Purton <dcpurton@marshwiggle.net>
+%% 
+%% This work may be distributed and/or modified under the conditions of
+%% the LaTeX Project2 Public License, either version 1.3c of this license
+%% or (at your option) any later version. The latest version of this
+%% license is in
+%%    http://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% 
+%% This work is "maintained" (as per the LPPL maintenance status)
+%% by David Purton.
+%% 
+%% This work consists of the files pdfoverlay.ins, pdfoverlay.dtx, README.md,
+%% and the derived files pdfoverlay.sty and pdfoverlay.pdf
+%% 
+\RequirePackage{xparse}
+\ProvidesExplPackage{pdfoverlay}{2018/05/08}{1.0}
+  {Overlay text on an existing PDF document (DCP)}
+\RequirePackage{everypage,pdfpages}
+\AddEverypageHook { \__pdfoverlay_output_pdf_page: }
+\AtEndDocument {
+  \bool_if:NT \g__pdfoverlay_action_pending_bool
+    {
+      \null
+    }
+}
+\msg_new:nnnn { pdfoverlay } { file-not-found }
+  { PDF~file~`#1'~not~found. }
+  { Unable~to~find~the~file~`#1'. \\
+    Check~that~the~file~exists~and~you~have~spelt~it~correctly. }
+\msg_new:nnnn { pdfoverlay } { file-not-set }
+  { PDF~file~not~set. }
+  { You~have~not~specified~a~PDF~file. \\
+    Set~a~PDF~file~using~\pdfoverlaySetPDF. }
+\msg_new:nnnn { pdfoverlay } { page-not-found }
+  { Page~not~found~in~PDF. }
+  { PDF~file~`#1'~does~not~contain~page~#2. \\
+    Specify~a~page~between~1~and~#3. }
+\msg_new:nnnn { pdfoverlay } { page-too-low }
+  { Requested~page~less~than~current~page~in~PDF. }
+  { You~have~requested~to~include~to~page~#1, \\
+    but~the~current~page~is~already~at~page~#2. \\
+    Specify~a~page~between~#2~and~#3. }
+\str_new:N \g__pdfoverlay_pdf_file_name_str
+\int_new:N \g__pdfoverlay_page_count_int
+\int_new:N \g__pdfoverlay_page_int
+\bool_new:N \g__pdfoverlay_output_active_bool
+\bool_new:N \g__pdfoverlay_action_pending_bool
+\clist_new:N \g__pdfoverlay_graphics_options_clist
+\clist_set:Nn \g__pdfoverlay_graphics_options_clist
+  {
+    keepaspectratio ,
+    width  = \paperwidth ,
+    height = \paperheight ,
+    page = \int_use:N \g__pdfoverlay_page_int
+  }
+\cs_new:Nn \__pdfoverlay_output_pdf_page:
+  {
+    \bool_lazy_all:nT
+      {
+        { \bool_if_p:N \g__pdfoverlay_output_active_bool }
+        { \bool_not_p:n
+            { \str_if_empty_p:N \g__pdfoverlay_pdf_file_name_str } }
+        { \int_compare_p:n
+            { \c_zero <= \g__pdfoverlay_page_int
+              < \g__pdfoverlay_page_count_int } }
+      }
+      {
+        \AddToShipoutPictureBG*
+          {
+            \__pdfoverlay_format_pdf_page:
+          }
+        \int_gincr:N \g__pdfoverlay_page_int
+        \bool_gset_false:N \g__pdfoverlay_action_pending_bool
+      }
+  }
+\cs_new:Nn \__pdfoverlay_format_pdf_page:
+  {
+    \AtPageCenter
+      {
+        \makebox (0, 0)
+          {
+            \use:x
+              {
+                \exp_not:N \includegraphics
+                  [ \clist_use:Nn \g__pdfoverlay_graphics_options_clist { , } ]
+                  { \g__pdfoverlay_pdf_file_name_str }
+              }
+          }
+      }
+  }
+\prg_new_conditional:Npnn \__pdfoverlay_if_page_exists:n #1 { p, T, F, TF }
+  {
+    \str_if_empty:NTF \g__pdfoverlay_pdf_file_name_str
+      {
+        \msg_error:nn { pdfoverlay } { file-not-set }
+        \prg_return_false:
+      }
+      {
+        \int_compare:nTF
+          {
+            \c_one <= #1 <= \g__pdfoverlay_page_count_int
+          }
+          {
+            \prg_return_true:
+          }
+          {
+            \msg_error:nnxxx { pdfoverlay } { page-not-found }
+              { \str_use:N \g__pdfoverlay_pdf_file_name_str }
+              { \int_eval:n { #1 } }
+              { \int_use:N \g__pdfoverlay_page_count_int }
+            \prg_return_false:
+          }
+      }
+  }
+\cs_new:Npn \pdfoverlay_set_pdf:n #1
+  {
+    \file_if_exist:nTF { #1 }
+      {
+        \str_gset:Nn \g__pdfoverlay_pdf_file_name_str { #1 }
+        \edef \AM@currentdocname { #1 }
+        \AM@getpagecount
+        \int_gset_eq:NN \g__pdfoverlay_page_count_int \AM@pagecount
+        \int_gset_eq:NN \g__pdfoverlay_page_int \c_zero
+        \bool_gset_true:N \g__pdfoverlay_output_active_bool
+        \bool_gset_false:N \g__pdfoverlay_action_pending_bool
+      }
+      {
+        \msg_error:nnn { pdfoverlay } { file-not-found } { #1 }
+      }
+  }
+\cs_new:Nn \pdfoverlay_set_graphics_options:n
+  {
+    \clist_gset:Nn \g__pdfoverlay_graphics_options_clist { #1 }
+    \clist_gput_right:Nn \g__pdfoverlay_graphics_options_clist
+      {
+        page = \int_use:N \g__pdfoverlay_page_int
+      }
+  }
+\cs_new:Npn \pdfoverlay_include_to_page:n #1
+  {
+    \__pdfoverlay_if_page_exists:nT { #1 }
+      {
+        \int_compare:nTF
+          {
+              #1 >= \g__pdfoverlay_page_int + 1
+          }
+          {
+            \bool_lazy_all:nT
+              {
+                { \bool_if_p:n { \g__pdfoverlay_action_pending_bool } }
+                { \int_compare_p:n { \g__pdfoverlay_page_int <
+                                     \g__pdfoverlay_page_count_int - 1 } }
+                { \int_compare_p:n { #1 != \g__pdfoverlay_page_int + 1 } }
+              }
+              {
+                \null
+                \clearpage
+              }
+              \int_while_do:nNnn { \g__pdfoverlay_page_int } < { #1 - 1 }
+                {
+                  \null
+                  \clearpage
+                }
+              \bool_gset_true:N \g__pdfoverlay_action_pending_bool
+          }
+          {
+            \msg_error:nnxxx { pdfoverlay } { page-too-low }
+              { \int_eval:n { #1 } }
+              { \int_eval:n { \g__pdfoverlay_page_int + 1 } }
+              { \int_use:N \g__pdfoverlay_page_count_int }
+          }
+      }
+  }
+\cs_new:Nn \pdfoverlay_include_to_last_page:
+  {
+      \pdfoverlay_include_to_page:n { \g__pdfoverlay_page_count_int }
+  }
+\cs_new:Npn \pdfoverlay_skip_to_page:n #1
+  {
+    \__pdfoverlay_if_page_exists:nT { #1 }
+      {
+        \bool_if:nT { \g__pdfoverlay_action_pending_bool }
+          {
+            \null
+            \clearpage
+          }
+        \int_gset:Nn \g__pdfoverlay_page_int { #1 - 1 }
+        \bool_gset_true:N \g__pdfoverlay_action_pending_bool
+      }
+  }
+\cs_new:Nn \pdfoverlay_pause_output:
+  {
+    \bool_gset_false:N \g__pdfoverlay_output_active_bool
+  }
+\cs_new:Nn \pdfoverlay_resume_output:
+  {
+    \bool_gset_true:N \g__pdfoverlay_output_active_bool
+  }
+\NewDocumentCommand \pdfoverlaySetPDF { m }
+  {
+    \pdfoverlay_set_pdf:n { #1 }
+  }
+\NewDocumentCommand \pdfoverlaySetGraphicsOptions { m }
+  {
+    \pdfoverlay_set_graphics_options:n { #1 }
+  }
+\NewDocumentCommand \pdfoverlayIncludeToPage { m }
+  {
+    \pdfoverlay_include_to_page:n { #1 }
+  }
+\NewDocumentCommand \pdfoverlayIncludeToLastPage { }
+  {
+    \pdfoverlay_include_to_last_page:
+  }
+\NewDocumentCommand \pdfoverlaySkipToPage { m }
+  {
+    \pdfoverlay_skip_to_page:n { #1 }
+  }
+\NewDocumentCommand \pdfoverlayPauseOutput { }
+  {
+    \pdfoverlay_pause_output:
+  }
+\NewDocumentCommand \pdfoverlayResumeOutput { }
+  {
+    \pdfoverlay_resume_output:
+  }
+%% 
+%%
+%% End of file `pdfoverlay.sty'.

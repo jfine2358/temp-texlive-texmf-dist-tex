@@ -1,0 +1,395 @@
+%%
+%% This is file `xpinyin.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% xpinyin.dtx  (with options: `package')
+%% 
+%%    Copyright (C) 2012--2013 by Qing Lee <sobenlee@gmail.com>
+%% --------------------------------------------------------------------------
+%%    This work may be distributed and/or modified under the
+%%    conditions of the LaTeX Project Public License, either version 1.3
+%%    of this license or (at your option) any later version.
+%%    The latest version of this license is in
+%%      http://www.latex-project.org/lppl.txt
+%%    and version 1.3 or later is part of all distributions of LaTeX
+%%    version 2005/12/01 or later.
+%% 
+%%    This work has the LPPL maintenance status "maintained".
+%%    The Current Maintainer of this work is Qing Lee.
+%% 
+\NeedsTeXFormat{LaTeX2e}
+\RequirePackage{expl3}
+\GetIdInfo$Id: xpinyin.dtx 407 2013-05-20 02:19:35Z sobenlee $
+  {Automatically add pinyin to Chinese characters}
+\ProvidesExplPackage{\ExplFileName}{\ExplFileDate}{1.3}{\ExplFileDescription}
+\msg_new:nnn  { xpinyin } { no-LuaTeX }
+  {
+    The~xpinyin~package~is~not~supported~in~LuaTeX.\\\\
+    You~must~change~your~typesetting~engine~to\\
+    "xelatex"~or~"pdflatex"~or~"latex"~instead~of~"lualatex".
+  }
+\luatex_if_engine:T { \msg_critical:nn { xpinyin } { no-LuaTeX } }
+\RequirePackage{xparse}
+\RequirePackage{l3keys2e}
+\box_new:N \l_xpinyin_tmpa_box
+\box_new:N \l_xpinyin_tmpb_box
+\cs_new_nopar:Nn \xpinyin_make_box:nn
+  { \xpinyin_save_CJKsymbol:n {#1} \xpinyin_make_pinyin_box:nn {#1} {#2} }
+\cs_new_nopar:Nn \xpinyin_make_pinyin_box:nn
+  {
+    \hbox_overlap_left:n
+      {
+        \hbox_set:Nn \l_xpinyin_tmpa_box
+          { \xpinyin_CJKsymbol_hook: \xpinyin_save_CJKsymbol:n {#1} }
+        \hbox_set:Nn \l_xpinyin_tmpb_box
+          {
+            \color_group_begin: \color_ensure_current:
+            \xpinyin_select_font:
+            \l_xpinyin_format_tl
+            \clist_if_exist:cT
+              { c_xpinyin_multiple_ \xpinyin_CJKsymbol_to_unicode:n {#1} _clist }
+              { \l_xpinyin_multiple_tl }
+            {#2}
+            \color_group_end:
+          }
+        \dim_compare:nNnT
+          { \box_wd:N \l_xpinyin_tmpb_box } >
+          { \box_wd:N \l_xpinyin_tmpa_box + \l_xpinyin_CJKglue_dim }
+          {
+            \box_resize:Nnn \l_xpinyin_tmpb_box
+              { \box_wd:N \l_xpinyin_tmpa_box + \l_xpinyin_CJKglue_dim }
+              { \box_ht:N \l_xpinyin_tmpb_box + \box_dp:N \l_xpinyin_tmpb_box }
+          }
+        \box_move_up:nn { \l_xpinyin_vsep_tl }
+          {
+            \hbox_to_wd:nn { \box_wd:N \l_xpinyin_tmpa_box }
+              { \tex_hss:D  \box_use_clear:N \l_xpinyin_tmpb_box \tex_hss:D }
+          }
+      }
+    { \xpinyin_CJK_node: }
+    \xpinyin_CJK_ignorespaces:
+  }
+\cs_new_nopar:Nn \xpinyin_CJKsymbol:n
+  { \xpinyin_make_box:nn {#1} { \xpinyin_to_pinyin:n {#1} } }
+\cs_new_nopar:Nn \xpinyin_to_pinyin:n
+  { \use:c { c_xpinyin_ \xpinyin_CJKsymbol_to_unicode:n {#1} _tl } }
+\NewDocumentEnvironment { pinyinscope } { O{} }
+  {
+    \keys_set:nn { xpinyin } {#1}
+    \tl_if_empty:NF \l_xpinyin_hsep_tl
+      { \cs_set_nopar:Npn \CJKglue { \skip_horizontal:n { \l_xpinyin_hsep_tl } } }
+    \settowidth \l_xpinyin_CJKglue_dim { \CJKglue }
+    \xpinyin_replace_CJKsymbol:
+  }
+  { \cs_gset_eq:NN \CJKsymbol \xpinyin_save_CJKsymbol:n }
+\NewDocumentCommand \xpinyin { s O{} m }
+  {
+    \IfBooleanTF {#1}
+      {
+        \group_begin:
+        \keys_set:nn { xpinyin } {#2}
+        \tl_if_empty:NF \l_xpinyin_hsep_tl
+          { \cs_set_nopar:Npn \CJKglue { \skip_horizontal:n { \l_xpinyin_hsep_tl } } }
+        \settowidth \l_xpinyin_CJKglue_dim { \CJKglue }
+        \xpinyin_replace_CJKsymbol:
+        #3
+        \group_end:
+      }
+      {
+        \group_begin:
+        \keys_set:nn { xpinyin } {#2}
+        \settowidth \l_xpinyin_CJKglue_dim { \CJKglue }
+        \xpinyin_xpinyin_single_aux:nn {#3}
+      }
+  }
+\dim_new:N \l_xpinyin_CJKglue_dim
+\cs_new_nopar:Nn \xpinyin_xpinyin_single_aux:nn
+  {
+    \xpinyin_xpinyin_single_hook:n
+      { \cs_set_eq:NN \xpinyin_save_CJKsymbol:n \use:n }
+    \cs_set_eq:NN \xpinyin_CJKsymbol_to_unicode:n \xpinyin_CJKchar_to_unicode:n
+    \xpinyin_make_box:nn {#1} { \xpinyin_pinyin:n {#2} }
+    \group_end:
+  }
+\cs_new_nopar:Nn \xpinyin_replace_CJKsymbol_aux:
+  {
+    \cs_if_eq:NNF \CJKsymbol \xpinyin_CJKsymbol:n
+      {
+        \cs_set_eq:NN \xpinyin_save_CJKsymbol:n \CJKsymbol
+        \cs_set_eq:NN \CJKsymbol \xpinyin_CJKsymbol:n
+      }
+  }
+\cs_new_nopar:Npn \xpinyin_xpinyin_single_hook_aux:n
+  {
+    \cs_if_eq:NNTF \CJKsymbol \xpinyin_CJKsymbol:n
+      {
+        \cs_set_eq:NN \CJKsymbol \xpinyin_save_CJKsymbol:n
+        \cs_set_eq:NN \xpinyin_save_CJKsymbol:n \use:n
+      }
+  }
+\cs_new_nopar:Nn \xpinyin_select_font_xetex:
+  {
+    \cs_if_exist_use:cF { \l_xpinyin_coor_tl }
+      {
+        \tl_set:Nx \l_xpinyin_current_coor_tl { \l_xpinyin_coor_tl }
+        \xpinyin_select_font_aux:
+        \int_compare:nNnT { \XeTeXfonttype \tex_font:D } > \c_zero
+          {
+            \exp_last_unbraced:NNV
+            \cs_gset_eq:cN \l_xpinyin_current_coor_tl \tex_font:D
+          }
+      }
+  }
+\cs_new_nopar:Nn \xpinyin_select_font_aux:
+  {
+    \fontsize
+      { \l_xpinyin_ratio_tl \etex_dimexpr:D \f@size pt \scan_stop: }
+      { \c_zero_skip }
+    \l_xpinyin_font_tl
+    \selectfont
+  }
+\cs_new_nopar:Nn \xpinyin_CJKsymbol_to_unicode_xetex:n { \int_to_hexadecimal:n {`#1} }
+\cs_new_nopar:Nn \xpinyin_CJKsymbol_to_unicode_pdftex:n
+  { \int_to_hexadecimal:n { \int_from_hexadecimal:V \CJK@plane * "100 + #1 } }
+\cs_new_nopar:Nn \xpinyin_CJKchar_to_unicode_pdftex:n
+  { \int_to_hexadecimal:n { \xpinyin_UTF_viii_to_unicode:NNNw #1 \q_stop } }
+\cs_new_nopar:Npn \xpinyin_UTF_viii_to_unicode:NNNw #1#2#3#4 \q_stop
+  {
+    \tl_if_empty:nTF {#4}
+      { ( `#1 - "E0 ) * "1000 + ( `#2 - "80 ) * "40 + ( `#3 - "80 ) }
+      { ( `#1 - "F0 ) * "4000 + ( `#2 - "80 ) * "1000 + ( `#3 - "80 ) * "40 + ( `#4 - "80 ) }
+  }
+\cs_generate_variant:Nn \int_from_hexadecimal:n { V }
+\cs_new_nopar:Nn \xpinyin_adjust_xeCJK_hook:
+  {
+    \cs_new_eq:NN \xpinyin_select_font:           \xpinyin_select_font_xetex:
+    \cs_new_eq:NN \xpinyin_CJKsymbol_to_unicode:n \xpinyin_CJKsymbol_to_unicode_xetex:n
+    \cs_new_eq:NN \xpinyin_CJKchar_to_unicode:n   \xpinyin_CJKsymbol_to_unicode:n
+    \cs_new_eq:NN \xpinyin_replace_CJKsymbol:     \xpinyin_replace_CJKsymbol_aux:
+    \cs_new_eq:NN \xpinyin_CJK_node:              \xeCJK_CJK_kern:
+    \cs_new_eq:NN \xpinyin_CJK_ignorespaces:      \xeCJK_ignore_spaces:w
+    \cs_new_protected_nopar:Npn \xpinyin_CJK_node: { \xeCJK_make_node:n { CJK } }
+    \tl_gset:Nn \l_xpinyin_coor_tl
+      { (\cs_meaning:N \l_xpinyin_font_tl)/\l_xeCJK_current_font_tl/\l_xpinyin_ratio_tl }
+    \cs_new_nopar:Nn \xpinyin_CJKsymbol_hook: { \makexeCJKinactive \xeCJK_select_font: }
+    \cs_new_nopar:Npn \xpinyin_xpinyin_single_hook:n
+      { \cs_if_eq:NNTF \CJKsymbol \xpinyin_CJKsymbol:n { \cs_set_eq:NN \CJKsymbol \use:n } }
+  }
+\cs_new_nopar:Nn \xpinyin_adjust_CJK_hook:
+  {
+    \cs_new_eq:NN \xpinyin_select_font:           \xpinyin_select_font_aux:
+    \cs_new_eq:NN \xpinyin_CJKsymbol_to_unicode:n \xpinyin_CJKsymbol_to_unicode_pdftex:n
+    \cs_new_eq:NN \xpinyin_CJKchar_to_unicode:n   \xpinyin_CJKchar_to_unicode_pdftex:n
+    \cs_new_eq:NN \xpinyin_CJKsymbol_hook:        \prg_do_nothing:
+    \cs_new_eq:NN \xpinyin_CJK_node:              \CJK@CJK
+    \cs_new_eq:NN \xpinyin_CJK_ignorespaces:      \prg_do_nothing:
+    \@ifpackageloaded { CJKpunct }
+      { \xpinyin_adjust_CJKpunct_hook: }
+      {
+        \cs_new_eq:NN \xpinyin_replace_CJKsymbol:   \xpinyin_replace_CJKsymbol_aux:
+        \cs_new_eq:NN \xpinyin_xpinyin_single_hook:n \xpinyin_xpinyin_single_hook_aux:n
+      }
+    \prop_map_function:NN \g_xpinyin_tone_prop \DeclareUnicodeCharacter
+  }
+\cs_new_nopar:Nn \xpinyin_adjust_CJKpunct_hook:
+  {
+    \cs_new_nopar:Nn \xpinyin_replace_CJKsymbol:
+      {
+        \int_compare:nNnTF { \CJKpunct@punctstyle } = { \CJKpunct@ps@plain }
+          { \xpinyin_replace_CJKsymbol_aux: }
+          {
+            \cs_if_eq:NNF \CJKosymbol \xpinyin_CJKsymbol:n
+              {
+                \cs_set_eq:NN \xpinyin_save_CJKsymbol:n \CJKosymbol
+                \cs_set_eq:NN \CJKosymbol \xpinyin_CJKsymbol:n
+              }
+          }
+      }
+    \cs_new_nopar:Npn \xpinyin_xpinyin_single_hook:n
+      {
+        \int_compare:nNnTF { \CJKpunct@punctstyle } = { \CJKpunct@ps@plain }
+          { \xpinyin_xpinyin_single_hook_aux:n }
+          {
+            \cs_if_eq:NNTF \CJKosymbol \xpinyin_CJKsymbol:n
+              {
+                \cs_set_eq:NN \CJKosymbol \xpinyin_save_CJKsymbol:n
+                \cs_set_eq:NN \xpinyin_save_CJKsymbol:n \use:n
+              }
+          }
+      }
+  }
+\AtBeginDocument
+  {
+    \@ifpackageloaded { xeCJK }
+      { \xpinyin_adjust_xeCJK_hook: }
+      {
+        \@ifpackageloaded { CJKutf8 }
+          { \xpinyin_adjust_CJK_hook: }
+          { \msg_warning:nn { xpinyin } { invalid } }
+      }
+  }
+\msg_new:nnn { xpinyin } { invalid }
+  {
+    If~you~want~to~use~xpinyin~in~the~right~way,~you\\
+    should~load~the~\xetex_if_engine:TF { xeCJK } { CJKutf8 }~
+    package~in~the~preamble.\\
+  }
+\NewDocumentCommand \pinyin { O{} m }
+  {
+    \group_begin:
+    \keys_set:nn { xpinyin } {#1}
+    \l_xpinyin_font_tl
+    \l_xpinyin_format_tl
+    \selectfont
+    \xpinyin_pinyin:n {#2}
+    \group_end:
+  }
+\cs_new_nopar:Nn \xpinyin_pinyin:n
+  {
+    \xpinyin_xpinyin_init:
+    \bool_set_true:N \l_xpinyin_first_bool
+    \tl_set:Nn \l_xpinyin_save_tl {#1}
+    \xpinyin_xpinyin_aux:N #1 \q_recursion_tail \q_recursion_stop
+  }
+\cs_new_nopar:Nn \xpinyin_xpinyin_aux:N
+  {
+    \quark_if_recursion_tail_stop_do:Nn #1
+      {
+        \bool_if:NTF \l_xpinyin_first_bool { \l_xpinyin_save_tl }
+          { \tl_if_empty:NF \l_xpinyin_item_tl { \l_xpinyin_pysep_tl \l_xpinyin_item_tl } }
+      }
+    \xpinyin_if_number:NTF {#1}
+      {
+        \bool_if:NTF \l_xpinyin_first_bool
+          { \bool_set_false:N \l_xpinyin_first_bool }
+          { \l_xpinyin_pysep_tl }
+        \l_xpinyin_pre_tl
+        \xpinyin_tone:Vn \l_xpinyin_tone_tl {#1}
+        \l_xpinyin_post_tl
+        \xpinyin_xpinyin_init:
+      }
+      {
+        \int_compare:nNnTF
+          { 0 \cs_if_exist_use:c { c_xpinyin_ \tl_to_str:N \l_xpinyin_tone_tl _tl } } >
+          { 0 \cs_if_exist_use:c { c_xpinyin_ \tl_to_str:n {#1} _tl } }
+          { \tl_put_right:Nn \l_xpinyin_post_tl {#1} }
+          {
+            \tl_set:Nn \l_xpinyin_tone_tl {#1}
+            \tl_set_eq:NN \l_xpinyin_pre_tl \l_xpinyin_item_tl
+            \tl_clear:N \l_xpinyin_post_tl
+          }
+        \tl_put_right:Nx \l_xpinyin_item_tl { \xpinyin_replace_v:N {#1} }
+      }
+    \xpinyin_xpinyin_aux:N
+  }
+\cs_new_nopar:Nn \xpinyin_tone:Nn
+  { \use:c { xpinyin_num_to_tone_ #1 :Nn } {#1} {#2} }
+\cs_generate_variant:Nn \xpinyin_tone:Nn { V }
+\cs_new_nopar:Nn \xpinyin_replace_v:N
+  {
+    \str_if_eq:nnTF {#1} { v }
+      {
+        \bool_if:nTF
+          {
+            \str_if_eq_p:Vn \l_xpinyin_item_tl { l } ||
+            \str_if_eq_p:Vn \l_xpinyin_item_tl { n } ||
+            \str_if_eq_p:Vn \l_xpinyin_item_tl { L } ||
+            \str_if_eq_p:Vn \l_xpinyin_item_tl { N }
+          }
+          { \exp_not:n { ü} } { u }
+      }
+      { \exp_not:n {#1} }
+  }
+\cs_new_nopar:Nn \xpinyin_xpinyin_init:
+  {
+    \tl_clear:N \l_xpinyin_pre_tl   \tl_clear:N \l_xpinyin_post_tl
+    \tl_clear:N \l_xpinyin_item_tl  \tl_clear:N \l_xpinyin_tone_tl
+  }
+\prg_new_conditional:Nnn \xpinyin_if_number:N { p , T , F , TF }
+  {
+    \if_int_compare:w \c_one < 1 #1 \exp_stop_f:
+      \prg_return_true: \else: \prg_return_false: \fi:
+  }
+\bool_new:N \l_xpinyin_first_bool
+\tl_const:Nn \c_xpinyin_a_tl { 3 }
+\tl_const:Nn \c_xpinyin_o_tl { 2 }
+\tl_const:Nn \c_xpinyin_e_tl { 2 }
+\tl_const:Nn \c_xpinyin_i_tl { 1 }
+\tl_const:Nn \c_xpinyin_u_tl { 1 }
+\tl_const:Nn \c_xpinyin_v_tl { 1 }
+\cs_new_nopar:Nn \xpinyin_num_to_tone:Nn
+  {
+    \if_case:w \int_eval:n { #2 - \c_one } \exp_stop_f:
+      \= {#1}  \or: \'{#1}  \or: \v {#1}  \or: \` {#1}  \else: #1 \fi:
+  }
+\tl_map_inline:nn { a o e u }
+  { \cs_new_eq:cN { xpinyin_num_to_tone_ #1 :Nn } \xpinyin_num_to_tone:Nn }
+\cs_new_nopar:Nn \xpinyin_num_to_tone_i:Nn
+  {
+    \if_case:w \int_eval:n { #2 - \c_one } \exp_stop_f:
+      ī  \or: í  \or: ǐ  \or: ì \else: i \fi:
+  }
+\cs_new_nopar:Nn \xpinyin_num_to_tone_v:Nn
+  {
+    \bool_if:nTF
+      {
+        \str_if_eq_p:Vn \l_xpinyin_pre_tl { l } ||
+        \str_if_eq_p:Vn \l_xpinyin_pre_tl { n } ||
+        \str_if_eq_p:Vn \l_xpinyin_pre_tl { L } ||
+        \str_if_eq_p:Vn \l_xpinyin_pre_tl { N }
+      }
+      {
+        \if_case:w \int_eval:n { #2 - \c_one } \exp_stop_f:
+          ǖ  \or: ǘ  \or: ǚ  \or: ǜ \else: ü \fi:
+      }
+      { \xpinyin_num_to_tone:Nn u {#2} }
+  }
+\prop_new:N \g_xpinyin_tone_prop
+\clist_map_inline:nn
+  {
+    {0101}{\=a} ,     {00E1}{\'a} ,     {01CE}{\v{a}} ,   {00E0}{\`a} ,
+    {014D}{\=o} ,     {00F3}{\'o} ,     {01D2}{\v{o}} ,   {00F2}{\`o} ,
+    {0113}{\=e} ,     {00E9}{\'e} ,     {011B}{\v{e}} ,   {00E8}{\`e} ,
+    {012B}{\={\i}} ,  {00ED}{\'{\i}} ,  {01D0}{\v{\i}} ,  {00EC}{\`{\i}} ,
+    {016B}{\=u} ,     {00FA}{\'u} ,     {01D4}{\v{u}} ,   {00F9}{\`u} ,
+    {00FC}{\"u} ,
+    {01D6}{\={\"u}} , {01D8}{\'{\"u}} , {01DA}{\v{\"u}} , {01DC}{\`{\"u}}
+  }
+  { \prop_gput:Nnn \g_xpinyin_tone_prop #1 }
+\NewDocumentCommand \xpinyinsetup { m } { \keys_set:nn { xpinyin } {#1} }
+\clist_map_inline:nn
+  { ratio , vsep , hsep , pysep , font , format , multiple }
+  { \keys_define:nn { xpinyin } { #1 .tl_set:c = { l_xpinyin_ #1 _tl } } }
+\keys_set:nn { xpinyin }
+  {
+    ratio   = .4 ,
+    vsep    = 1 em ,
+    pysep   = \c_space_tl ,
+    font    = \normalfont ,
+  }
+\group_begin:
+\char_set_catcode_active:N \U
+\char_set_catcode_active:N \V
+\cs_set_nopar:Npn U+ #1 ~ #2 ~ { \tl_gset:cn { c_xpinyin_ #1 _tl } {#2} }
+\cs_set_nopar:Npn V+ #1 ~ #2 ~ { \clist_gset:cn { c_xpinyin_multiple_ #1 _clist } {#2} }
+\char_set_catcode_space:N \
+\file_input:n {xpinyin-map.cfg}
+\group_end:
+\NewDocumentCommand \setpinyin { m m }
+  {
+    \tl_set:cn
+      { c_xpinyin_ \xpinyin_CJKchar_to_unicode:n {#1} _tl }
+      { \xpinyin_pinyin:n {#2} }
+  }
+\ProcessKeysOptions { xpinyin }
+%% 
+%%    This package consists of the file  xpinyin.dtx,
+%%                                       xpinyin-map.cfg,
+%%                 and the derived files xpinyin.sty,
+%%                                       xpinyin.pdf,
+%%                                       xpinyin.ins and
+%%                                       README.
+%%
+%% End of file `xpinyin.sty'.

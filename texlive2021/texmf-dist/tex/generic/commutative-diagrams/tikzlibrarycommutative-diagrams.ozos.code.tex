@@ -1,0 +1,58 @@
+%
+% CoDi: Commutative Diagrams for TeX
+% Copyright (c) 2015-2020 Paolo Brasolin <paolo.brasolin@gmail.com>
+% SPDX-License-Identifier: MIT
+%
+% This file is part of CoDi 1.0.1, released on 2020/06/11 under MIT license.
+%
+
+% όζος • (ózos)
+%   1. node
+%   2. nodule
+%   3. gnarl
+
+% Ozos is an alternative parsing mechanism for TiKz nodes.
+% It implements the following transformation
+%   \kDOzos ... {CONTENTS};  --->  \node ... [node contents={CONTENTS}];
+% to ensure the node contents always pass through the TikZ key.
+
+\usetikzlibrary{commutative-diagrams.koinos}
+
+%==[ TikZ/pgf layer ]===========================================================
+
+\pgfkeys{/ozos/every node/.style={}}
+
+%==[ main macro ]===============================================================
+
+\def\kDOzos%
+  {\kDOzosFetchThen
+  {\kDOzosMaybeDumpThen
+   \kDOzosOutput}}
+
+%==[ fetching routine ]=========================================================
+
+% I use the general one implemented by koinos.
+\let\kDOzosFetchThen\kDFetchOptAndGrpThen
+
+%==[ parsing routine ]==========================================================
+
+% Trivially solved by fetching.
+
+%==[ dumping routine ]==========================================================
+
+\def\kDOzosMaybeDumpThen#1{%
+  \kDDump{options: '\the\kDOptTok'}%
+  \kDDump{content: '\the\kDGrpTok'}%
+  #1}
+
+%==[ output routine ]===========================================================
+
+\def\kDOzosOutput{
+  \edef\kDAct{
+    \noexpand\node
+      [/ozos/every node]
+      \the\kDOptTok
+      [/tikz/node contents={\the\kDGrpTok}];
+  }
+  \kDAct
+}

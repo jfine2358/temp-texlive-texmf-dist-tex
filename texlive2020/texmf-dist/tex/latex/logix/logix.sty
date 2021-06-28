@@ -1,0 +1,2438 @@
+% Copyright (c) 2001..2020 by Michael Lee Finney.
+%
+% logix.sty - 2020-01-04 v1.02
+%
+%    This work may be distributed and/or modified under the conditions of the
+% LaTeX Project Public License, either version 1.3 of this license or (at your
+% option) any later version.  The latest version of this license is in
+%
+%     http://www.latex-project.org/lppl.txt
+%
+% and version 1.3c or later is part of all distributions of LaTeX version
+% 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+%
+% The Current Maintainer of this work is Michael Lee Finney.
+%
+% This work consists of the file logix.sty.
+%
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+%
+% This package provides a font and associated commands which are complementary
+% to the STIX2 OpenType mathematic fonts. Usage in logic is emphasized as
+% opposed to mathematical usage. A large set of stretchy delimiters is provided
+% along with numerous arrows and geometric symbols and Rational Knot drawing
+% symbols. Many other additional symbols are provided.
+%
+
+   \NeedsTeXFormat{LaTeX2e}
+   \ProvidesPackage{logix}
+      [2020-01-04 v1.02 (Michael Lee Finney) Supplemental logical and mathematical symbols for XeLaTex / LuaLaTeX.]
+   \ProvidesFile{logix.otf}
+      [2020-01-04 v1.02 (Michael Lee Finney) OpenType Unicode font.]
+   \RequirePackage{iftex}
+   \RequirePackage{unicode-math}
+   \RequirePackage{arydshln}
+
+% Checks for LuaTex or XeTex as engines.
+
+   \ifluatex \else \ifxetex \else
+      \PackageError{logix}{LuaLaTeX or XeLaTeX is required.}{Compile using LuaLaTeX or XeLaTeX.}
+      \fi \fi
+
+% This source file loads the logix font and defines associated commands.
+
+   \IfFontExistsTF{logix.otf} {}
+      { \PackageError{logix}{logix.otf required}{Make sure that the logix.otf font file is installed} }
+
+% Load / define logix font.
+
+   \newfontface \logix {logix.otf}[Scale=1.0,NFSSFamily=logix]
+
+   \DeclareSymbolFont{Logix}{TU}{logix}{m}{n}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+%
+%    Environments are defined for logic definitions, logic proofs and building rational
+% knots. There are four environments: KnotGrid, LogixDefn, LogixProof and LogixSeqnt.
+%
+%    KnotGrid provides a grid (based on tabular, but the use of ampersand (&) separators
+% is not required between grid cells. Each knot symbol has an exact width and height --
+% most are 1em x 1em, but a few are half or quarter height or width. Every symbol (or
+% symbols) in a grid cell must have the same height as all other knot symbols in the
+% same row and same width as all other knot symbols in the same column. The KnotGrid
+% environment has no options and is used as follows (this example has 3 rows and 5
+% columns):
+%
+%    \begin{KnotGrid}
+%       \KntLFC   \KntTSN      \KntHXSOSU   \KntTSFN         \KntTRSC  \\
+%       \KntNF    \KntHXSUSO   \KntNN       \KntRQC \KntNQ   \KntRSN   \\
+%       \KntLFC   \KntBSN      \KntHXSOSU   \KntBSFN         \KntRBSC
+%       \end{KnotGrid}
+%
+% where a grid cell would otheriwse be empty or where padding is required to satisfy
+% the size requirements for a cell, 16 KntxxSpace symbols are provided which are
+% exactly sized both horizontally and vertically to assist. The knot symbosl are
+% typeset in math mode so that spaces are ignored. This allows the grid structure to
+% be explicit, making readability and maintenance easier.
+%
+%    LogixDefn provides structured formatting for logic definitions. There is an
+% optional parameter, which must be a horizontal length. If present, all of the
+% definitions must fit within that length. The LogixDefn environment defines the
+% Line macro, which has three parameters if the optional LogixDefn parameter is not
+% present and otherwise four. The optional fourth parameter may not be omitted if
+% the length parameter is present and contains a comment to placed at the end of
+% the line. The basic three parameters for the Line macro are the definition's name,
+% optional number (but the empty argument must be present) and the definition itself,
+% which is typeset in math mode. Two examples of its use are:
+%
+%    \begin{LogixDefn}
+%       \Line{Special}{}{ \OpnParn \prop{p} \WkEquv \prop{q} \ClsParn \Defn \OpnParn \prop{p} \WkImpl \prop{q} \ClsParn \Nd \OpnParn \prop{q} \WkImpl \prop{p} \ClsParn }
+%       \Line{Df}    {4}{ \OpnParn \prop{p} \WkEquv \prop{q} \ClsParn \Defn \OpnParn \prop{p} \WkImpl \prop{q} \ClsParn \Nd \OpnParn \prop{q} \WkImpl \prop{p} \ClsParn }
+%       \end{LogixDefn}
+%
+%    \begin{LogixDefn}[15em]
+%       \Line{Df}{1}{ \OpnParn \prop{p} \WkEquv \prop{q} \ClsParn \Defn \OpnParn \prop{p} \WkImpl \prop{q} \ClsParn \Nd \OpnParn \prop{q} \WkImpl \prop{p} \ClsParn } { Some comment }
+%       \Line{Df}{2}{ \OpnParn \prop{p} \WkEquv \prop{q} \ClsParn \Defn \OpnParn \prop{p} \WkImpl \prop{q} \ClsParn \Nd \OpnParn \prop{q} \WkImpl \prop{p} \ClsParn } { Yet another  }
+%       \end{LogixDefn}
+%
+%    LogixProof provides structed formatting for logic proofs. There are four
+% arguments with the first one optional. As for LogixDefn the optional argument
+% is a horizontal length argument, and provides a width for each line which is
+% followed by a comment when the length argument is present. The other three
+% arguments are the name (and any associated number) of the theorem, a possibly
+% empty set of postulates which are assumed only for the purpose of the proof
+% (e.g. assuming the Axiom of Choice for a specific theorem when working in ZF
+% instead of ZFC) Thus postulates are distinguished from axioms which are assumed
+% to hold for all theorems in a system. The third parameter is the statement of
+% the proof.
+%
+%    The LogixProof environment defines two macros -- Dash and Line, which are
+% identical except that Dash is followed by a dashed line separator and Line is
+% followed by a solid line separator. Each of these macros have four parameters
+% (five when the length argument is present). The first is the line number. It
+% is typeset in math mode so that subscripts may be used (sometimes useful in
+% meta proofs). The second is the justifying axiom or previous theorem. The
+% third is the list of previous lines of the proof used to justify the proof,
+% and the fourth is the expression for the proof line. A list is used for the
+% previous justifying lines since the same line can be used more than once
+% and the order is potentially significant. Both the second and third parameters
+% may be empty, allowing for using the comment for justification (a common style
+% in some textbooks and papers). Here is an example with comments:
+%
+%    \begin{LogixProof}[5em] {Th 46} {} {\prop{p}\Comma\prop{q}\Seq\prop{r}}
+%       \Dash {1} {Th 41} {}    {\prop{r} \Nd \prop{s} \Impl \prop{q}} {Comment for first line}
+%       \Dash {2} {Cn 2 } {}    {\prop{r}}                             {Comment for second line}
+%       \Dash {3} {Th 38} {2}   {\prop{r}}                             {}
+%       \Line {4} {Im 3 } {1,6} {\prop{r}}                             {Comment for last line}
+%       \end{LogixProof}
+%
+%    LogixSeqnt is identical to LogixProof execpt that the lines have an extra
+% parameter before the expression, which represents the list of expressions
+% assumed to hold for the expression as a sequent. An example of its use (but
+% without comments and with solid lines) is:
+%
+%    \begin{LogixSeqnt} {Th 46} {Dt 1} {\prop{p}\Comma\prop{q}\Seq\prop{r}}
+%       \Line {1} {Th 41} {}    {\prop{p}\Comma\prop{q}} {\prop{r}}
+%       \Line {2} {Cn 2 } {}    {\prop{p}\Comma\prop{q}} {\prop{r}}
+%       \Line {3} {Th 38} {2}   {                      } {\prop{r}}
+%       \end{LogixSeqnt}
+%
+%    Note that none of these environments are indented by default. Often,
+% horizontal space is at a premium, so any indentation is left to the user.
+%
+
+% Environment for drawing knots.
+
+   \newenvironment{KnotGrid}{%
+      \renewcommand{\arraystretch}{0}
+      \noindent\begin{tabular}{ @{} >{$} c <{$} @{} } }{%
+      \end{tabular} }
+
+% Enviroment for logic definitions.
+
+   \newenvironment{LogixDefn}[1][]{%
+      \newcommand  \PrfEnd {\rule[-0.375em]{0pt}{1.30em}}
+      \renewcommand{\arraystretch}{0}
+      \ifx&#1&
+            \newcommand \Line[3]{%
+               \ifx&##2&%
+                     ##1. \hspace{0.25em} &                      & ##3                            & \PrfEnd \\%
+                  \else%
+                     ##1  \hspace{0.35em} & ##2. \hspace{0.25em} & ##3                            & \PrfEnd \\%
+                  \fi%
+               }
+         \else
+            \newcommand \Line[4]{%
+               \ifx&##2&%
+                     ##1. \hspace{0.25em} &                      & \mathmakebox[#1][l]{##3} $##4$ & \PrfEnd \\%
+                  \else%                                                                
+                     ##1  \hspace{0.35em} & ##2. \hspace{0.25em} & \mathmakebox[#1][l]{##3} $##4$ & \PrfEnd \\%
+                  \fi%
+               }
+         \fi
+      \noindent\begin{tabular}{ @{} l @{} r @{} >{$} l <{$} @{} c @{} }}{%
+      \end{tabular} }
+
+% Environment for logic proofs without sequents.
+
+   \newenvironment{LogixProof}[4][]{%
+      \setlength{\dashlinedash}{2pt}
+      \setlength{\dashlinegap}{2pt}
+      \setlength{\arrayrulewidth}{0.2pt}%
+      \renewcommand{\arraystretch}{0}%
+      \newcommand  \PrfEnd {\rule[-0.375em]{0pt}{1.30em}}
+      \ifx&#1&
+            \newcommand \parms {4}
+            \newcommand \Dash[4] { \hspace{0.35em} ##1. & \ifx&##2&\else \hspace{0.25em}##2.\fi & \ifx&##3&\else\hspace{0.25em}{\OpnBrkt}##3{\ClsBrkt}\fi & ##4 & \PrfEnd \\ \hdashline}
+            \newcommand \Line[4] { \hspace{0.35em} ##1. & \ifx&##2&\else \hspace{0.25em}##2.\fi & \ifx&##3&\else\hspace{0.25em}{\OpnBrkt}##3{\ClsBrkt}\fi & ##4 & \PrfEnd \\ \hline}
+         \else
+            \newcommand \parms {5}
+            \newcommand \Dash[5] { \hspace{0.35em} ##1. & \ifx&##2&\else \hspace{0.25em}##2.\fi & \ifx&##3&\else\hspace{0.25em}{\OpnBrkt}##3{\ClsBrkt}\fi & \mathmakebox[#1][l]{##4} $##5$ & \PrfEnd \\ \hdashline}
+            \newcommand \Line[5] { \hspace{0.35em} ##1. & \ifx&##2&\else \hspace{0.25em}##2.\fi & \ifx&##3&\else\hspace{0.25em}{\OpnBrkt}##3{\ClsBrkt}\fi & \mathmakebox[#1][l]{##4} $##5$ & \PrfEnd \\ \hline}
+         \fi
+      \noindent\begin{tabular}{
+         @{} >{$} r <{$}                                    % Line number, aligned right, left padding 0.35em.
+         @{} l                                              % Justification reference, left padding 0.25em.
+         @{} l @{\hspace{0.25em}} |                         % Justification line numbers, left padding 0.25em, vertical bar, right padding 0.25em.
+         @{} >{\hspace{0.25em}$} l <{$} @{\hspace{0.25em}}  % Proposition, right padding 0.25em.
+         @{} c @{} }
+         \multicolumn{\parms}{@{} l}{\noindent\begin{tabular}{ @{} l @{} l @{} @{\hspace{0.25em}} >{$} l <{$} @{} c @{} }
+         #2. & \ifx&#3&\else{\hspace{0.25em}\OpnGrp}#3{\ClsGrp}\fi & #4 & \PrfEnd
+         \end{tabular}} \\\hline%
+         }{%
+      \end{tabular} }
+
+% Environment for logic proofs with sequents.
+
+   \newenvironment{LogixSeqnt}[4][]{%
+      \setlength{\dashlinedash}{2pt}
+      \setlength{\dashlinegap}{2pt}
+      \setlength{\arrayrulewidth}{0.2pt}%
+      \renewcommand{\arraystretch}{0}%
+      \newcommand  \PrfEnd {\rule[-0.375em]{0pt}{1.30em}}
+      \ifx&#1&
+            \newcommand \parms {5}
+            \newcommand \Dash[5] { \hspace{0.35em} ##1. & \ifx&##2&\else \hspace{0.25em}##2.\fi & \ifx&##3&\else\hspace{0.25em}{\OpnBrkt}##3{\ClsBrkt}\fi & ##4 & ##5 & \PrfEnd \\ \hdashline}
+            \newcommand \Line[5] { \hspace{0.35em} ##1. & \ifx&##2&\else \hspace{0.25em}##2.\fi & \ifx&##3&\else\hspace{0.25em}{\OpnBrkt}##3{\ClsBrkt}\fi & ##4 & ##5 & \PrfEnd \\ \hline}
+         \else
+            \newcommand \parms {6}
+            \newcommand \Dash[6] { \hspace{0.35em} ##1. & \ifx&##2&\else \hspace{0.25em}##2.\fi & \ifx&##3&\else\hspace{0.25em}{\OpnBrkt}##3{\ClsBrkt}\fi & ##4 & \mathmakebox[#1][l]{##5} $##6$ & \PrfEnd \\ \hdashline}
+            \newcommand \Line[6] { \hspace{0.35em} ##1. & \ifx&##2&\else \hspace{0.25em}##2.\fi & \ifx&##3&\else\hspace{0.25em}{\OpnBrkt}##3{\ClsBrkt}\fi & ##4 & \mathmakebox[#1][l]{##5} $##6$ & \PrfEnd \\ \hline}
+         \fi
+      \noindent\begin{tabular}{
+         @{} >{$} r <{$}                        % Line number, aligned right, left padding 0.35em.
+         @{} l                                  % Justification reference, left padding 0.25em.
+         @{} l @{\hspace{0.25em}} |             % Justification line numbers, left padding 0.25em, vertical bar, right padding 0.25em.
+         @{} >{\hspace{0.25em}$} r <{$}         % Sequent assumptions, left padding 0.25em.
+         @{} >{$\Seq} l <{$} @{\hspace{0.25em}} % Sequent conclusion, right padding 0.25em.
+         @{} c @{} }
+         \multicolumn{\parms}{@{} l}{\noindent\begin{tabular}{ @{} l @{} l @{} @{\hspace{0.25em}} >{$} l <{$} @{} c @{} }
+         #2. & \ifx&#3&\else{\hspace{0.25em}\OpnGrp}#3{\ClsGrp}\fi & #4 & \PrfEnd
+         \end{tabular}} \\\hline%
+         }{%
+      \end{tabular} }
+
+
+%    Define the logix math symbols. These symbols have sidebearings defined in the font.
+% Applying the symbol type results in extra white space so they are declared as
+% \mathord. However, some symbols require minor kerning adjustments to work smoothly
+% with LaTeX math layout. That is accomplished using the \mkern command as part of
+% the symbol defintion. The standard symbol types are shown below.
+%
+%    Logic expressions, as compared to mathematic expressions do not require
+% additional spacing. The minimum spacing is provided by the sidebearings,
+% so all symbols are defined as type \mathord to prevent elastic glue. Any
+% adjustments, if necessary will either be made here (on a temporary basis)
+% or in the font itself. If normal TeX glue is desired in a specific case,
+% then use one of the following commands.
+%
+%    \mathord     0 - Simple / ordinary, e.g. \alpha, no padding space
+%    \mathop      1 - Prefix operator, thin space on both sides (3mu)
+%    \mathbin     2 - Binary operator, medium space on both sides (4mu)
+%    \mathrel     3 - Relation, thick space on both sides (5mu)
+%    \mathopen    4 - Open (left) delimiter, may add space on left
+%    \mathclose   5 - Close (right) delimiter, may add space on right
+%    \mathpunct   6 - Postfix operator / punctuation, thin space on right.
+%    \mathalpha   7 - Alphabetic (e.g. A), no padding space
+
+   \newcommand  \lgx[1]           {\ensuremath{\Umathchar "0 \symLogix "#1}}
+   \newcommand  \lgl[1]           {\ensuremath{\Udelimiter 4 \symLogix "#1}}
+   \newcommand  \lgm[1]           {\ensuremath{\Udelimiter 0 \symLogix "#1}}
+   \newcommand  \lgr[1]           {\ensuremath{\Udelimiter 5 \symLogix "#1}}
+
+   \newcommand  \OpnBar           {\lgl{E300}}              % Open Vertical Bar
+   \newcommand  \OpnGrp           {\lgl{E301}}              % Open Group Brace
+   \newcommand  \OpnParn          {\lgl{E302}}              % Open Parenthesis
+   \newcommand  \OpnBrac          {\lgl{E303}}              % Open Curly Brace
+   \newcommand  \OpnBrknBrac      {\lgl{E304}}              % Open Curly Broken Brace
+   \newcommand  \OpnCircBrac      {\lgl{E305}}              % Open Curly Circle Brace
+   \newcommand  \OpnArrwBrac      {\lgl{E306}}              % Open Arrow Brace
+   \newcommand  \OpnBrkt          {\lgl{E307}}              % Open Square Bracket
+   \newcommand  \OpnCrlyBrkt      {\lgl{E308}}              % Open Square Curly Bracket
+   \newcommand  \OpnBrknBrkt      {\lgl{E309}}              % Open Square Broken Bracket
+   \newcommand  \OpnCircBrkt      {\lgl{E30A}}              % Open Square Circle Bracket
+   \newcommand  \OpnTortoise      {\lgl{E30B}}              % Open Tortoise Shell
+   \newcommand  \OpnAngl          {\lgl{E30C}}              % Open Angle Bracket
+   \newcommand  \OpnDblBrac       {\lgl{E30D}}              % Open Double Curly Brace
+   \newcommand  \OpnDblAngl       {\lgl{E30E}}              % Open Double Angle Bracket
+   \newcommand  \OpnSqrParn       {\lgl{E30F}}              % Open Square Parenthesis
+   \newcommand  \OpnParnBar       {\lgl{E310}}              % Open Parenthesis with Bar
+   \newcommand  \OpnBracBar       {\lgl{E311}}              % Open Brace with Bar
+   \newcommand  \OpnBrknBracBar   {\lgl{E312}}              % Open Broken Brace with Bar
+   \newcommand  \OpnCircBracBar   {\lgl{E313}}              % Open Circle Brace with Bar
+   \newcommand  \OpnBrktBar       {\lgl{E314}}              % Open Bracket with Bar
+   \newcommand  \OpnCrlyBrktBar   {\lgl{E315}}              % Open Curly Bracket with Bar
+   \newcommand  \OpnBrknBrktBar   {\lgl{E316}}              % Open Broken Bracket with Bar
+   \newcommand  \OpnCircBrktBar   {\lgl{E317}}              % Open Circle Bracket with Bar
+   \newcommand  \OpnTortoiseBar   {\lgl{E318}}              % Open Tortoise Shell with Bar
+   \newcommand  \OpnAnglBar       {\lgl{E319}}              % Open Angle Bracket with Bar
+   \newcommand  \OpnCurvAngl      {\lgl{E31A}}              % Open Curved Angle Bracket
+   \newcommand  \OpnDblParn       {\lgl{E31B}}              % Open Double Parenthesis
+   \newcommand  \OpnCeil          {\lgl{E31C}}              % Open Ceiling
+   \newcommand  \OpnFloor         {\lgl{E31D}}              % Open Floor
+   \newcommand  \OpnTurn          {\lgl{E31E}}              % Open Turnstile
+   \newcommand  \OpnCntx          {\lgx{E31F}}              % Open Context Quote
+   \newcommand  \OpnDblGrp        {\lgl{E320}}              % Open Double Group Brace
+   \newcommand  \OpnDblBar        {\lgl{E321}}              % Open Double Vertical Bar
+
+   \newcommand  \OpnBarS          {\left\OpnBar}            % Stretchy Open Vertical Bar
+   \newcommand  \OpnGrpS          {\left\OpnGrp}            % Stretchy Open Group Brace
+   \newcommand  \OpnParnS         {\left\OpnParn}           % Stretchy Open Parenthesis
+   \newcommand  \OpnBracS         {\left\OpnBrac}           % Stretchy Open Curly Brace
+   \newcommand  \OpnBrknBracS     {\left\OpnBrknBrac}       % Stretchy Open Curly Broken Brace
+   \newcommand  \OpnCircBracS     {\left\OpnCircBrac}       % Stretchy Open Curly Circle Brace
+   \newcommand  \OpnArrwBracS     {\left\OpnArrwBrac}       % Stretchy Open Arrow Brace
+   \newcommand  \OpnBrktS         {\left\OpnBrkt}           % Stretchy Open Square Bracket
+   \newcommand  \OpnCrlyBrktS     {\left\OpnCrlyBrkt}       % Stretchy Open Square Curly Bracket
+   \newcommand  \OpnBrknBrktS     {\left\OpnBrknBrkt}       % Stretchy Open Square Broken Bracket
+   \newcommand  \OpnCircBrktS     {\left\OpnCircBrkt}       % Stretchy Open Square Circle Bracket
+   \newcommand  \OpnTortoiseS     {\left\OpnTortoise}       % Stretchy Open Tortoise Shell
+   \newcommand  \OpnAnglS         {\left\OpnAngl}           % Stretchy Open Angle Bracket
+   \newcommand  \OpnDblBracS      {\left\OpnDblBrac}        % Stretchy Open Double Curly Brace
+   \newcommand  \OpnDblAnglS      {\left\OpnDblAngl}        % Stretchy Open Double Angle Bracket
+   \newcommand  \OpnSqrParnS      {\left\OpnSqrParn}        % Stretchy Open Square Parenthesis
+   \newcommand  \OpnParnBarS      {\left\OpnParnBar}        % Stretchy Open Parenthesis with Bar
+   \newcommand  \OpnBracBarS      {\left\OpnBracBar}        % Stretchy Open Brace with Bar
+   \newcommand  \OpnBrknBracBarS  {\left\OpnBrknBracBar}    % Stretchy Open Broken Brace with Bar
+   \newcommand  \OpnCircBracBarS  {\left\OpnCircBracBar}    % Stretchy Open Circle Brace with Bar
+   \newcommand  \OpnBrktBarS      {\left\OpnBrktBar}        % Stretchy Open Bracket with Bar
+   \newcommand  \OpnCrlyBrktBarS  {\left\OpnCrlyBrktBar}    % Stretchy Open Curly Bracket with Bar
+   \newcommand  \OpnBrknBrktBarS  {\left\OpnBrknBrktBar}    % Stretchy Open Broken Bracket with Bar
+   \newcommand  \OpnCircBrktBarS  {\left\OpnCircBrktBar}    % Stretchy Open Circle Bracket with Bar
+   \newcommand  \OpnTortoiseBarS  {\left\OpnTortoiseBar}    % Stretchy Open Tortoise Shell with Bar
+   \newcommand  \OpnAnglBarS      {\left\OpnAnglBar}        % Stretchy Open Angle Bracket with Bar
+   \newcommand  \OpnCurvAnglS     {\left\OpnCurvAngl}       % Stretchy Open Curved Angle Bracket
+   \newcommand  \OpnDblParnS      {\left\OpnDblParn}        % Stretchy Open Double Parenthesis
+   \newcommand  \OpnCeilS         {\left\OpnCeil}           % Stretchy Open Ceiling
+   \newcommand  \OpnFloorS        {\left\OpnFloor}          % Stretchy Open Floor
+   \newcommand  \OpnTurnS         {\left\OpnTurn}           % Stretchy Open Turnstile
+   \newcommand  \OpnCntxS         {\left\OpnCntx}           % Stretchy Open Context Quote
+   \newcommand  \OpnDblGrpS       {\left\OpnDblGrp}         % Stretchy Open Double Group Brace
+   \newcommand  \OpnDblBarS       {\left\OpnDblBar}         % Stretchy Open Double Vertical Bar
+
+   \newcommand  \ClsBar           {\lgr{E340}}              % Close Bar
+   \newcommand  \ClsGrp           {\lgr{E341}}              % Close Group Brace
+   \newcommand  \ClsParn          {\lgr{E342}}              % Close Parenthesis
+   \newcommand  \ClsBrac          {\lgr{E343}}              % Close Curly Brace
+   \newcommand  \ClsBrknBrac      {\lgr{E344}}              % Close Curly Broken Brace
+   \newcommand  \ClsCircBrac      {\lgr{E345}}              % Close Curly Circle Brace
+   \newcommand  \ClsArrwBrac      {\lgr{E346}}              % Close Arrow Brace
+   \newcommand  \ClsBrkt          {\lgr{E347}}              % Close Square Bracket
+   \newcommand  \ClsCrlyBrkt      {\lgr{E348}}              % Close Square Curly Bracket
+   \newcommand  \ClsBrknBrkt      {\lgr{E349}}              % Close Square Broken Bracket
+   \newcommand  \ClsCircBrkt      {\lgr{E34A}}              % Close Square Circle Bracket
+   \newcommand  \ClsTortoise      {\lgr{E34B}}              % Close Tortoise Shell
+   \newcommand  \ClsAngl          {\lgr{E34C}}              % Close Angle Bracket
+   \newcommand  \ClsDblBrac       {\lgr{E34D}}              % Close Double Curly Brace
+   \newcommand  \ClsDblAngl       {\lgr{E34E}}              % Close Double Angle Bracket
+   \newcommand  \ClsSqrParn       {\lgr{E34F}}              % Close Square Parenthesis
+   \newcommand  \ClsParnBar       {\lgr{E350}}              % Close Parenthesis with Bar
+   \newcommand  \ClsBracBar       {\lgr{E351}}              % Close Brace with Bar
+   \newcommand  \ClsBrknBracBar   {\lgr{E352}}              % Close Broken Brace with Bar
+   \newcommand  \ClsCircBracBar   {\lgr{E353}}              % Close Circle Brace with Bar
+   \newcommand  \ClsBrktBar       {\lgr{E354}}              % Close Bracket with Bar
+   \newcommand  \ClsCrlyBrktBar   {\lgr{E355}}              % Close Curly Bracket with Bar
+   \newcommand  \ClsBrknBrktBar   {\lgr{E356}}              % Close Broken Bracket with Bar
+   \newcommand  \ClsCircBrktBar   {\lgr{E357}}              % Close Circle Bracket with Bar
+   \newcommand  \ClsTortoiseBar   {\lgr{E358}}              % Close Tortoise Shell with Bar
+   \newcommand  \ClsAnglBar       {\lgr{E359}}              % Close Angle Bracket with Bar
+   \newcommand  \ClsCurvAngl      {\lgr{E35A}}              % Close Curved Angle Bracket
+   \newcommand  \ClsDblParn       {\lgl{E35B}}              % Close Double Parenthesis
+   \newcommand  \ClsCeil          {\lgr{E35C}}              % Close Ceiling
+   \newcommand  \ClsFloor         {\lgr{E35D}}              % Close Floor
+   \newcommand  \ClsTurn          {\lgr{E35E}}              % Close Turnstile
+   \newcommand  \ClsCntx          {\lgx{E35F}}              % Close Context Quote
+   \newcommand  \ClsDblGrp        {\lgr{E360}}              % Close Double Group Brace
+   \newcommand  \ClsDblBar        {\lgr{E361}}              % Close Double Vertical Bar
+
+   \newcommand  \ClsBarS          {\right\ClsBar}           % Stretchy Close Bar
+   \newcommand  \ClsGrpS          {\right\ClsGrp}           % Stretchy Close Group Brace
+   \newcommand  \ClsParnS         {\right\ClsParn}          % Stretchy Close Parenthesis
+   \newcommand  \ClsBracS         {\right\ClsBrac}          % Stretchy Close Curly Brace
+   \newcommand  \ClsBrknBracS     {\right\ClsBrknBrac}      % Stretchy Close Curly Broken Brace
+   \newcommand  \ClsCircBracS     {\right\ClsCircBrac}      % Stretchy Close Curly Circle Brace
+   \newcommand  \ClsArrwBracS     {\right\ClsArrwBrac}      % Stretchy Close Arrow Brace
+   \newcommand  \ClsBrktS         {\right\ClsBrkt}          % Stretchy Close Square Bracket
+   \newcommand  \ClsCrlyBrktS     {\right\ClsCrlyBrkt}      % Stretchy Close Square Curly Bracket
+   \newcommand  \ClsBrknBrktS     {\right\ClsBrknBrkt}      % Stretchy Close Square Broken Bracket
+   \newcommand  \ClsCircBrktS     {\right\ClsCircBrkt}      % Stretchy Close Square Circle Bracket
+   \newcommand  \ClsTortoiseS     {\right\ClsTortoise}      % Stretchy Close Tortoise Shell
+   \newcommand  \ClsAnglS         {\right\ClsAngl}          % Stretchy Close Angle Bracket
+   \newcommand  \ClsDblBracS      {\right\ClsDblBrac}       % Stretchy Close Double Curly Brace
+   \newcommand  \ClsDblAnglS      {\right\ClsDblAngl}       % Stretchy Close Double Angle Bracket
+   \newcommand  \ClsSqrParnS      {\right\ClsSqrParn}       % Stretchy Close Square Parenthesis
+   \newcommand  \ClsParnBarS      {\right\ClsParnBar}       % Stretchy Close Parenthesis with Bar
+   \newcommand  \ClsBracBarS      {\right\ClsBracBar}       % Stretchy Close Brace with Bar
+   \newcommand  \ClsBrknBracBarS  {\right\ClsBrknBracBar}   % Stretchy Close Broken Brace with Bar
+   \newcommand  \ClsCircBracBarS  {\right\ClsCircBracBar}   % Stretchy Close Circle Brace with Bar
+   \newcommand  \ClsBrktBarS      {\right\ClsBrktBar}       % Stretchy Close Bracket with Bar
+   \newcommand  \ClsCrlyBrktBarS  {\right\ClsCrlyBrktBar}   % Stretchy Close Curly Bracket with Bar
+   \newcommand  \ClsBrknBrktBarS  {\right\ClsBrknBrktBar}   % Stretchy Close Broken Bracket with Bar
+   \newcommand  \ClsCircBrktBarS  {\right\ClsCircBrktBar}   % Stretchy Close Circle Bracket with Bar
+   \newcommand  \ClsTortoiseBarS  {\right\ClsTortoiseBar}   % Stretchy Close Tortoise Shell with Bar
+   \newcommand  \ClsAnglBarS      {\right\ClsAnglBar}       % Stretchy Close Angle Bracket with Bar
+   \newcommand  \ClsCurvAnglS     {\right\ClsCurvAngl}      % Stretchy Close Curved Angle Bracket
+   \newcommand  \ClsDblParnS      {\right\ClsDblParn}       % Stretchy Close Double Parenthesis
+   \newcommand  \ClsCeilS         {\right\ClsCeil}          % Stretchy Close Ceiling
+   \newcommand  \ClsFloorS        {\right\ClsFloor}         % Stretchy Close Floor
+   \newcommand  \ClsTurnS         {\right\ClsTurn}          % Stretchy Close Turnstile
+   \newcommand  \ClsCntxS         {\right\ClsCntx}          % Stretchy Close Context Quote
+   \newcommand  \ClsDblGrpS       {\right\ClsDblGrp}        % Stretchy Close Double Group Brace
+   \newcommand  \ClsDblBarS       {\right\ClsDblBar}        % Stretchy Close Vertical Double Bar
+
+   \newcommand  \MapParInMul      {\lgx{EAA0}}              % Continuous, Partial, Into Multi-Map
+   \newcommand  \MapParInSng      {\lgx{EAA1}}              % Continuous, Partial, Into, Singleton Map
+   \newcommand  \MapParInOne      {\lgx{EAA2}}              % Continuous, Partial, Into, One-To-One Map
+   \newcommand  \MapParOnMul      {\lgx{EAA8}}              % Continuous, Partial, Onto Multi-Map
+   \newcommand  \MapParOnSng      {\lgx{EAA9}}              % Continuous, Partial, Onto, Singleton Map
+   \newcommand  \MapParOnOne      {\lgx{EAAA}}              % Continuous, Partial, Onto, One-To-One Map
+   \newcommand  \MapParInGndMul   {\lgx{EAB0}}              % Continuous, Partial, Into, Grounded Multi-Map
+   \newcommand  \MapParInGndSng   {\lgx{EAB1}}              % Continuous, Partial, Into, Grounded, Singleton Map
+   \newcommand  \MapParInGndOne   {\lgx{EAB2}}              % Continuous, Partial, Into, Grounded, One-To-One Map
+   \newcommand  \MapParOnGndMul   {\lgx{EAB8}}              % Continuous, Partial, Onto, Grounded Multi-Map
+   \newcommand  \MapParOnGndSng   {\lgx{EAB9}}              % Continuous, Partial, Onto, Grounded, Singleton Map
+   \newcommand  \MapParOnGndOne   {\lgx{EABA}}              % Continuous, Partial, Onto, Grounded, One-To-One Map
+
+   \newcommand  \MapTotInMul      {\lgx{EA80}}              % Continuous, Total, Into Multi-Map
+   \newcommand  \MapTotInSng      {\lgx{EA81}}              % Continuous, Total, Into, Singleton Map
+   \newcommand  \MapTotInOne      {\lgx{EA82}}              % Continuous, Total, Into, One-To-One Map
+   \newcommand  \MapTotOnMul      {\lgx{EA88}}              % Continuous, Total, Onto Multi-Map
+   \newcommand  \MapTotOnSng      {\lgx{EA89}}              % Continuous, Total, Onto, Singleton Map
+   \newcommand  \MapTotOnOne      {\lgx{EA8A}}              % Continuous, Total, Onto, One-To-One Map
+   \newcommand  \MapTotInGndMul   {\lgx{EA90}}              % Continuous, Total, Into, Grounded Multi-Map
+   \newcommand  \MapTotInGndSng   {\lgx{EA91}}              % Continuous, Total, Into, Grounded, Singleton Map
+   \newcommand  \MapTotInGndOne   {\lgx{EA92}}              % Continuous, Total, Into, Grounded, One-To-One Map
+   \newcommand  \MapTotOnGndMul   {\lgx{EA98}}              % Continuous, Total, Onto, Grounded Multi-Map
+   \newcommand  \MapTotOnGndSng   {\lgx{EA99}}              % Continuous, Total, Onto, Grounded, Singleton Map
+   \newcommand  \MapTotOnGndOne   {\lgx{EA9A}}              % Continuous, Total, Onto, Grounded, One-To-One Map
+
+   \newcommand  \FunParInMul      {\lgx{EAA4}}              % Continuous, Partial, Into Multi-Function
+   \newcommand  \FunParInSng      {\lgx{EAA5}}              % Continuous, Partial, Into, Singleton Function
+   \newcommand  \FunParInOne      {\lgx{EAA6}}              % Continuous, Partial, Into, One-To-One Function
+   \newcommand  \FunParOnMul      {\lgx{EAAC}}              % Continuous, Partial, Onto Multi-Function
+   \newcommand  \FunParOnSng      {\lgx{EAAD}}              % Continuous, Partial, Onto, Singleton Function
+   \newcommand  \FunParOnOne      {\lgx{EAAE}}              % Continuous, Partial, Onto, One-To-One Function
+   \newcommand  \FunParInGndMul   {\lgx{EAB4}}              % Continuous, Partial, Into, Grounded Multi-Function
+   \newcommand  \FunParInGndSng   {\lgx{EAB5}}              % Continuous, Partial, Into, Grounded, Singleton Function
+   \newcommand  \FunParInGndOne   {\lgx{EAB6}}              % Continuous, Partial, Into, Grounded, One-To-One Function
+   \newcommand  \FunParOnGndMul   {\lgx{EABC}}              % Continuous, Partial, Onto, Grounded Multi-Function
+   \newcommand  \FunParOnGndSng   {\lgx{EABD}}              % Continuous, Partial, Onto, Grounded, Singleton Function
+   \newcommand  \FunParOnGndOne   {\lgx{EABE}}              % Continuous, Partial, Onto, Grounded, One-To-One Function
+
+   \newcommand  \FunTotInMul      {\lgx{EA84}}              % Continuous, Total, Into Multi-Function
+   \newcommand  \FunTotInSng      {\lgx{EA85}}              % Continuous, Total, Into, Singleton Function
+   \newcommand  \FunTotInOne      {\lgx{EA86}}              % Continuous, Total, Into, One-To-One Function
+   \newcommand  \FunTotOnMul      {\lgx{EA8C}}              % Continuous, Total, Onto Multi-Function
+   \newcommand  \FunTotOnSng      {\lgx{EA8D}}              % Continuous, Total, Onto, Singleton Function
+   \newcommand  \FunTotOnOne      {\lgx{EA8E}}              % Continuous, Total, Onto, One-To-One Function
+   \newcommand  \FunTotInGndMul   {\lgx{EA94}}              % Continuous, Total, Into, Grounded Multi-Function
+   \newcommand  \FunTotInGndSng   {\lgx{EA95}}              % Continuous, Total, Into, Grounded, Singleton Function
+   \newcommand  \FunTotInGndOne   {\lgx{EA96}}              % Continuous, Total, Into, Grounded, One-To-One Function
+   \newcommand  \FunTotOnGndMul   {\lgx{EA9C}}              % Continuous, Total, Onto, Grounded Multi-Function
+   \newcommand  \FunTotOnGndSng   {\lgx{EA9D}}              % Continuous, Total, Onto, Grounded, Singleton Function
+   \newcommand  \FunTotOnGndOne   {\lgx{EA9E}}              % Continuous, Total, Onto, Grounded, One-To-One Function
+
+   \newcommand  \MapComp          {\lgx{E23C}}              % Map Composition
+   \newcommand  \FncComp          {\lgx{E239}}              % Function Composition
+   \newcommand  \FncCnvrs         {\lgx{E2C3}}              % Function Converse
+
+   \newcommand  \SFunc            {\lgx{E9DC}}              % Short Function
+   \newcommand  \Func             {\lgx{E9DD}}              % Function
+   \newcommand  \LFunc            {\lgx{E9DE}}              % Long Function
+   \newcommand  \XFunc            {\lgx{E9DF}}              % Extra Long Function
+
+   \newcommand  \ClsImpl          {\lgx{E79E}}              % Classical Implication
+   \newcommand  \NotClsImpl       {\lgx{E79F}}              % Not Classical Implication
+   \newcommand  \ClsEquv          {\lgx{E666}}              % Classical Equivalence
+   \newcommand  \NotClsEquv       {\lgx{E667}}              % Not Classical Equivalence
+
+   \newcommand  \SWkMtImpl        {\lgx{E810}}              % Short Weak Material Implication
+   \newcommand  \NotSWkMtImpl     {\lgx{E811}}              % Short Not Weak Material Implication
+   \newcommand  \SWkMtEquv        {\lgx{E812}}              % Short Weak Material Equivalence
+   \newcommand  \NotSWkMtEquv     {\lgx{E813}}              % Short Not Weak Material Equivalence
+   \newcommand  \WkMtImpl         {\lgx{E814}}              % Weak Material Implication
+   \newcommand  \NotWkMtImpl      {\lgx{E815}}              % Not Weak Material Implication
+   \newcommand  \WkMtEquv         {\lgx{E816}}              % Weak Material Equivalence
+   \newcommand  \NotWkMtEquv      {\lgx{E817}}              % Not Weak Material Equivalence
+   \newcommand  \LWkMtImpl        {\lgx{E818}}              % Long Weak Material Implication
+   \newcommand  \NotLWkMtImpl     {\lgx{E819}}              % Long Not Weak Material Implication
+   \newcommand  \LWkMtEquv        {\lgx{E81A}}              % Long Weak Material Equivalence
+   \newcommand  \NotLWkMtEquv     {\lgx{E81B}}              % Long Not Weak Material Equivalence
+   \newcommand  \XWkMtImpl        {\lgx{E81C}}              % Extra Long Weak Material Implication
+   \newcommand  \NotXWkMtImpl     {\lgx{E81D}}              % Extra Long Not Weak Material Implication
+   \newcommand  \XWkMtEquv        {\lgx{E81E}}              % Extra Long Weak Material Equivalence
+   \newcommand  \NotXWkMtEquv     {\lgx{E81F}}              % Extra Long Not Weak Material Equivalence
+
+   \newcommand  \SMtImpl          {\lgx{E820}}              % Short WMaterial Implication
+   \newcommand  \NotSMtImpl       {\lgx{E821}}              % Short NNot Material Implication
+   \newcommand  \SMtEquv          {\lgx{E822}}              % Short WMaterial Equivalence
+   \newcommand  \NotSMtEquv       {\lgx{E823}}              % Short NNot Material Equivalence
+   \newcommand  \MtImpl           {\lgx{E824}}              % Material Implication
+   \newcommand  \NotMtImpl        {\lgx{E825}}              % Not Material Implication
+   \newcommand  \MtEquv           {\lgx{E826}}              % Material Equivalence
+   \newcommand  \NotMtEquv        {\lgx{E827}}              % Not Material Equivalence
+   \newcommand  \LMtImpl          {\lgx{E828}}              % Long Material Implication
+   \newcommand  \NotLMtImpl       {\lgx{E829}}              % Long Not Material Implication
+   \newcommand  \LMtEquv          {\lgx{E82A}}              % Long Material Equivalence
+   \newcommand  \NotLMtEquv       {\lgx{E82B}}              % Long Not Material Equivalence
+   \newcommand  \XMtImpl          {\lgx{E82C}}              % Extra Long Material Implication
+   \newcommand  \NotXMtImpl       {\lgx{E82D}}              % Extra Long Not Material Implication
+   \newcommand  \XMtEquv          {\lgx{E82E}}              % Extra Long Material Equivalence
+   \newcommand  \NotXMtEquv       {\lgx{E82F}}              % Extra Long Not Material Equivalence
+
+   \newcommand  \SInImpl          {\lgx{E830}}              % Short WIntuitionistic Implication
+   \newcommand  \NotSInImpl       {\lgx{E831}}              % Short NNot Intuitionistic Implication
+   \newcommand  \SInEquv          {\lgx{E832}}              % Short WIntuitionistic Equivalence
+   \newcommand  \NotSInEquv       {\lgx{E833}}              % Short NNot Intuitionistic Equivalence
+   \newcommand  \InImpl           {\lgx{E834}}              % Intuitionistic Implication
+   \newcommand  \NotInImpl        {\lgx{E835}}              % Not Intuitionistic Implication
+   \newcommand  \InEquv           {\lgx{E836}}              % Intuitionistic Equivalence
+   \newcommand  \NotInEquv        {\lgx{E837}}              % Not Intuitionistic Equivalence
+   \newcommand  \LInImpl          {\lgx{E838}}              % Long Intuitionistic Implication
+   \newcommand  \NotLInImpl       {\lgx{E839}}              % Long Not Intuitionistic Implication
+   \newcommand  \LInEquv          {\lgx{E83A}}              % Long Intuitionistic Equivalence
+   \newcommand  \NotLInEquv       {\lgx{E83B}}              % Long Not Intuitionistic Equivalence
+   \newcommand  \XInImpl          {\lgx{E83C}}              % Extra Long Intuitionistic Implication
+   \newcommand  \NotXInImpl       {\lgx{E83D}}              % Extra Long Not Intuitionistic Implication
+   \newcommand  \XInEquv          {\lgx{E83E}}              % Extra Long Intuitionistic Equivalence
+   \newcommand  \NotXInEquv       {\lgx{E83F}}              % Extra Long Not Intuitionistic Equivalence
+
+   \newcommand  \SWkImpl          {\lgx{E840}}              % Short WWeak Implication
+   \newcommand  \NotSWkImpl       {\lgx{E841}}              % Short NNot Weak Implication
+   \newcommand  \SWkEquv          {\lgx{E842}}              % Short WWeak Implication Equivalence
+   \newcommand  \NotSWkEquv       {\lgx{E843}}              % Short NNot Weak Implication Equivalence
+   \newcommand  \WkImpl           {\lgx{E844}}              % Weak Implication
+   \newcommand  \NotWkImpl        {\lgx{E845}}              % Not Weak Implication
+   \newcommand  \WkEquv           {\lgx{E846}}              % Weak Implication Equivalence
+   \newcommand  \NotWkEquv        {\lgx{E847}}              % Not Weak Implication Equivalence
+   \newcommand  \LWkImpl          {\lgx{E848}}              % Long Weak Implication
+   \newcommand  \NotLWkImpl       {\lgx{E849}}              % Long Not Weak Implication
+   \newcommand  \LWkEquv          {\lgx{E84A}}              % Long Weak Implication Equivalence
+   \newcommand  \NotLWkEquv       {\lgx{E84B}}              % Long Not Weak Implication Equivalence
+   \newcommand  \XWkImpl          {\lgx{E84C}}              % Extra Long Weak Implication
+   \newcommand  \NotXWkImpl       {\lgx{E84D}}              % Extra Long Not Weak Implication
+   \newcommand  \XWkEquv          {\lgx{E84E}}              % Extra Long Weak Implication Equivalence
+   \newcommand  \NotXWkEquv       {\lgx{E84F}}              % Extra Long Not Weak Implication Equivalence
+
+   \newcommand  \SImpl            {\lgx{E850}}              % Short WImplication
+   \newcommand  \NotSImpl         {\lgx{E851}}              % Short NNot Implication
+   \newcommand  \SEquv            {\lgx{E852}}              % Short WImplication Equivalence
+   \newcommand  \NotSEquv         {\lgx{E853}}              % Short NNot Implication Equivalence
+   \newcommand  \Impl             {\lgx{E854}}              % Implication
+   \newcommand  \NotImpl          {\lgx{E855}}              % Not Implication
+   \newcommand  \Equv             {\lgx{E856}}              % Implication Equivalence
+   \newcommand  \NotEquv          {\lgx{E857}}              % Not Implication Equivalence
+   \newcommand  \LImpl            {\lgx{E858}}              % Long Implication
+   \newcommand  \NotLImpl         {\lgx{E859}}              % Long Not Implication
+   \newcommand  \LEquv            {\lgx{E85A}}              % Long Implication Equivalence
+   \newcommand  \NotLEquv         {\lgx{E85B}}              % Long Not Implication Equivalence
+   \newcommand  \XImpl            {\lgx{E85C}}              % Extra Long Implication
+   \newcommand  \NotXImpl         {\lgx{E85D}}              % Extra Long Not Implication
+   \newcommand  \XEquv            {\lgx{E85E}}              % Extra Long Implication Equivalence
+   \newcommand  \NotXEquv         {\lgx{E85F}}              % Extra Long Not Implication Equivalence
+
+   \newcommand  \SWkEntail        {\lgx{E860}}              % Short WWeak Entailment
+   \newcommand  \NotSWkEntail     {\lgx{E861}}              % Short NNot Weak Entailment
+   \newcommand  \SWkEntailEquv    {\lgx{E862}}              % Short WWeak Entailment Equivalence
+   \newcommand  \NotSWkEntailEquv {\lgx{E863}}              % Short NNot Weak Entailment Equivalence
+   \newcommand  \WkEntail         {\lgx{E864}}              % Weak Entailment
+   \newcommand  \NotWkEntail      {\lgx{E865}}              % Not Weak Entailment
+   \newcommand  \WkEntailEquv     {\lgx{E866}}              % Weak Entailment Equivalence
+   \newcommand  \NotWkEntailEquv  {\lgx{E867}}              % Not Weak Entailment Equivalence
+   \newcommand  \LWkEntail        {\lgx{E868}}              % Long Weak Entailment
+   \newcommand  \NotLWkEntail     {\lgx{E869}}              % Long Not Weak Entailment
+   \newcommand  \LWkEntailEquv    {\lgx{E86A}}              % Long Weak Entailment Equivalence
+   \newcommand  \NotLWkEntailEquv {\lgx{E86B}}              % Long Not Weak Entailment Equivalence
+   \newcommand  \XWkEntail        {\lgx{E86C}}              % Extra Long Weak Entailment
+   \newcommand  \NotXWkEntail     {\lgx{E86D}}              % Extra Long Not Weak Entailment
+   \newcommand  \XWkEntailEquv    {\lgx{E86E}}              % Extra Long Weak Entailment Equivalence
+   \newcommand  \NotXWkEntailEquv {\lgx{E86F}}              % Extra Long Not Weak Entailment Equivalence
+
+   \newcommand  \SEntail          {\lgx{E870}}              % Short WEntailment
+   \newcommand  \NotSEntail       {\lgx{E871}}              % Short NNot Entailment
+   \newcommand  \SEntailEquv      {\lgx{E872}}              % Short WEntailment Equivalence
+   \newcommand  \NotSEntailEquv   {\lgx{E873}}              % Short NNot Entailment Equivalence
+   \newcommand  \Entail           {\lgx{E874}}              % Entailment
+   \newcommand  \NotEntail        {\lgx{E875}}              % Not Entailment
+   \newcommand  \EntailEquv       {\lgx{E876}}              % Entailment Equivalence
+   \newcommand  \NotEntailEquv    {\lgx{E877}}              % Not Entailment Equivalence
+   \newcommand  \LEntail          {\lgx{E878}}              % Long Entailment
+   \newcommand  \NotLEntail       {\lgx{E879}}              % Long Not Entailment
+   \newcommand  \LEntailEquv      {\lgx{E87A}}              % Long Entailment Equivalence
+   \newcommand  \NotLEntailEquv   {\lgx{E87B}}              % Long Not Entailment Equivalence
+   \newcommand  \XEntail          {\lgx{E87C}}              % Extra Long Entailment
+   \newcommand  \NotXEntail       {\lgx{E87D}}              % Extra Long Not Entailment
+   \newcommand  \XEntailEquv      {\lgx{E87E}}              % Extra Long Entailment Equivalence
+   \newcommand  \NotXEntailEquv   {\lgx{E87F}}              % Extra Long Not Entailment Equivalence
+
+   \newcommand  \Seq              {\lgx{E94C}}              % Sequent
+   \newcommand  \NotSeq           {\lgx{E96C}}              % Sequent Denied
+   \newcommand  \Rule             {\lgx{E940}}              % Assertion (Rule)
+   \newcommand  \NotRule          {\lgx{E960}}              % Assertion (Rule) Denied
+   \newcommand  \Model            {\lgx{E942}}              % Model
+   \newcommand  \NotModel         {\lgx{E962}}              % Model Denied
+   \newcommand  \Turn             {\lgx{E944}}              % Turnstile
+   \newcommand  \NotTurn          {\lgx{E964}}              % Turnstile Denied
+   \newcommand  \Conseq           {\lgx{E946}}              % Consequence Relation
+   \newcommand  \NotConseq        {\lgx{E966}}              % Consequence Relation Denied
+
+   \newcommand  \Defn             {\lgx{E60A}}              % Defines
+   \newcommand  \Qed              {\lgx{E08F}}              % Q.E.D.
+
+   \newcommand  \Nd               {\lgx{E6A0}}              % Bitwise AND operator / Logical Conjunction
+   \newcommand  \Or               {\lgx{E6A1}}              % Bitwise OR operator  / Logical Disjunction
+   \newcommand  \Nt               {\lgx{E0C0}}              % Bitwise NOT operator / Logical Negation
+   \newcommand  \Ng               {\lgx{E64C}}              % Classical Logical Negation
+   \newcommand  \Nand             {\lgx{E6A2}}              % Bitwise NAND operator
+   \newcommand  \Nor              {\lgx{E6A3}}              % Bitwise NOR operator
+   \newcommand  \Xor              {\lgx{E6A5}}              % Bitwise XOR operator
+
+   \newcommand  \LcgCohrnc        {\lgx{E068}}              % Logical Coherence
+   \newcommand  \BncCohrnc        {\lgx{E078}}              % Bunch Coherence
+
+   \newcommand  \True             {\lgx{E012}}              % True
+   \newcommand  \False            {\lgx{E014}}              % False
+   \newcommand  \Top              {\lgx{E017}}              % Lattice / type top
+   \newcommand  \Bot              {\lgx{E016}}              % Lattice / type  bottom
+
+   \newcommand  \QuantCon         {\lgx{E891}}              % Quantified Conjunction
+   \newcommand  \QuantDis         {\lgx{E890}}              % Quantified Disjuntion
+   \newcommand  \ForAll           {\lgx{E8C0}}              % Universal Individual Quantifier
+   \newcommand  \Exists           {\lgx{E8C1}}              % Existential Individual Quantifier
+   \newcommand  \Unique           {\lgx{E8C2}}              % Unique Existential Individual Quantifier
+   \newcommand  \BnchForAll       {\lgx{E8D0}}              % Universal Bunch Quantifier
+   \newcommand  \BnchExists       {\lgx{E8D1}}              % Existential Bunch Quantifier
+   \newcommand  \BnchUnique       {\lgx{E8D2}}              % Unique Existential Bunch Quantifier
+   \newcommand  \BndMap           {\lgx{E030}}              % Map Abstraction
+
+   \newcommand  \Dt               {\lgx{E098}}              % Dot
+   \newcommand  \Comma            {\lgx{E099}}              % Comma
+   \newcommand  \Semicln          {\lgx{E09A}}              % Semicolon
+   \newcommand  \Cln              {\lgx{E091}}              % Colon
+   \newcommand  \Thus             {\lgx{E092}}              % Thus
+   \newcommand  \Since            {\lgx{E093}}              % Since
+   \newcommand  \Dts              {\lgx{E096}}              % Dots (ellipsis)
+   \newcommand  \BndDot           {\lgx{E090}}              % Binding Dot
+   \newcommand  \BndBar           {\lgm{E380}}              % Binding Bar
+   \newcommand  \BndBarS          {\middle\BndBar}          % Stretchy Binding Bar
+   \newcommand  \LngVrtBar        {\lgx{E0EC}}              % Long Vertical Bar
+   \newcommand  \Queston          {\lgx{E02C}}              % Question mark
+   \newcommand  \Exclaim          {\lgx{E02D}}              % Exclamation point
+   \newcommand  \Percent          {\lgx{E03C}}              % Percent sign
+   \newcommand  \Ampersand        {\lgx{E03D}}              % Ampersand
+   \newcommand  \Dollar           {\lgx{E05F}}              % Dollar sign
+   \newcommand  \At               {\lgx{E03E}}              % At sign
+   \newcommand  \Circumflex       {\lgx{E03F}}              % ASCII Circumflex
+   \newcommand  \Number           {\lgx{E04F}}              % Number sign
+   \newcommand  \Underscore       {\lgx{E09E}}              % Underscore
+   \newcommand  \Tild             {\lgx{007E}}              % Tilde  E64C
+   \newcommand  \SingleQuote      {\lgx{E09C}}              % Single quote
+   \newcommand  \DoubleQuote      {\lgx{E09B}}              % Double quote
+   \newcommand  \BackQuote        {\lgx{E09D}}              % Back quote (grave)
+   \newcommand  \LeftSlash        {\lgx{E103}}              % Left (back) slash
+   \newcommand  \RightSlash       {\lgx{E102}}              % Right (forward) slash
+
+   \newcommand  \ShftSuper        {\lgx{EAC3}}              % Shift for superscripts
+   \newcommand  \ShftSubscr       {\lgx{EAC4}}              % Shift for subscripts
+   \newcommand  \ShftAccent       {\lgx{EAC5}}              % Shift for accents
+
+   \newcommand  \RplcAllBndRight  {\lgx{E9D4}}              % Replace All Bound Variables (right)
+   \newcommand  \RplcAllBndLeft   {\lgx{E9D5}}              % Replace All Bound Variables (left)
+   \newcommand  \RplcAllRight     {\lgx{E9DA}}              % Replace All (right)
+   \newcommand  \RplcAllLeft      {\lgx{E9DB}}              % Replace All (left)
+   \newcommand  \RplcFreeRight    {\lgx{E9F0}}              % Replace Any Free Variables (right)
+   \newcommand  \RplcFreeLeft     {\lgx{E9F1}}              % Replace Any Free Variables (left)
+   \newcommand  \RplcEquvRight    {\lgx{E9F8}}              % Replace Equivalent Expressions (right)
+   \newcommand  \RplcEquvLeft     {\lgx{E9F9}}              % Replace Equivalent Expressions (left)
+
+   \newcommand  \LstFix           {\lgx{E031}}              % Least Fixed Point
+   \newcommand  \GrtFix           {\lgx{E032}}              % Greatest Fixed Point
+   \newcommand  \Choice           {\lgx{E033}}              % Choice
+   \newcommand  \ExLstFix         {\lgx{E034}}              % Extended Least Fixed Point
+   \newcommand  \ExGrtFix         {\lgx{E035}}              % Extended Greatest Fixed Point
+   \newcommand  \FrstOrd          {\lgx{E039}}              % First Ordinal (omega)
+
+   \newcommand  \LogNec           {\lgx{E230}}              % Logical Necessity   (temporal always or henceforth)
+   \newcommand  \LogPos           {\lgx{E232}}              % Logical Possibility (temporal sometime or eventually)
+   \newcommand  \LogNext          {\lgx{E233}}              % Logical Next        (temporal next or nexttime)
+   \newcommand  \LogFutr          {\lgx{E234}}              % Logical Future      (temporal in the future)
+   \newcommand  \LogPast          {\lgx{E235}}              % Logical Past        (temporal in the past)
+   \newcommand  \LogCont          {\lgx{E236}}              % Logical Contingency
+   \newcommand  \LogNonCont       {\lgx{E237}}              % Logical Non-contingency
+
+   \newcommand  \Nec              {\lgx{E270}}              % Necessity   (temporal always or henceforth)
+   \newcommand  \Pos              {\lgx{E272}}              % Possibility (temporal sometime or eventually)
+   \newcommand  \Next             {\lgx{E273}}              % Next        (temporal next or nexttime)
+   \newcommand  \Futr             {\lgx{E274}}              % Future      (temporal in the future)
+   \newcommand  \Past             {\lgx{E275}}              % Past        (temporal in the past)
+   \newcommand  \Cont             {\lgx{E276}}              % Contingency
+   \newcommand  \NonCont          {\lgx{E277}}              % Non-contingency
+
+   \newcommand  \FacNec           {\lgx{E220}}              % Factual Necessity   (temporal always or henceforth)
+   \newcommand  \FacPos           {\lgx{E222}}              % Factual Possibility (temporal sometime or eventually)
+   \newcommand  \FacNext          {\lgx{E223}}              % Factual Next        (temporal next or nexttime)
+   \newcommand  \FacFutr          {\lgx{E224}}              % Factual Future      (temporal in the future)
+   \newcommand  \FacPast          {\lgx{E225}}              % Factual Past        (temporal in the past)
+   \newcommand  \FacCont          {\lgx{E226}}              % Factual Contingency
+   \newcommand  \FacNonCont       {\lgx{E227}}              % Factual Non-contingency
+
+   \newcommand  \Of               {\lgx{E600}}              % Bunch Inclusion
+   \newcommand  \In               {\lgx{E602}}              % Set Membership
+   \newcommand  \NotIn            {\lgx{E603}}              % Set Membership Negated
+
+   \newcommand  \EmptyBunch       {\lgx{E054}}              % Empty Bunch
+   \newcommand  \NullSet          {\lgx{E053}}              % Null Set
+
+   \newcommand  \BnchMeet         {\lgx{E710}}              % Bunch Meet
+   \newcommand  \BnchJoin         {\lgx{E711}}              % Bunch Join
+
+   \newcommand  \StrctSbnch       {\lgx{E718}}              % Strict Subbunch
+   \newcommand  \NotStrctSbnch    {\lgx{E719}}              % Strict Subbunch Negated
+   \newcommand  \Sbnch            {\lgx{E71A}}              % Subbunch
+   \newcommand  \NotSbnch         {\lgx{E71B}}              % Subbunch Negated
+
+   \newcommand  \StrctWkSbnch     {\lgx{E738}}              % Strict Weak Subbunch
+   \newcommand  \NotStrctWkSbnch  {\lgx{E739}}              % Strict Weak Subbunch Negated
+   \newcommand  \WkSbnch          {\lgx{E73A}}              % Weak Subbunch
+   \newcommand  \NotWkSbnch       {\lgx{E73B}}              % Weak Subbunch Negated
+
+   \newcommand  \MapMeet          {\lgx{E760}}              % Map Meet
+   \newcommand  \MapJoin          {\lgx{E761}}              % Map Join
+
+   \newcommand  \StrctSbmap       {\lgx{E768}}              % Strict Submap
+   \newcommand  \NotStrctSbmap    {\lgx{E769}}              % Strict Submap Negated
+   \newcommand  \Sbmap            {\lgx{E76A}}              % Submap
+   \newcommand  \NotSbmap         {\lgx{E76B}}              % Submap Negated
+
+   \newcommand  \SetMeet          {\lgx{E790}}              % Set Intersection
+   \newcommand  \SetJoin          {\lgx{E791}}              % Set Union
+   \newcommand  \Normal           {\lgx{E2E5}}              % Normal Subgroup
+   \newcommand  \SetSymDiff       {\lgx{E2E7}}              % Set Symmetric Difference
+
+   \newcommand  \StrctSbset       {\lgx{E798}}              % Strict Subset
+   \newcommand  \NotStrctSbset    {\lgx{E799}}              % Strict Subset Negated
+   \newcommand  \Sbset            {\lgx{E79A}}              % Subset
+   \newcommand  \NotSbset         {\lgx{E79B}}              % Subset Negated
+
+   \newcommand  \QuantBnchMeet    {\lgx{E895}}              % Bunch Meet Quantifier
+   \newcommand  \QuantBnchJoin    {\lgx{E894}}              % Bunch Join Quantifier
+   \newcommand  \QuantSetMeet     {\lgx{E893}}              % Set Intersection Quantifier
+   \newcommand  \QuantSetJoin     {\lgx{E892}}              % Set Union Quantifier
+
+   \newcommand  \Ls               {\lgx{E6A8}}              % Less Than
+   \newcommand  \Lse              {\lgx{E6AA}}              % Less Than or Equal
+   \newcommand  \Eq               {\lgx{E656}}              % Equal
+   \newcommand  \Sm               {\lgx{E658}}              % Similar
+   \newcommand  \Gr               {\lgx{E6AE}}              % Greater Than
+   \newcommand  \Gre              {\lgx{E6AC}}              % Greater Than or Equal
+
+   \newcommand  \NotLs            {\lgx{E6A9}}              % Not Less Than
+   \newcommand  \NotLse           {\lgx{E6AB}}              % Not Less Than or Equal
+   \newcommand  \NotEq            {\lgx{E657}}              % Not Equal
+   \newcommand  \NotSm            {\lgx{E659}}              % Not Similar
+   \newcommand  \NotGr            {\lgx{E6AF}}              % Not Greater Than
+   \newcommand  \NotGre           {\lgx{E6AD}}              % Not Greater Than or Equal
+
+   \newcommand  \Pre              {\lgx{E6C8}}              % Precedes
+   \newcommand  \Preq             {\lgx{E6CA}}              % Precedes or Equal
+   \newcommand  \Suc              {\lgx{E6CE}}              % Succeeds
+   \newcommand  \Sucq             {\lgx{E6CC}}              % Succeeds or Equal
+
+   \newcommand  \NotPre           {\lgx{E6C9}}              % Not Precedes
+   \newcommand  \NotPreq          {\lgx{E6CB}}              % Not Precedes or Equal
+   \newcommand  \NotSuc           {\lgx{E6CF}}              % Not Succeeds
+   \newcommand  \NotSucq          {\lgx{E6CD}}              % Not Succeeds or Equal
+
+   \newcommand  \Minus            {\lgx{E0C7}}              % Minus
+   \newcommand  \Plus             {\lgx{E0C6}}              % Plus
+   \newcommand  \PlusMinus        {\lgx{E0CE}}              % Plus / Minus
+   \newcommand  \MinusPlus        {\lgx{E0CF}}              % Minus / Plus
+   \newcommand  \Asterick         {\lgx{E0C4}}              % Asterick
+   \newcommand  \Divide           {\lgx{E103}}              % Divide
+   \newcommand  \Times            {\lgx{E0C5}}              % Times
+
+   \newcommand  \Append           {\lgx{E0CB}}              % Append
+   \newcommand  \Concat           {\lgx{E0CD}}              % Concatenation
+
+   \newcommand  \CircPlus         {\lgx{E12B}}              % Large Circled Plus
+   \newcommand  \CircTimes        {\lgx{E12C}}              % Large Circled Times
+   \newcommand  \CircStar         {\lgx{E11D}}              % Circled Star
+
+   \newcommand  \Dagger           {\lgx{E05B}}              % Single dagger
+   \newcommand  \Ddagger          {\lgx{E05C}}              % Double horizontal dagger
+   \newcommand  \Daggerr          {\lgx{E05D}}              % Double vertical dagger
+   \newcommand  \Ddaggerr         {\lgx{E05E}}              % Double horizontal and vertical dagger
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+% Define custom \not mappings.
+
+   \NewNegationCommand  {\ClsImpl}        {\NotClsImpl}
+   \NewNegationCommand  {\SWkMtImpl}      {\NotSWkMtImpl}
+   \NewNegationCommand  {\SMtImpl}        {\NotSMtImpl}
+   \NewNegationCommand  {\SInImpl}        {\NotSInImpl}
+   \NewNegationCommand  {\SWkImpl}        {\NotSWkImpl}
+   \NewNegationCommand  {\SImpl}          {\NotSImpl}
+   \NewNegationCommand  {\SWkEntail}      {\NotSWkEntail}
+   \NewNegationCommand  {\SEntail}        {\NotSEntail}
+   \NewNegationCommand  {\WkMtImpl}       {\NotWkMtImpl}
+   \NewNegationCommand  {\MtImpl}         {\NotMtImpl}
+   \NewNegationCommand  {\InImpl}         {\NotInImpl}
+   \NewNegationCommand  {\WkImpl}         {\NotWkImpl}
+   \NewNegationCommand  {\Impl}           {\NotImpl}
+   \NewNegationCommand  {\WkEntail}       {\NotWkEntail}
+   \NewNegationCommand  {\Entail}         {\NotEntail}
+   \NewNegationCommand  {\LWkMtImpl}      {\NotLWkMtImpl}
+   \NewNegationCommand  {\LMtImpl}        {\NotLMtImpl}
+   \NewNegationCommand  {\LInImpl}        {\NotLInImpl}
+   \NewNegationCommand  {\LWkImpl}        {\NotLWkImpl}
+   \NewNegationCommand  {\LImpl}          {\NotLImpl}
+   \NewNegationCommand  {\LWkEntail}      {\NotLWkEntail}
+   \NewNegationCommand  {\LEntail}        {\NotLEntail}
+   \NewNegationCommand  {\XWkMtImpl}      {\NotXWkMtImpl}
+   \NewNegationCommand  {\XMtImpl}        {\NotXMtImpl}
+   \NewNegationCommand  {\XInImpl}        {\NotXInImpl}
+   \NewNegationCommand  {\XWkImpl}        {\NotXWkImpl}
+   \NewNegationCommand  {\XImpl}          {\NotXImpl}
+   \NewNegationCommand  {\XWkEntail}      {\NotXWkEntail}
+   \NewNegationCommand  {\XEntail}        {\NotXEntail}
+   \NewNegationCommand  {\CksEquv}        {\NotClsEquv}
+   \NewNegationCommand  {\SWkMtEquv}      {\NotSWkMtEquv}
+   \NewNegationCommand  {\SMtEquv}        {\NotSMtEquv}
+   \NewNegationCommand  {\SInEquv}        {\NotSInEquv}
+   \NewNegationCommand  {\SWkEquv}        {\NotSWkEquv}
+   \NewNegationCommand  {\SEquv}          {\NotSEquv}
+   \NewNegationCommand  {\SWkEntailEquv}  {\NotSWkEntailEquv}
+   \NewNegationCommand  {\SEntailEquv}    {\NotSEntailEquv}
+   \NewNegationCommand  {\WkMtEquv}       {\NotWkMtEquv}
+   \NewNegationCommand  {\MtEquv}         {\NotMtEquv}
+   \NewNegationCommand  {\InEquv}         {\NotInEquv}
+   \NewNegationCommand  {\WkEquv}         {\NotWkEquv}
+   \NewNegationCommand  {\Equv}           {\NotEquv}
+   \NewNegationCommand  {\WkEntailEquv}   {\NotWkEntailEquv}
+   \NewNegationCommand  {\EntailEquv}     {\NotEntailEquv}
+   \NewNegationCommand  {\LWkMtEquv}      {\NotLWkMtEquv}
+   \NewNegationCommand  {\LMtEquv}        {\NotLMtEquv}
+   \NewNegationCommand  {\LInEquv}        {\NotLInEquv}
+   \NewNegationCommand  {\LWkEquv}        {\NotLWkEquv}
+   \NewNegationCommand  {\LEquv}          {\NotLEquv}
+   \NewNegationCommand  {\LWkEntailEquv}  {\NotLWkEntailEquv}
+   \NewNegationCommand  {\LEntailEquv}    {\NotLEntailEquv}
+   \NewNegationCommand  {\XWkMtEquv}      {\NotXWkMtEquv}
+   \NewNegationCommand  {\XMtEquv}        {\NotXMtEquv}
+   \NewNegationCommand  {\XInEquv}        {\NotXInEquv}
+   \NewNegationCommand  {\XWkEquv}        {\NotXWkEquv}
+   \NewNegationCommand  {\XEquv}          {\NotXEquv}
+   \NewNegationCommand  {\XWkEntailEquv}  {\NotXWkEntailEquv}
+   \NewNegationCommand  {\XEntailEquv}    {\NotXEntailEquv}
+   \NewNegationCommand  {\Seq}            {\NotSeq}
+   \NewNegationCommand  {\Rule}           {\NotRule}
+   \NewNegationCommand  {\Model}          {\NotModel}
+   \NewNegationCommand  {\Turn}           {\NotTurn}
+   \NewNegationCommand  {\Conseq}         {\NotConseq}
+   \NewNegationCommand  {\In}             {\NotIn}
+   \NewNegationCommand  {\StrctSbnch}     {\NotStrctSbnch}
+   \NewNegationCommand  {\Sbnch}          {\NotSbnch}
+   \NewNegationCommand  {\StrctWkSbnch}   {\NotStrctWkSbnch}
+   \NewNegationCommand  {\WkSbnch}        {\NotWkSbnch}
+   \NewNegationCommand  {\StrctSbmap}     {\NotStrctSbmap}
+   \NewNegationCommand  {\Sbmap}          {\NotSbmap}
+   \NewNegationCommand  {\StrctSbset}     {\NotStrctSbset}
+   \NewNegationCommand  {\Sbset}          {\NotSbset}
+   \NewNegationCommand  {\Ls}             {\NotLs}
+   \NewNegationCommand  {\Lse}            {\NotLse}
+   \NewNegationCommand  {\Eq}             {\NotEq}
+   \NewNegationCommand  {\Sm}             {\NotSm}
+   \NewNegationCommand  {\Gr}             {\NotGr}
+   \NewNegationCommand  {\Gre}            {\NotGre}
+   \NewNegationCommand  {\Pre}            {\NotPre}
+   \NewNegationCommand  {\Preq}           {\NotPreq}
+   \NewNegationCommand  {\Suc}            {\NotSuc}
+   \NewNegationCommand  {\Sucq}           {\NotSucq}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+% Define oversized delimiters and their stretchy parts.
+
+   \newcommand    \defineDelimiter[2] {%
+\expandafter\def\csname #1A\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "00}}%  Size variant  1
+\expandafter\def\csname #1B\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "01}}%  Size variant  2
+\expandafter\def\csname #1C\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "02}}%  Size variant  3
+\expandafter\def\csname #1D\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "03}}%  Size variant  4
+\expandafter\def\csname #1E\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "04}}%  Size variant  5
+\expandafter\def\csname #1F\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "05}}%  Size variant  6
+\expandafter\def\csname #1G\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "06}}%  Size variant  7
+\expandafter\def\csname #1H\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "07}}%  Size variant  8
+\expandafter\def\csname #1I\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "08}}%  Size variant  9
+\expandafter\def\csname #1J\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "09}}%  Size variant 10
+\expandafter\def\csname #1K\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "0A}}%  Size variant 11
+\expandafter\def\csname #1L\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "0B}}}% Size variant 12
+
+   \newcommand    \defineDelimiterX[2] {%
+\expandafter\def\csname #1M\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "0C}}%  Size variant 13
+\expandafter\def\csname #1N\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "0D}}%  Size variant 14
+\expandafter\def\csname #1O\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "0E}}%  Size variant 15
+\expandafter\def\csname #1P\endcsname{\ensuremath{\Umathchar "0 \symLogix \numexpr "#2 + "0F}}}% Size variant 16
+
+   \defineDelimiter{OpnGrp}         {EBE0}
+   \defineDelimiter{ClsGrp}         {EBF0}
+   \defineDelimiter{OpnParn}        {EC00}
+   \defineDelimiter{ClsParn}        {EC10}
+   \defineDelimiter{OpnBrac}        {EC20}
+   \defineDelimiter{ClsBrac}        {EC30}
+   \defineDelimiter{OpnBrknBrac}    {EC40}
+   \defineDelimiter{ClsBrknBrac}    {EC50}
+   \defineDelimiter{OpnCircBrac}    {EC60}
+   \defineDelimiter{ClsCircBrac}    {EC70}
+   \defineDelimiter{OpnArrwBrac}    {EC80}
+   \defineDelimiter{ClsArrwBrac}    {EC90}
+   \defineDelimiter{OpnBrkt}        {ECA0}
+   \defineDelimiter{ClsBrkt}        {ECB0}
+   \defineDelimiter{OpnCrlyBrkt}    {ECC0}
+   \defineDelimiter{ClsCrlyBrkt}    {ECD0}
+   \defineDelimiter{OpnBrknBrkt}    {ECE0}
+   \defineDelimiter{ClsBrknBrkt}    {ECF0}
+   \defineDelimiter{OpnCircBrkt}    {ED00}
+   \defineDelimiter{ClsCircBrkt}    {ED10}
+   \defineDelimiter{OpnTortoise}    {ED20}
+   \defineDelimiter{ClsTortoise}    {ED30}
+   \defineDelimiter{OpnAngl}        {ED40}
+   \defineDelimiterX{OpnAngl}       {ED40}
+   \defineDelimiter{ClsAngl}        {ED50}
+   \defineDelimiterX{ClsAngl}       {ED50}
+   \defineDelimiter{OpnCurvAngl}    {ED60}
+   \defineDelimiterX{OpnCurvAngl}   {ED60}
+   \defineDelimiter{ClsCurvAngl}    {ED70}
+   \defineDelimiterX{ClsCurvAngl}   {ED70}
+   \defineDelimiter{OpnDblBrac}     {ED80}
+   \defineDelimiter{ClsDblBrac}     {ED90}
+   \defineDelimiter{OpnDblAngl}     {EDA0}
+   \defineDelimiterX{OpnDblAngl}    {EDA0}
+   \defineDelimiter{ClsDblAngl}     {EDB0}
+   \defineDelimiterX{ClsDblAngl}    {EDB0}
+   \defineDelimiter{OpnSqrParn}     {EDC0}
+   \defineDelimiter{ClsSqrParn}     {EDD0}
+   \defineDelimiter{OpnParnBar}     {EDE0}
+   \defineDelimiter{ClsParnBar}     {EDF0}
+   \defineDelimiter{OpnBracBar}     {EE00}
+   \defineDelimiter{ClsBracBar}     {EE10}
+   \defineDelimiter{OpnBrknBracBar} {EE20}
+   \defineDelimiter{ClsBrknBracBar} {EE30}
+   \defineDelimiter{OpnCircBracBar} {EE40}
+   \defineDelimiter{ClsCircBracBar} {EE50}
+   \defineDelimiter{OpnBrktBar}     {EE60}
+   \defineDelimiter{ClsBrktBar}     {EE70}
+   \defineDelimiter{OpnCrlyBrktBar} {EE80}
+   \defineDelimiter{ClsCrlyBrktBar} {EE90}
+   \defineDelimiter{OpnBrknBrktBar} {EEA0}
+   \defineDelimiter{ClsBrknBrktBar} {EEB0}
+   \defineDelimiter{OpnCircBrktBar} {EEC0}
+   \defineDelimiter{ClsCircBrktBar} {EED0}
+   \defineDelimiter{OpnCeil}        {EEE0}
+   \defineDelimiter{ClsCeil}        {EEF0}
+   \defineDelimiter{OpnFloor}       {EF00}
+   \defineDelimiter{ClsFloor}       {EF10}
+   \defineDelimiter{OpnTurn}        {EF20}
+   \defineDelimiter{ClsTurn}        {EF30}
+   \defineDelimiter{OpnBar}         {EF40}
+   \defineDelimiter{ClsBar}         {EF50}
+   \defineDelimiter{BndBar}         {EF60}
+   \defineDelimiter{OpnTortoiseBar} {EF70}
+   \defineDelimiter{ClsTortoiseBar} {EF80}
+   \defineDelimiter{OpnAnglBar}     {EF90}
+   \defineDelimiterX{OpnAnglBar}    {EF90}
+   \defineDelimiter{ClsAnglBar}     {EFA0}
+   \defineDelimiterX{ClsAnglBar}    {EFA0}
+   \defineDelimiter{OpnDblParn}     {F000}
+   \defineDelimiter{ClsDblParn}     {F010}
+   \defineDelimiter{OpnDblGrp}      {F020}
+   \defineDelimiter{ClsDblGrp}      {F080}
+   \defineDelimiter{OpnDblBar}      {F090}
+   \defineDelimiter{ClsDblBar}      {F0A0}
+
+   \newcommand  \OpnGrpBtm          {\lgx{EBEC}}  % OpnGrp bottom
+   \newcommand  \OpnGrpExt          {\lgx{EBED}}  % OpnGrp extender
+   \newcommand  \OpnGrpTop          {\lgx{EBEE}}  % OpnGrp top
+
+   \newcommand  \ClsGrpBtm          {\lgx{EBFC}}  % ClsGrp bottom
+   \newcommand  \ClsGrpExt          {\lgx{EBFD}}  % ClsGrp extender
+   \newcommand  \ClsGrpTop          {\lgx{EBFE}}  % ClsGrp top
+
+   \newcommand  \OpnParnBtm         {\lgx{EC0C}}  % OpnParn bottom
+   \newcommand  \OpnParnExt         {\lgx{EC0D}}  % OpnParn extender
+   \newcommand  \OpnParnTop         {\lgx{EC0E}}  % OpnParn top
+
+   \newcommand  \ClsParnBtm         {\lgx{EC1C}}  % ClsParn bottom
+   \newcommand  \ClsParnExt         {\lgx{EC1D}}  % ClsParn extender
+   \newcommand  \ClsParnTop         {\lgx{EC1E}}  % ClsParn top
+
+   \newcommand  \OpnBracBtm         {\lgx{EC2C}}  % OpnBrac bottom
+   \newcommand  \OpnBracExt         {\lgx{EC2D}}  % OpnBrac extender
+   \newcommand  \OpnBracMid         {\lgx{EC2E}}  % OpnBrac middle
+   \newcommand  \OpnBracTop         {\lgx{EC2F}}  % OpnBrac top
+
+   \newcommand  \ClsBracBtm         {\lgx{EC3C}}  % ClsBrac bottom
+   \newcommand  \ClsBracExt         {\lgx{EC3D}}  % ClsBrac extender
+   \newcommand  \ClsBracMid         {\lgx{EC3E}}  % ClsBrac middle
+   \newcommand  \ClsBracTop         {\lgx{EC3F}}  % ClsBrac top
+
+   \newcommand  \OpnBrknBracBtm     {\lgx{EC4C}}  % OpnBrknBrac bottom
+   \newcommand  \OpnBrknBracExt     {\lgx{EC4D}}  % OpnBrknBrac extender
+   \newcommand  \OpnBrknBracMid     {\lgx{EC4E}}  % OpnBrknBrac middle
+   \newcommand  \OpnBrknBracTop     {\lgx{EC4F}}  % OpnBrknBrac top
+
+   \newcommand  \ClsBrknBracBtm     {\lgx{EC5C}}  % ClsBrknBrac bottom
+   \newcommand  \ClsBrknBracExt     {\lgx{EC5D}}  % ClsBrknBrac extender
+   \newcommand  \ClsBrknBracMid     {\lgx{EC5E}}  % ClsBrknBrac middle
+   \newcommand  \ClsBrknBracTop     {\lgx{EC5F}}  % ClsBrknBrac top
+
+   \newcommand  \OpnCircBracBtm     {\lgx{EC6C}}  % OpnCircBrac bottom
+   \newcommand  \OpnCircBracExt     {\lgx{EC6D}}  % OpnCircBrac extender
+   \newcommand  \OpnCircBracMid     {\lgx{EC6E}}  % OpnCircBrac middle
+   \newcommand  \OpnCircBracTop     {\lgx{EC6F}}  % OpnCircBrac top
+
+   \newcommand  \ClsCircBracBtm     {\lgx{EC7C}}  % ClsCircBrac bottom
+   \newcommand  \ClsCircBracExt     {\lgx{EC7D}}  % ClsCircBrac extender
+   \newcommand  \ClsCircBracMid     {\lgx{EC7E}}  % ClsCircBrac middle
+   \newcommand  \ClsCircBracTop     {\lgx{EC7F}}  % ClsCircBrac top
+
+   \newcommand  \OpnArrwBracBtm     {\lgx{EC8C}}  % OpnArrwBrac bottom
+   \newcommand  \OpnArrwBracExt     {\lgx{EC8D}}  % OpnArrwBrac extender
+   \newcommand  \OpnArrwBracMid     {\lgx{EC8E}}  % OpnArrwBrac middle
+   \newcommand  \OpnArrwBracTop     {\lgx{EC8F}}  % OpnArrwBrac top
+
+   \newcommand  \ClsArrwBracBtm     {\lgx{EC9C}}  % ClsArrwBrac bottom
+   \newcommand  \ClsArrwBracExt     {\lgx{EC9D}}  % ClsArrwBrac extender
+   \newcommand  \ClsArrwBracMid     {\lgx{EC9E}}  % ClsArrwBrac middle
+   \newcommand  \ClsArrwBracTop     {\lgx{EC9F}}  % ClsArrwBrac top
+
+   \newcommand  \OpnBrktBtm         {\lgx{ECAC}}  % OpnBrkt bottom
+   \newcommand  \OpnBrktExt         {\lgx{ECAD}}  % OpnBrkt extender
+   \newcommand  \OpnBrktTop         {\lgx{ECAE}}  % OpnBrkt top
+
+   \newcommand  \ClsBrktBtm         {\lgx{ECBC}}  % ClsBrkt bottom
+   \newcommand  \ClsBrktExt         {\lgx{ECBD}}  % ClsBrkt extender
+   \newcommand  \ClsBrktTop         {\lgx{ECBE}}  % ClsBrkt top
+
+   \newcommand  \OpnCrlyBrktBtm     {\lgx{ECCC}}  % OpnCrlyBrkt bottom
+   \newcommand  \OpnCrlyBrktExt     {\lgx{ECCD}}  % OpnCrlyBrkt extender
+   \newcommand  \OpnCrlyBrktMid     {\lgx{ECCE}}  % OpnCrlyBrkt middle
+   \newcommand  \OpnCrlyBrktTop     {\lgx{ECCF}}  % OpnCrlyBrkt top
+
+   \newcommand  \ClsCrlyBrktBtm     {\lgx{ECDC}}  % ClsCrlyBrkt bottom
+   \newcommand  \ClsCrlyBrktExt     {\lgx{ECDD}}  % ClsCrlyBrkt extender
+   \newcommand  \ClsCrlyBrktMid     {\lgx{ECDE}}  % ClsCrlyBrkt middle
+   \newcommand  \ClsCrlyBrktTop     {\lgx{ECDF}}  % ClsCrlyBrkt top
+
+   \newcommand  \OpnBrknBrktBtm     {\lgx{ECEC}}  % OpnBrknBrkt bottom
+   \newcommand  \OpnBrknBrktExt     {\lgx{ECED}}  % OpnBrknBrkt extender
+   \newcommand  \OpnBrknBrktMid     {\lgx{ECEE}}  % OpnBrknBrkt middle
+   \newcommand  \OpnBrknBrktTop     {\lgx{ECEF}}  % OpnBrknBrkt top
+
+   \newcommand  \ClsBrknBrktBtm     {\lgx{ECFC}}  % ClsBrknBrkt bottom
+   \newcommand  \ClsBrknBrktExt     {\lgx{ECFD}}  % ClsBrknBrkt extender
+   \newcommand  \ClsBrknBrktMid     {\lgx{ECFE}}  % ClsBrknBrkt middle
+   \newcommand  \ClsBrknBrktTop     {\lgx{ECFF}}  % ClsBrknBrkt top
+
+   \newcommand  \OpnCircBrktBtm     {\lgx{ED0C}}  % OpnCircBrkt bottom
+   \newcommand  \OpnCircBrktExt     {\lgx{ED0D}}  % OpnCircBrkt extender
+   \newcommand  \OpnCircBrktMid     {\lgx{ED0E}}  % OpnCircBrkt middle
+   \newcommand  \OpnCircBrktTop     {\lgx{ED0F}}  % OpnCircBrkt top
+
+   \newcommand  \ClsCircBrktBtm     {\lgx{ED1C}}  % ClsCircBrkt bottom
+   \newcommand  \ClsCircBrktExt     {\lgx{ED1D}}  % ClsCircBrkt extender
+   \newcommand  \ClsCircBrktMid     {\lgx{ED1E}}  % ClsCircBrkt middle
+   \newcommand  \ClsCircBrktTop     {\lgx{ED1F}}  % ClsCircBrkt top
+
+   \newcommand  \OpnTortoiseBtm     {\lgx{ED2C}}  % OpnTortoise bottom
+   \newcommand  \OpnTortoiseExt     {\lgx{ED2D}}  % OpnTortoise extender
+   \newcommand  \OpnTortoiseTop     {\lgx{ED2E}}  % OpnTortoise top
+
+   \newcommand  \ClsTortoiseBtm     {\lgx{ED3C}}  % ClsTortoise bottom
+   \newcommand  \ClsTortoiseExt     {\lgx{ED3D}}  % ClsTortoise extender
+   \newcommand  \ClsTortoiseTop     {\lgx{ED3E}}  % ClsTortoise top
+
+   \newcommand  \OpnDblBracBtm      {\lgx{ED8C}}  % OpnDblBrac bottom
+   \newcommand  \OpnDblBracExt      {\lgx{ED8D}}  % OpnDblBrac extender
+   \newcommand  \OpnDblBracMid      {\lgx{ED8E}}  % OpnDblBrac middle
+   \newcommand  \OpnDblBracTop      {\lgx{ED8F}}  % OpnDblBrac top
+
+   \newcommand  \ClsDblBracBtm      {\lgx{ED9C}}  % ClsDblBrac bottom
+   \newcommand  \ClsDblBracExt      {\lgx{ED9D}}  % ClsDblBrac extender
+   \newcommand  \ClsDblBracMid      {\lgx{ED9E}}  % ClsDblBrac middle
+   \newcommand  \ClsDblBracTop      {\lgx{ED9F}}  % ClsDblBrac top
+
+   \newcommand  \OpnSqrParnBtm      {\lgx{EDCC}}  % OpnSqrParn bottom
+   \newcommand  \OpnSqrParnExt      {\lgx{EDCD}}  % OpnSqrParn extender
+   \newcommand  \OpnSqrParnTop      {\lgx{EDCE}}  % OpnSqrParn top
+
+   \newcommand  \ClsSqrParnBtm      {\lgx{EDDC}}  % ClsSqrParn bottom
+   \newcommand  \ClsSqrParnExt      {\lgx{EDDD}}  % ClsSqrParn extender
+   \newcommand  \ClsSqrParnTop      {\lgx{EDDE}}  % ClsSqrParn top
+
+   \newcommand  \OpnParnBarBtm      {\lgx{EDEC}}  % OpnParnBar bottom
+   \newcommand  \OpnParnBarExt      {\lgx{EDED}}  % OpnParnBar extender
+   \newcommand  \OpnParnBarTop      {\lgx{EDEE}}  % OpnParnBar top
+
+   \newcommand  \ClsParnBarBtm      {\lgx{EDFC}}  % ClsParnBar bottom
+   \newcommand  \ClsParnBarExt      {\lgx{EDFD}}  % ClsParnBar extender
+   \newcommand  \ClsParnBarTop      {\lgx{EDFE}}  % ClsParnBar top
+
+   \newcommand  \OpnBracBarBtm      {\lgx{EE0C}}  % OpnBracBar bottom
+   \newcommand  \OpnBracBarExt      {\lgx{EE0D}}  % OpnBracBar extender
+   \newcommand  \OpnBracBarMid      {\lgx{EE0E}}  % OpnBracBar middle
+   \newcommand  \OpnBracBarTop      {\lgx{EE0F}}  % OpnBracBar top
+
+   \newcommand  \ClsBracBarBtm      {\lgx{EE1C}}  % ClsBracBar bottom
+   \newcommand  \ClsBracBarExt      {\lgx{EE1D}}  % ClsBracBar extender
+   \newcommand  \ClsBracBarMid      {\lgx{EE1E}}  % ClsBracBar middle
+   \newcommand  \ClsBracBarTop      {\lgx{EE1F}}  % ClsBracBar top
+
+   \newcommand  \OpnBrknBracBarBtm  {\lgx{EE2C}}  % OpnBrknBracBar bottom
+   \newcommand  \OpnBrknBracBarExt  {\lgx{EE2D}}  % OpnBrknBracBar extender
+   \newcommand  \OpnBrknBracBarMid  {\lgx{EE2E}}  % OpnBrknBracBar middle
+   \newcommand  \OpnBrknBracBarTop  {\lgx{EE2F}}  % OpnBrknBracBar top
+
+   \newcommand  \ClsBrknBracBarBtm  {\lgx{EE3C}}  % ClsBrknBracBar bottom
+   \newcommand  \ClsBrknBracBarExt  {\lgx{EE3D}}  % ClsBrknBracBar extender
+   \newcommand  \ClsBrknBracBarMid  {\lgx{EE3E}}  % ClsBrknBracBar middle
+   \newcommand  \ClsBrknBracBarTop  {\lgx{EE3F}}  % ClsBrknBracBar top
+
+   \newcommand  \OpnCircBracBarBtm  {\lgx{EE4C}}  % OpnCircBracBar bottom
+   \newcommand  \OpnCircBracBarExt  {\lgx{EE4D}}  % OpnCircBracBar extender
+   \newcommand  \OpnCircBracBarMid  {\lgx{EE4E}}  % OpnCircBracBar middle
+   \newcommand  \OpnCircBracBarTop  {\lgx{EE4F}}  % OpnCircBracBar top
+
+   \newcommand  \ClsCircBracBarBtm  {\lgx{EE5C}}  % ClsCircBracBar bottom
+   \newcommand  \ClsCircBracBarExt  {\lgx{EE5D}}  % ClsCircBracBar extender
+   \newcommand  \ClsCircBracBarMid  {\lgx{EE5E}}  % ClsCircBracBar middle
+   \newcommand  \ClsCircBracBarTop  {\lgx{EE5F}}  % ClsCircBracBar top
+
+   \newcommand  \OpnBrktBarBtm      {\lgx{EE6C}}  % OpnBrktBar bottom
+   \newcommand  \OpnBrktBarExt      {\lgx{EE6D}}  % OpnBrktBar extender
+   \newcommand  \OpnBrktBarTop      {\lgx{EE6E}}  % OpnBrktBar top
+
+   \newcommand  \ClsBrktBarBtm      {\lgx{EE7C}}  % ClsBrktBar bottom
+   \newcommand  \ClsBrktBarExt      {\lgx{EE7D}}  % ClsBrktBar extender
+   \newcommand  \ClsBrktBarTop      {\lgx{EE7E}}  % ClsBrktBar top
+
+   \newcommand  \OpnCrlyBrktBarBtm  {\lgx{EE8C}}  % OpnCrlyBrktBar bottom
+   \newcommand  \OpnCrlyBrktBarExt  {\lgx{EE8D}}  % OpnCrlyBrktBar extender
+   \newcommand  \OpnCrlyBrktBarMid  {\lgx{EE8E}}  % OpnCrlyBrktBar middle
+   \newcommand  \OpnCrlyBrktBarTop  {\lgx{EE8F}}  % OpnCrlyBrktBar top
+
+   \newcommand  \ClsCrlyBrktBarBtm  {\lgx{EE9C}}  % ClsCrlyBrktBar bottom
+   \newcommand  \ClsCrlyBrktBarExt  {\lgx{EE9D}}  % ClsCrlyBrktBar extender
+   \newcommand  \ClsCrlyBrktBarMid  {\lgx{EE9E}}  % ClsCrlyBrktBar middle
+   \newcommand  \ClsCrlyBrktBarTop  {\lgx{EE9F}}  % ClsCrlyBrktBar top
+
+   \newcommand  \OpnBrknBrktBarBtm  {\lgx{EEAC}}  % OpnBrknBrktBar bottom
+   \newcommand  \OpnBrknBrktBarExt  {\lgx{EEAD}}  % OpnBrknBrktBar extender
+   \newcommand  \OpnBrknBrktBarMid  {\lgx{EEAE}}  % OpnBrknBrktBar middle
+   \newcommand  \OpnBrknBrktBarTop  {\lgx{EEAF}}  % OpnBrknBrktBar top
+
+   \newcommand  \ClsBrknBrktBarBtm  {\lgx{EEBC}}  % ClsBrknBrktBar bottom
+   \newcommand  \ClsBrknBrktBarExt  {\lgx{EEBD}}  % ClsBrknBrktBar extender
+   \newcommand  \ClsBrknBrktBarMid  {\lgx{EEBE}}  % ClsBrknBrktBar middle
+   \newcommand  \ClsBrknBrktBarTop  {\lgx{EEBF}}  % ClsBrknBrktBar top
+
+   \newcommand  \OpnCircBrktBarBtm  {\lgx{EECC}}  % OpnCircBrktBar bottom
+   \newcommand  \OpnCircBrktBarExt  {\lgx{EECD}}  % OpnCircBrktBar extender
+   \newcommand  \OpnCircBrktBarMid  {\lgx{EECE}}  % OpnCircBrktBar middle
+   \newcommand  \OpnCircBrktBarTop  {\lgx{EECF}}  % OpnCircBrktBar top
+
+   \newcommand  \ClsCircBrktBarBtm  {\lgx{EEDC}}  % ClsCircBrktBar bottom
+   \newcommand  \ClsCircBrktBarExt  {\lgx{EEDD}}  % ClsCircBrktBar extender
+   \newcommand  \ClsCircBrktBarMid  {\lgx{EEDE}}  % ClsCircBrktBar middle
+   \newcommand  \ClsCircBrktBarTop  {\lgx{EEDF}}  % ClsCircBrktBar top
+
+   \newcommand  \OpnCeilExt         {\lgx{EEEC}}  % OpnCeil extender
+   \newcommand  \OpnCeilTop         {\lgx{EEED}}  % OpnCeil top
+
+   \newcommand  \ClsCeilExt         {\lgx{EEFC}}  % ClsCeil extender
+   \newcommand  \ClsCeilTop         {\lgx{EEFD}}  % ClsCeil top
+
+   \newcommand  \OpnFloorBtm        {\lgx{EF0C}}  % OpnFloor bottom
+   \newcommand  \OpnFloorExt        {\lgx{EF0D}}  % OpnFloor extender
+
+   \newcommand  \ClsFloorBtm        {\lgx{EF1C}}  % ClsFloor bottom
+   \newcommand  \ClsFloorExt        {\lgx{EF1D}}  % ClsFloor extender
+
+   \newcommand  \OpnTurnMid         {\lgx{EF2C}}  % OpnTurn middle
+   \newcommand  \OpnTurnExt         {\lgx{EF2D}}  % OpnTurn extender
+
+   \newcommand  \ClsTurnMid         {\lgx{EF3C}}  % ClsTurn middle
+   \newcommand  \ClsTurnExt         {\lgx{EF3D}}  % ClsTurn extender
+
+   \newcommand  \OpnBarBtm          {\lgx{EF4C}}  % OpnBar bottom
+   \newcommand  \OpnBarExt          {\lgx{EF4D}}  % OpnBar extender
+
+   \newcommand  \ClsBarBtm          {\lgx{EF5C}}  % ClsBar bottom
+   \newcommand  \ClsBarExt          {\lgx{EF5D}}  % ClsBar extender
+
+   \newcommand  \BndBarBtm          {\lgx{EF6C}}  % BndBar bottom
+   \newcommand  \BndBarExt          {\lgx{EF6D}}  % BndBar extender
+
+   \newcommand  \OpnTortoiseBarBtm  {\lgx{EF7C}}  % OpnTortoiseBar bottom
+   \newcommand  \OpnTortoiseBarExt  {\lgx{EF7D}}  % OpnTortoiseBar extender
+   \newcommand  \OpnTortoiseBarTop  {\lgx{EF7E}}  % OpnTortoiseBar top
+
+   \newcommand  \ClsTortoiseBarBtm  {\lgx{EF8C}}  % ClsTortoiseBar bottom
+   \newcommand  \ClsTortoiseBarExt  {\lgx{EF8D}}  % ClsTortoiseBar extender
+   \newcommand  \ClsTortoiseBarTop  {\lgx{EF8E}}  % ClsTortoiseBar top
+
+   \newcommand  \OpnDblParnBtm      {\lgx{F00C}}  % OpnDblParn bottom
+   \newcommand  \OpnDblParnExt      {\lgx{F00D}}  % OpnDblParn extender
+   \newcommand  \OpnDblParnTop      {\lgx{F00E}}  % OpnDblParn top
+
+   \newcommand  \ClsDblParnBtm      {\lgx{F01C}}  % ClsDblParn bottom
+   \newcommand  \ClsDblParnExt      {\lgx{F01D}}  % ClsDblParn extender
+   \newcommand  \ClsDblParnTop      {\lgx{F01E}}  % ClsDblParn top
+
+   \newcommand  \OpnDblGrpBtm       {\lgx{F02C}}  % OpnDblGrp bottom
+   \newcommand  \OpnDblGrpExt       {\lgx{F02D}}  % OpnDblGrp extender
+   \newcommand  \OpnDblGrpTop       {\lgx{F02E}}  % OpnDblGrp top
+
+   \newcommand  \ClsDblGrpBtm       {\lgx{F08C}}  % ClsDblGrp bottom
+   \newcommand  \ClsDblGrpExt       {\lgx{F08D}}  % ClsDblGrp extender
+   \newcommand  \ClsDblGrpTop       {\lgx{F08E}}  % ClsDblGrp top
+
+   \newcommand  \OpnDblBarBtm       {\lgx{F09C}}  % OpnDblBar bottom
+   \newcommand  \OpnDblBarExt       {\lgx{F09D}}  % OpnDblBar extender
+
+   \newcommand  \ClsDblBarBtm       {\lgx{F0AC}}  % ClsDblBar bottom
+   \newcommand  \ClsDblBarExt       {\lgx{F0aD}}  % ClsDblBar extender
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+%
+%    Define symbols which may be used to construct Rational Links, Knots and Tangles.
+% In order to keep names shortish, the following abbreviations are used for Knot symbols
+%
+%    A - Arrow
+%    B - Bottom
+%    C - Cap / Corner
+%    D - Dashed / Down
+%    E - Three quarter
+%    F - halF
+%    H - Horizontal
+%    J - Join
+%    L - Left
+%    M - sMoothed
+%    N - liNe / Normal
+%    O - Over
+%    Q - Fourth / Quarter
+%    R - Right
+%    S - Solid
+%    T - Top
+%    U - Under / Up
+%    V - Vertical
+%    X - Cross
+%    Z - Zero
+%
+%    All symbols starting with Knt have their depth and height set identically
+% so that when aligned on their baselines, TeX sees their dimensions as the
+% same. This allows consistent vertical alignment. The \KntXY struts / spaces
+% are designed so that their depth and height matches that of the corresponding
+% symbols where X is the height and Y is the width (N, E, F, Q, or Z). They can
+% be used for empty cells matching the the width and height of the current row
+% and column and for padding a symbol.
+%
+%    The \KntlgX macros (where X is one of k, e, f, q or v) may be used to force
+% a specific height for a symbol.
+%
+
+   \newcommand  \lgk[1]           {\protect\raisebox{0.0000em}[0.7620em][0.2380em]{\ensuremath{\Umathchar "0 \symLogix "#1}}}
+   \newcommand  \lge[1]           {\protect\raisebox{0.0000em}[0.5120em][0.2380em]{\ensuremath{\Umathchar "0 \symLogix "#1}}}
+   \newcommand  \lgf[1]           {\protect\raisebox{0.0000em}[0.2620em][0.2380em]{\ensuremath{\Umathchar "0 \symLogix "#1}}}
+   \newcommand  \lgq[1]           {\protect\raisebox{0.0000em}[0.0120em][0.2380em]{\ensuremath{\Umathchar "0 \symLogix "#1}}}
+   \newcommand  \lgv[1]           {\protect\raisebox{0.4330em}[0.7620em][0.2380em]{\ensuremath{\Umathchar "0 \symLogix "#1}}}
+
+   \newcommand  \Kntlgk[1]        {\protect\raisebox{0.0000em}[0.7620em][0.2380em]{#1}}
+   \newcommand  \Kntlge[1]        {\protect\raisebox{0.0000em}[0.5120em][0.2380em]{#1}}
+   \newcommand  \Kntlgf[1]        {\protect\raisebox{0.0000em}[0.2620em][0.2380em]{#1}}
+   \newcommand  \Kntlgq[1]        {\protect\raisebox{0.0000em}[0.0120em][0.2380em]{#1}}
+   \newcommand  \Kntlgv[1]        {\protect\raisebox{0.4330em}[0.7620em][0.2380em]{#1}}
+
+   \newcommand  \KntNN            {\lgk{E210}}                       % Full height, full width space.
+   \newcommand  \KntNE            {\lgk{E211}}                       % Full height, three quarter width space.
+   \newcommand  \KntNF            {\lgk{E212}}                       % Full height, half width space.
+   \newcommand  \KntNQ            {\lgk{E213}}                       % Full height, quarter width space.
+   \newcommand  \KntNZ            {\rule[-0.238em]{0pt}{1.000em}}    % Full height, zero width strut.
+
+   \newcommand  \KntEN            {\lge{E210}}                       % Three quarter height, full width space.
+   \newcommand  \KntEE            {\lge{E211}}                       % Three quarter height, three quarter width space.
+   \newcommand  \KntEF            {\lge{E212}}                       % Three quarter height, half width space.
+   \newcommand  \KntEQ            {\lge{E213}}                       % Three quarter height, quarter width space.
+   \newcommand  \KntEZ            {\rule[-0.238em]{0pt}{0.750em}}    % Three quarter height, zero width strut.
+
+   \newcommand  \KntFN            {\lgf{E210}}                       % Half height, full width space.
+   \newcommand  \KntFE            {\lgf{E211}}                       % Half height, three quarter width space.
+   \newcommand  \KntFF            {\lgf{E212}}                       % Half height, half width space.
+   \newcommand  \KntFQ            {\lgf{E213}}                       % Half height, quarter width space.
+   \newcommand  \KntFZ            {\rule[-0.238em]{0pt}{0.500em}}    % Half height, zero width strut.
+
+   \newcommand  \KntQN            {\lgq{E210}}                       % Quarter height, full width space.
+   \newcommand  \KntQE            {\lgq{E211}}                       % Quarter height, three quarter width space.
+   \newcommand  \KntQF            {\lgq{E212}}                       % Quarter height, half width space.
+   \newcommand  \KntQQ            {\lgq{E213}}                       % Quarter height, quarter width space.
+   \newcommand  \KntQZ            {\rule[-0.238em]{0pt}{0.250em}}    % Quarter height, zero width strut.
+
+   \newcommand  \KntZN            {\rule[0pt]{1.000em}{0pt}}         % Zero height, full width strut.
+   \newcommand  \KntZE            {\rule[0pt]{0.750em}{0pt}}         % Zero height, three quarter width strut.
+   \newcommand  \KntZF            {\rule[0pt]{0.500em}{0pt}}         % Zero height, half width width strut.
+   \newcommand  \KntZQ            {\rule[0pt]{0.250em}{0pt}}         % Zero height, quarter width strut.
+   \newcommand  \KntZZ            {\rule[0pt]{0.000em}{0pt}}         % Zero height, zero width strut.
+
+   \newcommand  \KntHXSOSU        {\lgk{E140}}  % Horizontal flow, Cross, solid over, solid under
+   \newcommand  \KntHXSUSO        {\lgk{E141}}  % Horizontal flow, Cross, solid under, solid over
+   \newcommand  \KntVXSOSU        {\lgk{E142}}  % Vertical flow, Cross, solid over, solid under
+   \newcommand  \KntVXSUSO        {\lgk{E143}}  % Vertical flow, Cross, solid under, solid over
+   \newcommand  \KntHXDOSU        {\lgk{E144}}  % Horizontal flow, Cross, dashed over, solid under
+   \newcommand  \KntHXSUDO        {\lgk{E145}}  % Horizontal flow, Cross, solid under, dashed over
+   \newcommand  \KntVXDOSU        {\lgk{E146}}  % Vertical flow, Cross, dashed over, solid under
+   \newcommand  \KntVXSUDO        {\lgk{E147}}  % Vertical flow, Cross, solid under, dashed over
+   \newcommand  \KntHXSODU        {\lgk{E148}}  % Horizontal flow, Cross, solid over, dashed under
+   \newcommand  \KntHXDUSO        {\lgk{E149}}  % Horizontal flow, Cross, dashed under, solid over
+   \newcommand  \KntVXSODU        {\lgk{E14A}}  % Vertical flow, Cross, solid over, dashed under
+   \newcommand  \KntVXDUSO        {\lgk{E14B}}  % Vertical flow, Cross, dashed under, solid over
+   \newcommand  \KntHXDODU        {\lgk{E14C}}  % Horizontal flow, Cross, dashed over, dashed under
+   \newcommand  \KntHXDUDO        {\lgk{E14D}}  % Horizontal flow, Cross, dashed under, dashed over
+   \newcommand  \KntVXDODU        {\lgk{E14E}}  % Vertical flow, Cross, dashed over, dashed under
+   \newcommand  \KntVXDUDO        {\lgk{E14F}}  % Vertical flow, Cross, dashed under, dashed over
+
+   \newcommand  \KntHHMSTSB       {\lgk{E150}}  % Horizontal flow, Horizontal smoothing; solid top, solid bottom
+   \newcommand  \KntVVMSLSR       {\lgk{E151}}  % Vertical flow, Vertical smoothing; solid left, solid right
+   \newcommand  \KntHHMDTSB       {\lgk{E152}}  % Horizontal flow, Horizontal smoothing; dashed top, solid bottom
+   \newcommand  \KntVVMSLDR       {\lgk{E153}}  % Vertical flow, Vertical smoothing; solid left, dashed right
+   \newcommand  \KntHHMSTDB       {\lgk{E154}}  % Horizontal flow, Horizontal smoothing; solid top, dashed bottom
+   \newcommand  \KntVVMDLSR       {\lgk{E155}}  % Vertical flow, Vertical smoothing; dashed left, solid right
+   \newcommand  \KntHHMDTDB       {\lgk{E156}}  % Horizontal flow, Horizontal smoothing; dashed top, dashed bottom
+   \newcommand  \KntVVMDLDR       {\lgk{E157}}  % Vertical flow, Vertical smoothing; dashed left, dashed right
+   \newcommand  \KntHVMSLSR       {\lgk{E158}}  % Horizontal flow, Vertical smoothing, solid left, solid right
+   \newcommand  \KntVHMSTSB       {\lgk{E159}}  % Vertical flow, Horizontal smoothing, solid top, solid bottom
+   \newcommand  \KntHVMSLDR       {\lgk{E15A}}  % Horizontal flow, Vertical smoothing, solid left, dashed right
+   \newcommand  \KntVHMSTDB       {\lgk{E15B}}  % Vertical flow, Horizontal smoothing, solid top, dashed bottom
+   \newcommand  \KntHVMDLSR       {\lgk{E15C}}  % Horizontal flow, Vertical smoothing, dashed left, solid right
+   \newcommand  \KntVHMDTSB       {\lgk{E15D}}  % Vertical flow, Horizontal smoothing, dashed top, solid bottom
+   \newcommand  \KntHVMDLDR       {\lgk{E15E}}  % Horizontal flow, Vertical smoothing, dashed left, dashed right
+   \newcommand  \KntVHMDTDB       {\lgk{E15F}}  % Vertical flow, Horizontal smoothing, dashed top, dashed bottom
+
+   \newcommand  \KntLCS           {\lgk{E160}}  % Left cap, solid
+   \newcommand  \KntTCS           {\lgk{E161}}  % Top cap, solid
+   \newcommand  \KntRCS           {\lgk{E162}}  % Right cap, solid
+   \newcommand  \KntBCS           {\lgk{E163}}  % Bottom cap, solid
+   \newcommand  \KntLCD           {\lgk{E164}}  % Left cap, dashed
+   \newcommand  \KntTCD           {\lgk{E165}}  % Top cap, dashed
+   \newcommand  \KntRCD           {\lgk{E166}}  % Right cap, dashed
+   \newcommand  \KntBCD           {\lgk{E167}}  % Bottom cap, dashed
+   \newcommand  \KntLFC           {\lgk{E168}}  % Left half width cap
+   \newcommand  \KntTFC           {\lgf{E169}}  % Top half width cap
+   \newcommand  \KntRFC           {\lgk{E16A}}  % Right half width cap
+   \newcommand  \KntBFC           {\lgf{E16B}}  % Bottom half width cap
+   \newcommand  \KntLQC           {\lgk{E16C}}  % Left quarter width cap
+   \newcommand  \KntTQC           {\lgq{E16D}}  % Top quarter width cap
+   \newcommand  \KntRQC           {\lgk{E16E}}  % Right quarter width cap
+   \newcommand  \KntBQC           {\lgq{E16F}}  % Bottom quarter width cap
+
+   \newcommand  \KntSJTLBR        {\lgk{E170}}  % Solid join, top left to bottom right
+   \newcommand  \KntSJBLTR        {\lgk{E171}}  % Solid join, bottom left to top right
+   \newcommand  \KntSJTRBL        {\lgk{E172}}  % Solid join, top right to bottom left
+   \newcommand  \KntSJBRTL        {\lgk{E173}}  % Solid join, bottom right to top left
+   \newcommand  \KntDJTLBR        {\lgk{E174}}  % Dashed join, top left to bottom right
+   \newcommand  \KntDJBLTR        {\lgk{E175}}  % Dashed join, bottom left to top right
+   \newcommand  \KntDJTRBL        {\lgk{E176}}  % Dashed join, top right to bottom left
+   \newcommand  \KntDJBRTL        {\lgk{E177}}  % Dashed join, bottom right to top left
+   \newcommand  \KntSFJTLBR       {\lgk{E178}}  % Solid half width join, top left to bottom right
+   \newcommand  \KntSFJBLTR       {\lgk{E179}}  % Solid half width join, bottom left to top right
+   \newcommand  \KntSFJTRBL       {\lgf{E17A}}  % Solid half width join, top right to bottom left
+   \newcommand  \KntSFJBRTL       {\lgf{E17B}}  % Solid half width join, bottom right to top left
+   \newcommand  \KntDFJTLBR       {\lgk{E17C}}  % Dashed half width join, top left to bottom right
+   \newcommand  \KntDFJBLTR       {\lgk{E17D}}  % Dashed half width join, bottom left to top right
+   \newcommand  \KntDFJTRBL       {\lgf{E17E}}  % Dashed half width join, top right to bottom left
+   \newcommand  \KntDFJBRTL       {\lgf{E17F}}  % Dashed half width join, bottom right to top left
+
+   \newcommand  \KntLTSC          {\lgk{E180}}  % Left, top solid corner
+   \newcommand  \KntTRSC          {\lgk{E181}}  % Top, right solid corner
+   \newcommand  \KntRBSC          {\lgk{E182}}  % Right, bottom solid corner
+   \newcommand  \KntBLSC          {\lgk{E183}}  % Bottom, left solid corner
+   \newcommand  \KntLTDC          {\lgk{E184}}  % Left, top dashed corner
+   \newcommand  \KntTRDC          {\lgk{E185}}  % Top, right dashed corner
+   \newcommand  \KntRBDC          {\lgk{E186}}  % Right, bottom dashed corner
+   \newcommand  \KntBLDC          {\lgk{E187}}  % Bottom, left dashed corner
+   \newcommand  \KntLTSFC         {\lgf{E188}}  % Left, top solid half width corner
+   \newcommand  \KntTRSFC         {\lgf{E189}}  % Top, right solid half width corner
+   \newcommand  \KntRBSFC         {\lgf{E18A}}  % Right, bottom solid half width corner
+   \newcommand  \KntBLSFC         {\lgf{E18B}}  % Bottom, left solid half width corner
+   \newcommand  \KntLTDFC         {\lgf{E18C}}  % Left, top dashed half width corner
+   \newcommand  \KntTRDFC         {\lgf{E18D}}  % Top, right dashed half width corner
+   \newcommand  \KntRBDFC         {\lgf{E18E}}  % Right, bottom dashed half width corner
+   \newcommand  \KntBLDFC         {\lgf{E18F}}  % Bottom, left dashed half width corner
+
+   \newcommand  \KntTSN           {\lgk{E190}}  % Top solid line
+   \newcommand  \KntRSN           {\lgk{E191}}  % Right solid line
+   \newcommand  \KntBSN           {\lgk{E192}}  % Bottom solid line
+   \newcommand  \KntLSN           {\lgk{E193}}  % Left solid line
+   \newcommand  \KntTDN           {\lgk{E194}}  % Top dashed line
+   \newcommand  \KntRDN           {\lgk{E195}}  % Right dashed line
+   \newcommand  \KntBDN           {\lgk{E196}}  % Bottom dashed line
+   \newcommand  \KntLDN           {\lgk{E197}}  % Left dashed line
+   \newcommand  \KntTSNBSN        {\lgk{E198}}  % Top solid line, bottom solid line
+   \newcommand  \KntLSNRSN        {\lgk{E199}}  % Left solid line, right solid line
+   \newcommand  \KntTSNBDN        {\lgk{E19A}}  % Top solid line, bottom dashed line
+   \newcommand  \KntLDNRSN        {\lgk{E19B}}  % Left dashed line, right solid line
+   \newcommand  \KntTDNBSN        {\lgk{E19C}}  % Top dashed line, bottom solid line
+   \newcommand  \KntLSNRDN        {\lgk{E19D}}  % Left solid line, right dashed line
+   \newcommand  \KntTDNBDN        {\lgk{E19E}}  % Top dashed line, bottom dashed line
+   \newcommand  \KntLDNRDN        {\lgk{E19F}}  % Left dashed line, right dashed line
+
+   \newcommand  \KntTSFN          {\lgk{E1A0}}  % Top solid half line
+   \newcommand  \KntRSFN          {\lgf{E1A1}}  % Right solid half line
+   \newcommand  \KntBSFN          {\lgk{E1A2}}  % Bottom solid half line
+   \newcommand  \KntLSFN          {\lgf{E1A3}}  % Left solid half line
+   \newcommand  \KntTSDN          {\lgk{E1A4}}  % Top dashed half line
+   \newcommand  \KntRSDN          {\lgf{E1A5}}  % Right dashed half line
+   \newcommand  \KntBSDN          {\lgk{E1A6}}  % Bottom dashed half line
+   \newcommand  \KntLSDN          {\lgf{E1A7}}  % Left dashed half line
+   \newcommand  \KntTSFNBSFN      {\lgk{E1A8}}  % Top solid half line, bottom solid half line
+   \newcommand  \KntLSFNRSFN      {\lgf{E1A9}}  % Left solid half line, right solid half line
+   \newcommand  \KntTSFNBDFN      {\lgk{E1AA}}  % Top solid half line, bottom dashed half line
+   \newcommand  \KntLDFNRSFN      {\lgf{E1AB}}  % Left dashed half line, right solid half line
+   \newcommand  \KntTDFNBSFN      {\lgk{E1AC}}  % Top dashed half line, bottom solid half line
+   \newcommand  \KntLSFNRDFN      {\lgf{E1AD}}  % Left solid half line, right dashed half line
+   \newcommand  \KntTDFNBDFN      {\lgk{E1AE}}  % Top dashed half line, bottom dashed half line
+   \newcommand  \KntLDFNRDFN      {\lgf{E1AF}}  % Left dashed half line, right dashed half line
+
+   \newcommand  \KntTSQN          {\lgk{E1B0}}  % Top solid forth line
+   \newcommand  \KntRSQN          {\lgq{E1B1}}  % Right solid forth line
+   \newcommand  \KntBSQN          {\lgk{E1B2}}  % Bottom solid forth line
+   \newcommand  \KntLSQN          {\lgq{E1B3}}  % Left solid forth line
+   \newcommand  \KntTDQN          {\lgk{E1B4}}  % Top dashed forth line
+   \newcommand  \KntRDQN          {\lgq{E1B5}}  % Right dashed forth line
+   \newcommand  \KntBDQN          {\lgk{E1B6}}  % Bottom dashed forth line
+   \newcommand  \KntLDQN          {\lgq{E1B7}}  % Left dashed forth line
+   \newcommand  \KntTSQNBSQN      {\lgk{E1B8}}  % Top solid forth line, bottom solid forth line
+   \newcommand  \KntLSQNRSQN      {\lgq{E1B9}}  % Left solid forth line, right solid forth line
+   \newcommand  \KntTSQNBDQN      {\lgk{E1BA}}  % Top solid forth line, bottom dashed forth line
+   \newcommand  \KntLDQNRSQN      {\lgq{E1BB}}  % Left dashed forth line, right solid forth line
+   \newcommand  \KntBDQNBSQN      {\lgk{E1BC}}  % Top dashed forth line, bottom solid forth line
+   \newcommand  \KntLSQNRDQN      {\lgq{E1BD}}  % Left solid forth line, right dashed forth line
+   \newcommand  \KntTDQNBDQN      {\lgk{E1BE}}  % Top dashed forth line, bottom dashed forth line
+   \newcommand  \KntLDQNRDQN      {\lgq{E1BF}}  % Left dashed forth line, right dashed forth line
+
+   \newcommand  \KntTSLA          {\lgk{E1C0}}  % Top solid left arrow
+   \newcommand  \KntRSUA          {\lgk{E1C1}}  % Right solid up arrow
+   \newcommand  \KntBSRA          {\lgk{E1C2}}  % Bottom solid right arrow
+   \newcommand  \KntLSDA          {\lgk{E1C3}}  % Left solid down arrow
+   \newcommand  \KntTSRA          {\lgk{E1C4}}  % Top solid right arrow
+   \newcommand  \KntRSDA          {\lgk{E1C5}}  % Right solid down arrow
+   \newcommand  \KntBSLA          {\lgk{E1C6}}  % Bottom solid left arrow
+   \newcommand  \KntLSUA          {\lgk{E1C7}}  % Left solid up arrow
+   \newcommand  \KntTDLA          {\lgk{E1C8}}  % Top dashed left arrow
+   \newcommand  \KntRDUA          {\lgk{E1C9}}  % Right dashed up arrow
+   \newcommand  \KntBDRA          {\lgk{E1CA}}  % Bottom dashed right arrow
+   \newcommand  \KntLDDA          {\lgk{E1CB}}  % Left dashed down arrow
+   \newcommand  \KntTDRA          {\lgk{E1CC}}  % Top dashed right arrow
+   \newcommand  \KntRDDA          {\lgk{E1CD}}  % Right dashed down arrow
+   \newcommand  \KntBDLA          {\lgk{E1CE}}  % Bottom dashed left arrow
+   \newcommand  \KntLDUA          {\lgk{E1CF}}  % Left dashed up arrow
+
+   \newcommand  \KntTSLABSLA      {\lgk{E1D0}}  % Top solid left arrow, bottom solid left arrow
+   \newcommand  \KntLSUARSUA      {\lgk{E1D1}}  % Left solid up arrow, right solid up arrow
+   \newcommand  \KntTSRABSRA      {\lgk{E1D2}}  % Top solid right arrow, bottom solid right arrow
+   \newcommand  \KntLSDARSDA      {\lgk{E1D3}}  % Left solid down arrow, right solid down arrow
+   \newcommand  \KntTSLABSRA      {\lgk{E1D4}}  % Top solid left arrow, bottom solid right arrow
+   \newcommand  \KntLSDARSUA      {\lgk{E1D5}}  % Left solid down arrow, right solid up arrow
+   \newcommand  \KntTSRABSLA      {\lgk{E1D6}}  % Top solid right arrow, bottom solid left arrow
+   \newcommand  \KntLSUARSDA      {\lgk{E1D7}}  % Left solid up arrow, right solid down arrow
+   \newcommand  \KntTSLABDLA      {\lgk{E1D8}}  % Top solid left arrow, bottom dashed left arrow
+   \newcommand  \KntLDUARSUA      {\lgk{E1D9}}  % Left dashed up arrow, right solid up arrow
+   \newcommand  \KntTDRABSRA      {\lgk{E1DA}}  % Top dashed right arrow, bottom solid right arrow
+   \newcommand  \KntLSDARDDA      {\lgk{E1DB}}  % Left solid down arrow, right dashed down arrow
+   \newcommand  \KntTDLABSLA      {\lgk{E1DC}}  % Top dashed left arrow, bottom solid left arrow
+   \newcommand  \KntLSUARDUA      {\lgk{E1DD}}  % Left solid up arrow, right dashed up arrow
+   \newcommand  \KntTSRABDRA      {\lgk{E1DE}}  % Top solid right arrow, bottom dashed right arrow
+   \newcommand  \KntLDDARSDA      {\lgk{E1DF}}  % Left dashed down arrow, right solid down arrow
+
+   \newcommand  \KntTSLABDRA      {\lgk{E1E0}}  % Top solid left arrow, bottom dashed right arrow
+   \newcommand  \KntLDDARSUA      {\lgk{E1E1}}  % Left dashed down arrow, right solid up arrow
+   \newcommand  \KntTDLABSRA      {\lgk{E1E2}}  % Top dashed left arrow, bottom solid right arrow
+   \newcommand  \KntLSDARDUA      {\lgk{E1E3}}  % Left solid down arrow, right dashed up arrow
+   \newcommand  \KntTDRABSLA      {\lgk{E1E4}}  % Top dashed right arrow, bottom solid left arrow
+   \newcommand  \KntLSUARDDA      {\lgk{E1E5}}  % Left solid up arrow, right dashed down arrow
+   \newcommand  \KntTSRABDLA      {\lgk{E1E6}}  % Top solid right arrow, bottom dashed left arrow
+   \newcommand  \KntLDUARSDA      {\lgk{E1E7}}  % Left dashed up arrow, right solid down arrow
+   \newcommand  \KntTDLABDLA      {\lgk{E1E8}}  % Top dashed left arrow, bottom dashed left arrow
+   \newcommand  \KntLDUARDUA      {\lgk{E1E9}}  % Left dashed up arrow, right dashed up arrow
+   \newcommand  \KntTDRABDRA      {\lgk{E1EA}}  % Top dashed right arrow, bottom dashed right arrow
+   \newcommand  \KntLDDARDDA      {\lgk{E1EB}}  % Left dashed down arrow, right dashed down arrow
+   \newcommand  \KntTDLABDRA      {\lgk{E1EC}}  % Top dashed left arrow, bottom dashed right arrow
+   \newcommand  \KntLDDARDUA      {\lgk{E1ED}}  % Left dashed down arrow, right dashed up arrow
+   \newcommand  \KntTDRABDLA      {\lgk{E1EE}}  % Top dashed right arrow, bottom dashed left arrow
+   \newcommand  \KntLDUARDDA      {\lgk{E1EF}}  % Left dashed up arrow, right dashed down arrow
+
+   \newcommand  \KntTSNBSLA       {\lgk{E1F0}}  % Top solid line, bottom solid left arrow
+   \newcommand  \KntLSUARSN       {\lgk{E1F1}}  % Left solid up arrow, right solid line
+   \newcommand  \KntTSRABSN       {\lgk{E1F2}}  % Top solid right arrow, bottom solid line
+   \newcommand  \KntLSNRSDA       {\lgk{E1F3}}  % Left solid line, right solid down arrow
+   \newcommand  \KntTSNBSRA       {\lgk{E1F4}}  % Top solid line, bottom solid right arrow
+   \newcommand  \KntLSDARSN       {\lgk{E1F5}}  % Left solid down arrow, right solid line
+   \newcommand  \KntTSLABSN       {\lgk{E1F6}}  % Top solid left arrow, bottom solid line
+   \newcommand  \KntLSNRSUA       {\lgk{E1F7}}  % Left solid line, right solid up arrow
+   \newcommand  \KntTDNBSLA       {\lgk{E1F8}}  % Top dashed line, bottom solid left arrow
+   \newcommand  \KntLSUARDN       {\lgk{E1F9}}  % Left solid up arrow, right dashed line
+   \newcommand  \KntTSRABDN       {\lgk{E1FA}}  % Top solid right arrow, bottom dashed line
+   \newcommand  \KntLDNRSDA       {\lgk{E1FB}}  % Left dashed line, right solid down arrow
+   \newcommand  \KntTSLABDN       {\lgk{E1FC}}  % Top solid left arrow, bottom dashed line
+   \newcommand  \KntLDNRSUA       {\lgk{E1FD}}  % Left dashed line, right solid up arrow
+   \newcommand  \KntTDNBSRA       {\lgk{E1FE}}  % Top dashed line, bottom solid right arrow
+   \newcommand  \KntLSDARDN       {\lgk{E1FF}}  % Left solid down arrow, right dashed line
+
+   \newcommand  \KntTSNBDLA       {\lgk{E200}}  % Top solid line, bottom dashed left arrow
+   \newcommand  \KntLDUARSN       {\lgk{E201}}  % Left dashed up arrow, right solid line
+   \newcommand  \KntTDRABSN       {\lgk{E202}}  % Top dashed right arrow, bottom solid line
+   \newcommand  \KntLSNRDDA       {\lgk{E203}}  % Left solid line, right dashed down arrow
+   \newcommand  \KntTDLABSN       {\lgk{E204}}  % Top dashed left arrow, bottom solid line
+   \newcommand  \KntLSNRDUA       {\lgk{E205}}  % Left solid line, right dashed up arrow
+   \newcommand  \KntTSNBDRA       {\lgk{E206}}  % Top solid line, bottom dashed right arrow
+   \newcommand  \KntLDDARSN       {\lgk{E207}}  % Left dashed down arrow, right solid line
+   \newcommand  \KntTDNBDLA       {\lgk{E208}}  % Top dashed line, bottom dashed left arrow
+   \newcommand  \KntLDUARDN       {\lgk{E209}}  % Left dashed up arrow, right dashed line
+   \newcommand  \KntTDRABDN       {\lgk{E20A}}  % Top dashed right arrow, bottom dashed line
+   \newcommand  \KntLDNRDDA       {\lgk{E20B}}  % Left dashed line, right dashed down arrow
+   \newcommand  \KntTDLABDN       {\lgk{E20C}}  % Top dashed left arrow, bottom dashed line
+   \newcommand  \KntLDNRDUA       {\lgk{E20D}}  % Left dashed line, right dashed up arrow
+   \newcommand  \KntTDNBDRA       {\lgk{E20E}}  % Top dashed line, bottom dashed right arrow
+   \newcommand  \KntLDDARDN       {\lgk{E20F}}  % Left dashed down arrow, right dashed line
+
+   \newcommand  \KntTSNF          {\lgf{E214}}  % Top solid line, half height
+   \newcommand  \KntRSNF          {\lgk{E215}}  % Right solid line, half width
+   \newcommand  \KntBSNF          {\lgf{E216}}  % Bottom solid line, half height
+   \newcommand  \KntLSNF          {\lgk{E217}}  % Left solid line, half width
+   \newcommand  \KntTSFNF         {\lgf{E218}}  % Top solid half line, half height
+   \newcommand  \KntRSFNF         {\lgf{E219}}  % Right solid half line, half width
+   \newcommand  \KntBSFNF         {\lgf{E21A}}  % Bottom solid half line, half height
+   \newcommand  \KntLSFNF         {\lgf{E21B}}  % Left solid half line, half width
+   \newcommand  \KntTSQNF         {\lgf{E21C}}  % Top solid forth line, half height
+   \newcommand  \KntRSQNF         {\lgq{E21D}}  % Right solid forth line, half width
+   \newcommand  \KntBSQNF         {\lgf{E21E}}  % Bottom solid forth line, half height
+   \newcommand  \KntLSQNF         {\lgq{E21F}}  % Left solid forth line, half width
+
+   \newcommand  \Kntzero          {\lgv{EFB0}}  % Monospace raised italic, serif font: digit 0
+   \newcommand  \Kntone           {\lgv{EFB1}}  % Monospace raised italic, serif font: digit 1
+   \newcommand  \Knttwo           {\lgv{EFB2}}  % Monospace raised italic, serif font: digit 2
+   \newcommand  \Kntthree         {\lgv{EFB3}}  % Monospace raised italic, serif font: digit 3
+   \newcommand  \Kntfour          {\lgv{EFB4}}  % Monospace raised italic, serif font: digit 4
+   \newcommand  \Kntfive          {\lgv{EFB5}}  % Monospace raised italic, serif font: digit 5
+   \newcommand  \Kntsix           {\lgv{EFB6}}  % Monospace raised italic, serif font: digit 6
+   \newcommand  \Kntseven         {\lgv{EFB7}}  % Monospace raised italic, serif font: digit 7
+   \newcommand  \Knteight         {\lgv{EFB8}}  % Monospace raised italic, serif font: digit 8
+   \newcommand  \Kntnine          {\lgv{EFB9}}  % Monospace raised italic, serif font: digit 9
+
+   \newcommand  \KntA             {\lgv{EFC1}}  % Monospace raised italic, serif font: letter A
+   \newcommand  \KntB             {\lgv{EFC2}}  % Monospace raised italic, serif font: letter B
+   \newcommand  \KntC             {\lgv{EFC3}}  % Monospace raised italic, serif font: letter C
+   \newcommand  \KntD             {\lgv{EFC4}}  % Monospace raised italic, serif font: letter D
+   \newcommand  \KntE             {\lgv{EFC5}}  % Monospace raised italic, serif font: letter E
+   \newcommand  \KntF             {\lgv{EFC6}}  % Monospace raised italic, serif font: letter F
+   \newcommand  \KntG             {\lgv{EFC7}}  % Monospace raised italic, serif font: letter G
+   \newcommand  \KntH             {\lgv{EFC8}}  % Monospace raised italic, serif font: letter H
+   \newcommand  \KntI             {\lgv{EFC9}}  % Monospace raised italic, serif font: letter I
+   \newcommand  \KntJ             {\lgv{EFCA}}  % Monospace raised italic, serif font: letter J
+   \newcommand  \KntK             {\lgv{EFCB}}  % Monospace raised italic, serif font: letter K
+   \newcommand  \KntL             {\lgv{EFCC}}  % Monospace raised italic, serif font: letter L
+   \newcommand  \KntM             {\lgv{EFCD}}  % Monospace raised italic, serif font: letter M
+   \newcommand  \KntN             {\lgv{EFCE}}  % Monospace raised italic, serif font: letter N
+   \newcommand  \KntO             {\lgv{EFCF}}  % Monospace raised italic, serif font: letter O
+   \newcommand  \KntP             {\lgv{EFD0}}  % Monospace raised italic, serif font: letter P
+   \newcommand  \KntQ             {\lgv{EFD1}}  % Monospace raised italic, serif font: letter Q
+   \newcommand  \KntR             {\lgv{EFD2}}  % Monospace raised italic, serif font: letter R
+   \newcommand  \KntS             {\lgv{EFD3}}  % Monospace raised italic, serif font: letter S
+   \newcommand  \KntT             {\lgv{EFD4}}  % Monospace raised italic, serif font: letter T
+   \newcommand  \KntU             {\lgv{EFD5}}  % Monospace raised italic, serif font: letter U
+   \newcommand  \KntV             {\lgv{EFD6}}  % Monospace raised italic, serif font: letter V
+   \newcommand  \KntW             {\lgv{EFD7}}  % Monospace raised italic, serif font: letter W
+   \newcommand  \KntX             {\lgv{EFD8}}  % Monospace raised italic, serif font: letter X
+   \newcommand  \KntY             {\lgv{EFD9}}  % Monospace raised italic, serif font: letter Y
+   \newcommand  \KntZ             {\lgv{EFDA}}  % Monospace raised italic, serif font: letter Z
+
+   \newcommand  \Knta             {\lgv{EFE1}}  % Monospace raised italic, serif font: letter a
+   \newcommand  \Kntb             {\lgv{EFE2}}  % Monospace raised italic, serif font: letter b
+   \newcommand  \Kntc             {\lgv{EFE3}}  % Monospace raised italic, serif font: letter c
+   \newcommand  \Kntd             {\lgv{EFE4}}  % Monospace raised italic, serif font: letter d
+   \newcommand  \Knte             {\lgv{EFE5}}  % Monospace raised italic, serif font: letter e
+   \newcommand  \Kntf             {\lgv{EFE6}}  % Monospace raised italic, serif font: letter f
+   \newcommand  \Kntg             {\lgv{EFE7}}  % Monospace raised italic, serif font: letter g
+   \newcommand  \Knth             {\lgv{EFE8}}  % Monospace raised italic, serif font: letter h
+   \newcommand  \Knti             {\lgv{EFE9}}  % Monospace raised italic, serif font: letter i
+   \newcommand  \Kntj             {\lgv{EFEA}}  % Monospace raised italic, serif font: letter j
+   \newcommand  \Kntk             {\lgv{EFEB}}  % Monospace raised italic, serif font: letter k
+   \newcommand  \Kntl             {\lgv{EFEC}}  % Monospace raised italic, serif font: letter l
+   \newcommand  \Kntm             {\lgv{EFED}}  % Monospace raised italic, serif font: letter m
+   \newcommand  \Kntn             {\lgv{EFEE}}  % Monospace raised italic, serif font: letter n
+   \newcommand  \Knto             {\lgv{EFEF}}  % Monospace raised italic, serif font: letter o
+   \newcommand  \Kntp             {\lgv{EFF0}}  % Monospace raised italic, serif font: letter p
+   \newcommand  \Kntq             {\lgv{EFF1}}  % Monospace raised italic, serif font: letter q
+   \newcommand  \Kntr             {\lgv{EFF2}}  % Monospace raised italic, serif font: letter r
+   \newcommand  \Knts             {\lgv{EFF3}}  % Monospace raised italic, serif font: letter s
+   \newcommand  \Kntt             {\lgv{EFF4}}  % Monospace raised italic, serif font: letter t
+   \newcommand  \Kntu             {\lgv{EFF5}}  % Monospace raised italic, serif font: letter u
+   \newcommand  \Kntv             {\lgv{EFF6}}  % Monospace raised italic, serif font: letter v
+   \newcommand  \Kntw             {\lgv{EFF7}}  % Monospace raised italic, serif font: letter w
+   \newcommand  \Kntx             {\lgv{EFF8}}  % Monospace raised italic, serif font: letter x
+   \newcommand  \Knty             {\lgv{EFF9}}  % Monospace raised italic, serif font: letter y
+   \newcommand  \Kntz             {\lgv{EFFA}}  % Monospace raised italic, serif font: letter z
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+% Define geometric symbols, some of which are also used for mathematical operators.
+
+   \newcommand  \BlackSquare                                     {\lgx{E220}}
+   \newcommand  \BlackSquareRoundCorners                         {\lgx{E221}}
+   \newcommand  \BlackDiamond                                    {\lgx{E222}}
+   \newcommand  \BlackCircle                                     {\lgx{E223}}
+   \newcommand  \BlackRightTriangle                              {\lgx{E224}}
+   \newcommand  \BlackLeftTriangle                               {\lgx{E225}}
+   \newcommand  \BlackDownTriangle                               {\lgx{E226}}
+   \newcommand  \BlackUpTriangle                                 {\lgx{E227}}
+   \newcommand  \BlackSmallCircle                                {\lgx{E228}}
+   \newcommand  \BlackVerySmallCircle                            {\lgx{E229}}
+   \newcommand  \BlackLozenge                                    {\lgx{E22A}}
+   \newcommand  \BlackCurvedDiamond                              {\lgx{E22B}}
+   \newcommand  \BlackVerySmallSquare                            {\lgx{E22C}}
+   \newcommand  \BlackLeftArrowHead                              {\lgx{E22D}}
+   \newcommand  \BlackRightArrowHead                             {\lgx{E22E}}
+   \newcommand  \BlackRightCurvedArrowHead                       {\lgx{E22F}}
+
+   \newcommand  \WhiteSquare                                     {\lgx{E230}}
+   \newcommand  \WhiteSquareRoundCorners                         {\lgx{E231}}
+   \newcommand  \WhiteDiamond                                    {\lgx{E232}}
+   \newcommand  \WhiteCircle                                     {\lgx{E233}}
+   \newcommand  \WhiteRightTriangle                              {\lgx{E234}}
+   \newcommand  \WhiteLeftTriangle                               {\lgx{E235}}
+   \newcommand  \WhiteDownTriangle                               {\lgx{E236}}
+   \newcommand  \WhiteUpTriangle                                 {\lgx{E237}}
+   \newcommand  \WhiteSmallCircle                                {\lgx{E238}}
+   \newcommand  \WhiteVerySmallCircle                            {\lgx{E239}}
+   \newcommand  \WhiteLozenge                                    {\lgx{E23A}}
+   \newcommand  \WhiteCurvedDiamond                              {\lgx{E23B}}
+   \newcommand  \WhiteVerySmallSquare                            {\lgx{E23C}}
+   \newcommand  \WhiteLeftArrowHead                              {\lgx{E23D}}
+   \newcommand  \WhiteRightArrowHead                             {\lgx{E23E}}
+   \newcommand  \WhiteRightCurvedArrowHead                       {\lgx{E23F}}
+
+   \newcommand  \OutlineSquare                                   {\lgx{E240}}
+   \newcommand  \OutlineSquareRoundCorners                       {\lgx{E241}}
+   \newcommand  \OutlineDiamond                                  {\lgx{E242}}
+   \newcommand  \OutlineCircle                                   {\lgx{E243}}
+   \newcommand  \OutlineRightTriangle                            {\lgx{E244}}
+   \newcommand  \OutlineLeftTriangle                             {\lgx{E245}}
+   \newcommand  \OutlineDownTriangle                             {\lgx{E246}}
+   \newcommand  \OutlineUpTriangle                               {\lgx{E247}}
+   \newcommand  \OutlineSmallCircle                              {\lgx{E248}}
+   \newcommand  \OutlineVerySmallCircle                          {\lgx{E249}}
+   \newcommand  \OutlineLozenge                                  {\lgx{E24A}}
+   \newcommand  \OutlineCurvedDiamond                            {\lgx{E24B}}
+   \newcommand  \OutlineVerySmallSquare                          {\lgx{E24C}}
+   \newcommand  \OutlineLeftArrowHead                            {\lgx{E24D}}
+   \newcommand  \OutlineRightArrowHead                           {\lgx{E24E}}
+   \newcommand  \OutlineRightCurvedArrowHead                     {\lgx{E24F}}
+
+   \newcommand  \DottedSquare                                    {\lgx{E250}}
+   \newcommand  \DottedSquareRoundCorners                        {\lgx{E251}}
+   \newcommand  \DottedDiamond                                   {\lgx{E252}}
+   \newcommand  \DottedCircle                                    {\lgx{E253}}
+   \newcommand  \DottedRightTriangle                             {\lgx{E254}}
+   \newcommand  \DottedLeftTriangle                              {\lgx{E255}}
+   \newcommand  \DottedDownTriangle                              {\lgx{E256}}
+   \newcommand  \DottedUpTriangle                                {\lgx{E257}}
+   \newcommand  \DottedSmallCircle                               {\lgx{E258}}
+   \newcommand  \DottedVerySmallCircle                           {\lgx{E259}}
+   \newcommand  \DottedLozenge                                   {\lgx{E25A}}
+   \newcommand  \DottedCurvedDiamond                             {\lgx{E25B}}
+   \newcommand  \DottedVerySmallSquare                           {\lgx{E25C}}
+   \newcommand  \DottedLeftArrowHead                             {\lgx{E25D}}
+   \newcommand  \DottedRightArrowHead                            {\lgx{E25E}}
+   \newcommand  \DottedRightCurvedArrowHead                      {\lgx{E25F}}
+
+   \newcommand  \WhiteSquareContainingBlackSquare                {\lgx{E260}}
+   \newcommand  \WhiteSquareRoundCornersContainingBlackSquare    {\lgx{E261}}
+   \newcommand  \WhiteDiamondContainingBlackDiamond              {\lgx{E262}}
+   \newcommand  \WhiteCircleContainingBlackCircle                {\lgx{E263}}
+   \newcommand  \WhiteRightTriangleContainingBlackRightTriangle  {\lgx{E264}}
+   \newcommand  \WhiteLeftTriangleContainingBlackLeftTriangle    {\lgx{E265}}
+   \newcommand  \WhiteDownTriangleContainingBlackDownTriangle    {\lgx{E266}}
+   \newcommand  \WhiteUpTriangleContainingBlackUpTriangle        {\lgx{E267}}
+   \newcommand  \WhiteSmallCircleContainingBlackCircle           {\lgx{E268}}
+   \newcommand  \WhiteVerySmallCircleContainingBlackCircle       {\lgx{E269}}
+   \newcommand  \WhiteLozengeContainingBlackLozenge              {\lgx{E26A}}
+   \newcommand  \WhiteCurvedDiamondContainingBlackDiamond        {\lgx{E26B}}
+   \newcommand  \WhiteVerySmallSquareContainingBlackSquare       {\lgx{E26C}}
+   \newcommand  \WhiteReallySmallCircle                          {\lgx{E26D}}
+   \newcommand  \WhiteReallySmallSquare                          {\lgx{E26E}}
+   \newcommand  \WhiteReallySmallDiamond                         {\lgx{E26F}}
+
+   \newcommand  \HorizontallyDividedSquare                       {\lgx{E270}}
+   \newcommand  \HorizontallyDividedSquareRoundCorners           {\lgx{E271}}
+   \newcommand  \HorizontallyDividedDiamond                      {\lgx{E272}}
+   \newcommand  \HorizontallyDividedCircle                       {\lgx{E273}}
+   \newcommand  \HorizontallyDividedRightTriangle                {\lgx{E274}}
+   \newcommand  \HorizontallyDividedLeftTriangle                 {\lgx{E275}}
+   \newcommand  \HorizontallyDividedDownTriangle                 {\lgx{E276}}
+   \newcommand  \HorizontallyDividedUpTriangle                   {\lgx{E277}}
+   \newcommand  \HorizontallyDividedSmallCircle                  {\lgx{E278}}
+   \newcommand  \HorizontallyDividedVerySmallCircle              {\lgx{E279}}
+   \newcommand  \HorizontallyDividedLozenge                      {\lgx{E27A}}
+   \newcommand  \HorizontallyDividedCurvedDiamond                {\lgx{E27B}}
+   \newcommand  \HorizontallyDividedVerySmallSquare              {\lgx{E27C}}
+   \newcommand  \BlackReallySmallCircle                          {\lgx{E27D}}
+   \newcommand  \BlackReallySmallSquare                          {\lgx{E27E}}
+   \newcommand  \BlackReallySmallDiamond                         {\lgx{E27F}}
+
+   \newcommand  \VerticallyDividedSquare                         {\lgx{E280}}
+   \newcommand  \VerticallyDividedSquareRoundCorners             {\lgx{E281}}
+   \newcommand  \VerticallyDividedDiamond                        {\lgx{E282}}
+   \newcommand  \VerticallyDividedCircle                         {\lgx{E283}}
+   \newcommand  \VerticallyDividedRightTriangle                  {\lgx{E284}}
+   \newcommand  \VerticallyDividedLeftTriangle                   {\lgx{E285}}
+   \newcommand  \VerticallyDividedDownTriangle                   {\lgx{E286}}
+   \newcommand  \VerticallyDividedUpTriangle                     {\lgx{E287}}
+   \newcommand  \VerticallyDividedSmallCircle                    {\lgx{E288}}
+   \newcommand  \VerticallyDividedVerySmallCircle                {\lgx{E289}}
+   \newcommand  \VerticallyDividedLozenge                        {\lgx{E28A}}
+   \newcommand  \VerticallyDividedCurvedDiamond                  {\lgx{E28B}}
+   \newcommand  \VerticallyDividedVerySmallSquare                {\lgx{E28C}}
+
+   \newcommand  \QuarteredSquare                                 {\lgx{E290}}
+   \newcommand  \QuarteredSquareRoundCorners                     {\lgx{E291}}
+   \newcommand  \QuarteredDiamond                                {\lgx{E292}}
+   \newcommand  \QuarteredCircle                                 {\lgx{E293}}
+   \newcommand  \QuarteredRightTriangle                          {\lgx{E294}}
+   \newcommand  \QuarteredLeftTriangle                           {\lgx{E295}}
+   \newcommand  \QuarteredDownTriangle                           {\lgx{E296}}
+   \newcommand  \QuarteredUpTriangle                             {\lgx{E297}}
+   \newcommand  \QuarteredSmallCircle                            {\lgx{E298}}
+   \newcommand  \QuarteredVerySmallCircle                        {\lgx{E299}}
+   \newcommand  \QuartedLozenge                                  {\lgx{E29A}}
+   \newcommand  \QuarteredCurvedDiamond                          {\lgx{E29B}}
+   \newcommand  \QuarteredVerySmallSquare                        {\lgx{E29C}}
+
+   \newcommand  \DownSlashedSquare                               {\lgx{E2A0}}
+   \newcommand  \DownSlashedSquareRoundCorners                   {\lgx{E2A1}}
+   \newcommand  \DownSlashedDiamond                              {\lgx{E2A2}}
+   \newcommand  \DownSlashedCircle                               {\lgx{E2A3}}
+   \newcommand  \DownSlashedRightTriangle                        {\lgx{E2A4}}
+   \newcommand  \DownSlashedLeftTriangle                         {\lgx{E2A5}}
+   \newcommand  \DownSlashedDownTriangle                         {\lgx{E2A6}}
+   \newcommand  \DownSlashedUpTriangle                           {\lgx{E2A7}}
+   \newcommand  \DownSlashedSmallCircle                          {\lgx{E2A8}}
+   \newcommand  \DownSlashedVerySmallCircle                      {\lgx{E2A9}}
+   \newcommand  \DownSlashedLozenge                              {\lgx{E2AA}}
+   \newcommand  \DownSlashedCurvedDiamond                        {\lgx{E2AB}}
+   \newcommand  \DownSlashedVerySmallSquare                      {\lgx{E2AC}}
+
+   \newcommand  \UpSlashedSquare                                 {\lgx{E2B0}}
+   \newcommand  \UpSlahsedSquareRoundCorners                     {\lgx{E2B1}}
+   \newcommand  \UpSlashedDiamond                                {\lgx{E2B2}}
+   \newcommand  \UpSlashedCircle                                 {\lgx{E2B3}}
+   \newcommand  \UpSlashedRightTriangle                          {\lgx{E2B4}}
+   \newcommand  \UpSlashedLeftTriangle                           {\lgx{E2B5}}
+   \newcommand  \UpSlashedDownTriangle                           {\lgx{E2B6}}
+   \newcommand  \UpSlashedUpTriangle                             {\lgx{E2B7}}
+   \newcommand  \UpSlashedSmallCircle                            {\lgx{E2B8}}
+   \newcommand  \UpSlashedVerySmallCircle                        {\lgx{E2B9}}
+   \newcommand  \UpSlashedLozenge                                {\lgx{E2BA}}
+   \newcommand  \UpSlashedCurvedDiamond                          {\lgx{E2BB}}
+   \newcommand  \UpSlashedVerySmallSquare                        {\lgx{E2BC}}
+
+   \newcommand  \CrossedSquare                                   {\lgx{E2C0}}
+   \newcommand  \CrossedSquareRoundCorners                       {\lgx{E2C1}}
+   \newcommand  \CrossedDiamond                                  {\lgx{E2C2}}
+   \newcommand  \CrossedCircle                                   {\lgx{E2C3}}
+   \newcommand  \CrossedRightTriangle                            {\lgx{E2C4}}
+   \newcommand  \CrossedLeftTriangle                             {\lgx{E2C5}}
+   \newcommand  \CrossedDownTriangle                             {\lgx{E2C6}}
+   \newcommand  \CrossedUpTriangle                               {\lgx{E2C7}}
+   \newcommand  \CrossedSmallCircle                              {\lgx{E2C8}}
+   \newcommand  \CrossedVerySmallCircle                          {\lgx{E2C9}}
+   \newcommand  \CrossedLozenge                                  {\lgx{E2CA}}
+   \newcommand  \CrossedCurvedDiamond                            {\lgx{E2CB}}
+   \newcommand  \CrossedVerySmallSquare                          {\lgx{E2CC}}
+
+   \newcommand  \LBlackSquare                                    {\lgx{E2D0}}
+   \newcommand  \LBlackSquareRoundCorners                        {\lgx{E2D1}}
+   \newcommand  \LBlackDiamond                                   {\lgx{E2D2}}
+   \newcommand  \LBlackCircle                                    {\lgx{E2D3}}
+   \newcommand  \LBlackRightTriangle                             {\lgx{E2D4}}
+   \newcommand  \LBlackLeftTriangle                              {\lgx{E2D5}}
+   \newcommand  \LBlackDownTriangle                              {\lgx{E2D6}}
+   \newcommand  \LBlackUpTriangle                                {\lgx{E2D7}}
+   \newcommand  \LBlackSmallCircle                               {\lgx{E2D8}}
+   \newcommand  \LBlackVerySmallCircle                           {\lgx{E2D9}}
+   \newcommand  \LBlackLozenge                                   {\lgx{E2DA}}
+   \newcommand  \LBlackCurvedDiamond                             {\lgx{E2DB}}
+   \newcommand  \LBlackVerySmallSquare                           {\lgx{E2DC}}
+   \newcommand  \LBlackLeftArrowHead                             {\lgx{E2DD}}
+   \newcommand  \LBlackRightArrowHead                            {\lgx{E2DE}}
+   \newcommand  \LBlackRightCurvedArrowHead                      {\lgx{E2DF}}
+
+   \newcommand  \LWhiteSquare                                    {\lgx{E2E0}}
+   \newcommand  \LWhiteSquareRoundCorners                        {\lgx{E2E1}}
+   \newcommand  \LWhiteDiamond                                   {\lgx{E2E2}}
+   \newcommand  \LWhiteCircle                                    {\lgx{E2E3}}
+   \newcommand  \LWhiteRightTriangle                             {\lgx{E2E4}}
+   \newcommand  \LWhiteLeftTriangle                              {\lgx{E2E5}}
+   \newcommand  \LWhiteDownTriangle                              {\lgx{E2E6}}
+   \newcommand  \LWhiteUpTriangle                                {\lgx{E2E7}}
+   \newcommand  \LWhiteSmallCircle                               {\lgx{E2E8}}
+   \newcommand  \LWhiteVerySmallCircle                           {\lgx{E2E9}}
+   \newcommand  \LWhiteLozenge                                   {\lgx{E2EA}}
+   \newcommand  \LWhiteCurvedDiamond                             {\lgx{E2EB}}
+   \newcommand  \LWhiteVerySmallSquare                           {\lgx{E2EC}}
+   \newcommand  \LWhiteLeftArrowHead                             {\lgx{E2ED}}
+   \newcommand  \LWhiteRightArrowHead                            {\lgx{E2EE}}
+   \newcommand  \LWhiteRightCurvedArrowHead                      {\lgx{E2EF}}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+%
+%   Define alphanumeric symbols. Twenty scripts are provided. Some of these
+% overlap with the math fonts provided by STIX2 with minor differences. In
+% particular, every Latin script has an associated set of digits, which as
+% far as possible match the font. Unicode does not provide all sets of digits
+% and for some scripts may omit some letters. Additionally, the main three
+% scripts: sans-serif, slab serif and normal serif all are represented as
+% upright, italic/slanted, bold, and bold italic/slanted.
+%
+%   Each script is identified by three letters.The first two letters
+% provide the major classification of the font.
+%
+%    sa - Sans serif
+%    sl - Slab serif
+%    sr - Normal serif
+%    cl - Calligraphic
+%    bl - Blackboard
+%    fr - Fraktur
+%    mn - Monospace
+%    gr - Greek
+%
+% The first letter is upper case for bold scripts and otherwise lower case. The
+% third letter is either 'u' for upright or 'i' for italic / slanted. Except for
+% Sans serif, slab serif and normal serif not all of the four script styles are
+% present.
+%
+% The complete list of scripts is:
+%
+%    Sans serif font.                           sau
+%    Sans serif, italic font.                   sai
+%    Sans serif, bold font.                     Sau
+%    Sans serif, bold, oblique font.            Sai
+%
+%    Slab serif font.                           slu
+%    Slab serif, italic font.                   sli
+%    Slab serif, bold font.                     Slu
+%    Slab serif, bold, oblique font.            Sli
+%
+%    Normal serif font.                         sru
+%    Normal serif, italic font.                 sri
+%    Normal serif, bold font.                   Sru
+%    Normal serif, bold, italic font.           Sri
+%
+%    Calligraphic font.                         cli
+%
+%    Blackboard font.                           blu
+%
+%    Fraktur font.                              fru
+%    Fraktur bold font.                         Fru
+%
+%    Monospace slab-serif font.                 mnu
+%    Monospace raised, serif, italic font.      mni
+%
+%    Greek font.                                gru
+%    Greek, italic font.                        gri
+%
+%    Individual letters are available as xxx<name> where xxx is one of the
+% above and <name> is the letter and for latin scripts is one of: zero, one,
+% two, three, four, five, six, seven, eight, nine, a-z or A-Z. Thus, for
+% example, SluX is a slab serif, bold upper case 'X'. In addition to the
+% scripts listed above, "Knt" is the same as "mni" except that each digit
+% or letter is raised by 0.433em, and is intended for use with the Knt
+% symbols.
+%
+%    Each script has a symXxx and mathXxx macro which can be used in math mode
+% where 'Xxx' is the three letters that identify the script. So, the slab serif
+% bold font has the symSlu and mathSlu macros. Unlike the unicode-math package,
+% these scripts do not provide the \partial and \nabla symbols. Also unlike the
+% unicode-math package, the Greek scripts do not change due to context. The symmni
+% and mathmni macros space out adjacent letters unlike the the other macros and
+% are raised by 0.433em to match the Knt symbols.
+%
+% Synonyms for some of the symXxx macros are provided for use in logic.
+%
+%    \prop     \symsau   Upright sans-serif variables.
+%    \propi    \symsai   Italic sans-serif variables.
+%    \meta     \symSau   Bold sans-serif variables.
+%    \metai    \symSai   Bold, italic sans-serif variables.
+%               
+%    \bnch     \symslu   Upright slab-serif variables.
+%    \bnchi    \symsli   Italic slab-serif variables.
+%    \bnchb    \symSlu   Bold slab-serif variables.
+%    \bnchbi   \symSli   Bold, italic slab-serif variables.
+%               
+%    \vrbl     \symsru   Upright serif variables.
+%    \vrbli    \symsri   Italic serif variables.
+%    \vrblb    \symSru   Bold serif variables.
+%    \vrblbi   \symSri   Bold, italic serif variables.
+%               
+%    \vrblc    \symcli   Calligraphic variables.
+%    \vrbld    \symblu   Blackboard / double struck variables
+%    \vrblf    \symfru   Fraktur variables.
+%    \vrblF    \symFru   Bold, Fraktur variables.
+%               
+%    \mono     \symmnu   Monospace slab-serif variables.
+%
+
+   \newcommand    \defineLatinScriptMacro[3] {%
+\Umathcode "30 = "#3 \symLogix \numexpr "#1 + "30\relax%
+\Umathcode "31 = "#3 \symLogix \numexpr "#1 + "31\relax%
+\Umathcode "32 = "#3 \symLogix \numexpr "#1 + "32\relax%
+\Umathcode "33 = "#3 \symLogix \numexpr "#1 + "33\relax%
+\Umathcode "34 = "#3 \symLogix \numexpr "#1 + "34\relax%
+\Umathcode "35 = "#3 \symLogix \numexpr "#1 + "35\relax%
+\Umathcode "36 = "#3 \symLogix \numexpr "#1 + "36\relax%
+\Umathcode "37 = "#3 \symLogix \numexpr "#1 + "37\relax%
+\Umathcode "38 = "#3 \symLogix \numexpr "#1 + "38\relax%
+\Umathcode "39 = "#3 \symLogix \numexpr "#1 + "39\relax%
+%
+\Umathcode "41 = "#3 \symLogix \numexpr "#2 + "41\relax%
+\Umathcode "42 = "#3 \symLogix \numexpr "#2 + "42\relax%
+\Umathcode "43 = "#3 \symLogix \numexpr "#2 + "43\relax%
+\Umathcode "44 = "#3 \symLogix \numexpr "#2 + "44\relax%
+\Umathcode "45 = "#3 \symLogix \numexpr "#2 + "45\relax%
+\Umathcode "46 = "#3 \symLogix \numexpr "#2 + "46\relax%
+\Umathcode "47 = "#3 \symLogix \numexpr "#2 + "47\relax%
+\Umathcode "48 = "#3 \symLogix \numexpr "#2 + "48\relax%
+\Umathcode "49 = "#3 \symLogix \numexpr "#2 + "49\relax%
+\Umathcode "4A = "#3 \symLogix \numexpr "#2 + "4A\relax%
+\Umathcode "4B = "#3 \symLogix \numexpr "#2 + "4B\relax%
+\Umathcode "4C = "#3 \symLogix \numexpr "#2 + "4C\relax%
+\Umathcode "4D = "#3 \symLogix \numexpr "#2 + "4D\relax%
+\Umathcode "4E = "#3 \symLogix \numexpr "#2 + "4E\relax%
+\Umathcode "4F = "#3 \symLogix \numexpr "#2 + "4F\relax%
+\Umathcode "50 = "#3 \symLogix \numexpr "#2 + "50\relax%
+\Umathcode "51 = "#3 \symLogix \numexpr "#2 + "51\relax%
+\Umathcode "52 = "#3 \symLogix \numexpr "#2 + "52\relax%
+\Umathcode "53 = "#3 \symLogix \numexpr "#2 + "53\relax%
+\Umathcode "54 = "#3 \symLogix \numexpr "#2 + "54\relax%
+\Umathcode "55 = "#3 \symLogix \numexpr "#2 + "55\relax%
+\Umathcode "56 = "#3 \symLogix \numexpr "#2 + "56\relax%
+\Umathcode "57 = "#3 \symLogix \numexpr "#2 + "57\relax%
+\Umathcode "58 = "#3 \symLogix \numexpr "#2 + "58\relax%
+\Umathcode "59 = "#3 \symLogix \numexpr "#2 + "59\relax%
+\Umathcode "5A = "#3 \symLogix \numexpr "#2 + "5A\relax%
+%
+\Umathcode "61 = "#3 \symLogix \numexpr "#2 + "61\relax%
+\Umathcode "62 = "#3 \symLogix \numexpr "#2 + "62\relax%
+\Umathcode "63 = "#3 \symLogix \numexpr "#2 + "63\relax%
+\Umathcode "64 = "#3 \symLogix \numexpr "#2 + "64\relax%
+\Umathcode "65 = "#3 \symLogix \numexpr "#2 + "65\relax%
+\Umathcode "66 = "#3 \symLogix \numexpr "#2 + "66\relax%
+\Umathcode "67 = "#3 \symLogix \numexpr "#2 + "67\relax%
+\Umathcode "68 = "#3 \symLogix \numexpr "#2 + "68\relax%
+\Umathcode "69 = "#3 \symLogix \numexpr "#2 + "69\relax%
+\Umathcode "6A = "#3 \symLogix \numexpr "#2 + "6A\relax%
+\Umathcode "6B = "#3 \symLogix \numexpr "#2 + "6B\relax%
+\Umathcode "6C = "#3 \symLogix \numexpr "#2 + "6C\relax%
+\Umathcode "6D = "#3 \symLogix \numexpr "#2 + "6D\relax%
+\Umathcode "6E = "#3 \symLogix \numexpr "#2 + "6E\relax%
+\Umathcode "6F = "#3 \symLogix \numexpr "#2 + "6F\relax%
+\Umathcode "70 = "#3 \symLogix \numexpr "#2 + "70\relax%
+\Umathcode "71 = "#3 \symLogix \numexpr "#2 + "71\relax%
+\Umathcode "72 = "#3 \symLogix \numexpr "#2 + "72\relax%
+\Umathcode "73 = "#3 \symLogix \numexpr "#2 + "73\relax%
+\Umathcode "74 = "#3 \symLogix \numexpr "#2 + "74\relax%
+\Umathcode "75 = "#3 \symLogix \numexpr "#2 + "75\relax%
+\Umathcode "76 = "#3 \symLogix \numexpr "#2 + "76\relax%
+\Umathcode "77 = "#3 \symLogix \numexpr "#2 + "77\relax%
+\Umathcode "78 = "#3 \symLogix \numexpr "#2 + "78\relax%
+\Umathcode "79 = "#3 \symLogix \numexpr "#2 + "79\relax%
+\Umathcode "7A = "#3 \symLogix \numexpr "#2 + "7A\relax}
+
+   \newcommand    \defineLatinScript[3] {%
+\expandafter\def\csname #1zero\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#2 + "30}}%  Latin digit 0
+\expandafter\def\csname #1one\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#2 + "31}}%   Latin digit 1
+\expandafter\def\csname #1two\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#2 + "32}}%   Latin digit 2
+\expandafter\def\csname #1three\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#2 + "33}}% Latin digit 3
+\expandafter\def\csname #1four\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#2 + "34}}%  Latin digit 4
+\expandafter\def\csname #1five\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#2 + "35}}%  Latin digit 5
+\expandafter\def\csname #1six\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#2 + "36}}%   Latin digit 6
+\expandafter\def\csname #1seven\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#2 + "37}}% Latin digit 7
+\expandafter\def\csname #1eight\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#2 + "38}}% Latin digit 8
+\expandafter\def\csname #1nine\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#2 + "39}}%  Latin digit 9
+%
+\expandafter\def\csname #1A\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "41}}%     Latin letter A
+\expandafter\def\csname #1B\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "42}}%     Latin letter B
+\expandafter\def\csname #1C\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "43}}%     Latin letter C
+\expandafter\def\csname #1D\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "44}}%     Latin letter D
+\expandafter\def\csname #1E\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "45}}%     Latin letter E
+\expandafter\def\csname #1F\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "46}}%     Latin letter F
+\expandafter\def\csname #1G\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "47}}%     Latin letter G
+\expandafter\def\csname #1H\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "48}}%     Latin letter H
+\expandafter\def\csname #1I\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "49}}%     Latin letter I
+\expandafter\def\csname #1J\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "4A}}%     Latin letter J
+\expandafter\def\csname #1K\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "4B}}%     Latin letter K
+\expandafter\def\csname #1L\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "4C}}%     Latin letter L
+\expandafter\def\csname #1M\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "4D}}%     Latin letter M
+\expandafter\def\csname #1N\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "4E}}%     Latin letter N
+\expandafter\def\csname #1O\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "4F}}%     Latin letter O
+\expandafter\def\csname #1P\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "50}}%     Latin letter P
+\expandafter\def\csname #1Q\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "51}}%     Latin letter Q
+\expandafter\def\csname #1R\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "52}}%     Latin letter R
+\expandafter\def\csname #1S\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "53}}%     Latin letter S
+\expandafter\def\csname #1T\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "54}}%     Latin letter T
+\expandafter\def\csname #1U\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "55}}%     Latin letter U
+\expandafter\def\csname #1V\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "56}}%     Latin letter V
+\expandafter\def\csname #1W\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "57}}%     Latin letter W
+\expandafter\def\csname #1X\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "58}}%     Latin letter X
+\expandafter\def\csname #1Y\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "59}}%     Latin letter Y
+\expandafter\def\csname #1Z\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "5A}}%     Latin letter Z
+%
+\expandafter\def\csname #1a\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "61}}%     Latin letter a
+\expandafter\def\csname #1b\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "62}}%     Latin letter b
+\expandafter\def\csname #1c\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "63}}%     Latin letter c
+\expandafter\def\csname #1d\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "64}}%     Latin letter d
+\expandafter\def\csname #1e\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "65}}%     Latin letter e
+\expandafter\def\csname #1f\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "66}}%     Latin letter f
+\expandafter\def\csname #1g\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "67}}%     Latin letter g
+\expandafter\def\csname #1h\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "68}}%     Latin letter h
+\expandafter\def\csname #1i\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "69}}%     Latin letter i
+\expandafter\def\csname #1j\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "6A}}%     Latin letter j
+\expandafter\def\csname #1k\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "6B}}%     Latin letter k
+\expandafter\def\csname #1l\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "6C}}%     Latin letter l
+\expandafter\def\csname #1m\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "6D}}%     Latin letter m
+\expandafter\def\csname #1n\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "6E}}%     Latin letter n
+\expandafter\def\csname #1o\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "6F}}%     Latin letter o
+\expandafter\def\csname #1p\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "70}}%     Latin letter p
+\expandafter\def\csname #1q\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "71}}%     Latin letter q
+\expandafter\def\csname #1r\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "72}}%     Latin letter r
+\expandafter\def\csname #1s\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "73}}%     Latin letter s
+\expandafter\def\csname #1t\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "74}}%     Latin letter t
+\expandafter\def\csname #1u\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "75}}%     Latin letter u
+\expandafter\def\csname #1v\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "76}}%     Latin letter v
+\expandafter\def\csname #1w\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "77}}%     Latin letter w
+\expandafter\def\csname #1x\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "78}}%     Latin letter x
+\expandafter\def\csname #1y\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "79}}%     Latin letter y
+\expandafter\def\csname #1z\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#3 + "7A}}}%    Latin letter z
+
+   \newcommand    \defineGreekScriptMacro[2] {%
+\Umathcode "391 = "#2 \symLogix \numexpr "#1 + "21\relax%  Greek upper case letter Alpha
+\Umathcode "392 = "#2 \symLogix \numexpr "#1 + "22\relax%  Greek upper case letter Beta
+\Umathcode "393 = "#2 \symLogix \numexpr "#1 + "23\relax%  Greek upper case letter Gamma
+\Umathcode "394 = "#2 \symLogix \numexpr "#1 + "24\relax%  Greek upper case letter Delta
+\Umathcode "395 = "#2 \symLogix \numexpr "#1 + "25\relax%  Greek upper case letter Epsilon
+\Umathcode "396 = "#2 \symLogix \numexpr "#1 + "26\relax%  Greek upper case letter Zeta
+\Umathcode "397 = "#2 \symLogix \numexpr "#1 + "27\relax%  Greek upper case letter Eta
+\Umathcode "398 = "#2 \symLogix \numexpr "#1 + "28\relax%  Greek upper case letter Theta
+\Umathcode "399 = "#2 \symLogix \numexpr "#1 + "29\relax%  Greek upper case letter Iota
+\Umathcode "39A = "#2 \symLogix \numexpr "#1 + "2A\relax%  Greek upper case letter Kappa
+\Umathcode "39B = "#2 \symLogix \numexpr "#1 + "2B\relax%  Greek upper case letter Lambda
+\Umathcode "39C = "#2 \symLogix \numexpr "#1 + "2C\relax%  Greek upper case letter Mu
+\Umathcode "39D = "#2 \symLogix \numexpr "#1 + "2D\relax%  Greek upper case letter Nu
+\Umathcode "39E = "#2 \symLogix \numexpr "#1 + "2E\relax%  Greek upper case letter Xi
+\Umathcode "39F = "#2 \symLogix \numexpr "#1 + "2F\relax%  Greek upper case letter Omicron
+\Umathcode "3A0 = "#2 \symLogix \numexpr "#1 + "30\relax%  Greek upper case letter Pi
+\Umathcode "3A1 = "#2 \symLogix \numexpr "#1 + "31\relax%  Greek upper case letter Rho
+\Umathcode "3A3 = "#2 \symLogix \numexpr "#1 + "32\relax%  Greek upper case letter Sigma
+\Umathcode "3A4 = "#2 \symLogix \numexpr "#1 + "33\relax%  Greek upper case letter Tau
+\Umathcode "3A5 = "#2 \symLogix \numexpr "#1 + "34\relax%  Greek upper case letter Upsilon
+\Umathcode "3A6 = "#2 \symLogix \numexpr "#1 + "35\relax%  Greek upper case letter Phi
+\Umathcode "3A7 = "#2 \symLogix \numexpr "#1 + "36\relax%  Greek upper case letter Chi
+\Umathcode "3A8 = "#2 \symLogix \numexpr "#1 + "37\relax%  Greek upper case letter Psi
+\Umathcode "3A9 = "#2 \symLogix \numexpr "#1 + "38\relax%  Greek upper case letter Omega
+%
+\Umathcode "3B1 = "#2 \symLogix \numexpr "#1 + "41\relax%  Greek lower case letter alpha
+\Umathcode "3B2 = "#2 \symLogix \numexpr "#1 + "42\relax%  Greek lower case letter beta
+\Umathcode "3B3 = "#2 \symLogix \numexpr "#1 + "43\relax%  Greek lower case letter gamma
+\Umathcode "3B4 = "#2 \symLogix \numexpr "#1 + "44\relax%  Greek lower case letter delta
+\Umathcode "3F5 = "#2 \symLogix \numexpr "#1 + "45\relax%  Greek lower case letter epsilon
+\Umathcode "3B6 = "#2 \symLogix \numexpr "#1 + "46\relax%  Greek lower case letter zeta
+\Umathcode "3B7 = "#2 \symLogix \numexpr "#1 + "47\relax%  Greek lower case letter eta
+\Umathcode "3B8 = "#2 \symLogix \numexpr "#1 + "48\relax%  Greek lower case letter theta
+\Umathcode "3B9 = "#2 \symLogix \numexpr "#1 + "49\relax%  Greek lower case letter iota
+\Umathcode "3BA = "#2 \symLogix \numexpr "#1 + "4A\relax%  Greek lower case letter kappa
+\Umathcode "3BB = "#2 \symLogix \numexpr "#1 + "4B\relax%  Greek lower case letter lambda
+\Umathcode "3BC = "#2 \symLogix \numexpr "#1 + "4C\relax%  Greek lower case letter mu
+\Umathcode "3BD = "#2 \symLogix \numexpr "#1 + "4D\relax%  Greek lower case letter nu
+\Umathcode "3BE = "#2 \symLogix \numexpr "#1 + "4E\relax%  Greek lower case letter xi
+\Umathcode "3BF = "#2 \symLogix \numexpr "#1 + "4F\relax%  Greek lower case letter omicron
+\Umathcode "3C0 = "#2 \symLogix \numexpr "#1 + "50\relax%  Greek lower case letter pi
+\Umathcode "3C1 = "#2 \symLogix \numexpr "#1 + "51\relax%  Greek lower case letter rho
+\Umathcode "3C3 = "#2 \symLogix \numexpr "#1 + "52\relax%  Greek lower case letter sigma
+\Umathcode "3C4 = "#2 \symLogix \numexpr "#1 + "53\relax%  Greek lower case letter tau
+\Umathcode "3C5 = "#2 \symLogix \numexpr "#1 + "54\relax%  Greek lower case letter upsilon
+\Umathcode "3D5 = "#2 \symLogix \numexpr "#1 + "55\relax%  Greek lower case letter phi
+\Umathcode "3C7 = "#2 \symLogix \numexpr "#1 + "56\relax%  Greek lower case letter chi
+\Umathcode "3C8 = "#2 \symLogix \numexpr "#1 + "57\relax%  Greek lower case letter psi
+\Umathcode "3C9 = "#2 \symLogix \numexpr "#1 + "58\relax%  Greek lower case letter omega
+%
+\Umathcode "3B5 = "#2 \symLogix \numexpr "#1 + "65\relax%  Greek lower case letter variant varepsilon
+\Umathcode "3D1 = "#2 \symLogix \numexpr "#1 + "68\relax%  Greek lower case letter variant vartheta
+\Umathcode "3D6 = "#2 \symLogix \numexpr "#1 + "70\relax%  Greek lower case letter variant varpi
+\Umathcode "3F1 = "#2 \symLogix \numexpr "#1 + "71\relax%  Greek lower case letter variant varrho
+\Umathcode "3C2 = "#2 \symLogix \numexpr "#1 + "72\relax%  Greek lower case letter variant varsigma
+\Umathcode "3C6 = "#2 \symLogix \numexpr "#1 + "75\relax}% Greek lower case letter variant varphi
+
+   \newcommand    \defineGreekScript[3] {%
+\expandafter\def\csname #1Alpha\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "21}}%  Greek upper case Alpha
+\expandafter\def\csname #1Beta\endcsname{\ensuremath{      \Umathchar 7 \symLogix \numexpr "#2 + "22}}%  Greek upper case Beta
+\expandafter\def\csname #1Gamma\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "23}}%  Greek upper case Gamma
+\expandafter\def\csname #1Delta\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "24}}%  Greek upper case Delta
+\expandafter\def\csname #1Epsilon\endcsname{\ensuremath{   \Umathchar 7 \symLogix \numexpr "#2 + "25}}%  Greek upper case Epsilon
+\expandafter\def\csname #1Zeta\endcsname{\ensuremath{      \Umathchar 7 \symLogix \numexpr "#2 + "26}}%  Greek upper case Zeta
+\expandafter\def\csname #1Eta\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "27}}%  Greek upper case Eta
+\expandafter\def\csname #1Theta\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "28}}%  Greek upper case Theta
+\expandafter\def\csname #1Iota\endcsname{\ensuremath{      \Umathchar 7 \symLogix \numexpr "#2 + "29}}%  Greek upper case Iota
+\expandafter\def\csname #1Kappa\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "2A}}%  Greek upper case Kappa
+\expandafter\def\csname #1Lambda\endcsname{\ensuremath{    \Umathchar 7 \symLogix \numexpr "#2 + "2B}}%  Greek upper case Lambda
+\expandafter\def\csname #1Mu\endcsname{\ensuremath{        \Umathchar 7 \symLogix \numexpr "#2 + "2C}}%  Greek upper case Mu
+\expandafter\def\csname #1Nu\endcsname{\ensuremath{        \Umathchar 7 \symLogix \numexpr "#2 + "2D}}%  Greek upper case Nu
+\expandafter\def\csname #1Xi\endcsname{\ensuremath{        \Umathchar 7 \symLogix \numexpr "#2 + "2E}}%  Greek upper case Xi
+\expandafter\def\csname #1Omicron\endcsname{\ensuremath{   \Umathchar 7 \symLogix \numexpr "#2 + "2F}}%  Greek upper case Omicron
+\expandafter\def\csname #1Pi\endcsname{\ensuremath{        \Umathchar 7 \symLogix \numexpr "#2 + "30}}%  Greek upper case Pi
+\expandafter\def\csname #1Rho\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "31}}%  Greek upper case Rho
+\expandafter\def\csname #1Sigma\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "32}}%  Greek upper case Sigma
+\expandafter\def\csname #1Tau\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "33}}%  Greek upper case Tau
+\expandafter\def\csname #1Upsilon\endcsname{\ensuremath{   \Umathchar 7 \symLogix \numexpr "#2 + "34}}%  Greek upper case Upsilon
+\expandafter\def\csname #1Phi\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "35}}%  Greek upper case Phi
+\expandafter\def\csname #1Chi\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "36}}%  Greek upper case Chi
+\expandafter\def\csname #1Psi\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "37}}%  Greek upper case Psi
+\expandafter\def\csname #1Omega\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "38}}%  Greek upper case Omega
+%
+\expandafter\def\csname #1alpha\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "41}}%  Greek lower case alpha
+\expandafter\def\csname #1beta\endcsname{\ensuremath{      \Umathchar 7 \symLogix \numexpr "#2 + "42}}%  Greek lower case beta
+\expandafter\def\csname #1gamma\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "43}}%  Greek lower case gamma
+\expandafter\def\csname #1delta\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "44}}%  Greek lower case delta
+\expandafter\def\csname #1epsilon\endcsname{\ensuremath{   \Umathchar 7 \symLogix \numexpr "#2 + "45}}%  Greek lower case epsilon
+\expandafter\def\csname #1zeta\endcsname{\ensuremath{      \Umathchar 7 \symLogix \numexpr "#2 + "46}}%  Greek lower case zeta
+\expandafter\def\csname #1eta\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "47}}%  Greek lower case eta
+\expandafter\def\csname #1theta\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "48}}%  Greek lower case theta
+\expandafter\def\csname #1iota\endcsname{\ensuremath{      \Umathchar 7 \symLogix \numexpr "#2 + "49}}%  Greek lower case iota
+\expandafter\def\csname #1kappa\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "4A}}%  Greek lower case kappa
+\expandafter\def\csname #1lambda\endcsname{\ensuremath{    \Umathchar 7 \symLogix \numexpr "#2 + "4B}}%  Greek lower case lambda
+\expandafter\def\csname #1mu\endcsname{\ensuremath{        \Umathchar 7 \symLogix \numexpr "#2 + "4C}}%  Greek lower case mu
+\expandafter\def\csname #1nu\endcsname{\ensuremath{        \Umathchar 7 \symLogix \numexpr "#2 + "4D}}%  Greek lower case nu
+\expandafter\def\csname #1xi\endcsname{\ensuremath{        \Umathchar 7 \symLogix \numexpr "#2 + "4E}}%  Greek lower case xi
+\expandafter\def\csname #1omicron\endcsname{\ensuremath{   \Umathchar 7 \symLogix \numexpr "#2 + "4F}}%  Greek lower case omicron
+\expandafter\def\csname #1pi\endcsname{\ensuremath{        \Umathchar 7 \symLogix \numexpr "#2 + "50}}%  Greek lower case pi
+\expandafter\def\csname #1rho\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "51}}%  Greek lower case rho
+\expandafter\def\csname #1sigma\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "52}}%  Greek lower case sigma
+\expandafter\def\csname #1tau\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "53}}%  Greek lower case tau
+\expandafter\def\csname #1upsilon\endcsname{\ensuremath{   \Umathchar 7 \symLogix \numexpr "#2 + "54}}%  Greek lower case upsilon
+\expandafter\def\csname #1phi\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "55}}%  Greek lower case phi
+\expandafter\def\csname #1chi\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "56}}%  Greek lower case chi
+\expandafter\def\csname #1psi\endcsname{\ensuremath{       \Umathchar 7 \symLogix \numexpr "#2 + "57}}%  Greek lower case psi
+\expandafter\def\csname #1omega\endcsname{\ensuremath{     \Umathchar 7 \symLogix \numexpr "#2 + "58}}%  Greek lower case omega
+%
+\expandafter\def\csname #1varepsilon\endcsname{\ensuremath{\Umathchar 7 \symLogix \numexpr "#2 + "65}}%  Greek lower case variant epsilon
+\expandafter\def\csname #1vartheta\endcsname {\ensuremath{ \Umathchar 7 \symLogix \numexpr "#2 + "68}}%  Greek lower case variant theta
+\expandafter\def\csname #1varpi\endcsname {\ensuremath{    \Umathchar 7 \symLogix \numexpr "#2 + "70}}%  Greek lower case variant pi
+\expandafter\def\csname #1varrho\endcsname{\ensuremath{    \Umathchar 7 \symLogix \numexpr "#2 + "71}}%  Greek lower case variant rho
+\expandafter\def\csname #1varsigma\endcsname{\ensuremath{  \Umathchar 7 \symLogix \numexpr "#2 + "72}}%  Greek lower case variant sigma
+\expandafter\def\csname #1varphi\endcsname{\ensuremath{    \Umathchar 7 \symLogix \numexpr "#2 + "75}}}% Greek lower case variant phi
+
+% Sans serif font.
+
+   \newcommand  \sauNbrBase       {0000}
+   \newcommand  \sauLtrBase       {0000}
+
+   \defineLatinScript{sau}{\sauNbrBase}{\sauLtrBase}
+
+   \newcommand \symsau[1]  {{\defineLatinScriptMacro{\sauNbrBase}{\sauLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathsau[1] {{\defineLatinScriptMacro{\sauNbrBase}{\sauLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Prop}{\sauNbrBase}{\sauLtrBase}
+
+   \newcommand \prop[1] {{\defineLatinScriptMacro{\sauNbrBase}{\sauLtrBase}{0}\ensuremath{#1}}}
+
+% Sans serif, italic font.
+
+   \newcommand  \saiNbrBase       {F000}
+   \newcommand  \saiLtrBase       {F000}
+
+   \defineLatinScript{sai}{\saiNbrBase}{\saiLtrBase}
+
+   \newcommand \symsai[1]  {{\defineLatinScriptMacro{\saiNbrBase}{\saiLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathsai[1] {{\defineLatinScriptMacro{\saiNbrBase}{\saiLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Propi}{\saiNbrBase}{\saiLtrBase}
+
+   \newcommand \propi[1] {{\defineLatinScriptMacro{\saiNbrBase}{\saiLtrBase}{0}\ensuremath{#1}}}
+
+% Sans serif, bold font.
+
+   \newcommand  \SauNbrBase       {F080}
+   \newcommand  \SauLtrBase       {F080}
+
+   \defineLatinScript{Sau}{\SauNbrBase}{\SauLtrBase}
+
+   \newcommand \symSau[1]  {{\defineLatinScriptMacro{\SauNbrBase}{\SauLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathSau[1] {{\defineLatinScriptMacro{\SauNbrBase}{\SauLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Meta}{\SauNbrBase}{\SauLtrBase}
+
+   \newcommand \meta[1] {{\defineLatinScriptMacro{\SauNbrBase}{\SauLtrBase}{0}\ensuremath{#1}}}
+
+% Sans serif, bold, italic font.
+
+   \newcommand  \SaiNbrBase       {F100}
+   \newcommand  \SaiLtrBase       {F100}
+
+   \defineLatinScript{Sai}{\SaiNbrBase}{\SaiLtrBase}
+
+   \newcommand \symSai[1]  {{\defineLatinScriptMacro{\SaiNbrBase}{\SaiLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathSai[1] {{\defineLatinScriptMacro{\SaiNbrBase}{\SaiLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Metai}{\SaiNbrBase}{\SaiLtrBase}
+
+   \newcommand \metai[1]  {{\defineLatinScriptMacro{\SaiNbrBase}{\SaiLtrBase}{0}\ensuremath{#1}}}
+
+% Slab serif font.
+
+   \newcommand  \sluNbrBase       {F180}
+   \newcommand  \sluLtrBase       {F180}
+
+   \defineLatinScript{slu}{\sluNbrBase}{\sluLtrBase}
+
+   \newcommand \symslu[1]  {{\defineLatinScriptMacro{\sluNbrBase}{\sluLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathslu[1] {{\defineLatinScriptMacro{\sluNbrBase}{\sluLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Bnch}{\sluNbrBase}{\sluLtrBase}
+
+   \newcommand \bnch[1]  {{\defineLatinScriptMacro{\sluNbrBase}{\sluLtrBase}{0}\ensuremath{#1}}}
+
+% Slab serif, italic font.
+
+   \newcommand  \sliNbrBase       {F200}
+   \newcommand  \sliLtrBase       {F200}
+
+   \defineLatinScript{sli}{\sliNbrBase}{\sliLtrBase}
+
+   \newcommand \symsli[1]  {{\defineLatinScriptMacro{\sliNbrBase}{\sliLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathsli[1] {{\defineLatinScriptMacro{\sliNbrBase}{\sliLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Bnchi}{\sliNbrBase}{\sliLtrBase}
+
+   \newcommand \bnchi[1]  {{\defineLatinScriptMacro{\sliNbrBase}{\sliLtrBase}{0}\ensuremath{#1}}}
+
+% Slab serif, bold font.
+
+   \newcommand  \SluNbrBase       {F280}
+   \newcommand  \SluLtrBase       {F280}
+
+   \defineLatinScript{Slu}{\SluNbrBase}{\SluLtrBase}
+
+   \newcommand \symSlu[1]  {{\defineLatinScriptMacro{\SluNbrBase}{\SluLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathSlu[1] {{\defineLatinScriptMacro{\SluNbrBase}{\SluLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Bnchb}{\SluNbrBase}{\SluLtrBase}
+
+   \newcommand \bnchb[1]  {{\defineLatinScriptMacro{\SluNbrBase}{\SluLtrBase}{0}\ensuremath{#1}}}
+
+% Slab serif, bold, italic font.
+
+   \newcommand  \SliNbrBase       {F300}
+   \newcommand  \SliLtrBase       {F300}
+
+   \defineLatinScript{Sli}{\SliNbrBase}{\SliLtrBase}
+
+   \newcommand \symSli[1]  {{\defineLatinScriptMacro{\SliNbrBase}{\SliLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathSli[1] {{\defineLatinScriptMacro{\SliNbrBase}{\SliLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Bnchbi}{\SliNbrBase}{\SliLtrBase}
+
+   \newcommand \bnchbi[1]  {{\defineLatinScriptMacro{\SliNbrBase}{\SliLtrBase}{0}\ensuremath{#1}}}
+
+% Normal serif font.
+
+   \newcommand  \sruNbrBase       {F380}
+   \newcommand  \sruLtrBase       {F380}
+
+   \defineLatinScript{sru}{\sruNbrBase}{\sruLtrBase}
+
+   \newcommand \symsru[1]  {{\defineLatinScriptMacro{\sruNbrBase}{\sruLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathsru[1] {{\defineLatinScriptMacro{\sruNbrBase}{\sruLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Vrbl}{\sruNbrBase}{\sruLtrBase}
+
+   \newcommand \vrbl[1]  {{\defineLatinScriptMacro{\sruNbrBase}{\sruLtrBase}{0}\ensuremath{#1}}}
+
+% Normal serif, italic font.
+
+   \newcommand  \sriNbrBase       {F400}
+   \newcommand  \sriLtrBase       {F400}
+
+   \defineLatinScript{sri}{\sriNbrBase}{\sriLtrBase}
+
+   \newcommand \symsri[1]  {{\defineLatinScriptMacro{\sriNbrBase}{\sriLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathsri[1] {{\defineLatinScriptMacro{\sriNbrBase}{\sriLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Vrbli}{\sriNbrBase}{\sriLtrBase}
+
+   \newcommand \vrbli[1]  {{\defineLatinScriptMacro{\sriNbrBase}{\sriLtrBase}{0}\ensuremath{#1}}}
+
+% Normal serif, bold font.
+
+   \newcommand  \SruNbrBase       {F480}
+   \newcommand  \SruLtrBase       {F480}
+
+   \defineLatinScript{Sru}{\SruNbrBase}{\SruLtrBase}
+
+   \newcommand \symSru[1]  {{\defineLatinScriptMacro{\SruNbrBase}{\SruLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathSru[1] {{\defineLatinScriptMacro{\SruNbrBase}{\SruLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Vrblb}{\SruNbrBase}{\SruLtrBase}
+
+   \newcommand \vrblb[1]  {{\defineLatinScriptMacro{\SruNbrBase}{\SruLtrBase}{0}\ensuremath{#1}}}
+
+% Normal serif, bold, italic font.
+
+   \newcommand  \SriNbrBase       {F500}
+   \newcommand  \SriLtrBase       {F500}
+
+   \defineLatinScript{Sri}{\SriNbrBase}{\SriLtrBase}
+
+   \newcommand \symSri[1]  {{\defineLatinScriptMacro{\SriNbrBase}{\SriLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathSri[1] {{\defineLatinScriptMacro{\SriNbrBase}{\SriLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Vrblbi}{\SriNbrBase}{\SriLtrBase}
+
+   \newcommand \vrblbi[1]  {{\defineLatinScriptMacro{\SriNbrBase}{\SriLtrBase}{0}\ensuremath{#1}}}
+
+% Calligraphic font.
+
+   \newcommand  \cliNbrBase       {F400}
+   \newcommand  \cliLtrBase       {F580}
+
+   \defineLatinScript{cli}{\cliNbrBase}{\cliLtrBase}
+
+   \newcommand \symcli[1]  {{\defineLatinScriptMacro{\cliNbrBase}{\cliLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathcli[1] {{\defineLatinScriptMacro{\cliNbrBase}{\cliLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Vrblc}{\cliNbrBase}{\cliLtrBase}
+
+   \newcommand \vrblc[1]  {{\defineLatinScriptMacro{\cliNbrBase}{\cliLtrBase}{0}\ensuremath{#1}}}
+
+% Blackboard font.
+
+   \newcommand  \bluNbrBase       {F600}
+   \newcommand  \bluLtrBase       {F600}
+
+   \defineLatinScript{blu}{\bluNbrBase}{\bluLtrBase}
+
+   \newcommand \symblu[1]  {{\defineLatinScriptMacro{\bluNbrBase}{\bluLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathblu[1] {{\defineLatinScriptMacro{\bluNbrBase}{\bluLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Vrbld}{\bluNbrBase}{\bluLtrBase}
+
+   \newcommand \vrbld[1]  {{\defineLatinScriptMacro{\bluNbrBase}{\bluLtrBase}{0}\ensuremath{#1}}}
+
+% Fraktur font.
+
+   \newcommand  \fruNbrBase       {F380}
+   \newcommand  \fruLtrBase       {F680}
+
+   \defineLatinScript{fru}{\fruNbrBase}{\fruLtrBase}
+
+   \newcommand \symfru[1]  {{\defineLatinScriptMacro{\fruNbrBase}{\fruLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathfru[1] {{\defineLatinScriptMacro{\fruNbrBase}{\fruLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Vrblf}{\fruNbrBase}{\fruLtrBase}
+
+   \newcommand \vrblf[1]  {{\defineLatinScriptMacro{\fruNbrBase}{\fruLtrBase}{0}\ensuremath{#1}}}
+
+% Fraktur bold font.
+
+   \newcommand  \FruNbrBase       {F480}
+   \newcommand  \FruLtrBase       {F700}
+
+   \defineLatinScript{Fru}{\FruNbrBase}{\FruLtrBase}
+
+   \newcommand \symFru[1]  {{\defineLatinScriptMacro{\FruNbrBase}{\FruLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathFru[1] {{\defineLatinScriptMacro{\FruNbrBase}{\FruLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{VrblF}{\FruNbrBase}{\FruLtrBase}
+
+   \newcommand \vrblF[1]  {{\defineLatinScriptMacro{\FruNbrBase}{\FruLtrBase}{0}\ensuremath{#1}}}
+
+% Monospace slab serif font.
+
+   \newcommand  \mnuNbrBase       {F780}
+   \newcommand  \mnuLtrBase       {F780}
+
+   \defineLatinScript{mnu}{\mnuNbrBase}{\mnuLtrBase}
+
+   \newcommand \symmnu[1]  {{\defineLatinScriptMacro{\mnuNbrBase}{\mnuLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathmnu[1] {{\defineLatinScriptMacro{\mnuNbrBase}{\mnuLtrBase}{7}\ensuremath{#1}}}
+
+   \defineLatinScript{Mono}{\mnuNbrBase}{\mnuLtrBase}
+
+   \newcommand \mono[1]  {{\defineLatinScriptMacro{\mnuNbrBase}{\mnuLtrBase}{0}\ensuremath{#1}}}
+
+% Monospace, serif, italic font.
+
+   \newcommand  \mniNbrBase       {EF80}
+   \newcommand  \mniLtrBase       {EF80}
+
+   \defineLatinScript{mni}{\mniNbrBase}{\mniLtrBase}
+
+   \newcommand \symmni[1]  {{\defineLatinScriptMacro{\mniNbrBase}{\mniLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathmni[1] {{\defineLatinScriptMacro{\mniNbrBase}{\mniLtrBase}{7}\ensuremath{#1}}}
+
+% Greek font.
+
+   \newcommand  \gruLtrBase       {F800}
+
+   \defineGreekScript{gru}{\gruLtrBase}
+
+   \newcommand \symgru[1]  {{\defineGreekScriptMacro{\gruLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathgru[1] {{\defineGreekScriptMacro{\gruLtrBase}{7}\ensuremath{#1}}}
+
+% Greek, italic font.
+
+   \newcommand  \griLtrBase       {F880}
+
+   \defineGreekScript{gri}{\griLtrBase}
+
+   \newcommand \symgri[1]  {{\defineGreekScriptMacro{\griLtrBase}{0}\ensuremath{#1}}}
+   \newcommand \mathgri[1] {{\defineGreekScriptMacro{\griLtrBase}{7}\ensuremath{#1}}}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+% End of the package.
+
+   \endinput
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

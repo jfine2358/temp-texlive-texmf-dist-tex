@@ -1,0 +1,294 @@
+%%
+%% This is file `nomencl.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% nomencl.dtx  (with options: `package')
+%% 
+%% Copyright 1996-2019 Boris Veytsman, Bernd Shandl, Lee Netherton, CV
+%% Radhakrishnan, Brian Elmegaard
+%% 
+%% 
+%% This file can be redistributed and/or modified under the terms
+%% of the LaTeX Project Public License distributed from CTAN
+%% archives in the directory macros/latex/base/lppl.txt; either
+%% version 1.2 of the license, or (at your option) any later version.
+%% 
+\ProvidesPackage{nomencl}%
+          [2019/02/08 v5.1 Nomenclature package]
+\NeedsTeXFormat{LaTeX2e}
+\RequirePackage{xkeyval}
+\RequirePackage{ifthen}
+\RequirePackage{tocbasic}
+\addtotoclist[nomencl]{nlo}
+\addtotoclist[nomencl]{nls}
+\newif\if@printeqref
+\newif\if@printpageref
+\newif\if@intoc
+\newif\if@compatibilitymode
+\DeclareOptionX{refeq}{\@printeqreftrue}
+\DeclareOptionX{norefeq}{\@printeqreffalse}
+\DeclareOptionX{refpage}{\@printpagereftrue}
+\DeclareOptionX{norefpage}{\@printpagereffalse}
+\DeclareOptionX{intoc}{\@intoctrue}
+\DeclareOptionX{notintoc}{\@intocfalse}
+\DeclareOptionX{compatible}{\@compatibilitymodetrue}
+\DeclareOptionX{noncompatible}{\@compatibilitymodefalse}
+\DeclareOptionX{prefix}{\def\nomprefix{a}}
+\DeclareOptionX{noprefix}{\def\nomprefix{}}
+\newif\if@nomentbl
+\DeclareOptionX{nomentbl}{\@nomentbltrue}
+\DeclareOptionX{norefeq}{\@nomentblfalse}
+\newif\if@loadcfg
+\DeclareOptionX{cfg}[nomencl.cfg]{\@loadcfgtrue\gdef\@cfgfile{#1}}
+\DeclareOptionX{nocfg}{\@loadcfgfalse}
+\newif\if@stdsubgroups
+\DeclareOptionX{stdsubgroups}{\@stdsubgroupstrue}
+\DeclareOptionX{nostdsubgroups}{\@stdsubgroupsfalse}
+\DeclareOptionX{croatian}{%
+  \def\eqdeclaration##1{, vidi jednad\v{z}bu\nobreakspace(##1)}%
+  \def\pagedeclaration##1{, stranica\nobreakspace##1}%
+  \def\nomname{Popis simbola}%
+  \def\nomAname{Latini\v{c}na slova}%
+  \def\nomGname{Gr\v{c}ka slova}%
+  \def\nomXname{Exponenats}%
+  \def\nomZname{Indeksi}}
+\DeclareOptionX{danish}{%
+  \def\eqdeclaration##1{, se ligning\nobreakspace(##1)}%
+  \def\pagedeclaration##1{, side\nobreakspace##1}%
+  \def\nomname{Symbolliste}%
+  \def\nomAname{Romerske bogstaver}%
+  \def\nomGname{Gr{\ae}ske bogstaver}%
+  \def\nomXname{(H{\o}jtstillede) indices}%
+  \def\nomZname{Indices}}
+\DeclareOptionX{english}{%
+  \def\eqdeclaration##1{, see equation\nobreakspace(##1)}%
+  \def\pagedeclaration##1{, page\nobreakspace##1}%
+  \def\nomname{Nomenclature}%
+  \def\nomAname{Latin Letters}%
+  \def\nomGname{Greek Letters}%
+  \def\nomXname{Superscripts}%
+  \def\nomZname{Subscripts}}
+\DeclareOptionX{french}{%
+  \def\eqdeclaration##1{, voir \'equation\nobreakspace(##1)}%
+  \def\pagedeclaration##1{, page\nobreakspace##1}%
+  \def\nomname{Liste des symboles}%
+  \def\nomAname{Lettres latines}%
+  \def\nomGname{Lettres grecques}%
+  \def\nomXname{Indices sup{\'e}rieurs}%
+  \def\nomZname{Indices}}
+\DeclareOptionX{german}{%
+  \def\eqdeclaration##1{, siehe Gleichung\nobreakspace(##1)}%
+  \def\pagedeclaration##1{, Seite\nobreakspace##1}%
+  \def\nomname{Symbolverzeichnis}%
+   \def\nomAname{Lateinische Buchstaben}%
+   \def\nomGname{Griechische Buchstaben}%
+   \def\nomXname{(hochgestellte) Indizes}%
+   \def\nomZname{Indizes}}
+\DeclareOptionX{italian}{%
+  \def\eqdeclaration##1{, vedi equazione\nobreakspace(##1)}%
+  \def\pagedeclaration##1{, pagina\nobreakspace##1}%
+  \def\nomname{Elenco dei simboli}%
+   \def\nomAname{Lettere latine}%
+   \def\nomGname{Lettere greche}%
+   \def\nomXname{Apici}%
+   \def\nomZname{Indici}}
+\DeclareOptionX{polish}{%
+  \def\eqdeclaration##1{, porownaj rownanie\nobreakspace(##1)}%
+  \def\pagedeclaration##1{, strona\nobreakspace##1}%
+  \def\nomname{Lista symboli}%
+   \def\nomAname{Litery {\l}aci\'nskie}%
+   \def\nomGname{Litery greckie}%
+   \def\nomXname{Indeksy g\'orny}%
+   \def\nomZname{Indeksy dolne}}
+\DeclareOptionX{portuguese}{%
+  \def\eqdeclaration##1{, veja equa\c{c}\~ao\nobreakspace(##1)}%
+  \def\pagedeclaration##1{, p\'agina\nobreakspace##1}%
+  \def\nomname{Nomenclatura}%
+  \def\nomAname{Letras latinas}%
+  \def\nomGname{Letras gregas}%
+  \def\nomXname{Sobrescritos}%
+  \def\nomZname{Subscritos}}
+\DeclareOptionX{russian}{%
+  \def\eqdeclaration##1{, \cyrs\cyrm.\nobreakspace(##1)}%
+  \def\pagedeclaration##1{, \cyrs\cyrt\cyrr.\nobreakspace##1}%
+  \def\nomname{\CYRS\cyrp\cyri\cyrs\cyro\cyrk%
+    \ \cyro\cyrb\cyro\cyrz\cyrn\cyra\cyrch\cyre\cyrn\cyri%
+    \cyrishrt}%
+   \def\nomAname{\CYRL\cyra\cyrt\cyri\cyrn\cyrs\cyrk\cyri\cyre\
+     \cyrb\cyru\cyrk\cyrv\cyrery}%
+   \def\nomGname{\CYRG\cyrr\cyre\cyrch\cyre\cyrs\cyrk\cyri\cyre\
+     \cyrb\cyru\cyrk\cyrv\cyrery}%
+   \def\nomXname{\CYRN\cyra\cyrd\cyrs\cyrt\cyrr\cyro\cyrch\cyrn\cyrery\cyre\
+     \cyri\cyrn\cyrd\cyre\cyrk\cyrs\cyrery}%
+   \def\nomZname{\CYRP\cyro\cyrd\cyrs\cyrt\cyrr\cyro\cyrch\cyrn\cyrery\cyre\
+     \cyri\cyrn\cyrd\cyre\cyrk\cyrs\cyrery}}
+\DeclareOptionX{spanish}{%
+  \def\eqdeclaration##1{, v\'ease la ecuaci\'on\nobreakspace(##1)}%
+  \def\pagedeclaration##1{, p\'agina\nobreakspace##1}%
+  \def\nomname{Nomenclatura}%
+   \def\nomAname{Letras latinas}%
+   \def\nomGname{Letras griegas}%
+   \def\nomXname{Super{\'\i}ndices}%
+   \def\nomZname{Sub{\'\i}ndices}}
+\DeclareOptionX{ukrainian}{%
+  \def\eqdeclaration##1{, \cyrd\cyri\cyrv.\nobreakspace(##1)}%
+  \def\pagedeclaration##1{, \cyrs\cyrt\cyro\cyrr.\nobreakspace##1}%
+  \def\nomname{\CYRP\cyre\cyrr\cyre\cyrl\cyrii\cyrk%
+    \ \cyrp\cyro\cyrz\cyrn\cyra\cyrch\cyre\cyrn\cyrsftsn}%
+   \def\nomAname{\CYRL\cyra\cyrt\cyri\cyrn\cyrs\cyrsftsn\cyrk\cyrii\
+     \cyrl\cyrii\cyrt\cyre\cyrr\cyri}%
+   \def\nomGname{\CYRG\cyrr\cyre\cyrc\cyrsftsn\cyrk\cyrii\
+     \cyrl\cyrii\cyrt\cyre\cyrr\cyri}%
+   \def\nomXname{\CYRV\cyre\cyrr\cyrh\cyrn\cyrii\
+     \cyrii\cyrn\cyrd\cyre\cyrk\cyrs\cyri}%
+   \def\nomZname{\CYRII\cyrn\cyrd\cyre\cyrk\cyrs\cyri}}
+\ExecuteOptionsX{noncompatible,notintoc,norefeq,norefpage,prefix,cfg,english,nostdsubgroups}
+\ProcessOptionsX\relax
+\if@nomentbl
+\RequirePackage{array,longtable, siunitx}
+\fi
+\if@intoc
+\setuptoc{nls}{totoc}
+\fi
+\if@compatibilitymode%
+    \def\@outputfileextension{.glo}%
+    \def\@inputfileextension{.gls}%
+\else%
+    \def\@outputfileextension{.nlo}%
+    \def\@inputfileextension{.nls}%
+\fi%
+\def\makenomenclature{%
+  \newwrite\@nomenclaturefile
+  \immediate\openout\@nomenclaturefile=\jobname\@outputfileextension
+  \def\@nomenclature{%
+    \@bsphack
+    \begingroup
+    \@sanitize
+    \@ifnextchar[%
+      {\@@@nomenclature}{\@@@nomenclature[\nomprefix]}}%
+  \PackageInfo{nomencl}{Writing nomenclature file \jobname\@outputfileextension}%
+  \let\makenomenclature\@empty}
+\if@compatibilitymode\let\makeglossary\makenomenclature\fi%
+\def\nom@verb{\expandafter\strip@prefix\meaning}
+\def\nomenclature{\protect\@nomenclature}
+\def\@nomenclature{%
+  \@bsphack
+  \begingroup
+  \@sanitize
+  \@ifnextchar[%
+  {\@@nomenclature}{\@@nomenclature[\nomprefix]}}
+\if@nomentbl
+  \def\@@nomenclature[#1]#2#3#4#5{\endgroup\@esphack}
+\else
+  \def\@@nomenclature[#1]#2#3{\endgroup\@esphack}
+\fi
+\if@nomentbl
+  \def\@@@nomenclature[#1]#2#3#4#5{%
+    \def\@tempa{#2}\def\@tempb{#3}%
+    \protected@write\@nomenclaturefile{}%
+    {\string\nomenclatureentry{#1\nom@verb\@tempa @&{\nom@verb\@tempa}&%
+        \begingroup\nom@verb\@tempb\endgroup &\begingroup#4\endgroup&%
+        \begingroup#5\endgroup&\begingroup\protect\nomeqref{\theequation}%
+        |nompageref}{\thepage}}%
+    \endgroup
+    \@esphack}
+\else
+  \def\@@@nomenclature[#1]#2#3{%
+    \def\@tempa{#2}\def\@tempb{#3}%
+    \protected@write\@nomenclaturefile{}%
+    {\string\nomenclatureentry{#1\nom@verb\@tempa @[{\nom@verb\@tempa}]%
+        \begingroup\nom@verb\@tempb\protect\nomeqref{\theequation}%
+        |nompageref}{\thepage}}%
+    \endgroup
+    \@esphack}
+\fi
+\if@stdsubgroups
+  \if@nomentbl
+  \def\nomgroup#1{%
+    \ifthenelse{\equal{#1}{A}}{%
+      \item&\multicolumn{5}{@{}l}{\textbf{\nomAname}}}{%
+        \ifthenelse{\equal{#1}{G}}{%
+        \item&\multicolumn{5}{@{}l}{\textbf{\nomGname}}}{%
+          \ifthenelse{\equal{#1}{X}}{%
+          \item&\multicolumn{5}{@{}l}{\textbf{\nomXname}}}{%
+            \ifthenelse{\equal{#1}{Z}}{%
+            \item&\multicolumn{5}{@{}l}{\textbf{\nomZname}}}{%
+              {}}}}}}
+  \else
+    \def\nomgroup#1{%
+      \ifthenelse{\equal{#1}{A}}{%
+      \item[\textbf{\nomAname}]}{%
+        \ifthenelse{\equal{#1}{G}}{%
+        \item[\textbf{\nomGname}]}{%
+          \ifthenelse{\equal{#1}{X}}{%
+          \item[\textbf{\nomXname}]}{%
+            \ifthenelse{\equal{#1}{Z}}{%
+            \item[\textbf{\nomZname}]}{%
+              {}}}}}}
+    \fi
+\else
+  \def\nomgroup#1{}
+\fi
+\newdimen\nomlabelwidth
+\nomlabelwidth1cm\relax
+\newdimen\nom@tempdim
+\def\printnomenclature{%
+  \@ifnextchar[%
+    {\@printnomenclature}{\@printnomenclature[\nomlabelwidth]}}
+\def\@printnomenclature[#1]{%
+  \nom@tempdim#1\relax
+  \@input@{\jobname\@inputfileextension}}
+\if@compatibilitymode\let\printglossary\printnomenclature\fi%
+\def\nomlabel#1{#1\hfil}
+\def\nompreamble{}
+\def\nompostamble{}
+\def\nomentryend{}
+\newskip\nomitemsep
+\nomitemsep\itemsep
+\def\setnomtableformat#1{\def\@nomtableformat{l@{}#1}}
+\setnomtableformat{lp{0.45\textwidth}sp{0.3\textwidth}@{}l}
+\def\thenomenclature{%
+  \providecommand*{\listofnlsname}{\nomname}%
+  \let\list@fname\listofnlsname
+  \def\@currext{nls}%
+  \tocbasic@listhead{\list@fname}%
+  \nompreamble
+  \if@nomentbl
+    \let\itemOrig=\item
+    \def\item{\gdef\item{\\}}%
+    \expandafter\longtable\expandafter{\@nomtableformat}
+  \else
+    \list{}{%
+      \labelwidth\nom@tempdim
+      \leftmargin\labelwidth
+      \advance\leftmargin\labelsep
+      \itemsep\nomitemsep
+      \let\makelabel\nomlabel}%
+  \fi
+}
+\def\endthenomenclature{%
+  \if@nomentbl
+    \item\endlongtable
+    \global\let\item=\itemOrig
+  \else
+    \endlist
+  \fi
+  \nompostamble}
+\def\nomrefeq{\@printeqreftrue}
+\def\nomrefpage{\@printpagereftrue}
+\def\nomrefeqpage{\@printeqreftrue\@printpagereftrue}
+\def\nomnorefeq{\@printeqreffalse}
+\def\nomnorefpage{\@printpagereffalse}
+\def\nomnorefeqpage{\@printeqreffalse\@printpagereffalse}
+\def\nomeqref#1{\if@printeqref\eqdeclaration{#1}\fi\ignorespaces}
+\def\nompageref#1{\if@printpageref\pagedeclaration{#1}\fi%
+  \nomentryend\endgroup}
+\if@loadcfg
+  \InputIfFileExists{\@cfgfile}{%
+    \PackageInfo{nomencl}{Using the configuration file \@cfgfile}}{}
+\fi
+\endinput
+%%
+%% End of file `nomencl.sty'.

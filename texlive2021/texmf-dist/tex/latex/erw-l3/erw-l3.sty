@@ -1,0 +1,516 @@
+%%
+%% This is file `erw-l3.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% erw-l3.dtx  (with options: `package')
+%% ----------------------------------------------------------------------------
+%% erw-l3 --- Utilities for LaTeX3 programming
+%% Released under the LaTeX Project Public License v1.3c or later
+%% See http://www.latex-project.org/lppl.txt
+%% ----------------------------------------------------------------------------
+%% 
+ \NeedsTeXFormat{LaTeX2e}[2020/02/02]
+ \RequirePackage{etoolbox}[2019/09/21]
+ \RequirePackage{l3keys2e}[2020/03/06]
+ \RequirePackage{xparse}[2020/03/06]
+ \ProvidesExplPackage
+ {erw-l3}                                                                            % Package name
+ {2020/06/04}                                                                        % Release date
+ {3.1}                                                                               % Release version
+ {erw-l3 --- Utilities for LaTeX3 programming }                                      % Description
+\cs_new:Nn \__erw_cs_name:N
+{
+  \exp_last_unbraced:Nf \use_i:nnn {\cs_split_function:N #1}
+}
+\cs_new:Nn \erw_cs_compose:NnN
+{
+  \erw_cs_set_inline:Nn \g__erw_tl_function:n
+  {
+    #1{##1}#3
+  }
+  \exp_args:Nf\erw_tl_map:n
+  {
+    \tl_reverse:n{#2}
+  }
+}
+\cs_set:Npn \erw_cs_identity:n #1{#1}
+\cs_new_protected:Nn \erw_cs_set_inline:Nn
+{
+  \cs_set:Npn #1 ##1{#2}
+}
+\cs_generate_variant:Nn \erw_cs_set_inline:Nn {cn}
+\cs_new:Nn \erw_cs_gset_inline:Nn
+{
+  \cs_gset:Npn #1 ##1{#2}
+}
+\cs_generate_variant:Nn \erw_cs_gset_inline:Nn {cn}
+\int_new:N \g__erw_csint_int
+\cs_new:Nn \__erw_csint_name: {\erw_csint_name:n{\g__erw_csint_int}}
+\cs_new:Nn \erw_csint:nn
+{
+ \exp_args:No \use:c{\erw_csint_name:n{#1}}{#2}
+}
+\cs_new:Nn \erw_csint_name:n {__erw_csint_\int_to_alph:n{#1}:n}
+\cs_new_protected:Nn \erw_csint_new:n
+{
+  \int_incr:N \g__erw_csint_int
+  \exp_args:No
+  \erw_cs_set_inline:cn{\__erw_csint_name:}
+  {
+    \token_if_cs:NTF
+    {#1}
+    {#1{##1}}
+    {#1}
+  }
+}
+\cs_new:Nn \erw_csint_names_braced:nnn
+{
+  \int_step_function:nnnN { #1 }{ #2 }{ #3 } \erw_csint_names_braced:n
+  % TODO \tl_range_braced:nnn?
+}
+\cs_new:Nn \erw_csint_names_braced:n {{\erw_csint_name:n{#1}}}
+\cs_new:Nn \erw_csint_names_braced:
+{
+  \erw_csint_names_braced:nnn{1}{1}{\g__erw_csint_int}
+}
+\cs_new_protected:Nn \erw_csint_reset:
+{
+  \int_zero:N \g__erw_csint_int
+  \tl_set:Nn \__erw_csint_ext_tl{}%^^A TODO remove?
+}
+\cs_set:Npn \__erw_int_range:nnn #1 #2 #3
+{
+  \int_compare:nNnTF
+  {
+    \int_eval:n{#2+1}
+  }>{#3}
+  {
+    {#1}
+  }
+  {
+    \__erw_int_range:nnn
+    {
+      \exp_args:Nx\erw_tl_append_item:nn{#1}
+      {
+        \int_eval:n{#2+1}
+      }
+    }
+    {\int_eval:n{#2+1}}
+    {#3}
+  }
+}
+\cs_new:Nn \erw_int_range:nn
+{
+  \__erw_int_range:nnn {{#1}}{#1}{#2}
+}
+\cs_new:Nn \erw_int_range:n
+{
+  \__erw_int_range:nnn {}{0}{#1}
+}
+\cs_new:Nn \erw_keyval_error:Nn{\msg_error:nnnnn{__erw}{keyval/n}{\erw_keyval_error:Nn}{#1}{#2}}
+\cs_new:Nn \erw_keyval_error:Nnn{\msg_error:nnnnnn{__erw}{keyval/nn}{\erw_keyval_error:Nnn}{#1}{#2}{#3}}
+\cs_new_protected:Nn\erw_keyval_parse:NNNn
+{
+  \cs_set_protected:Nn \__erw_keyval_function:n {#2 #1{##1}}
+  \cs_set_protected:Nn \__erw_keyval_function:nn {#3 #1{##1}{##2}}
+  \keyval_parse:NNn
+  \__erw_keyval_function:n
+  \__erw_keyval_function:nn
+  {#4}
+}
+\cs_new_protected:Npn \erw_lambda:nnn #1 #2 #3
+{
+  \exp_args:NNx
+  #1 \__erw_lambda_expression
+  {#2}
+  {#3}
+  \__erw_lambda_expression
+}
+\msg_new:nnn{__erw}{generic}{#1}
+\msg_new:nnn{__erw}{keyval/nn}{#1#2{#3}{#4};~encountered~key=val~where~only~key~required}
+\msg_new:nnn{__erw}{keyval/n}{#1#2{#3};~encountered~key~~where~only~key=val~required}
+\msg_new:nnn{__erw}{separ}{#1~expects~1~to~3~items,~#2}
+\msg_new:nnn{__erw}{timestamp / base}{Calling~#1,~arg~must~be~'dec|hex'}
+\msg_new:nnn{__erw}{timestamp / period}{Calling~#1,~arg~must~be~'date|time|datetime'}
+\msg_new:nnn{erw}{notset}{#1~not~set}
+\cs_new_protected:Nn \__erw_prop_map_item:NNN
+{
+  \cs_set_protected:Nn \__erw_function:nn
+  {
+    #1 #2 {##1}{##2}
+  }
+  \prop_map_function:NN #3 \__erw_function:nn
+}
+\cs_new_protected:Nn \erw_prop_to_clist:Nn
+{
+  \cs_set:Nn \__erw_keyval_function:n {,\prop_item:Nn#1{##1}}
+  \exp_args:Nf
+  \tl_tail:n
+  {
+    \keyval_parse:NNn
+    \__erw_keyval_function:n
+    \erw_keyval_error:Nnn
+    {#2}
+  }
+}
+\cs_generate_variant:Nn \erw_prop_to_clist:Nn { c }
+\cs_new_protected:Nn \erw_prop_map_item:NNN
+{
+  \prop_if_exist:NTF #2
+  {\__erw_prop_map_item:NNN #1#2#3}
+  {
+    \prop_new:N #2
+    \erw_prop_map_item:NNN #1#2#3
+  }
+}
+\cs_new_protected:Nn\erw_prop_keyval_parse:NNNn
+{
+  \prop_if_exist:NTF#1
+  {\erw_keyval_parse:NNNn #1#2#3{#4}}
+  {
+    \prop_new:N #1
+    \erw_prop_keyval_parse:NNNn#1#2#3{#4}
+  }
+}
+\keys_define:nn{__erw}
+{
+  tl/fold_set_par.tl_gset:N = \g__erw_tl_fold_set_par_tl,
+  tl/fold_set_par.value_required:n = true,
+  tl/fold_set_par.default:n = {Nf},
+  tl/fold_set_par.initial:n = {Nf},
+  tl/fold_apply_par.tl_gset:N = \g__erw_tl_fold_apply_par_tl,
+  tl/fold_apply_par.value_required:n = true,
+  tl/fold_apply_par.default:n = {Nf},
+  tl/fold_apply_par.initial:n = {Nf}
+}
+\cs_new_protected:Nn\erw_option:n
+{
+  \keys_set:nn{__erw}{#1}
+}
+\tl_new:N \g__erw_seq_fold_item_tl
+\cs_new_protected:Nn\__erw_seq_put_right_clist:Nn
+{
+  \cs_set_protected:Nn \__erw_function:n
+  {
+    \seq_put_right:Nn #1{##1}
+  }
+  \keyval_parse:NNn
+  \__erw_function:n
+  \erw_keyval_keyonly:nn
+  {#2}
+}
+\cs_generate_variant:Nn \__erw_seq_put_right_clist:Nn { c }
+\cs_new_protected:Nn\__erw_seq_put_right_prop:NNn
+{
+  \__erw_seq_put_right_clist:Nn #1
+  {\erw_prop_to_clist:Nn #2 {#3}}
+}
+\cs_generate_variant:Nn \__erw_seq_put_right_prop:NNn { cc }
+\cs_new_protected:Nn\erw_seq_put_right_clist:Nn
+{
+  \seq_if_exist:NTF#1
+  {\__erw_seq_put_right_clist:Nn#1{#2}}
+  {\seq_new:N#1\erw_seq_put_right_clist:Nn#1{#2}}
+}
+\cs_generate_variant:Nn \erw_seq_put_right_clist:Nn { c }
+\cs_new_protected:Nn\erw_seq_put_right_prop:NNn
+{
+  \seq_if_exist:NTF#1
+  {\__erw_seq_put_right_prop:NNn#1#2{#3}}
+  {\seq_new:N#1\erw_seq_put_right_prop:NNn#1#2{#3}}
+}
+\cs_generate_variant:Nn \erw_seq_put_right_prop:NNn { cc }
+\cs_new_protected:Nn \erw_seq_fold:NN
+{
+  \seq_get_right:NN #2 \g__erw_seq_fold_item_tl
+  \erw_tl_fold:NN #1 \g__erw_seq_fold_item_tl
+  \seq_put_right:No #2 {\g__erw_seq_fold_item_tl}
+}
+\cs_generate_variant:Nn \erw_seq_fold:NN {cN}
+\cs_new:Nn \erw_seq_use:Nn
+{
+  \exp_last_unbraced:NNf
+  \seq_use:Nnnn #1
+  \erw_tl_separators:n{#2}
+}
+\cs_new:Nn \__erw_sys_date_dec:
+{
+  \int_eval:n
+  {
+    \c_sys_year_int * 10000
+    +\c_sys_month_int * 100
+    +\c_sys_day_int *  1
+  }
+}
+\cs_new:Nn \__erw_sys_date:N{\int_to_hex:n{\__erw_sys_date_dec:}}
+\cs_new:Nn \__erw_sys_date_hex:{\int_to_hex:n{\__erw_sys_date_dec:}}
+\cs_new:Nn \__erw_sys_time_dec:
+{
+  \int_eval:n
+  {
+    \c_sys_hour_int * 100
+    +\c_sys_minute_int * 1
+  }
+}
+\cs_new:Nn\__erw_sys_time_hex:{\int_to_hex:n{\__erw_sys_time_dec:}}
+\cs_new:Nn\__erw_sys_datetime_base:n
+{
+  \int_case:nnTF{#1}
+  {
+    {10}{dec}
+    {16}{hex}
+  }
+  {\c_empty_tl}
+  {\msg_error:nnn{__erw}{timestamp / base}{\__erw_sys_datetime_base:n{#1}}}
+}
+\cs_new:Nn\__erw_sys_datetime_join:nn{\erw_tl_join:nnn{#1}{\g__erw_sys_timestamp_delim_str}{#2}}
+\cs_new:Nn\__erw_sys_datetime_period:n
+{
+  \str_case:nnTF{#1}
+  {
+    {date}{date}
+    {time}{time}
+    {datetime}{datetime}
+  }
+  {\c_empty_tl}
+  {\msg_error:nnn{__erw}{ timestamp / period }{\__erw_sys_datetime_period:n{#1}}}
+}
+\cs_new:Nn\__erw_sys_datetime_dec: {\__erw_sys_datetime_join:nn{\__erw_sys_date_dec:}{\__erw_sys_time_dec:}}
+\cs_new:Nn\__erw_sys_datetime_hex: {\__erw_sys_datetime_join:nn{\__erw_sys_date_hex:}{\__erw_sys_time_hex:}}
+\cs_new:Nn\__erw_sys_jobnametimestamp_prefix:
+{
+  \erw_tl_join:nn
+  {\c_sys_jobname_str}
+  {\g__erw_sys_timestamp_delim_str}
+}
+\cs_new:Nn\__erw_sys_jobnametimestamp:nn
+{
+  \erw_tl_join:nn
+  {\__erw_sys_jobnametimestamp_prefix:}
+  {\erw_sys_timestamp:nn{#1}{#2}}
+}
+\cs_new:Nn\__erw_sys_jobnametimestamp:
+{
+  \erw_tl_join:nn
+  {\__erw_sys_jobnametimestamp_prefix:}
+  {\erw_sys_timestamp:}
+}
+\cs_new:Nn\__erw_sys_timestamp:nn
+{
+  \exp_args:No
+  \use:c{__erw_sys_\__erw_sys_datetime_period:n{#1}_\__erw_sys_datetime_base:n{#2}:}
+}
+\cs_new_protected:Nn \__erw_sys_set_delim:nn
+{
+  \use:c{tl_gset:N#1}
+  \g__erw_sys_timestamp_delim_str{#2}
+}
+\keys_define:nn{__erw}
+{
+  sys / timestamp_delim .code:n =
+  {
+    \exp_last_unbraced:No
+    \__erw_sys_set_delim:nn{n}{#1}
+  },
+  sys / timestamp_delim  .value_required:n = true,
+  sys / timestamp_delim  .default:n = {-},
+  sys / timestamp_delim  .initial:n = {-}
+}
+\cs_new:Nn\erw_sys_jobnametimestamp:nn{\__erw_sys_jobnametimestamp:nn{#1}{#2}}
+\cs_new:Nn\erw_sys_jobnametimestamp:{\__erw_sys_jobnametimestamp:}
+\cs_new:Nn\erw_sys_timestamp_delimiter:
+{
+  \use:N \g__erw_sys_timestamp_delim_str
+}
+\cs_new:Nn\erw_sys_timestamp:nn
+{
+  \__erw_sys_timestamp:nn{#1}{#2}
+}
+\cs_new:Nn\erw_sys_timestamp:
+{
+  \__erw_sys_timestamp:nn{datetime}{16}
+}
+\tl_new:N \g__erw_tl_compose_tl
+\cs_new_protected:Nn \g__erw_tl_function:n
+{
+  \msg_error:nnn
+  {erw}
+  {notset}
+  {\g__erw_tl_function:n}
+}
+\cs_set_protected:Nn \__erw_tl_map:nn
+{
+  \quark_if_recursion_tail_stop:n{#1}
+  \g__erw_tl_function:n{#1}  \__erw_tl_map:nn{#2}
+}
+\cs_set_protected:Nn \__erw_tl_map_thread_at:Nnn
+{
+  #1
+  {\exp_args:Nf\tl_item:nn {#3} {#2} }
+}
+\cs_set_protected:Nn \__erw_tl_map_thread_at:Nnnn
+{
+  #1
+  {\exp_args:Nf\tl_item:nn {#3} {#2} }
+  {\exp_args:Nf\tl_item:nn {#4} {#2} }
+}
+\cs_set_protected:Nn \__erw_tl_map_thread_at:Nnnnn
+{
+  #1
+  {\exp_args:Nf\tl_item:nn {#3} {#2} }
+  {\exp_args:Nf\tl_item:nn {#4} {#2} }
+  {\exp_args:Nf\tl_item:nn {#5} {#2} }
+}
+\cs_set_protected:Nn \__erw_tl_map_thread_at:Nnnnnn
+{
+  #1
+  {\exp_args:Nf\tl_item:nn {#3} {#2} }
+  {\exp_args:Nf\tl_item:nn {#4} {#2} }
+  {\exp_args:Nf\tl_item:nn {#5} {#2} }
+  {\exp_args:Nf\tl_item:nn {#6} {#2} }
+}
+\cs_new:Nn \__erw_tl_separators:nn
+{
+  \int_case:nnTF {#1}
+  {
+    {1}
+    { \prg_replicate:nn{ 3 }{#2} }
+    {2}
+    {
+      { \use_ii:nn #2 }
+      { \use_i:nn #2 }
+      { \use_i:nn #2 \use_ii:nn #2 }
+    }
+    {3}{#2}
+  }
+  { \c_empty_tl }
+  {
+    \msg_error:nnnn { __erw }
+    { separ }
+    { \__erw_tl_separators:nn }
+    {#2}
+  }
+}
+\cs_generate_variant:Nn \__erw_tl_separators:nn { e }
+\cs_new:Nn \erw_tl_append_item:nn
+{
+  {#1{#2}}
+}
+\cs_new:Nn \erw_tl_fold:NN
+{
+  \use:c{tl_set:\g__erw_tl_fold_set_par_tl}
+  #2
+  {
+    \use:c{exp_args:\g__erw_tl_fold_apply_par_tl}{#1}{#2}
+  }
+}
+\cs_generate_variant:Nn \erw_tl_fold:NN {cN}
+\cs_new:Nn \erw_tl_gset_function:N
+{
+  \erw_cs_gset_eq:NN \g__erw_tl_function:n #1
+}
+\cs_new:Nn \erw_tl_gset_function:n
+{
+  \erw_cs_gset_inline:Nn \g__erw_tl_function:n {#1}
+}
+\cs_new:Nn \erw_tl_last_item:n
+{
+  \exp_args:Nof \tl_item:nn
+  {#1}
+  {
+    \tl_count:n{#1}
+  }
+}
+\cs_new:Nn \erw_tl_join:nn{#1#2}
+\cs_new:Nn \erw_tl_join:nnn{#1#2#3}
+\cs_new:Nn \erw_tl_join:nnnn{#1#2#3#4}
+\cs_new:Nn \erw_tl_join:nnnnn{#1#2#3#4#5}
+\cs_new_protected:Nn \erw_tl_map:n
+{
+  \__erw_tl_map:nn#1\q_recursion_tail\q_recursion_stop\q_recursion_tail\q_recursion_stop
+}
+\cs_new_protected:Nn \erw_tl_map:Nn
+{
+  \cs_set_eq:NN \g__erw_tl_function:n #1
+  \erw_tl_map:n{#2}
+}
+\cs_new_protected:Nn \erw_tl_map_inline:nn
+{
+  \erw_cs_set_inline:Nn \g__erw_tl_function:n {#1}
+  \erw_tl_map:n{#2}
+}
+\cs_new:Nn \erw_tl_repeat:nn
+{
+  \int_step_inline:nnnn{1}{1}{#1}{#2}
+}
+\cs_new:Nn \erw_tl_split:nnn
+{
+  \tl_head:n{#1}
+  \use:c{exp_args:#3} \tl_map_inline:nn
+  {
+    \tl_tail:n
+    {
+      #1
+    }
+  }{#2##1}
+}
+\cs_new:Nn \erw_tl_split:nn
+{
+  \erw_tl_split:nnn{#1}{#2}{Nf}
+}
+\cs_new_protected:Nn \erw_tl_map_thread_at:Nnn
+{
+  \exp_args:Nf\int_case:nnTF
+  {
+    \tl_count:n{#3}
+  }
+  {
+    {1}{ \__erw_tl_map_thread_at:Nnn #1{#2}#3 }
+    {2}{ \__erw_tl_map_thread_at:Nnnn #1{#2}#3 }
+    {3}{ \__erw_tl_map_thread_at:Nnnnn #1{#2}#3 }
+    {4}{ \__erw_tl_map_thread_at:Nnnnnn #1{#2}#3 }
+  }
+  {
+    % Do nothing
+  }
+  {
+    \msg_error:nnn{__erw}
+    {generic}
+    {erw_tl_map_thread_at:~count~of~#3~not~withing~1~to~4}
+  }
+}
+\cs_new_protected:Nn \erw_tl_map_thread:Nn
+{
+  \int_step_inline:nn
+  {
+    \exp_args:Nf \tl_count:n{ \tl_head:n{#2} }
+  }
+  {
+    \erw_tl_map_thread_at:Nnn #1 {##1} {#2}
+  }
+}
+\cs_new:Nn \erw_tl_separators:n
+{
+  \__erw_tl_separators:en{ \tl_count:n{#1} }{#1}
+}
+\ExplSyntaxOff
+%% 
+%% Copyright (C) 2018-2020 by Erwann Rogard
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License (LPPL), either
+%% version 1.3c of this license or (at your option) any later
+%% version.  The latest version of this license is in the file:
+%% 
+%% http://www.latex-project.org/lppl.txt
+%% 
+%% This work is "maintained" (as per LPPL maintenance status) by
+%% Erwann Rogard.
+%% 
+%% This work consists of the file erw-l3.dtx and the derived files:
+%% erw-l3.sty, and erw-l3.pdf.
+%% 
+%%
+%% End of file `erw-l3.sty'.

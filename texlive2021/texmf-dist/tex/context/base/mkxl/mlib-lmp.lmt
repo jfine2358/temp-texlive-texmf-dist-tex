@@ -1,0 +1,104 @@
+if not modules then modules = { } end modules ['mlib-lmp'] = {
+    version   = 1.001,
+    comment   = "companion to mlib-ctx.mkiv",
+    author    = "Hans Hagen, PRAGMA-ADE, Hasselt NL",
+    copyright = "PRAGMA ADE / ConTeXt Development Team",
+    license   = "see context related readme files",
+}
+
+-- path relates stuff ... todo: use a stack (or numeric index to list)
+
+local type = type
+
+local aux            = mp.aux
+local mpnumeric      = aux.numeric
+local mppair         = aux.pair
+
+local registerscript = metapost.registerscript
+
+local scan           = mp.scan
+local get            = mp.get
+local scannumber     = scan.number
+local scanstring     = scan.string
+local scanpath       = scan.path
+local scanproperty   = scan.property
+local gethashentry   = get.hashentry
+
+local p = nil
+local n = 0
+
+registerscript("pathreset", function()
+    p = nil
+    n = 0
+end)
+
+registerscript("pathlengthof", function()
+    p = scanpath()
+    n = p and #p or 1
+    mpnumeric(n)
+end)
+
+registerscript("pathpointof", function()
+    local i = scannumber()
+    if i > 0 and i <= n then
+        local pi = p[i]
+        mppair(pi[1],pi[2])
+    end
+end)
+
+registerscript("pathleftof", function()
+    local i = scannumber()
+    if i > 0 and i <= n then
+        local pi = p[i]
+        mppair(pi[5],pi[6])
+    end
+end)
+
+registerscript("pathrightof", function()
+    local i = scannumber()
+    if i > 0 and i <= n then
+        local pn
+        if i == 1 then
+            pn = p[2] or p[1]
+        else
+            pn = p[i+1] or p[1]
+        end
+        mppair(pn[3],pn[4])
+    end
+end)
+
+local report   = logs.reporter("metapost", "log")
+local codes    = metapost.codes
+local types    = metapost.types
+local procodes = mplib.propertycodes
+
+registerscript("showproperty", function()
+    local k, s, p, d = scanproperty()
+    if k then
+        report("name %a, property %a, command %a, detail %a",s,procodes[p] or "-",codes[k] or "-",types[d] or "-")
+    end
+end)
+
+registerscript("showhashentry", function()
+    local s = scanstring()
+    if s then
+        local k, p, d = gethashentry(s)
+        if k then
+            report("name %a, property %a, command %a, detail %a",s,procodes[p] or "-",codes[k] or "-",types[d] or "-")
+        end
+    end
+end)
+
+local getmacro      = tokens.getters.macro
+local mpgnamespace  = getmacro("??graphicvariable")
+
+local scanmpstring  = mp.scan.string
+
+local injectnumeric = mp.inject.numeric
+local injectstring  = mp.inject.string
+
+-- registerscript("mpv_numeric",   function() injectnumeric  (getmacro(mpgnamespace .. getmacro("currentmpvariableclass") .. ":" .. scanmpstring())) end)
+-- registerscript("mpv_dimension", function() return getmacro(mpgnamespace .. getmacro("currentmpvariableclass") .. ":" .. scanmpstring()) end)
+-- registerscript("mpv_string",    function() injectstring   (getmacro(mpgnamespace .. getmacro("currentmpvariableclass") .. ":" .. scanmpstring())) end)
+
+registerscript("mpvar", function() return getmacro(mpgnamespace .. getmacro("currentmpvariableclass") .. ":" .. scanmpstring(), true) end) -- Isn't it already edef'd?

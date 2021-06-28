@@ -1,0 +1,195 @@
+%%
+%% This is file `tocdata.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% tocdata.dtx  (with options: `package')
+%% This is a generated file.
+%% Copyright 2016 Brian Dunn
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{tocdata}
+    [2016/12/02 v0.12 Adds author/artist to TOC entries.]
+
+
+
+\RequirePackage{xparse}
+\RequirePackage{etoolbox}
+\RequirePackage{xifthen}
+
+\newcommand{\TD@thistocdata}{}
+
+\newcommand{\settocdata}[1]{\renewcommand{\TD@thistocdata}{#1}}
+
+\newcommand{\tocdata}[2]{%
+\@bsphack\addtocontents{#1}{\protect\settocdata{#2}}\@esphack%
+}
+\newcommand{\tocdatafont}[1]{{\normalfont\textit{\small#1}}}
+\newcommand{\TD@usetocdata}{%
+\tocdatafont{\TD@thistocdata}%
+\global\def\TD@thistocdata{}%
+}
+
+\@ifpackageloaded{titletoc}{
+
+\@ifundefined{chapter}
+{}
+{
+\titlecontents{chapter}[0em]{}{\contentslabel{2.5em}}{}{%
+\titlerule*[.75pc]{.}%
+\TD@usetocdata% <-- newly added for the tocdata package
+\contentspage}[\vspace{-.5ex}]%
+}
+\titlecontents{section}[2.5em]{}{\contentslabel{2.5em}}{}{%
+\titlerule*[.75pc]{.}%
+\TD@usetocdata%
+\contentspage}[\vspace{-.5ex}]%
+\titlecontents{figure}[0em]{}{\contentslabel{3em}}{}{%
+\titlerule*[1pc]{.}%
+\TD@usetocdata%
+\contentspage}[\vspace{-.5ex}]%
+
+}% end of titletoc loaded
+{% titletoc is not loaded
+}% end of \@ifpackageloaded{titletoc}
+
+\@ifpackageloaded{tocloft}
+{
+\if@cfthaschapter
+\renewcommand{\cftchapleader}{\bfseries\cftdotfill{\cftchapdotsep}\TD@usetocdata}
+\renewcommand{\cftsecleader}{\normalfont\cftdotfill{\cftsecdotsep}\TD@usetocdata}
+\renewcommand{\cftfigleader}{\normalfont\cftdotfill{\cftfigdotsep}\TD@usetocdata}
+\else
+\renewcommand{\cftsecleader}{\bfseries\cftdotfill{\cftsecdotsep}\TD@usetocdata}
+\renewcommand{\cftfigleader}{\normalfont\cftdotfill{\cftfigdotsep}\TD@usetocdata}
+\fi
+}% end of tocloft patches
+{}% tocloft not loaded
+
+\newcommand{\TD@optionalname}[1]
+{%
+\ifthenelse{\equal{#1}{}}%
+{}%
+{#1~}%
+}
+\@ifundefined{chapter}
+{}% if no chapters
+{% only of chapters exists in this documentclass:
+\newcommand{\tocdatachapprint}[4]
+{%
+\newline\noindent{\normalfont\normalsize\textit{\hspace*{2em}--- %
+\TD@optionalname{#1}\TD@optionalname{#2}#3#4}}%
+}
+}% end of chapters-only
+\newcommand{\tocdatasecprint}[4]
+{%
+\newline\noindent{\normalfont\normalsize\textit{\hspace*{2em}--- %
+\TD@optionalname{#1}\TD@optionalname{#2}#3#4}%
+}%
+}
+\newcommand{\tocdatafigprint}[4]{%
+\addvspace{2ex}%
+\begin{minipage}{\linewidth}%
+\TD@namealign%
+\footnotesize\textsc{{\TD@optionalname{#1}\TD@optionalname{#2}#3#4}}%
+\end{minipage}%
+\par%
+\addvspace{2ex}%
+}
+\newcommand{\tocdatafigtextprint}[1]{%
+\addvspace{2ex}%
+\begin{minipage}{\linewidth}%
+\TD@textalign%
+\footnotesize%
+\setlength{\parskip}{1.5ex}%
+\setlength{\parindent}{0em}%
+#1%
+\end{minipage}%
+\par%
+\addvspace{2ex}%
+}
+\@ifundefined{chapter}
+{}% if no chapters
+{% only of chapters exists in this documentclass:
+\NewDocumentCommand{\chapterauthor}{s o m O{} m m O{}}{%
+\IfBooleanTF{#1}% star:
+{\chapter*{#3\tocdatachapprint{#4}{#5}{#6}{#7}}}%
+{% no star:
+\tocdata{toc}{#5 #6}%
+\IfValueTF{#2}%
+{\chapter[#2]{#3\tocdatachapprint{#4}{#5}{#6}{#7}}}%
+{\chapter[#3]{#3\tocdatachapprint{#4}{#5}{#6}{#7}}}%
+}%
+\ifthenelse{\equal{#5}{}}%
+{\index{#6}}%
+{\index{#6, #5}}%
+}% end of \chapterauthor
+}% end of \@ifundefined{chapter}
+
+\NewDocumentCommand{\sectionauthor}{s o m O{} m m O{}}{%
+\IfBooleanTF{#1}% star:
+{\section*{#3\tocdatasecprint{#4}{#5}{#6}{#7}}}%
+{% no star:
+\tocdata{toc}{#5 #6}%
+\IfValueTF{#2}%
+{\section[#2]{#3\tocdatasecprint{#4}{#5}{#6}{#7}}}%
+{\section[#3]{#3\tocdatasecprint{#4}{#5}{#6}{#7}}}%
+}% no star
+\ifthenelse{\equal{#5}{}}%
+{\index{#6}}%
+{\index{#6, #5}}%
+}
+\newcommand{\TD@namealign}{\centering}
+\newcommand{\tdnamejustify}{%
+\renewcommand{\TD@namealign}{}%
+}
+\newcommand{\tdnamecenter}{%
+\renewcommand{\TD@namealign}{\centering}%
+}
+\newcommand{\tdnameleft}{%
+\renewcommand{\TD@namealign}{\raggedright}%
+}
+\newcommand{\tdnameright}{%
+\renewcommand{\TD@namealign}{\raggedleft}%
+}
+\newcommand{\TD@textalign}{\centering}
+\newcommand{\tdtextjustify}{%
+\renewcommand{\TD@textalign}{}%
+}
+\newcommand{\tdtextcenter}{%
+\renewcommand{\TD@textalign}{\centering}%
+}
+\newcommand{\tdtextleft}{%
+\renewcommand{\TD@textalign}{\raggedright}%
+}
+\newcommand{\tdtextright}{%
+\renewcommand{\TD@textalign}{\raggedleft}%
+}
+\NewDocumentCommand{\captionartist}{s o m +O{} O{} m m O{}}{%
+\par\addvspace{\medskipamount}%
+\tocdatafigprint{#5}{#6}{#7}{#8}%
+\ifthenelse{\equal{#4}{}}{}{\par\tocdatafigtextprint{#4}}%
+\unskip%
+\IfBooleanTF{#1}%
+{% starred
+\IfValueTF{#2}{\caption*[#2]{#3}}{\caption*{#3}}%
+}% starred
+{% not starred
+\tocdata{lof}{#6 #7}%
+\IfValueTF{#2}{\caption[#2]{#3}}{\caption{#3}}%
+}% not starred
+\ifthenelse{\equal{#6}{}}%
+{\index{#7}}%
+{\index{#7, #6}}%
+}
+\endinput
+%%
+%% End of file `tocdata.sty'.

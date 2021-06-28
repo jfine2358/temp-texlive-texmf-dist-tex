@@ -1,0 +1,166 @@
+%%
+%% This is file `bidituftetitle.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% bidi.dtx  (with options: `bidituftetitle.sty')
+%% 
+%%   ______________________________________
+%%   Copyright © 2009–2013  Persian TeX Group
+%% 
+%%   License information appended.
+%% 
+%% 
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bidituftetitle}[2011/06/18 v0.1
+bidi implementation of tufte title]
+\RequirePackage{etoolbox}
+%%
+\newboolean{@bidituftetitle@titlepage}
+\DeclareOption{titlepage}{\setboolean{@bidituftetitle@titlepage}{true}}
+\DeclareOption{notitlepage}{\setboolean{@bidituftetitle@titlepage}{false}}
+\@ifclassloaded{book}{%
+\ExecuteOptions{titlepage}}{%
+\@ifclassloaded{article}{%
+\ExecuteOptions{notitlepage}}%
+{}}
+\ProcessOptions
+%%
+\newcommand{\plaintitle}{}%     plain-text-only title
+\newcommand{\plainauthor}{}%    plain-text-only author
+\newcommand{\plainpublisher}{}% plain-text-only publisher
+\newcommand{\thanklesstitle}{}%     full title text minus \thanks{}
+\newcommand{\thanklessauthor}{}%    full author text minus \thanks{}
+\newcommand{\thanklesspublisher}{}% full publisher minus \thanks{}
+\newcommand{\@publisher}{}% full publisher with \thanks{}
+\newcommand{\thedate}{\today}
+\hopatch@AfterPackage{bidi}{%
+\renewcommand{\thanks}[1]{\footnote{#1}}
+\renewcommand{\LTRthanks}[1]{\LTRfootnote{#1}}
+\renewcommand{\RTLthanks}[1]{\RTLfootnote{#1}}
+}
+\renewcommand{\title}[2][]{%
+  \gdef\@title{#2}%
+  \begingroup%
+    % TODO store contents of \thanks command
+    \renewcommand{\thanks}[1]{}% swallow \thanks contents
+    \renewcommand{\LTRthanks}[1]{}% swallow \LTRthanks contents
+    \renewcommand{\RTLthanks}[1]{}% swallow \RTLthanks contents
+    \protected@xdef\thanklesstitle{#2}%
+  \endgroup%
+  \ifthenelse{\isempty{#1}}%
+    {\renewcommand{\plaintitle}{\thanklesstitle}}% use thankless title
+    {\renewcommand{\plaintitle}{#1}}% use provided plain-text title
+  \@ifundefined{hypersetup}%
+    {}% hyperref is not loaded; do nothing
+    {\hypersetup{pdftitle={\plaintitle}}}% set the PDF metadata title
+}
+\let\@author\@empty% suppress default latex.ltx ``no author'' warning
+\renewcommand{\author}[2][]{%
+  \ifthenelse{\isempty{#2}}{}{\gdef\@author{#2}}%
+  \begingroup%
+    % TODO store contents of \thanks command
+    \renewcommand{\thanks}[1]{}% swallow \thanks contents
+    \renewcommand{\LTRthanks}[1]{}% swallow \LTRthanks contents
+    \renewcommand{\RTLthanks}[1]{}% swallow \RTLthanks contents
+    \protected@xdef\thanklessauthor{#2}%
+  \endgroup%
+  \ifthenelse{\isempty{#1}}%
+    {\renewcommand{\plainauthor}{\thanklessauthor}}% use thankless author
+    {\renewcommand{\plainauthor}{#1}}% use provided plain-text author
+  \@ifundefined{hypersetup}%
+    {}% hyperref is not loaded; do nothing
+    {\hypersetup{pdfauthor={\plainauthor}}}% set the PDF metadata author
+}
+\renewcommand{\date}[1]{%
+  \gdef\@date{#1}%
+  \begingroup%
+    % TODO store contents of \thanks command
+    \renewcommand{\thanks}[1]{}% swallow \thanks contents
+    \renewcommand{\LTRthanks}[1]{}% swallow \LTRthanks contents
+    \renewcommand{\RTLthanks}[1]{}% swallow \RTLthanks contents
+    \protected@xdef\thedate{#1}%
+  \endgroup%
+}
+%%
+\newcommand{\publisher}[2][]{%
+  \gdef\@publisher{#2}%
+  \begingroup%
+    \renewcommand{\thanks}[1]{}% swallow \thanks contents
+    \renewcommand{\LTRthanks}[1]{}% swallow \LTRthanks contents
+    \renewcommand{\RTLthanks}[1]{}% swallow \RTLthanks contents
+    \protected@xdef\thanklesspublisher{#2}%
+  \endgroup%
+  \ifthenelse{\isempty{#1}}
+    {\renewcommand{\plainpublisher}{\thanklesspublisher}}% use thankless publisher
+    {\renewcommand{\plainpublisher}{#1}}% use provided plain-text publisher
+}
+%%
+\newcommand{\maketitlepage}[0]{%
+  \cleardoublepage%
+  {%
+  \bfseries%
+  \begin{fullwidth}%
+  \fontsize{18}{20}\selectfont\par\noindent\thanklessauthor%
+  \vspace{11.5pc}%
+  \fontsize{36}{40}\selectfont\par\noindent\thanklesstitle%
+  \vfill%
+  \fontsize{14}{16}\selectfont\par\noindent\thanklesspublisher%
+  \end{fullwidth}%
+  }
+  \thispagestyle{empty}%
+  \clearpage%
+}
+%%
+\AfterEndPreamble{%
+\renewcommand{\maketitle}{%
+  \newpage%
+  \global\@topnum\z@% prevent floats from being placed at the top of the page
+  \begingroup%
+    \setlength{\parindent}{0pt}%
+    \setlength{\parskip}{4pt}%
+    \let\@@title\@empty%
+    \let\@@author\@empty%
+    \let\@@date\@empty%
+      \gdef\@@title{\LARGE\itshape\@title\par}%
+      \gdef\@@author{\Large\itshape\@author\par}%
+      \gdef\@@date{\Large\itshape\@date\par}%
+    \@@title%
+    \@@author%
+    \@@date%
+  \endgroup%
+  \thispagestyle{plain}% suppress the running head
+}%
+}
+%%
+\AfterEndPreamble{%
+\ifthenelse{\boolean{@bidituftetitle@titlepage}}
+  {\renewcommand{\maketitle}{\maketitlepage}}
+  {}
+}
+%%
+\def\cleardoublepage{\clearpage\if@twoside\ifodd\c@page\else
+  \hbox{}
+  %\vspace*{\fill}
+  %\begin{center}
+  %  This page intentionally contains only this sentence.
+  %\end{center}
+  %\vspace{\fill}
+  \thispagestyle{empty}
+  \newpage
+  \if@twocolumn\hbox{}\newpage\fi\fi\fi}
+%% 
+%% Copyright © 2009–2013  Persian TeX Group <persian-tex@tug.org>
+%% 
+%% It may be distributed and/or modified under the LaTeX Project Public License,
+%% version 1.3c or higher (your choice). The latest version of
+%% this license is at: http://www.latex-project.org/lppl.txt
+%% 
+%% This work is “maintained” (as per LPPL maintenance status)
+%% by Persian TeX Group.
+%% 
+%% 
+%% 
+%%
+%% End of file `bidituftetitle.sty'.

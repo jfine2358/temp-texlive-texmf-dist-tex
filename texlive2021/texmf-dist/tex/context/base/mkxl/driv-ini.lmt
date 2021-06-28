@@ -1,0 +1,375 @@
+if not modules then modules = { } end modules ['driv-ini'] = {
+    version   = 1.001,
+    comment   = "companion to driv-ini.mkiv",
+    author    = "Hans Hagen, PRAGMA-ADE, Hasselt NL",
+    copyright = "PRAGMA ADE / ConTeXt Development Team",
+    license   = "see context related readme files"
+}
+
+local type = type
+local addsuffix = file.addsuffix
+
+local setmetatableindex = table.setmetatableindex
+local formatters        = string.formatters
+
+local starttiming       = statistics.starttiming
+local stoptiming        = statistics.stoptiming
+
+local report            = logs.reporter("drivers")
+
+local instances         = { }
+local helpers           = { }
+local converters        = { }
+local prepared          = { }
+local wrappedup         = { }
+local cleanedup         = { }
+local currentdriver     = "default"
+local currentinstance   = nil
+
+local shipout           = tex.shipout
+local texgetbox         = tex.getbox
+local texgetcount       = tex.getcount
+
+function converters.engine(driver,boxnumber,mode,number,specification)
+    return shipout(boxnumber)
+end
+
+local prepare        = nil
+local convert        = nil
+local wrapup         = nil
+local cleanup        = nil
+local outputfilename = nil
+
+drivers = drivers or {
+    instances   = instances,
+    helpers     = helpers,
+    converters  = converters,
+    lmtxversion = 0.10,
+    report      = report,
+}
+
+local dummy = function() end
+
+local defaulthandlers = {
+    prepare         = dummy,
+    initialize      = dummy,
+    finalize        = dummy,
+    updatefontstate = dummy,
+    wrapup          = dummy,
+    cleanup         = dummy,
+    convert         = dummy,
+    outputfilename  = dummy,
+}
+
+local installwhatsits  do
+
+    local leaderlevel = 0
+    local backends    = backends
+
+    local function pushleaderlevel()
+        leaderlevel = leaderlevel + 1
+    end
+
+    local function popleaderlevel()
+        leaderlevel = leaderlevel - 1
+    end
+
+    local function flushlatelua(current,h,v)
+        -- Here we assume maganement by the lua function so currently we don't
+        -- check for leaderlevel.
+        return backends.latelua(current,h,v)
+    end
+
+    local function flushwriteout(current)
+        if leaderlevel == 0 then
+            backends.writeout(current)
+        end
+    end
+
+    local function flushopenout(current)
+        if leaderlevel == 0 then
+            backends.openout(current)
+        end
+    end
+
+    local function flushcloseout(current)
+        if leaderlevel == 0 then
+            backends.closeout(current)
+        end
+    end
+
+    local function flushsavepos(current,pos_h,pos_v)
+        local jp = job.positions
+        jp.lastx = pos_h
+        jp.lasty = pos_v
+    end
+
+    local function flushuserdefined()
+        -- nothing here
+    end
+
+    local whatsitcodes = nodes.whatsitcodes
+
+    local trace = true  trackers.register("backends.whatsits",function(v) trace = v end)
+
+    installwhatsits = function(name,flushers)
+
+        -- latelua     : specific
+        -- userdefined : special purpose, handled in callbacks
+        -- savepos     : only used by generic packages
+        -- open        : generic
+        -- close       : generic
+        -- write       : generic
+
+        -- An alternative is to have a first time setter.
+
+        local function checkagain(t, k)
+            local v = rawget(flushers,k) -- in case it's registered later
+            if not v then
+                if trace then
+                    report("unsupported whatsit %a in driver %a",whatsitcodes[k] or k,name)
+                end
+                v = function() end
+            end
+            t[k] = v
+            return v
+        end
+
+     -- flushers.whatsit = setmetatableindex ( {
+     --     [whatsitcodes.literal]        = flushers.literal,
+     --     [whatsitcodes.latelua]        = flushlatelua,
+     --     [whatsitcodes.userdefined]    = flushuserdefined,
+     --     [whatsitcodes.savepos]        = flushsavepos,
+     --     [whatsitcodes.save]           = flushers.save,
+     --     [whatsitcodes.restore]        = flushers.restore,
+     --     [whatsitcodes.setmatrix]      = flushers.setmatrix,
+     --     [whatsitcodes.open]           = flushopenout,
+     --     [whatsitcodes.close]          = flushcloseout,
+     --     [whatsitcodes.write]          = flushwriteout,
+     --     [whatsitcodes.startmatrix]    = flushers.startmatrix,
+     --     [whatsitcodes.stopmatrix]     = flushers.stopmatrix,
+     --     [whatsitcodes.startscaling]   = flushers.startscaling,
+     --     [whatsitcodes.stopscaling]    = flushers.stopscaling,
+     --     [whatsitcodes.startrotation]  = flushers.startrotation,
+     --     [whatsitcodes.stoprotation]   = flushers.stoprotation,
+     --     [whatsitcodes.startmirroring] = flushers.startmirroring,
+     --     [whatsitcodes.stopmirroring]  = flushers.stopmirroring,
+     --     [whatsitcodes.startclipping]  = flushers.startclipping,
+     --     [whatsitcodes.stopclipping]   = flushers.stopclipping,
+     --     [whatsitcodes.setstate]       = flushers.setstate,
+     -- }, checkagain )
+
+     -- -- sparse
+
+     -- flushers.whatsit = setmetatableindex ( {
+     --     [whatsitcodes.latelua]     = flushlatelua,
+     --     [whatsitcodes.userdefined] = flushuserdefined,
+     --     [whatsitcodes.savepos]     = flushsavepos,
+     --     [whatsitcodes.open]        = flushopenout,
+     --     [whatsitcodes.close]       = flushcloseout,
+     --     [whatsitcodes.write]       = flushwriteout,
+     -- }, checkagain )
+
+        -- -- delayed
+
+        local whatsit ; whatsit = setmetatableindex ( {
+            [whatsitcodes.literal]        = flushers.literal        or function(...) return checkagain(whatsit,whatsitcodes.literal       )(...) end,
+            [whatsitcodes.latelua]        = flushlatelua,
+            [whatsitcodes.userdefined]    = flushuserdefined,
+            [whatsitcodes.savepos]        = flushsavepos,
+            [whatsitcodes.save]           = flushers.save           or function(...) return checkagain(whatsit,whatsitcodes.save          )(...) end,
+            [whatsitcodes.restore]        = flushers.restore        or function(...) return checkagain(whatsit,whatsitcodes.restore       )(...) end,
+            [whatsitcodes.setmatrix]      = flushers.setmatrix      or function(...) return checkagain(whatsit,whatsitcodes.setmatrix     )(...) end,
+            [whatsitcodes.open]           = flushopenout,
+            [whatsitcodes.close]          = flushcloseout,
+            [whatsitcodes.write]          = flushwriteout,
+            [whatsitcodes.startmatrix]    = flushers.startmatrix    or function(...) return checkagain(whatsit,whatsitcodes.startmatrix   )(...) end,
+            [whatsitcodes.stopmatrix]     = flushers.stopmatrix     or function(...) return checkagain(whatsit,whatsitcodes.stopmatrix    )(...) end,
+            [whatsitcodes.startscaling]   = flushers.startscaling   or function(...) return checkagain(whatsit,whatsitcodes.startscaling  )(...) end,
+            [whatsitcodes.stopscaling]    = flushers.stopscaling    or function(...) return checkagain(whatsit,whatsitcodes.stopscaling   )(...) end,
+            [whatsitcodes.startrotation]  = flushers.startrotation  or function(...) return checkagain(whatsit,whatsitcodes.startrotation )(...) end,
+            [whatsitcodes.stoprotation]   = flushers.stoprotation   or function(...) return checkagain(whatsit,whatsitcodes.stoprotation  )(...) end,
+            [whatsitcodes.startmirroring] = flushers.startmirroring or function(...) return checkagain(whatsit,whatsitcodes.startmirroring)(...) end,
+            [whatsitcodes.stopmirroring]  = flushers.stopmirroring  or function(...) return checkagain(whatsit,whatsitcodes.stopmirroring )(...) end,
+            [whatsitcodes.startclipping]  = flushers.startclipping  or function(...) return checkagain(whatsit,whatsitcodes.startclipping )(...) end,
+            [whatsitcodes.stopclipping]   = flushers.stopclipping   or function(...) return checkagain(whatsit,whatsitcodes.stopclippin   )(...) end,
+            [whatsitcodes.setstate]       = flushers.setstate       or function(...) return checkagain(whatsit,whatsitcodes.setstate      )(...) end,
+        }, checkagain)
+
+        flushers.whatsit = whatsit
+
+        flushers.pushleaderlevel = pushleaderlevel
+        flushers.popleaderlevel  = popleaderlevel
+
+    end
+
+end
+
+function drivers.install(specification)
+    local name = specification.name
+    if not name then
+        report("missing driver name")
+        return
+    end
+    local actions = specification.actions
+    if not actions then
+        report("no actions for driver %a",name)
+        return
+    end
+    local flushers = specification.flushers
+    if not flushers then
+        report("no flushers for driver %a",name)
+        return
+    end
+    installwhatsits(name,flushers)
+ -- report("driver %a is installed",name)
+    setmetatableindex(actions, defaulthandlers)
+    setmetatableindex(flushers, function() return dummy end)
+    instances[name] = specification
+end
+
+function drivers.convert(boxnumber)
+    if currentinstance then
+        callbacks.functions.start_page_number()
+        starttiming(drivers)
+        convert(currentinstance,boxnumber,texgetcount("realpageno"))
+        stoptiming(drivers)
+        callbacks.functions.stop_page_number()
+    end
+end
+
+function drivers.outputfilename()
+    if currentinstance then
+        return outputfilename(currentinstance)
+    end
+end
+
+luatex.wrapup(function()
+    if currentinstance and wrapup and not wrappedup[currentdriver] then
+        starttiming(drivers)
+        wrapup(currentinstance)
+        stoptiming(drivers)
+        wrappedup[currentdriver] = true
+        cleanedup[currentdriver] = true
+    end
+end)
+
+luatex.cleanup(function()
+    if currentinstance and cleanup and not cleanedup[currentdriver] then
+        starttiming(drivers)
+        cleanup(currentinstance)
+        stoptiming(drivers)
+        wrappedup[currentdriver] = true
+        cleanedup[currentdriver] = true
+    end
+end)
+
+function drivers.enable(name)
+    if name ~= currentdriver then
+        if currentinstance then
+            starttiming(drivers)
+            cleanup(currentinstance)
+            stoptiming(drivers)
+        end
+        currentdriver   = name or "default"
+        currentinstance = instances[currentdriver]
+        if currentinstance then
+            local actions   = currentinstance.actions
+            prepare         = actions.prepare
+            wrapup          = actions.wrapup
+            cleanup         = actions.cleanup
+            convert         = actions.convert
+            outputfilename  = actions.outputfilename
+            --
+            if prepare and not prepared[currentdriver] then
+                starttiming(drivers)
+                prepare(currentinstance)
+                stoptiming(drivers)
+                prepared[currentdriver] = true
+            end
+        else
+            report("bad driver")
+        end
+    end
+end
+
+statistics.register("driver time",function()
+    return statistics.elapsedseconds(drivers)
+end)
+
+interfaces.implement {
+    name      = "shipoutpage",
+    arguments = "integer",
+    actions   = drivers.convert,
+}
+
+interfaces.implement {
+    name      = "enabledriver",
+    arguments = "string",
+    actions   = drivers.enable,
+}
+
+-- The default driver:
+
+do
+
+    local filename = nil
+
+    drivers.install {
+        name     = "default",
+        actions  = {
+            convert        = drivers.converters.engine,
+            outputfilename = function(driver)
+                if not filename then
+                    filename = addsuffix(tex.jobname,"pdf")
+                end
+                return filename
+            end,
+        },
+        flushers = {
+            -- we always need this entry
+        },
+    }
+
+end
+
+-- No driver:
+
+do
+
+    drivers.install {
+        name     = "none",
+        actions  = { },
+        flushers = { },
+    }
+
+end
+
+do
+
+    local function prepare(driver)
+        converter = drivers.converters.lmtx
+    end
+
+    local function convert(driver,boxnumber,pagenumber)
+        converter(driver,texgetbox(boxnumber),"page",pagenumber)
+    end
+
+    drivers.install {
+        name     = "empty",
+        actions  = {
+            prepare = prepare,
+            convert = convert,
+        },
+        flushers = { },
+    }
+
+end
+
+--
+
+setmetatableindex(instances,function() return instances.default end)
+
+-- for now:
+
+drivers.enable("default")

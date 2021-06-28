@@ -1,0 +1,141 @@
+%
+% luatexja-fontspec.sty
+%
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{luatexja-fontspec}[2011/09/23 v0.2]
+
+\RequirePackage{fontspec,luatexja}
+
+\ExplSyntaxOn
+
+\cs_new:Npn \ltj_fontspec_warning:n   { \msg_warning:nn   {ltj-fontspec} }
+
+\msg_new:nnn {ltj-fontspec} {addjfontfeatures-ignored}
+{
+  \string\addjfontfeature (s)~ ignored;\\
+  it~ cannot~ be~ used~ with~ a~ font~ that~ wasn't~ selected~ by~ luatexja-fontspec.
+}
+
+\cs_generate_variant:Nn \prg_new_conditional:Nnn {Nnx}
+
+\prg_new_conditional:Nnx \ltj_fontspec_if_liiikeys: {TF,F} {
+  \@ifpackagelater {fontspec} {2011/09/13}
+  { \exp_not:N \prg_return_true: }  % fontspec >= 2.2 (l3keys)
+  { \exp_not:N \prg_return_false: } % fontspec <  2.2 (xkeyval)
+}
+
+\cs_new:Nn \ltj_fontspec_define_option:nn {
+  \ltj_fontspec_if_liiikeys:TF {
+    \keys_define:nn {fontspec} { #1 .code:n = {#2}}
+  } {
+    \define@key[zf]{options}{#1}{#2}
+  }
+}
+
+\cs_new:Nn \ltj_fontspec_define_preparse_external:nn {
+  \ltj_fontspec_if_liiikeys:TF {
+    \keys_define:nn {fontspec-preparse-external} { #1 .code:n = {#2}}
+  } {
+    \define@key[zf]{preparse-external}{#1}{#2}
+  }
+}
+
+\cs_new:Nn \ltj_fontspec_select:nn {
+  \group_begin:
+  \ltj_fontspec_define_option:nn {CID} {
+    \fontspec_update_fontid:n  {+cid=##1}
+    \fontspec_update_featstr:n {cid=##1}
+  }
+  \ltj_fontspec_define_option:nn {JFM} {
+    \fontspec_update_fontid:n  {+jfm=##1}
+    \fontspec_update_featstr:n {jfm=##1}
+  }
+  \ltj_fontspec_define_option:nn {JFM-var} {
+    \fontspec_update_fontid:n  {+jfmvar=##1}
+    \fontspec_update_featstr:n {jfmvar=##1}
+  }
+  \ltj_fontspec_define_preparse_external:nn {NoEmbed} {
+    \cs_set:Nn \fontspec_namewrap:n {psft:####1}
+  }
+  %% Omit the warning message
+  %% "OpenType feature 'Kerning=Off' (-kern) not available ..."
+  \ltj_fontspec_define_option:nn {Kerning/Off} {
+    \fontspec_update_fontid:n  {-kern}
+    \fontspec_update_featstr:n {-kern}
+  }
+  \ltj_fontspec_if_liiikeys:TF {
+    \tl_set:Nn \g_fontspec_encoding_tl {JY3}
+  } {
+    \tl_set:Nn \zf@enc {JY3}
+  }
+  \tl_set:Nx \g_fontspec_default_fontopts_tl
+             {JFM=ujis,Scale=0.962216,Kerning=Off,\g_ltj_fontspec_default_fontopts_tl}
+  \cs_set_eq:NN \DeclareFontFamily \DeclareKanjiFamily
+  \fontspec_select:nn{#1}{#2}
+  \group_end:
+  \ltj_fontspec_if_liiikeys:F {
+    \tl_set_eq:NN \l_fontspec_family_tl \zf@family
+  }
+}
+
+\cs_new:Nn \ltj_fontspec_set_family:Nnn {
+  \ltj_fontspec_select:nn{#2}{#3}
+  \tl_set_eq:NN #1 \l_fontspec_family_tl
+}
+
+\DeclareDocumentCommand \jfontspec { O{} m } {
+  \ltj_fontspec_set_family:Nnn \k@family {#1}{#2}
+  \selectfont
+  \ignorespaces
+}
+
+\DeclareDocumentCommand \setmainjfont { O{} m } {
+  \ltj_fontspec_set_family:Nnn \mcdefault {#1}{#2}
+  \normalfont
+}
+
+\DeclareDocumentCommand \setsansjfont { O{} m } {
+  \ltj_fontspec_set_family:Nnn \gtdefault {#1}{#2}
+  \normalfont
+}
+
+\DeclareDocumentCommand \newjfontfamily { m O{} m } {
+  \ltj_fontspec_select:nn{#2}{#3}
+  \use:x {
+    \exp_not:N \DeclareRobustCommand \exp_not:N #1 {
+      \exp_not:N \kanjifamily {\l_fontspec_family_tl} \exp_not:N \selectfont
+    }
+  }
+}
+
+\DeclareDocumentCommand \newjfontface { m O{} m } {
+  \newjfontfamily #1 [ BoldFont={},ItalicFont={},SmallCapsFont={},#2 ] {#3}
+}
+
+\DeclareDocumentCommand \defaultjfontfeatures {m} {
+  \tl_set:Nn \g_ltj_fontspec_default_fontopts_tl {#1,}
+}
+
+\tl_clear:N \g_ltj_fontspec_default_fontopts_tl
+
+\DeclareDocumentCommand \addjfontfeatures {m} {
+  \ifcsname zf@family@fontdef\k@family\endcsname
+    \group_begin:
+      \tl_clear:N \g_ltj_fontspec_default_fontopts_tl
+      \use:x {
+        \exp_not:N\ltj_fontspec_select:nn
+          {\csname zf@family@options\k@family\endcsname,#1}
+          {\csname zf@family@fontname\k@family\endcsname}
+      }
+    \group_end:
+    \fontfamily\l_fontspec_family_tl\selectfont
+  \else
+    \ltj_fontspec_warning:n {addjfontfeatures-ignored}
+  \fi
+  \ignorespaces
+}
+
+\cs_set_eq:NN \addjfontfeature \addjfontfeatures
+
+\endinput

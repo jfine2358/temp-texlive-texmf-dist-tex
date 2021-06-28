@@ -1,0 +1,578 @@
+%%
+%% This is file 'zxjafont.sty'.
+%%
+%% Copyright (c) 2009-2020 Takayuki YATO (aka. "ZR")
+%%   GitHub:   https://github.com/zr-tex8r
+%%   Twitter:  @zr_tex8r
+%%
+%% This package is distributed under the MIT License.
+%%
+
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{zxjafont}[2020/02/24 v1.2]
+\def\zxjf@pkgname{zxjafont}
+
+%% preparation
+\RequirePackage{ifxetex}\RequireXeTeX
+\providecommand{\bxDebug}[1]{}
+
+%%<+> \zxjafontFeature
+% The default features for fonts declared by this package.
+% (Used if defined.)
+
+%--------------------------------------- general
+
+%% packages
+\RequirePackage{fontspec}
+\RequirePackage{keyval}
+\RequirePackage{etoolbox}[2011/01/03]% v2.1
+
+%% errors
+\def\zxjf@err@ivval#1#2{%
+  \PackageError\zxjf@pkgname
+   {Invalid value '#2' for option #1}\@ehc}
+
+%% switch 'fontspec@mw'
+\newif\ifzxjf@fontspec@mw
+\@ifpackagelater{fontspec}{2014/06/01}{\zxjf@fontspec@mwtrue}{}% v2.4
+
+%% \zxjf@cond\ifXXX...\fi{<true>}{<false>}
+\@gobbletwo\if\if \def\zxjf@cond#1\fi{%
+  #1\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
+
+%% \zxjf@with@cs\CS{<csname>}
+\def\zxjf@with@cs#1#2{%
+  \expandafter#1\csname#2\endcsname}
+
+%% \zxjf@onlypreamble@def\CS
+\def\zxjf@onlypreamble@def#1{%
+  \@onlypreamble#1\def#1}
+%% \zxjf@onlypreamble@let\CS
+\def\zxjf@onlypreamble@let#1{%
+  \@onlypreamble#1\let#1}
+
+%% \if\zxjf@isvalid{<csname>}...\fi
+\def\zxjf@isvalid#1{%
+  \ifcsvoid{#1}{F}{T}T}
+
+%% \zxjf@if@font@exists
+\ifdefined\IfFontExistsTF
+  \let\zxjf@if@font@exists\IfFontExistsTF
+\else % fallback
+  \def\zxjf@if@font@exists#1{\@firstoftwo}
+\fi
+
+%--------------------------------------- handle options
+
+%% errors
+\zxjf@onlypreamble@def\zxjf@warn@niopt#1{%
+  \PackageWarningNoLine\zxjf@pkgname
+   {Option '#1' is not implemented}}
+
+%% constants
+\chardef\zxjf@cjkshape@@none=0
+\chardef\zxjf@cjkshape@@xc=1    % 90jis
+\chardef\zxjf@cjkshape@@mmiv=2  % jis2004
+\chardef\zxjf@jatype@@none=0
+\chardef\zxjf@jatype@@xeCJK=1
+\chardef\zxjf@jatype@@zxjatype=2
+
+%% variables
+\let\zxjf@main@preset\relax
+\let\zxjf@sub@preset\@empty
+\newif\ifzxjf@prop
+\newif\ifzxjf@oneweight
+\newif\ifzxjf@threeweight
+\newif\ifzxjf@bold
+\let\zxjf@cjkshape\zxjf@cjkshape@@none
+\let\zxjf@scale\relax
+\let\zxjf@feature\@empty
+\let\zxjf@jatype\zxjf@jatype@@none
+\newif\ifzxjf@ignore@jatype
+\newif\ifzxjf@expert
+
+%% default for 'threeweight'
+\ifzxjf@fontspec@mw
+  \zxjf@threeweighttrue
+\fi
+
+%% \zxjf@all@main@preset
+\zxjf@onlypreamble@def\zxjf@all@main@preset{%
+  nopreset,noembed,%
+  %(uniweight)
+  ms,ipa,ipaex,%
+  %(multiweight)
+  ms-hg,ipa-hg,ipaex-hg,moga,moga-90,mogaN-90,ume,%
+  kozuka-pro,kozuka-pr6,kozuka-pr6n,hiragino-pro,hiragino-pron,%
+  morisawa-pro,morisawa-pr6n,yu-win,yu-win10,yu-osx,%
+  sourcehan,sourcehan-jp,noto,noto-jp,haranoaji,%
+  moga-mobo,moga-mobo-ex,%
+  %(alias)
+  kozuka,morisawa,moga-mobo-ex,noto-otf,hiragino}
+
+%% \zxjf@all@sub@preset
+\zxjf@onlypreamble@def\zxjf@all@sub@preset{%
+  hg,hiraginomg-pro,hiraginomg-pron,mobo,mobo-90,maruberi,%
+  hiraginomg}
+
+% preset options
+\def\zxjf@do#1{\DeclareOption{#1}{\def\zxjf@main@preset{#1}}}
+\@for\zxjf@x:=\zxjf@all@main@preset\do{%
+  \expandafter\zxjf@do\expandafter{\zxjf@x}}
+\def\zxjf@do#1{\DeclareOption{#1}{\appto\zxjf@sub@preset{#1,}}}
+\@for\zxjf@x:=\zxjf@all@sub@preset\do{%
+  \expandafter\zxjf@do\expandafter{\zxjf@x}}
+% 'prop'
+\DeclareOption{prop}{\zxjf@proptrue}
+\DeclareOption{noprop}{\zxjf@propfalse}
+% 'oneweight'
+\DeclareOption{oneweight}{\zxjf@oneweighttrue}
+\DeclareOption{nooneweight}{\zxjf@oneweightfalse}
+\DeclareOption{nodeluxe}{\zxjf@oneweighttrue}
+\DeclareOption{deluxe}{\zxjf@oneweightfalse}
+% 'threeweight'
+\DeclareOption{threeweight}{\zxjf@threeweighttrue}
+\DeclareOption{nothreeweight}{\zxjf@threeweightfalse}
+% 'bold'
+\DeclareOption{bold}{\zxjf@boldtrue}
+\DeclareOption{nobold}{\zxjf@boldfalse}
+% '90jis'/'jis2004'
+\DeclareOption{jis90}{\let\zxjf@cjkshape\zxjf@cjkshape@@xc}
+\DeclareOption{90jis}{\let\zxjf@cjkshape\zxjf@cjkshape@@xc}
+\DeclareOption{jis2004}{\let\zxjf@cjkshape\zxjf@cjkshape@@mmiv}
+\DeclareOption{2004jis}{\let\zxjf@cjkshape\zxjf@cjkshape@@mmiv}
+\DeclareOption{nojisshape}{\let\zxjf@cjkshape\zxjf@cjkshape@@none}
+% 'ignorejatype'
+\DeclareOption{ignorejatype}{\zxjf@ignore@jatypetrue}
+\DeclareOption{noignorejatype}{\zxjf@ignore@jatypefalse}
+% 'expert'
+\DeclareOption{expert}{\zxjf@experttrue}
+% dummy options for compatibility with luatexja-preset
+\DeclareOption{match}{}% xeCJK always work as 'match' is on
+\DeclareOption{fontspec}{}% always on
+\DeclareOption{nfssonly}{\zxjf@warn@niopt{nfssonly}}
+
+% abolished presets
+\zxjf@onlypreamble@def\zxjf@err@abpre#1{%
+  \PackageError\zxjf@pkgname
+   {The old preset '#1' is *abolished*}{\@ehc}}
+\@for\zxjf@x:={%
+  kozuka4,kozuka6,kozuka6n,ms-dx,ipa-dx,hiragino-dx%
+}\do{\DeclareOption{\zxjf@x}{\zxjf@err@abpre{\CurrentOption}}}
+
+%% options using keyval
+\DeclareOption*{\def\zxjf@do{\setkeys{zxjf}}%
+  \expandafter\zxjf@do\expandafter{\CurrentOption}}
+% 'scale=<real>'
+\define@key{zxjf}{scale}{\def\zxjf@scale{#1}}
+% 'feature=<text>'
+\define@key{zxjf}{feature}{\def\zxjf@feature{#1}}
+
+%% dispatch
+\zxjf@onlypreamble@let\zxjf@org@use@ption\@use@ption
+\def\@use@ption{\csname ds@\CurrentOption \endcsname}% FIXME
+\ProcessOptions*
+\let\@use@ption\zxjf@org@use@ption
+
+%% preset must be given
+\ifx\zxjf@main@preset\relax
+  \PackageError\zxjf@pkgname
+   {Preset name not specified}
+   {You must give one of the following names as option.\MessageBreak
+    \space\space\zxjf@all@main@preset}
+\expandafter\endinput\fi\relax
+
+%% detect zxjatype/xeCJK
+\unless\ifzxjf@ignore@jatype
+  \@ifpackageloaded{xeCJK}{\let\zxjf@jatype\zxjf@jatype@@xeCJK}{}
+  \@ifpackageloaded{zxjatype}{\let\zxjf@jatype\zxjf@jatype@@zxjatype}{}
+  \ifnum\zxjf@jatype=\zxjf@jatype@@none
+    \AtBeginDocument{%
+      \@ifpackageloaded{xeCJK}{%
+        \PackageError\zxjf@pkgname
+         {zxjatype/xeCJK must be loaded before zxjafont}\@ehc
+      }{}%
+    }
+  \fi
+\fi
+
+%% check for 'threeweight'
+\unless\ifzxjf@fontspec@mw\ifzxjf@threeweight
+  \PackageError\zxjf@pkgname
+   {Option 'threeweight' cannot be used, bebause\MessageBreak
+    your 'fontspec' is too old}
+   {\@ehc}
+  \zxjf@threeweightfalse
+\fi\fi
+
+%% decide scale factor
+\ifx\zxjf@scale\relax
+  % If zxjatype is used, try \zxjatypeJaScale, \zxjt@scale,
+  % and \__zxjt_scale_tl.
+  \ifnum\zxjf@jatype=\zxjf@jatype@@zxjatype
+    \ifdefined\zxjatypeJaScale \let\zxjf@scale\zxjatypeJaScale
+    \else\if\zxjf@isvalid{zxjt@scale}\let\zxjf@scale\zxjt@scale
+    \else\if\zxjf@isvalid{__zxjt_scale_tl}%
+      \letcs\zxjf@scale{__zxjt_scale_tl}
+    \fi\fi\fi
+  \fi
+  \ifx\zxjf@scale\relax % still unknown
+    % Try \Cjascale and \jsScale.
+    \ifdefined\Cjascale \let\zxjf@scale\Cjascale
+    \else\ifdefined\jsScale \let\zxjf@scale\jsScale
+    \fi\fi
+  \fi
+  \ifx\zxjf@scale\relax % still unknown
+    \def\zxjf@scale{1}%
+  \fi
+\fi
+
+%% \zxjf@whole@feature
+% All fontspec options including scale.
+\edef\zxjf@whole@feature{%
+  Scale=\zxjf@scale
+  % CJKShape
+  \ifcase\zxjf@cjkshape % none
+  \or ,CJKShape=JIS1990% 90jis
+  \or ,CJKShape=JIS2004% jis2004
+  \fi
+  \ifzxjf@expert
+    ,Style=HorizontalKana%
+  \fi
+  \ifdefined\zxjafontFeature
+    ,\expandonce\zxjafontFeature
+  \fi
+  \unless\ifx\zxjf@feature\@empty
+    ,\expandonce\zxjf@feature
+  \fi}
+\bxDebug{zxjafont>>scale=\zxjf@scale/feat={\zxjf@whole@feature}/%
+  preset=\zxjf@main@preset/\zxjf@sub@preset}
+
+%--------------------------------------- font setup helpers
+
+%% \zxjf@font@set
+\zxjf@onlypreamble@def\zxjf@font@set#1#2{%
+  \noexpand#1[\expandonce\zxjf@whole@feature,#2]}
+%% \zxjf@newfamily@gen\CSnewjafamily
+\@onlypreamble\zxjf@newfamily@gen\edef\zxjf@newfamily@gen{%
+  \noexpand\zxjf@newfamily@gen@a
+      {\expandonce\zxjf@feature}{\expandonce\zxjf@whole@feature}}
+\zxjf@onlypreamble@def\zxjf@newfamily@gen@a#1#2#3{%
+  \def\zxjf@newfamily##1##2##3{%
+    \csedef{##1family}{%
+      \expandonce{\csname a##1family\endcsname}\noexpand\CJKfamily{##1}}%
+    \zxjf@with@cs\newfontfamily{a##1family}[#1,##2]{##3}%
+    #3{##1}[#2,##2]{##3}}}
+
+%% \zxjf@setmainfont{<attributes>}{<fam_name>}, etc.
+\ifnum\zxjf@jatype=\zxjf@jatype@@xeCJK
+\edef\zxjf@setmainfont#1{\zxjf@font@set\setCJKmainfont{#1}}
+\edef\zxjf@setsansfont#1{\zxjf@font@set\setCJKsansfont{#1}}
+\edef\zxjf@setmonofont#1{\zxjf@font@set\setCJKmonofont{#1}}
+\zxjf@newfamily@gen{\setCJKfamilyfont}
+\else\ifnum\zxjf@jatype=\zxjf@jatype@@zxjatype
+\edef\zxjf@setmainfont#1{\zxjf@font@set\setjamainfont{#1}}
+\edef\zxjf@setsansfont#1{\zxjf@font@set\setjasansfont{#1}}
+\edef\zxjf@setmonofont#1{\zxjf@font@set\setjamonofont{#1}}
+\zxjf@newfamily@gen{\setjafamilyfont}
+\else
+\edef\zxjf@setmainfont#1{\zxjf@font@set\setmainfont{#1}}
+\edef\zxjf@setsansfont#1{\zxjf@font@set\setsansfont{#1}}
+\edef\zxjf@setmonofont#1{\zxjf@font@set\setmonofont{#1}}
+\edef\zxjf@newfamily#1#2{%
+  \unexpanded{\zxjf@with@cs\newfontfamily}{#1family}%
+      [\expandonce\zxjf@whole@feature,#2]}
+\fi\fi
+
+%--------------------------------------- preset japanese font mappings
+
+%% \zxjf@declare@preset{<name>}{<text>}, etc.
+\zxjf@onlypreamble@def\zxjf@declare@preset#1{%
+  \zxjf@with@cs\zxjf@onlypreamble@def{zxjf@the@preset@#1}}
+\zxjf@declare@preset{}{}
+\ifzxjf@fontspec@mw %TODO: temporary fix
+\zxjf@onlypreamble@def\zxjf@uniweight#1#2#3{%
+  \zxjf@setmainfont{#3,FontFace={bx}{n}{#2},BoldFont=#2}{#1}%
+  \zxjf@setsansfont{#3,FontFace={bx}{n}{#2},BoldFont=#2}{#2}%
+  \zxjf@setmonofont{#3,FontFace={bx}{n}{#2},BoldFont=#2}{#2}}
+\zxjf@onlypreamble@def\zxjf@multiweight#1#2#3#4#5#6#7#8{%
+  \ifzxjf@bold
+    \zxjf@setmainfont{#8,FontFace={bx}{n}{#5},BoldFont=#5}{#2}%
+    \zxjf@setsansfont{#8,FontFace={bx}{n}{#5},BoldFont=#5}{#5}%
+    \zxjf@setmonofont{#8,FontFace={bx}{n}{#5},BoldFont=#5}{#5}%
+  \else\ifzxjf@oneweight
+    \zxjf@setmainfont{#8,FontFace={bx}{n}{#7},BoldFont=#7}{#2}%
+    \zxjf@setsansfont{#8,FontFace={bx}{n}{#7},BoldFont=#7}{#7}%
+    \zxjf@setmonofont{#8,FontFace={bx}{n}{#7},BoldFont=#7}{#7}%
+  \else\ifzxjf@threeweight
+    \zxjf@setmainfont{#8,FontFace={bx}{n}{#3},BoldFont=#3,
+        FontFace={l}{n}{#1}}{#2}%
+    \zxjf@setsansfont{#8,FontFace={bx}{n}{#5},BoldFont=#5,
+        FontFace={eb}{n}{#6}}{#4}%
+    \zxjf@setmonofont{#8,FontFace={bx}{n}{#5},BoldFont=#5,
+        FontFace={eb}{n}{#6}}{#4}%
+  \else
+    \zxjf@setmainfont{#8,FontFace={bx}{n}{#3},BoldFont=#3}{#2}%
+    \zxjf@setsansfont{#8,FontFace={bx}{n}{#5},BoldFont=#5}{#4}%
+    \zxjf@setmonofont{#8,FontFace={bx}{n}{#5},BoldFont=#5}{#4}%
+  \fi\fi\fi}
+\else
+\zxjf@onlypreamble@def\zxjf@uniweight#1#2#3{%
+  \zxjf@setmainfont{#3,BoldFont=#2}{#1}%
+  \zxjf@setsansfont{#3,BoldFont=#2}{#2}%
+  \zxjf@setmonofont{#3,BoldFont=#2}{#2}}
+\zxjf@onlypreamble@def\zxjf@multiweight#1#2#3#4#5#6#7#8{%
+  \ifzxjf@bold
+    \zxjf@setmainfont{#8,BoldFont=#5}{#2}%
+    \zxjf@setsansfont{#8,BoldFont=#5}{#5}%
+    \zxjf@setmonofont{#8,BoldFont=#5}{#5}%
+  \else\ifzxjf@oneweight
+    \zxjf@setmainfont{#8,BoldFont=#7}{#2}%
+    \zxjf@setsansfont{#8,BoldFont=#7}{#7}%
+    \zxjf@setmonofont{#8,BoldFont=#7}{#7}%
+  \else\ifzxjf@threeweight
+    \zxjf@setmainfont{#8,BoldFont=#3,
+        FontFace={l}{n}{#1}}{#2}%
+    \zxjf@setsansfont{#8,BoldFont=#5,
+        FontFace={eb}{n}{#6}}{#4}%
+    \zxjf@setmonofont{#8,BoldFont=#5,
+        FontFace={eb}{n}{#6}}{#4}%
+  \else
+    \zxjf@setmainfont{#8,BoldFont=#3}{#2}%
+    \zxjf@setsansfont{#8,BoldFont=#5}{#4}%
+    \zxjf@setmonofont{#8,BoldFont=#5}{#4}%
+  \fi\fi\fi}
+\fi
+%% \zxjf@declare@preset@with@prop{<name>}{<text>}
+\zxjf@onlypreamble@def\zxjf@declare@preset@with@prop#1#2{%
+  \zxjf@declare@preset{#1}{#2{RawFeature=-palt;-kern}}%
+  \zxjf@declare@preset{#1/prop}{#2{RawFeature=+palt;+kern}}}
+
+%% \zxjf@declare@preset@alias{<name1>}{<name2>}
+\zxjf@onlypreamble@def\zxjf@declare@preset@alias#1#2{%
+  \zxjf@with@cs\@onlypreamble{zxjf@the@preset@#1}%
+  \csletcs{zxjf@the@preset@#1}{zxjf@the@preset@#2}}
+%% \zxjf@declare@preset@alias@with@prop{<name1>}{<name2>}
+\zxjf@onlypreamble@def\zxjf@declare@preset@alias@with@prop#1#2{%
+  \zxjf@declare@preset@alias{#1}{#2}%
+  \zxjf@declare@preset@alias{#1/prop}{#2/prop}}
+
+%% \zxjf@declare@preproc{<name>}{<text>}
+\zxjf@onlypreamble@def\zxjf@declare@preproc#1{%
+  \zxjf@with@cs\zxjf@onlypreamble@def{zxjf@the@preproc@#1}}
+%% \zxjf@declare@preproc@alias{<name1>}{<name2>}
+\zxjf@onlypreamble@def\zxjf@declare@preproc@alias#1#2{%
+  \zxjf@with@cs\@onlypreamble{zxjf@the@preproc@#1}%
+  \csletcs{zxjf@the@preproc@#1}{zxjf@the@preproc@#2}}
+
+%% \zxjf@use@preset{<name>}
+\zxjf@onlypreamble@def\zxjf@use@preset#1{%
+  \csuse{zxjf@the@preproc@#1}%
+  \undef\zxjf@do
+  \ifzxjf@prop \letcs\zxjf@do{zxjf@the@preset@#1/prop}\fi
+  \unless\ifdefined\zxjf@do \letcs\zxjf@do{zxjf@the@preset@#1}\fi
+  \zxjf@do}
+
+%% definitions of main preset mappings
+\zxjf@declare@preset{nopreset}{}
+\zxjf@declare@preset{noembed}{%
+  \PackageWarningNoLine\zxjf@pkgname
+   {Preset 'noembed' is not supported, because\MessageBreak
+    XeTeX does not support non-embedded fonts,\MessageBreak
+    fallback to preset 'nopreset'}}
+\zxjf@declare@preset{ms}{%
+  \zxjf@uniweight{MS-Mincho}{MS-Gothic}{}}
+\zxjf@declare@preset{ms/prop}{%
+  \zxjf@uniweight{MS-PMincho}{MS-PGothic}{}}
+\zxjf@declare@preset{ms-hg}{%
+  \zxjf@multiweight{MS-Mincho}{MS-Mincho}{HGMinchoE}%
+    {HGGothicM}{HGGothicE}{hgrsgu.ttc}{MS-Gothic}{}}
+\zxjf@declare@preset{ms-hg/prop}{%
+  \zxjf@multiweight{MS-PMincho}{MS-PMincho}{HGPMinchoE}%
+    {HGPGothicM}{HGGothicE}{hgrsgu.ttc}{MS-PGothic}{}}
+\zxjf@declare@preset{ipa}{%
+  \zxjf@uniweight{IPAMincho}{IPAGothic}{}}
+\zxjf@declare@preset{ipa/prop}{%
+  \zxjf@uniweight{IPAPMincho}{IPAPGothic}{}}
+\zxjf@declare@preset{ipa-hg}{%
+  \zxjf@multiweight{IPAMincho}{IPAMincho}{HGMinchoE}%
+    {HGGothicM}{HGGothicE}{hgrsgu.ttc}{IPAGothic}{}}
+\zxjf@declare@preset{ipa-hg/prop}{%
+  \zxjf@multiweight{IPAPMincho}{IPAPMincho}{HGPMinchoE}%
+    {HGPGothicM}{HGGothicE}{hgrsgu.ttc}{IPAPGothic}{}}
+\zxjf@declare@preset{ipaex}{%
+  \zxjf@uniweight{\zxjf@Fa}{\zxjf@Fb}{}}
+\zxjf@declare@preproc{ipaex}{%
+  \zxjf@if@font@exists{ipaexm.ttf}%
+    {\def\zxjf@Fa{ipaexm.ttf}\def\zxjf@Fb{ipaexg.ttf}}%
+    {\def\zxjf@Fa{IPAexMincho}\def\zxjf@Fb{IPAexGothic}}}
+\zxjf@declare@preset{ipaex-hg}{%
+  \zxjf@multiweight{\zxjf@Fa}{\zxjf@Fa}{HGSMinchoE}%
+    {HGSGothicM}{HGSGothicE}{hgrsgu.ttc}{\zxjf@Fb}{}}
+\zxjf@declare@preproc@alias{ipaex-hg}{ipaex}
+\zxjf@declare@preset{moga}{%
+  \zxjf@multiweight{MogaEx\zxjf@Fa Mincho}{MogaEx\zxjf@Fa Mincho}%
+    {MogaEx\zxjf@Fa Mincho Bold}{MogaEx\zxjf@Fa Gothic}%
+    {MogaEx\zxjf@Fa Gothic Bold}{MogaEx\zxjf@Fa Gothic Bold}%
+    {MogaEx\zxjf@Fa Gothic}{}}
+\zxjf@declare@preset@alias{moga-90}{moga}
+\zxjf@declare@preset{mogaN-90}{%
+  \zxjf@multiweight{Moga\zxjf@Fa Mincho}{Moga\zxjf@Fa Mincho}%
+    {Moga\zxjf@Fa Mincho Bold}{Moga\zxjf@Fa Gothic}%
+    {Moga\zxjf@Fa Gothic Bold}{Moga\zxjf@Fa Gothic Bold}%
+    {Moga\zxjf@Fa Gothic}{}}
+\zxjf@declare@preproc{moga}{%
+  \edef\zxjf@Fa{\ifcase\zxjf@cjkshape \or 90\or \fi}}
+\zxjf@declare@preproc{moga-90}{%
+  \edef\zxjf@Fa{\ifcase\zxjf@cjkshape 90\or 90\or \fi}}
+\zxjf@declare@preproc@alias{mogaN-90}{moga-90}
+\zxjf@declare@preset{ume}{%
+  \zxjf@multiweight{Ume Mincho}{Ume Mincho}{Ume Mincho}%
+    {Ume Gothic}{Ume Gothic O5}{Ume Gothic O5}{Ume Gothic O5}{}}
+\zxjf@declare@preset@with@prop{kozuka-pro}{%
+  \zxjf@multiweight{KozMinPro-Light}{KozMinPro-Regular}{KozMinPro-Bold}%
+    {KozGoPro-Regular}{KozGoPro-Bold}{KozGoPro-Heavy}%
+    {KozGoPro-Medium}}
+\zxjf@declare@preset@with@prop{kozuka-pr6}{%
+  \zxjf@multiweight{KozMinProVI-Light}{KozMinProVI-Regular}{KozMinProVI-Bold}%
+    {KozGoProVI-Regular}{KozGoProVI-Bold}{KozGoProVI-Heavy}%
+    {KozGoProVI-Medium}}
+\zxjf@declare@preset@with@prop{kozuka-pr6n}{%
+  \zxjf@multiweight{KozMinPr6N-Light}{KozMinPr6N-Regular}{KozMinPr6N-Bold}%
+    {KozGoPr6N-Regular}{KozGoPr6N-Bold}{KozGoPr6N-Heavy}%
+    {KozGoPr6N-Medium}}
+\zxjf@declare@preset@with@prop{hiragino-pro}{%
+  \zxjf@multiweight{Hiragino Mincho Pro W2}{Hiragino Mincho Pro W3}{Hiragino Mincho Pro W6}%
+    {Hiragino Kaku Gothic Pro W3}{Hiragino Kaku Gothic Pro W6}{Hiragino Kaku Gothic Std W8}%
+    {Hiragino Kaku Gothic Pro W6}}
+\zxjf@declare@preset@with@prop{hiragino-pron}{%
+  \zxjf@multiweight{Hiragino Mincho ProN W2}{Hiragino Mincho ProN W3}{Hiragino Mincho ProN W6}%
+    {Hiragino Kaku Gothic ProN W3}{Hiragino Kaku Gothic ProN W6}{Hiragino Kaku Gothic StdN W8}%
+    {Hiragino Kaku Gothic ProN W6}}
+\zxjf@declare@preset@with@prop{morisawa-pro}{%
+  \zxjf@multiweight{A-OTF-RyuminPro-Light.otf}{A-OTF-RyuminPro-Light.otf}{A-OTF-FutoMinA101Pro-Bold.otf}%
+    {A-OTF-GothicBBBPro-Medium.otf}{A-OTF-FutoGoB101Pro-Bold.otf}{A-OTF-MidashiGoPro-MB31.otf}%
+    {A-OTF-GothicBBBPro-Medium.otf}}
+\zxjf@declare@preset@with@prop{morisawa-pr6n}{%
+  \zxjf@multiweight{A-OTF-RyuminPr6N-Light.otf}{A-OTF-RyuminPr6N-Light.otf}{A-OTF-FutoMinA101Pr6N-Bold.otf}%
+    {A-OTF-GothicBBBPr6N-Medium.otf}{A-OTF-FutoGoB101Pr6N-Bold.otf}{A-OTF-MidashiGoPr6N-MB31.otf}%
+    {A-OTF-GothicBBBPr6N-Medium.otf}}
+\zxjf@declare@preset@with@prop{yu-win}{%
+  \zxjf@multiweight{YuMincho-Light}{YuMincho-Regular}{YuMincho-Demibold}%
+    {YuGothic-Regular}{YuGothic-Bold}{YuGothic-Bold}%
+    {YuGothic-Regular}}
+\zxjf@declare@preset@with@prop{yu-win10}{%
+  \zxjf@multiweight{YuMincho-Light}{YuMincho-Regular}{YuMincho-Demibold}%
+    {YuGothic-Regular}{YuGothic-Bold}{YuGothic-Bold}%
+    {YuGothic-Medium}}
+\zxjf@declare@preset@with@prop{yu-osx}{%
+  \zxjf@multiweight{YuMincho-Medium}{YuMincho-Medium}{YuMincho-Demibold}%
+    {YuGothic-Medium}{YuGothic-Bold}{YuGothic-Bold}%
+    {YuGothic-Medium}}
+\zxjf@declare@preset@with@prop{sourcehan}{%
+  \zxjf@multiweight{SourceHanSerif-Light}{SourceHanSerif-Regular}{SourceHanSerif-Bold}%
+    {SourceHanSans-Regular}{SourceHanSans-Bold}{SourceHanSans-Heavy}%
+    {SourceHanSans-Medium}}
+\zxjf@declare@preset@with@prop{sourcehan-jp}{%
+  \zxjf@multiweight{SourceHanSerifJP-Light}{SourceHanSerifJP-Regular}{SourceHanSerifJP-Bold}%
+    {SourceHanSansJP-Regular}{SourceHanSansJP-Bold}{SourceHanSansJP-Heavy}%
+    {SourceHanSansJP-Medium}}
+\zxjf@declare@preset@with@prop{noto}{%
+  \zxjf@multiweight{NotoSerifCJKjp-Light}{NotoSerifCJKjp-Regular}{NotoSerifCJKjp-Bold}%
+    {NotoSansCJKjp-Regular}{NotoSansCJKjp-Bold}{NotoSansCJKjp-Black}%
+    {NotoSansCJKjp-Medium}}
+\zxjf@declare@preset@with@prop{noto-jp}{%
+  \zxjf@multiweight{NotoSerifJP-Light}{NotoSerifJP-Regular}{NotoSerifJP-Bold}%
+    {NotoSansJP-Regular}{NotoSansJP-Bold}{NotoSansJP-Black}%
+    {NotoSansJP-Medium}}
+\zxjf@declare@preset@with@prop{haranoaji}{%
+  \zxjf@multiweight{HaranoAjiMincho-Light\zxjf@Fa}{HaranoAjiMincho-Regular\zxjf@Fa}{HaranoAjiMincho-Bold\zxjf@Fa}%
+    {HaranoAjiGothic-Regular\zxjf@Fa}{HaranoAjiGothic-Bold\zxjf@Fa}{HaranoAjiGothic-Heavy\zxjf@Fa}%
+    {HaranoAjiGothic-Medium\zxjf@Fa}}
+\zxjf@declare@preproc{haranoaji}{%
+  \zxjf@if@font@exists{HaranoAjiMincho-Regular.otf}%
+    {\def\zxjf@Fa{.otf}}{\let\zxjf@Fa\@empty}}
+%(alias)
+\zxjf@declare@preset@alias@with@prop{kozuka}{kozuka-pro}
+\zxjf@declare@preset@alias@with@prop{morisawa}{morisawa-pro}
+\zxjf@declare@preset@alias{moga-mobo-ex}{moga-90}
+\zxjf@declare@preproc@alias{moga-mobo-ex}{moga-90}
+\zxjf@declare@preset@alias{moga-mobo}{mogaN-90}
+\zxjf@declare@preproc@alias{moga-mobo}{mogaN-90}
+\zxjf@declare@preset@alias@with@prop{noto-otf}{noto}
+\zxjf@declare@preset@alias@with@prop{hiragino}{hiragino-pro}
+
+%% \zxjf@declare@sub@preset@nf@with@prop{<name>}{<fam>}{<font>}
+\zxjf@onlypreamble@def\zxjf@declare@sub@preset@nf@with@prop#1#2#3{%
+  \zxjf@declare@preset{#1}{\zxjf@newfamily{#2}{RawFeature=-palt;-kern}{#3}}%
+  \zxjf@declare@preset{#1/prop}{\zxjf@newfamily{#2}{RawFeature=+palt;+kern}{#3}}}
+%% definitions of sub preset mappings
+\zxjf@declare@preset{hg}{%
+  \zxjf@newfamily{hgmc}{BoldFont=HGSMinchoE}{HGSMinchoB}%
+  \zxjf@newfamily{hgpr}{}{HGSSoeiPresenceEB}%
+  \zxjf@newfamily{hggt}{BoldFont=HGSGothicE}{HGSGothicM}%
+  \zxjf@newfamily{hggu}{}{HGSSoeiKakugothicUB}%
+  \zxjf@newfamily{hgmg}{}{HGMaruGothicMPRO}%
+  \zxjf@newfamily{hgkk}{}{HGSKyokashotai}%
+  \zxjf@newfamily{hgks}{}{HGSeikaishotaiPRO}%
+  \zxjf@newfamily{hggs}{}{HGSGyoshotai}%
+  \zxjf@newfamily{hgpp}{}{HGSSoeiKakupoptai}%
+}
+\zxjf@declare@preset{hg/prop}{%
+  \zxjf@newfamily{hgmc}{BoldFont=HGPMinchoE}{HGPMinchoB}%
+  \zxjf@newfamily{hgpr}{}{HGPSoeiPresenceEB}%
+  \zxjf@newfamily{hggt}{BoldFont=HGPGothicE}{HGPGothicM}%
+  \zxjf@newfamily{hggu}{}{HGPSoeiKakugothicUB}%
+  \zxjf@newfamily{hgmg}{}{HGMaruGothicMPRO}%
+  \zxjf@newfamily{hgkk}{}{HGPKyokashotai}%
+  \zxjf@newfamily{hgks}{}{HGSeikaishotaiPRO}%
+  \zxjf@newfamily{hggs}{}{HGPGyoshotai}%
+  \zxjf@newfamily{hgpp}{}{HGPSoeiKakupoptai}%
+}
+\zxjf@declare@sub@preset@nf@with@prop{hiraginomg-pro}%
+  {hmg}{Hiragino Maru Gothic Pro W4}
+\zxjf@declare@sub@preset@nf@with@prop{hiraginomg-pron}%
+  {hmg}{Hiragino Maru Gothic ProN W4}
+\zxjf@declare@preset@alias@with@prop{hiraginomg}{hiraginomg-pro}
+
+\zxjf@declare@preset{mobo}{%
+  \zxjf@newfamily{mobo}{BoldFont=MoboExGothic Bold}{MoboExGothic}}
+\zxjf@declare@preset{mobo-90}{%
+  \zxjf@newfamily{mobo}{BoldFont=MoboEx90Gothic Bold}{MoboEx90Gothic}}
+\zxjf@declare@preset{maruberi}{%
+  \zxjf@newfamily{mmg}{}{MotoyaLMaru}}
+
+%% ... and invokes the specified one!
+\zxjf@use@preset{\zxjf@main@preset}
+\@for\zxjf@x:=\zxjf@sub@preset\do{\zxjf@use@preset\zxjf@x}
+
+%--------------------------------------- and some extras
+
+\ifzxjf@threeweight
+  %%<*> \ltdefault/\ltseries
+  \providecommand*\ltdefault{l}
+  \DeclareRobustCommand\ltseries{%
+    \not@math@alphabet\ltseries\relax
+    % \fontseries{\ltdefault} fails on New NFSS
+    % unless alphabetic font also has 'l' series.
+    \edef\f@series{\ltdefault}\selectfont
+  }
+  %%<*> \ebdefault/\ebseries
+  \providecommand*\ebdefault{eb}
+  \DeclareRobustCommand\ebseries{%
+    \not@math@alphabet\ebseries\relax
+    \edef\f@series{\ebdefault}\selectfont
+  }
+\fi
+
+%%<*> \useeasyjapanesesettings
+\newcommand*\useeasyjapanesesettings{%
+\XeTeXlinebreaklocale "ja"\relax
+\XeTeXlinebreakskip=0pt plus 1pt minus 0.1pt\relax
+\XeTeXlinebreakpenalty=0\relax
+}
+
+%--------------------------------------- all done
+\endinput
+%% EOF

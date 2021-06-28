@@ -1,0 +1,278 @@
+
+
+% fixjfm.sty
+% Copyright 2017--2018 Yue ZHANG
+% License: Knuth License (https://ctan.org/license/knuth)
+
+\csname ENDINPUTFIXJFMDOTSTY\endcsname
+
+\let\ENDINPUTFIXJFMDOTSTY=\endinput
+
+\begingroup\expandafter\expandafter\expandafter\endgroup
+  \expandafter\ifx\csname ProvidesPackage\endcsname\relax
+  \else
+    \ProvidesPackage{fixjfm}[2018/03/24 v0.8 Fix JFM (for *pTeX)]%
+  \fi
+
+\edef\FIXJFMDOTSTYRESTORECATCODE{\catcode`\noexpand\@=\the\catcode`\@\relax}
+
+\catcode`\@=11\relax
+
+% common utilities
+
+\def\fixjfm@ifprimitive#1{%
+  \begingroup
+    \edef\fixjfm@temp@meaning{\meaning#1}%
+    \edef\fixjfm@temp@string{\string#1}%
+    \expandafter
+  \endgroup
+  \ifx\fixjfm@temp@meaning\fixjfm@temp@string}
+
+\fixjfm@ifprimitive\tate
+\else
+  \errmessage{pTeX / e-pTeX / upTeX / e-upTeX / ApTeX is required}%
+  \FIXJFMDOTSTYRESTORECATCODE
+  \expandafter\endinput
+\fi
+
+\def\fixjfm@empty{}
+
+\begingroup
+  \let\CATCODE=\catcode
+  \let\RELAX=\relax
+  \let\GDEF=\gdef
+  \let\ENDGROUP=\endgroup
+  \CATCODE`\k=12\RELAX
+  \CATCODE`\a=12\RELAX
+  \CATCODE`\n=12\RELAX
+  \CATCODE`\j=12\RELAX
+  \CATCODE`\i=12\RELAX
+  \CATCODE`\c=12\RELAX
+  \CATCODE`\h=12\RELAX
+  \CATCODE`\r=12\RELAX
+  \CATCODE`\t=12\RELAX
+  \CATCODE`\e=12\RELAX
+  \GDEF\FIXJFM@KANJICHARACTER{kanji character }%
+\ENDGROUP
+
+\def\fixjfm@get@inhibitxspcode#1{%
+  \expandafter\expandafter\expandafter\fixjfm@@get@inhibitxspcode
+    \expandafter\meaning\expandafter#1\FIXJFM@KANJICHARACTER\relax\fixjfm@nil}
+
+\expandafter\def\expandafter\fixjfm@@get@inhibitxspcode
+  \expandafter#\expandafter1\FIXJFM@KANJICHARACTER#2#3\fixjfm@nil{%
+    \count2=-1\relax
+    \def\fixjfm@temp@tokens{#1}%
+    \ifx\fixjfm@temp@tokens\fixjfm@empty
+      \count2=\inhibitxspcode`#2\relax
+    \fi}
+
+% \leavevmode
+
+\fixjfm@ifprimitive\quitvmode
+  \let\leavevmode=\quitvmode
+\fi
+
+% \fixjfmspacing
+
+\def\fixjfmspacing{\FixJFMSpacing}
+
+\newif\iffixjfm@lastnodechar@available@
+
+\fixjfm@ifprimitive\lastnodechar
+  \fixjfm@lastnodechar@available@true
+\fi
+
+\iffixjfm@lastnodechar@available@
+  \begingroup
+    \kansujichar1=\sjis"8ABF\relax % U+6F22: Kanji Han
+    \kansujichar2=\sjis"82A0\relax % U+3042: Hiragana A
+    \kansujichar3=\sjis"8142\relax % U+3002: CJK Full Stop
+    \xdef\fixjfm@kanji{\kansuji1}%
+    \xdef\fixjfm@kana{\kansuji2}%
+    \xdef\fixjfm@other{\kansuji3}%
+  \endgroup
+  \csname newif\expandafter\endcsname\csname iffixjfm@sp@status@\endcsname
+  \def\fixjfm@ifautospacing{%
+    \fixjfm@sp@status@false
+    \begingroup
+      \kanjiskip=10pt\relax
+      \setbox0=\hbox{\fixjfm@kanji\fixjfm@kanji\fixjfm@kanji}%
+      \dimen4=\wd0\relax
+      \noautospacing
+      \setbox0=\hbox{\fixjfm@kanji\fixjfm@kanji\fixjfm@kanji}%
+      \dimen2=\wd0\relax
+      \expandafter
+    \endgroup
+    \ifdim\dimen4>\dimen2\relax
+      \fixjfm@sp@status@true
+    \fi}%
+  \def\fixjfm@ifautoxspacing{%
+    \fixjfm@sp@status@false
+    \begingroup
+      \xspcode`\A=3\relax
+      \inhibitxspcode\sjis"8ABF=3\relax % U+6F22: Kanji Han
+      \xkanjiskip=20pt\relax
+      \setbox0=\hbox{\fixjfm@kanji A\fixjfm@kanji}%
+      \dimen4=\wd0\relax
+      \noautoxspacing
+      \setbox0=\hbox{\fixjfm@kanji A\fixjfm@kanji}%
+      \dimen2=\wd0\relax
+      \expandafter
+    \endgroup
+    \ifdim\dimen4>\dimen2\relax
+      \fixjfm@sp@status@true
+    \fi}%
+  \def\FixJFMSpacing{\futurelet\fixjfm@sp@temp@token\fixjfm@fixspacing}%
+  \def\fixjfm@fixspacing{%
+    \begingroup
+      \count0=\lastnodechar
+      \edef\fixjfm@sp@temp@tokens{\fixjfm@sp@temp@token}%
+      \expandafter\fixjfm@@fixspacing\fixjfm@sp@temp@tokens\relax\fixjfm@sp@nil
+      \ifnum\count0>-1\relax
+        \ifnum\count0<256\relax
+          \ifnum\xspcode\count0>1\relax
+            \ifnum\count2>1\relax
+              \fixjfm@ifautoxspacing
+              \iffixjfm@sp@status@
+                \hskip\xkanjiskip
+              \fi
+            \fi
+          \fi
+        \else
+          \fixjfm@ifautospacing
+          \iffixjfm@sp@status@
+            \hskip\kanjiskip
+          \fi
+        \fi
+        \setbox0=\hbox{%
+          \inhibitglue\char\count0\relax\fixjfm@sp@temp@token\inhibitglue}%
+        \setbox2=\hbox{%
+          \inhibitglue\char\count0 \fixjfm@sp@temp@token\inhibitglue}%
+        \dimen0=\wd2\relax
+        \advance\dimen0 by -\wd0\relax
+        \fixjfm@temp@hskip
+      \fi
+    \endgroup}%
+  \long\def\fixjfm@@fixspacing#1#2\fixjfm@sp@nil{%
+    \count2=1\relax
+    \ifcat#1\fixjfm@kanji
+    \else
+      \ifcat#1\fixjfm@kana
+      \else
+        \ifcat#1\fixjfm@other
+        \else
+          \count0=-1\relax
+          \count2=0\relax
+        \fi
+      \fi
+    \fi
+    \ifnum\count2>0\relax
+      \fixjfm@get@inhibitxspcode#1\relax
+    \fi}%
+  \def\SetFixJFMSpacingStretch#1{\def\fixjfm@temp@hskip@stretch{#1}}%
+  \def\SetFixJFMSpacingShrink#1{\def\fixjfm@temp@hskip@shrink{#1}}%
+  \def\fixjfm@temp@hskip{%
+    \hskip\dimen0 plus \fixjfm@temp@hskip@stretch
+      minus \fixjfm@temp@hskip@shrink\relax}%
+  \SetFixJFMSpacingStretch{0.05zw}%
+  \SetFixJFMSpacingShrink{0.05zw}%
+\else
+  \let\FixJFMSpacing=\fixjfm@empty
+  \def\SetFixJFMSpacingStretch#1{}%
+  \def\SetFixJFMSpacingShrink#1{}%
+\fi
+
+\newif\ifUseFixJFMCJKTextFontCommands
+\newif\ifUseStandardCJKTextFontCommands
+
+\begingroup\expandafter\expandafter\expandafter\endgroup
+  \expandafter\ifx\csname DeclareTextFontCommand\endcsname\relax
+    \def\DeclareFixJFMCJKTextFontCommand#1#2{}%
+    \def\DeclareStandardCJKTextFontCommand#1#2{}%
+    \let\UseFixJFMCJKTextFontCommands=\fixjfm@empty
+    \let\UseStandardCJKTextFontCommands=\fixjfm@empty
+    \def\AppendToUseXCJKTextFontCommands#1#2{}%
+  \else
+    \def\DeclareFixJFMCJKTextFontCommand#1#2{%
+      \DeclareRobustCommand#1[1]{%
+        \relax\ifmmode\expandafter\nfss@text\fi
+        {#2\fixjfmspacing##1}\fixjfmspacing}}%
+    \def\DeclareStandardCJKTextFontCommand#1#2{%
+      \DeclareRobustCommand#1[1]{%
+        \relax\ifmmode\expandafter\nfss@text\fi{#2##1}}}%
+    \def\UseFixJFMCJKTextFontCommands{%
+      \UseFixJFMCJKTextFontCommandstrue
+      \UseStandardCJKTextFontCommandsfalse
+      \DeclareFixJFMCJKTextFontCommand\textmc{\mcfamily}%
+      \DeclareFixJFMCJKTextFontCommand\textgt{\gtfamily}}%
+    \def\UseStandardCJKTextFontCommands{%
+      \UseStandardCJKTextFontCommandstrue
+      \UseFixJFMCJKTextFontCommandsfalse
+      \DeclareStandardCJKTextFontCommand\textmc{\mcfamily}%
+      \DeclareStandardCJKTextFontCommand\textgt{\gtfamily}}%
+    \def\AppendToUseXCJKTextFontCommands#1#2{%
+      \g@addto@macro\UseFixJFMCJKTextFontCommands{%
+        \DeclareFixJFMCJKTextFontCommand#1{#2}}%
+      \g@addto@macro\UseStandardCJKTextFontCommands{%
+        \DeclareStandardCJKTextFontCommand#1{#2}}%
+      \ifUseFixJFMCJKTextFontCommands
+        \DeclareFixJFMCJKTextFontCommand#1{#2}%
+      \else
+        \DeclareStandardCJKTextFontCommand#1{#2}%
+      \fi}%
+    \UseFixJFMCJKTextFontCommands
+  \fi
+
+% \inhibitglue
+
+\fixjfm@ifprimitive\protected
+  \protected\def\<{\ifvmode\leavevmode\fi\inhibitglue}%
+\else
+  \def\<{\inhibitglue}%
+\fi
+
+% \fixjfmparindent
+
+\def\fixjfmparindent{\FixJFMParindent}
+
+\begingroup
+  \expandafter\ifx\csname useparheadparenindent\endcsname\relax % bxjaprnind.sty
+  \else
+    \global\let\FixJFMParindent=\fixjfm@empty
+    \global\let\EveryparPreHook=\fixjfm@empty
+    \global\let\EveryparPostHook=\fixjfm@empty
+    \aftergroup\FIXJFMDOTSTYRESTORECATCODE
+    \aftergroup\endinput
+  \fi
+\endgroup
+
+\def\FixJFMParindent{\futurelet\fixjfm@pi@temp@token\fixjfm@fixparindent}
+
+\def\fixjfm@fixparindent{%
+  \begingroup
+    \fixjfm@get@inhibitxspcode\fixjfm@pi@temp@token
+    \ifnum\count2=2\relax\inhibitglue\fi
+  \endgroup}
+
+\begingroup\expandafter\expandafter\expandafter\endgroup
+  \expandafter\ifx\csname PushPostHook\endcsname\relax % everyhook.sty
+    \def\EveryparPreHook{}%
+    \def\EveryparPostHook{\fixjfmparindent}%
+    \let\fixjfm@previous@everypar=\everypar
+    \csname newtoks\expandafter\endcsname\csname everypar\endcsname
+    \let\fixjfm@private@everypar=\everypar
+    \fixjfm@private@everypar=\fixjfm@previous@everypar
+    \fixjfm@previous@everypar={%
+      \EveryparPreHook
+      \the\expandafter\fixjfm@private@everypar
+      \EveryparPostHook}%
+  \else
+    \PushPostHook{par}{\fixjfmparindent}%
+    \let\EveryparPreHook=\fixjfm@empty
+    \let\EveryparPostHook=\fixjfm@empty
+  \fi
+
+\FIXJFMDOTSTYRESTORECATCODE
+
+\endinput

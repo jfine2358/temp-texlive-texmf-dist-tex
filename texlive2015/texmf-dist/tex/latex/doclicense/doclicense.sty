@@ -1,0 +1,221 @@
+%% See file 'doclicense.dtx' for copyright and license.
+\NeedsTeXFormat{LaTeX2e}[1998/12/01]
+\ProvidesPackage{doclicense}
+    [2015/04/06 v1.1 Support for putting documents under a license]
+
+%% Dependencies {{{
+\RequirePackage{kvoptions}
+\RequirePackage{xifthen}
+\RequirePackage{etoolbox} %% \ifcsdef
+\RequirePackage{xspace}
+\AtEndPreamble{%
+  \@ifpackageloaded{csquotes}{}{\RequirePackage{csquotes}}
+  \@ifpackageloaded{ccicons}{}{\RequirePackage{ccicons}}
+    %% For \doclicenseIcon
+  \@ifpackageloaded{graphicx}{}{\RequirePackage{graphicx}}
+    %% For \doclicenseImage
+  \@ifpackageloaded{hyperref}{}{\RequirePackage{hyperref}}
+  \@ifpackageloaded{hyperxmp}{%
+    %% The following options are only defined when the hyperxmp package was loaded.
+    \hypersetup{
+      pdfcopyright  = {\doclicenseLongText},
+      pdflicenseurl = {\doclicenseURL},
+    }
+  }{}
+}
+%% }}}
+
+%% Parameters {{{
+\DeclareStringOption[CC]{type}
+\DeclareStringOption[by-sa]{modifier}
+\DeclareStringOption{version}
+\DeclareStringOption{lang}
+\DeclareStringOption{imagemodifier}
+\DeclareStringOption[10em]{imagewidth}
+%% }}}
+
+\ProcessLocalKeyvalOptions*
+%% Declare variables {{{
+\newcommand{\doclicense@baseUrlCC}{https://creativecommons.org}
+\newcommand{\doclicense@versionFallback}{}
+\newcommand{\doclicense@versionUsed}{}
+\newboolean{doclicense@licenseKnown}
+\newlength{\doclicense@hsize}
+\newcommand{\doclicense@longName}{%
+  \@nameuse{doclicense@lang@lic@\doclicense@type @\doclicense@modifier%
+    @\doclicense@versionUsed}%
+}
+\newcommand{\doclicense@icon}{%
+  \PackageError{doclicense}{Icon not defined}
+    {Please check the documentation of doclicense to see what you can do about it.}%
+}
+%% }}}
+
+%% User macros {{{
+\newcommand{\doclicenseType}{\doclicense@type\xspace}
+\newcommand{\doclicenseLongType}{}
+\newcommand{\doclicenseModifier}{\MakeUppercase{\doclicense@modifier}\xspace}
+\newcommand{\doclicenseVersion}{\doclicense@versionUsed\xspace}
+\newcommand{\doclicenseName}{%
+  \doclicense@type~\MakeUppercase{\doclicense@modifier}~\doclicense@versionUsed\xspace%
+}
+\newcommand{\doclicenseNameRef}{\href{\doclicenseURL}{\doclicenseName}\xspace}
+\newcommand{\doclicenseLongName}{\doclicenseLongType\space\doclicense@longName\xspace}
+\newcommand{\doclicenseLongNameRef}{\href{\doclicenseURL}{\doclicenseLongName}}
+\newcommand{\doclicenseText}{%
+  \doclicense@lang@thisDoc\space
+  \href{\doclicenseURL}{\enquote{\doclicenseName{}}} \doclicense@lang@word@license.\xspace%
+}
+\newcommand{\doclicenseLongText}{%
+  \doclicense@lang@thisDoc\space
+  \href{\doclicenseURL}{\doclicenseLongType\space\enquote{\doclicense@longName}}
+  \doclicense@lang@word@license.\xspace%
+}
+\newcommand{\doclicenseIcon}{\doclicense@icon\xspace}
+\newcommand{\doclicenseImageFileName}{doclicense-\doclicense@type-\doclicense@modifier\doclicense@imagemodifier}
+\newcommand{\doclicenseImage}[1][]{%
+  \setkeys{doclicense}{#1}
+  \href{\doclicenseURL}{%
+    \includegraphics[
+      width=\doclicense@imagewidth%
+    ]{\doclicenseImageFileName}%
+  }
+}
+
+\newcommand{\doclicenseLicense}{\doclicenseThis} %% legacy support
+\newcommand{\doclicenseThis}{
+  \setlength{\doclicense@hsize}{\textwidth-\doclicense@imagewidth-2em}
+  \ifthenelse{\isnamedefined{iflandscape}}{
+    \iflandscape{
+      \setlength{\doclicense@hsize}{\doclicense@hsize-10em}
+    }{}
+  }{}
+  \begin{center}
+    \begin{minipage}{\doclicense@hsize}
+      \doclicenseLongText%
+    \end{minipage}
+    \hfill
+    \begin{minipage}{\doclicense@imagewidth}
+      \doclicenseImage%
+    \end{minipage}
+  \end{center}
+}
+%% }}}
+
+%% Language support {{{
+\ifthenelse{\equal{\doclicense@lang}{}}{%
+  \renewcommand{\doclicense@lang}{\languagename}}{}
+\IfFileExists{doclicense-\doclicense@lang.ldf}{%
+  \input{doclicense-\doclicense@lang.ldf}
+}{%
+  \PackageWarning{doclicense}{%
+    No language definition for \doclicense@lang found.
+    Please add one and submit a patch. Using English as fallback.}
+  \renewcommand{\doclicense@lang}{english}
+  \input{doclicense-\doclicense@lang.ldf}
+}
+\ifthenelse{\equal{\doclicense@imagemodifier}{-us}}{%
+  \@namedef{doclicense@imagemodifier}{}
+}{}
+
+%% }}}
+
+%% Set license {{{
+\newcommand{\doclicense@setVersion}[1][]{%
+  \ifthenelse{\equal{#1}{}}{}{%
+    \renewcommand{\doclicense@versionFallback}{#1}
+  }
+  \ifthenelse{\equal{\doclicense@version}{}}{%
+    \renewcommand{\doclicense@versionUsed}{\doclicense@versionFallback}
+  }{%
+    \renewcommand{\doclicense@versionUsed}{\doclicense@version}
+  }
+}
+\newcommand{\doclicense@set}{%
+  %% CC {{{
+  \ifthenelse{\equal{\doclicense@type}{CC}}{%
+    \renewcommand{\doclicenseLongType}{Creative Commons\xspace}
+
+    \doclicense@setVersion[3.0]
+
+    %% Allow to predefine the following macros in ldf files.
+    \ifcsdef{doclicense@UrlLangPart}{}{%
+      \ifthenelse{\equal{\doclicense@lang@lic@CC@code}{}}{%
+        \edef\doclicense@UrlLangPart{}
+      }{%
+        \ifthenelse{%
+          %% German only: Version 3.0 and version 4.0 use a different different URL schema.
+          \equal{\doclicense@lang@lic@CC@code}{de}%
+          \AND%
+          \equal{\doclicense@versionUsed}{4.0}%
+        }{%
+          \edef\doclicense@UrlLangPart{/\doclicense@lang@translation@lic@CC@code}
+        }{%
+          \edef\doclicense@UrlLangPart{/\doclicense@lang@lic@CC@code}
+        }
+      }
+    }
+    \ifcsdef{doclicenseURL}{}{%
+      \edef\doclicenseURL{%
+        \doclicense@baseUrlCC/%
+        licenses/%
+        \doclicense@modifier/%
+        \doclicense@versionUsed\doclicense@UrlLangPart%
+      }
+    }
+    \ifthenelse{\equal{\doclicense@modifier}{by-sa}}{%
+      \renewcommand{\doclicense@icon}{\ccbysa}
+      \renewcommand{\doclicense@imagemodifier}{}
+    }{}
+    \ifthenelse{\equal{\doclicense@modifier}{by-nd}}{%
+      \renewcommand{\doclicense@icon}{\ccbynd}
+      \renewcommand{\doclicense@imagemodifier}{}
+    }{}
+    \ifthenelse{\equal{\doclicense@modifier}{by-nc}}{%
+      \renewcommand{\doclicense@icon}{\ccbync}
+      \renewcommand{\doclicense@imagemodifier}{}
+    }{}
+    \ifthenelse{\equal{\doclicense@modifier}{by-nc-sa}}
+      {\renewcommand{\doclicense@icon}{\ccbync}}{}
+    \ifthenelse{\equal{\doclicense@modifier}{by-nc-nd}}
+      {\renewcommand{\doclicense@icon}{\ccbync}}{}
+    \ifthenelse{\equal{\doclicense@modifier}{zero}}{%
+      \renewcommand{\doclicense@icon}{\cczero}
+      \renewcommand{\doclicense@imagemodifier}{}
+      \doclicense@setVersion[1.0]
+      \edef\doclicenseURL{%
+        \doclicense@baseUrlCC/%
+        publicdomain/%
+        \doclicense@modifier/%
+        \doclicense@versionUsed\doclicense@UrlLangPart}
+    }{}
+    \ifthenelse{\equal{\doclicense@modifier}{pd}}{
+      \renewcommand{\doclicense@icon}{\ccpd}
+      \renewcommand{\doclicense@imagemodifier}{}
+      \doclicense@setVersion[1.0]
+      \edef\doclicenseURL{%
+        \doclicense@baseUrlCC/%
+        licenses/publicdomain/%
+        \doclicense@versionUsed\doclicense@UrlLangPart}
+    }{}
+
+    \ifcsdef{doclicense@lang@lic@\doclicense@type%
+      @\doclicense@modifier @\doclicense@versionUsed}{}{%
+
+      \PackageError{doclicense}{License long name not defined}%
+        {Please check the documentation of doclicense to see what you can do about it.}%
+    }
+
+    \setboolean{doclicense@licenseKnown}{true}
+  }{}%% }}}
+  \ifthenelse{\not\boolean{doclicense@licenseKnown}}{%
+    \PackageError{doclicense}{License unknown}%
+      {Please check the documentation of doclicense to see what you can do about it.}%
+  }{}%
+}
+%% }}}
+
+\doclicense@set%
+\endinput
+%%
+%% End of file `doclicense.sty'.

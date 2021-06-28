@@ -1,0 +1,138 @@
+%%
+%% This is file `embedall.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% embedall.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (C) 2013 by Alberto Sartori
+%% Copyright (C) 2019 by David Lichti
+%% 
+%% This file may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either
+%% version 1.3 of this license or (at your option) any later
+%% version. The latest version of this license is in:
+%% 
+%% http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3 or later is part of all distributions of
+%% LaTeX version 2005/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesClass{embedall}[2019/05/18 v2.0 Automatically embed source files in PDF]
+\newif\ifembedall@all
+\embedall@alltrue
+\newif\ifembedall@main
+\embedall@mainfalse
+\newif\ifembedall@input
+\embedall@inputfalse
+\newif\ifembedall@include
+\embedall@includefalse
+\newif\ifembedall@graphicx
+\embedall@graphicxfalse
+\newif\ifembedall@csvsimple
+\embedall@csvsimplefalse
+\newif\ifembedall@compat
+\embedall@compatfalse
+\DeclareOption{all}{\embedall@alltrue}
+\DeclareOption{notall}{\embedall@allfalse}
+\DeclareOption{main}{\embedall@maintrue\embedall@allfalse}
+\DeclareOption{input}{\embedall@inputtrue\embedall@allfalse}
+\DeclareOption{include}{\embedall@includetrue\embedall@allfalse}
+\DeclareOption{graphicx}{\embedall@graphicxtrue\embedall@allfalse}
+\DeclareOption{csvsimple}{\embedall@csvsimpletrue\embedall@allfalse}
+\DeclareOption{compat}{\embedall@compattrue}
+\ProcessOptions\relax
+\ifembedall@all
+    \embedall@maintrue
+    \embedall@inputtrue
+    \embedall@includetrue
+    \embedall@graphicxtrue
+    \embedall@csvsimpletrue
+\fi
+\RequirePackage{embedfile}
+\RequirePackage{filehook}
+\RequirePackage{currfile}
+\RequirePackage{etoolbox}
+\ifembedall@compat
+    \RequirePackage{letltxmacro}
+\fi
+\newcommand\embedsource[1][]{\embedall@embed[#1]{\currfilename}}
+\def\embedall@filelist{}
+\newcommand{\embedall@embed}[2][]{%
+    \xifinlist{#2}{\embedall@filelist}{}{%
+        \newlinechar=`\^^J%
+        \message{^^J^^Jembedall: Attaching file '#2'.^^J^^J}%
+        \embedfile[#1]{#2}%
+        \listxadd{\embedall@filelist}{#2}%
+    }%
+}
+\ifembedall@compat
+    \LetLtxMacro\embedall@latex@includegraphics\includegraphics
+    \newcommand\embedall@includegraphics[2][]{%
+        \embedall@embed[desc=image]{#2}
+        \embedall@latex@includegraphics[#1]{#2}%
+    }
+    \LetLtxMacro\embedall@latex@lstinputlisting\lstinputlisting
+    \newcommand\embedall@lstinputlisting[2][]{%
+        \embedfile[desc=listing file]{#2}
+        \embedall@latex@lstinputlisting[#1]{#2}%
+    }
+    \ifembedall@input
+        \DeclareRobustCommand\embedinput[2][]{%
+            \input{#2}%
+        }
+    \else
+        \DeclareRobustCommand\embedinput[2][input file]{%
+            \input{#2}%
+            \embedall@embed[desc={#1}]{#2}%
+        }
+    \fi
+\fi
+\ifembedall@main
+    \ifembedall@compat
+        \IfFileExists{./\jobname.tex}{%
+            \embedall@embed[desc=main source file]{\jobname.tex}
+        }{}
+    \else
+        \AtBeginDocument{\embedsource[desc=main source file]}
+    \fi
+\fi
+\ifembedall@input
+    \AtBeginOfInputs{\embedsource[desc=input file]}
+\fi
+\ifembedall@include
+    \AtBeginOfIncludes{\embedsource[desc=include file]}
+\fi
+\ifembedall@graphicx
+    \ifcsname Gin@setfile\endcsname
+        \let\embedall@Gin@setfile\Gin@setfile
+        \def\Gin@setfile#1#2#3{%
+            \embedall@Gin@setfile{#1}{#2}{#3}%
+            \embedall@embed[image file]{#3}%
+        }
+    \else
+        \ifembedall@all\else
+            \PackageWarning{embedall}{Patching of graphicx requested, but package not loaded. Consider removing the 'graphicx' option.}
+        \fi
+    \fi
+\fi
+\ifembedall@csvsimple
+    \ifcsname csvloop\endcsname
+        \let\embedall@csvloop\csvloop
+        \def\csvloop#1{%
+            \embedall@csvloop{#1}%
+            \embedall@embed[CSV file]{\csv@input@filename}%
+        }
+    \else
+        \ifembedall@all\else
+            \PackageWarning{embedall}{Patching of csvsimple requested explicitly, but package not loaded. Consider removing the 'csvsimple' option.}
+        \fi
+    \fi
+\fi
+\endinput
+%%
+%% End of file `embedall.sty'.

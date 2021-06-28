@@ -1,0 +1,964 @@
+%%
+%% This is file `metastr.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% metastr.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2020 Niklas Beisert
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1996/12/01]
+\ProvidesPackage{metastr}[2020/02/06 v1.0 Metadata Strings Storage]
+
+\RequirePackage{keyval}
+
+\newif\ifmstr@opt@hyperref\mstr@opt@hyperreftrue
+\newif\ifmstr@opt@hyperxmp\mstr@opt@hyperxmptrue
+\newif\ifmstr@opt@checkdef\mstr@opt@checkdeftrue
+\newif\ifmstr@opt@xmppdfinfo\mstr@opt@xmppdfinfotrue
+\newif\ifmstr@opt@course\mstr@opt@coursefalse
+\newif\ifmstr@opt@draft\mstr@opt@draftfalse
+\newif\ifmstr@opt@cclogo\mstr@opt@cclogotrue
+\def\mstr@opt@cclogocurr{dollar}
+\def\mstr@opt@loadlang{en}
+\def\mstr@group{mstr@}
+\define@key{\mstr@group}{hyperref}[true]
+  {\csname mstr@opt@hyperref#1\endcsname}
+\define@key{\mstr@group}{hyperxmp}[true]
+  {\csname mstr@opt@hyperxmp#1\endcsname}
+\define@key{\mstr@group}{checkdef}[true]
+  {\csname mstr@opt@checkdef#1\endcsname}
+\define@key{\mstr@group}{xmppdfinfo}[true]
+  {\csname mstr@opt@xmppdfinfo#1\endcsname}
+\define@key{\mstr@group}{cclogo}[true]{\csname mstr@opt@cclogo#1\endcsname}
+\define@key{\mstr@group}{cclogocurr}{\def\mstr@opt@cclogocurr{#1}}
+\define@key{\mstr@group}{loadlang}{\def\mstr@opt@loadlang{#1}}
+\define@key{\mstr@group}{course}[true]{\csname mstr@opt@course#1\endcsname}
+\define@key{\mstr@group}{draft}[true]{\csname mstr@opt@draft#1\endcsname}
+
+\DeclareOption*{\expandafter\setkeys\expandafter\mstr@group%
+  \expandafter{\CurrentOption}}
+
+\ProcessOptions
+
+\ifmstr@opt@hyperref\RequirePackage{hyperref}\fi
+\ifmstr@opt@hyperxmp\RequirePackage{hyperxmp}\fi
+
+\def\mstr@exptwo#1{\expandafter#1\expandafter}
+\def\mstr@csdo#1#2{\expandafter#1\csname#2\endcsname}
+\def\mstr@csdotwo#1#2#3{\mstr@exptwo#1#2\csname#3\endcsname}
+\long\def\mstr@iftext#1#2#3{\def\mstr@tmp{#2}\ifx#1\mstr@tmp#3\fi}
+
+\let\mstr@lang@main\@empty
+\let\mstr@lang@short\@empty
+\let\mstr@lang@fallback\@empty
+\let\mstr@lang@meta\@empty
+
+\ifdefined\xmptilde
+\let\metatilde\xmptilde
+\let\metacomma\xmpcomma
+\else
+\def\metatilde{~}
+\def\metacomma{,}
+\fi
+
+\newcommand{\metadef}[1]{%
+  \mstr@csdo\let{mstr@def@#1}\relax}
+
+\newcommand{\mstr@verify}[1]{%
+  \ifcsname mstr@def@#1\endcsname\else
+    \PackageError{metastr}{register `#1' undefined}{}%
+  \fi}
+\ifmstr@opt@checkdef\else\def\mstr@verify#1{}\fi
+
+\long\def\mstr@setbare[#1]#2#3{%
+  \mstr@csdo\gdef{mstr@data@#2@#1}##1{#3}}
+
+\long\def\mstr@set[#1]#2#3{\mstr@verify{#2}%
+  \mstr@setbare[#1]{#2}{#3}}
+
+\newcommand{\metaset}{\@ifnextchar[{\mstr@set}{\mstr@set[]}}
+
+\long\def\mstr@unset[#1]#2{\mstr@verify{#2}%
+  \mstr@csdotwo\global\let{mstr@data@#2@#1}\@undefined}
+
+\newcommand{\metaunset}{\@ifnextchar[{\mstr@unset}{\mstr@unset[]}}
+
+\long\def\metaif[#1]#2#3#4{%
+  \ifcsname mstr@data@#2@#1\endcsname #3\else #4\fi}
+
+\long\def\mstr@ifloop[#1,#2]#3#4#5{%
+  \metaif[#1]{#3}{#4}{\if @#2@#5\else\mstr@ifloop[#2]{#3}{#4}{#5}\fi}}
+\long\def\metaifpick[#1]#2#3#4{%
+  \mstr@ifloop
+    [#1,\mstr@lang@main,\mstr@lang@short,,\mstr@lang@fallback,]
+    {#2}{#3}{#4}}
+
+\long\def\mstr@append[#1]#2#3{%
+  \mstr@csdotwo\let\mstr@tmpa{mstr@data@#2@#1}%
+  \def\mstr@tmpb##1{\mstr@set[#1]{#2}{##1#3}}%
+  \mstr@exptwo\mstr@tmpb{\mstr@tmpa{##1}}}
+
+\long\def\mstr@prepend[#1]#2#3{%
+  \mstr@csdotwo\let\mstr@tmpa{mstr@data@#2@#1}%
+  \def\mstr@tmpb##1{\mstr@set[#1]{#2}{#3##1}}%
+  \mstr@exptwo\mstr@tmpb{\mstr@tmpa{##1}}}
+
+\long\def\mstr@addsep[#1]#2#3#4{%
+  \metaif[#1]{#2}{\mstr@append[#1]{#2}{#3#4}}{\mstr@set[#1]{#2}{#4}}}
+
+\newcommand{\metaappend}{%
+  \@ifnextchar[{\mstr@append}{\mstr@append[]}}
+\newcommand{\metaprepend}{%
+  \@ifnextchar[{\mstr@prepend}{\mstr@prepend[]}}
+\newcommand{\metaaddsep}{%
+  \@ifnextchar[{\mstr@addsep}{\mstr@addsep[]}}
+
+\def\mstr@getbare[#1]#2#3{\csname mstr@data@#2@#1\endcsname{#3}}
+
+\def\metaget[#1]#2{%
+  \metaif[#1]{#2}{\mstr@getbare[#1]{#2}{#1}}{}}%
+
+\long\def\mstr@composeloop[#1,#2]#3#4#5#6#7{%
+  \metaif[#1]{#4}{#5\mstr@getbare[#1]{#4}{#3}#6}
+    {\if @#2@#7\else\mstr@composeloop[#2]{#3}{#4}{#5}{#6}{#7}\fi}}
+\long\def\metacompose[#1]#2#3#4#5{%
+  \mstr@composeloop
+    [#1,\mstr@lang@main,\mstr@lang@short,,\mstr@lang@fallback,]{#1}
+    {#2}{#3}{#4}{#5}}%
+\def\metapick[#1]#2{\metacompose[#1]{#2}{}{}{}}
+
+\metadef{language}
+\def\mstr@lang@split#1#2-#3@{%
+  \mstr@csdo\gdef{mstr@lang@#1}{#2}}
+\newcommand{\mstr@setlang@main}[1]{%
+  \metaset{language}{#1}%
+  \gdef\mstr@lang@main{#1}%
+  \mstr@lang@split{short}#1-@%
+  \metaset[short]{language}{\mstr@lang@short}%
+  \metaif[meta]{language}{}{\mstr@lang@split{meta}#1-@}}
+\newcommand{\mstr@setlang@meta}[1]{%
+  \metaset[meta]{language}{#1}%
+  \mstr@lang@split{meta}#1-@%
+  \metaset[metashort]{language}{\mstr@lang@meta}}
+\newcommand{\metasetlang}{%
+  \@ifstar\mstr@setlang@meta\mstr@setlang@main}
+
+\newcommand{\metaterm}{\metatranslate[]}
+\def\metatranslate[#1]#2{\metapick[#1]{term-#2}}
+\long\def\mstr@setterm[#1]#2#3{%
+  \metadef{term-#2}\mstr@setbare[#1]{term-#2}{#3}}
+\newcommand{\metasetterm}{\@ifnextchar[{\mstr@setterm}{\mstr@setterm[]}}
+
+\metadef{writepdf}
+\metaset[auto]{writepdf}{}
+\metaset[preamble]{writepdf}{}
+\metaset[info]{writepdf}{}
+\metaset[aux]{writepdf}{}
+
+\long\def\mstr@ifwritepdf[#1]#2{%
+  \metaif[#1]{writepdf}{#2\metaunset[#1]{writepdf}}{}}
+
+\newcommand{\metawritepdf}{%
+  \mstr@ifwritepdf[preamble]{\metawritepdfpreamble}%
+  \mstr@ifwritepdf[info]{\metawritepdfinfo}%
+  \mstr@ifwritepdf[aux]{\metawritepdfaux}%
+  \mstr@ifwritepdf[contact]{\metawritepdfcontact}%
+  \mstr@ifwritepdf[rights]{\metawritepdfrights}%
+}
+
+\newcommand{\mstr@begindoc}{%
+  \mstr@ifwritepdf[preamble]{\metawritepdfpreamble}%
+  \mstr@ifwritepdf[auto]{\metawritepdf}%
+}
+
+\begingroup
+\toks@\expandafter{\expandafter\mstr@begindoc\@begindocumenthook}%
+\xdef\@begindocumenthook{\the\toks@}%
+\endgroup
+
+\metadef{draft}
+\ifmstr@opt@draft
+\metaset{draft}{\metatranslate[#1]{draft}}
+\fi
+
+\metadef{title}
+\metadef{subtitle}
+\metadef{author}
+\metadef{date}
+\metadef{location}
+\metadef{subject}
+\metadef{keywords}
+
+\metadef{titletext}
+
+\def\metatitleline[#1]#2{%
+  \metacompose[#1]{#2}
+   {\metaget[skip]{#2}\begingroup\metaget[style]{#2}}
+   {\par\endgroup}{}}
+\def\metatitlelinetwo[#1]#2[#3]#4{%
+  \metaif[sep]{#4}
+   {\metacompose[#1]{#2}
+     {\metaget[skip]{#2}\begingroup\metaget[style]{#2}}
+     {\metacompose[#3]{#4}{\metaget[sep]{#4}}{}{}\par\endgroup}
+     {\metatitleline[#3]{#4}}}
+   {\metatitleline[#1]{#2}\metatitleline[#3]{#4}}}
+
+\metaset[style]{title}{\LARGE}
+\metaset[style]{subtitle}{\large}
+\metaset[style]{draft}{\large}
+\metaset[style]{author}{\large}
+\metaset[style]{location}{\large}
+\metaset[style]{date}{\large}
+\metaset[skip]{subtitle}{\vspace{1.5em}}
+\metaset[skip]{draft}{\vspace{1.5em}}
+\metaset[skip]{author}{\vspace{3em}}
+\metaset[skip]{location}{\vspace{1.5em}}
+\metaset[skip]{date}{\vspace{1.5em}}
+\metaset[sep]{subtitle}{ -- }
+\metaset[sep]{date}{, }
+\metaset{titletext}{%
+  \metacompose[#1]{draft}{}{: }{}%
+  \metapick[#1]{title}%
+  \metacompose[#1]{subtitle}{\metaget[sep]{subtitle}}{}{}}
+\metaset[print]{titletext}{%
+  \metatitleline[print]{title}%
+  \metatitlelinetwo[print]{subtitle}[print]{draft}%
+  \metatitleline[print]{author}%
+  \metatitlelinetwo[print]{location}[print]{date}}
+
+\metadef{url}
+\metadef{urlmessage}
+\metaset[print]{url}{\url{\metaget[]{url}}}
+
+\metadef{partof}
+\metadef{partofmessage}
+
+\metadef{source}
+
+\newcommand{\metawritepdfpreamble}{\ifdefined\hypersetup
+  \ifmstr@opt@xmppdfinfo
+    \ifdefined\xmptilde\hypersetup{keeppdfinfo}\fi\fi
+  \metaif[]{language}
+    {\hypersetup{pdflang={\metaget[]{language}}}}{}%
+  \ifdefined\xmptilde
+    \metaif[meta]{language}
+      {\hypersetup{pdfmetalang={\metaget[meta]{language}}}}{}%
+  \fi\fi}
+
+\newcommand{\metawritepdfinfo}{\ifdefined\hypersetup
+  \metaifpick[\mstr@lang@meta]{author}
+    {\hypersetup{pdfauthor={\metapick[\mstr@lang@meta]{author}}}}{}%
+  \metaifpick[\mstr@lang@meta]{title}
+    {\hypersetup{pdftitle={\metapick[\mstr@lang@meta]{titletext}}}}{}%
+  \metaifpick[\mstr@lang@meta]{subject}
+    {\hypersetup{pdfsubject={\metapick[\mstr@lang@meta]{subject}}}}{}%
+  \metaifpick[\mstr@lang@meta]{keywords}
+    {\hypersetup{pdfkeywords={\metapick[\mstr@lang@meta]{keywords}}}}{}%
+  \ifdefined\xmptilde
+    \metaif[altlang]{title}{%
+      \@for\mstr@tmp:=\mstr@data@title@altlang{}\do{%
+        \metaifpick[\mstr@tmp]{title}
+          {\XMPLangAlt{\mstr@tmp}{pdftitle=
+            {\metapick[\mstr@tmp]{titletext}}}}{}}%
+      \metaunset[altlang]{title}}{}%
+    \metaif[altlang]{subject}{%
+      \@for\mstr@tmp:=\mstr@data@subject@altlang{}\do{%
+        \metaifpick[\mstr@tmp]{subject}
+          {\XMPLangAlt{\mstr@tmp}{pdfsubject=
+            {\metapick[\mstr@tmp]{subject}}}}{}}%
+      \metaunset[altlang]{subject}}{}%
+  \fi\fi}
+
+\newcommand{\metawritepdfaux}{\ifdefined\hypersetup\ifdefined\xmptilde
+  \metaif[]{url}
+    {\hypersetup{pdfurl={\metaget[]{url}}}}{}%
+  \hypersetup{pdfsource={}}%
+  \metaif[]{source}
+    {\hypersetup{pdfsource={\metaget[]{source}}}}{}%
+\fi\fi}
+
+\metadef{rightstext}
+\metaset{rightstext}{%
+  \metaifpick[]{partof}{\metacompose[#1]{partofmessage}{}{ }{}}{}%
+  \metapick[#1]{copyrightstatement}%
+  \metacompose[#1]{copyrightmessage}{ }{}{}%
+  \metacompose[#1]{licensemessage}{ }{}{}%
+  \metaif[]{licenseurl}{\metacompose[#1]{licenseurlmessage}{ }{}{}}{}%
+  \metaif[]{url}{\metacompose[#1]{urlmessage}{ }{}{}}{}%
+}
+\metaset[skip]{rightstext}{\par\addvspace\medskipamount}
+\metaset[print]{rightstext}{%
+  \metaifpick[]{partof}{%
+    \metacompose[#1]{partofmessage}{}{\metaget[skip]{rightstext}}{}}{}%
+  \metacompose[#1]{copyrightstatement}{}{\metaget[skip]{rightstext}}{}%
+  \metacompose[#1]{copyrightmessage}{}{ }{}%
+  \metacompose[#1]{licensemessage}{}{ }{}%
+  \metaif[]{licenselogo}{%
+    \metacompose[#1]{licenselogomessage}
+    {\metaget[skip]{rightstext}}{\metaget[skip]{rightstext}}{}}{}%
+  \metaif[]{licenseurl}{\metacompose[#1]{licenseurlmessage}{ }{ }{}}{}%
+  \metaif[]{url}{\metacompose[#1]{urlmessage}
+    {\metaget[skip]{rightstext}}{}{}}{}
+  \metacompose[#1]{attributionmessage}{\metaget[skip]{rightstext}}{}{}%
+}
+
+\metadef{copyrightmark}
+\metadef{copyrightdate}
+\metadef{copyrightowner}
+\metadef{copyrightstatement}
+\metadef{copyrightmessage}
+
+\metaset{copyrightmark}{Copyright}
+\metaset[print]{copyrightmark}{\copyright}
+
+\metaset{copyrightstatement}{\metaifpick[#1]{copyrightdate}%
+  {\metapick[#1]{copyrightmark} \metapick[#1]{copyrightdate}%
+  \metacompose[#1]{copyrightowner}{ }{}{}.}
+  {\metaifpick[#1]{copyrightowner}
+   {\metapick[#1]{copyrightmark} \metapick[#1]{copyrightowner}.}{}}}
+
+\metadef{licenseversion}
+\metadef{licenseprovider}
+\metadef{licensemessage}
+\metadef{licenselogo}
+\metadef{licenselogomessage}
+\metadef{licenseurl}
+\metadef{licenseurlmessage}
+
+\metadef{attributionmessage}
+
+
+\metaset[print]{licenseurl}{\url{\metaget[]{licenseurl}}}
+
+\metaset[print]{licenselogomessage}{%
+  \centerline{\metapick[#1]{licenselogo}}}
+\metaset[cmd]{licenselogo}{\includegraphics{#1}}
+\metaset[print]{licenselogo}{%
+  \mstr@getbare[cmd]{licenselogo}{\metaget[]{licenselogo}}}
+
+\newcommand{\metawritepdfrights}{\ifdefined\hypersetup\ifdefined\xmptilde
+    \metaifpick[\mstr@lang@meta]{rightstext}
+      {\hypersetup{pdfcopyright=
+        {\metapick[\mstr@lang@meta]{rightstext}}}}{}%
+    \metaif[altlang]{rightstext}
+      {\@for\mstr@tmp:=\mstr@data@rightstext@altlang{}\do
+        {\XMPLangAlt{\mstr@tmp}{pdfcopyright=
+          {\metapick[\mstr@tmp]{rightstext}}}}}{}
+    \metaifpick[\mstr@lang@meta]{licenseurl}
+      {\hypersetup{pdflicenseurl=
+        {\metapick[\mstr@lang@meta]{licenseurl}}}}{}%
+\fi\fi}
+
+\metadef{copyright@plain}
+\metadef{copyright@parts}
+\metadef{copyright@doc}
+\metadef{copyright@doc-parts}
+\metadef{copyright@reserved}
+\metadef{copyright@publicdomain}
+
+\metadef{license@consent}
+\metadef{license@consent-noncom}
+\metadef{license@lppl}
+
+
+
+\metaset[url]{license@lppl}{http://www.latex-project.org/lppl.txt}
+
+\newcommand{\metacopyright}[1]{%
+  \metaset{copyrightmessage}{\metapick[##1]{copyright@#1}}}
+\newcommand{\metalicense}[1]{%
+  \metaset{licensemessage}{\metapick[##1]{license@#1}}%
+  \metaif[url]{license@#1}{%
+    \metaset{licenseurl}{\metaget[url]{license@#1}}}{}}
+
+\metadef{cc@type}
+\metadef{cc@class}
+
+\metasetterm{cc@sep}{-}
+\metasetterm{cc@quotel}{\textquotedblleft}
+\metasetterm{cc@quoter}{\textquotedblright}
+\metasetterm{cc@cc}{Creative Commons}
+\metasetterm{cc@zero}{CC0}
+\metasetterm{cc@by}{Attribution}
+\metasetterm{cc@sa}{ShareAlike}
+\metasetterm{cc@nd}{NoDerivatives}
+\metasetterm{cc@nc}{NonCommercial}
+\metasetterm{cc@unported}{Unported}
+\metasetterm{cc@generic}{Generic}
+\metasetterm{cc@intl}{International}
+\metasetterm{cc@univ}{Universal}
+\metasetterm{cc@pd}{Public Domain}
+\metasetterm{cc@license}{License}
+\metasetterm{cc@pddecl}{Public Domain Dedication}
+
+\metadef{cc@pd}
+\metadef{cc@zero}
+\metadef{cc@by}
+\metadef{cc@by-sa}
+\metadef{cc@by-nd}
+\metadef{cc@by-nc}
+\metadef{cc@by-nc-sa}
+\metadef{cc@by-nc-nd}
+\metaset{cc@zero}{\metatranslate[#1]{cc@zero}}
+\metaset{cc@by}{\metatranslate[#1]{cc@by}}
+\metaset{cc@by-sa}{%
+  \metatranslate[#1]{cc@by}\metatranslate[#1]{cc@sep}%
+  \metatranslate[#1]{cc@sa}}
+\metaset{cc@by-nd}{%
+  \metatranslate[#1]{cc@by}\metatranslate[#1]{cc@sep}%
+  \metatranslate[#1]{cc@nd}}
+\metaset{cc@by-nc}{%
+  \metatranslate[#1]{cc@by}\metatranslate[#1]{cc@sep}%
+  \metatranslate[#1]{cc@nc}}
+\metaset{cc@by-nc-sa}{%
+  \metatranslate[#1]{cc@by}\metatranslate[#1]{cc@sep}%
+  \metatranslate[#1]{cc@nc}\metatranslate[#1]{cc@sep}%
+  \metatranslate[#1]{cc@sa}}
+\metaset{cc@by-nc-nd}{%
+  \metatranslate[#1]{cc@by}\metatranslate[#1]{cc@sep}%
+  \metatranslate[#1]{cc@nc}\metatranslate[#1]{cc@sep}%
+  \metatranslate[#1]{cc@nd}}
+
+\metadef{cc@1.0@zero}
+\metadef{cc@1.0}
+\metadef{cc@2.0}
+\metadef{cc@2.5}
+\metadef{cc@3.0}
+\metadef{cc@4.0}
+\metaset{cc@1.0@zero}{\metatranslate[#1]{cc@univ}}
+\metaset{cc@1.0}{\metatranslate[#1]{cc@generic}}
+\metaset{cc@2.0}{\metatranslate[#1]{cc@generic}}
+\metaset{cc@2.5}{\metatranslate[#1]{cc@generic}}
+\metaset{cc@3.0}{\metatranslate[#1]{cc@unported}}
+\metaset{cc@4.0}{\metatranslate[#1]{cc@intl}}
+
+\metadef{cc@license}
+\metadef{cc@license@zero}
+\metadef{cc@license@pd}
+\metaset{cc@license@pd}{\metatranslate[#1]{cc@pddecl}}
+
+\metadef{cc@message}
+\metadef{cc@message@zero}
+
+\metadef{licensecc}
+\metadef{licenseccver}
+\metadef{licenseccfull}
+\metaset{licensecc}{%
+  \metapick[#1]{cc@\metaget[]{cc@type}}}
+\metaset{licenseccver}{%
+  \metaget[]{licenseversion}
+  \metapick[#1]{cc@\metaget[]{licenseversion}\metaget[]{cc@class}}}
+\metaset{licenseccfull}{%
+  \metapick[#1]{cc@license\metaget[]{cc@class}}
+  \metatranslate[#1]{cc@quotel}%
+  \metapick[#1]{licensecc}
+  \metapick[#1]{licenseccver}%
+  \metatranslate[#1]{cc@quoter}}
+
+\metaset[ident]{licenseccver}{\metaget[]{licenseversion}}
+\metaset[ident]{licenseccfull}{%
+  \metapick[ident]{licensecc} \metaget[ident]{licenseccver}}
+\metasetterm[ident]{cc@sep}{-}
+\metasetterm[ident]{cc@cc}{CC}
+\metasetterm[ident]{cc@by}{BY}
+\metasetterm[ident]{cc@sa}{SA}
+\metasetterm[ident]{cc@nd}{ND}
+\metasetterm[ident]{cc@nc}{NC}
+\metasetterm[ident]{cc@zero}{CC0}
+\metaset[short]{licensecc}{%
+  \metaget[short]{cc@license\metaget[]{cc@class}}%
+  \metapick[short]{cc@\metaget[]{cc@type}}}
+\metaset[short]{licenseccver}{\metaget[]{licenseversion}}
+\metaset[short]{licenseccfull}{%
+  \metapick[short]{licensecc} \metaget[short]{licenseccver}}
+\metasetterm[short]{cc@sep}{-}
+\metasetterm[short]{cc@cc}{CC}
+\metasetterm[short]{cc@by}{BY}
+\metasetterm[short]{cc@sa}{SA}
+\metasetterm[short]{cc@nd}{ND}
+\metasetterm[short]{cc@nc}{NC}
+\metasetterm[short]{cc@zero}{CC0}
+\metaset[short]{cc@license}{CC }
+\metaset[short]{cc@license@zero}{}
+
+\metaset[logo]{cc@pd}{doclicense-CC-pd}
+\metaset[logo]{cc@zero}{doclicense-CC-zero}
+\metaset[logo]{cc@by}{doclicense-CC-by}
+\metaset[logo]{cc@by-sa}{doclicense-CC-by-sa}
+\metaset[logo]{cc@by-nd}{doclicense-CC-by-nd}
+\metaset[logo]{cc@by-nc}{doclicense-CC-by-nc}
+\metaset[logo]{cc@by-nc-sa}{doclicense-CC-by-nc-sa}
+\metaset[logo]{cc@by-nc-nd}{doclicense-CC-by-nc-nd}
+\mstr@iftext\mstr@opt@cclogocurr{euro}{
+\metaset[logo]{cc@by-nc}{doclicense-CC-by-nc-eu}
+\metaset[logo]{cc@by-nc-sa}{doclicense-CC-by-nc-sa-eu}
+\metaset[logo]{cc@by-nc-nd}{doclicense-CC-by-nc-nd-eu}}
+
+\newcommand{\mstr@setcclogo}{%
+  \ifmstr@opt@cclogo
+    \IfFileExists{doclicense.sty}{%
+      \ifdefined\includegraphics
+      \metaset{licenselogo}{%
+        \metapick[logo]{licensecc}}
+      \fi}{\GenericWarning{please install package `doclicense'}}%
+  \fi}
+
+\metaset[icon]{licensecc}{%
+  \metaget[icon]{cc@license\metaget[]{cc@class}}%
+  \metapick[icon]{cc@\metaget[]{cc@type}}}
+\metaset[icon]{licenseccver}{\metaget[]{licenseversion}}
+\metaset[icon]{licenseccfull}{%
+  \metaget[icon]{licensecc}
+  \metaget[icon]{licenseccver}}
+\metasetterm[icon]{cc@sep}{}
+\metasetterm[icon]{cc@cc}{\ccLogo}
+\metasetterm[icon]{cc@pd}{\ccPublicDomain}
+\metasetterm[icon]{cc@zero}{\ccZero}
+\metasetterm[icon]{cc@by}{\ccAttribution}
+\metasetterm[icon]{cc@sa}{\ccShareAlike}
+\metasetterm[icon]{cc@nd}{\ccNoDerivatives}
+\metasetterm[icon]{cc@nc}{\ccNonCommercial}
+\metaset[icon]{cc@license}{\metatranslate[#1]{cc@cc}}
+\metaset[icon]{cc@license@zero}{\metatranslate[#1]{cc@cc}}
+\metaset[icon]{cc@license@pd}{\metatranslate[#1]{cc@pd}}
+\metaset[icon]{copyrightmark}{\ccCopy}
+\mstr@iftext\mstr@opt@cclogocurr{euro}{
+  \metasetterm[icon]{cc@nc}{\ccNonCommercialEU}}
+\mstr@iftext\mstr@opt@cclogocurr{yen}{
+  \metasetterm[icon]{cc@nc}{\ccNonCommercialJP}}
+
+\metaset[url]{licenseccver}{\metaget[]{licenseversion}}
+\metaset[url]{licenseccfull}{%
+  \metaget[url]{cc@license\metaget[]{cc@class}}/%
+  \metapick[url]{licensecc}/%
+  \metaget[url]{licenseccver}/}
+\metaset[url]{cc@license}{https://creativecommons.org/licenses}
+\metaset[url]{cc@license@zero}{https://creativecommons.org/publicdomain}
+\metaset[url]{cc@zero}{zero}
+\metaset[url]{cc@by}{by}
+\metaset[url]{cc@by-sa}{by-sa}
+\metaset[url]{cc@by-nd}{by-nd}
+\metaset[url]{cc@by-nc}{by-nc}
+\metaset[url]{cc@by-nc-sa}{by-nc-sa}
+\metaset[url]{cc@by-nc-nd}{by-nc-nd}
+
+\metadef{cc@url}
+\metadef{cc@url@deed}
+\metaset{cc@url@deed}{}
+\metaset{cc@url}{\metapick[url]{licenseccfull}\metapick[#1]{cc@url@deed}}
+
+\newcommand{\metalicensecc}[1]{%
+  \def\mstr@tmpl{#1}%
+  \def\mstr@tmp{pd}%
+  \ifx\mstr@tmpl\mstr@tmp
+    \metaset{cc@class}{@pd}%
+    \metacopyright{publicdomain}%
+    \metaset{cc@type}{pd}%
+  \else
+    \def\mstr@tmp{zero}%
+    \ifx\mstr@tmpl\mstr@tmp
+      \metaset{cc@class}{@zero}%
+      \metaif[]{licenseversion}{}{\metaset{licenseversion}{1.0}}%
+    \else
+      \metaset{cc@class}{}%
+      \metaif[]{licenseversion}{}{\metaset{licenseversion}{4.0}}%
+    \fi
+    \metaset{cc@type}{#1}%
+    \metaset{licenseurl}{\metapick[##1]{cc@url}}%
+    \metaset{licensemessage}
+      {\metapick[##1]{cc@message\metaget[]{cc@class}}}%
+  \fi
+  \mstr@setcclogo}
+
+\metadef{contactaddress}
+\metadef{contactpostcode}
+\metadef{contactcity}
+\metadef{contactregion}
+\metadef{contactcountry}
+\metadef{contactemail}
+\metadef{contacturl}
+
+\newcommand{\metawritepdfcontact}{\ifdefined\hypersetup\ifdefined\xmptilde
+  \metaifpick[\mstr@lang@meta]{contactaddress}{%
+    \hypersetup{pdfcontactaddress=
+      {\metapick[\mstr@lang@meta]{contactaddress}}}}{}%
+  \metaifpick[\mstr@lang@meta]{contactpostcode}{%
+    \hypersetup{pdfcontactpostcode=
+      {\metapick[\mstr@lang@meta]{contactpostcode}}}}{}%
+  \metaifpick[\mstr@lang@meta]{contactcity}{%
+    \hypersetup{pdfcontactcity=
+      {\metapick[\mstr@lang@meta]{contactcity}}}}{}%
+  \metaifpick[\mstr@lang@meta]{contactregion}{%
+    \hypersetup{pdfcontactregion=
+      {\metapick[\mstr@lang@meta]{contactregion}}}}{}%
+  \metaifpick[\mstr@lang@meta]{contactcountry}{%
+    \hypersetup{pdfcontactcountry=
+      {\metapick[\mstr@lang@meta]{contactcountry}}}}{}%
+  \metaifpick[\mstr@lang@meta]{contactemail}{%
+    \hypersetup{pdfcontactemail=
+      {\metapick[\mstr@lang@meta]{contactemail}}}}{}%
+  \metaifpick[\mstr@lang@meta]{contacturl}{%
+    \hypersetup{pdfcontacturl=
+      {\metapick[\mstr@lang@meta]{contacturl}}}}{}%
+\fi\fi}
+
+\ifmstr@opt@course
+
+\metadef{institution}
+\metadef{instructor}
+\metadef{course}
+\metadef{material}
+\metadef{period}
+
+\metaset[style]{course}{\LARGE\bfseries}
+\metaset[style]{material}{\large}
+\metaset[style]{institution}{\large}
+\metaset[style]{period}{\large}
+\metaset[style]{instructor}{\scshape\Large}
+\metaset[skip]{material}{\vspace{2ex}}
+\metaset[skip]{institution}{\vspace{4ex}}
+\metaset[skip]{period}{\vspace{4ex}}
+\metaset[skip]{instructor}{\vspace{6ex}}
+\metaset[sep]{period}{, }
+
+\metaset[course]{titletext}{%
+  \metatitleline[print]{course}%
+  \metatitlelinetwo[print]{material}[print]{draft}%
+  \metatitlelinetwo[print]{institution}[print]{period}%
+  \metatitleline[print]{instructor}}
+
+\metaset{title}{\metapick[#1]{course}}
+\metaset{subtitle}{\metapick[#1]{material}}
+\metaset{author}{\metapick[#1]{instructor}}
+\metaset{date}{\metapick[#1]{period}}
+\metaset{location}{\metapick[#1]{institution}}
+
+\fi
+
+\def\mstr@loadlangloop#1|#2&{%
+  \mstr@csdo\let{mstr@lang@#1}\relax%
+  \ifx\mstr@lang@fallback\@empty\def\mstr@lang@fallback{#1}\fi%
+  \if @#2@\else\mstr@loadlangloop#2&\fi}
+\expandafter\mstr@loadlangloop\mstr@opt@loadlang|&
+
+\ifdefined\mstr@lang@en
+
+\metasetterm[en]{title}{Title}
+\metasetterm[en]{abstract}{Abstract}
+\metasetterm[en]{copyright}{Copyright}
+\metasetterm[en]{preface}{Preface}
+\metasetterm[en]{part}{Part}
+\metasetterm[en]{chapter}{Chapter}
+\metasetterm[en]{section}{Section}
+\metasetterm[en]{subsection}{Subsection}
+\metasetterm[en]{paragraph}{Paragraph}
+\metasetterm[en]{appendix}{Appendix}
+\metasetterm[en]{page}{Page}
+\metasetterm[en]{figure}{Figure}
+\metasetterm[en]{table}{Table}
+\metasetterm[en]{contents}{Contents}
+\metasetterm[en]{listfigure}{List of Figures}
+\metasetterm[en]{listtable}{List of Tables}
+\metasetterm[en]{references}{References}
+\metasetterm[en]{index}{Index}
+\metasetterm[en]{draft}{DRAFT}
+
+\metaset[en]{urlmessage}{%
+  The current version of this work can be found at: \metapick[#1]{url}.}
+\metaset[en]{partofmessage}{%
+  This document is part of the work: \metapick[#1]{partof}.}
+\metaset[en]{licenseurlmessage}{%
+  To view a copy of this license, visit: \metapick[#1]{licenseurl}.}
+\metaset[en]{copyright@plain}{%
+  This work is protected by copyright.}
+\metaset[en]{copyright@parts}{%
+  This work as well as its parts is protected by copyright.}
+\metaset[en]{copyright@doc}{%
+  This document is protected by copyright.}
+\metaset[en]{copyright@doc-parts}{%
+  This document as well as its parts is protected by copyright.}
+\metaset[en]{copyright@reserved}{All rights reserved.}
+\metaset[en]{copyright@publicdomain}
+  {This work is dedicated to the public domain.}
+\metaset[en]{license@consent}{%
+  Reproduction of any part of this work in any form
+  without prior written consent
+  \metacompose[#1]{licenseprovider}{}{}{of the author}
+  is not permissible.}
+\metaset[en]{license@consent-noncom}{%
+  Reproduction of any part of this work in any form
+  without prior written consent
+  \metacompose[#1]{licenseprovider}{}{}{of the author}
+  is permissible only for private, scientific and non-commercial use.}
+\metaset[en]{license@lppl}{%
+  This work may be distributed and/or modified under the
+  conditions of the LaTeX Project Public License, either version
+  \metaif[]{licenseversion}{\metaget[]{licenseversion}}{1.3}
+  of this license or (at your option) any later version.}
+\metaset[en]{cc@url@deed}{deed.en}
+\metaset[en]{cc@message}{%
+  This work is licensed under the
+  \metapick[en]{licenseccfull} (\metapick[short]{licenseccfull}).}
+\metaset[en]{cc@message@zero}{%
+  This work is dedicated to the public domain by means of the
+  \metapick[#1]{licenseccfull} (\metapick[short]{licenseccfull}).}
+\metaset[en]{cc@license}{%
+  \metatranslate[#1]{cc@cc} \metatranslate[#1]{cc@license}}
+\metaset[en]{cc@license@zero}{%
+  \metatranslate[#1]{cc@cc} \metatranslate[#1]{cc@pddecl}}
+\metasetterm[en]{cc@sep}{-}
+\metasetterm[en]{cc@quotel}{\textquotedblleft}
+\metasetterm[en]{cc@quoter}{\textquotedblright}
+\metasetterm[en]{cc@by}{Attribution}
+\metasetterm[en]{cc@sa}{ShareAlike}
+\metasetterm[en]{cc@nd}{NoDerivatives}
+\metasetterm[en]{cc@nc}{NonCommercial}
+\metasetterm[en]{cc@unported}{Unported}
+\metasetterm[en]{cc@generic}{Generic}
+\metasetterm[en]{cc@intl}{International}
+\metasetterm[en]{cc@univ}{Universal}
+\metasetterm[en]{cc@license}{License}
+\metasetterm[en]{cc@pd}{Public Domain}
+\metasetterm[en]{cc@pddecl}{Public Domain Dedication}
+
+\fi
+
+\ifdefined\mstr@lang@de
+
+\metasetterm[de]{title}{Titel}
+\metasetterm[de]{abstract}{Zusammenfassung}
+\metasetterm[de]{copyright}{Urheberrechte}
+\metasetterm[de]{preface}{Vorwort}
+\metasetterm[de]{part}{Teil}
+\metasetterm[de]{chapter}{Kapitel}
+\metasetterm[de]{section}{Abschnitt}
+\metasetterm[de]{subsection}{Unterabschnitt}
+\metasetterm[de]{paragraph}{Absatz}
+\metasetterm[de]{appendix}{Anhang}
+\metasetterm[de]{page}{Seite}
+\metasetterm[de]{figure}{Abbildung}
+\metasetterm[de]{table}{Tabelle}
+\metasetterm[de]{contents}{Inhaltsverzeichnis}
+\metasetterm[de]{listfigure}{Abbildungsverzeichnis}
+\metasetterm[de]{listtable}{Tabellenverzeichnis}
+\metasetterm[de]{references}{Literatur}
+\metasetterm[de]{index}{Index}
+\metasetterm[de]{draft}{ENTWURF}
+
+\metaset[de]{urlmessage}{%
+  Die aktuelle Version dieses Werks befindet sich unter:
+  \metapick[#1]{url}.}
+\metaset[de]{partofmessage}{%
+  Dieses Dokument ist Teil des Werks: \metapick[#1]{partof}.}
+\metaset[de]{licenseurlmessage}{%
+  Die Lizenz kann eingesehen werden unter:
+  \metapick[#1]{licenseurl}.}
+\metaset[de]{copyright@plain}{%
+  Dieses Werk ist urheberrechtlich gesch\"utzt.}
+\metaset[de]{copyright@parts}{%
+  Dieses Werk sowie seine Teile sind urheberrechtlich gesch\"utzt.}
+\metaset[de]{copyright@doc}{%
+  Dieses Dokument ist urheberrechtlich gesch\"utzt.}
+\metaset[de]{copyright@doc-parts}{%
+  Dieses Dokument sowie seine Teile sind urheberrechtlich gesch\"utzt.}
+\metaset[de]{copyright@reserved}{Alle Rechte vorbehalten.}
+\metaset[de]{copyright@publicdomain}
+  {Dieses Werk ist gemeinfrei.}
+\metaset[de]{license@consent}{%
+  Reproduktion eines Teils dieses Werks in beliebiger Form
+  ohne vorg\"angige schriftliche Erlaubnis
+  \metacompose[#1]{licenseprovider}{}{}{des Verfassers}
+  ist nicht gestattet.}
+\metaset[de]{license@consent-noncom}{%
+  Reproduktion eines Teils dieses Werks in beliebiger Form
+  ohne vorg\"angige schriftliche Erlaubnis
+  \metacompose[#1]{licenseprovider}{}{}{des Verfassers}
+  ist nur zum privaten, wissenschaftlichen
+  und nicht-gewerblichen Gebrauch gestattet.}
+\metaset[de]{license@lppl}{%
+  Dieses Werk darf nach den Bedingungen der LaTeX Project Public Lizenz,
+  entweder Version
+  \metaif[]{licenseversion}{\metaget[]{licenseversion}}{1.3}
+  oder (nach Ihrer Wahl) jede sp\"atere Version,
+  verteilt und/oder ver\"andert werden.}
+\metaset[de]{cc@url@deed}{deed.de}
+\metaset[de]{cc@message}{%
+  Dieses Werk ist lizensiert unter der
+  \metapick[de]{licenseccfull} (\metapick[short]{licenseccfull}).}
+\metaset[de]{cc@message@zero}{%
+  Dieses Werk ist gemeinfrei deklariert mittels der
+  \metapick[de]{licenseccfull} (\metapick[short]{licenseccfull}).}
+\metaset[de]{cc@license}{%
+  \metatranslate[#1]{cc@cc} \metatranslate[#1]{cc@license}}
+\metaset[de]{cc@license@zero}{%
+  \metatranslate[#1]{cc@cc} \metatranslate[#1]{cc@pddecl}}
+\metasetterm[de]{cc@sep}{ -- }
+\metasetterm[de]{cc@quotel}{\quotedblbase}
+\metasetterm[de]{cc@quoter}{\textquotedblleft}
+\metasetterm[de]{cc@by}{Namensnennung}
+\metasetterm[de]{cc@sa}{Weitergabe unter gleichen Bedingungen}
+\metasetterm[de]{cc@nd}{Keine Bearbeitungen}
+\metasetterm[de]{cc@nc}{Nicht kommerziell}
+\metasetterm[de]{cc@unported}{Unportiert}
+\metasetterm[de]{cc@generic}{Generisch}
+\metasetterm[de]{cc@intl}{International}
+\metasetterm[de]{cc@univ}{Universell}
+\metasetterm[de]{cc@license}{Lizenz}
+\metasetterm[de]{cc@pd}{Gemeinfrei}
+\metasetterm[de]{cc@pddecl}{Gemeinfrei Deklaration}
+
+\fi
+
+\ifdefined\mstr@lang@fr
+
+\metasetterm[fr]{title}{Titre}
+\metasetterm[fr]{abstract}{R\'esum\'e}
+\metasetterm[fr]{copyright}{Droits d'Auteur}
+\metasetterm[fr]{preface}{Pr\'eface}
+\metasetterm[fr]{part}{Partie}
+\metasetterm[fr]{chapter}{Chapitre}
+\metasetterm[fr]{section}{Section}
+\metasetterm[fr]{subsection}{Sous-Section}
+\metasetterm[fr]{paragraph}{Paragraphe}
+\metasetterm[fr]{appendix}{Annexe}
+\metasetterm[fr]{page}{Page}
+\metasetterm[fr]{figure}{Figure}
+\metasetterm[fr]{table}{Table}
+\metasetterm[fr]{contents}{Table des Mati\`eres}
+\metasetterm[fr]{listfigure}{Table des Figures}
+\metasetterm[fr]{listtable}{Liste des Tableaux}
+\metasetterm[fr]{references}{R\'ef\'erences}
+\metasetterm[fr]{index}{Index}
+\metasetterm[fr]{draft}{BROUILLON}
+
+\metaset[fr]{urlmessage}{%
+  La version actuelle de cet \oe uvre se trouve \`a l'adresse:
+  \metapick[#1]{url}.}
+\metaset[fr]{partofmessage}{%
+  Ce document fait partie de la \oe uvre: \metapick[#1]{partof}.}
+\metaset[fr]{licenseurlmessage}{%
+  Pour voir une copie de cette licence, visitez:
+  \metapick[#1]{licenseurl}.}
+\metaset[fr]{copyright@plain}{%
+  Cette \oe uvre est prot\'eg\'ee par le droit d'auteur.}
+\metaset[fr]{copyright@parts}{%
+  Cette \oe uvre ainsi que ses parties
+  sont prot\'eg\'ees par le droit d'auteur.}
+\metaset[fr]{copyright@doc}{%
+  Ce document est prot\'eg\'es par le droit d'auteur.}
+\metaset[fr]{copyright@doc-parts}{%
+  Ce document ainsi que ses parties
+  sont prot\'eg\'es par le droit d'auteur.}
+\metaset[fr]{copyright@reserved}{Tous les droits sont r\'eserv\'es.}
+\metaset[fr]{copyright@publicdomain}
+  {Cette \oe uvre est du domaine public.}
+\metaset[fr]{cc@url@deed}{deed.fr}
+\metaset[fr]{cc@message}{%
+  Cette \oe uvre est mise \`a disposition selon les termes de la
+  \metapick[fr]{licenseccfull} (\metapick[short]{licenseccfull}).}
+\metaset[fr]{cc@message@zero}{%
+  Cette \oe uvre est d\'eclar\'ee du domaine public par le
+  \metapick[fr]{licenseccfull} (\metapick[short]{licenseccfull}).}
+\metaset[fr]{cc@license}{%
+  \metatranslate[#1]{cc@license} \metatranslate[#1]{cc@cc}}
+\metaset[fr]{cc@license@zero}{%
+  \metatranslate[#1]{cc@pddecl} \metatranslate[#1]{cc@cc}}
+\metasetterm[fr]{cc@sep}{ -- }
+\metasetterm[fr]{cc@quotel}{\guillemotleft}
+\metasetterm[fr]{cc@quoter}{\guillemotright}
+\metasetterm[fr]{cc@by}{Attribution}
+\metasetterm[fr]{cc@sa}{Partage dans les M\^emes Conditions}
+\metasetterm[fr]{cc@nd}{Pas de Modification}
+\metasetterm[fr]{cc@nc}{Pas d'Utilisation Commerciale}
+\metasetterm[fr]{cc@unported}{Non Transpos\'e}
+\metasetterm[fr]{cc@generic}{G\'en\'erique}
+\metasetterm[fr]{cc@intl}{International}
+\metasetterm[fr]{cc@univ}{Universel}
+\metasetterm[fr]{cc@license}{Licence}
+\metasetterm[fr]{cc@pd}{Domaine Public}
+\metasetterm[fr]{cc@pddecl}{Transfert dans le Domaine Public}
+
+\fi
+
+\ifdefined\mstr@lang@es
+
+\metasetterm[es]{chapter}{Cap\'itulo}
+\metasetterm[es]{section}{Secci\'on}
+\metasetterm[es]{subsection}{Subsecci\'on}
+\metasetterm[es]{paragraph}{P\'arrafo}
+\metasetterm[es]{title}{T\'itulo}
+\metasetterm[es]{abstract}{Resumen}
+\metasetterm[es]{copyright}{Derechos de Autor}
+\metasetterm[es]{preface}{Prefacio}
+\metasetterm[es]{part}{Parte}
+\metasetterm[es]{appendix}{Ap\'endice}
+\metasetterm[es]{page}{P\'agina}
+\metasetterm[es]{figure}{Figura}
+\metasetterm[es]{table}{Cuadro}
+\metasetterm[es]{contents}{\'Indice}
+\metasetterm[es]{listfigure}{\'Indice de Figuras}
+\metasetterm[es]{listtable}{\'Indice de Cuadros}
+\metasetterm[es]{references}{Referencias}
+\metasetterm[es]{index}{\'Indice Alfab\'etico}
+\metasetterm[es]{draft}{BORRADOR}
+
+\metaset[es]{urlmessage}{%
+  La versi\'on actual de esta obra se puede encontrar en:
+  \metapick[#1]{url}.}
+\metaset[es]{partofmessage}{%
+  Este documento es parte de la obra: \metapick[#1]{partof}.}
+\metaset[es]{licenseurlmessage}{%
+  Para ver una copia de esta licencia, visite:
+  \metapick[#1]{licenseurl}.}
+\metaset[es]{copyright@plain}{%
+  Esta obra est\'a protegida por derechos de autor.}
+\metaset[es]{copyright@parts}{%
+  Esta obra y sus partes est\'an protegidas por derechos de autor.}
+\metaset[es]{copyright@doc}{%
+  Este documento est\'a protegido por derechos de autor.}
+\metaset[es]{copyright@doc-parts}{%
+  Este documento y sus partes est\'an protegidos por derechos de autor.}
+\metaset[es]{copyright@reserved}{Todos los derechos reservados.}
+\metaset[es]{copyright@publicdomain}
+  {Esta obra es de dominio p\'ublico.}
+\metaset[es]{cc@url@deed}{deed.es}
+\metaset[es]{cc@message}{%
+  Esta obra est\'a bajo la
+  \metapick[es]{licenseccfull} (\metapick[short]{licenseccfull}).}
+\metaset[es]{cc@message@zero}{Esta obra est\'a dedicada
+  al dominio p\'ublico por la
+  \metapick[es]{licenseccfull} (\metapick[short]{licenseccfull}).}
+\metaset[es]{cc@license}{%
+  \metatranslate[#1]{cc@license} \metatranslate[#1]{cc@cc}}
+\metaset[es]{cc@license@zero}{%
+  \metatranslate[#1]{cc@pddecl} \metatranslate[#1]{cc@cc}}
+\metasetterm[es]{cc@sep}{-}
+\metasetterm[es]{cc@quotel}{\textquotedblleft}
+\metasetterm[es]{cc@quoter}{\textquotedblright}
+\metasetterm[es]{cc@by}{Atribuci\'on}
+\metasetterm[es]{cc@sa}{CompartirIgual}
+\metasetterm[es]{cc@nd}{SinDerivadas}
+\metasetterm[es]{cc@nc}{NoComercial}
+\metasetterm[es]{cc@unported}{No Portada}
+\metasetterm[es]{cc@generic}{Gen\'erica}
+\metasetterm[es]{cc@intl}{Internacional}
+\metasetterm[es]{cc@univ}{Universal}
+\metasetterm[es]{cc@license}{Licencia}
+\metasetterm[es]{cc@pd}{Dominio P\'ublico}
+\metasetterm[es]{cc@pddecl}{Dedicaci\'on de Dominio P\'ublico}
+
+\fi
+
+\endinput
+%%
+%% End of file `metastr.sty'.

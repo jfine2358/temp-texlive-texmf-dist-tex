@@ -1,0 +1,68 @@
+%% $Id: xltabular.sty 635 2017-10-24 18:22:59Z herbert $
+%%
+%% This file is distributed under the terms of the LaTeX Project Public
+%% License from CTAN archives in directory  macros/latex/base/lppl.txt.
+%% Either version 1.3 or, at your option, any later version.
+%%
+% Copyright 2017 Herbert Voss <hvoss@tug.org>
+%                Rolf Niepraschk <Rolf.Niepraschk@gmx.de>
+%%
+\ProvidesPackage{xltabular}[2017/10/26 v0.05 `xltabular' package (hv,RN)]
+\RequirePackage{tabularx}
+\let\ORIGi@tabularx=\tabularx
+\let\ORIGi@endtabularx=\endtabularx
+\let\ORIGi@TX@endtabularx=\TX@endtabularx
+%
+\RequirePackage{ltablex}
+\keepXColumns% xltabular behaves like tabularx
+%
+\let\ORIGii@tabularx=\tabularx
+\let\ORIGii@TX@endtabularx=\TX@endtabularx
+%
+\let\ORIG@longtable=\longtable
+%
+% restore original tabularx
+\let\tabularx=\ORIGi@tabularx
+\let\endtabularx=\ORIGi@endtabularx
+\let\TX@endtabularx=\ORIGi@TX@endtabularx
+%
+% define a new tabularx like the one from "ltablex" 
+%
+\newenvironment{xltabular}[1][x]
+{\if l#1%
+    \LTleft\z@ \LTright\fill
+ \else\if r#1%
+    \LTleft\fill \LTright\z@
+ \else\if c#1%
+    \LTleft\fill \LTright\fill
+ \fi\fi\fi
+ \let\TX@endtabularx=\ORIGii@TX@endtabularx
+ \let\endtabularx\endxltabular
+ \ORIGii@tabularx}
+{\def\@currenvir{tabularx}}
+
+% In "longtable" increase the counter "table" only if "\caption" is used 
+\AtBeginDocument{%
+  \let\ORIG@LT@capti@n=\LT@capti@n
+  \def\LT@capti@n{%
+    \@ifstar{\ORIG@LT@capti@n*}{%
+      % We use the following instead of "\refstepcounter"
+      \stepcounter{\LTcaptype}%
+      % We are inside a group: edef -> xdef
+      \protected@xdef\@currentlabel
+        {\csname p@\LTcaptype\endcsname\csname the\LTcaptype\endcsname}%    
+      \ORIG@LT@capti@n
+    }%
+  }%
+} 
+%
+\providecommand*\LTcaptype{table}% support of package "caption"
+\def\longtable{%
+  \addtocounter{\LTcaptype}\m@ne
+  \ORIG@longtable
+}  
+%
+\endinput
+%%
+%% End of file `xltabular.sty'.
+

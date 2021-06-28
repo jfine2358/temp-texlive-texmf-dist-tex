@@ -1,0 +1,614 @@
+%%
+%% exam-randomizechoices.sty
+%%
+%% Randomize mc choices using the exam class
+%%
+%% Copyright (c)2019, Jesse E. J. op den Brouw
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX 
+%% version 2003/12/01 or later.
+%%
+%% This work consists of the files exam-randomizechoices.sty,
+%% exam-randomizechoices.tex and exam-randomizechoices-doc.tex
+
+%% This software is provided 'as is', without warranty of any kind,
+%% either expressed or implied, including, but not limited to, the
+%% implied warranties of merchantability and fitness for a
+%% particular purpose.
+
+%% Jesse op den Brouw
+%% Department of Electrical Engineering
+%% The Hague University of Applied Sciences
+%% Rotterdamseweg 137, 2628 AL, Delft
+%% Netherlands
+%% J.E.J.opdenBrouw@hhs.nl
+
+%% The newest version of this package should always be available
+%% from BitBucket: https://bitbucket.org/jesseopdenbrouw/exam-randomizechoices/src/master/
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% What LaTeX format do we need and version and date
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+%% Version and date
+\gdef\fileversion{0.1}
+\gdef\filedate{2019/01/09}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Sign up to LaTeX
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ProvidesPackage{exam-randomizechoices}[\filedate\space \fileversion\space
+ LaTeX package for creating random placed choices in multiple choice environments using the exam document class]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Check if the exam class is loaded
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\@ifclassloaded{exam}%
+  {}%
+  {\PackageError{exam-randomizechoices}{The exam class is not loaded. Emergency stop!}{You didn't load the exam class explicit using \string\documentclass\space or implied by another class.}\stop}%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Process package options
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Want debug messages
+\newif\if@@ercdebug\@@ercdebugfalse
+\DeclareOption{debug}{\PackageWarning{exam-randomizechoices}{Debug turned on}\@@ercdebugtrue}
+
+%% Want to overload or not overload the *choices and *checkboxes environments?
+\newif\if@@ercoverload\@@ercoverloadfalse
+\DeclareOption{overload}{\if@@ercdebug\PackageWarning{exam-randomizechoices}{Overload turned on}\fi\@@ercoverloadtrue}
+\DeclareOption{nooverload}{\if@@ercdebug\PackageWarning{exam-randomizechoices}{Overload turned off}\fi\@@ercoverloadfalse}
+
+%% Global keeplast
+\newif\if@@ercgkeeplast\@@ercgkeeplastfalse
+\DeclareOption{keeplast}{\if@@ercdebug\PackageWarning{exam-randomizechoices}{Global keeplast turned on}\fi\@@ercgkeeplasttrue}
+\DeclareOption{nokeeplast}{\if@@ercdebug\PackageWarning{exam-randomizechoices}{Global keeplast turned off}\fi\@@ercgkeeplastfalse}
+
+%% Global random
+\newif\if@@ercgrandom\@@ercgrandomtrue
+\DeclareOption{randomize}{\if@@ercdebug\PackageWarning{exam-randomizechoices}{Global randomization turned on}\fi\@@ercgrandomtrue}
+\DeclareOption{norandomize}{\if@@ercdebug\PackageWarning{exam-randomizechoices}{Global randomization turned off}\fi\@@ercgrandomfalse}
+
+%% Unknown option
+\DeclareOption*{\PackageWarning{exam-randomizechoices}{Unknown option '\CurrentOption'}}
+\ProcessOptions\relax
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                       %%
+%% Load needed packages                                  %%
+%%                                                       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% http://ctan.org/pkg/{environ,etoolbox,pgffor}
+\@ifpackageloaded{environ}{\if@@ercdebug\PackageWarning{exam-randomizechoicces}{Package environ already loaded}\fi}{\RequirePackage{environ}}
+\@ifpackageloaded{etoolbox}{\if@@ercdebug\PackageWarning{exam-randomizechoicces}{Package etoolbox already loaded}\fi}{\RequirePackage{etoolbox}}
+\@ifpackageloaded{pgffor}{\if@@ercdebug\PackageWarning{exam-randomizechoicces}{Package pgffor already loaded}\fi}{\RequirePackage{pgffor}}
+
+
+%% A scratch counter
+\newcounter{erc@counter}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                       %%
+%% Loading the randomizer seed                           %%
+%%                                                       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newif\iferc@seedset\erc@seedsetfalse
+\newcommand{\setrandomizerseed}[1]{
+	\pgfmathsetseed{#1}
+	\global\erc@seedsettrue
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                       %%
+%% Key list question nam and key name                    %%
+%%                                                       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\keylistquestionname}[1]{\edef\erc@keylistquestionname{#1}}
+\keylistquestionname{Question}
+\newcommand{\keylistkeyname}[1]{\edef\erc@keylistkeyname{#1}}
+\keylistkeyname{Key}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                       %%
+%% \erc@createrandomlist                                 %%
+%%                                                       %%
+%% This macro creates a randomly ordered list from the   %%
+%% choices given in the environments randomizechoices,   %%
+%% randomizeoneparchoices, randomizecheckboxes, and      %%
+%% randomizeoneparcheckboxes. Typesetting is left to the %%
+%% respective environment.                               %%
+%%                                                       %%
+%% Ideas taken from the mcexam package,                  %%
+%% see https://ctan.org/pkg/mcexam                       %%
+%%                                                       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcounter{erc@nrcorrectchoices}
+
+\newif\iferc@keeplast
+\newif\iferc@random
+\newif\iferc@nolabel
+\newcommand{\erc@createrandomlist}[1][]{%
+  %%
+  \if@@ercdebug
+    \PackageWarning{exam-randomizechoices}{Parsing question \thequestion}%
+  \fi
+  %%
+  %% Copy the global package options
+  \if@@ercgkeeplast\erc@keeplasttrue\else\erc@keeplastfalse\fi
+  \if@@ercgrandom\erc@randomtrue\else\erc@randomfalse\fi
+  %%
+  %% Check if label can be used
+  \erc@nolabelfalse
+  %%
+  %% Check if the user has defined our special command
+  \ifdefined\inaccessible
+    \if@@ercdebug
+      \PackageWarning{exam-randomizechoices}{You should NOT define \noexpand\inaccessible}%
+    \else
+      \PackageError{exam-randomizechoices}{You should NOT define \noexpand\inaccessible. Emergency stop!}{Somewhere in your document, you have defined the macro \noexpand\inaccessible. This package relies on the fact that this macro is not defined. Please use another macro name instead. I have to stop now. Sorry.}%
+      \stop
+    \fi
+  \fi
+  %%
+  %% Parse options to question
+  \foreach \erc@option in {#1} {%
+    \if@@ercdebug
+      \PackageWarning{exam-randomizechoices}{I found option: "\erc@option"}%
+    \fi
+    \ifdefstring{\erc@option}{keeplast}{\global\erc@keeplasttrue}{}%
+    \ifdefstring{\erc@option}{nokeeplast}{\global\erc@keeplastfalse}{}%
+    \ifdefstring{\erc@option}{randomize}{\global\erc@randomtrue}{}%
+    \ifdefstring{\erc@option}{norandomize}{\global\erc@randomfalse}{}%
+    \ifdefstring{\erc@option}{nolabel}{\global\erc@nolabeltrue}{}%
+  }%
+  %%
+  %% Counter for counting the number of choices
+  \setcounter{erc@counter}{-1}%
+  %% Counter for counting the number of correct choices
+  \setcounter{erc@nrcorrectchoices}{0}%
+  %% Useful \def
+  \def\erc@incr{\stepcounter{erc@nrcorrectchoices}}%
+  %%
+  %% Patch \BODY, \correctchoice and \CorrectChoice are replaced by \choice \inaccessible
+  %% We need to do this for the following step, which is splitting the list
+  %% into list items, because the list parser can only handle one separator at
+  %% a time.
+  \newbool{erc@stillpatching}%
+  \booltrue{erc@stillpatching}%
+  \whileboolexpr{ test {\ifbool{erc@stillpatching}}}{%
+    \patchcmd{\BODY}{\CorrectChoice}{\choice \inaccessible }{\erc@incr}{\boolfalse{erc@stillpatching}}%
+  }%
+  \booltrue{erc@stillpatching}%
+  \whileboolexpr{ test {\ifbool{erc@stillpatching}}}{%
+    \patchcmd{\BODY}{\correctchoice}{\choice \inaccessible }{\erc@incr}{\boolfalse{erc@stillpatching}}%
+  }%
+  %%
+  %% We need exactly one \CorrectChoice, so throw a warning if not.
+  \ifnum \theerc@nrcorrectchoices=1\relax\else
+    \PackageWarning{exam-randomizechoices}{You need exactly one \string\CorrectChoice, I found \theerc@nrcorrectchoices\space in question \thequestion}%
+  \fi
+  %%
+  %% Declare list \erc@list and separator \choice
+  \DeclareListParser{\erc@list}{\choice}%
+  %% Declare list iterator command
+  \renewcommand\do[1]{%
+    \stepcounter{erc@counter}%
+    \long\csgdef{erc@answer\roman{erc@counter}}{##1}%
+  }%
+  %% Put an \@empty in front of \BODY and create the list
+  \expandafter\erc@list\expandafter{\expandafter\@empty\BODY}%
+  %%
+  %% Emit the number of choices found, warning if less than two.
+  \ifnum \theerc@counter<2\relax
+    \PackageWarning{exam-randomizechoices}{You need at least two choices in question \thequestion}%
+  \else
+    \if@@ercdebug
+      \PackageWarning{exam-randomizechoices}{I found \theerc@counter\space choices}%
+    \fi
+  \fi
+  %%
+  %% Check if there is text before the first \choice, \CorrectChoice or \correctchoice
+  %% and emit an error if so.
+  \setbox0=\hbox{\csuse{erc@answer}\unskip}%
+  \ifdim\wd0=0pt\else
+    \PackageError{exam-randomizechoices}{Something's wrong, perhaps a missing \string\choice\space or \string\CorrectChoice\space or \string\correctchoice\space in question \thequestion}{You cannot have text before the first \string\choice, \string\CorrectChoice\space or \string\correctchoice.}%
+  \fi
+  %%
+  %% Create a set of macros in the form of \erc@answerTempnum<number> where
+  %% we keep track of the choice numbers.  
+  \foreach \a in {1,...,\theerc@counter}{%
+    \csxdef{erc@answerTempnum\a}{\a}%
+  }%
+  %%
+  %% If randomize question...
+  \iferc@random
+    %% If we should randomize...
+    \if@@ercdebug
+      \PackageWarning{exam-randomizechoices}{Randomizing...}%
+    \fi
+    %%
+    %% We need to perform a number of swaps to perform randomization
+    %% We do this on the \erc@answerTempnum<number> macros because it's
+    %% a pain to do it on the choices itself
+    \numdef\@numberofswaps{\theerc@counter-1}%
+%    \PackageWarning{test}{++> \@numberofswaps\space \theerc@counter}%
+    %%
+    %% User didn't set the seed	
+	\iferc@seedset
+	\else
+	  \PackageWarning{exam-randomizechoices}{You didn't set the randomizer seed}%
+	\fi
+    %%
+    %% Randomize the choice number list 
+    \foreach \x in {1,...,\@numberofswaps} {%
+      \iferc@keeplast
+        \pgfmathrandominteger{\r}{\x}{\@numberofswaps}%
+      \else
+	    \pgfmathrandominteger{\r}{\x}{\theerc@counter}%
+      \fi
+	  %%   
+      %% Swap the items
+      \letcs\erc@temp{erc@answerTempnum\x}%
+      \global\csletcs{erc@answerTempnum\x}{erc@answerTempnum\r}%
+      \global\cslet{erc@answerTempnum\r}{\erc@temp}%
+    }%
+    \if@@ercdebug
+      \PackageWarning{exam-randomizechoices}{Done randomizing...}%
+    \fi
+  \fi	
+  %%
+  %% We travel the list items. If an item begin with the special marker
+  %% \inaccessible, we prepend it with \correctchoice, otherwise we prepend it
+  %% with \choice. At the end we have all the list items prepended with
+  %% either \choice or \correctchoice. Then we append the list item to
+  %% the list.
+  %%
+  %% This list to typeset
+  \gdef\erc@typesetchoices{}%
+  \ifnum\theerc@counter>0\relax
+    \foreach \@x in {1,...,\theerc@counter} {%
+      %% Patchcmd doesn't like \usecs as command, so use an temporary macro with \let
+      \letcs{\erc@tempnr}{erc@answerTempnum\@x}%
+      \letcs{\erc@temp}{erc@answer\romannumeral \erc@tempnr}%
+      %%
+        %% Patch \inaccessible for \correctchoice in \erc@temp, otherwise prepend \choice to \erc@temp
+        \iferc@nolabel
+          \patchcmd{\erc@temp}{\inaccessible }{\correctchoice }{}{\gpreto{\erc@temp}{\choice}}%
+        \else
+          \patchcmd{\erc@temp}{\inaccessible}{\correctchoice \label{question@\thequestion @correctchoice}}{}{\gpreto{\erc@temp}{\choice}}%
+        \fi
+      %% Add expanded once version of \erc@temp to the list
+      \xappto{\erc@typesetchoices}{\expandonce{\erc@temp}}%
+    }%
+  \fi
+}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Overloading the choices, oneparchoices, checkboxes and oneparcheckboxes
+%% environments (or not overloading)
+%%
+%% See https://tex.stackexchange.com/questions/116670/duplicating-environments
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%
+%% Overload the choices environment
+%%
+
+\if@@ercoverload
+  \if@@ercdebug
+      \PackageWarning{exam-randomizechoices}{Overloading choices environment}%
+  \fi
+
+  %% Save choices environment
+  \let\@oldchoices\choices
+  \let\end@oldchoices\endchoices
+
+  %% Renew the choices environment
+  \RenewEnviron{choices}[1][]{
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1]%
+    %%
+    %% Start the choices environment
+    \begin{@oldchoices}%
+      % Execute the list
+      \erc@typesetchoices%
+    \end{@oldchoices}%
+  }
+
+  \NewEnviron{randomizechoices}[1][]{
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1]%
+    %%
+    %% Start the choices environment
+    \begin{@oldchoices}%
+      % Execute the list
+      \erc@typesetchoices%
+    \end{@oldchoices}%
+  }
+\else
+  \NewEnviron{randomizechoices}[1][]{
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1]%
+    %%
+    %% Start the choices environment
+    \begin{choices}%
+      % Execute the list
+      \erc@typesetchoices%
+    \end{choices}%
+  }
+\fi
+
+%%
+%% Overload the oneparchoices environment
+%%
+\if@@ercoverload
+  \if@@ercdebug
+      \PackageWarning{exam-randomizechoices}{Overloading oneparchoices environment}
+  \fi
+
+  %% Save oneparchoices environment
+  \let\@oldoneparchoices\oneparchoices
+  \let\end@oldoneparchoices\endoneparchoices
+
+  %% Renew the oneparchoices environment
+  \RenewEnviron{oneparchoices}[1][]{
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1]%
+    %%
+    %% Start the oneparchoices environment
+    \begin{@oldoneparchoices}%
+      % Execute the list
+      \erc@typesetchoices
+    \end{@oldoneparchoices}%
+  }
+
+  \NewEnviron{randomizeoneparchoices}[1][]{
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1]%
+    %%
+    %% Start the oneparchoices environment
+    \begin{@oldoneparchoices}%
+      % Execute the list
+      \erc@typesetchoices%
+    \end{@oldoneparchoices}%
+  }
+\else
+  \NewEnviron{randomizeoneparchoices}[1][]{
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1]%
+    %%
+    %% Start the oneparchoices environment
+    \begin{oneparchoices}%
+      % Execute the list
+      \erc@typesetchoices%
+    \end{oneparchoices}%
+  }
+\fi
+
+%%
+%% Overload the checkboxes environment
+%%
+\if@@ercoverload
+  \if@@ercdebug
+      \PackageWarning{exam-randomizechoices}{Overloading checkboxes environment}
+  \fi
+
+  %% Save choices environment
+  \let\@oldcheckboxes\checkboxes
+  \let\end@oldcheckboxes\endcheckboxes
+
+  %% Renew the oneparchoices environment
+  \RenewEnviron{checkboxes}[1][]{
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1,nolabel]%
+    %%
+    %% Start the choices environment
+    \begin{@oldcheckboxes}%
+      % Execute the list
+      \erc@typesetchoices%
+    \end{@oldcheckboxes}%
+  }
+
+  \NewEnviron{randomizecheckboxes}[1][]{%
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1,nolabel]%
+    %%
+    %% Start the choices environment
+    \begin{@oldcheckboxes}%
+      % Execute the list
+      \erc@typesetchoices%
+    \end{@oldcheckboxes}%
+  }
+\else
+  \NewEnviron{randomizecheckboxes}[1][]{
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1,nolabel]%
+    %%
+    %% Start the oneparchoices environment
+    \begin{checkboxes}%
+      % Execute the list
+      \erc@typesetchoices%
+    \end{checkboxes}%
+  }
+\fi
+
+%%
+%% Overload the oneparcheckboxes environment
+%%
+\if@@ercoverload
+  \if@@ercdebug
+      \PackageWarning{exam-randomizechoices}{Overloading oneparcheckboxes environment}
+  \fi
+
+  %% Save oneparcheckboxes environment
+  \let\@oldoneparcheckboxes\oneparcheckboxes
+  \let\end@oldoneparcheckboxes\endoneparcheckboxes
+
+  %% Renew the oneparcheckboxes environment
+  \RenewEnviron{oneparcheckboxes}[1][]{
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1,nolabel]%
+    %%
+    %% Start the oneparcheckboxes environment
+    \begin{@oldoneparcheckboxes}%
+      % Execute the list
+      \erc@typesetchoices%
+    \end{@oldoneparcheckboxes}%
+  }
+
+  \NewEnviron{randomizeoneparcheckboxes}[1][]{%
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1,nolabel]%
+    %%
+    %% Start the oneparcheckboxes environment
+    \begin{@oldoneparcheckboxes}%
+      % Execute the list
+      \erc@typesetchoices%
+    \end{@oldoneparcheckboxes}%
+  }
+\else
+  \NewEnviron{randomizeoneparcheckboxes}[1][]{%
+    %%
+    %% Create a random list
+    \erc@createrandomlist[#1,nolabel]%
+    %%
+    %% Start the onrparcheckboxes environment
+    \begin{oneparcheckboxes}%
+      % Execute the list
+      \erc@typesetchoices%
+    \end{oneparcheckboxes}%
+  }
+\fi
+
+%%
+%% Simple key table printer
+%%
+%% Building a table with \foreach from the pgffor package is hard to do.
+%% See https://tex.stackexchange.com/questions/367979/latex-foreach-in-tabular-environment
+%% So we use \gappto and \xappto to build the table. At the end, we expand the macro
+%%
+\newcommand{\printkeytable}{%
+  \if@@ercdebug
+    \PackageWarning{exam-randomizechoices}{Writing key table}%
+  \fi
+  %% Create the key table typesetting macro
+  \xdef\erc@keytable{}%
+  %%
+  %% Add the preamble of the table {regular tabular}
+  \gappto\erc@keytable{\begin{tabular} {|c|c|} \hline}%
+  \xappto\erc@keytable{\erc@keylistquestionname\space & \erc@keylistkeyname}%
+  \gappto\erc@keytable{ \\ \hline}%
+  %%
+  %% Write the table entries.
+  \ifnum\thequestion=0\relax
+  \else
+    \foreach \x in {1,...,\thequestion} {%
+      %%
+      %% Add '\ref{question@\x} & ', \x should be expandend, \ref not 
+      \gappto\erc@keytable{\ref}%
+      \xappto\erc@keytable{{question@\x}}%
+      \gappto\erc@keytable{ & }%
+      \@ifundefined{r@question@\x @correctchoice}{%
+        %not found
+        \gappto\erc@keytable{\textbf{??} \\ }%
+      }{%
+        %found
+        \gappto\erc@keytable{\ref}%
+        \xappto\erc@keytable{{question@\x @correctchoice}}%
+        \gappto\erc@keytable{ \\ }%
+      }%
+    }%
+  \fi
+  %%
+  %% Add the epilogue
+  \gappto\erc@keytable{\hline \end{tabular}}%
+  %%
+  %% Typeset the table
+  \erc@keytable%
+}
+
+%%
+%% Simple key list file writer
+%%
+\def\writekeylist{\@ifnextchar[{\erc@writekeylist}{\erc@writekeylist[\jobname.keylist]}}%
+\def\erc@writekeylist[#1]#2{%
+  %%
+  \if@filesw
+    %%
+    \if@@ercdebug
+      \PackageWarning{exam-randomizechoices}{Writing key list to file}%
+    \fi
+    \def\erc@macroname{#2}%
+    %% Open the key list file for writing and add some preface content.
+    \newwrite\tempfile
+    \immediate\openout\tempfile=#1%
+    \immediate\write\tempfile{\@percentchar}%
+    \immediate\write\tempfile{\@percentchar\space Automatically generated key list file}%
+    \immediate\write\tempfile{\@percentchar\space written by package exam-randomizechoices}%
+    \immediate\write\tempfile{\@percentchar\space File written at \today\space (\number\year/\two@digits\month/\two@digits\day)}% doesn't behave well
+    \immediate\write\tempfile{\@percentchar}%
+    \immediate\write\tempfile{\@percentchar\space Edits to this file are lost}%
+    \immediate\write\tempfile{\@percentchar\space This file may safely be removed}%
+    \immediate\write\tempfile{\@percentchar}%
+    %%
+    %% Create a command that has all the question numbers / question keys
+    %% separated by a /
+    \gdef\erc@keylist{\@gobble}%
+    %% Write the list entries.
+    \ifnum\thequestion=0\relax
+      \gdef\erc@keylist{}%
+    \else
+      \foreach \x in {1,...,\thequestion} {%
+        \@ifundefined{r@question@\x @correctchoice}{%
+          %not found
+          \xdef\erc@keylist{\erc@keylist,\x/?}%
+        }{%
+          %found
+         \xdef\erc@keylist{\erc@keylist,\x/\getrefnumber{question@\x @correctchoice}}%
+        }%
+      }%
+    \fi
+    %%
+    %% Write the gdef with key list in one write. This prevents Latex to
+    %% add end-of-line characters. After that, close the file. 
+    \immediate\write\tempfile{\string\gdef\expandafter\string\erc@macroname\@charlb\erc@keylist\@charrb}%
+    \immediate\write\tempfile{\string\endinput}%
+    \immediate\closeout\tempfile
+  \else
+    \PackageError{exam-randomizechoices}{Cannot write key list file}{The writing of files is disabled by the system, so no key list file is generated.}%
+  \fi
+}
+
+\endinput

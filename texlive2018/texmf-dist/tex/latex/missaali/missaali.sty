@@ -1,0 +1,517 @@
+%% missaali.tex
+%% Copyright 2016 Tommi Syrjönen 
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+% 
+% The Current Maintainer of this work is Tommi Syrjänen 
+%
+% See file MANIFEST-Missaali.txt to a list of files that make up this
+% work.
+\ProvidesPackage{missaali}[2016/12/25 v1.004 XeLaTeX Package (Use Missaali Open Type Font)]
+%% Author: Tommi Syrjänen (tssyrjan@iki.fi)
+%%
+
+%% This is a package for using the Missaali OpenType textura font
+%% with xelatex. Documentation is in the file 'missaali.pdf'.
+
+%% First require some necessary packages 
+\RequirePackage{fontspec}
+\RequirePackage{ifthen}
+\RequirePackage{accsupp}
+\RequirePackage{calc}
+\RequirePackage{multicol}
+\RequirePackage{geometry}
+
+%% Boolean flags for selecting font features 
+\newif\ifOldFinnish
+\newif\ifContextualAlternates
+\newif\ifLigatures
+\newif\ifMissaleAbbrStyle
+\newif\ifAbbreviate
+\newif\ifHistForms
+\newif\ifPoFusion
+\newif\ifAlternateG
+\newif\ifAlternateZ
+\newif\ifAltPunctuation
+\newif\ifAdditionalAbbrs
+
+\makeatletter
+
+
+% By default: abbreviation style Missale, ligatures and contextual alternates true
+\ContextualAlternatestrue
+\Ligaturestrue
+\MissaleAbbrStyletrue
+
+%% Package option: old punctuation
+\DeclareOption{OldPunctuation}{\AltPunctuationtrue}
+
+%% Package option: old Finnish ortogrphy
+\DeclareOption{OldFinnish}{\OldFinnishtrue}
+
+%% Package option: old style adieresis and ae-ligature
+\DeclareOption{OldAE}{\HistFormstrue}
+
+%% Package option: alternate G
+\DeclareOption{AltG}{\AlternateGtrue}
+
+%% Package option: alternate Z
+\DeclareOption{AltZ}{\AlternateZtrue}
+
+%% Package option: fuse po
+\DeclareOption{FusePo}{\PoFusiontrue}
+
+\ProcessOptions*{}
+
+% Possibly global font features:
+% calt - long s and rotunda r
+% liga - standard ligatures
+% hist - old ae and oe
+% ss16 - old Finnish ortography
+% ss17 - alternate punctuation
+% ss18 - use po-ligature
+% ss19 - alternate z
+% ss20 - alternage G
+
+\newcommand{\@caltoptions}{\ifContextualAlternates +calt;\else -calt;\fi}
+\newcommand{\@ligaoptions}{\ifLigatures +liga;\else -liga;\fi}
+\newcommand{\@histoptions}{\ifHistForms +hist; \fi}
+\newcommand{\@finnoptions}{\ifOldFinnish +ss16; \fi}
+\newcommand{\@punctoptions}{\ifAltPunctuation +ss17; \fi}
+\newcommand{\@pofusionoptions}{\ifPoFusion +ss18;\fi}
+\newcommand{\@zoptions}{\ifAlternateZ +ss19; \fi}
+\newcommand{\@goptions}{\ifAlternateG +ss22; \fi}
+
+\newcommand{\msmanualspacing}{\@enableobeylines\@enableactivechars}
+\newcommand{\msaltpunctuation}{\addfontfeature{RawFeature=+ss17:}}
+
+\newcommand{\@abbroptions}{%
+  \ifAbbreviate%
+    \ifAdditionalAbbrs%
+      +ss02;%
+    \else%
+      \ifMissaleAbbrStyle%
+        +dlig;%
+      \else%
+        +ss03;%
+      \fi%
+    \fi%
+  \fi%
+}
+\begingroup
+\catcode`,=\active
+\catcode`.=\active
+\catcode`!=\active
+\catcode`:=\active
+
+% \@enableactivechars adds some extra space on both sides of
+% punctuation symbols. The following commands are created with voodoo
+% programming and some experimentation and there probably is some more
+% reasonable way to do it. The important points are: 
+% 
+% 1. A punctuation mark should have some stretch added to its both
+% sides if there is justification going on. 
+%
+% 2. If there is just the the skip on both sides, then the active
+% character will eat any letter 'l' immediately after it. (Probably
+% because it then adds the 'l' to the fill turning it to filll.)
+%
+% 3. If an empty group is added after the skip (or it is enclosed
+% inside extra pair of braces), then it doesn't eat 'l' but it will
+% add extra space after the symbol and that is not desirable. There's
+% probably a some reason for this but I wasn't in the mood to find the
+% root cause.
+%
+% 4. The negative kern at the end removes some of the extra space. 
+%
+% 5. The kerning dimension is defined using the extra skip and dimexpr
+% because when we are expanding the macro, the dot is an active
+% character so it's not possible to use it for the decimal separator.
+\gdef\@enableactivechars{%
+\newskip\@activeskip%
+\@activeskip\dimexpr 2em/10
+\catcode`,=\active\def,{\hskip0pt plus 2fill\char`,\hskip0pt plus 1fill{}%
+  \kern-\@activeskip\hbox{}}%
+\catcode`.=\active\def.{\hskip0pt plus 2fill\char`.\hskip0pt plus 1fill{}%
+  \kern-\@activeskip\hbox{}}%
+\catcode`!=\active\def!{\hskip0pt plus 2fill\char`!\hskip0pt plus 1fill{}%
+  \kern-\@activeskip\hbox{}}%
+\catcode`:=\active\def:{\hskip0pt plus 2fill\char`:\hskip0pt plus 1fill{}%
+  \kern-\@activeskip\hbox{}}%
+}
+\endgroup
+
+\newcommand{\@enableobeylines}{
+  \obeylines\spaceskip 0.2em plus 3fill%
+}
+\newcommand{\@createoptions}{
+  RawFeature=\@abbroptions\@zoptions\@goptions\@pofusionoptions\@punctoptions\@finnoptions\@histoptions\@ligaoptions\@caltoptions+dmmy;
+}
+
+
+
+\newcommand{\MsNormalStyle}{\OldFinnishfalse\HistFormsfalse\ContextualAlternatestrue\Ligaturestrue\MissaleAbbrStyletrue\PoFusionfalse\AlternateGfalse\AlternateZfalse\AdditionalAbbrsfalse\AltPunctuationfalse}
+\newcommand{\MsAltAEStyle}{\HistFormstrue}
+\newcommand{\MsAltZStyle}{\AlternateZtrue}
+\newcommand{\MsAltGStyle}{\AlternateGtrue}
+\newcommand{\MsOldFinnishStyle}{\OldFinnishtrue}
+\newcommand{\MsPoFusionStyle}{\PoFusiontrue}
+\newcommand{\MsAltAbbrStyle}{\AdditionalAbbrsfalse\MissaleAbbrStylefalse}
+\newcommand{\MsNormalAbbrStyle}{\AdditionalAbbrsfalse\MissaleAbbrStyletrue}
+\newcommand{\MsAdditionalAbbrStyle}{\AdditionalAbbrstrue}
+\newcommand{\MsAltPunctiationStyle}{\AltPunctuationtrue}
+
+% These colors correspond to the red and blue inks used in the
+% facsimile reprint of Missale Aboense in the SRGB color space (as
+% interpreted by my scanner)
+\newcommand{\@blue}{455f9b}
+\newcommand{\@red}{c55e47}
+
+% Emphasize by adding red color
+\newcommand{\texturaemph}[1]{{\addfontfeature{Color=\@red}#1}}
+
+% Change font family to textura
+\newcommand{\mstexturafamily}{\parindent0pt%
+  \let\emph\texturaemph%
+  \fontspec[\@createoptions]{Missaali}}
+
+% Set an isolated text fragment in Missaali
+\newcommand{\missaali}[1]{{\mstexturafamily #1}}
+
+\newcommand{\mssetsizes}[3]{%
+  \setcounter{@texturafontsize}{#1}%
+  \setlength{\@texturablockwidth}{#2}%
+  \setcounter{@texturablocklines}{#3}}
+
+
+% The width of a single column of text
+\newlength{\@texturablockwidth}
+\setlength{\@texturablockwidth}{6.40cm}
+
+\newcommand{\mssetblockwidth}[1]{%
+  \setlength{\@texturablockwidth}{#1}}
+
+% The height of the text block in lines
+\newcounter{@texturablocklines}
+\setcounter{@texturablocklines}{34}
+\newcommand{\mssetblocklines}[1]{%
+  \setcounter{@texturablocklines}{#1}}
+
+% The width of the gutter
+\newlength{\@texturagutterwidth}
+\setlength{\@texturagutterwidth}{1cm}
+\newcommand{\mssetgutterwidth}[1]{%
+  \setcounter{\@texturagutterwidth}{#1}}
+
+% Textura font size
+\newcounter{@texturafontsize}
+\setcounter{@texturafontsize}{18}
+\newcommand{\mssetfontsize}[1]{%
+  \setcounter{@texturafontsize}{#1}}
+
+\newlength{\@textwidth}
+\newlength{\@textheight}
+% An environment for setting textura full page at a time
+\newenvironment{mstextura}{%
+  \begingroup%
+  \setlength{\@textwidth}{\dimexpr\@texturablockwidth*2+\@texturagutterwidth}%
+  \setlength{\@textheight}{\dimexpr \value{@texturafontsize}pt*\value{@texturablocklines}}%
+  \newgeometry{textwidth=\@textwidth,textheight=\@textheight,columnsep=\@texturagutterwidth}%
+  \parindent0pt%
+  \begin{multicols}{2}\raggedcolumns%
+    \fontsize{\value{@texturafontsize}}{\value{@texturafontsize}}%
+    \msmanualspacing%
+    \mstexturafamily}{%
+  \end{multicols}%
+  \restoregeometry\endgroup}
+
+% Setting textura in two columns without setting the length of the
+% blocks 
+\newlength{\@savedcolumnsep}
+
+\newenvironment{mstexturablocks}{%
+  \begingroup%
+  \setlength{\@textwidth}{\dimexpr\@texturablockwidth*2+\@texturagutterwidth}%
+  \setlength{\@savedcolumnsep}{\columnsep}
+  \columnsep\@texturagutterwidth%
+  \begin{minipage}{\@textwidth}%
+    \parindent0pt%
+    \begin{multicols}{2}\raggedcolumns%
+      \fontsize{\value{@texturafontsize}}{\value{@texturafontsize}}%
+      \msmanualspacing%
+      \mstexturafamily}{%
+    \end{multicols}%
+  \end{minipage}%&
+  \columnsep\@savedcolumnsep
+  \endgroup}
+
+% A single column block of textura
+\newenvironment{mstexturablock}{%
+  \begingroup%
+  \setlength{\@textwidth}{\@texturablockwidth}%
+  \begin{minipage}{\@textwidth}%
+  \parindent0pt%
+  \fontsize{\value{@texturafontsize}}{\value{@texturafontsize}}%
+  \msmanualspacing%
+  \mstexturafamily}{%
+  \end{minipage}\endgroup}
+
+% Chapterinitial doesn't use lettrine because I'm having troubles of
+% finding a correct scaling for the initial letter so that the result
+% will be of the right height. This has the unfortunate problem that
+% the user has to handle the indentation of the second line of the
+% initial by hand. However, as lettrine didn't work nicely together
+% with the \msmanualspacing option in any case, this would have happened
+% often anyway. The value 1.3 for lower is a magic number that seems
+% to give a nicish result in most cases. 
+\newbox\@ibox
+\newlength\@initwidth
+\newcommand{\mschapterinitial}[1]{%
+   \setbox\@ibox\hbox{\msrubric{\addfontfeature{Scale=2}\addfontfeature{RawFeature=+ss20;}#1}}%
+   \@initwidth=\wd\@ibox%
+   \mbox{\smash{\lower1.3\baselineskip\hbox to \wd\@ibox{\vbox to 2\baselineskip{\hbox to \wd\@ibox{\box\@ibox}}}}}}
+
+\newcommand{\mschapterinitialblue}[1]{%
+   \setbox\@ibox\hbox{\msrubricblue{\addfontfeature{Scale=2}\addfontfeature{RawFeature=+ss20;}#1}}%
+   \@initwidth=\wd\@ibox%
+   \mbox{\smash{\lower1.3\baselineskip\hbox to \wd\@ibox{\vbox to 2\baselineskip{\hbox to \wd\@ibox{\box\@ibox}}}}}}
+
+% \mschapterindent adds as much horizontal space as the latest seen
+% chapter initial is wide 
+\newcommand{\mschapterindent}{\mbox{}\hskip\@initwidth}
+
+% \startchapter takes three arguments. The first is the initial letter,
+% the second is the text of the first line, and the third is the text
+% of the second line. 
+\newcommand{\msstartchapter}[3]{%
+  \par\mschapterinitial{#1}#2\\%
+  \mschapterindent{}#3}
+
+% \startchapterblue takes three arguments. The first is the initial letter,
+% the second is the text of the first line, and the third is the text
+% of the second line. 
+\newcommand{\msstartchapterblue}[3]{%
+  \par\mschapterinitialblue{#1}#2\\%
+  \mschapterindent{}#3}
+
+
+% \startchapterwithrubric takes four arguments. The first argument is
+% a rubric that is set at the right edge of the column, the second is
+% the initial letter, the third is the contents of the first line and
+% the last is the contents of the second line.
+\newcommand{\msstartchapterwithrubric}[4]{%
+  \par\mspartialrubric{#1}%
+  \mspartialline{\mschapterinitial{#2}#3}\\%
+  \mschapterindent{}#4}
+
+% \startchapterwithrubricblue takes four arguments. The first argument
+% is a rubric that is set at the right edge of the column in red, the
+% second is the initial letter that will be set in blue, the third is
+% the contents of the first line and the last is the contents of the
+% second line.
+\newcommand{\msstartchapterwithrubricblue}[4]{%
+  \par\mspartialrubric{#1}%
+  \mspartialline{\mschapterinitialblue{#2}#3}\\%
+  \mschapterindent{}#4}
+
+
+
+% Add a one-line high red lombardic initial 
+\newcommand{\msparinitial}[1]{{%
+    \addfontfeature{Color=\@red}%
+    \addfontfeature{RawFeature=+titl;}#1}}
+
+% Add a one-line high blue lombardic initial
+\newcommand{\msparinitialblue}[1]{{%
+    \addfontfeature{Color=\@blue}%
+    \addfontfeature{RawFeature=+titl;}#1}}
+
+% Turns off the standard ligature substitutions for its argument. 
+\newcommand{\msnoliga}[1]{{\addfontfeature{RawFeature=-liga;}#1}}
+
+% Use the abbreviation ligatures that are used in main text of Missale
+% Aboense 
+\newcommand{\msabbr}[1]{{%
+    \Abbreviatetrue\MsNormalAbbrStyle\mstexturafamily #1}}
+
+% Use additional abbreviation symbols 
+\newcommand{\msabbra}[1]{{%
+    \Abbreviatetrue\MsAdditionalAbbrStyle%
+    \mstexturafamily #1}}
+
+% Use the alternate set of abbreviation symbols 
+\newcommand{\msabbralt}[1]{{%
+    \Abbreviatetrue\MsAltAbbrStyle\mstexturafamily #1}}
+
+% The commands that add abbreviation marks all have four forms that
+% are based on two binary selections: whether the mark is on only r or
+% over all other letters, and whether there is an additional
+% unabbreviated actual text that is added to the pdf or not. 
+%
+% If the basic command is FOO, the four forms are:
+%  \mstFOO: letters other than r, no actual text
+%  \mstFOOacc: letters other than r, has actual text
+%  \rmstFOO: r only, no actual text
+%  \rmstFOOacc: r only, has actual text
+
+% Add a generic abbreviation symbol, r not abbreviated
+\newcommand{\mstd}[1]{{\addfontfeature{RawFeature=+lt04;}#1}}
+\newcommand{\mstdacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \mstd{#1}\EndAccSupp{}}
+
+% add a generic abbreviation symbol, r abbreviated
+\newcommand{\rmstd}[1]{{\addfontfeature{RawFeature=+lr04;}#1}}
+\newcommand{\rmstdacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \rmstd{#1}\EndAccSupp{}}
+
+% Add specifically tilde, r not abbreviated
+\newcommand{\mstdt}[1]{{\addfontfeature{RawFeature=+lt05}#1}}
+\newcommand{\mstdtacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \mstdt{#1}\EndAccSupp{}}
+
+% Add specifically tilde, r abbreviated
+\newcommand{\rmstdt}[1]{{\addfontfeature{RawFeature=+lr05}#1}}
+\newcommand{\rmstdtacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \rmstdt{#1}\EndAccSupp{}}
+
+% Add wide tilde for a-abbreviation, r not abbreviated
+\newcommand{\mstda}[1]{{\addfontfeature{RawFeature=+lt09}#1}}
+\newcommand{\mstdaacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \mstda{#1}\EndAccSupp{}}
+
+% Add wide tilde for a-abbreviation, r abbreviated
+\newcommand{\rmstda}[1]{{\addfontfeature{RawFeature=+lr09}#1}}
+\newcommand{\rmstdaacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \rmstda{#1}\EndAccSupp{}}
+
+
+% Add acute for r-abbreviation, r not abbreviated
+\newcommand{\mstdr}[1]{{\addfontfeature{RawFeature=+lt07}#1}}
+\newcommand{\mstdracc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \mstdr{#1}\EndAccSupp{}}
+
+% Add acute for r-abbreviation, r abbreviated
+\newcommand{\rmstdr}[1]{{\addfontfeature{RawFeature=+lr07}#1}}
+\newcommand{\rmstdracc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \rmstdr{#1}\EndAccSupp{}}
+
+
+% Add grave for short tilde, r not abbreviated
+\newcommand{\mstdst}[1]{{\addfontfeature{RawFeature=+lt08}#1}}
+\newcommand{\mstdstacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \mstdst{#1}\EndAccSupp{}}
+
+% Add grave for short tilde, r abbreviated
+\newcommand{\rmstdst}[1]{{\addfontfeature{RawFeature=+lr08}#1}}
+\newcommand{\rmstdstacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \rmstdst{#1}\EndAccSupp{}}
+
+% Add ring for o-abbreviation, r not abbreviated
+\newcommand{\mstdo}[1]{{\addfontfeature{RawFeature=+lt10}#1}}
+\newcommand{\mstdoacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \mstdo{#1}\EndAccSupp{}}
+
+% Add ring for o-abbreviation, r abbreviated
+\newcommand{\rmstdo}[1]{{\addfontfeature{RawFeature=+lr10}#1}}
+\newcommand{\rmstdoacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \rmstdo{#1}\EndAccSupp{}}
+
+% Add dieresis, r not abbreviatd
+\newcommand{\mstdd}[1]{{\addfontfeature{RawFeature=+lt06}#1}}
+\newcommand{\mstddacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \mstdd{#1}\EndAccSupp{}}
+
+% Add dieresis, r xabbreviatd
+\newcommand{\rmstdd}[1]{{\addfontfeature{RawFeature=+lr06}#1}}
+\newcommand{\rmstddacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \rmstdd{#1}\EndAccSupp{}}
+
+% Add diagonal slash, r not abbreviated
+\newcommand{\mstddg}[1]{{\addfontfeature{RawFeature=+lt11;}#1}}
+\newcommand{\mstddgacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \mstddg{#1}\EndAccSupp{}}
+
+% Add diagonal slash, r abbreviated
+\newcommand{\rmstddg}[1]{{\addfontfeature{RawFeature=+lr11}#1}}
+\newcommand{\rmstddgacc}[2]{%
+  \BeginAccSupp{method=plain,ActualText=#2}%
+  \rmstddg{#1}\EndAccSupp{}}
+
+
+% Enable liturgical symbols
+\newcommand{\mstdl}[1]{{\addfontfeature{RawFeature=+ss15}#1}}
+
+% Macros for entering different forms of 'r' and 's' directly to the
+% code. 
+\newcommand{\rotundar}{\char`\^^^^a75b}
+\newcommand{\straightr}{\char`\^^^^ef3f}
+\newcommand{\shorts}{\char`\^^^^ef3c}
+\newcommand{\longs}{\char'\^^^^017f}
+
+
+
+% Enters a lombardic initial in the current size and color:
+\newcommand{\msinit}[1]{{\addfontfeature{RawFeature=+titl;}#1}}
+
+% Enters an alternative form of initial in the current size and color:
+\newcommand{\msinita}[1]{{\addfontfeature{RawFeature=+titl;+ss23;}#1}}
+
+% Adds the alternative form of initial I in very large size in the
+% gutter.  
+\newbox\initialibox
+\newcommand{\initialI}{%
+  \setbox\initialibox\hbox{\smash{%
+        \mstexturafamily%
+        \addfontfeature{Scale=10}%
+        \addfontfeature{Color=\@blue}%
+        \addfontfeature{RawFeature=+titl;+ss23;}I}}%
+  \mbox{}\kern-\wd\initialibox%
+  \smash{\lower9ex\box\initialibox{}}}
+
+% Add a red paragraph symbol 
+\newcommand{\mspara}{{\msrubric{¶}}}
+
+% Change font color to red
+\newcommand{\msrubric}[1]{{\addfontfeature{Color=\@red}#1}}
+
+% Change font color to blue
+\newcommand{\msrubricblue}[1]{{\addfontfeature{Color=\@blue}#1}}
+
+% The commands \mspartialrubric and \mspartialline are used together
+% to set a short title on the right end of the line and normal text to
+% left. These commands should be used as a pair, with \mspartialrubric
+% first. 
+\newbox\rubricbox
+\setbox\rubricbox\hbox{}
+\newcommand{\mspartialrubric}[1]{%
+  \setbox\rubricbox\hbox{\msrubric{#1}}%
+  \hfill{}\msrubric{#1}}
+\newcommand{\mspartialline}[1]{\vskip-\baselineskip{}#1\phantom{\box\rubricbox}}
+
+%% Typeset the name of the font
+\newcommand{\Missaali}{{\Ligaturestrue\mstexturafamily{}Missaali}}
+
+\makeatother

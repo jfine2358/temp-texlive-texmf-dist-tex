@@ -1,0 +1,125 @@
+% This package serves the purpose of providing a way
+% for relating entries in the bibliography to the license
+% under which those entries where licensed. For this end
+% it uses the build in biblatex 'related' mechanism to
+% link works to their license. It therefor defines a new
+% 'relatedtype', which is 'license'.
+% 
+% Anselm Wagner (a.wagner1@uni-wuppertal.de)
+%
+% This material is subject to the LaTeX Project Public License 1.3c.
+% https://ctan.org/license/lppl1.3
+% 
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+\ProvidesPackage{biblatex-license}
+  [2020/01/30 v1.0 biblatex-license]
+\RequirePackage{biblatex}
+\RequirePackage{kvoptions}
+\SetupKeyvalOptions{
+  family=biblicense,
+  prefix=biblicense@}
+\DeclareStringOption[short]{license} % how should the licenses be printed in
+                                     % bib? Options: short, full, off
+\DeclareBoolOption[false]{url} % should the url of the license be printed
+                               % as well?
+\DeclareBoolOption[true]{link} % should the lincense be a weblink?
+\DeclareStringOption[default]{introtext} % alternative introtext for licenses
+                                         % in the bibliography. Arbitrary text.
+\ProcessKeyvalOptions*
+
+\ifbiblicense@link % link=true
+  \RequirePackage{hyperref}
+\fi
+
+% set related=true otherwise this package has no functionality
+\ExecuteBibliographyOptions{related=true}
+
+% Common definitions:
+\NewBibliographyString{licensedunder}
+\DefineBibliographyStrings{english}{%
+  licensedunder = {licensed under},
+}
+\DefineBibliographyStrings{german}{%
+  licensedunder = {Lizenziert unter},
+}
+
+\newbibmacro*{shortIfShorttitleExists}{%
+    \iffieldundef{shorttitle}
+    {\printfield{title}}
+    {\printfield{shorttitle}}
+}
+
+\newbibmacro*{licenseAsLink}{\printfield[licenseAsLink]{url}}
+
+\DeclareFieldFormat{licenseAsLink}{\href{#1}{\usebibmacro{shortIfShorttitleExists}\unspace}}
+
+% test if alternative introtext was entered and change accordingly
+\ifnum\pdf@strcmp{\biblicense@introtext}{default}=0%
+    \newcommand{\biblicenseintrotext}{\biblstring{licensedunder}}
+\else
+    \newcommand{\biblicenseintrotext}{\biblicense@introtext}
+\fi
+
+
+\ifnum\pdf@strcmp{\biblicense@license}{off}=0% Package has no functionality.
+  \newbibmacro*{related:license}[1]{}
+\else % license is to be printed
+  \ifnum\pdf@strcmp{\biblicense@license}{short}=0% short license to be printed
+    \ifbiblicense@url % url=true
+      \newbibmacro*{related:license}[1]{%
+        \entrydata{#1}{%
+          \printtext{\biblicenseintrotext}%
+          \setunit{\addspace}%
+          \usebibmacro{shortIfShorttitleExists}%
+          \iffieldundef{url}
+          {}
+          {\setunit{\addspace}\usebibmacro{url}}}%
+      }
+    \else % url=false
+      \ifbiblicense@link % link=true
+        \newbibmacro*{related:license}[1]{%
+          \entrydata{#1}{%
+            \printtext{\biblicenseintrotext}%
+            \setunit{\addspace}%
+            \iffieldundef{url}
+            {\usebibmacro{shortIfShorttitleExists}}
+            {\usebibmacro{licenseAsLink}}%
+          }
+        }
+      \else % link=false
+        \newbibmacro*{related:license}[1]{%
+          \entrydata{#1}{%
+            \printtext{\biblicenseintrotext}%
+            \setunit{\addspace}%
+            {\usebibmacro{shortIfShorttitleExists}}%
+          }
+        }
+      \fi % link = ?
+    \fi % url = ?
+  \else % license=full -- full license to be printed
+      \newbibmacro*{related:license}[1]{%
+          \entrydata{#1}{%
+              \printtext{\biblicenseintrotext}%
+              \setunit{\addspace}%
+              \usedriver
+              {\ifnameundef{savedauthor}
+                  {\ifnameundef{savededitor}
+                      {}
+                      {\ifnamesequal{editor}{savededitor}
+                      {\clearname{editor}}
+                      {}}}
+                  {\ifnamesequal{author}{savedauthor}
+                      {\clearname{author}}
+                      {}}%
+              \renewbibmacro*{related:init}{}%
+              \DeclareNameAlias{sortname}{default}%
+              \ifbibmacroundef{date+extradate}
+                  {}
+                  {\renewbibmacro*{date+extradate}{}%
+                  \renewbibmacro*{date}{\printdate}}%
+              \renewbibmacro*{pageref}{}}
+              {\thefield{entrytype}}
+          }
+      }
+  \fi
+\fi

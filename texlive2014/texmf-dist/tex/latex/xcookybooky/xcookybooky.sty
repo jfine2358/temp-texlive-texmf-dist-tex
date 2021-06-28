@@ -1,0 +1,656 @@
+%%
+%% This is file `xcookybooky.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% xcookybooky.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% Copyright (C) 2013 by Sven Harder
+%% 
+%% This file may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either
+%% version 1.3 of this license or (at your option) any later
+%% version. The latest version of this license is in:
+%% 
+%% http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3 or later is part of all distributions of
+%% LaTeX version 2005/12/01 or later.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{xcookybooky}
+ [2013/03/10 v1.2 Easy typesetting (potentially long) recipes with pictures]
+\newif\ifHandwrittenFont@required
+\HandwrittenFont@requiredfalse
+\DeclareOption{handwritten}
+{% displays the recipename in a handwitten font
+    \HandwrittenFont@requiredtrue
+    \AtEndOfPackage{
+        \setRecipeSizes{recipename = \fontsize{25pt}{30pt}}
+        \setRecipenameFont{fjd}{T1}{m}{n}
+    }
+}
+\DeclareOption{nowarnings}
+{% tries to eliminate nasty warnings
+    \AtEndOfPackage{
+        \def\WF@conflict{}
+        %\def\@fancywarning#1{}
+    }
+}
+\DeclareOption{myconfig}
+{% load personal configuration
+    \AtEndOfPackage{
+        \InputIfFileExists{xcookybooky.cfg}
+        {\PackageInfo{xcookybooky}{inputting 'xcookybooky.cfg'}}
+        {\PackageWarning{xcookybooky}{cannot find the configuration file 'xcookybooky.cfg'}}
+    }
+}
+\ProcessOptions\relax
+
+\RequirePackage{tikz}                        % for creating the lines for the hint
+\RequirePackage{graphicx}
+\RequirePackage{xcolor}
+\RequirePackage[clock, misc, weather]{ifsym} % Symbolpackage e.g. \Interval, \Wecker etc
+\RequirePackage{cookingsymbols}              % Cookings symbols e.g. \Oven, \Dish etc
+\ifHandwrittenFont@required
+    \RequirePackage{emerald}                 % Handwritten Fonts
+\fi
+\RequirePackage{wrapfig}                     % To wrap the tabular with the ingredients
+
+\RequirePackage{ifthen}
+\RequirePackage{xkeyval}
+\RequirePackage{lettrine}                    % numbering the preparation steps
+\RequirePackage{fancyhdr}
+\RequirePackage{units}
+\RequirePackage{eso-pic}                     % for background pictures
+\RequirePackage{picture}                     % for modfifying the position of the bg pictures
+\RequirePackage{tabularx}                    % line breaks in tabular
+
+\setlength{\parindent}{0cm}
+\setlength{\parskip}{2ex plus 0.5ex}
+
+\setlength{\textwidth}{15.5cm}
+\setlength{\textheight}{24.0cm}
+\setlength{\topmargin}{-0.8cm}
+\setlength{\headheight}{14pt} %0cm
+\setlength{\headsep}{1cm}
+\setlength{\topskip}{0cm}
+\setlength{\footskip}{1.4cm}
+\setlength{\evensidemargin}{-0.5cm}
+\setlength{\oddsidemargin}{0.5cm}
+\setlength{\voffset}{0cm}
+\setlength{\hoffset}{0cm}
+\setcounter{secnumdepth}{2} % subsubsections not numbered
+\setcounter{tocdepth}{3}    % subsubsections in the .toc file
+
+\newcommand*{\recipesection}[2][]
+{%
+    \subsubsection[#1]{#2}
+}
+
+\define@key{colorManagement}{recipename}[green]{\def\xcb@color@recipename{#1}}
+\define@key{colorManagement}{ing}[gray]{\def\xcb@color@ing{#1}}
+\define@key{colorManagement}{inghead}[gray]{\def\xcb@color@inghead{#1}}
+\define@key{colorManagement}{prep}[black]{\def\xcb@color@prep{#1}}
+\define@key{colorManagement}{prephead}[black]{\def\xcb@color@prephead{#1}}
+\define@key{colorManagement}{hint}[black]{\def\xcb@color@hint{#1}}
+\define@key{colorManagement}{hinthead}[red]{\def\xcb@color@hinthead{#1}}
+\define@key{colorManagement}{hintline}[red]{\def\xcb@color@hintline{#1}}
+\define@key{colorManagement}{numeration}[red]{\def\xcb@color@numeration{#1}}
+\savekeys{colorManagement}
+{%
+    recipename,   % color of recipename
+    ing,          % color of ingredients (text)
+    inghead,      % color of headline of ingredients
+    prep,         % color of preparation (text)
+    prephead,     % color of headline of preparation
+    hint,         % color of hint (text)
+    hinthead,     % color of headline of hint
+    hintline,     % color of lines of hint
+    numeration    % color of numeration (preparation)
+}
+
+\newcommand*{\setRecipeColors}[1]
+{%
+    \setkeys{colorManagement}{#1}
+}
+
+\setRecipeColors
+{% initialisation
+    recipename,
+    ing,
+    inghead,
+    prep,
+    prephead,
+    hint,
+    hinthead,
+    hintline,
+    numeration
+}
+
+\define@key{sizeManagement}{recipename}[\fontsize{25pt}{30pt}]{\def\xcb@fontsize@recipename{#1}}
+\define@key{sizeManagement}{ing}[\normalsize]{\def\xcb@fontsize@ing{#1}}
+\define@key{sizeManagement}{inghead}[\normalsize]{\def\xcb@fontsize@inghead{#1}}
+\define@key{sizeManagement}{prep}[\normalsize]{\def\xcb@fontsize@prep{#1}}
+\define@key{sizeManagement}{prephead}[\normalsize]{\def\xcb@fontsize@prephead{#1}}
+\define@key{sizeManagement}{hint}[\normalsize]{\def\xcb@fontsize@hint{#1}}
+\define@key{sizeManagement}{hinthead}[\Large]{\def\xcb@fontsize@hinthead{#1}}
+\savekeys{sizeManagement}
+{
+    recipename,
+    ing,
+    inghead,
+    prep,
+    prephead,
+    hint,
+    hinthead
+}
+
+\newcommand*{\setRecipeSizes}[1]
+{
+    \setkeys{sizeManagement}{#1}
+}
+
+\setRecipeSizes
+{% initialisation
+    recipename,
+    ing,
+    inghead,
+    prep,
+    prephead,
+    hint,
+    hinthead
+}
+
+%% Handwritten fonts: hlce, pbsi, hlcw, fjd, fau
+%% Other fonts: fwb
+\newcommand*{\setRecipenameFont}[4]
+{% sets the font for the recipename
+    \def\xcb@font@recipename
+    {
+        \fontfamily{#1}
+        \fontencoding{#2}
+        \fontseries{#3} %x1
+        \fontshape{#4}
+        \xcb@fontsize@recipename
+        \selectfont
+    }
+}
+\setRecipenameFont{cmr}{T1}{b}{n}
+
+\newcounter{step}
+\setcounter{step}{0}
+\renewcommand{\LettrineFontHook}
+{%
+    \color{\xcb@color@numeration}
+}
+
+\newcommand{\step}
+{%
+    \lettrine
+    [%
+        lines=2,
+        lhang=0,          % space into margin, value between 0 and 1
+        loversize=0.15,   % enlarges the height of the capital
+        slope=0em,
+        findent=1em,      % gap between capital and intended text
+        nindent=0em       % shifts all intended lines, begining with the second line
+    ]{\stepcounter{step}\thestep}{}%
+}
+
+\define@key{headlines}{inghead}[Zutaten]{
+    \def\xcb@name@inghead{\textcolor{\xcb@color@inghead}{\textbf{\xcb@fontsize@inghead{#1}}\ }}
+}
+\define@key{headlines}{prephead}[Zubereitung]{
+    \def\xcb@name@prephead{\textcolor{\xcb@color@prephead}{\textbf{\xcb@fontsize@prephead{#1}}\ }}
+}
+\define@key{headlines}{hinthead}[Tipp:]{
+    \def\xcb@name@hinthead{\textcolor{\xcb@color@hinthead}{\xcb@fontsize@hinthead{#1}}}
+}
+\define@key{headlines}{continuationhead}[Fortsetzung]{\def\xcb@name@continuationhead{#1}}
+\define@key{headlines}{continuationfoot}[Fortsetzung auf n\"achster Seite]{\def\xcb@name@continuationfoot{#1}}
+\define@key{headlines}{preparationtime}[\fontsize{14.5pt}{10pt}\Gloves]{\def\xcb@name@preparationtime{#1}}
+\define@key{headlines}{bakingtime}[\fontsize{14.5pt}{10pt}\Oven]{\def\xcb@name@bakingtime{#1}}
+\define@key{headlines}{bakingtemperature}[\Thermo{4}]{\def\xcb@name@bakingtemperature{#1}}
+\define@key{headlines}{portion}[\fontsize{14.5pt}{10pt}\Dish]{\def\xcb@name@portion{#1}}
+\define@key{headlines}{portionvalue}[Personen]{\def\xcb@name@portionvalue{#1}}
+\define@key{headlines}{calory}[Brennwert]{\def\xcb@name@calory{#1}}
+\define@key{headlines}{source}[\PaperPortrait]{\def\xcb@name@source{#1}}
+\savekeys{headlines}
+{
+    inghead,
+    prephead,
+    hinthead,
+    continuationhead,
+    continuationfoot,
+    preparationtime,
+    bakingtime,
+    bakingtemperature,
+    portion,
+    portionvalue,
+    calory,
+    source
+}
+\newcommand*{\setHeadlines}[1]
+{%
+    \setkeys{headlines}{#1}
+}
+\setHeadlines
+{% initialisation
+    inghead,
+    prephead,
+    hinthead,
+    continuationhead,
+    continuationfoot,
+    preparationtime,
+    bakingtime,
+    bakingtemperature,
+    portion,
+    portionvalue,
+    calory,
+    source
+}
+
+\define@key{recipelengths}{preparationwidth}[0.60\textwidth]{\def\xcb@preparationwidth{#1}}
+\define@key{recipelengths}{ingredientswidth}[0.35\textwidth]{\def\xcb@ingredientswidth{#1}}
+\define@key{recipelengths}{pictureheight}[6cm]{\def\xcb@pictureheight{#1}}
+\define@key{recipelengths}{bigpicturewidth}[0.60\textwidth]{\def\xcb@bigpicturewidth{#1}}
+\define@key{recipelengths}{smallpicturewidth}[0.35\textwidth]{\def\xcb@smallpicturewidth{#1}}
+\savekeys{recipelengths}
+{
+    preparationwidth,
+    ingredientswidth,
+    pictureheight,
+    bigpicturewidth,
+    smallpicturewidth
+}
+
+\newcommand*{\setRecipeLengths}[1]
+{%
+    \setkeys{recipelengths}{#1}
+}
+\setRecipeLengths
+{% initialisation
+    preparationwidth,
+    ingredientswidth,
+    pictureheight,
+    bigpicturewidth,
+    smallpicturewidth
+}
+
+\define@key{picture}{small}[]{
+    \def\xcb@picture@small{
+        \ifthenelse{\equal{#1}{}}
+        {% not set => not shown
+        }
+        {
+            \vspace{-0.6cm}
+            \includegraphics[width=\linewidth, height = \xcb@pictureheight, keepaspectratio]{#1}
+        }
+    }
+}
+\define@key{picture}{smallpicturewidth}[]{\def\xcb@picture@smallwidth{#1}}
+\define@key{picture}{bigpicturewidth}[]{\def\xcb@picture@bigwidth{#1}}
+\define@key{picture}{big}[]{
+    \def\xcb@picture@big{
+        \ifthenelse{\equal{#1}{}}
+        {% not set => not shown
+        }
+        {
+            \vspace{-0.6cm}
+            \includegraphics[width=\linewidth, height = \xcb@pictureheight, keepaspectratio]{#1}
+        }
+    }
+}
+
+\define@key{recipe}{preparationtime}[]{\def\xcb@preparationtime{#1}}
+\define@key{recipe}{bakingtime}[]{\def\xcb@bakingtime{#1}}
+\define@key{recipe}{bakingtemperature}[]{\def\xcb@bakingtemperature{#1}}
+\define@key{recipe}{portion}[]{\def\xcb@portion{#1}}
+\define@key{recipe}{calory}[]{\def\xcb@calory{#1}}
+\define@key{recipe}{source}[]{\def\xcb@source{#1}}
+
+\newcommand*{\portion}[2][\xcb@name@portionvalue]{\unit[#2]{#1}}
+
+\define@key{bakingtemperature}{fanoven}[]{\def\xcb@bakingtemperature@fanoven{#1}}
+\define@key{bakingtemperature}{topbottomheat}[]{\def\xcb@bakingtemperature@topbottomheat{#1}}
+\define@key{bakingtemperature}{topheat}[]{\def\xcb@bakingtemperature@topheat{#1}}
+\define@key{bakingtemperature}{bottomheat}[]{\def\xcb@bakingtemperature@bottomheat{#1}}
+\define@key{bakingtemperature}{gasstove}[]{\def\xcb@bakingtemperature@gasstove{#1}}
+
+\newboolean{xcb@bakingtemperature@firstentry}
+\newcommand*{\bakingtemperature}[1]
+{%
+    \setboolean{xcb@bakingtemperature@firstentry}{true}%
+    \setkeys{bakingtemperature}{fanoven, topbottomheat, topheat, bottomheat, gasstove}%
+    \setkeys{bakingtemperature}{#1}%
+
+    \ifthenelse{\equal{\xcb@bakingtemperature@fanoven}{}}%
+    {}%
+    {%
+        \xcb@bakingtemperature@fanoven \ {\fontsize{14.5pt}{10pt}\Fanoven}%
+        \setboolean{xcb@bakingtemperature@firstentry}{false}%
+    }%
+    \ifthenelse{\equal{\xcb@bakingtemperature@topbottomheat}{}}%
+    {}%
+    {%
+        \ifthenelse{\boolean{xcb@bakingtemperature@firstentry}}{\setboolean{xcb@bakingtemperature@firstentry}{false}}{, }%
+        \xcb@bakingtemperature@topbottomheat \ {\fontsize{14.5pt}{10pt}\Topbottomheat}%
+    }%
+    \ifthenelse{\equal{\xcb@bakingtemperature@topheat}{}}%
+    {}%
+    {%
+        \ifthenelse{\boolean{xcb@bakingtemperature@firstentry}}{\setboolean{xcb@bakingtemperature@firstentry}{false}}{, }%
+        \xcb@bakingtemperature@topheat \ {\fontsize{14.5pt}{10pt}\Topheat}%
+    }%
+    \ifthenelse{\equal{\xcb@bakingtemperature@bottomheat}{}}%
+    {}%
+    {%
+        \ifthenelse{\boolean{xcb@bakingtemperature@firstentry}}{\setboolean{xcb@bakingtemperature@firstentry}{false}}{, }%
+        \xcb@bakingtemperature@bottomheat \ {\fontsize{14.5pt}{10pt}\Bottomheat}%
+    }%
+    \ifthenelse{\equal{\xcb@bakingtemperature@gasstove}{}}%
+    {}%
+    {%
+        \ifthenelse{\boolean{xcb@bakingtemperature@firstentry}}{\setboolean{xcb@bakingtemperature@firstentry}{false}}{, }%
+        \xcb@bakingtemperature@gasstove \ {\fontsize{14.5pt}{10pt}\Gasstove}%
+    }%
+}
+\newenvironment{recipe}[2][]
+{
+    %% macros
+    \newcommand*{\graph}[1]
+    {%
+        \setkeys{picture}{##1}
+    }
+
+    \newcommand*{\ingredients}[1]
+    {%
+        \def\xcb@ingredients
+        {%
+            \vspace{-1em}    % same height of ingredients and preparation
+            \xcb@name@inghead
+            %\\[4pt]
+            \\[1em]
+            \xcb@fontsize@ing\color{\xcb@color@ing}
+            \begin{tabularx}{\xcb@ingredientswidth}{rX}
+                ##1
+            \end{tabularx}
+        }
+    }
+
+    \newcommand*{\preparation}[1]
+    {%
+        \def\xcb@preparation
+        {%
+            \xcb@name@prephead
+            %\\[4pt]
+            \xcb@fontsize@prep\color{\xcb@color@prep}##1
+        }
+        \setcounter{step}{0}
+    }
+
+    \newcommand*{\hint}[1]
+    {%
+        \def\xcb@hint
+        {%
+            \pagebreak[1]    % begin here a new page, if the space is small
+            \begin{tikzpicture}[line width = 1.5pt, \xcb@color@hintline]
+                \useasboundingbox (0,0) -- ++(right:3.5cm) -- ++(up:3mm) -- ++(left:3.5cm) -- cycle;
+                \draw (-3mm, 0mm) -- ++(right:3.5cm);
+                \draw (0, 3mm) -- ++(down:2.4cm);
+            \end{tikzpicture}
+
+            \nopagebreak
+
+            \begingroup      % a group for the hint
+                \leftskip1em
+                \xcb@name@hinthead
+                \nopagebreak
+
+                \itshape\textcolor{\xcb@color@hint}{\xcb@fontsize@hint{##1}}
+                \par
+            \endgroup
+        }
+    }
+
+    \newcommand{\xcb@cmd@recipeoverview}
+    {
+        \begin{tabular}{rl}
+            \ifthenelse{\equal{\xcb@preparationtime}{}}
+            {% not set => not shown
+            }
+            {
+                \xcb@name@preparationtime & \xcb@preparationtime\\
+            }
+            \ifthenelse{\equal{\xcb@bakingtime}{}}
+            {% not set => not shown
+            }
+            {
+                \xcb@name@bakingtime & \xcb@bakingtime\ifthenelse{\equal{\xcb@bakingtemperature}{}}
+                {
+                    \\
+                }
+                {,\hspace{1em} \xcb@name@bakingtemperature \hspace{1ex} \xcb@bakingtemperature\\
+                }
+            }
+            \ifthenelse{\equal{\xcb@portion}{}}
+            {% not set => not shown
+            }
+            {
+                \xcb@name@portion & \xcb@portion\\
+            }
+            \ifthenelse{\equal{\xcb@calory}{}}
+            {% not set => not shown
+            }
+            {
+                \xcb@name@calory & \xcb@calory\\
+            }
+            \ifthenelse{\equal{\xcb@source}{}}
+            {% not set => not shown
+            }
+            {
+                \xcb@name@source & \xcb@source
+            }
+        \end{tabular}
+    }
+
+    \newcommand\xcb@cmd@wrapfill
+    {%
+        \par
+        \ifx\parshape\WF@fudgeparshape
+        \nobreak
+        \vskip-\baselineskip
+        \vskip\c@WF@wrappedlines\baselineskip
+        \allowbreak
+        \WFclear
+        \fi
+    }
+    %% end of macros
+
+    % initialisation
+    \setkeys{recipe}{preparationtime, bakingtime, bakingtemperature, portion, calory, source}
+    \setkeys{picture}{small, big, smallpicturewidth=\xcb@smallpicturewidth, bigpicturewidth=\xcb@bigpicturewidth} % load the default values
+    \ingredients{}
+    \preparation{}
+    \def\xcb@hint{}
+
+    \def\xcb@recipename{#2}
+    \setkeys{recipe}{#1}  % reading the optional parameters
+
+    \setcounter{xcb@newpagefoot}{1}
+    \setcounter{xcb@newpagehead}{\value{page}}
+}
+{% this part is executed at \end{recipe}
+%% FIRST BLOCK
+    \if@twoside
+        \ifodd\arabic{page}
+            \begin{minipage}[T]{\xcb@picture@bigwidth}
+                \xcb@picture@big
+            \end{minipage}
+            \hfill
+            \begin{minipage}[T]{\xcb@picture@smallwidth}
+                \xcb@picture@small
+            \end{minipage}
+        \else
+            \begin{minipage}[T]{\xcb@picture@smallwidth}
+                \xcb@picture@small
+            \end{minipage}
+            \hfill
+            \begin{minipage}[T]{\xcb@picture@bigwidth}
+                \xcb@picture@big
+            \end{minipage}
+        \fi
+    \else
+        \begin{minipage}[T]{\xcb@picture@bigwidth}
+            \xcb@picture@big
+        \end{minipage}
+        \hfill
+        \begin{minipage}[T]{\xcb@picture@smallwidth}
+            \xcb@picture@small
+        \end{minipage}
+    \fi
+
+%% SECOND BLOCK
+    \recipesection[\normalsize\xcb@recipename]%
+    {\hspace{-1em}\textcolor{\xcb@color@recipename}{\xcb@font@recipename\xcb@recipename}}
+    \xcb@cmd@recipeoverview
+
+%% THIRD BLOCK
+    \begin{wraptable}{r}{\xcb@ingredientswidth}
+    {
+        \xcb@ingredients
+    }
+    \end{wraptable}
+    \xcb@preparation
+
+    \vfill
+
+    \xcb@cmd@wrapfill
+    \xcb@hint
+    \setcounter{xcb@newpagefoot}{0}
+}
+
+\pagestyle{fancy}
+\renewcommand{\sectionmark}[1]
+{%
+    \markright{\MakeUppercase{\thesection.\ #1}}
+}
+\renewcommand{\headrulewidth}
+{%
+    0.5pt
+}
+\fancyhf{}
+\if@twoside
+    \fancyfoot[LE,RO]{\textbf{\thepage}}
+    \fancyhead[LE,RO]{\rightmark}
+\else
+    \fancyfoot[R]{\textbf{\thepage}}
+    \fancyhead[R]{\rightmark}
+\fi
+\fancyhead[C]{\@newpagehint{head}}
+\fancyfoot[C]{\@newpagehint{foot}}
+
+\newcounter{xcb@newpagehead}
+\setcounter{xcb@newpagehead}{0}
+\newcounter{xcb@newpagefoot}
+\setcounter{xcb@newpagefoot}{0}
+\newcommand*{\@newpagehint}[1]
+{
+    \ifthenelse{\equal{#1}{head}}
+    {
+        \ifnum \value{xcb@newpagehead} < \value{page}
+            \ifnum \value{xcb@newpagehead} > 0
+                \xcb@name@continuationhead
+            \fi
+        \fi
+    }
+    {
+        \ifthenelse{\value{xcb@newpagefoot} > 0}
+        {
+            \xcb@name@continuationfoot
+        }
+        {% if no message at the bottom is set, there is no need for a message on the next page
+            \setcounter{xcb@newpagehead}{0}
+        }
+    }
+}
+
+\define@key{background}{width}[\linewidth]{\def\xcb@background@width{#1}}
+\define@key{background}{height}[\paperheight]{\def\xcb@background@height{#1}}
+\define@key{background}{x}[0cm]{\def\xcb@background@x{#1}}
+\define@key{background}{y}[0cm]{\def\xcb@background@y{#1}}
+\define@key{background}{orientation}[default]{\def\xcb@background@orientation{#1}}
+\savekeys{background}
+{%
+    width,
+    height,
+    x,
+    y,
+    orientation
+}
+
+\newcommand*{\setBackgroundPicture}[2][]
+{%
+    \ClearShipoutPictureBG
+    \setkeys{background}{width, height, x, y, orientation} % initialisation
+    \setkeys{background}{#1}
+    \AddToShipoutPicture
+    {%
+        \ifthenelse{\equal{\xcb@background@orientation}{default}}
+        {% default
+            \put(\xcb@background@x, \xcb@background@y)
+            {%
+                \parbox[b][\xcb@background@height]{\xcb@background@width}
+                {%
+                    \vfill
+                    \includegraphics[width=\xcb@background@width, height=\xcb@background@height, keepaspectratio]{#2}%
+                    \vfill
+                }
+            }
+        }
+        {%
+            \ifthenelse{\equal{\xcb@background@orientation}{pagecenter}}
+            {% pagecenter
+                \AtPageCenter{%
+                    \makebox(\xcb@background@x, \xcb@background@y)[c]
+                    {%
+                        \includegraphics[width=\xcb@background@width, height=\xcb@background@height, keepaspectratio]{#2}
+                    }
+                }
+            }
+            {%
+                \ifthenelse{\equal{\xcb@background@orientation}{textcenter}}
+                {% textcenter
+                    \AtTextCenter{%
+                        \makebox(\xcb@background@x, \xcb@background@y)[c]
+                        {%
+                            \includegraphics[width=\xcb@background@width, height=\xcb@background@height, keepaspectratio]{#2}
+                        }
+                    }
+                }
+                {%
+                    \ifthenelse{\equal{\xcb@background@orientation}{stockcenter}}
+                    {% stockcenter
+                        \AtStockCenter{%
+                            \makebox(\xcb@background@x, \xcb@background@y)[c]
+                            {%
+                                \includegraphics[width=\xcb@background@width, height=\xcb@background@height, keepaspectratio]{#2}
+                            }
+                        }
+                    }
+                    {% error message
+                        \PackageError{xcookybooky}
+                        {There is no '\xcb@background@orientation' option for background picture orientation available!}
+                        {The possible options are: default, pagecenter, textcenter or stockcenter}
+                    }
+                }
+            }
+        }
+
+    }
+}
+\endinput
+%%
+%% End of file `xcookybooky.sty'.

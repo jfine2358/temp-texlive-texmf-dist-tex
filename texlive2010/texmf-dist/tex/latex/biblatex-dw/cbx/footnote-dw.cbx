@@ -1,0 +1,352 @@
+% footnote-dw.cbx, Dominik Waßenhoven 2010
+
+\ProvidesFile{footnote-dw.cbx}[2010/03/11 v1.3 biblatex citation style]
+
+\RequireCitationStyle{standard-dw}
+
+\newbool{cbx:pageref}
+
+\DeclareBibliographyOption{pageref}[true]{%
+  \setbool{cbx:pageref}{#1}}
+
+\ExecuteBibliographyOptions{
+  uniquename=false,  % damit bei idem=false Vor- und Nachname gesetzt werden!
+  loccittracker=true,% für die Option 'ibidpage'
+}
+
+% Kommandos zum Verpacken der Zitate in Fußnoten
+\newrobustcmd{\mkfootnotecite}[1]{%
+  \iffootnote
+    {#1}
+    {\unspace\footnote{%
+       \toggletrue{blx@footnote}%
+       \bibsentence#1\addperiod}}}
+       
+\newbool{cbx:parencitefoot}% wenn parencite innerhalb einer 
+                           % Fußnote aufgerufen wird 
+                           % (wichtig für seenote)
+\newrobustcmd{\mkparencite}[1]{%
+  \iffootnote
+    {\booltrue{cbx:parencitefoot}%
+     \begingroup
+     \let\mkbibparens\mkbibbrackets
+     \bibleftparen#1\bibrightparen
+     \endgroup}
+    {\unspace\footnote{%
+       \toggletrue{blx@footnote}%
+       \bibsentence#1\addperiod}}}
+
+\newbibmacro*{cite}{%
+  \global\boolfalse{cbx:herename}%
+  \global\boolfalse{cbx:loccit}%
+  \bibhypertarget{cite\the\value{instcount}}{%
+    \ifciteseen
+      {\iffieldundef{shorthand}
+         {\ifthenelse{\ifciteibid\AND\NOT\iffirstonpage}
+            {\usebibmacro{cite:ibid}%
+             \usebibmacro{cite:save}%
+             \usebibmacro{cite:reset}}
+            {\ifthenelse{\ifciteidem\AND\NOT\boolean{cbx:noidem}%
+                                    \AND\NOT\iffirstonpage}
+              {\usebibmacro{cite:idem}%
+               \usebibmacro{cite:title}}
+              {\ifnameundef{labelname}
+                 {\usebibmacro{cite:title}}
+                 {\usebibmacro{cite:name}%
+                  \ifopcit
+                    {\ifloccit
+                      {\usebibmacro{cite:loccit}}
+                      {\usebibmacro{cite:opcit}}}
+                    {\usebibmacro{cite:title}}}}%
+             \usebibmacro{cite:save}}}
+         {\ifbool{cbx:shorthandibid}%
+           {\ifthenelse{\ifciteibid\AND\NOT\iffirstonpage}%
+             {\usebibmacro{cite:ibid}}%
+             {\usebibmacro{cite:shorthand}}}
+           {\usebibmacro{cite:shorthand}}%
+          \usebibmacro{cite:save}%
+          \usebibmacro{cite:reset}}}
+      {\ifthenelse{\ifciteidem\AND\NOT\boolean{cbx:noidem}%
+                              \AND\NOT\iffirstonpage}
+       	 {\usebibmacro{cite:idem}%
+          \booltrue{cbx:idemfull}}
+       	 {}%
+       \usebibmacro{cite:full}%
+       \usebibmacro{cite:save}}}}
+
+\newbibmacro*{footref}{%
+  \csxdef{cbx@first@\thefield{entrykey}}{\the\value{instcount}}%
+  \label{cbx@\the\value{instcount}}}
+
+\newbibmacro*{cite:full}{%
+  \usebibmacro{footref}%
+  \ifuseeditor
+    {\ifnameundef{editor}
+      {\setunit{}}
+      {}}%
+    {\setunit{}}%
+  \printtext[bibhypertarget]{%
+    \usedriver
+      {\ifbool{cbx:option:omitpages}
+        {\booltrue{cbx:omitpages}}
+        {}%
+       \DeclareNameAlias{sortname}{default}}
+      {\thefield{entrytype}}%
+    \iffieldundef{shorthand}
+      {}
+      {\ifbool{cbx:citedas}
+        {\addspace\usebibmacro{shorthandintro}}
+        {}}%
+    \iffieldundef{pages}
+   		{}%
+   		{\iffieldundef{postnote}
+   			{}%
+   			{\ifthenelse{\boolean{cbx:option:herename}\AND\NOT
+                     \boolean{cbx:omitpages}}
+   			  {\global\booltrue{cbx:herename}%
+   			   \herenamepunct%
+           \bibstring{herename}}
+   			  {}}}}}
+   			
+\newbibmacro*{cite:title}{%
+  \ifsingletitle
+    {\setunit{}}% Löschen des \citenamepunct, falls kein Titel ausgegeben wird
+    {\printtext[bibhyperlink]{%
+       \printfield[citetitle]{labeltitle}}}%
+  \ifuseeditor
+    {}
+    {\ifbool{cbx:omiteditor}
+      {}
+      {\ifnameundef{editor}
+        {}
+        {\ifbool{bbx:xrefnoidem}%
+	        {\newunit
+           \usebibmacro{cite:byeditor}}%
+          {\ifbool{bbx:edbyidem}
+		        {\newunit
+             \bibstring{byeditor}%
+             \setunit{\addspace}%
+             \bibstring[\mkidem]{idemdat\thefield{gender}}}
+            {\newunit
+             \usebibmacro{cite:byeditor}}}}}}%
+  \usebibmacro{cite:seenote}}
+            
+\newbibmacro*{cite:shorthand}{%
+  \printtext[bibhyperlink]{\printfield{shorthand}}%
+  \ifbool{cbx:citedas}
+    {}
+    {\usebibmacro{cite:seenote}}}
+
+\newbibmacro*{cite:seenote}{%
+  \ifbool{cbx:parencitefoot}
+    {\addspace\mkbibbrackets{%
+      \bibstring{seenote}\addnbspace%\ref{\thefield{entrykey}}%
+      \ref{cbx@\csuse{cbx@first@\thefield{entrykey}}}%
+      \ifbool{cbx:pageref}
+        {\ifsamepage{\the\value{instcount}}
+                    {\csuse{cbx@first@\thefield{entrykey}}}
+          {}
+          {\addcomma\space\bibstring{page}\addnbspace
+    	     \pageref{cbx@\csuse{cbx@first@\thefield{entrykey}}}}}
+        {}}}
+    {\addspace\mkbibparens{%
+      \bibstring{seenote}\addnbspace%\ref{\thefield{entrykey}}%
+      \ref{cbx@\csuse{cbx@first@\thefield{entrykey}}}%
+      \ifbool{cbx:pageref}
+        {\ifsamepage{\the\value{instcount}}
+                    {\csuse{cbx@first@\thefield{entrykey}}}
+          {}
+          {\addcomma\space\bibstring{page}\addnbspace
+    	     \pageref{cbx@\csuse{cbx@first@\thefield{entrykey}}}}}
+        {}}}}
+
+%% xref
+\newbibmacro*{cite:xref}{%
+  \ifciteseen
+    {\iffieldundef{shorthand}
+      {\ifuseeditor
+        {\ifnameundef{labelname}
+          {}%
+          {\ifbool{cbx:xrefnoidem}
+             {\usebibmacro{cite:editor}%
+              \citenamepunct}%
+             {\usebibmacro{cite:idem}}}}
+        {}%
+       \usebibmacro{cite:title}}       
+      {\usebibmacro{cite:shorthand}}}%
+    {\ifbool{cbx:xrefnoidem}
+       {\usebibmacro{cite:fullxref}}%
+       {\ifbool{bbx:edbyidem}
+         {\usebibmacro{cite:fullxrefidem}}%
+         {\usebibmacro{cite:fullxref}}}}}%
+
+\newbibmacro*{cite:fullxref}{%
+  \usebibmacro{footref}%
+  \usedriver
+    {\ifbool{cbx:option:omitpages}
+      {\booltrue{cbx:omitpages}}
+      {}%
+     \DeclareNameAlias{sortname}{default}}
+    {xref\thefield{entrytype}}%
+  \iffieldundef{shorthand}
+    {}
+    {\ifbool{cbx:citedas}
+      {\addspace\usebibmacro{shorthandintro}}
+      {}}}
+
+\newbibmacro*{cite:fullxrefidem}{%
+  \usebibmacro{footref}%
+  \usedriver
+    {\ifbool{cbx:option:omitpages}
+      {\booltrue{cbx:omitpages}}
+      {}%
+     \DeclareNameAlias{sortname}{default}%
+     \clearfield{editor}}
+    {xrefidem\thefield{entrytype}}%
+  \iffieldundef{shorthand}
+    {}
+    {\ifbool{cbx:citedas}
+      {\addspace\usebibmacro{shorthandintro}}
+      {}}}%
+      
+%% falls eine Bibliographie ausgegeben wird,
+%% soll kein '(wie Anm. x)' erscheinen
+\AtBeginBibliography{%
+  \renewbibmacro*{cite:xref}{%
+    \iffieldundef{shorthand}%
+      {\ifuseeditor
+        {\ifnameundef{labelname}
+          {}
+          {\ifbool{bbx:xrefnoidem}%
+		        {\printnames{labelname}%
+		         \printtext{\labelnamepunct}}%
+		        {\ifbool{bbx:edbyidem}
+		          {\midsentence%
+		           \usebibmacro{cite:idem}}%
+		          {\printnames{labelname}%
+  		         \printtext{\labelnamepunct}}}}}
+        {}%
+       \iffieldundef{shorttitle}%
+         {\printfield{title}}%
+         {\printfield{shorttitle}}%
+       \ifuseeditor
+         {}
+         {\ifbool{cbx:omiteditor}
+           {}
+           {\ifnameundef{editor}
+             {}
+             {\ifbool{bbx:xrefnoidem}%
+	             {\newunit
+               \usebibmacro{byeditor}}%
+               {\ifbool{bbx:edbyidem}
+		             {\newunit
+                  \bibstring{byeditor}%
+                  \setunit{\addspace}%
+                  \bibstring[\mkidem]{idemdat\thefield{gender}}}
+                 {\newunit
+                  \usebibmacro{byeditor}}}}}}}%
+      {\printtext[bibhyperref]{\printfield{shorthand}}}}}      
+    
+\DeclareCiteCommand{\cite}[\mkfootnotecite]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+\DeclareCiteCommand{\parencite}[\mkparencite]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+\DeclareCiteCommand{\footcite}[\mkfootnotecite]
+  {\bibsentence
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{cite:postnote}}
+
+\DeclareCiteCommand{\fullcite}[\mkfootnotecite]
+  {\usebibmacro{prenote}}
+  {\usedriver
+     {\ifbool{cbx:option:omitpages}
+       {\booltrue{cbx:omitpages}}
+       {}%
+      \DeclareNameAlias{sortname}{default}}
+     {\thefield{entrytype}}}
+  {\multicitedelim}
+  {\iffieldundef{postnote}
+   {}
+   {\ifthenelse{\boolean{cbx:option:herename}\AND\NOT
+                \(\iffieldundef{pages}\OR
+                  \boolean{cbx:omitpages}\)}
+   	 {\global\booltrue{cbx:herename}%
+      \herenamepunct%
+      \bibstring{herename}}
+   	 {\global\boolfalse{cbx:herename}}%
+    \usebibmacro{postnote}}}
+
+\DeclareCiteCommand{\footfullcite}[\mkfootnotecite]
+  {\bibsentence
+   \usebibmacro{prenote}}
+  {\usedriver
+     {\ifbool{cbx:option:omitpages}
+       {\booltrue{cbx:omitpages}}
+       {}%
+      \DeclareNameAlias{sortname}{default}}
+     {\thefield{entrytype}}}
+  {\multicitedelim}
+  {\iffieldundef{postnote}
+   {}
+   {\ifthenelse{\boolean{cbx:option:herename}\AND\NOT
+                \(\iffieldundef{pages}\OR
+                  \boolean{cbx:omitpages}\)}
+   	 {\global\booltrue{cbx:herename}%
+      \herenamepunct%
+      \bibstring{herename}}
+   	 {\global\boolfalse{cbx:herename}}%
+    \usebibmacro{postnote}}}
+
+\DeclareMultiCiteCommand{\cites}[\mkfootnotecite]{\cite}{\multicitedelim}
+\DeclareMultiCiteCommand{\parencites}[\mkparencite]{\parencite}{\multicitedelim}
+\DeclareMultiCiteCommand{\footcites}[\mkfootnotecite]{\footcite}{\multicitedelim}
+
+%%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%%
+%%%%% Unverändert aus verbose-trad1 übernommen  %%%%%
+%%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%% %%%%% 
+
+\newbool{cbx:loccit}
+
+\DeclareBibliographyOption{ibidpage}[true]{%
+  \ifstrequal{#1}{true}
+    {\renewbibmacro*{cite:ibid:page}{\global\booltrue{cbx:loccit}}}
+    {\renewbibmacro*{cite:ibid:page}{}}}
+
+\newbibmacro*{cite:opcit}{%
+  \printtext[bibhyperlink]{\bibstring[\mkibid]{opcit}}}
+
+\newbibmacro*{cite:loccit}{%
+  \printtext{%
+    \bibhyperlink{cite\@nameuse{cbx:lastcite@\thefield{entrykey}}}{%
+      \bibstring[\mkibid]{loccit}}}%
+  \global\booltrue{cbx:loccit}}
+
+\newbibmacro*{cite:ibid}{%
+  \printtext{%
+    \bibhyperlink{cite\@nameuse{cbx:lastcite@\thefield{entrykey}}}{%
+      \bibstring[\mkibid]{ibidem}}}%
+  \ifloccit
+    {\usebibmacro{cite:ibid:page}}
+    {}}
+
+\newbibmacro*{cite:ibid:page}{}
+
+\newbibmacro*{cite:postnote}{%
+  \ifbool{cbx:loccit}
+    {}
+    {\usebibmacro{postnote}}}
+       
+\endinput

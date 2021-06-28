@@ -1,0 +1,495 @@
+%
+% mathfam256.sty
+% 2018/01/22 v0.2  Hironobu Yamashita (aminophen)
+% 2016/12/26 v0.1  Hironobu Yamashita (aminophen)
+% 2009/02/20 v0.01 Kazuyoshi Yamamoto (ymt)
+%
+% This package, originally written by Kazuyoshi Yamamoto
+% (as ofamex1.sty, ofamex2.sty, ofamex3.sty)
+% and renamed/modified by Hironobu Yamashita, is distributed
+% at GitHub repository:
+% https://github.com/aminophen/mathfam256
+%
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{mathfam256}
+  [2018/01/22 v0.2 Extend math family up to 256]
+
+%% engine check
+\ifx\omathchar\@undefined
+  \PackageError{mathfam256}{%
+    Sorry, this package requires Omega-like engine features.\MessageBreak
+    Currently only the following formats are known:\MessageBreak
+    * pLaTeX (run on e-pTeX)\MessageBreak
+    * upLaTeX (run on e-upTeX)\MessageBreak
+    * Lamed (run on Aleph)\MessageBreak
+    It seems you are running unsupported engine}\@ehc
+\fi
+\ifx\numexpr\@undefined
+  \PackageError{mathfam256}{This package requires e-TeX features}\@ehc
+\fi
+
+%% engine check has been done, so always 256
+\mathchardef\e@mathgroup@top=\@cclvi
+
+%% patch LaTeX2e internal only if older than 2015/01/01
+\@ifl@t@r\fmtversion{2015/01/01}{}{%
+  %% Increase math alphabet up to 256
+  \PackageInfo{mathfam256}{Patch for \noexpand\document@select@group applied}%
+  \def\document@select@group#1#2#3#4{%
+   \ifx\math@bgroup\bgroup\else\relax\expandafter\@firstofone\fi
+   {%
+   \ifmmode
+     \ifnum\csname c@mv@\math@version\endcsname<\e@mathgroup@top
+       \begingroup
+         \escapechar\m@ne
+         \getanddefine@fonts{\csname c@mv@\math@version\endcsname}#3%
+         \globaldefs\@ne  \math@fonts
+       \endgroup
+       \expandafter\extract@alph@from@version
+           \csname mv@\math@version\expandafter\endcsname
+           \expandafter{\number\csname
+                         c@mv@\math@version\endcsname}%
+            #1%
+       \global\advance\csname c@mv@\math@version\endcsname\@ne
+     \else
+       \let#1\relax
+       \@latex@error{Too many math alphabets used
+                     in version \math@version}%
+          \@eha
+    \fi
+   \else \expandafter\non@alpherr\fi
+   #1{#4}%
+   }%
+  }%
+  \PackageInfo{mathfam256}{Patch for \noexpand\select@group applied}%
+  \def\select@group#1#2#3#4{%
+   \ifx\math@bgroup\bgroup\else\relax\expandafter\@firstofone\fi
+   {%
+   \ifmmode
+    \ifnum\csname c@mv@\math@version\endcsname<\e@mathgroup@top
+       \begingroup
+         \escapechar\m@ne
+         \getanddefine@fonts{\csname c@mv@\math@version\endcsname}#3%
+         \globaldefs\@ne  \math@fonts
+       \endgroup
+       \init@restore@version
+       \xdef#1{\noexpand\use@mathgroup\noexpand#2%
+               {\number\csname c@mv@\math@version\endcsname}}%
+       \global\advance\csname c@mv@\math@version\endcsname\@ne
+     \else
+       \let#1\relax
+       \@latex@error{Too many math alphabets used in
+                     version \math@version}%
+          \@eha
+     \fi
+   \else \expandafter\non@alpherr\fi
+   #1{#4}%
+   }%
+  }%
+  %% Increase math symbol up to 256
+  \PackageInfo{mathfam256}{Patch for \noexpand\new@mathgroup applied}%
+  \def\new@mathgroup
+    {\e@alloc\mathgroup\chardef{\count18}\m@ne\e@mathgroup@top}%
+}
+
+%% use \omath... primitives for low-level commands
+\def\set@mathchar#1#2#3#4{%
+  \ifnum#1<\sixt@@n
+    \global\mathcode`#2="\mathchar@type#3\hexnumber@#1#4\relax
+  \else
+    \global\omathcode`#2="\mathchar@type#3\hexnumber@@#100#4\relax
+  \fi
+}
+\def\set@mathsymbol#1#2#3#4{%
+  \ifnum#1<\sixt@@n
+    \global\mathchardef#2"\mathchar@type#3\hexnumber@#1#4\relax
+  \else
+    \global\omathchardef#2"\mathchar@type#3\hexnumber@@#100#4\relax
+  \fi
+}
+\def\set@mathaccent#1#2#3#4{%
+  \ifnum#1<\sixt@@n
+    \xdef#2{\mathaccent"\mathchar@type#3\hexnumber@#1#4\relax}%
+  \else
+    \xdef#2{\omathaccent"\mathchar@type#3\hexnumber@@#100#4\relax}%
+  \fi
+}
+\def\set@mathdelimiter#1#2#3#4#5#6{%
+  \@tempswatrue
+    \ifnum#1<\sixt@@n\relax\else\@tempswafalse\fi
+    \ifnum#2<\sixt@@n\relax\else\@tempswafalse\fi
+  \if@tempswa
+    \xdef#3{\delimiter"\mathchar@type#4\hexnumber@#1#5\hexnumber@#2#6\relax}%
+  \else
+    \xdef#3{\odelimiter"\mathchar@type#4\hexnumber@@#100#5%
+                       "\hexnumber@@#200#6\relax}%
+  \fi
+}
+\def\set@@mathdelimiter#1#2#3#4#5{%
+  \@tempswatrue
+    \ifnum#1<\sixt@@n\relax\else\@tempswafalse\fi
+    \ifnum#2<\sixt@@n\relax\else\@tempswafalse\fi
+  \if@tempswa
+    \global\delcode`#3="\hexnumber@#1#4\hexnumber@#2#5\relax
+  \else
+    \global\odelcode`#3="\hexnumber@@#100#4"\hexnumber@@#200#5\relax
+  \fi
+}
+\def\DeclareMathRadical#1#2#3#4#5{%
+  \expandafter\ifx
+       \csname\expandafter\@gobble\string#1\endcsname
+       \relax
+     \let#1\radical
+  \fi
+  \edef\reserved@a{\noexpand\in@
+       {\expandafter\@gobble\string\radical}{\meaning#1}}%
+  \reserved@a
+  \ifin@
+    \expandafter\in@\csname sym#2\expandafter\endcsname
+       \expandafter{\group@list}%
+    \ifin@
+      \expandafter\in@\csname sym#4\expandafter\endcsname
+         \expandafter{\group@list}%
+      \ifin@
+        \begingroup
+          \count\z@=#3\relax
+          \count\tw@\count\z@
+          \divide\count\z@\sixt@@n
+          \count@\count\z@
+          \multiply\count@\sixt@@n
+          \advance\count\tw@-\count@
+          \edef\reserved@c{%
+            \hexnumber@{\count\z@}\hexnumber@{\count\tw@}}%
+          \count\z@=#5\relax
+          \count\tw@\count\z@
+          \divide\count\z@\sixt@@n
+          \count@\count\z@
+          \multiply\count@\sixt@@n
+          \advance\count\tw@-\count@
+          \edef\reserved@d{%
+            \hexnumber@{\count\z@}\hexnumber@{\count\tw@}}%
+        \expandafter\set@mathradical
+           \csname sym#2\expandafter\endcsname
+           \csname sym#4\endcsname
+           #1\reserved@c\reserved@d
+        \endgroup
+      \else
+        \@latex@error{Symbol font `#4' is not defined}\@eha
+      \fi
+    \else
+      \@latex@error{Symbol font `#2' is not defined}\@eha
+    \fi
+  \else
+    \@latex@error{Command `\string#1' already defined}\@eha
+  \fi
+}
+\def\set@mathradical#1#2#3#4#5{%
+  \@tempswatrue
+    \ifnum#1<\sixt@@n\relax\else\@tempswafalse\fi
+    \ifnum#2<\sixt@@n\relax\else\@tempswafalse\fi
+  \if@tempswa
+    \xdef#3{\radical"\hexnumber@#1#4\hexnumber@#2#5\relax}%
+  \else
+    \xdef#3{\oradical"\hexnumber@@#100#4"\hexnumber@@#200#5\relax}%
+  \fi
+}
+\@onlypreamble\set@mathradical
+
+%% patch for \hexnumber@ (e.g. amsfonts.sty contains some codes like
+%%   \edef\yen{\noexpand\mathhexbox{\hexnumber@\symAMSa}55}
+%% this should work as well)
+\def\mathhexbox#1#2#3{%
+  \ifnum"#1<\sixt@@n
+    \mbox{$\m@th \mathchar"#1#2#3$}%
+  \else
+    \mbox{$\m@th \omathchar"#100#2#3$}%
+  \fi
+}
+\def\org@hexnumber@#1{\ifcase\number#1
+ 0\or 1\or 2\or 3\or 4\or 5\or 6\or 7\or 8\or
+ 9\or A\or B\or C\or D\or E\or F\fi}
+\def\hexnumber@#1{%
+  \ifnum\number#1<\sixt@@n
+    \org@hexnumber@{#1}%
+  \else
+    \hexnumber@@{#1}%
+  \fi
+}
+\def\hexnumber@@#1{\ifcase\number#1
+    00\or 01\or 02\or 03\or 04\or 05\or 06\or 07\or 08\or
+          09\or 0A\or 0B\or 0C\or 0D\or 0E\or 0F\or
+    10\or 11\or 12\or 13\or 14\or 15\or 16\or 17\or 18\or
+          19\or 1A\or 1B\or 1C\or 1D\or 1E\or 1F\or
+    20\or 21\or 22\or 23\or 24\or 25\or 26\or 27\or 28\or
+          29\or 2A\or 2B\or 2C\or 2D\or 2E\or 2F\or
+    30\or 31\or 32\or 33\or 34\or 35\or 36\or 37\or 38\or
+          39\or 3A\or 3B\or 3C\or 3D\or 3E\or 3F\or
+    40\or 41\or 42\or 43\or 44\or 45\or 46\or 47\or 48\or
+          49\or 4A\or 4B\or 4C\or 4D\or 4E\or 4F\or
+    50\or 51\or 52\or 53\or 54\or 55\or 56\or 57\or 58\or
+          59\or 5A\or 5B\or 5C\or 5D\or 5E\or 5F\or
+    60\or 61\or 62\or 63\or 64\or 65\or 66\or 67\or 68\or
+          69\or 6A\or 6B\or 6C\or 6D\or 6E\or 6F\or
+    70\or 71\or 72\or 73\or 74\or 75\or 76\or 77\or 78\or
+          79\or 7A\or 7B\or 7C\or 7D\or 7E\or 7F\or
+    80\or 81\or 82\or 83\or 84\or 85\or 86\or 87\or 88\or
+          89\or 8A\or 8B\or 8C\or 8D\or 8E\or 8F\or
+    90\or 91\or 92\or 93\or 94\or 95\or 96\or 97\or 98\or
+          99\or 9A\or 9B\or 9C\or 9D\or 9E\or 9F\or
+    A0\or A1\or A2\or A3\or A4\or A5\or A6\or A7\or A8\or
+          A9\or AA\or AB\or AC\or AD\or AE\or AF\or
+    B0\or B1\or B2\or B3\or B4\or B5\or B6\or B7\or B8\or
+          B9\or BA\or BB\or BC\or BD\or BE\or BF\or
+    C0\or C1\or C2\or C3\or C4\or C5\or C6\or C7\or C8\or
+          C9\or CA\or CB\or CC\or CD\or CE\or CF\or
+    D0\or D1\or D2\or D3\or D4\or D5\or D6\or D7\or D8\or
+          D9\or DA\or DB\or DC\or DD\or DE\or DF\or
+    E0\or E1\or E2\or E3\or E4\or E5\or E6\or E7\or E8\or
+          E9\or EA\or EB\or EC\or ED\or EE\or EF\or
+    F0\or F1\or F2\or F3\or F4\or F5\or F6\or F7\or F8\or
+          F9\or FA\or FB\or FC\or FD\or FE\or FF
+  \fi
+}
+
+%% patch LaTeX2e internal only if newer than (or equal to) 2015/01/01
+%% since the error code was introduced at that time
+\@ifl@t@r\fmtversion{2015/01/01}{%
+  \PackageInfo{mathfam256}{Patch for \noexpand\DeclareSymbolFont applied}%
+  \def\DeclareSymbolFont#1#2#3#4#5{%
+   \@tempswafalse
+   \edef\reserved@b{#2}%
+   \def\cdp@elt##1##2##3##4{\def\reserved@c{##1}%
+        \ifx\reserved@b\reserved@c \@tempswatrue\fi}%
+   \cdp@list
+   \if@tempswa
+     \@ifundefined{sym#1}{%
+        \ifnum\count18<\e@mathgroup@top
+          \expandafter\new@mathgroup\csname sym#1\endcsname
+          \expandafter\new@symbolfont\csname sym#1\endcsname
+                          {#2}{#3}{#4}{#5}%
+        \else
+           \@latex@error{Too many symbol fonts declared}\@eha
+        \fi
+       }%
+       {%
+        \@font@info{Redeclaring symbol font `#1'}%
+        \def\group@elt##1##2{%
+             \noexpand\group@elt\noexpand##1%
+             \expandafter\ifx\csname sym#1\endcsname##1%
+               \expandafter\noexpand\csname#2/#3/#4/#5\endcsname
+             \else
+                 \noexpand##2%
+             \fi}%
+        \xdef\group@list{\group@list}%
+        \def\version@elt##1{%
+            \expandafter
+            \SetSymbolFont@\expandafter##1\csname#2/#3/#4/#5\expandafter
+                \endcsname \csname sym#1\endcsname
+            }%
+        \version@list
+       }%
+    \else
+      \@latex@error{Encoding scheme  `#2' unknown}\@eha
+    \fi
+  }%
+}{}
+
+%% use \omath... primitives for high-level commands
+\def\DeclareMathSymbol#1#2#3#4{%
+  \expandafter\in@\csname sym#3\expandafter\endcsname
+     \expandafter{\group@list}%
+  \ifin@
+    \begingroup
+      \if\relax\noexpand#1% is command?
+        \edef\reserved@a{\noexpand\in@{\string\mathchar}{\meaning#1}}%
+        \reserved@a
+        \ifin@
+          \oset@mathsymbol{#1}{#2}{#3}{#4}%
+          \@font@info{Redeclaring math symbol \string#1}%
+        \else
+            \expandafter\ifx
+            \csname\expandafter\@gobble\string#1\endcsname
+            \relax
+            \oset@mathsymbol{#1}{#2}{#3}{#4}%
+          \else
+            \@latex@error{Command `\string#1' already defined}\@eha
+          \fi
+        \fi
+      \else
+        \oset@mathchar{#1}{#2}{#3}{#4}%
+      \fi
+    \endgroup
+  \else
+    \@latex@error{Symbol font `#3' is not defined}\@eha
+  \fi
+}
+%\@onlypreamble\DeclareMathSymbol
+\def\oset@mathsymbol#1#2#3#4{%
+  \global\omathchardef#1%
+    \number
+    \numexpr"1000000*\mathchar@type#2+"10000*\csname sym#3\endcsname+#4}
+\@onlypreamble\oset@mathsymbol
+\def\oset@mathchar#1#2#3#4{%
+  \global\omathcode`#1=%
+    \number
+    \numexpr"1000000*\mathchar@type#2+"10000*\csname sym#3\endcsname+#4}
+\@onlypreamble\oset@mathchar
+\def\DeclareMathAccent#1#2#3#4{%
+  \expandafter\in@\csname sym#3\expandafter\endcsname
+     \expandafter{\group@list}%
+  \ifin@
+    \begingroup
+      \if\relax\noexpand#1% is command?
+        \edef\reserved@a{\noexpand\in@{\string\mathaccent}{\meaning#1}}%
+        \reserved@a
+        \ifin@
+          \oset@mathaccent{#1}{#2}{#3}{#4}%
+          \@font@info{Redeclaring math accent \string#1}%
+        \else
+          \expandafter\ifx
+          \csname\expandafter\@gobble\string#1\endcsname
+          \relax
+            \oset@mathaccent{#1}{#2}{#3}{#4}%
+          \else
+            \@latex@error{Command `\string#1' already defined}\@eha
+          \fi
+        \fi
+      \else
+       \@latex@error{Not a command name: `\noexpand#1'}\@eha
+      \fi
+    \endgroup
+  \else
+    \@latex@error{Symbol font `#3' is not defined}\@eha
+  \fi
+}
+%\@onlypreamble\DeclareMathAccent
+\def\oset@mathaccent#1#2#3#4{%
+  \xdef#1{\omathaccent%
+    \number
+    \numexpr"1000000*\mathchar@type#2+"10000*\csname sym#3\endcsname+#4}}
+\@onlypreamble\oset@mathaccent
+%\def\DeclareMathDelimiter#1{%
+%  \if\relax\noexpand#1%
+%    \expandafter\@DeclareMathDelimiter
+%  \else
+%    \expandafter\@xxDeclareMathDelimiter
+%  \fi
+%  #1}
+%\@onlypreamble\DeclareMathDelimiter
+%\def\@xxDeclareMathDelimiter#1#2#3#4{%
+%   \begingroup
+%    \let\mathalpha\mathord
+%    \ifnum7=\mathchar@type{#2}%
+%      \endgroup
+%      \expandafter\@firstofone
+%    \else
+%      \endgroup
+%      \DeclareMathSymbol#1{#2}{#3}{#4}%
+%      \expandafter\@firstoftwo
+%    \fi
+%    {\@xDeclareMathDelimiter#1}{#2}{#3}{#4}}
+%\@onlypreamble\@xxDeclareMathDelimiter
+\def\@DeclareMathDelimiter#1#2#3#4#5#6{%
+  \expandafter\in@\csname sym#3\expandafter\endcsname
+     \expandafter{\group@list}%
+  \ifin@
+    \expandafter\in@\csname sym#5\expandafter\endcsname
+       \expandafter{\group@list}%
+    \ifin@
+      \begingroup
+        \edef\reserved@a{\noexpand\in@{\string\delimiter}{\meaning#1}}%
+        \reserved@a
+        \ifin@
+          \oset@mathdelimiter{#1}{#2}{#3}{#4}{#5}{#6}%
+          \@font@info{Redeclaring math delimiter \string#1}%
+        \else
+            \expandafter\ifx
+            \csname\expandafter\@gobble\string#1\endcsname
+            \relax
+            \oset@mathdelimiter{#1}{#2}{#3}{#4}{#5}{#6}%
+          \else
+            \@latex@error{Command `\string#1' already defined}\@eha
+          \fi
+        \fi
+      \endgroup
+    \else
+      \@latex@error{Symbol font `#5' is not defined}\@eha
+    \fi
+  \else
+    \@latex@error{Symbol font `#3' is not defined}\@eha
+  \fi
+}
+%\@onlypreamble\@DeclareMathDelimiter
+\def\@xDeclareMathDelimiter#1#2#3#4#5{%
+  \expandafter\in@\csname sym#2\expandafter\endcsname
+     \expandafter{\group@list}%
+  \ifin@
+    \expandafter\in@\csname sym#4\expandafter\endcsname
+       \expandafter{\group@list}%
+    \ifin@
+      \oset@@mathdelimiter{#1}{#2}{#3}{#4}{#5}%
+    \else
+      \@latex@error{Symbol font `#4' is not defined}\@eha
+    \fi
+  \else
+    \@latex@error{Symbol font `#2' is not defined}\@eha
+  \fi
+}
+%\@onlypreamble\@xDeclareMathDelimiter
+\def\oset@mathdelimiter#1#2#3#4#5#6{%
+  \begingroup
+  \count\z@
+    \numexpr"1000000*\mathchar@type#2+"10000*\csname sym#3\endcsname+#4%
+  \count\tw@
+    \numexpr"10000*\csname sym#5\endcsname+#6%
+  \xdef#1{\odelimiter\number\count\z@\space \number\count\tw@}%
+  \endgroup
+}
+\@onlypreamble\oset@mathdelimiter
+\def\oset@@mathdelimiter#1#2#3#4#5{%
+  \begingroup
+  \count\z@\numexpr"10000*\csname sym#2\endcsname+#3%
+  \count\tw@\numexpr"10000*\csname sym#4\endcsname+#5%
+  \global\odelcode`#1=\number\count\z@\space \number\count\tw@
+  \endgroup
+}
+\@onlypreamble\oset@@mathdelimiter
+\def\DeclareMathRadical#1#2#3#4#5{%
+  \expandafter\ifx
+       \csname\expandafter\@gobble\string#1\endcsname
+       \relax
+     \let#1\radical
+  \fi
+  \edef\reserved@a{\noexpand\in@{\string\radical}{\meaning#1}}%
+  \reserved@a
+  \ifin@
+    \expandafter\in@\csname sym#2\expandafter\endcsname
+       \expandafter{\group@list}%
+    \ifin@
+      \expandafter\in@\csname sym#4\expandafter\endcsname
+         \expandafter{\group@list}%
+      \ifin@
+        \oset@mathradical{#1}{#2}{#3}{#4}{#5}%
+      \else
+        \@latex@error{Symbol font `#4' is not defined}\@eha
+      \fi
+    \else
+      \@latex@error{Symbol font `#2' is not defined}\@eha
+    \fi
+  \else
+    \@latex@error{Command `\string#1' already defined}\@eha
+  \fi
+}
+%\@onlypreamble\DeclareMathRadical
+\def\oset@mathradical#1#2#3#4#5{%
+  \begingroup
+  \count\z@\numexpr"10000*\csname sym#2\endcsname+#3%
+  \count\tw@\numexpr"10000*\csname sym#4\endcsname+#5%
+  \xdef#1{\oradical\number\count\z@\space \number\count\tw@}%
+  \endgroup
+}
+\@onlypreamble\oset@mathradical
+
+%% all done
+\endinput

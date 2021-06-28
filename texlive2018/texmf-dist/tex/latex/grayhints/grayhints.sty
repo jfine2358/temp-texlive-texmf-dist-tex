@@ -1,0 +1,119 @@
+%%
+%% This is file `grayhints.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% grayhints.dtx  (with options: `copyright,package')
+%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% grayhints.sty package,                              %%
+%% Copyright (C) 2016        D. P. Story                 %%
+%%   dpstory@uakron.edu                                  %%
+%%                                                       %%
+%% This program can redistributed and/or modified under  %%
+%% the terms of the LaTeX Project Public License         %%
+%% Distributed from CTAN archives in directory           %%
+%% macros/latex/base/lppl.txt; either version 1.2 of the %%
+%% License, or (at your option) any later version.       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\NeedsTeXFormat{LaTeX2e}[1997/12/01]
+\ProvidesPackage{grayhints}
+ [2017/03/02 v1.0 grayhints: Create gray hints in text fields]
+\DeclareOption{usehyforms}{%
+    \def\FormsRequirement{\RequirePackage{insdljs}[2017/03/02]}}
+\def\FormsRequirement{\RequirePackage{eforms}[2017/02/27]}
+\DeclareOption{nocalcs}{\let\nodljsend\endinput}
+\DeclareOption{nodljs}{\let\FormsRequirement\relax
+    \let\nodljsend\endinput}
+\let\nodljsend\relax
+\DeclareOption*{\PassOptionsToPackage{\CurrentOption}{insdljs}}
+\ProcessOptions
+\FormsRequirement
+\@ifundefined{jsColor}{\let\eq@YES=y\let\eq@NO=n%
+    \InputIfFileExists{eqcolor.def}
+    {\PackageInfo{grayhints}{Inputting eqcolor.def from exerquiz}}
+    {\PackageError{grayhints}{cannot find eqcolor.def belonging
+    to exerquiz}{Refresh your file name database and try again.}}
+}{}
+\newcommand{\normalGrayColors}[2]{\def\gh@rgi{#1}\def\gh@rgii{#2}%
+    \ifx\gh@rgi\@empty\else
+        \jsColor\gh@normalcolor{#1}\gh@chkTr@nsparency\fi
+    \ifx\gh@rgii\@empty\else\jsColor\gh@graycolor{#2}\m@tchGray\fi}
+\def\gh@normalcolor{}\def\gh@graycolor{}
+\AtEndOfPackage{\normalGrayColors{color.black}{color.ltGray}}
+\definecolor{ltGray}{gray}{0.75}
+\definecolor{gray}{gray}{.5}
+\definecolor{dkGray}{gray}{.25}
+\def\gh@pd@transparent{ltGray}\def\gh@transparent{transparent}
+\def\gh@pd@black{black}\def\gh@pd@white{white}
+\def\gh@pd@dkGray{dkGray}\def\gh@pd@gray{gray}\def\gh@pd@ltGray{ltGray}
+\def\gh@pd@red{red}\def\gh@pd@green{green}\def\gh@pd@blue{blue}
+\def\gh@pd@cyan{cyan}\def\gh@pd@magenta{magenta}
+\def\gh@pd@yellow{yellow}
+\def\m@tchGray{\eq@checkRawJSColor{\gh@graycolor}%
+    \ifx\eqpredefineJSCol\eq@NO
+        \let\matchGray\@empty
+        \expandafter\gh@extr@ctJSModelInfo\gh@graycolor\@nil
+        \ifx\@rgi\@empty\else\edef\matchGray{\@rgi}\fi
+        \ifx\@rgii\@empty\else\edef\matchGray{\matchGray\space\@rgii}\fi
+        \ifx\@rgiii\@empty\else
+            \edef\matchGray{\matchGray\space\@rgiii}\fi
+        \ifx\@rgiv\@empty\else\edef\matchGray{\matchGray\space\@rgiv}\fi
+    \else
+        \expandafter\gh@getColorFromPrefined\gh@graycolor\@nil
+        \@ifundefined{gh@pd@\pd@color}{%
+            \def\gh@graycolor{color.ltGray}\def\pd@color{ltGray}%
+            \PackageWarning{grayhints}
+                {The color.\pd@color\space is undefined,\MessageBreak
+                substituting color.ltGray}}{\ifx\pd@color\gh@transparent
+            \def\gh@graycolor{color.ltGray}\def\pd@color{ltGray}%
+            \PackageWarning{grayhints}
+                {A transparent color is not supported,\MessageBreak
+                using color.ltGray instead}\fi
+        }%
+        \edef\matchGray{\@nameuse{gh@pd@\pd@color}}%
+    \fi}
+\def\gh@chkTr@nsparency{\eq@checkRawJSColor{\gh@normalcolor}%
+    \ifx\eqpredefineJSCol\eq@YES
+        \expandafter\gh@getColorFromPrefined\gh@normalcolor\@nil
+        \@ifundefined{gh@pd@\pd@color}{\def\gh@normalcolor{color.black}%
+            \PackageWarning{grayhints}
+            {The color.\pd@color\space is undefined,\MessageBreak
+            substituting color.black}}{}%
+        \ifx\pd@color\gh@transparent\def\gh@normalcolor{color.black}%
+        \PackageWarning{grayhints}
+            {A transparent color is not supported,\MessageBreak
+            using color.black instead}\fi
+    \fi
+}
+\def\gh@extr@ctJSModelInfo[#1,#2]\@nil{%
+    \gh@getspecv@lues#2,,,,\@nil}%
+\def\gh@getspecv@lues#1,#2,#3,#4,#5\@nil{%
+    \def\@rgi{#1}\def\@rgii{#2}\def\@rgiii{#3}\def\@rgiv{#4}}
+\def\gh@getColorFromPrefined color.#1\@nil{\def\pd@color{#1}}
+\newcommand\FmtToGray[1]{if(event.value=="")event.value=("#1");}
+\newcommand\KeyToGray{if(event.value=="")%
+    event.target.textColor=\gh@graycolor;}
+\newcommand\CalcToGray{event.target.textColor=%
+    (event.value=="")?\gh@graycolor:\gh@normalcolor;}
+\newcommand\FocusToBlack{if(event.target.valueAsString=="")%
+    event.target.textColor=\gh@normalcolor;}
+\newcommand\BlurToBlack{event.target.textColor=%
+    (event.target.valueAsString=="")?\gh@graycolor:\gh@normalcolor;}
+\nodljsend
+\begin{insDLJS}{ghsupport}{grayhints: Support for the Calculate Event}
+function AllowCalc(cArray) {
+    var f,g;
+    for (var i=0; i<cArray.length; i++) {
+        f=this.getField(cArray[i]);
+        g=f.getArray();
+        for (var j=0; j<g.length; j++)
+            if (g[j].valueAsString!="") return true;
+    }
+    return false;
+}
+\end{insDLJS}
+\endinput
+%%
+%% End of file `grayhints.sty'.

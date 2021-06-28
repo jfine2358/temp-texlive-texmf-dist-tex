@@ -1,0 +1,182 @@
+% Package for creating invoices.
+% Implemented by Mathias Lohne (mathialo@ifi.uio.no).
+% (c) 2017 Mathias Lohne
+% Version 2017-11-03.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{simpleinvoice}[2017/11/03 package simpleinvoice]
+
+% Fall back to english if option parsing fails
+\def \INV@lang {eng}
+
+% Language options
+\DeclareOption{american}{\def \INV@lang  {eng}}
+\DeclareOption{english}{\def \INV@lang   {eng}}
+\DeclareOption{UKenglish}{\def \INV@lang {eng}}
+\DeclareOption{USenglish}{\def \INV@lang {eng}}
+\DeclareOption{norsk}{\def \INV@lang     {nobm}}
+\DeclareOption{norwegian}{\def \INV@lang {nobm}}
+\DeclareOption{bokmaal}{\def \INV@lang {nobm}}
+
+\ProcessOptions
+
+% Translations
+\def \INV@text@invoice@eng {Invoice}
+\def \INV@text@ourref@eng {Our ref}
+\def \INV@text@yourref@eng {Your ref}
+\def \INV@text@invnum@eng {Invoice number}
+\def \INV@text@invdate@eng {Invoice date}
+\def \INV@text@deadline@eng {Deadline}
+\def \INV@text@description@eng {Description}
+\def \INV@text@itemprice@eng {Item price}
+\def \INV@text@vat@eng {VAT}
+\def \INV@text@itemtotal@eng {Sum}
+\def \INV@text@subtotal@eng {Subtotal}
+\def \INV@text@total@eng {Total}
+\def \INV@text@paymentinfo@eng {Payment info}
+\def \INV@text@totallong@eng {Total}
+\def \INV@text@accountnum@eng {Account number}
+\def \INV@text@warning@eng {By paying after deadline, additional interest and fees may apply.}
+
+\def \INV@text@invoice@nobm {Faktura}
+\def \INV@text@ourref@nobm {Vår ref}
+\def \INV@text@yourref@nobm {Deres ref}
+\def \INV@text@invnum@nobm {Fakturanummer}
+\def \INV@text@invdate@nobm {Fakturadato}
+\def \INV@text@deadline@nobm {Forfallsdato}
+\def \INV@text@description@nobm {Beskrivelse}
+\def \INV@text@itemprice@nobm {Enhetspris}
+\def \INV@text@vat@nobm {MVA}
+\def \INV@text@itemtotal@nobm {Sum}
+\def \INV@text@subtotal@nobm {MVA-grunnlag}
+\def \INV@text@total@nobm {Å betale}
+\def \INV@text@paymentinfo@nobm {Betalingsinformasjon}
+\def \INV@text@totallong@nobm {Sum å betale}
+\def \INV@text@accountnum@nobm {Kontonummer}
+\def \INV@text@warning@nobm {Ved betaling etter forfall kan det påløpe renter og gebyr etter statens satser. Ved innsigelse vil kravet kunne bli sendt til forliksrådet, jf. tvistelovens § 5-2.}
+
+% Import neccesary libraries
+\RequirePackage{advdate}
+\RequirePackage{hyperref}
+\RequirePackage{url}
+\RequirePackage{tabularx}
+\RequirePackage{etoolbox}
+\RequirePackage{xcolor}
+\RequirePackage{colortbl}
+\RequirePackage{babel}
+
+% Define colors
+\definecolor{linecolor}{HTML}{b2b2b2}
+
+% Miscellanous styling
+\setlength{\tabcolsep}{0em}
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{0pt}
+
+% Links
+\RequirePackage{hyperref}
+\RequirePackage{url}
+
+% Table
+\RequirePackage{tabularx}
+
+% Commands
+\RequirePackage{etoolbox}
+
+% Line seperator
+\newcommand{\linesep}{\vspace{6pt} {\color{linecolor}\hrule} \vspace{6pt}}
+
+% Standard values
+\def \INV@content@num {{\color{red} No number}}
+\def \INV@content@title {\csname INV@text@invoice@\INV@lang\endcsname}
+\def \INV@content@date {\today}
+\def \INV@content@deadline {\DayAfter[14]}
+\def \INV@content@name {{\color{red} Your name}}
+\def \INV@content@addr {{\color{red} Address line 1 \\ Address line 2}}
+\def \INV@content@addroneline {{\color{red} Address line 1 / Address line 2}}
+\def \INV@content@toname {{\color{red} Company}}
+\def \INV@content@toaddr {{\color{red} Address line 1 \\ Address line 2}}
+\def \INV@content@subtotal {{\color{red} Subtotal}}
+\def \INV@content@vat {{\color{red} VAT}}
+\def \INV@content@total {{\color{red} Total}}
+\def \INV@content@accountnum {{\color{red} Bank account}}
+
+% Functions for overriding standard values
+\newcommand{\setinvoicetitle}[1]{\def \INV@content@title {#1}}
+\newcommand{\setinvoicenumber}[1]{\def \INV@content@num {#1}}
+\newcommand{\setreceivername}[1]{\def \INV@content@toname {#1}}
+\newcommand{\setreceiveraddress}[1]{\def \INV@content@toaddr {#1}}
+\newcommand{\setname}[1]{\def \INV@content@name {#1}}
+\newcommand{\setaddress}[2]{\def \INV@content@addr {#1}
+	\def \INV@content@addroneline {#2}
+}
+\newcommand{\setphonenumber}[1]{\def \INV@content@phonenum {#1}}
+\newcommand{\setemail}[1]{\def \INV@content@email {\href{mailto:#1}{#1}}}
+\newcommand{\setyourref}[1]{\def \INV@content@yourref {#1}}
+\newcommand{\setourref}[1]{\def \INV@content@ourref {#1}}
+\newcommand{\setinvoicedate}[1]{\def \INV@content@date {#1}}
+\newcommand{\setdeadline}[1]{\def \INV@content@deadline {\DayAfter[#1]}}
+\newcommand{\additem}[4]{\ifdef{\INV@content@list}{\appto \INV@content@list {\\ #1 & #2 & #3 \% & #4}}{\def \INV@content@list {#1 & #2 & #3 \% & #4}}}
+\newcommand{\setsubtotal}[1]{\def \INV@content@subtotal {#1}}
+\newcommand{\setvat}[1]{\def \INV@content@vat {#1}}
+\newcommand{\settotal}[1]{\def \INV@content@total {#1}}
+\newcommand{\setaccountnumber}[1]{\def \INV@content@accountnum {#1}}
+
+% Make invoice function
+\def \makeinvoice {
+	\begin{minipage}[b]{0.5\textwidth}
+		{\large \textbf{\INV@content@toname}} \\
+		\INV@content@toaddr
+	\end{minipage}
+	\begin{minipage}[b]{0.5\textwidth}
+		\hfill {\Huge \INV@content@title}
+		
+		\linesep
+		
+		{\large \textbf{\INV@content@name}} \\
+		\INV@content@addr \ifdef{\INV@content@phonenum}{\\ \INV@content@phonenum}{} \ifdef{\INV@content@email}{\\ \INV@content@email}{}
+		
+		\linesep
+		
+		{ \footnotesize
+			\ifdef{\INV@content@ourref}{\csname INV@text@ourref@\INV@lang\endcsname: \INV@content@ourref \\}{}
+			\ifdef{\INV@content@yourref}{\csname INV@text@yourref@\INV@lang\endcsname: \INV@content@yourref \\}{}
+			\csname INV@text@invnum@\INV@lang\endcsname: \INV@content@num \\
+			\csname INV@text@invdate@\INV@lang\endcsname: \INV@content@date \\
+			\csname INV@text@deadline@\INV@lang\endcsname: \INV@content@deadline
+		}
+	\end{minipage}
+	
+	\vspace{3cm}
+	
+	\renewcommand{\arraystretch}{1.5}
+	\begin{tabularx}{\textwidth}{X c c r}
+		\textbf{\csname INV@text@description@\INV@lang\endcsname} & \textbf{\csname INV@text@itemprice@\INV@lang\endcsname} & \hspace{10pt}\textbf{\csname INV@text@vat@\INV@lang\endcsname}\hspace{10pt} & \textbf{\csname INV@text@itemtotal@\INV@lang\endcsname} \\ \arrayrulecolor{linecolor}\hline
+		\ifdef{\INV@content@list}{\INV@content@list}{{\color{red} No Items yet} & & &}
+	\end{tabularx}
+	
+	\vspace{2cm}
+	\hfill
+	\renewcommand{\arraystretch}{1}
+	\begin{tabular}{r r}
+		\csname INV@text@subtotal@\INV@lang\endcsname: \hspace{10pt} & \INV@content@subtotal \\
+		\csname INV@text@vat@\INV@lang\endcsname: \hspace{10pt} & \INV@content@vat \\ 
+		{\Large \csname INV@text@total@\INV@lang\endcsname: \hspace{10pt}} & {\Large \INV@content@total}
+	\end{tabular}
+	
+	\vfill
+	
+	{{\color{gray} \itshape \csname INV@text@warning@\INV@lang\endcsname} \vspace{10pt} \\
+		{\huge \csname INV@text@paymentinfo@\INV@lang\endcsname}
+		\linesep
+		\begin{tabularx}{\textwidth}{X r}
+			\csname INV@text@invnum@\INV@lang\endcsname: & \INV@content@num  \\
+			\csname INV@text@totallong@\INV@lang\endcsname: & \INV@content@total \\
+			\csname INV@text@accountnum@\INV@lang\endcsname: & \INV@content@accountnum 
+		\end{tabularx}
+		
+		\vspace{1 cm}
+		\linesep
+		{\footnotesize \color{gray} \INV@content@name \hfill \INV@content@addroneline \ifdef{\INV@content@phonenum}{\hfill \INV@content@phonenum}{} \ifdef{\INV@content@email}{\hfill \INV@content@email}{}}}
+}
+

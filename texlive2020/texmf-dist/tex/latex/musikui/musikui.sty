@@ -1,0 +1,294 @@
+%
+% This is file 'musikui.sty'.
+%
+% Author
+% Naoki Kaneko
+% License
+% The LaTeX Project Public License
+
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{musikui}[2018/04/25 v1]
+\def\mk@pkgname{musikui}
+\RequirePackage{graphicx}
+
+%--------------------------------------- general
+
+%% unique tokens
+\def\mk@end{\mk@end@}
+
+%% variables
+\newdimen\mk@width
+\newdimen\mk@halfwidth
+\newdimen\mk@height
+\newdimen\mk@depth
+\newdimen\mk@hgap
+\newdimen\mk@vgap
+\newdimen\mk@rule
+\newdimen\mk@dima
+\newif\ifmk@g@box@used
+\newif\ifmk@graphicx
+\newbox\mk@product
+\newbox\mk@product@a
+\newbox\mk@product@b
+\newbox\mk@quotient@a
+\newbox\mk@quotient@b
+\newbox\mk@whole
+\newbox\mk@boxa
+\newbox\mk@boxb
+\newcounter{mk@counter@kake}
+\setcounter{mk@counter@kake}{0}
+\newcounter{mk@counter@wari}
+\setcounter{mk@counter@wari}{0}
+\let\mk@cell@proc\relax
+
+%% switch 'mk@graphicx'
+\AtBeginDocument{%
+  \@ifpackageloaded{graphicx}{\mk@graphicxtrue}{}}
+
+%% \mk@foreach@cell\CS{...&...&...}
+\def\mk@foreach@cell#1#2{%
+  \def\mk@cell@proc{#1}%
+  \let\mk@next\mk@foreach@cell@a
+  \mk@next#2&\mk@end&}
+\def\mk@foreach@cell@a#1&{%
+  \def\mk@tmpa{#1}\def\mk@tmpb{\mk@end}%
+  \ifx\mk@tmpa\mk@tmpb
+    \let\mk@next\relax
+  \else
+    \mk@cell@proc{#1}%
+  \fi
+  \mk@next}
+
+%% \mk@fit@width{<width>}{<text>}
+\def\mk@fit@width#1#2{%
+  \sbox\mk@boxb{#2}%
+  \ifdim\wd\mk@boxb>#1\relax
+    \ifmk@graphicx
+      \resizebox{#1}{\height}{\usebox\mk@boxb}%
+    \else
+      \hb@xt@#1{\hss\usebox\mk@boxb\hss}%
+    \fi
+  \else
+    \hb@xt@#1{\hfil\usebox\mk@boxb\hfil}%
+  \fi}
+
+%--------------------------------------- public parameters
+
+% NOTE: These parameters are not lengths but macros.
+
+%%<*> \musiwidth
+% The width of a hole.
+\newcommand*{\musiwidth}{1.2em}
+
+%%<*> \musiheight
+% The height of a hole.
+\newcommand*{\musiheight}{0.96em}
+
+%%<*> \musidepth
+% The depth of a hole.
+\newcommand*{\musidepth}{0.24em}
+
+%%<*> \musihgap
+% The horizonal gap between holes.
+\newcommand*{\musihgap}{0.4em}
+
+%%<*> \musivgap
+% The vertical gap between holes.
+\newcommand*{\musivgap}{0.4em}
+
+%%<*> \musirule
+% The rule width.
+\newcommand*{\musirule}{0.4pt}
+
+%%<*> \musiopsymbol
+% The operator symbol.
+\newcommand*{\musiopsymbol}{$\times$}
+
+%%<)> \musiwarikakko
+\newcommand*{\musiwarikakko}{\Big)}
+%--------------------------------------- cells
+
+%% variables
+\newdimen\mk@org@rule
+\newdimen\mk@org@sep
+
+%% \mk@eaten{<text>}
+\def\mk@eaten#1{%
+  \mk@frame@box{\mk@fit@width{\mk@width}{#1}}}
+
+%% \mk@noneaten{<text>}
+\def\mk@noneaten#1{%
+  \mk@plain@box{\mk@fit@width{\mk@width}{#1}}}
+
+%% \mk@halfeaten{<text>}
+\def\mk@halfeaten#1{%
+  \mk@frame@box{\mk@fit@width{\mk@halfwidth}{#1}}}
+
+%% \mk@halfnoneaten{<text>}
+\def\mk@halfnoneaten#1{%
+  \mk@plain@box{\mk@fit@width{\mk@halfwidth}{#1}}}
+
+%% \mk@hhalfeaten{<textL>}{<textR>}
+\def\mk@hhalfeaten#1#2{%
+  \mk@frame@box{\mk@fit@width{\mk@halfwidth}{#1}}%
+  \kern-\mk@rule
+  \mk@frame@box{\mk@fit@width{\mk@halfwidth}{#2}}}
+
+%% \mk@hhalfnoneaten{<textL>}{<textR>}
+\def\mk@hhalfnoneaten#1#2{%
+  \mk@plain@box{\mk@fit@width{\mk@halfwidth}{#1}}%
+  \kern-\mk@rule
+  \mk@plain@box{\mk@fit@width{\mk@halfwidth}{#2}}}
+
+%% \mk@frame@box{<text>}
+\def\mk@frame@box#1{%
+  \global\mk@g@box@usedtrue
+  \begingroup
+    \mk@org@rule\fboxrule \mk@org@sep\fboxsep
+    \fboxrule\mk@rule \fboxsep\z@
+    \fbox{\fboxrule\mk@org@rule \fboxsep\mk@org@sep
+      \raisebox{\z@}[\mk@height][\mk@depth]{#1}}%
+  \endgroup}
+
+%% \mk@plain@box{<text>}
+\def\mk@plain@box#1{%
+  \global\mk@g@box@usedtrue
+  \leavevmode \kern\mk@rule
+  \raisebox{\z@}[\mk@height][\mk@depth]{#1}%
+  \kern\mk@rule}
+
+%--------------------------------------- entire constructino
+
+%% \mk@initialize
+\def\mk@initialize{%
+  % internal parameters
+  \setlength{\mk@hgap}{\musihgap}%
+  \setlength{\mk@vgap}{\musivgap}%
+  \setlength{\mk@rule}{\musirule}%
+  \setlength{\mk@width}{\musiwidth}%
+  \advance\mk@width-2\mk@rule
+  \mk@halfwidth.5\mk@width
+  \advance\mk@halfwidth-.5\mk@rule
+  \setlength{\mk@height}{\musiheight}%
+  \advance\mk@height-\mk@rule
+  \setlength{\mk@depth}{\musidepth}%
+  \advance\mk@depth-\mk@rule
+  \setbox\mk@product\box\voidb@x
+  % commands used inside musikui
+  \let\eaten\mk@eaten
+  \let\noneaten\mk@noneaten
+  \let\halfeaten\mk@halfeaten
+  \let\halfnoneaten\mk@halfnoneaten
+  \let\hhalfeaten\mk@hhalfeaten
+  \let\hhalfnoneaten\mk@hhalfnoneaten
+  \let\kake\mk@kake
+  \let\wari\mk@wari
+  \let\musi\mk@musi
+  \let\bubunsen\mk@bubunsen
+  \let\sen\mk@sen}
+
+\def\mk@put@cell#1{%
+  \global\mk@g@box@usedfalse
+  \sbox\mk@boxa{\ignorespaces#1\unskip}%
+  \ifmk@g@box@used
+    \usebox\mk@boxa
+  \else
+    \mk@noneaten{\usebox\mk@boxa}%
+  \fi
+  \hskip\mk@hgap}
+
+%% \mk@kake{<multiplicand>}{<multiplier>}{<product>}
+\def\mk@kake#1#2#3{%
+  \setcounter{mk@counter@kake}{0}
+  \setcounter{mk@counter@wari}{0}
+  \stepcounter{mk@counter@kake}
+  \sbox\mk@product@a{%
+    \hskip\mk@hgap \mk@foreach@cell\mk@put@cell{#3}}%
+    \let\mk@product\mk@product@a
+  \hb@xt@\wd\mk@product{%
+    \hfil \mk@foreach@cell\mk@put@cell{#1}}%
+  \nointerlineskip
+  \vskip\mk@vgap
+  \hb@xt@\wd\mk@product{%
+    \hskip\mk@hgap
+    \hb@xt@\mk@width{\hss\musiopsymbol\hss}%
+    \hfil \mk@foreach@cell\mk@put@cell{#2}}%
+  \vskip\mk@vgap
+  \hrule\@height\mk@rule\@depth\z@
+  \vskip\mk@vgap}
+
+%% \mk@wari{<dividend>}{<divide>}{<quotient>}
+\def\mk@wari#1#2#3{%
+  \setcounter{mk@counter@kake}{0}
+  \setcounter{mk@counter@wari}{0}
+  \stepcounter{mk@counter@wari}
+  \sbox\mk@quotient@a{\smash{\musiwarikakko}\hskip\mk@hgap \mk@foreach@cell\mk@put@cell{#1}}
+  \sbox\mk@quotient@b{%
+      \mk@foreach@cell\mk@put@cell{#2}\copy\mk@quotient@a}%
+  \hb@xt@\wd\mk@quotient@b{%
+    \hfil \mk@foreach@cell\mk@put@cell{#3}}%
+  \nointerlineskip%
+  \vskip\mk@vgap%
+  \mk@sen%
+  \copy\mk@quotient@b%
+  \nointerlineskip
+  \vskip\mk@vgap}
+
+%% \mk@musi{<content>}{<trail-count>}
+\def\mk@musi#1#2{%
+  \ifvoid\mk@product\else
+  {\ifnum \themk@counter@wari=1 \let\mk@product\mk@quotient@b
+  \else \let\mk@product\mk@product@a \fi
+    \hb@xt@\wd\mk@product{%
+      \hfil \mk@foreach@cell\mk@put@cell{#1}%
+      \advance\mk@width2\mk@rule
+      \advance\mk@width\mk@hgap
+      \hskip#2\mk@width}%
+    \nointerlineskip
+    \vskip\mk@vgap}
+  \fi}
+
+%% \mk@sen
+\def\mk@sen{%
+  \ifnum \themk@counter@wari=1 \let\mk@product@R\mk@quotient@a
+  \else \let\mk@product@R\mk@product@a \fi
+  \ifnum \themk@counter@wari=1 \let\mk@product\mk@quotient@b
+  \else \let\mk@product\mk@product@a \fi
+  \hb@xt@\wd\mk@product{\hfil%
+  \vrule\@height\mk@rule width \wd\mk@product@R}%
+  \nointerlineskip
+  \vskip\mk@vgap}
+
+%% \mk@bubunsen{<rule-count>}{<trail-count>}
+\def\mk@bubunsen#1#2{%
+  \ifnum \themk@counter@wari=1 \let\mk@product\mk@quotient@b
+  \else \let\mk@product\mk@product@a \fi
+  \hb@xt@\wd\mk@product{\hfil
+    \advance\mk@width2\mk@rule
+    \advance\mk@width\mk@hgap
+    \mk@dima#1\mk@width \advance\mk@dima\mk@hgap
+    \vrule\@height\mk@rule\@width\mk@dima
+    \hskip#2\mk@width}%
+  \nointerlineskip
+  \vskip\mk@vgap}
+
+%% \mk@finalize
+\def\mk@finalize{%
+%\typeout{size=(\the\ht\mk@product+\the\dp\mk@product)x\the\wd\mk@product}%
+  \box\mk@product@a}
+
+%--------------------------------------- public interface
+
+%%<*> \begin{musikui}...\end{musikui}
+\newenvironment{musikui}{%
+\leavevmode
+  \mk@initialize
+  \setbox\mk@whole\vbox\bgroup}%
+ {\mk@finalize
+  \egroup
+  \box\mk@whole}
+
+%--------------------------------------- all done
+\endinput
+%% EOF

@@ -1,0 +1,314 @@
+% ********************************************************************
+% * Aufgaben                                                         *
+% ********************************************************************
+
+% Konfiguration des xSim-Pakets
+% ********************************************************************
+
+\xsimsetup{
+	file-extension=xsim
+	% Bezeichnungen
+%	points/name=Punkt,
+%	points/name-plural=Punkte,
+%	points/bonus-name=Zusatzpunkt,
+%	points/bonus-plural=Zusatzpunkte,
+%	% Noten
+%	grades/half=true, % Auf halbe Punkte runden
+%	grades/round=1, % Eine Dezimalstelle
+%	% Darstellung der Punkte
+%	question/headings=schule-standard,
+}
+
+% Übersetzungen
+% **************************************************** ****************
+\DeclareExerciseTranslations{bonusquestion}{
+	Fallback = bonus question,
+	German = Zusatzaufgabe,
+}
+\DeclareExerciseTranslations{bonusquestions}{
+	Fallback = bonus questions,
+	German = Zusatzaufgaben,
+}
+
+\DeclareExerciseTranslations{total}{
+	Fallback = total,
+	German = $\Sigma$, %oder: gesamt %war: %insgesamt
+}
+
+% Metadaten
+% ********************************************************************
+\DeclareExerciseProperty{bearbeitungshinweis}
+\DeclareExerciseProperty{symbol}
+
+% Aufgabenstile
+% ********************************************************************
+
+% Makro zum Setzen des Symbols von Aufgaben
+\newcommand{\setzeSymbol}[1]{\SetExerciseProperty{symbol}{#1}}
+
+% Aufgabenstile und Tabellenstile laden (einzelne Files)
+
+\loadxsimstyle{schule-default,schule-keinepunkte,schule-tcolorbox, schule-binnen, schule-randpunkte,schule-keintitel, schule-keinenummer, schule-tabelle-kurz}
+
+% Umgebungen
+% ********************************************************************
+
+% Definiton der Aufgaben- und Lösungsumgebungen des xsim-Pakets
+% --------------------------------------------------------------------
+\DeclareExerciseType{aufgabe}{
+	exercise-env = aufgabe,
+	solution-env = loesung,
+	exercise-name = \XSIMtranslate{question},
+	solution-name = \XSIMtranslate{solution},
+	exercise-template = schule-default,
+	solution-template = schule-default,
+}
+
+
+\DeclareExerciseType{zusatzaufgabe}{
+	exercise-env = aufgabe*,
+	solution-env = loesung*,
+	exercise-name = \XSIMtranslate{bonusquestion},
+	solution-name = \XSIMtranslate{solution},
+	exercise-template = schule-default,
+	solution-template = schule-default,
+}
+
+\DeclareExerciseTranslation{German}{default-heading}{%
+  \XSIMmixedcase{\GetExerciseParameter{solution-name}}en zu den
+  \XSIMmixedcase{\GetExerciseParameter{exercise-name}}%
+  \XSIMifeqF{\GetExerciseParameter{exercise-name}}{Aufgabe}{}n%
+}
+
+\DeclareExerciseTranslation{German}{collection-heading}{%
+  \XSIMmixedcase{\GetExerciseParameter{solution-name}}en zu den
+  \XSIMmixedcase{\GetExerciseParameter{exercise-name}}%
+  \XSIMifeqF{\GetExerciseParameter{exercise-name}}{Zusatzaufgaben}{e}n%
+}
+
+
+%Setzten des Aufgabentemplates
+\NewDocumentCommand{\setzeAufgabentemplate}{m}{
+    \xsimsetup{aufgabe/template=#1}
+}
+
+
+% Teilaufgaben
+% --------------------------------------------------------------------
+\newcounter{teilpunkte}
+\@ifclassloaded{beamer}{
+	\newenvironment{teilaufgaben}{\begin{enumerate}[a)]
+	}{\end{enumerate}}
+}{
+    \setcounter{teilpunkte}{0}
+    \newlist{teilaufgaben}{enumerate}{1}
+    \setlist[teilaufgaben]{
+        label=\textbf{\alph{teilaufgabeni})},
+        topsep=0.2em,
+        itemsep=-0.1em,
+    }
+}
+
+\xsimsetup{
+	aufgabe/begin-hook={\setcounter{teilpunkte}{0}},
+	aufgabe/end-hook={%
+		\ifnum\theteilpunkte>0%
+			\SetExpandedExerciseProperty{points}{\theteilpunkte}%
+		\fi%
+	}%
+}
+
+\newcommand{\Teilpunkte}{\arabic{teilpunkte}}
+
+\makeatletter
+\NewDocumentCommand{\teilaufgabe}{o}{
+	\IfInsideSolutionTF{
+		% In Lösungen
+		\item%
+	}{
+		% In Aufgaben
+		\item%
+		\IfNoValueF{#1}{\addtocounter{teilpunkte}{#1}(#1)\xspace}
+	}
+}
+
+% Gedacht, wenn es bei Teilaufgaben kein Lösung angegeben werden soll
+\newcommand{\teilaufgabeOhneLoesung}{\addtocounter{teilaufgabeni}{1}}
+
+% Spezielle Aufgabentypen
+% ********************************************************************
+
+% Lücken
+% --------------------------------------------------------------------
+\newcommand{\verstecke}[1]{
+	\IfInsideSolutionTF{#1}{}
+}
+\newcommand{\luecke}[2][]{%
+	% Feste Lücke
+	\blank[width=#2,#1]{}%
+}
+
+\newcommand{\textluecke}[2][]{%
+	% Textabhängige Lücke
+	% Default: Doppelte Textlänge als Lückenlänge
+	% Param: 'nichts' für keine Linie o.ä.
+	% (Korrekturfaktor für Handschrift)
+  \ifthenelse{\equal{\detokenize{#1}}{\detokenize{nichts}}}
+	{\IfInsideSolutionTF{#2}{ }} % TRUE
+	{\blank[scale=2,#1]{#2}}% FALSE
+}
+
+%%%% Mit xsim nicht möglich
+% \aufgabeLueckentext
+%     [Optionen für die Aufgabenumgebung]
+%     {Lückentext}
+%     {Extras}
+%     [Symbol]
+% \NewDocumentCommand{\aufgabeLueckentext}{ O{} m m O{} O{} }{%
+%     \begin{aufgabe}[#1,symbol=#4]%
+%         %\setzeSymbol{#4}%
+%         #2%
+%         \begin{loesung}%
+%             #2%
+%         \end{loesung}%
+%         #3%
+%     \end{aufgabe}%
+% }
+
+
+% Multiple Choice
+% --------------------------------------------------------------------
+\NewTasks[style=multiplechoice]{mcumgebung}[\choice](3)
+\newcommand*{\mcrichtig}{%
+	\IfInsideSolutionTF{\checkedchoicebox}{\choicebox}%
+}
+
+%%%%% Mit xsim nicht möglich
+% \aufgabeMC
+%     [Punkte]
+%     {Auswahlmöglichkeiten}
+%     [Spaltenzahl]
+%     {Extras}
+%     [Symbol]
+%     [Optionen für die Aufgabenumgebung]
+% \NewDocumentCommand{\aufgabeMC}{ O{} m O{3} m O{} O{} }{
+%     \begin{aufgabe}[#6]{#1}
+%         \setzeSymbol{#5}
+%         \begin{mcumgebung}(#3)
+%         #2
+%         \end{mcumgebung}
+%         \begin{loesung}
+%             \begin{mcumgebung}(#3)
+%             #2
+%             \end{mcumgebung}
+%         \end{loesung}
+%         #4
+%     \end{aufgabe}
+% }
+
+% ********************************************************************
+% * Lösungen                                                         *
+% ********************************************************************
+
+% Markierung für Seitenzahlen setzen, ACHTUNG: Wird nur ausgeführt,
+% falls noch etwas kommt, d.h. Lösungen oder EWH. Sonst undefiniert!
+\AtEndDocument{\label{LetzteInhaltsseite}}
+\newboolean{schule@ende@inhalt@gesetzt}
+\setboolean{schule@ende@inhalt@gesetzt}{false}
+
+% Welche Art von Lösung?
+\ifthenelse{\equal{\schule@loesungen}{seite}}{
+    % Lösungsseite
+    \AtEndDocument{
+        \clearpage
+        \ifthenelse{\boolean{schule@ende@inhalt@gesetzt}}{}{%
+            \pagenumbering{Roman}%
+            \setboolean{schule@ende@inhalt@gesetzt}{true}%
+        }
+        \chead{\Titel\schule@kopfUmbruch}
+        \ohead{Lösung\schule@kopfUmbruch}
+        \cfoot{\thepage}
+        %\section*{Lösungen} % mit XSIM: Lösungen zu den Aufgaben in printsolutions drin?
+        \printsolutions
+    }
+}{
+    \ifthenelse{\equal{\schule@loesungen}{folgend}}{
+        % auf Aufgaben folgend
+        \xsimsetup{
+            solution/print,
+            loesung/print,
+            loesung*/print,
+        }
+    }{
+        % nichts
+    }
+}
+
+% ********************************************************************
+% * Bewertung und Punkte                                             *
+% ********************************************************************
+
+\newcommand{\punkteAufgabe}{%
+\GetExerciseProperty{points}\xspace%
+\IfExerciseGoalSingularTF{points}
+    {\,\XSIMtranslate{point}}
+    {\,\XSIMtranslate{points}}
+}
+
+\newcommand{\punkteTotal}{%
+\TotalExerciseGoals{points}%+ bonus-points
+    {\,\XSIMtranslate{point}}
+    {\,\XSIMtranslate{points}}%
+}
+
+% Punktübersicht
+% ********************************************************************
+
+\NewDocumentCommand{\punktuebersicht}{O{kurz}}{
+    \gradingtable[template=#1]%kurz oder: default* oder: default
+}
+
+% ********************************************************************
+% Hinweise                                                           *
+% ********************************************************************
+% Zur Speicherung der Hinweise werden die Eigenschaften von xsim
+% Aufgaben erweitert. Hierzu ist es erforderlich dem
+% "SetExerciseProperty"-Makro als Wert für den Schlüssel
+% "hinweise" übergeben werden.
+% Um den folgenden Quelltext halbwegs lesbar zu halten, wird auf
+% das environ-Paket zurückgegriffen.
+
+% Hinweise-Umgebung
+% ********************************************************************
+
+\ExplSyntaxOn
+\NewEnviron{bearbeitungshinweis}{
+    \exp_args:Nno \SetExerciseProperty {bearbeitungshinweis} {\BODY}
+}
+\ExplSyntaxOff
+
+% Ausgabe von Hinweisen
+% ********************************************************************
+
+% Vollständige Liste
+\newcommand{\bearbeitungshinweisliste}{
+    \begin{description}
+        \ForEachUsedExerciseByID{%
+            \def\ExerciseType{##1}%
+            \def\ExerciseID{##2}%
+            \GetExercisePropertyT{bearbeitungshinweis}{%
+                \item[\XSIMmixedcase{\GetExerciseName}~##3]
+                ####1%
+            }%
+        }%
+    \end{description}
+}
+
+% Für eine Aufgabe
+\NewDocumentCommand{\bearbeitungshinweisZuAufgabe}{O{aufgabe} m}{
+    \ifthenelse{\equal{#2}{}}{
+        \GetExerciseProperty{bearbeitungshinweis}%
+    }{%
+        \ExercisePropertyGet{#1}{#2}{bearbeitungshinweis}%
+    }
+}

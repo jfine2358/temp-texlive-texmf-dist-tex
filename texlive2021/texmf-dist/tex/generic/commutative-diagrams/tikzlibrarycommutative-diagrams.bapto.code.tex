@@ -1,0 +1,56 @@
+%
+% CoDi: Commutative Diagrams for TeX
+% Copyright (c) 2015-2020 Paolo Brasolin <paolo.brasolin@gmail.com>
+% SPDX-License-Identifier: MIT
+%
+% This file is part of CoDi 1.0.1, released on 2020/06/11 under MIT license.
+%
+
+% βάπτω • (báptō)
+%   1. I dip, submerge
+%   2. I dye, colour
+%   3. I baptise
+
+% Bapto is a node labeling mechanism.
+% It allows non-invasive relabeling and preprocessing.
+
+% ,-- input           input hook
+% `-> controller --.  the controller conditionally
+% ,---[overwrite]--'    (depending upon the given overwriting behaviour)
+% `-> trigger -----.    calls the trigger
+% ,--- ??? <-------'  either short the keys or do preprocessing here
+% `-> dispatcher --.  the dispatcher conditionally
+% ,---[overwrite]--|    (depending upon the given overwriting behaviour)
+% `-> (name|alias) |    assigns the label
+%     output <-----'  output hook
+
+%==[ input ]====================================================================
+
+\pgfqkeys{/bapto/input}{
+  .forward to=/bapto/controller
+}
+
+%==[ controller/dispatcher ]====================================================
+
+\pgfqkeys{/bapto/overwrite}{.is choice,
+  false/.style={/bapto/controller/.code={\def\kDTmp{##1}\ifx\kDTmp\empty\else
+                                         \tikz@fig@name\ifx\tikz@fig@name\empty
+                                         \pgfqkeys{/bapto}{trigger={##1}}\fi\fi},
+                /bapto/dispatcher/.code={\pgfqkeys{/tikz}{name=##1}%
+                                         \pgfqkeys{/bapto}{output=##1}}},
+  alias/.style={/bapto/controller/.code={\def\kDTmp{##1}\ifx\kDTmp\empty\else
+                                         \pgfqkeys{/bapto}{trigger={##1}}\fi},
+                /bapto/dispatcher/.code={\pgfqkeys{/tikz}{alias=##1}%
+                                         \pgfqkeys{/bapto}{output=##1}}},
+  true/.style= {/bapto/controller/.code={\def\kDTmp{##1}\ifx\kDTmp\empty\else
+                                         \pgfqkeys{/bapto}{trigger={##1}}\fi},
+                /bapto/dispatcher/.code={\pgfqkeys{/tikz}{name=##1}%
+                                         \pgfqkeys{/bapto}{output=##1}}},
+  false, % default is no name overwriting and no aliasing
+}
+
+%==[ output ]===================================================================
+
+\pgfqkeys{/bapto/output}{
+  .code={}
+}

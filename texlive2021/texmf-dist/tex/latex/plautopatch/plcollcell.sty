@@ -1,0 +1,199 @@
+%
+% plcollcell.sty
+% written by Hironobu Yamashita (@aminophen)
+%
+% This package is part of the plautopatch bundle.
+% https://github.com/aminophen/plautopatch
+%
+% This package is expected to be compatible with
+%   * collcell.sty
+%     (2011/02/27 v0.5)
+%   * plarray.sty in platex-tools
+%     (2018/03/12 v0.1e -- 2018/10/27 v0.1h)
+%
+
+\NeedsTeXFormat{pLaTeX2e}
+\ProvidesPackage{plcollcell}
+  [2020/05/05 v0.1 Tabular extension package for pLaTeX/upLaTeX]
+\RequirePackageWithOptions{collcell}
+\RequirePackage{plarray}% collcell.sty requires array.sty
+
+%% code from plarray.sty (for pLaTeX2e 2018/03/09 or later)
+\def\plclcl@insert@column{%
+       \the@toks \the \@tempcnta
+       \relax \pltx@next@inhibitglue
+       \ignorespaces \@sharp \unskip \removejfmglue
+       \the@toks \the \count@ \relax}
+% -- check
+\ifx\insert@column\plclcl@insert@column\else
+  \PackageWarningNoLine{pxcollcell}
+    {Patch to \noexpand\collectcell unsupported}
+  \expandafter\endinput
+\fi \let\plclcl@insert@column\@undefined
+
+%% \plclcl@patch@cmd\CMD{<orig>}{<new>}
+\@onlypreamble\plclcl@patch@cmd
+\def\plclcl@patch@cmd#1#2#3{%
+  \def\plclcl@next##1#2##2\plclcl@mark##3\plclcl@fin{%
+    \ifx\plclcl@mark##3\plclcl@mark
+      \let\plclcl@fragment\relax
+    \else
+      \def\plclcl@fragment{##2}%
+      \def#1{##1#3##2}%
+    \fi}%
+  \expandafter\plclcl@next#1\plclcl@mark#2\plclcl@mark\plclcl@fin}
+% -- prepend (TODO: \kern0pt enables \inhibitglue effect. why?)
+\plclcl@patch@cmd\collcell@beforeuser
+    {\ignorespaces}
+    {\kern0pt\inhibitglue\ignorespaces}
+\ifx\plclcl@fragment\relax
+  \PackageWarningNoLine{pxcollcell}
+    {Patch to \noexpand\collcell@beforeuser failed}
+\fi
+
+%% code from collcell.sty
+\def\plclcl@collectcell#1#2\ignorespaces{%
+  \begingroup
+  \collect@cell@count\z@
+  \collect@cell@toks{}%
+  \let\collect@cell@spaces\empty
+  \def\collect@cell@end{%
+    \expandafter\endgroup
+    \expandafter\collcell@beforeuser
+    \expandafter\ccell@swap\expandafter{\the\collect@cell@toks}{#1}%
+    \collcell@afteruser
+  }%
+  \collect@cell@look#2%
+}
+% -- check
+\ifx\collectcell\plclcl@collectcell\else
+  \PackageWarningNoLine{pxcollcell}
+    {Patching \noexpand\collect@cell@arg but maybe unsafe}
+\fi \let\plclcl@collectcell\@undefined
+% -- redefine to skip \relax\pltx@next@inhibitglue
+\def\collectcell#1#2\relax\pltx@next@inhibitglue\ignorespaces{%
+  \begingroup
+  \collect@cell@count\z@
+  \collect@cell@toks{}%
+  \let\collect@cell@spaces\empty
+  \def\collect@cell@end{%
+    \expandafter\endgroup
+    \expandafter\collcell@beforeuser
+    \expandafter\ccell@swap\expandafter{\the\collect@cell@toks}{#1}%
+    \collcell@afteruser
+  }%
+  \collect@cell@look#2%
+}
+
+%% code from collcell.sty
+\def\plclcl@collect@cell@arg#1{%
+  \cc@case
+    \\{\collect@cell@cr#1}%
+    \end{\collect@cell@checkend}%
+    \csname{\collect@cell@checkcsname}%
+    \unskip{%
+      \let\collect@cell@spaces\empty
+      %\collect@cell@addarg{#1}% do not include the \unskip
+      \collect@cell@look%
+    }%
+    \@sharp{%
+      \expandafter\collect@cell@addarg\expandafter{#1}%
+      \collect@cell@look
+    }%
+    \collectcell{%
+      \advance\collect@cell@count by \@ne
+      \collect@cell@addcc%
+    }%
+    \endcollectcell{%
+      \ifnum\collect@cell@count=\z@
+        \expandafter\collect@cell@end
+      \else
+        \expandafter\endgroup
+        \expandafter\collect@cell@addarg\expandafter
+        {\expandafter{\the\collect@cell@toks}}%
+        \advance\collect@cell@count by \m@ne%
+        \expandafter\collect@cell@look
+      \fi
+    }%
+    \cci{%
+      \collect@cell@look
+    }%
+    \default{%
+      \expandafter\ccell@swap\expandafter
+        {\csname endtabular*\endcsname\endtabular\endarray}{\in@{#1}}%
+      \ifin@
+          \expandafter\@firstoftwo
+      \else
+          \expandafter\@secondoftwo
+      \fi
+      {\collect@cell@cr\\#1}%
+      {%
+        \collect@cell@addarg{#1}%
+        \collect@cell@look
+      }%
+    }%
+ \endcc@case
+}
+% -- check
+\ifx\collect@cell@arg\plclcl@collect@cell@arg\else
+  \PackageWarningNoLine{pxcollcell}
+    {Patching \noexpand\collect@cell@arg but maybe unsafe}
+\fi \let\plclcl@collect@cell@arg\@undefined
+% -- redefine to skip \removejfmglue
+\def\collect@cell@arg#1{%
+  \cc@case
+    \\{\collect@cell@cr#1}%
+    \end{\collect@cell@checkend}%
+    \csname{\collect@cell@checkcsname}%
+    \unskip{%
+      \let\collect@cell@spaces\empty
+      %\collect@cell@addarg{#1}% do not include the \unskip
+      \collect@cell@look%
+    }%
+    \@sharp{%
+      \expandafter\collect@cell@addarg\expandafter{#1}%
+      \collect@cell@look
+    }%
+    \collectcell{%
+      \advance\collect@cell@count by \@ne
+      \collect@cell@addcc%
+    }%
+    \endcollectcell{%
+      \ifnum\collect@cell@count=\z@
+        \expandafter\collect@cell@end
+      \else
+        \expandafter\endgroup
+        \expandafter\collect@cell@addarg\expandafter
+        {\expandafter{\the\collect@cell@toks}}%
+        \advance\collect@cell@count by \m@ne%
+        \expandafter\collect@cell@look
+      \fi
+    }%
+    \cci{%
+      \collect@cell@look
+    }%
+    %%% BEGIN
+    \removejfmglue{%
+      \collect@cell@look
+    }%
+    %%% END
+    \default{%
+      \expandafter\ccell@swap\expandafter
+        {\csname endtabular*\endcsname\endtabular\endarray}{\in@{#1}}%
+      \ifin@
+          \expandafter\@firstoftwo
+      \else
+          \expandafter\@secondoftwo
+      \fi
+      {\collect@cell@cr\\#1}%
+      {%
+        \collect@cell@addarg{#1}%
+        \collect@cell@look
+      }%
+    }%
+ \endcc@case
+}
+
+%% all done
+
+\endinput

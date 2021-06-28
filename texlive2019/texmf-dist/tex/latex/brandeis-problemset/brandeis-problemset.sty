@@ -1,0 +1,426 @@
+\ProvidesPackage{brandeis-problemset}[2019/04/02 0.5.4 Commands for COSI
+	problem sets at Brandeis University]
+\NeedsTeXFormat{LaTeX2e}
+
+% utility
+\RequirePackage{xparse}
+\RequirePackage{xkeyval}
+
+\RequirePackage{kvoptions}
+\SetupKeyvalOptions{
+	family=bps,
+	prefix=bps@,
+}
+
+% initializes complementary #1 and no#1 options
+\NewDocumentCommand{\bps@comploption}{O{false} m}{%
+	\DeclareBoolOption[#1]{#2}%
+	\DeclareComplementaryOption{no#2}{#2}}
+
+\bps@comploption{scheme}
+\bps@comploption{pseudocode}
+\bps@comploption{assembly}
+\bps@comploption{gantt}
+\bps@comploption{solution}
+\bps@comploption{maketitle}
+\bps@comploption{header}
+\bps@comploption{tabu}
+\bps@comploption{listings}
+\bps@comploption{config}
+\ProcessKeyvalOptions*
+
+\let\bps@comploption\relax
+
+\RequirePackage{changepage}
+
+\newif\iffontspec@ok
+\fontspec@okfalse
+\ExplSyntaxOn
+\sys_if_engine_luatex:T
+{
+	\fontspec@oktrue
+}
+\sys_if_engine_xetex:T
+{
+	\fontspec@oktrue
+}
+\ExplSyntaxOff
+
+\newif\ifbps@listingssetup
+\newcommand{\bps@setuplistings}{%
+	\ifbps@listingssetup
+	\else
+		\RequirePackage{listings}%
+		\lstset{
+			basicstyle=\ttfamily,
+			numbers=left,
+			numberstyle=\color{gray}\ttfamily,
+			aboveskip=1em,
+			belowskip=0.5em,
+			breaklines,
+			breakatwhitespace=true,
+			tabsize=4,
+			keywordstyle={\bf\ttfamily\color[rgb]{0,.3,.7}},
+			commentstyle={\color[rgb]{0.133,0.545,0.133}},
+			stringstyle={\color[rgb]{0.75,0.49,0.07}},
+		}%
+		\RequirePackage{xcolor}%
+		\bps@listingssetuptrue
+	\fi
+}
+
+\ifbps@listings
+	\bps@setuplistings
+	\lstnewenvironment{java}[1][]
+		{\lstset{language=java, #1}}
+		{}
+\fi
+
+\ifbps@scheme
+	\bps@setuplistings
+	% Language definition by Rebecca Turner and Andreas Stuhlmüller.
+	\lstdefinelanguage[R5RS]{Scheme}{
+		morekeywords={*,/,<=,<,=>,=,>=,>,+,-,%
+			% ``These procedures are compositions of car and cdr \dots\
+			% Arbitrary compositions, up to four deep, are provided. There are
+			% twenty-eight of these procedures in all.'' (6.3.2)
+			car,cdr,caar,cadr,cdar,cddr,caaar,caadr,cadar,caddr,cdaar,%
+			cdadr,cddar,cdddr,caaaar,caaadr,caadar,caaddr,cadaar,cadadr,%
+			caddar,cadddr,cdaaar,cdaadr,cdadar,cdaddr,cddaar,cddadr,cdddar,%
+			cddddr,%
+			% Define the rest of the primitives, from R5RS'
+			% \href{https://schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-15.html#%_chap_Temp_11}{``Alphabetic
+			% Index of Definitions of Concepts, Keywords, and Procedures''}
+			abs,acos,and,angle,append,apply,asin,assoc,%
+			assq,assv,atan,begin,boolean?,%
+			call-with-current-continuation,call-with-input-file,%
+			call-with-output-file,call-with-values,case,%
+			ceiling,char->integer,char-alphabetic?,char-ci<=?,char-ci<?,%
+			char-ci=?,char-ci>=?,char-ci>?,char-downcase,char-lower-case?,%
+			char-numeric?,char-ready?,char-upcase,char-upper-case?,%
+			char-whitespace?,char<=?,char<?,char=?,char>=?,char>?,char?,%
+			close-input-port,close-output-port,complex?,cond,cons,cos,%
+			current-input-port,current-output-port,define,define-syntax,delay,%
+			denominator,display,do,dynamic-wind,else,eof-object?,eq?,%
+			equal?,eqv?,eval,even?,exact->inexact,exact?,exp,expt,floor,%
+			for-each,force,gcd,if,imag-part,inexact->exact,inexact?,%
+			input-port?,integer->char,integer?,interaction-environment,lambda,%
+			lcm,length,let,let*,let-syntax,letrec,letrec-syntax,list,%
+			list->string,list->vector,list-ref,list-tail,list?,load,log,%
+			magnitude,make-polar,make-rectangular,make-string,make-vector,%
+			map,max,member,memq,memv,min,modulo,negative?,newline,not,%
+			null-environment,null?,number->string,number?,numerator,odd?,%
+			open-input-file,open-output-file,or,output-port?,pair?,peek-char,%
+			port?,positive?,procedure?,quasiquote,quote,quotient,rational?,%
+			rationalize,read,read-char,real-part,real?,remainder,reverse,%
+			round,scheme-report-environment,set!,set-car!,set-cdr!,setcar,%
+			sin,sqrt,string,string->list,string->number,string->symbol,%
+			string-append,string-ci<=?,string-ci<?,string-ci=?,string-ci>=?,%
+			string-ci>?,string-copy,string-fill!,string-length,string-ref,%
+			string-set!,string<=?,string<?,string=?,string>=?,string>?,%
+			string?,substring,symbol->string,symbol?,syntax-rules,tan,%
+			transcript-off,transcript-on,truncate,values,vector,vector->list,%
+			vector-fill!,vector-length,vector-ref,vector-set!,vector?,%
+			with-input-from-file,with-output-to-file,write,write-char,zero?},
+		otherkeywords={\#b,\#o,\#d,\#x,\#e,\#i,\#t,\#f,%
+			',`,{,},\,\@,...},
+		alsoletter={!\$\%&*/:<=>?@^_~+-},
+		alsodigit={.},
+		sensitive=true,
+		morecomment=[l]{;},
+		morecomment=[s]{\#|}{|\#},
+		morestring=[b]",
+		upquote=true,
+		literate=*{`}{{`}}{1}
+	}[keywords,comments,strings]
+	\lstset{
+		defaultdialect=[R5RS]Scheme
+	}
+	\lstnewenvironment{scheme}[1][]
+		{\lstset{language=Scheme, #1}}
+		{}
+\fi
+
+\ifbps@assembly
+	\bps@setuplistings
+	\lstdefinelanguage{assembly}{
+		keywords={LOAD,STORE,ADD,SUB,MUL,DIV,INC,SKIP,BR,BLT,BGT,BLEQ,BGEQ,
+			BEQ,BNEQ,READ,WRITE,HALT},
+		firstnumber=-3,
+		numberstyle={\color{gray}\ttfamily\addtocounter{lstnumber}{3}x +\ },
+		morecomment=[l]{;},
+	}
+	\lstnewenvironment{assembly}[1][]
+		{\lstset{language=assembly, #1}}{}
+\fi
+
+\ifbps@gantt
+	\RequirePackage{tikz}
+	\RequirePackage{fp}
+	\RequirePackage{calc}
+	\newcounter{bps@gantt@time}
+	\newcounter{bps@gantt@time@after}
+	\newlength{\bps@gantt@unit}
+	\NewDocumentEnvironment{ganttschedule}{m o} % total size, title
+		{\setlength{\bps@gantt@unit}{\linewidth / \real{#1}}%
+		\setcounter{bps@gantt@time}{0}%
+		\DeclareDocumentCommand{\burst}{m m} % pid, burst
+			{\setcounter{bps@gantt@time@after}{\value{bps@gantt@time}}%
+			\addtocounter{bps@gantt@time@after}{##2}%
+			\FPeval\gantthalf{(\arabic{bps@gantt@time}
+				+ \arabic{bps@gantt@time@after}) / 2}%
+
+			\draw (\value{bps@gantt@time}, 0) rectangle
+				(\value{bps@gantt@time@after}, 1);
+			\node at (\gantthalf, 0.5) {$P_{##1}$};
+			\draw [|<->|] (\value{bps@gantt@time} + 0.05, 1.25)
+				-- node[above=1mm] {##2}
+				(\value{bps@gantt@time@after} - 0.05, 1.25);
+
+			\setcounter{bps@gantt@time}{\value{bps@gantt@time@after}}}%
+
+		\IfValueT{#2}{\begin{center} #2 \end{center}}%
+		\begin{tikzpicture}[x=\bps@gantt@unit]}
+		{\end{tikzpicture}}
+\else
+	\NewDocumentEnvironment{ganttschedule}{m o}
+		{\PackageError{brandeis-problemset}{ganttschedule enviornment
+			not loaded in preamble}{Did you mean to use the 'gantt'
+			option for the brandeis-problemset package/document
+			class?}}{}
+\fi
+
+\let\pseudocodesymbolfont\ttfamily
+\ifbps@pseudocode
+	\bps@setuplistings
+	% pseudocode commands
+	\iffontspec@ok
+		% use unicode shortcuts
+		\newcommand{\bps@pcsym}[2]
+			{\expandafter\providecommand
+				\csname pseudocode#1\endcsname
+				{\pseudocodesymbolfont #2}}
+		\bps@pcsym{leftarrow} {←}
+		\bps@pcsym{rightarrow}{→}
+		\bps@pcsym{le}        {≤}
+		\bps@pcsym{ge}        {≥}
+		\bps@pcsym{emptyset}  {∅}
+		\bps@pcsym{ne}        {≠}
+		\bps@pcsym{infty}     {∞}
+		\@ifundefined{lmmath}{\@ifundefined{newfontface}{}{%
+			\newfontface{\lmmath}{latinmodern-math.otf}%
+		}}{}%
+		\@ifundefined{lmmath}{}{%
+			\let\pseudocodesymbolfont\lmmath
+		}%
+	\else
+		% use math-mode fallbacks
+		\newcommand{\bps@pcsym}[2]
+			{\expandafter\providecommand
+				\csname pseudocode#1\endcsname
+				{\ensuremath{#2}}}
+		\bps@pcsym{leftarrow} {\leftarrow}
+		\bps@pcsym{rightarrow}{\rightarrow}
+		\bps@pcsym{le}        {\le}
+		\bps@pcsym{ge}        {\ge}
+		\bps@pcsym{emptyset}  {\emptyset}
+		\bps@pcsym{ne}        {\ne}
+		\bps@pcsym{infty}     {\infty}
+	\fi
+
+	\lstdefinelanguage{Pseudocode}{
+		keywords={Input,Output,Complexity,while,do,return,for,to,if,then,else,True,False,None,and,or,nil,len},
+		literate={<-}{{\pseudocodeleftarrow}}2
+			{->} {{\pseudocoderightarrow}}2
+			{(/)}{{\pseudocodeemptyset}}2
+			{inf}{{\pseudocodeinfty}}3
+			{!=} {{\pseudocodene}}2
+			{>=} {{\pseudocodege}}2
+			{<=} {{\pseudocodele}}2,
+		morecomment=[l]{\#},
+	}
+
+	\lstnewenvironment{pseudocode}[1][]
+		{\lstset{
+			language=Pseudocode,
+			morekeywords={#1},
+		}}{}
+\fi
+
+\let\bps@setuplistings\relax
+
+% tables
+\ifbps@tabu
+	\ProvideExpandableDocumentCommand{\Th}{O{l} m}
+		{\multicolumn{1}{#1}{\Bf{#2}}}
+\fi
+
+\newcommand{\solutionstyle}{\color{blue}}
+\ifbps@solution
+	\newenvironment{solution}
+		{\solutionstyle}
+		{}
+\else
+	\RequirePackage{comment}
+	\excludecomment{solution}
+\fi
+
+\ifbps@maketitle
+	\bps@configtrue
+\fi
+\ifbps@header
+	\bps@configtrue
+\fi
+
+\ifbps@config
+	% config commands
+	\define@cmdkeys{bps}[bps@]{duedate, instructor, course, assignment}
+	% wrappers
+	\define@key{bps}{author}{\author{#1}}
+	\define@key{bps}{date}{\date{#1}}
+
+	% helpers
+	\define@key{bps}{number}{\def\bps@assignment{Problem Set #1}}
+	\define@key{bps}{coursenumber}{\def\bps@course{\textsc{cosi} #1}}
+	\define@key{bps}{codefont}{\setcodefont{#1}}
+	\newcommand{\bpsset}[1]{\setkeys{bps}{#1}}
+	\let\problemsetsetup\bpsset
+\fi
+
+\ifbps@maketitle
+	\NewDocumentCommand{\bps@titlerow}{o m}{\@ifundefined{bps@#2}{}%
+		{\IfValueTF{#1}{#1}{#2} & \csname bps@#2\endcsname \\}}
+
+	\renewcommand{\maketitle}{\thispagestyle{empty}%
+		\begin{center}%
+			\Large\begin{tabular}{r|l}
+			\bps@titlerow{assignment}%
+			by & \@author \\
+			\bps@titlerow{course}%
+			\bps@titlerow{instructor}%
+			\bps@titlerow[due]{duedate}%
+		\end{tabular}%
+		\end{center}%
+		\vspace*{2em}}
+
+	\newcommand{\maketitlepage}{\thispagestyle{empty}%
+		\vspace*{2in}%
+		\maketitle
+		\pagebreak}
+\fi
+
+\ifbps@header
+	% page headers
+	\RequirePackage{fancyhdr}
+	\fancyhf{}
+	\lhead{\@author
+		\hfill
+		\@ifundefined{bps@assignment}{}{\bps@assignment}%
+		\@ifundefined{bps@duedate}{}{\ (due \bps@duedate)}\hfill
+		\@ifundefined{bps@instructor}{}{\bps@instructor\hfill}%
+		\thepage}
+	\setlength{\headheight}{24pt}
+	\fancypagestyle{plain}{\fancyhead[L]{}}
+	\AtBeginDocument{\pagestyle{fancy}}
+\fi
+
+\let\ac\textsc
+
+\ProvideDocumentCommand{\newacronym}{o m}
+	{\IfValueTF{#1}%
+		{\def#1{\ac{#2}}}%
+		{\expandafter\def\csname #2\endcsname{\ac{#2}}}}
+
+\ProvideDocumentCommand{\newacronyms}{>{\SplitList{,}} m}
+	{\ProcessList{#1}{\newacronym}}
+
+% #1: env name
+% #2: pagebreak default
+\newcommand{\bps@problemkeys}[2]{%
+	\expandafter\newlength\csname bps@#1indent\endcsname
+	\expandafter\setlength\csname bps@#1indent\endcsname{1in}%
+	\expandafter\def\csname bps@#1@title\endcsname{%
+		\@ifundefined{cmdKV@#1@title}%
+			{}%
+			{: \csname cmdKV@#1@title\endcsname}}%
+	\expandafter\def\csname bps@#1@number\endcsname{\arabic{#1number}}%
+	\expandafter\def\csname bps@#1pagebreak\endcsname{%
+		\csname ifKV@#1@pagebreak\endcsname
+			\vfill\pagebreak
+		\fi}%
+	\define@boolkey{#1}{pagebreak}[true]{\csname bps@#1pagebreak\endcsname}%
+	\expandafter\def\csname bps@#1@tocstar\endcsname{%
+		\csname ifKV@#1@toc\endcsname
+		\else
+			*%
+		\fi}%
+	\define@boolkey{#1}{toc}[true]{}%
+	\define@cmdkeys{#1}{number, label, title}%
+	\presetkeys{#1}{pagebreak=#2, toc}{}%
+}
+
+\newcounter{problemnumber}
+\newcounter{subproblemnumber}[problemnumber]
+\bps@problemkeys{problem}{true}
+\bps@problemkeys{subproblem}{false}
+\define@cmdkeys{problem}{partlabel}
+\define@cmdkey{problem}{part}[]{%
+	\part{\cmdKV@problem@part}%
+	\@ifundefined{cmdKV@problem@partlabel}{}{%
+		\expandafter\label{\cmdKV@problem@partlabel}%
+	}%
+}
+
+% common code for subproblem and problem envs
+% #1: env name
+% #2: @currentlabel code
+% #3: sectioning command
+\newcommand{\bps@problem@}[3]{%
+	% define problem number based on user input (or lack thereof)
+	\@ifundefined{cmdKV@#1@number}{%
+		\stepcounter{#1number}%
+	}{%
+		\expandafter\def\csname bps@#1@number\endcsname
+			{\expandafter\noexpand\csname cmdKV@#1@number\endcsname}%
+	}%
+	% define labels for \ref and the like
+	\def\@currentlabel{#2}%
+	\edef\bps@problem@title@{Problem
+		\@currentlabel% the problem number
+		\expandafter\noexpand\csname bps@#1@title\endcsname}
+	\def\@currentlabelname{\bps@problem@title@}%
+	% no spaces or numbers before the \section command
+	\renewcommand{\@seccntformat}[1]{}%
+	\typeout{\@currentlabelname}
+	\csname ifKV@#1@toc\endcsname
+		\def\bps@problem@section{#3}%
+	\else
+		\def\bps@problem@section{#3*}%
+	\fi
+	% make the section (#3 is \section or something)
+	% NOTE: If you use \@currentlabelname for the title, the document
+	% will pause on compilation on this line; I don't know why this is,
+	% but it goes away if hyperref isn't loaded (my guess is that
+	% hyperref redefines \@currentlabelname to do something weird and
+	% possibly-recursive with \@currentlabel). Either way, defining an
+	% alternate command for the title works here.
+	\bps@problem@section{\bps@problem@title@}%
+	% fix up ref commands
+	\@ifundefined{cmdKV@#1@label}{}{%
+		\expandafter\label{\csname cmdKV@#1@label\endcsname}%
+	}%
+}
+
+\NewDocumentEnvironment{problem}{O{}}{%
+	\setkeys{problem}{#1}%
+	\@ifundefined{cmdKV@problem@number}{}{\setcounter{subproblemnumber}{0}}%
+	\bps@problem@{problem}{\bps@problem@number}{\section}%
+	\begin{adjustwidth}{\bps@problemindent}{0pt}}
+	{\end{adjustwidth}}
+
+% make sure to keep this code in sync with the problem env code
+\NewDocumentEnvironment{subproblem}{O{}}{%
+	\setkeys{subproblem}{#1}%
+	\bps@problem@{subproblem}{\bps@problem@number.\bps@subproblem@number}{\subsection}%
+	\begin{adjustwidth}{\bps@subproblemindent}{0pt}}
+	{\end{adjustwidth}}

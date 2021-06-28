@@ -1,0 +1,160 @@
+\ProvidesPackage{librecaslon}[%
+   2013/10/15 (Bob Tennent)  Supports LibreCaslon fonts for all LaTeX engines. ] 
+
+\RequirePackage{ifxetex,ifluatex,textcomp}
+
+\newif\iflibrecaslon@otf
+\ifxetex
+  \librecaslon@otftrue
+\else\ifluatex
+  \librecaslon@otftrue
+\else  % [pdf]LaTeX
+  \librecaslon@otffalse
+\fi\fi
+
+\newif\iflibrecaslon@lining \librecaslon@liningtrue
+
+\newcommand*{\LibreCaslonText@scale}{1}  
+\RequirePackage{xkeyval}
+\DeclareOptionX{scaled}{\renewcommand*{\LibreCaslonText@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\LibreCaslonText@scale}{#1}}
+
+\DeclareOptionX{type1}{\librecaslon@otffalse}
+
+\DeclareOptionX{lining}[true]{%
+\@nameuse{if#1}%
+  \librecaslon@liningtrue
+\else
+  librecaslon@liningfalse
+\fi
+}
+\DeclareOptionX{lf}[true]{%
+\@nameuse{if#1}%
+  \librecaslon@liningtrue
+\else
+  librecaslon@liningfalse
+\fi
+}
+\DeclareOptionX{oldstyle}[true]{%
+\@nameuse{if#1}%
+  \librecaslon@liningfalse
+\else
+  \librecaslon@liningtrue
+\fi
+}
+
+\DeclareOptionX{osf}[true]{%
+\@nameuse{if#1}%
+  \librecaslon@liningfalse
+\else
+  \librecaslon@liningtrue
+\fi
+}
+
+\ProcessOptionsX\relax
+
+\iflibrecaslon@otf
+  \iflibrecaslon@lining
+    \def\librecaslon@figurestyle{Monospaced}
+  \else
+    \def\librecaslon@figurestyle{OldStyle}
+  \fi
+
+\else % type1
+
+  \iflibrecaslon@lining
+    \def\librecaslon@figurealign{T} 
+    \def\librecaslon@figurestyle{LF} 
+  \else
+    \def\librecaslon@figurealign{} 
+    \def\librecaslon@figurestyle{OsF} 
+  \fi
+\fi
+
+
+\iflibrecaslon@otf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes}
+\fi
+
+\iflibrecaslon@otf
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+     Ligatures = TeX ,
+     Extension = .otf ,
+     Scale     = \LibreCaslonText@scale ,
+  }
+  \setmainfont
+      [ Numbers = {\librecaslon@figurestyle},
+        UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-Bold , 
+        BoldItalicFont = *-BoldItalic ]
+      {LibreCaslonText}
+  \providecommand\useosf{%
+    \edef\librecaslon@figurestyle{OldStyle}
+    \defaultfontfeatures{
+       Ligatures = TeX ,
+       Extension = .otf ,
+       Scale = \LibreCaslonText@scale ,
+    }
+    \setmainfont
+        [ Numbers = {\librecaslon@figurestyle},
+          UprightFont    = *-Regular ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-Bold , 
+          BoldItalicFont = *-BoldItalic ]
+        {LibreCaslonText}
+    \defaultfontfeatures{}
+  }
+  \newfontfamily\librecaslon
+      [ Numbers = {\librecaslon@figurestyle},
+        UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-Bold , 
+        BoldItalicFont = *-BoldItalic ]
+      {LibreCaslonText}
+  \newfontfamily\librecaslonOsF
+        [ Numbers = {OldStyle},
+        UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-Bold , 
+        BoldItalicFont = *-BoldItalic ]
+      {LibreCaslonText}
+  \newfontfamily\librecaslonLF
+        [ Numbers = {Monospaced},
+        UprightFont    = *-Regular ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-Bold , 
+        BoldItalicFont = *-BoldItalic ]
+      {LibreCaslonText}
+
+  \providecommand\sufigures{\librecaslonOsF\addfontfeatures{VerticalPosition=Superior}}  
+%                           !!!!!!!!!!!!!!!
+
+
+\else % type1
+
+  \def\librecaslonfamily{LibreCaslonText-\librecaslon@figurealign\librecaslon@figurestyle}
+  \providecommand*\librecaslon{\fontfamily{\librecaslonfamily}\selectfont}
+  \providecommand*\librecaslonLF{\fontfamily{LibreCaslonText-TLF}\selectfont}
+  \providecommand*\librecaslonOsF{\fontfamily{LibreCaslonText-OsF}\selectfont}
+
+  \fa@naming@exception{figures}{{superior}{proportional}}{Sup}
+  \fa@naming@exception{figures}{{superior}{tabular}}{Sup}
+  \providecommand\sufigures{\@nomath\sufigures\fontfigurestyle{superior}\selectfont}
+  \renewcommand*\rmdefault{\librecaslonfamily}
+  \providecommand*\useosf{\edef\librecaslon@figurealign{}\edef\librecaslon@figurestyle{OsF}%
+     \renewcommand*{\rmdefault}{LibreCaslonText-OsF}}
+
+\fi
+\DeclareTextFontCommand{\textsu}{\sufigures}
+
+% turn off defaults in case other fonts are selected:
+\iflibrecaslon@otf
+  \defaultfontfeatures{}
+\fi
+
+\endinput
+

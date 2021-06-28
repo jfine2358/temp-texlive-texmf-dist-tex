@@ -1,0 +1,157 @@
+%D \module
+%D   [       file=m-graph,
+%D        version=2008.09.08,
+%D          title=\CONTEXT\ Extra Modules,
+%D       subtitle=\METAPOST\ graph module support,
+%D         author=Hans Hagen,
+%D           date=\currentdate,
+%D      copyright={PRAGMA ADE \& \CONTEXT\ Development Team}]
+%C
+%C This module is part of the \CONTEXT\ macro||package and is
+%C therefore copyrighted by \PRAGMA. See mreadme.pdf for
+%C details.
+
+% We just assume lua specification instead of the graph ones that
+% are limited by what mp can do. We support @ as replacement for
+% the percent symbol. We also add a specifier when no one is given.
+
+\unprotect
+
+\startluacode
+    local format, gsub, find, match = string.format, string.gsub, string.find, string.match
+
+    local simplify = true
+
+    local function strip(n,e)
+        -- get rid of e(0)
+        -- get rid of e(+*)
+        e = gsub(e,"^+","")
+        -- remove leading zeros
+        e = gsub(e,"^([+-]*)0+(%d)","%1%2")
+        if not simplify then
+            -- take it as it is
+        elseif n == "1" then
+            return format("10^{%s}",e)
+        end
+        return format("%s\\times10^{%s}",n,e)
+    end
+
+    function metapost.format_n(fmt,str)
+        fmt = gsub(fmt,"@","%%")
+        local initial, hasformat, final = match(fmt,"^(.-)(%%.-[%a])(.-)$")
+        if hasformat then
+            str = format(fmt,str)
+            str = gsub(str,"(.-)e(.-)$",strip)
+            str = format("%s\\mathematics{%s}%s",initial,str,final)
+        elseif not find(fmt,"%%") then
+            str = format("%"..fmt,str)
+            str = gsub(str,"(.-)e(.-)$",strip)
+            str = format("\\mathematics{%s}",str)
+        end
+        context(str)
+    end
+\stopluacode
+
+\unexpanded\def\MPgraphformat#1#2{\ctxlua{metapost.format_n("#1","#2")}}
+
+% We could also delegate parsing using lower level plugins.
+
+\defineMPinstance
+  [graph]
+  [\s!format=metafun,
+   \s!extensions=\v!yes,
+   \s!initializations=\v!yes,
+   \c!method=\s!double]
+
+\startMPdefinitions{graph}
+    if unknown context_grap: input "mp-grap.mpiv" ; fi ;
+\stopMPdefinitions
+
+% For backwards compatibility (for the moment), also load the graph macros in 
+% the standard MP instance (scaled integer):
+
+\startMPdefinitions
+    if unknown context_grap: input "mp-grap.mpiv" ; fi ;
+\stopMPdefinitions
+
+\protect
+
+\continueifinputfile{m-graph.mkiv}
+
+\starttext
+
+\startMPpage[instance=graph]
+    label(format("@g","1e-8"),  (0,       0)) ;
+    label(format("@g","1e+8"),  (2cm,     0)) ;
+    label(format("@g","1e-10"), (0,  -0.5cm)) ;
+    label(format("@g","1e+10"), (2cm,-0.5cm)) ;
+    label(format("@g","1e-12"), (0,  -1.0cm)) ;
+    label(format("@g","1e+12"), (2cm,-1.0cm)) ;
+    label(format("@g","1e-0"),  (0,  -1.5cm)) ;
+    label(format("@g","1e+0"),  (2cm,-1.5cm)) ;
+    label(format("@g","1"),     (0,  -2.0cm)) ;
+    label(format("@g","1"),     (2cm,-2.0cm)) ;
+    label(format("@g","1e-102"),(0,  -2.5cm)) ;
+    label(format("@g","1e+102"),(2cm,-2.5cm)) ;
+\stopMPpage
+
+% \startMPpage[instance=graph]
+% draw begingraph(3in,2in);
+%     gdraw "t:/metapost/grphdata/agepop91.d";
+% endgraph;
+% \stopMPpage
+
+% \startMPpage[instance=graph]
+% draw begingraph(3in,2in);
+%     gdraw "agepop91.d" plot btex $\bullet$ etex;
+% endgraph;
+% \stopMPpage
+
+% \startMPpage[instance=graph]
+% draw begingraph(3in,2in);
+%     glabel.lft(btex \vbox{\hbox{Population} \hbox{in millions}} etex, OUT);
+%     glabel.bot(btex Age in years etex, OUT);
+%     gdraw "agepopm.d";
+% endgraph;
+% \stopMPpage
+
+% \startMPpage[instance=graph]
+% draw begingraph(3in,2in);
+%     glabel.lft(btex \vbox{\hbox{Population} \hbox{in millions}} etex, OUT);
+%     glabel.bot(btex Age in years etex, OUT);
+%     setrange(origin, whatever,whatever);
+%     gdraw "agepopm.d";
+% endgraph;
+% \stopMPpage
+
+% \startMPpage[instance=graph]
+% draw begingraph(2.3in,2in);
+%     setcoords(log,log);
+%     glabel.lft(btex Seconds etex,OUT);
+%     glabel.bot(btex Matrix size etex,
+%     OUT);
+%     gdraw "matmul.d" dashed evenly;
+%     glabel.ulft(btex Standard etex,8);
+%     gdraw "matmul.d";
+%     glabel.lrt(btex Strassen etex,7);
+% endgraph;
+% \stopMPpage
+
+% \startMPpage[instance=graph]
+% draw begingraph(6.5cm,4.5cm);
+%     setrange(80,0, 90,whatever);
+%     glabel.bot(btex Year etex, OUT);
+%     glabel.lft(btex \vbox{\hbox{Emissions in} \hbox{thousands of}
+%     \hbox{metric tons} \hbox{(heavy line)}}etex, OUT);
+%     gdraw "lead.d" withpen pencircle scaled 1.5pt;
+%     autogrid(,otick.lft);
+%     setcoords(linear,linear);
+%     setrange(80,0, 90,whatever);
+%     glabel.rt(btex \vbox{\hbox{Micrograms} \hbox{per cubic}
+%     \hbox{meter of air} \hbox{(thin line)}}etex, OUT);
+%     gdraw "lead.d";
+%     autogrid(otick.bot,otick.rt);
+% endgraph;
+% \stopMPpage
+
+\stoptext

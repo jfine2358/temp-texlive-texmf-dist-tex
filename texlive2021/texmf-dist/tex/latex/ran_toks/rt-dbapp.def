@@ -1,0 +1,148 @@
+%%
+%% This is file `rt-dbapp.def',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% ran_toks.dtx  (with options: `copyright,dbapp')
+%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ran_toks package,                                    %%
+%% Copyright (C) 1999-2021  D. P. Story                 %%
+%%   dpstory@uakron.edu, dpstory@acrotex.net            %%
+%%                                                      %%
+%% This program can redistributed and/or modified under %%
+%% the terms of the LaTeX Project Public License        %%
+%% Distributed from CTAN archives in directory          %%
+%% macros/latex/base/lppl.txt; either version 1 of the  %%
+%% License, or (at your option) any later version.      %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\rt@OpenProbIds{\@ifpackageloaded{eqexam}
+  {\immediate\openout\wrtprobids\jobname-ver\selVersion.cut}{}}
+\def\rt@ABD{\@ifundefined{eq@nVersions}{}
+  {\ifnum\eq@nVersions>\@ne\expandafter\rt@OpenProbIds\fi}}
+\def\rt@gettonil#1\@nil{\def\to@nilarg{#1}}
+\def\rt@ifspc{\ifx\@let@token\@sptoken
+  \let\rt@next\rt@xifspc\else
+  \let\rt@next\rt@gettonil\fi\rt@next
+}
+\begingroup
+\def\:{\rt@xifspc}\expandafter
+\gdef\: {\futurelet\@let@token\rt@ifspc}
+\endgroup
+\def\rt@strpspcs{\futurelet\@let@token\rt@ifspc}
+\def\ProbDBWarningMsg#1{\filename@parse{#1}
+  \PackageWarning{ran_toks}
+  {The file \filename@area\filename@base.\ifx\filename@ext\relax
+      tex\else\filename@ext\fi\space cannot be found}}
+\def\useTheseDBs#1{\def\rt@dblist{#1}\ifx\rt@dblist\@empty\else
+  \let\rt@DB@List\@empty
+  \edef\temp@expand{\noexpand\@for\noexpand\@@tmp:=\rt@dblist}%
+  \temp@expand\do{\ifx\@@tmp\@empty\else
+    \expandafter\rt@strpspcs\@@tmp\@nil\edef\@@tmp{\to@nilarg}%
+    \edef\rt@nextDB{\noexpand
+      \InputIfFileExists{\@@tmp}{}{\noexpand
+      \ProbDBWarningMsg{\@@tmp}}}%
+    \toks\tw@=\expandafter{\rt@DB@List}%
+    \toks@=\expandafter{\rt@nextDB}%
+    \edef\rt@DB@List{\the\toks\tw@\space\the\toks@}\fi
+  }\expandafter\rt@DB@List\fi}
+\let\useProbDBs\useTheseDBs
+\def\viewDB#1{\useRTName{#1}\rt@nCnt\z@
+  \edef\nSTOP{\@nameuse{nMax4\rt@BaseName}}%
+  \loop\advance\rt@nCnt\@ne
+    \rtTokByNum{\the\rt@nCnt}%
+  \ifnum\rt@nCnt<\nSTOP\repeat
+}
+%% uses \@tempcnta and \Indx
+\def\getR@nIndx#1{\def\argi{#1}%
+  \ifx\argi\rt@STOP
+    % no match, something is wrong
+    \edef\ranIndex{-1}\else
+    \advance\@tempcnta\@ne
+    \ifnum\Indx=\@tempcnta
+      \def\ranIndx{#1}\fi
+  \fi
+}
+\def\rt@NoAltChoice#1#2{\PackageWarning{ran_toks}
+  {Cannot find an alternative to #1-#2,\MessageBreak
+   will use it but it may be a duplicate\MessageBreak
+   question}}
+\def\xdb@unique#1{\@tempcnta\z@
+  \def\rt@STOP{\relax}%
+  \let\\\relax\edef\x{\@nameuse{#1-List}}%
+  \toks@=\expandafter{\x}\let\\\getR@nIndx
+  \the\toks@\\\rt@STOP
+  \xdef\rt@next{\noexpand
+    \@nameuse{rtRanTok\rt@orig@Indx#1}}%
+  \ifnum\ranIndx>\m@ne
+    \edef\rt@orig@ranIndx{\ranIndx}%
+    \expandafter
+    \ifx\csname#1-\ranIndx\endcsname\relax
+      \xdef\rt@next{\noexpand
+        \@nameuse{rtRanTok\Indx#1}}%
+    \else
+      \@tempcntb\z@
+      \rt@nCnt\rt@orig@Indx\relax
+      \xdef\rt@next{\noexpand\rt@NoAltChoice{#1}{\rt@orig@Indx}\noexpand
+        \@nameuse{rtRanTok\rt@orig@Indx#1}}%
+      \@whilenum\@tempcntb<\@nameuse{nMax4#1}\do{%
+        \advance\@tempcntb\@ne
+        \advance\rt@nCnt\@ne
+        \ifnum\rt@nCnt>\@nameuse{nMax4#1}\rt@nCnt\@ne\fi
+        \edef\Indx{\the\rt@nCnt}\@tempcnta\z@
+        \the\toks@\\\rt@STOP
+        \ifnum\ranIndx>\m@ne
+          \expandafter
+          \ifx\csname#1-\ranIndx\endcsname\relax
+            \pkgNotifType{ran_toks}{#1-\rt@orig@ranIndx\space
+              has already been used,\MessageBreak
+              will use #1-\ranIndx}%
+            % exit the \@whilenum loop
+            \@tempcntb\@nameuse{nMax4#1}%
+            \advance\@tempcntb\@ne
+          \fi
+        \fi
+        \xdef\rt@next{\noexpand\@nameuse{rtRanTok\Indx#1}}%
+      }% do
+      \ifnum\@tempcntb=\@nameuse{nMax4#1}\relax
+        \xdef\rt@next{\noexpand
+          \rt@NoAltChoice{#1}{\rt@orig@ranIndx}\noexpand
+          \@nameuse{rtRanTok\rt@orig@Indx#1}}%
+      \fi
+    \fi
+  \fi
+}
+\renewcommand{\uniqueXDBChoicesOn}{\xDBUniquetrue
+  \let\xdbunique\xdb@unique}
+\newif\ifrt@InputUsedIDs\rt@InputUsedIDsfalse
+\def\InputUsedIDs{\rt@InputUsedIDstrue
+  \bgroup
+    \setcounter{eq@count}{0}%
+    \let\rt@InputUsedIDs\@empty
+    \let\rt@InputUsedIDsFIs\@empty
+    \@whilenum \value{eq@count}<\eq@nVersions\relax\do
+    {%
+      \stepcounter{eq@count}%
+      \g@addto@macro\rt@InputUsedIDs{\if\selVersion}%
+      \g@addto@macro\rt@InputUsedIDsFIs{\fi}%
+      \edef\x{\Alph{eq@count}}%
+      \edef\y{\noexpand\g@addto@macro\noexpand
+        \rt@InputUsedIDs{\x\expandafter\noexpand
+        \csname else\endcsname\noexpand\rt@IIFE}}\y
+      \edef\x{{\x}}\expandafter
+      \g@addto@macro\expandafter\rt@InputUsedIDs\expandafter{\x}%
+    }% do
+    \expandafter\g@addto@macro\expandafter
+      \rt@InputUsedIDs\expandafter{\rt@InputUsedIDsFIs}%
+    \egroup
+  \rt@InputUsedIDs
+  \AtBeginDocument{\rt@ABD}%
+}
+\@onlypreamble\InputUsedIDs
+\def\rt@IIFE#1{\InputIfFileExists{\jobname-ver#1.cut}
+  {\PackageInfo{ran_toks}{Inputting \jobname-ver#1.cut}}
+  {\PackageInfo{ran_toks}{Cannot find \jobname-ver#1.cut}}}
+\endinput
+%%
+%% End of file `rt-dbapp.def'.

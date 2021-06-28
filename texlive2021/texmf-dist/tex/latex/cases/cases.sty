@@ -1,0 +1,268 @@
+%  C A S E S . S T Y             ver 3.2    Mar 2020
+%
+%  Copyright (C) 1993,1994,1995,2000,2002,2020 by Donald Arseneau
+%                                       asnd@triumf.ca
+%  These macros may be freely transmitted, reproduced, or modified 
+%  provided that this notice is left intact.  Sub-equation numbering
+%  is based on subeqn.sty by Stephen Gildea; most of the rest is based
+%  on LaTeX's \eqnarray by Leslie Lamport and the LaTeX3 team,
+%  and parts of amsmath.sty by the American Mathematical Society.
+%
+%  This provides a LaTeX environment {numcases} to produce multi-case 
+%  equations with a separate equation number for each case.  There is
+%  also {subnumcases} which numbers each case with the overall equation
+%  number plus a letter [8a, 8b, etc.].   The syntax is
+%
+%  \begin{numcases}{left_side}
+%   case_1 & explanation_1 \\
+%   case_2 & explanation_2 \\
+%   ...
+%   case_n & explanation_n
+%  \end{numcases}
+% 
+%  Each case is a math formula, and each explanation is a piece of lr mode
+%  text (which may contain math mode in \(...\) or $...$).  The explanations
+%  are optional.  Equation numbers are inserted automatically, just as for
+%  the eqnarray environment.  In particular, the \nonumber command suppresses
+%  an equation number and the \label command allows reference to a particular 
+%  case.  In a subnumcases environment, a \label in the left_side of the 
+%  equation gives the overall equation number, without any letter. 
+%
+%  For detailed description and package options, see cases.pdf (cases.tex).
+ 
+\ProvidesPackage{cases}[2020/03/29 ver 3.2]
+
+\newdimen\numc@numwid
+
+% copy \@@eqncr but change error message and handle \tag for amsmath:
+\def\@@numc@cr{\let\reserved@a\relax
+    \ifcase\@eqcnt \def\reserved@a{& & &}\or \def\reserved@a{& &}%
+     \or \def\reserved@a{&}\else
+       \let\reserved@a\@empty
+       \@latex@error{Too many columns in numcases environment}\@ehc\fi
+     \reserved@a \if@eqnsw\@eqnnum\stepcounter{equation}\else \iftag@ \df@tag\fi\fi
+     \global\@eqnswtrue\global\@eqcnt\z@\cr}
+\let\iftag@=\iffalse
+
+\newenvironment{numcases}[1]%
+{$$\numc@opts
+ \refstepcounter{equation}% Needed for LHS \label
+ \setbox\z@\hbox {% typeset LHS
+   \def\@currentlabel{\p@equation\theequation}% local def
+   $\displaystyle {#1{}}\m@th$}%
+ \numc@setsub % maybe \subequations (handling \refstepcounter)
+ \def\@currentlabel{\p@equation\theequation}%
+ \global\@eqnswtrue\m@th
+ \let\tag\numc@tag
+ \settowidth{\numc@numwid}{\ \advance\c@equation\tw@\numc@eqnnum}%
+ \@tempskipb\@centering
+ \ifx\numc@left\mathindent % fleqn:
+    \@tempskipa=\@ne\mathindent\@minus\@ne\mathindent
+    \ifx\numc@forcenumwid\z@ % leqno
+       \ifdim \numc@numwid>\mathindent % enlarge left space for equation number 
+         \@tempskipa=\numc@numwid\@minus\numc@numwid
+    \fi\fi
+ \else % not fleqn:
+    \@tempskipa=\@centering
+    \advance\@tempskipa \numc@numwid\@minus\numc@numwid
+    \advance\@tempskipa \numc@numwid\@minus\numc@forcenumwid
+    \advance\@tempskipb \tw@\numc@numwid\@minus\tw@\numc@numwid
+    \advance\@tempskipb -\numc@forcenumwid\@minus-\numc@forcenumwid
+ \fi
+ \setbox\tw@\vbox\bgroup
+  \everycr{}\let\\\@eqncr \let\@@eqncr\@@numc@cr
+  \tabskip\@tempskipa
+  \halign to \ifx\numc@left\mathindent \linewidth \else \displaywidth \fi \bgroup
+    \kern\wd\z@ \kern10\p@ % white space for LHS; assume (and force) width of brace
+    \global\let\iftag@=\iffalse % for amsmath (make sure this is not in \if block)
+    \global\@eqcnt\@ne $\numc@dispstyle ##\relax$\hfil % RHS
+    \tabskip\z@skip &% explanation
+    \global\@eqcnt\tw@
+    \numc@expstyle\quad ##\unskip\numc@expstyle\hfil % \unskip removes quad if no explanation
+    \tabskip\@tempskipb &% equation number
+    \global\@eqcnt\thr@@\hbox to\numc@forcenumwid\bgroup\hss##\egroup
+    \tabskip\z@skip\cr
+}{%
+    \@@numc@cr \egroup % end \halign, which does not contain first column or brace
+  \global\advance\c@equation\m@ne 
+  % Measure the natural width of the alignment
+  \unskip\unpenalty\unskip\unpenalty \setbox\z@\lastbox % grab last line
+  \nointerlineskip \copy\z@ % then put it back
+  \global\dimen@i\wd\z@ 
+  \setbox\z@\hbox{\unhbox\z@}% Measure its natural width in \dimen@i
+  \global\dimen@i\wd\z@
+ \egroup% end \vbox (\tw@) box\z@ is restored to LHS; \dimen@i is retained
+ \advance\dimen@i-\@tempskipa \advance\dimen@i-\wd\z@ \advance\dimen@i-10\p@ 
+ \advance\dimen@i-\@tempskipb 
+ % now \@dimen@i is natural width of RHS + explanation + eqno columns
+ \hbox to\wd\tw@{\m@th % assemble the whole equation stretched to display width
+  \hskip\@tempskipa
+  \box\z@ % LHS - parameter #1
+  \hbox to10\p@{\hss$\displaystyle
+    \dimen@\ht\tw@ \advance\dimen@\dp\tw@ % get size of brace
+    \ifdim\dimen@<1.5em\dimen@=1.5em\fi % don't allow really small brace
+    \left\lbrace\vcenter to\dimen@{\vfil}\,\right.\n@space % make brace
+    $\hss}% end 10pt brace box
+  \kern\dimen@i
+  \hskip\@tempskipb
+ }% finished first part (filled whole line) end the \hbox to\wd\tw@
+ \kern-\wd\tw@ % backspace the full width
+ \vcenter{\box\tw@}% overlay the alignment
+\numc@resetsub
+$$\global\@ignoretrue}
+
+% a wrapper around \subequations so it works in cases with hyperref and amsmath
+\def\numc@subequations{% skip the \refstepcounter inside \subequations
+  \let\numc@opts\refstepcounter
+  \def\refstepcounter##1{\let\refstepcounter\numc@opts}%
+  \subequations
+  \refstepcounter{equation}}
+
+\let\numc@setsub\relax
+\let\numc@resetsub\relax
+
+\def\subnumcases{%
+  \let\numc@setsub\numc@subequations 
+  \let\numc@resetsub\endsubequations
+  \numcases}
+\let\endsubnumcases\endnumcases 
+
+% declare subequations -- either defining them following the style of
+% Gildea's subeqn.sty, or using the version from AMS-LaTeX if that is loaded.
+
+\@ifundefined{c@parentequation}{% No AMS
+\def\numc@eqnnum{\@eqnnum}
+% for \tag (but not \tag*) without amsmath, using \@@numc@cr above.
+\def\numc@tag#1{\def\@currentlabel{#1}%
+  \gdef\df@tag{\def\theequation{#1}\@eqnnum}%
+  \global\let\iftag@=\iftrue
+  \nonumber}
+%
+% These versions of subequations follow the style of Gildea's subeqn.sty,
+% but are thoroughly rewritten.  
+%
+% You can change the labelling by redefining \thesubequation, but the names
+% of the counters may be confusing: The sub-number is given by counter
+% {equation}, while the overall equation number is given by {mainequation}.
+% There are two ways to reference the overall equation number:
+% through the value of \c@mainequation, as in \Roman{mainequation}, or
+% through \themainequation, which gives the text of the normal \theequation.
+% Refer to the local sub-number with \c@equation, as in \alph{equation}.
+% The default numbering is like 13c, given by:
+%
+\def\thesubequation{\themainequation\alph{equation}}
+%
+% Some alternatives:
+%   \def\thesubequation{\themainequation.\Alph{equation}}  %  13.C
+%   \def\thesubequation{\themainequation-\roman{equation}}  %  13-iii
+%   \def\thesubequation{(\arabic{mainequation}\alph{equation})} % (13c)
+% The third alternative should be used if a document style has
+% declared  \renewcommand{\@eqnnum}{\theequation} and
+% \renewcommand{\theequation}{(\arabic{equation})}, which makes
+% \ref put parentheses around regular equation numbers automatically.
+%
+\def\subequations{\refstepcounter{equation}%
+  \mathchardef\c@mainequation\c@equation
+  \let\@tempa\protect % * added protection
+  \def\protect{\noexpand\protect\noexpand}% *
+  \edef\themainequation{\theequation}\let\theequation\thesubequation
+  \let\protect\@tempa % *
+  \global\c@equation\z@}
+%
+\def\endsubequations{%
+  \global\c@equation\c@mainequation
+  \global\@ignoretrue}
+%
+% \begin{subeqnarray}  works like  \begin{subequations}\begin{eqnarray},
+% with the added feature that a \label command given given at the very
+% beginning of the first entry defines a label for the overall equation 
+% number.
+%
+\def\subeqnarray{\subequations\eqnarray\@ifnextchar\label{\@lab@subeqnarray}{}}
+\def\endsubeqnarray{\endeqnarray\endsubequations}
+\def\@lab@subeqnarray#1#2{\begingroup 
+  \let\@currentlabel\themainequation #1{#2}\endgroup}
+%
+}{% AMS
+
+%  \subequations already defined;
+% use tag format
+\def\numc@eqnnum{\tagform@{\theequation}}    
+\def\numc@tag{\tag@in@align}
+
+% add little space after brace to amsmath's cases
+\def\@tempa{%
+  \let\@ifnextchar\new@ifnextchar
+  \left\lbrace
+  \def\arraystretch{1.2}%
+  \array{@{}l@{\quad}l@{}}%
+}
+\ifx \env@cases\@tempa % add a bit of space after brace in amsmath cases env
+\def\env@cases{%
+  \let\@ifnextchar\new@ifnextchar
+  \left\lbrace\hskip 2\p@
+  \def\arraystretch{1.2}%
+  \array{@{}l@{\quad}l@{}}%
+}
+\fi
+}% end amsmath branch
+
+\def\numc@left{\@centering}
+\def\numc@opts{}
+\def\numc@forcenumwid{\numc@numwid}
+
+\DeclareOption{subnum}{%
+  \let\numc@setsub\numc@subequations 
+  \let\numc@resetsub\endsubequations
+}
+
+\DeclareOption{fleqn}{
+  \let\numc@left\mathindent
+  \def\numc@opts{\displaywidth\linewidth}
+}
+
+\DeclareOption{leqno}{
+  \let\numc@forcenumwid\z@
+}
+
+\let\numc@expstyle\@empty
+\let\numc@dispstyle\displaystyle
+\DeclareOption{amsstyle}{
+  \def\numc@expstyle{$}% used in pairs for math-mode ($) explanation
+  \let\numc@dispstyle\textstyle
+}
+
+\DeclareOption{casesstyle}{
+ \newcommand\@unnc@casecr[1][\z@skip]{%
+  \cr \noalign{\vskip #1}%
+ }
+ \renewenvironment{cases}{%
+  \let\@ifnextchar\new@ifnextchar
+  \left\lbrace\hskip 2\p@
+  \vcenter to1.3em{}%
+  \vcenter\bgroup
+    \let\\\@unnc@casecr
+    \openup\jot
+    \tabskip\z@skip 
+    \halign \bgroup 
+      $\numc@dispstyle ##\m@th$\hfil 
+      &\numc@expstyle\quad ##\unskip\numc@expstyle\hfil % \unskip removes space if no explanations
+      \cr
+ }{%
+      \crcr
+    \egroup
+  \egroup
+  \right.\n@space  
+ }
+}
+
+\DeclareOption{cases}{\ExecuteOptions{casesstyle}}
+
+\ProcessOptions
+
+\endinput
+
+% Send problem reports to asnd@triumf.ca
+
+Test file integrity:  ASCII 32-57, 58-126:  !"#$%&'()*+,-./0123456789
+:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~

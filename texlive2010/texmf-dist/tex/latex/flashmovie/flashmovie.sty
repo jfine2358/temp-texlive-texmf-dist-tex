@@ -1,0 +1,724 @@
+%%%%%%%%%%%%% flashmovie.sty
+%%%%%%%%%%%%% Copyright 2010 Timo Hartmann (thartmann15 at googlemail.com)
+%
+% Version 0.2
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+% http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This license applies to following files:
+%   flashmovie.sty,test.tex,test-flv.tex,README
+%
+%
+%
+% The file "player_flv_maxi.swf" is NOT from me. This is the original flv-player 
+% from http://flv-player.net whose developer is neolao. 
+% This file is distributed under the MPL-license. See the directory 
+% "flv-player-license" for more information. The file "license.txt" in that directory
+% is from the original source-code of the flv-player. A copy of the MPL-license is also
+% included there.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% special thanks to following people for providing support, tips and improvements:
+%  - Elie Roux
+%  - Marco Aurélio Graciotto Silva
+%  - neolao
+%
+% changelog:
+%   0.2 : 2010-04-21 : major overhaul: keyval 'engine', flv-player-engine,...
+%   0.1 : 2010-04-13 : a bunch of bugfixes
+%   0.0 : 2009-12-06 : initial release
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This package allows direct embedding of flash movies into PDF files. It is
+% designed for use with pdflatex.
+%
+% Basically it uses the fact that the Adobe Reader 9 contains an embedded Adobe Flash 
+% player which can be invoked with the "rich media annotation" feature which is described 
+% in "Adobe Supplement to the ISO 32000 BaseVersion: 1.7 ExtensionLevel: 3".
+%
+% advantages:
+%   - You can directly embed videos into the pdf (external window is optimal and not necessary).
+%   - You can play back videos without worrying about platform dependencies.
+%
+% disadvantages:
+%   - You can only play back embedded videos with Adobe Reader 9 and upwards.
+%
+% usage:
+%   There are two fundamental different ways to embed videos via the
+%   flash-component of the Adobe Reader:
+%     - One can create a ".swf"-file and insert this directly
+%       into the pdf. See example (1) below.
+%     - One can create a ".mp4"-file and use that file as an input
+%       to a flash-video-player which renders the videos.
+%       Both files (the video and the flash-video-player) will be
+%       embedded into the pdf. See example(2) below.
+%       Different video formats (mp4/flv/whatever-the-flash-video-player-accepts/...)
+%       can be used. Controls are available (depends on the player).
+%       See example (2) below.
+%
+% flash-video-players:
+%   There are several flash-video-players available which fit the needs
+%   of flashmovie.sty. The different players can be selected with the key "engine",
+%   for example: "\flashmovie[width=10cm,height=10cm,engine=flv-player]{saturn5.mp4}".
+%
+%   The use of "engine=flv-player" is recommended, because it is supported best and
+%   the flv-player is included in this distribution.
+%
+%   List of flash-video-players:
+%    - "engine=flv-player". This is an open-source player from http://flv-player.net.
+%      It is included with this distribution (the file player_flv_maxi.swf).
+%      The developer is neolao. See the directory flv-player-license for the license of it.
+%      This is the player which flashmovie.sty supports best.
+%
+%      supported parameters:
+%        auto=0                   --> auto-play off (default)
+%        auto=1                   --> auto-play on
+%        image=some.jpeg          --> start-image (not necessary)
+%
+%    - "engine=acropro". This is an commercial player which is distributed with
+%      Acrobat 9 Pro. You have to obtain VideoPlayer.swf and SkinOverPlaySeekStop.swf 
+%      from Acrobat 9 Pro and put them into the working directory in order to use that module.
+%      It is NOT included in this distribution.
+%      For this player flashmovie.sty only provides rudimentary support.
+%    - "engine=jw-player". This is the JW player from http://www.longtailvideo.com/players/jw-flv-player.
+%      You have to obtain player.swf from that site and put it in the working directory in order
+%      to use this module.
+%      It is NOT included with this distribution.
+%      For this player flashmovie.sty only provides rudimentary support.
+%    - "engine=osplayer". This is an open-source player from http://www.osflv.com
+%      You have to obtain OSplayer.swf from that site and put it in the working directory in order
+%      to use this module.
+%      It is NOT included with this distribution.
+%      For this player flashmovie.sty only provides rudimentary support.
+%
+%
+% example (1)
+%   - download a video file to use, for example
+%        http://heasarc.gsfc.nasa.gov/Videos/historical/saturn5.avi
+%   - transform this video into the flash format with ffmpeg:
+%        ffmpeg -i saturn5.avi saturn5.swf
+%     (or use any other program capable of this, for example mencoder)
+%   - put following line into your tex-file:
+%        \flashmovie[width=10cm,height=10cm]{saturn5.swf}
+%     (both width and height are needed!)
+%   - translate with pdflatex
+%   - advantages:
+%     - easy
+%     - does not rely on external components
+%   - disadvantages:
+%     - ffmpeg is incapable of embedding h.264 into swf-files, so one can only 
+%       use inferior video codecs (sorenson h.263 aka flv,...).
+%     - no controls (play,pause,stop,seek,...) possible
+%
+% example (2)
+%   - download a video file to use, for example
+%        http://heasarc.gsfc.nasa.gov/Videos/historical/saturn5.avi
+%   - transform this video into the mp4 format with ffmpeg:
+%        ffmpeg -i saturn5.avi -vcodec libx264 -vpre hq -crf 22 -acodec libfaac -ab 128k -ac 2 saturn5.mp4
+%     (or use any other program capable of this, for example mencoder)
+%   - alternatively the flv-format with video-codec sorenson h.263 (aka flv) and audio-codec mp3 is also possible:
+%       mencoder saturn5.avi -o saturn5.flv -of lavf -ovc lavc -lavcopts vcodec=flv:vbitrate=300:mbd=2:mv0:trell:v4mv:cbp:last_pred=3 -srate 22050 -ofps 24 -vf harddup -oac mp3lame -lameopts abr:br=56 )
+%     (or use ffmpeg to do the same thing...)
+%   - put following line into your tex-file:
+%        \flashmovie[width=10cm,height=10cm,engine=flv-player,auto=1]{saturn5.mp4}
+%     (both width and height are needed! instead of saturn5.mp4 one can also use saturn5.flv but not saturn5.swf)
+%   - translate with pdflatex
+%   - advantages:
+%     - controls (play,pause,stop,seek,...) possible
+%     - superior video codec possible (h.264)
+%     - one can directly embed mp4 and flv files without conversion
+%
+% todo:
+%   - make more options of rich-media annotations usable, for example activation by clicking, play-count,...
+%
+% warning:
+%   - Because the file names of the movies are directly embedded into the PDFs please use only
+%     "normal" file names. More specific use only names compatible with internal PDF strings.
+%     There is even a specification what conforming file names are (see the PDF reference).
+
+\RequirePackage{keyval}
+\RequirePackage{ifthen}
+
+\ifnum\pdfminorversion<7 \pdfminorversion=7\fi
+
+\def\flashmovieempty{}
+\def\flashmoviezero{0}
+\def\flashmovieembedded{}
+
+\def\flashmovieparamsclear{
+  \def\flashmoviewidth {4cm}
+  \def\flashmovieheight{4cm}
+  \def\flashmovieimage{}
+  \def\flashmovieauto{0}
+  \def\flashmovieengine{}
+}
+
+\define@key{flashmovieparams}{width}      {\def\flashmoviewidth  {#1}}
+\define@key{flashmovieparams}{height}     {\def\flashmovieheight {#1}}
+\define@key{flashmovieparams}{image}      {\def\flashmovieimage  {#1}}
+\define@key{flashmovieparams}{auto}       {\def\flashmovieauto   {#1}}
+\define@key{flashmovieparams}{engine}     {\def\flashmovieengine {#1}}
+
+\newlength{\flashmovie@width}
+\newlength{\flashmovie@height}
+\newsavebox{\flashmovie@content}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%% variable module %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \flashmovieset{a}{b}   is equivalent to \def\a{b}
+% \flashmovieget{a}      is equivalent to \a if a is defined and otherwise it is empty
+%
+% example:
+%   \flashmovieset{aaa}{bla} \flashmovieget{aaa}     ------> produces bla
+%                            \flashmovieget{bbb}     ------> produces nothing if bbb is not defined
+
+\def\flashmovieset#1#2{{\expandafter\xdef\csname flashmovie@f@#1\endcsname{#2}}}
+
+% warning: command must be on one line so that there are no spaces generated !
+\def\flashmovieget#1{\expandafter\ifx\csname flashmovie@f@#1\endcsname\relax\expandafter\flashmovieempty\else\csname flashmovie@f@#1\endcsname\fi}
+
+%simpler:
+%  \def\flashmovieset#1#2{{\expandafter\xdef\csname#1\endcsname{#2}}}
+%  \def\flashmovieget#1{\expandafter\ifx\csname#1\endcsname\relax\expandafter\flashmovieempty\else\csname#1\endcsname\fi}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%% file embedding module %%%%%%%%%%%%%%%%%%%%%%%%
+%
+% usage:
+%    \flashmovieembedfile{somefile}
+%    \edef\flashmovie@e@somefile{\flashmovieembedded}
+
+\def\flashmovieembedfileinternal#1{
+  \immediate
+  \pdfobj stream
+     attr {  /Type/EmbeddedFile  }
+     file {#1}
+  \immediate
+  \pdfobj { << 
+      /Type /Filespec
+      /F  (#1)
+      /UF (#1)
+      /EF << /F \the\pdflastobj\space 0 R >>
+    >>}
+}
+
+\def\flashmovieembedfile#1{
+  \ifthenelse{\equal{\flashmovieget{\pdfmdfivesum file {#1}}}{\flashmovieempty}}{
+    \flashmovieembedfileinternal{#1}
+    \def\flashmovieembedded{\the\pdflastobj}
+    \flashmovieset{\pdfmdfivesum file {#1}}{\flashmovieembedded}
+  }{
+    \def\flashmovieembedded{\flashmovieget{\pdfmdfivesum file {#1}}}
+  }
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\flashmovie{\@ifnextchar[\@flashmovie{\@flashmovie[]}}
+
+\def\@flashmovie[#1]#2{\flashmovieparamsclear \setkeys{flashmovieparams}{#1}{
+  \ifx\flashmovieimage\flashmovieengine
+    \flashmovie@pureswf[#1]{#2}
+  \else
+
+    \ifthenelse{\equal{\flashmovieengine}{pure-swf}}
+    {\flashmovie@puresef[#1]{#2}}{}
+
+    \ifthenelse{\equal{\flashmovieengine}{flv-player}}
+    {\flashmovie@flvplayer[#1]{#2}}{}
+
+    \ifthenelse{\equal{\flashmovieengine}{acropro}}
+    {\flashmovie@acropro[#1]{#2}}{}
+
+    \ifthenelse{\equal{\flashmovieengine}{jw-player}}
+    {\flashmovie@jwplayer[#1]{#2}}{}
+
+    \ifthenelse{\equal{\flashmovieengine}{osplayer}}
+    {\flashmovie@osplayer[#1]{#2}}{}
+
+  \fi
+}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% pure swf
+
+\def\flashmovie@pureswf{\@ifnextchar[\@flashmovie@pureswf{\@flashmovie@pureswf[]}}
+
+\def\@flashmovie@pureswf[#1]#2{\flashmovieparamsclear \setkeys{flashmovieparams}{#1}{
+  \newcount\configurationnum
+  \newcount\contentnum
+  \newcount\settingsnum
+
+  \flashmovieembedfile{#2}
+  \edef\flashmovie@e@video{\flashmovieembedded}
+
+  \immediate
+  \pdfobj
+    {<<
+      /Instances
+        [<<
+          /Asset \flashmovie@e@video\space 0 R
+          /Params << /Binding /Foreground >>
+        >>]
+      /Subtype /Flash
+    >>}
+  \configurationnum=\pdflastobj
+
+  \immediate
+  \pdfobj
+    {<<
+      /Assets << /Names [(#2) \flashmovie@e@video\space 0 R] >>
+      /Configurations [\the\configurationnum\space 0 R]
+    >>}
+  \contentnum=\pdflastobj
+
+  \immediate
+  \pdfobj
+    {<<
+      /Activation 
+        << /Type /RichMediaActivation 
+           /Condition /PO 
+           /Configuration \the\configurationnum\space 0 R 
+           /Animation 
+             << /Subtype /Linear 
+                /Speed 1 
+                /Playcount 1 
+             >> 
+           /Presentation
+             << /PassContextClick false
+                /Style /Embedded 
+                /Toolbar false
+                /NavigationPane false
+                /Transparent true
+                /Window 
+                  << /Type /RichMediaWindow 
+                     /Width  << /Default 100 /Min 100 /Max 100 >> 
+                     /Height << /Default 100 /Min 100 /Max 100 >> 
+                     /Position 
+                       << /Type /RichMediaPosition 
+                          /HAlign /Near 
+                          /VAlign /Near 
+                          /HOffset 0 
+                          /VOffset 0 
+                       >> 
+                  >> 
+              >> 
+        >> 
+      /Deactivation 
+        << /Type /RichMediaDeactivation 
+           /Condition /XD 
+        >> 
+    >>}
+  \settingsnum=\pdflastobj
+
+  \sbox{\flashmovie@content} {{\hbox to \flashmoviewidth {\vbox to \flashmovieheight { }}}}
+
+  \settowidth {\flashmovie@width} {\usebox{\flashmovie@content}}
+  \settoheight{\flashmovie@height}{\usebox{\flashmovie@content}}
+  \usebox{\flashmovie@content}
+
+  \pdfannot width \flashmovie@width height \flashmovie@height depth 0pt {
+       /Subtype /RichMedia
+       /RichMediaContent  \the\contentnum\space 0 R 
+       /RichMediaSettings \the\settingsnum\space 0 R 
+}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% player from adobe acrobat pro
+
+\def\flashmovie@acropro{\@ifnextchar[\@flashmovie@acropro{\@flashmovie@acropro[]}}
+
+\def\@flashmovie@acropro[#1]#2{\flashmovieparamsclear \setkeys{flashmovieparams}{#1}{
+  \newcount\configurationnum
+  \newcount\contentnum
+  \newcount\settingsnum
+
+  \flashmovieembedfile{#2}
+  \edef\flashmovie@e@video{\flashmovieembedded}
+
+  \flashmovieembedfile{SkinOverPlaySeekStop.swf}
+  \edef\flashmovie@e@skin{\flashmovieembedded}
+
+  \flashmovieembedfile{VideoPlayer.swf}
+  \edef\flashmovie@e@player{\flashmovieembedded}
+  
+  \immediate
+  \pdfobj
+    {<<
+      /Instances
+        [<<
+          /Asset \flashmovie@e@player\space 0 R
+          /Params 
+            << 
+               /Binding /Foreground
+               /FlashVars (source=#2&skin=SkinOverPlaySeekStop.swf&skinAutoHide=true&skinBackgroundColor=0x00FF00&skinBackgroundAlpha=0.33&volume=1.00)
+            >>
+        >>]
+      /Subtype /Flash
+    >>}
+  \configurationnum=\pdflastobj
+
+  \immediate
+  \pdfobj
+    {<<
+      /Assets << /Names [(#2) \flashmovie@e@video\space 0 R (skinover.swf) \flashmovie@e@skin\space 0 R (VideoPlayer.swf) \flashmovie@e@player\space 0 R] >>
+      /Configurations [\the\configurationnum\space 0 R]
+    >>}
+  \contentnum=\pdflastobj
+
+  \immediate
+  \pdfobj
+    {<<
+      /Activation 
+        << /Type /RichMediaActivation 
+           /Condition /PO 
+           /Configuration \the\configurationnum\space 0 R 
+           /Animation 
+             << /Subtype /Linear 
+                /Speed 1 
+                /Playcount 1 
+             >> 
+           /Presentation
+             << /PassContextClick false
+                /Style /Embedded 
+                /Toolbar false
+                /NavigationPane false
+                /Transparent true
+                /Window 
+                  << /Type /RichMediaWindow 
+                     /Width  << /Default 100 /Min 100 /Max 100 >> 
+                     /Height << /Default 100 /Min 100 /Max 100 >> 
+                     /Position 
+                       << /Type /RichMediaPosition 
+                          /HAlign /Near 
+                          /VAlign /Near 
+                          /HOffset 0 
+                          /VOffset 0 
+                       >> 
+                  >> 
+              >> 
+        >> 
+      /Deactivation 
+        << /Type /RichMediaDeactivation 
+           /Condition /XD 
+        >> 
+    >>}
+  \settingsnum=\pdflastobj
+
+  \sbox{\flashmovie@content} {{\hbox to \flashmoviewidth {\vbox to \flashmovieheight { }}}}
+
+  \settowidth {\flashmovie@width} {\usebox{\flashmovie@content}}
+  \settoheight{\flashmovie@height}{\usebox{\flashmovie@content}}
+  \usebox{\flashmovie@content}
+
+  \pdfannot width \flashmovie@width height \flashmovie@height depth 0pt {
+       /Subtype /RichMedia
+       /RichMediaContent  \the\contentnum\space 0 R 
+       /RichMediaSettings \the\settingsnum\space 0 R 
+}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% flv-player from http://flv-player.net/players/maxi
+
+\def\flashmovie@flvplayer{\@ifnextchar[\@flashmovie@flvplayer{\@flashmovie@flvplayer[]}}
+
+\def\@flashmovie@flvplayer[#1]#2{\flashmovieparamsclear \setkeys{flashmovieparams}{#1}{
+  \newcount\configurationnum
+  \newcount\contentnum
+  \newcount\settingsnum
+
+  \flashmovieembedfile{#2}
+  \edef\flashmovie@e@video{\flashmovieembedded}
+
+  \flashmovieembedfile{player_flv_maxi.swf}
+  \edef\flashmovie@e@player{\flashmovieembedded}
+
+  % startimage is initialized here
+  \ifx\flashmovieimage\flashmovieempty
+    \def\flashmovieimagevari{}
+    \def\flashmovieimagevarii{}
+  \else
+    \flashmovieembedfile{\flashmovieimage}
+    \edef\flashmovie@e@image{\flashmovieembedded}
+    \def\flashmovieimagevari{&startimage=\flashmovieimage}
+    \def\flashmovieimagevarii{(\flashmovieimage) \flashmovie@e@image\space 0 R}
+  \fi
+
+  % autoplay is initialized here
+  \ifx\flashmovieauto\flashmoviezero
+    \def\flashmovieautovari{}
+  \else
+    \def\flashmovieautovari{&autoplay=1}
+  \fi
+
+  \immediate
+  \pdfobj
+    {<<
+      /Instances
+        [<<
+          /Asset \flashmovie@e@player\space 0 R
+          /Params 
+            << 
+               /Binding /Foreground
+               /FlashVars (flv=#2&margin=0&showvolume=1&showstop=1&showtime=1&videobgcolor=0xFFFFFF&\flashmovieautovari\flashmovieimagevari&loop=1)
+            >>
+        >>]
+      /Subtype /Flash
+    >>}
+  \configurationnum=\pdflastobj
+
+  \immediate
+  \pdfobj
+    {<<
+      /Assets << /Names 
+       [(#2) \flashmovie@e@video\space 0 R (player_flv_maxi.swf) \flashmovie@e@player\space 0 R \flashmovieimagevarii] >>
+      /Configurations [\the\configurationnum\space 0 R]
+    >>}
+  \contentnum=\pdflastobj
+
+  \immediate
+  \pdfobj
+    {<<
+      /Activation 
+        << /Type /RichMediaActivation 
+           /Condition /PO 
+           /Configuration \the\configurationnum\space 0 R 
+           /Animation 
+             << /Subtype /Linear 
+                /Speed 1 
+                /Playcount 1 
+             >> 
+           /Presentation
+             << /PassContextClick false
+                /Style /Embedded 
+                /Toolbar false
+                /NavigationPane false
+                /Transparent true
+                /Window 
+                  << /Type /RichMediaWindow 
+                     /Width  << /Default 100 /Min 100 /Max 100 >> 
+                     /Height << /Default 100 /Min 100 /Max 100 >> 
+                     /Position 
+                       << /Type /RichMediaPosition 
+                          /HAlign /Near 
+                          /VAlign /Near 
+                          /HOffset 0 
+                          /VOffset 0 
+                       >> 
+                  >> 
+              >> 
+        >> 
+      /Deactivation 
+        << /Type /RichMediaDeactivation 
+           /Condition /XD 
+        >> 
+    >>}
+  \settingsnum=\pdflastobj
+
+  \sbox{\flashmovie@content} {{\hbox to \flashmoviewidth {\vbox to \flashmovieheight { }}}}
+
+  \settowidth {\flashmovie@width} {\usebox{\flashmovie@content}}
+  \settoheight{\flashmovie@height}{\usebox{\flashmovie@content}}
+  \usebox{\flashmovie@content}
+
+  \pdfannot width \flashmovie@width height \flashmovie@height depth 0pt {
+       /Subtype /RichMedia
+       /RichMediaContent  \the\contentnum\space 0 R 
+       /RichMediaSettings \the\settingsnum\space 0 R }
+}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% JW Player from http://www.longtailvideo.com/players/jw-flv-player/
+
+\def\flashmovie@jwplayer{\@ifnextchar[\@flashmovie@jwplayer{\@flashmovie@jwplayer[]}}
+
+\def\@flashmovie@jwplayer[#1]#2{\flashmovieparamsclear \setkeys{flashmovieparams}{#1}{
+  \newcount\configurationnum
+  \newcount\contentnum
+  \newcount\settingsnum
+
+  \flashmovieembedfile{#2}
+  \edef\flashmovie@e@video{\flashmovieembedded}
+
+  \flashmovieembedfile{player.swf}
+  \edef\flashmovie@e@player{\flashmovieembedded}
+
+  \immediate
+  \pdfobj
+    {<<
+      /Instances
+        [<<
+          /Asset \flashmovie@e@player\space 0 R
+          /Params 
+            << 
+               /Binding /Foreground
+               /FlashVars (file=#2)
+            >>
+        >>]
+      /Subtype /Flash
+    >>}
+  \configurationnum=\pdflastobj
+
+  \immediate
+  \pdfobj
+    {<<
+      /Assets << /Names 
+       [(#2) \flashmovie@e@video\space 0 R (player.swf) \flashmovie@e@player\space 0 R] >>
+      /Configurations [\the\configurationnum\space 0 R]
+    >>}
+  \contentnum=\pdflastobj
+
+  \immediate
+  \pdfobj
+    {<<
+      /Activation 
+        << /Type /RichMediaActivation 
+           /Condition /PO 
+           /Configuration \the\configurationnum\space 0 R 
+           /Animation 
+             << /Subtype /Linear 
+                /Speed 1 
+                /Playcount 1 
+             >> 
+           /Presentation
+             << /PassContextClick false
+                /Style /Embedded 
+                /Toolbar false
+                /NavigationPane false
+                /Transparent true
+                /Window 
+                  << /Type /RichMediaWindow 
+                     /Width  << /Default 100 /Min 100 /Max 100 >> 
+                     /Height << /Default 100 /Min 100 /Max 100 >> 
+                     /Position 
+                       << /Type /RichMediaPosition 
+                          /HAlign /Near 
+                          /VAlign /Near 
+                          /HOffset 0 
+                          /VOffset 0 
+                       >> 
+                  >> 
+              >> 
+        >> 
+      /Deactivation 
+        << /Type /RichMediaDeactivation 
+           /Condition /XD 
+        >> 
+    >>}
+  \settingsnum=\pdflastobj
+
+  \sbox{\flashmovie@content} {{\hbox to \flashmoviewidth {\vbox to \flashmovieheight { }}}}
+
+  \settowidth {\flashmovie@width} {\usebox{\flashmovie@content}}
+  \settoheight{\flashmovie@height}{\usebox{\flashmovie@content}}
+  \usebox{\flashmovie@content}
+
+  \pdfannot width \flashmovie@width height \flashmovie@height depth 0pt {
+       /Subtype /RichMedia
+       /RichMediaContent  \the\contentnum\space 0 R 
+       /RichMediaSettings \the\settingsnum\space 0 R }
+}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% OSFlvPlayer from http://www.osflv.com
+
+\def\flashmovie@osplayer{\@ifnextchar[\@flashmovie@osplayer{\@flashmovie@osplayer[]}}
+
+\def\@flashmovie@osplayer[#1]#2{\flashmovieparamsclear \setkeys{flashmovieparams}{#1}{
+  \newcount\configurationnum
+  \newcount\contentnum
+  \newcount\settingsnum
+
+  \flashmovieembedfile{#2}
+  \edef\flashmovie@e@video{\flashmovieembedded}
+
+  \flashmovieembedfile{OSplayer.swf}
+  \edef\flashmovie@e@player{\flashmovieembedded}
+
+  \immediate
+  \pdfobj
+    {<<
+      /Instances
+        [<<
+          /Asset \flashmovie@e@player\space 0 R
+          /Params 
+            << 
+               /Binding /Foreground
+               /FlashVars (movie=#2)
+            >>
+        >>]
+      /Subtype /Flash
+    >>}
+  \configurationnum=\pdflastobj
+
+  \immediate
+  \pdfobj
+    {<<
+      /Assets << /Names 
+       [(#2) \flashmovie@e@video\space 0 R (OSplayer.swf) \flashmovie@e@player\space 0 R] >>
+      /Configurations [\the\configurationnum\space 0 R]
+    >>}
+  \contentnum=\pdflastobj
+
+  \immediate
+  \pdfobj
+    {<<
+      /Activation 
+        << /Type /RichMediaActivation 
+           /Condition /PO 
+           /Configuration \the\configurationnum\space 0 R 
+           /Animation 
+             << /Subtype /Linear 
+                /Speed 1 
+                /Playcount 1 
+             >> 
+           /Presentation
+             << /PassContextClick false
+                /Style /Embedded 
+                /Toolbar false
+                /NavigationPane false
+                /Transparent true
+                /Window 
+                  << /Type /RichMediaWindow 
+                     /Width  << /Default 100 /Min 100 /Max 100 >> 
+                     /Height << /Default 100 /Min 100 /Max 100 >> 
+                     /Position 
+                       << /Type /RichMediaPosition 
+                          /HAlign /Near 
+                          /VAlign /Near 
+                          /HOffset 0 
+                          /VOffset 0 
+                       >> 
+                  >> 
+              >> 
+        >> 
+      /Deactivation 
+        << /Type /RichMediaDeactivation 
+           /Condition /XD 
+        >> 
+    >>}
+  \settingsnum=\pdflastobj
+
+  \sbox{\flashmovie@content} {{\hbox to \flashmoviewidth {\vbox to \flashmovieheight { }}}}
+
+  \settowidth {\flashmovie@width} {\usebox{\flashmovie@content}}
+  \settoheight{\flashmovie@height}{\usebox{\flashmovie@content}}
+  \usebox{\flashmovie@content}
+
+  \pdfannot width \flashmovie@width height \flashmovie@height depth 0pt {
+       /Subtype /RichMedia
+       /RichMediaContent  \the\contentnum\space 0 R 
+       /RichMediaSettings \the\settingsnum\space 0 R }
+}}

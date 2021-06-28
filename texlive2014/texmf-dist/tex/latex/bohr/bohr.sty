@@ -1,0 +1,799 @@
+% --------------------------------------------------------------------------
+% the BOHR package
+% 
+%   simple atom representation according to the Bohr model
+% 
+% --------------------------------------------------------------------------
+% Clemens Niederberger
+% Web:    https://bitbucket.org/cgnieder/bohr/
+% E-Mail: contact@mychemistry.eu
+% --------------------------------------------------------------------------
+% Copyright 2012-2013 Clemens Niederberger
+% 
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+% 
+% This work has the LPPL maintenance status `maintained'.
+% 
+% The Current Maintainer of this work is Clemens Niederberger.
+% --------------------------------------------------------------------------
+% The bohr package consists of the files
+%  - bohr.sty
+%  - bohr_en.tex, bohr_en.pdf
+%  - bohr_elements_english.def, bohr_elements_german.def,
+%    bohr_elements_french.def
+%  - README
+% --------------------------------------------------------------------------
+% If you have any ideas, questions, suggestions or bugs to report, please
+% feel free to contact me.
+% --------------------------------------------------------------------------
+\newcommand*\@bohr@date{2013/11/10}
+\newcommand*\@bohr@version{v0.4}
+\newcommand*\@bohr@description{simple atom representation according to the Bohr model}
+
+\ProvidesPackage{bohr}[\@bohr@date\space \@bohr@version\space \@bohr@description]
+\RequirePackage{tikz,cnltx-base}
+
+% --------------------------------------------------------------------------
+% message handling
+\newcommand*\@bohr@error@message{%
+  For details have a look at the `exsheets' manual.%
+}
+
+\cnltx@create@generic@message{@bohr}{bohr}{Error}{\@bohr@error@message}
+\cnltx@create@generic@message{@bohr}{bohr}{Warning}{}
+\cnltx@create@generic@message{@bohr}{bohr}{WarningNoLine}{}
+\cnltx@create@generic@message{@bohr}{bohr}{Info}{}
+
+% --------------------------------------------------------------------------
+% options
+\newcommand*\@bohr@name@options{}
+\newcommand*\@bohr@write@atom[1]{#1}
+\newcommand*\@bohr@nucleus@radius{1em}
+\newcommand*\@bohr@electron@options{blue!50!black!50}
+\newcommand*\@bohr@electron@radius{1.5pt}
+\newcommand*\@bohr@shell@dist{1em}
+\newcommand*\@bohr@nucleus@options{draw=black!80,fill=black!10,opacity=.25}
+\newcommand*\@bohr@shell@options{draw=blue!75,thin}
+
+\newbool{bohr@insert@symbol}
+\newbool{bohr@insert@number}
+
+\newcommand*\@bohr@insert@symbol[2]{%
+  \ifbool{bohr@insert@symbol}
+    {%
+      \ifblank{#2}
+        {\@bohr@get@atom@symbol{#1}}
+        {\@bohr@write@atom{#2}}%
+    }
+    {\@bohr@write@atom{#2}}%
+}
+
+\newcommand\@bohr@add@options@to[2]{%
+  \edef#1{\expandonce#1,\unexpanded{#2}}%
+}
+
+\newcommand*\@bohr@option@deprecated[2]{%
+  \@bohr@warning{option `#1' has deprecated, use `#2' instead}%
+}
+
+\pgfkeys{
+  bohr/.cd,
+    insert-symbol/.is if       = bohr@insert@symbol ,
+    insert-number/.is if       = bohr@insert@number ,
+    insert-missing/.is choice,
+    insert-missing/true/.code  =
+      \booltrue{bohr@insert@symbol}\booltrue{bohr@insert@number} ,
+    insert-missing/false/.code =
+      \boolfalse{bohr@insert@symbol}\boolfalse{bohr@insert@number} ,
+    insert-missing/.default    = true ,
+    atom-style/.code           = \def\@bohr@write@atom{#1} ,
+    name-options-set/.code     = \def\@bohr@name@options{#1} ,
+    name-options-add/.code     =
+      \@bohr@add@options@to\@bohr@name@options{#1} ,
+    nucleus-radius/.code       = \def\@bohr@nucleus@radius{#1} ,
+    nucleus-options-set/.code  = \def\@bohr@nucleus@options{#1} ,
+    nucleus-options-add/.code  =
+      \@bohr@add@options@to\@bohr@nucleus@options{#1} ,
+    electron-radius/.code      = \def\@bohr@electron@radius{#1} ,
+    electron-options-set/.code = \def\@bohr@electron@options{#1} ,
+    electron-options-add/.code =
+      \@bohr@add@options@to\@bohr@electron@options{#1} ,
+    shell-dist/.code           = \def\@bohr@shell@dist{#1} ,
+    shell-options-set/.code    = \def\@bohr@shell@options{#1} ,
+    shell-options-add/.code    =
+      \@bohr@add@options@to\@bohr@shell@options{#1} ,
+    german/.code               =
+      \@bohr@option@deprecated{german}{language=german} ,
+    ngerman/.code              =
+      \@bohr@option@deprecated{ngerman}{language=german} ,
+    language/.code             = \def\@bohr@language{#1} ,
+    distribution-method/.is choice ,
+    distribution-method/periodic/.code =
+      \def\@bohr@draw@electrons{\@bohr@draw@electrons@periodic}
+      \def\@bohr@get@shell@num{\@bohr@get@shell@num@periodic} ,
+    distribution-method/quantum/.code =
+      \def\@bohr@draw@electrons{\@bohr@draw@electrons@quantum}
+      \def\@bohr@get@shell@num{\@bohr@get@shell@num@quantum}
+}
+
+\newrobustcmd\setbohr[1]{\pgfqkeys{/bohr}{#1}}
+
+\setbohr{distribution-method=quantum}
+
+\ProcessPgfOptions*
+
+% --------------------------------------------------------------------------
+% the \bohr command
+%   optional #1: number of shells
+%   #2: number of electrons
+%   #3: atom name
+\newrobustcmd*\bohr[3][]{\@bohr{#1}{#2}{#3}}
+
+\newcommand*\@bohr[3]{%
+  \ifblank{#2}% electron number given ?
+    {% no
+      \ifboolexpr{ bool {bohr@insert@number} and test {\ifblank{#3}} }
+        {%
+          \@bohr@error{I can't insert the electron number.}
+            {I can't insert the electron number. You haven't specified the
+            element.}%
+        }{%
+          \ifboolexpr
+            {
+              bool {bohr@insert@number} and not
+              test {\lowercase{\ifcsvoid{@bohr@atom@number@#3}}}
+            }
+            {%
+              \lowercase{%
+                \def\@bohr@electron@current@number{\csuse{@bohr@atom@number@#3}}}%
+            }{%
+              \@bohr@error{You must specify an electron number, possibly 0.}
+                {You must specify an electron number, possibly 0.}%
+            }%
+        }%
+    }{% yes
+      \ifnum#2<0\relax
+        \@bohr@error{The electron number cannot be negative!}
+          {The electron number cannot be negative!}%
+      \else
+        \ifnum#2>112\relax
+          \@bohr@warning{I only know atoms up to 112 (Copernicium). You
+            gave me #2 so I am using 112 instead.}
+          \def\@bohr@electron@current@number{112}%
+        \else
+          \def\@bohr@electron@current@number{#2}%
+        \fi
+      \fi
+    }%
+  \ifblank{#1}
+    {\@bohr@get@shell@num{\@bohr@electron@current@number}}
+    {
+      \@bohr@get@shell@num{\@bohr@electron@current@number}%
+      \ifnum#1<\@bohr@shell@num
+        \@bohr@warning{The shell number you provided (#1) is too small for the
+          electron number you provided (\@bohr@electron@current@number)! I'll
+          use \@bohr@shell@num\space shells.}%
+      \else
+        \ifnum#1>7\relax
+          \@bohr@warning{I know only of 7 electron shells. You gave me #1 so I'll
+            be using 7 instead.}
+          \def\@bohr@shell@num{7}%
+        \else
+          \def\@bohr@shell@num{#1}%
+        \fi
+      \fi
+    }%
+  \tikzpicture[baseline=(nucleus.base)]
+    \expandafter\node\expandafter[\@bohr@name@options]
+      (nucleus) at (0,0) {\@bohr@insert@symbol{\@bohr@electron@current@number}{#3}} ;
+    \expandafter\draw\expandafter[\@bohr@nucleus@options]
+      (nucleus) circle (\@bohr@nucleus@radius) ;
+    \foreach\@bohr@current@shell@num in {1,...,\@bohr@shell@num}
+      {
+        \expandafter\draw\expandafter[\@bohr@shell@options]
+          (nucleus) circle (\@bohr@nucleus@radius+\@bohr@current@shell@num*\@bohr@shell@dist) ;
+      }
+    \@bohr@draw@electrons{\@bohr@electron@current@number}
+  \endtikzpicture
+}
+
+\newcommand*\@bohr@get@shell@num@periodic[1]{%
+  \ifnum#1<3\relax
+    \def\@bohr@shell@num{1}%
+  \else
+    \ifnum#1<11\relax
+      \def\@bohr@shell@num{2}%
+    \else
+      \ifnum#1<19\relax
+        \def\@bohr@shell@num{3}%
+      \else
+        \ifnum#1<37\relax
+          \def\@bohr@shell@num{4}%
+        \else
+          \ifnum#1<55\relax
+            \def\@bohr@shell@num{5}%
+          \else
+            \ifnum#1<87\relax
+              \def\@bohr@shell@num{6}%
+            \else
+              \def\@bohr@shell@num{7}%
+            \fi
+          \fi
+        \fi
+      \fi
+    \fi
+  \fi
+}
+
+\newrobustcmd*\@bohr@distribute@electrons[4]{%
+  \pgfmathparse{int(#2)}%
+  \let\@bohr@last@electron\pgfmathresult
+  \ifnum\@bohr@last@electron=0\relax
+  \else
+    \foreach\@bohr@electron@number in {#1,...,\@bohr@last@electron}
+      {
+        \expandafter\fill\expandafter[\@bohr@electron@options] (nucleus)
+          ++(#3*\@bohr@electron@number-#3:\@bohr@nucleus@radius+#4*\@bohr@shell@dist)
+          circle (\@bohr@electron@radius) ;
+      }
+  \fi
+}
+
+% the simple model according to periods:
+\newcommand*\@bohr@draw@electrons@periodic[1]{%
+  \ifnum#1<1\relax\else
+    \ifnum#1<3\relax
+      \@bohr@distribute@electrons{1}{#1}{180}{1}%
+    \else
+      \ifnum#1<11\relax
+        \@bohr@distribute@electrons{1}{2}{180}{1}%
+        \@bohr@distribute@electrons{1}{#1-2}{45}{2}%
+      \else
+        \ifnum#1<19\relax
+          \@bohr@distribute@electrons{1}{2}{180}{1}%
+          \@bohr@distribute@electrons{1}{8}{45}{2}%
+          \@bohr@distribute@electrons{1}{#1-10}{45}{3}%
+        \else
+          \ifnum#1<37\relax
+            \@bohr@distribute@electrons{1}{2}{180}{1}%
+            \@bohr@distribute@electrons{1}{8}{45}{2}%
+            \@bohr@distribute@electrons{1}{8}{45}{3}%
+            \@bohr@distribute@electrons{1}{#1-18}{20}{4}%
+          \else
+            \ifnum#1<55\relax
+              \@bohr@distribute@electrons{1}{2}{180}{1}%
+              \@bohr@distribute@electrons{1}{8}{45}{2}%
+              \@bohr@distribute@electrons{1}{8}{45}{3}%
+              \@bohr@distribute@electrons{1}{18}{20}{4}%
+              \@bohr@distribute@electrons{1}{#1-36}{20}{5}%
+            \else
+              \ifnum#1<87\relax
+                \@bohr@distribute@electrons{1}{2}{180}{1}%
+                \@bohr@distribute@electrons{1}{8}{45}{2}%
+                \@bohr@distribute@electrons{1}{8}{45}{3}%
+                \@bohr@distribute@electrons{1}{18}{20}{4}%
+                \@bohr@distribute@electrons{1}{18}{20}{5}%
+                \@bohr@distribute@electrons{1}{#1-54}{11.25}{6}%
+              \else
+                \@bohr@distribute@electrons{1}{2}{180}{1}%
+                \@bohr@distribute@electrons{1}{8}{45}{2}%
+                \@bohr@distribute@electrons{1}{8}{45}{3}%
+                \@bohr@distribute@electrons{1}{18}{20}{4}%
+                \@bohr@distribute@electrons{1}{18}{20}{5}%
+                \@bohr@distribute@electrons{1}{32}{11.25}{6}%
+                \ifnum#1<113\relax
+                  \@bohr@distribute@electrons{1}{#1-86}{11.25}{7}%
+                \else
+                  \@bohr@distribute@electrons{1}{26}{11.25}{7}%
+                  \@bohr@warning{%
+                    I only know atoms up to 112 (Copernicium). You gave me
+                    #1 so I am using 112 instead.%
+                  }%
+                \fi
+              \fi
+            \fi
+          \fi
+        \fi
+      \fi
+    \fi
+  \fi
+}
+
+% --------------------------------------------------------------------------
+% electron distribution per electron number
+\newrobustcmd*\DeclareElectronDistribution[2]{%
+  \@bohr@define@electron@distribution{#1}{#2}%
+}
+\@onlypreamble\DeclareElectronDistribution
+
+\newrobustcmd*\setelectrondistribution[2]{%
+  \@bohr@define@electron@distribution{#1}{#2}%
+}
+
+\newrobustcmd*\@bohr@define@electron@distribution[2]{%
+  \csdef{@bohr@electron@distribution@\romannumeral#1}{#2}%
+}
+
+\newcounter{@bohr@shell@number}
+
+\newrobustcmd*\@bohr@get@shell@num@quantum[1]{%
+  \setcounter{@bohr@shell@number}{0}%
+  \cnltx@expandargs(nx)\forcsvlist
+    {\stepcounter{@bohr@shell@number}\@gobble}
+    {\csuse{@bohr@electron@distribution@\romannumeral#1}}%
+  \edef\@bohr@shell@num{\arabic{@bohr@shell@number}}%
+}
+
+\newrobustcmd*\@bohr@draw@electrons@quantum[1]{%
+  \cnltx@expandargs(x)\@bohr@get@shell@electrons
+    {\csuse{@bohr@electron@distribution@\romannumeral#1}}%
+}
+
+\newrobustcmd*\@bohr@get@shell@electrons[1]{%
+  \setcounter{@bohr@shell@number}{0}%
+  \forcsvlist{\@bohr@draw@shell@electrons}{#1}%
+}
+
+\newrobustcmd*\@bohr@draw@shell@electrons[1]{%
+  \stepcounter{@bohr@shell@number}%
+  \ifnum\value{@bohr@shell@number}=1\relax % n=1
+    \@bohr@distribute@electrons{1}{#1}{180}{1}%
+  \fi
+  \ifnum\value{@bohr@shell@number}=2\relax % n=2
+    \@bohr@distribute@electrons{1}{#1}{45}{2}%
+  \fi
+  \ifnum\value{@bohr@shell@number}=3\relax % n=3
+    \ifnum\numexpr#1\relax<9\relax
+      \@bohr@distribute@electrons{1}{#1}{45}{3}%
+    \else
+      \@bohr@distribute@electrons{1}{#1}{20}{3}%
+    \fi
+  \fi
+  \ifnum\value{@bohr@shell@number}=4\relax % n=4
+    \ifnum\numexpr#1\relax<9\relax
+      \@bohr@distribute@electrons{1}{#1}{45}{4}%
+    \else
+      \ifnum\numexpr#1\relax<18\relax
+        \@bohr@distribute@electrons{1}{#1}{20}{4}%
+      \else
+        \@bohr@distribute@electrons{1}{#1}{11.25}{4}%
+      \fi
+    \fi
+  \fi
+  \ifnum\value{@bohr@shell@number}=5\relax % n=5
+    \ifnum\numexpr#1\relax<9\relax
+      \@bohr@distribute@electrons{1}{#1}{45}{5}%
+    \else
+      \ifnum\numexpr#1\relax<18\relax
+        \@bohr@distribute@electrons{1}{#1}{20}{5}%
+      \else
+        \@bohr@distribute@electrons{1}{#1}{11.25}{5}%
+      \fi
+    \fi
+  \fi
+  \ifnum\value{@bohr@shell@number}=6\relax % n=6
+    \ifnum\numexpr#1\relax<9\relax
+      \@bohr@distribute@electrons{1}{#1}{45}{6}%
+    \else
+      \ifnum\numexpr#1\relax<18\relax
+        \@bohr@distribute@electrons{1}{#1}{20}{6}%
+      \else
+        \@bohr@distribute@electrons{1}{#1}{11.25}{6}%
+      \fi
+    \fi
+  \fi
+  \ifnum\value{@bohr@shell@number}=7\relax % n=7
+    \@bohr@distribute@electrons{1}{#1}{180}{7}%
+  \fi
+}
+
+% --------------------------------------------------------------------------
+% atomic numbers and element symbols and names
+\newrobustcmd*\@bohr@define@atom@symbol[2]{%
+  \csdef{@bohr@atom@symbol@num@\romannumeral#1}{#2}%
+  \lowercase{\csdef{@bohr@atom@number@#2}}{#1}%
+}
+\newrobustcmd*\@bohr@define@atom@name[3]{%
+  \csdef{@bohr@atom@name@\romannumeral#1}{#2}%
+  \lowercase{\csdef{@bohr@atom@name@num@#3}}{#1}%
+}
+
+% #1: optional name (umlauts...)
+% #2: atomic number
+% #3: element name
+\newrobustcmd*\DeclareAtomName[3][]{%
+  \ifblank{#1}
+    {\@bohr@define@atom@name{#2}{#3}{#3}}
+    {\@bohr@define@atom@name{#2}{#3}{#1}}%
+}
+% \@onlypreamble\DeclareAtomName
+\newrobustcmd*\setatomname[3][]{%
+  \ifblank{#1}
+    {\@bohr@define@atom@name{#2}{#3}{#3}}
+    {\@bohr@define@atom@name{#2}{#3}{#1}}%
+}
+
+% #1: atomic number
+% #2: element symbol
+\newrobustcmd*\DeclareAtomSymbol[2]{%
+  \@bohr@define@atom@symbol{#1}{#2}%
+}
+\@onlypreamble\DeclareAtomSymbol
+\newrobustcmd*\declareatomsymbol[2]{%
+  \@bohr@define@atom@symbol{#1}{#2}%
+}
+
+\newrobustcmd*\@bohr@get@atom@symbol[1]{%
+  \cnltx@expandargs(x)\@bohr@write@atom
+    {\csuse{@bohr@atom@symbol@num@\romannumeral#1}}%
+}
+\newrobustcmd*\@bohr@get@atom@number[1]{%
+  \lowercase{\csuse{@bohr@atom@number@#1}}%
+}
+\newcommand*\@bohr@get@atom@name[1]{%
+  \csuse{@bohr@atom@name@\romannumeral#1}%
+}
+
+\newrobustcmd*\@bohr@element@symbol[1]{%
+  \lowercase{\ifcsdef{@bohr@atom@name@num@#1}}
+    {\lowercase{\@bohr@get@atom@symbol{\csuse{@bohr@atom@name@num@#1}}}}
+    {\@bohr@get@atom@symbol{#1}}%
+}
+
+\newrobustcmd*\@bohr@atomic@number[1]{%
+  \lowercase{\ifcsdef{@bohr@atom@number@#1}}
+    {\@bohr@get@atom@number{#1}}
+    {\lowercase{\csuse{@bohr@atom@name@num@#1}}}%
+}
+
+\newrobustcmd*\@bohr@element@name[1]{%
+  \cnltx@ifisnum{#1}
+    {\@bohr@get@atom@name{#1}}
+    {\lowercase{\@bohr@get@atom@name{\csuse{@bohr@atom@number@#1}}}}%
+}
+
+\newrobustcmd*\elementsymbol[1]{\@bohr@element@symbol{#1}}
+\newrobustcmd*\atomicnumber[1]{\@bohr@atomic@number{#1}}
+\newrobustcmd*\elementname[1]{\@bohr@element@name{#1}}
+\AtBeginDocument{\ifdef\Z{}{\let\Z\atomicnumber}}
+
+% --------------------------------------------------------------------------
+% electron distribution
+\newcounter{@bohr@orbital@type}
+% \newbool{@bohr@short@elconf}
+
+\newrobustcmd*\elconf[1]{\@bohr@elconf{#1}}
+\newrobustcmd*\writeelconf[1]{\@bohr@read@elconf{#1}}
+
+\newcommand*\@bohr@elconf[1]{%
+  \cnltx@ifisnum{#1}
+    {\def\@bohr@tmpa{#1}}
+    {%
+      \lowercase{\ifcsdef{@bohr@atom@number@#1}}
+        {\lowercase{\edef\@bohr@tmpa{\csuse{@bohr@atom@number@#1}}}}
+        {\lowercase{\edef\@bohr@tmpa{\csuse{@bohr@atom@name@num@#1}}}}%
+    }%
+  \cnltx@expandargs(Nf)%
+  \def\@bohr@tmpb{%
+    \csuse{@bohr@electron@distribution@\romannumeral\@bohr@tmpa}%
+  }%
+  \expandafter\@bohr@read@elconf\expandafter{\@bohr@tmpb}%
+}
+
+\newrobustcmd*\@bohr@read@elconf[1]{%
+  \def\@bohr@current@elconf{}%
+  \setcounter{@bohr@shell@number}{0}%
+  \@bohr@getelconf{#1}%
+  \expandafter\@bohr@write@elconf\expandafter{\@bohr@current@elconf}%
+}
+
+\newcommand*\@bohr@getelconf[1]{%
+  \forcsvlist{\@bohr@getelconf@aux}{#1}%
+}
+\newcommand*\@bohr@getelconf@aux[1]{%
+  \stepcounter{@bohr@shell@number}%
+  \setcounter{@bohr@orbital@type}{0}%
+  \@bohr@parse@elconf#1+\q@stop
+}
+\protected\def\@bohr@parse@elconf#1+#2\q@stop{%
+  \eappto\@bohr@current@elconf{\arabic{@bohr@shell@number}}%
+  \ifcase\value{@bohr@orbital@type}\relax
+    \appto\@bohr@current@elconf{s}%
+  \or
+    \appto\@bohr@current@elconf{p}%
+  \or
+    \appto\@bohr@current@elconf{d}%
+  \or
+    \appto\@bohr@current@elconf{f}%
+  \fi
+  \appto\@bohr@current@elconf{^{#1}}%
+  \stepcounter{@bohr@orbital@type}%
+  \ifblank{#2}
+    {}
+    {\@bohr@parse@elconf#2\q@stop}%
+}
+
+\newrobustcmd*\@bohr@write@elconf[1]{$#1$}
+
+% --------------------------------------------------------------------------
+% declare atom symbols
+\DeclareAtomSymbol{1}{H}
+\DeclareAtomSymbol{2}{He}
+\DeclareAtomSymbol{3}{Li}
+\DeclareAtomSymbol{4}{Be}
+\DeclareAtomSymbol{5}{B}
+\DeclareAtomSymbol{6}{C}
+\DeclareAtomSymbol{7}{N}
+\DeclareAtomSymbol{8}{O}
+\DeclareAtomSymbol{9}{F}
+\DeclareAtomSymbol{10}{Ne}
+\DeclareAtomSymbol{11}{Na}
+\DeclareAtomSymbol{12}{Mg}
+\DeclareAtomSymbol{13}{Al}
+\DeclareAtomSymbol{14}{Si}
+\DeclareAtomSymbol{15}{P}
+\DeclareAtomSymbol{16}{S}
+\DeclareAtomSymbol{17}{Cl}
+\DeclareAtomSymbol{18}{Ar}
+\DeclareAtomSymbol{19}{K}
+\DeclareAtomSymbol{20}{Ca}
+\DeclareAtomSymbol{21}{Sc}
+\DeclareAtomSymbol{22}{Ti}
+\DeclareAtomSymbol{23}{V}
+\DeclareAtomSymbol{24}{Cr}
+\DeclareAtomSymbol{25}{Mn}
+\DeclareAtomSymbol{26}{Fe}
+\DeclareAtomSymbol{27}{Co}
+\DeclareAtomSymbol{28}{Ni}
+\DeclareAtomSymbol{29}{Cu}
+\DeclareAtomSymbol{30}{Zn}
+\DeclareAtomSymbol{31}{Ga}
+\DeclareAtomSymbol{32}{Ge}
+\DeclareAtomSymbol{33}{As}
+\DeclareAtomSymbol{34}{Se}
+\DeclareAtomSymbol{35}{Br}
+\DeclareAtomSymbol{36}{Kr}
+\DeclareAtomSymbol{37}{Rb}
+\DeclareAtomSymbol{38}{Sr}
+\DeclareAtomSymbol{39}{Y}
+\DeclareAtomSymbol{40}{Zr}
+\DeclareAtomSymbol{41}{Nb}
+\DeclareAtomSymbol{42}{Mo}
+\DeclareAtomSymbol{43}{Tc}
+\DeclareAtomSymbol{44}{Ru}
+\DeclareAtomSymbol{45}{Rh}
+\DeclareAtomSymbol{46}{Pd}
+\DeclareAtomSymbol{47}{Ag}
+\DeclareAtomSymbol{48}{Cd}
+\DeclareAtomSymbol{49}{In}
+\DeclareAtomSymbol{50}{Sn}
+\DeclareAtomSymbol{51}{Sb}
+\DeclareAtomSymbol{52}{Te}
+\DeclareAtomSymbol{53}{I}
+\DeclareAtomSymbol{54}{Xe}
+\DeclareAtomSymbol{55}{Cs}
+\DeclareAtomSymbol{56}{Ba}
+\DeclareAtomSymbol{57}{La}
+\DeclareAtomSymbol{58}{Ce}
+\DeclareAtomSymbol{59}{Pr}
+\DeclareAtomSymbol{60}{Nd}
+\DeclareAtomSymbol{61}{Pm}
+\DeclareAtomSymbol{62}{Sm}
+\DeclareAtomSymbol{63}{Eu}
+\DeclareAtomSymbol{64}{Gd}
+\DeclareAtomSymbol{65}{Tb}
+\DeclareAtomSymbol{66}{Dy}
+\DeclareAtomSymbol{67}{Ho}
+\DeclareAtomSymbol{68}{Er}
+\DeclareAtomSymbol{69}{Tm}
+\DeclareAtomSymbol{70}{Yb}
+\DeclareAtomSymbol{71}{Lu}
+\DeclareAtomSymbol{72}{Hf}
+\DeclareAtomSymbol{73}{Ta}
+\DeclareAtomSymbol{74}{W}
+\DeclareAtomSymbol{75}{Rh}
+\DeclareAtomSymbol{76}{Os}
+\DeclareAtomSymbol{77}{Ir}
+\DeclareAtomSymbol{78}{Pt}
+\DeclareAtomSymbol{79}{Au}
+\DeclareAtomSymbol{80}{Hg}
+\DeclareAtomSymbol{81}{Tl}
+\DeclareAtomSymbol{82}{Pb}
+\DeclareAtomSymbol{83}{Bi}
+\DeclareAtomSymbol{84}{Po}
+\DeclareAtomSymbol{85}{At}
+\DeclareAtomSymbol{86}{Rn}
+\DeclareAtomSymbol{87}{Fr}
+\DeclareAtomSymbol{88}{Ra}
+\DeclareAtomSymbol{89}{Ac}
+\DeclareAtomSymbol{90}{Th}
+\DeclareAtomSymbol{91}{Pa}
+\DeclareAtomSymbol{92}{U}
+\DeclareAtomSymbol{93}{Np}
+\DeclareAtomSymbol{94}{Pu}
+\DeclareAtomSymbol{95}{Am}
+\DeclareAtomSymbol{96}{Cm}
+\DeclareAtomSymbol{97}{Bk}
+\DeclareAtomSymbol{98}{Cf}
+\DeclareAtomSymbol{99}{Es}
+\DeclareAtomSymbol{100}{Fm}
+\DeclareAtomSymbol{101}{Md}
+\DeclareAtomSymbol{102}{No}
+\DeclareAtomSymbol{103}{Lr}
+\DeclareAtomSymbol{104}{Rf}
+\DeclareAtomSymbol{105}{Db}
+\DeclareAtomSymbol{106}{Sg}
+\DeclareAtomSymbol{107}{Bh}
+\DeclareAtomSymbol{108}{Hs}
+\DeclareAtomSymbol{109}{Mt}
+\DeclareAtomSymbol{110}{Ds}
+\DeclareAtomSymbol{111}{Rg}
+\DeclareAtomSymbol{112}{Cn}
+
+% --------------------------------------------------------------------------
+% declare electron distributions
+% period 1
+\DeclareElectronDistribution{1}{1}
+\DeclareElectronDistribution{2}{2}% He
+% period 2
+\DeclareElectronDistribution{3}{2,1}
+\DeclareElectronDistribution{4}{2,2}
+\DeclareElectronDistribution{5}{2,2+1}
+\DeclareElectronDistribution{6}{2,2+2}
+\DeclareElectronDistribution{7}{2,2+3}
+\DeclareElectronDistribution{8}{2,2+4}
+\DeclareElectronDistribution{9}{2,2+5}
+\DeclareElectronDistribution{10}{2,2+6}
+% period 3
+\DeclareElectronDistribution{11}{2,2+6,1}% Ne
+\DeclareElectronDistribution{12}{2,2+6,2}
+\DeclareElectronDistribution{13}{2,2+6,2+1}
+\DeclareElectronDistribution{14}{2,2+6,2+2}
+\DeclareElectronDistribution{15}{2,2+6,2+3}
+\DeclareElectronDistribution{16}{2,2+6,2+4}
+\DeclareElectronDistribution{17}{2,2+6,2+5}
+\DeclareElectronDistribution{18}{2,2+6,2+6}% Ar
+% period 4
+\DeclareElectronDistribution{19}{2,2+6,2+6,1}
+\DeclareElectronDistribution{20}{2,2+6,2+6,2}
+\DeclareElectronDistribution{21}{2,2+6,2+6+1,2}
+\DeclareElectronDistribution{22}{2,2+6,2+6+2,2}
+\DeclareElectronDistribution{23}{2,2+6,2+6+3,2}
+\DeclareElectronDistribution{24}{2,2+6,2+6+5,1}
+\DeclareElectronDistribution{25}{2,2+6,2+6+5,2}
+\DeclareElectronDistribution{26}{2,2+6,2+6+6,2}
+\DeclareElectronDistribution{27}{2,2+6,2+6+7,2}
+\DeclareElectronDistribution{28}{2,2+6,2+6+8,2}
+\DeclareElectronDistribution{29}{2,2+6,2+6+10,1}
+\DeclareElectronDistribution{30}{2,2+6,2+6+10,2}
+\DeclareElectronDistribution{31}{2,2+6,2+6+10,2+1}
+\DeclareElectronDistribution{32}{2,2+6,2+6+10,2+2}
+\DeclareElectronDistribution{33}{2,2+6,2+6+10,2+3}
+\DeclareElectronDistribution{34}{2,2+6,2+6+10,2+4}
+\DeclareElectronDistribution{35}{2,2+6,2+6+10,2+5}
+\DeclareElectronDistribution{36}{2,2+6,2+6+10,2+6}% Kr
+% period 5
+\DeclareElectronDistribution{37}{2,2+6,2+6+10,2+6,1}
+\DeclareElectronDistribution{38}{2,2+6,2+6+10,2+6,2}
+\DeclareElectronDistribution{39}{2,2+6,2+6+10,2+6+1,2}
+\DeclareElectronDistribution{40}{2,2+6,2+6+10,2+6+2,2}
+\DeclareElectronDistribution{41}{2,2+6,2+6+10,2+6+4,1}
+\DeclareElectronDistribution{42}{2,2+6,2+6+10,2+6+5,1}
+\DeclareElectronDistribution{43}{2,2+6,2+6+10,2+6+6,1}
+\DeclareElectronDistribution{44}{2,2+6,2+6+10,2+6+7,1}
+\DeclareElectronDistribution{45}{2,2+6,2+6+10,2+6+8,1}
+\DeclareElectronDistribution{46}{2,2+6,2+6+10,2+6+10}
+\DeclareElectronDistribution{47}{2,2+6,2+6+10,2+6+10,1}
+\DeclareElectronDistribution{48}{2,2+6,2+6+10,2+6+10,2}
+\DeclareElectronDistribution{49}{2,2+6,2+6+10,2+6+10,2+1}
+\DeclareElectronDistribution{50}{2,2+6,2+6+10,2+6+10,2+2}
+\DeclareElectronDistribution{51}{2,2+6,2+6+10,2+6+10,2+3}
+\DeclareElectronDistribution{52}{2,2+6,2+6+10,2+6+10,2+4}
+\DeclareElectronDistribution{53}{2,2+6,2+6+10,2+6+10,2+5}
+\DeclareElectronDistribution{54}{2,2+6,2+6+10,2+6+10,2+6}% Xe
+% period 6
+\DeclareElectronDistribution{55}{2,2+6,2+6+10,2+6+10,2+6,1}
+\DeclareElectronDistribution{56}{2,2+6,2+6+10,2+6+10,2+6,2}
+\DeclareElectronDistribution{57}{2,2+6,2+6+10,2+6+10,2+6+1,2}
+\DeclareElectronDistribution{58}{2,2+6,2+6+10,2+6+10+2,2+6,2}
+\DeclareElectronDistribution{59}{2,2+6,2+6+10,2+6+10+3,2+6,2}
+\DeclareElectronDistribution{60}{2,2+6,2+6+10,2+6+10+4,2+6,2}
+\DeclareElectronDistribution{61}{2,2+6,2+6+10,2+6+10+5,2+6,2}
+\DeclareElectronDistribution{62}{2,2+6,2+6+10,2+6+10+6,2+6,2}
+\DeclareElectronDistribution{63}{2,2+6,2+6+10,2+6+10+7,2+6,2}
+\DeclareElectronDistribution{64}{2,2+6,2+6+10,2+6+10+7,2+6+1,2}
+\DeclareElectronDistribution{65}{2,2+6,2+6+10,2+6+10+9,2+6,2}
+\DeclareElectronDistribution{66}{2,2+6,2+6+10,2+6+10+10,2+6,2}
+\DeclareElectronDistribution{67}{2,2+6,2+6+10,2+6+10+11,2+6,2}
+\DeclareElectronDistribution{68}{2,2+6,2+6+10,2+6+10+12,2+6,2}
+\DeclareElectronDistribution{69}{2,2+6,2+6+10,2+6+10+13,2+6,2}
+\DeclareElectronDistribution{70}{2,2+6,2+6+10,2+6+10+14,2+6,2}
+\DeclareElectronDistribution{71}{2,2+6,2+6+10,2+6+10+14,2+6+1,2}
+\DeclareElectronDistribution{72}{2,2+6,2+6+10,2+6+10+14,2+6+2,2}
+\DeclareElectronDistribution{73}{2,2+6,2+6+10,2+6+10+14,2+6+3,2}
+\DeclareElectronDistribution{74}{2,2+6,2+6+10,2+6+10+14,2+6+4,2}
+\DeclareElectronDistribution{75}{2,2+6,2+6+10,2+6+10+14,2+6+5,2}
+\DeclareElectronDistribution{76}{2,2+6,2+6+10,2+6+10+14,2+6+6,2}
+\DeclareElectronDistribution{77}{2,2+6,2+6+10,2+6+10+14,2+6+7,2}
+\DeclareElectronDistribution{78}{2,2+6,2+6+10,2+6+10+14,2+6+9,1}
+\DeclareElectronDistribution{79}{2,2+6,2+6+10,2+6+10+14,2+6+10,1}
+\DeclareElectronDistribution{80}{2,2+6,2+6+10,2+6+10+14,2+6+10,2}
+\DeclareElectronDistribution{81}{2,2+6,2+6+10,2+6+10+14,2+6+10,2+1}
+\DeclareElectronDistribution{82}{2,2+6,2+6+10,2+6+10+14,2+6+10,2+2}
+\DeclareElectronDistribution{83}{2,2+6,2+6+10,2+6+10+14,2+6+10,2+3}
+\DeclareElectronDistribution{84}{2,2+6,2+6+10,2+6+10+14,2+6+10,2+4}
+\DeclareElectronDistribution{85}{2,2+6,2+6+10,2+6+10+14,2+6+10,2+5}
+\DeclareElectronDistribution{86}{2,2+6,2+6+10,2+6+10+14,2+6+10,2+6}% Rn
+% period 7
+\DeclareElectronDistribution{87}{2,2+6,2+6+10,2+6+10+14,2+6+10,2+6,1}
+\DeclareElectronDistribution{88}{2,2+6,2+6+10,2+6+10+14,2+6+10,2+6,2}
+\DeclareElectronDistribution{89}{2,2+6,2+6+10,2+6+10+14,2+6+10,2+6+1,2}
+\DeclareElectronDistribution{90}{2,2+6,2+6+10,2+6+10+14,2+6+10,2+6+2,2}
+\DeclareElectronDistribution{91}{2,2+6,2+6+10,2+6+10+14,2+6+10+2,2+6+1,2}
+\DeclareElectronDistribution{92}{2,2+6,2+6+10,2+6+10+14,2+6+10+3,2+6+1,2}
+\DeclareElectronDistribution{93}{2,2+6,2+6+10,2+6+10+14,2+6+10+4,2+6+1,2}
+\DeclareElectronDistribution{94}{2,2+6,2+6+10,2+6+10+14,2+6+10+6,2+6,2}
+\DeclareElectronDistribution{95}{2,2+6,2+6+10,2+6+10+14,2+6+10+7,2+6,2}
+\DeclareElectronDistribution{96}{2,2+6,2+6+10,2+6+10+14,2+6+10+7,2+6+1,2}
+\DeclareElectronDistribution{97}{2,2+6,2+6+10,2+6+10+14,2+6+10+9,2+6,2}
+\DeclareElectronDistribution{98}{2,2+6,2+6+10,2+6+10+14,2+6+10+10,2+6,2}
+\DeclareElectronDistribution{99}{2,2+6,2+6+10,2+6+10+14,2+6+10+11,2+6,2}
+\DeclareElectronDistribution{100}{2,2+6,2+6+10,2+6+10+14,2+6+10+12,2+6,2}
+\DeclareElectronDistribution{101}{2,2+6,2+6+10,2+6+10+14,2+6+10+13,2+6,2}
+\DeclareElectronDistribution{102}{2,2+6,2+6+10,2+6+10+14,2+6+10+14,2+6,2}
+\DeclareElectronDistribution{103}{2,2+6,2+6+10,2+6+10+14,2+6+10+14,2+6+1,2}
+\DeclareElectronDistribution{104}{2,2+6,2+6+10,2+6+10+14,2+6+10+14,2+6+2,2}
+\DeclareElectronDistribution{105}{2,2+6,2+6+10,2+6+10+14,2+6+10+14,2+6+3,2}
+\DeclareElectronDistribution{106}{2,2+6,2+6+10,2+6+10+14,2+6+10+14,2+6+4,2}
+\DeclareElectronDistribution{107}{2,2+6,2+6+10,2+6+10+14,2+6+10+14,2+6+5,2}
+\DeclareElectronDistribution{108}{2,2+6,2+6+10,2+6+10+14,2+6+10+14,2+6+6,2}
+\DeclareElectronDistribution{109}{2,2+6,2+6+10,2+6+10+14,2+6+10+14,2+6+7,2}
+\DeclareElectronDistribution{110}{2,2+6,2+6+10,2+6+10+14,2+6+10+14,2+6+9,1}
+\DeclareElectronDistribution{111}{2,2+6,2+6+10,2+6+10+14,2+6+10+14,2+6+10,1}
+\DeclareElectronDistribution{112}{2,2+6,2+6+10,2+6+10+14,2+6+10+14,2+6+10,2}
+
+% --------------------------------------------------------------------------
+% extandable language settings
+\RequirePackage{translations}
+\AfterEndPreamble{
+  % this will load a file `bohr_elements_<lang>.def', <lang> is a
+  % `translations' base language
+  % currently only German and English are available, English being the
+  % fallback; other languages are added by providing the corresponding file
+  \ifdef\@bohr@language
+    {\edef\@bohr@language{\@trnslt@language{\@bohr@language}}}
+    {\def\@bohr@language{\@trnslt@language{\@trnslt@current@language}}}
+  \InputIfFileExists
+    {bohr_elements_\@bohr@language.def}
+    {}
+    {\input{bohr_elements_english.def}}
+}
+
+\endinput
+
+% HISTORY
+2012/09/21 v0.1a - first version on bitbucket
+2012/09/22 v0.2  - added compatibility up to atomic number 112
+                 - added the commands \elementname and \elementsymbol with
+                   language support German and English
+                 - improved error checking
+2012/12/30 v0.2c - bug fixes in error checking
+2013/07/25 v0.2d - bug fix in warning message
+                 - added missing \@bohr@write@atom to \@bohr@insert@symbol
+                 - extended language support, added french element names
+                 - corrected name of Praseodynium
+2013/11/05 v0.3  - draw shell electrons according to main quantum number
+                 - French language file
+2013/11/10 v0.4  - allow `0' as value in electron distribution => this enables
+                   to draw excited states
+                 - new commands \setatomname, \setatomsymbol,
+                   \setelectrondistribution
+                 - new commands \elconf and \writeelconf
+                 - \elementsymbol prints symbols according to option
+                   `atom-style'

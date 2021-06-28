@@ -1,0 +1,269 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% fixocgx.sty
+%
+% Copyright 2015--\today, Alexander Grahn
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This package extends the usability of `ocgx' to all known engines including
+% latex+dvips+ps2pdf, xelatex and latex+dvipdfmx.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://mirrors.ctan.org/help/Catalogue/licenses.lppl.html
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+%
+% The Current Maintainer of this work is A. Grahn.
+
+\RequirePackage{xparse}
+\RequirePackage{atenddvi}
+\RequirePackage{ifpdf}
+
+%prevent ocg-p from inserting PS specials in dvipdfmx mode
+\ifpdf\else
+  \DeclareOption{dvipdfmx}{\@ocgp@ifpsfalse}
+  \ProcessOptions\relax
+\fi
+
+\@ifpackageloaded{ocgx}{}{
+  \PackageError{fixocgx}{%
+    Package `fixocgx' must be loaded /after/ one of\MessageBreak
+    \space\space\string\usepackage{ocgx}\MessageBreak
+    or\MessageBreak
+    \space\space\string\usetikzlibrary{ocgx}
+  }{}%
+}
+
+\AtBeginDocument{
+  \@ifpackageloaded{media9}{}{\RequirePackage{media9}}
+  \@ifpackagelater{media9}{2015/01/21}{}{
+    \PackageError{fixocgx}{%
+      Requires package `media9' v0.49 [2015/01/21] or\MessageBreak
+      newer, but only v\g@mix@version@tl\space[\g@mix@date@tl] is available
+    }{}%
+  }
+}
+
+\ProvidesExplPackage{fixocgx}{2015/03/16}{0.4}
+{ports `ocgx' functionality to dvips+ps2pdf, xelatex and dvipdfmx}
+
+%re-implement ocg-p's `ocg' environment
+\DeclareDocumentEnvironment{ocg}{O{}mmm}{
+  \bool_if:NT\g_fxocg_nestedB_bool{\tl_gput_right:Nx\@ocgbase@ocgorder{~[}}
+  \bool_gset_true:N\g_fxocg_nestedB_bool
+  \bool_gset_false:N\g_fxocg_nestedE_bool
+  \group_begin:
+    \tl_if_exist:cTF{fxocg@#3}{ %re-open existing layer
+      \tl_set:Nx\l_tempa_tl{[ocgp]{ocg}{\use:c{fxocg@#3.opts},#1}}
+      \exp_after:wN\setkeys\l_tempa_tl
+      \int_compare:nT{\@ocgp@listno=\c_zero}{
+        \tl_gput_right:Nx\@ocgbase@ocgorder{~\use:c{fxocg@#3}}
+      }
+    }{
+      \tl_gset:cn{fxocg@#3.opts}{#1}
+      \setkeys[ocgp]{ocg}{#1}
+      \mix_pdfobj:nnn{}{dict}{
+        /Type/OCG/Name~(#2)/Usage<<\l_fxocg_view_tl\@ocgp@print\@ocgp@export>>
+      }
+      \tl_gput_right:Nx\@ocgbase@ocgs{\space\g_mix_pdflastobj_tl}
+      \int_compare:nT{#4==\c_zero}{
+        \tl_gput_right:Nx\@ocgbase@offocgs{\space\g_mix_pdflastobj_tl}
+      }
+      \tl_gset:cx{fxocg@#3}{\g_mix_pdflastobj_tl}
+      \int_compare:nF{\@ocgp@listno=\c_one}{
+        \tl_gput_right:Nx\@ocgbase@ocgorder{~\g_mix_pdflastobj_tl}
+      }
+      \iow_now:Nx\@auxout{
+        \token_to_str:N\expandafter\xdef\token_to_str:N\csname
+        \space OCGpdfobj#3\endcsname{\g_mix_pdflastobj_tl}
+      }
+    }
+    \bool_if:nT{
+      !\cs_if_exist_p:c{OCGpdfobj#3} ||
+      !\str_if_eq_x_p:nn{\use:c{OCGpdfobj#3}}{\use:c{fxocg@#3}}
+    }{
+      \cs_if_exist:NF\g_fxocg_rerunwarned_tl{
+        \tl_new:N\g_fxocg_rerunwarned_tl
+        \AtEndDocument{\msg_warning:nn{fixocgx}{rerun}}
+      }
+    }
+    \tl_gset:cx{OCGpdfobj#3}{\use:c{fxocg@#3}}
+    \seq_gput_left:Nx\g_fixocg_ocgstack_seq{\use:c{fxocg@#3}}
+  \group_end:
+  \mix_pdfbdc:nn{/OC}{\use:c{fxocg@#3}}
+  \ignorespaces
+}{
+  \unskip
+  \mix_pdfemc:
+  \seq_gpop_left:NN\g_fixocg_ocgstack_seq\l_tempa_tl
+  \bool_if:NT\g_fxocg_nestedE_bool{\tl_gput_right:Nx\@ocgbase@ocgorder{~]}}
+  \bool_gset_true:N\g_fxocg_nestedE_bool
+  \bool_gset_false:N\g_fxocg_nestedB_bool
+}
+\bool_new:N\g_fxocg_nestedB_bool % nested OCG begin
+\bool_new:N\g_fxocg_nestedE_bool % nested OCG end
+
+%stack of PDF obj references of currently open OCGs
+\seq_new:N\g_fixocg_ocgstack_seq
+%macro that inserts /OC <<OCMD with currently open OCGs>> entry;
+%for use within annotation dicts
+\tl_set:Nn\fxocg@insert@OC{
+  \seq_if_empty:NF\g_fixocg_ocgstack_seq{
+    /OC~<</Type/OCMD/OCGs~[\seq_use:Nn\g_fixocg_ocgstack_seq{~}]/P/AllOn>>
+  }
+}
+
+%workaround for ocg buttons (from tikzlibraryocgx.code.tex)
+%with dvipdfmx and xelatex
+\cs_set:Nn\fxocg_pdflink:nn{
+  \bool_if:nTF{
+    \g_mix_dvipdfmx_bool && \cs_if_exist_p:N\pgfpictureid
+  }{
+    \hbox_set:Nn\l_tmpa_box{#2}
+    \mix_pdfannot:nnnn{
+      \dim_use:N\box_wd:N\l_tmpa_box}{
+      \dim_use:N\box_ht:N\l_tmpa_box}{
+      \dim_use:N\box_dp:N\l_tmpa_box
+    }{#1}
+    \box_use_clear:N\l_tmpa_box
+  }{
+    \mix_pdflink:nn{#1}{#2}
+  }
+}
+
+%re-implement commands from ocgx.sty (all engines including ps2pdf [gs>=9.15])
+\long\def\switchocg#1#2{
+  \tl_set:Nn\l_fxocg_ocglist_tl{}
+  \seq_set_split:Nnn\l_fxocg_ocglistarg_seq{~}{#1}
+  \seq_map_variable:NNn\l_fxocg_ocglistarg_seq\l_tempa_tl{
+    \fxocg_process_ocgref:NN\l_fxocg_ocglist_tl\l_tempa_tl
+  }
+  \leavevmode
+  \fxocg_pdflink:nn{
+    /Subtype/Link
+    /A <</S/SetOCGState /State [/Toggle~\l_fxocg_ocglist_tl]>>
+    /Border [0~0~0]
+  }{#2}
+}
+
+\long\def\showocg#1#2{
+  \tl_set:Nn\l_fxocg_ocglist_tl{}
+  \seq_set_split:Nnn\l_fxocg_ocglistarg_seq{~}{#1}
+  \seq_map_variable:NNn\l_fxocg_ocglistarg_seq\l_tempa_tl{
+    \fxocg_process_ocgref:NN\l_fxocg_ocglist_tl\l_tempa_tl
+  }
+  \leavevmode
+  \fxocg_pdflink:nn{
+    /Subtype/Link
+    /A <</S/SetOCGState/State [/ON~\l_fxocg_ocglist_tl]>>
+    /Border [0~0~0]
+  }{#2}
+}
+
+\long\def\hideocg#1#2{
+  \tl_set:Nn\l_fxocg_ocglist_tl{}
+  \seq_set_split:Nnn\l_fxocg_ocglistarg_seq{~}{#1}
+  \seq_map_variable:NNn\l_fxocg_ocglistarg_seq\l_tempa_tl{
+    \fxocg_process_ocgref:NN\l_fxocg_ocglist_tl\l_tempa_tl
+  }
+  \leavevmode
+  \fxocg_pdflink:nn{
+    /Subtype/Link
+    /A <</S/SetOCGState/State [/OFF~\l_fxocg_ocglist_tl]>>
+    /Border [0~0~0]
+  }{#2}
+}
+
+\long\def\actionsocg#1#2#3#4{
+  \tl_set:Nn\l_fxocg_toswitch_tl{}
+  \seq_set_split:Nnn\l_fxocg_ocglistarg_seq{~}{#1}
+  \seq_map_variable:NNn\l_fxocg_ocglistarg_seq\l_tempa_tl{
+    \fxocg_process_ocgref:NN\l_fxocg_toswitch_tl\l_tempa_tl
+  }
+  \tl_set:Nn\l_fxocg_toshow_tl{}
+  \seq_set_split:Nnn\l_fxocg_ocglistarg_seq{~}{#2}
+  \seq_map_variable:NNn\l_fxocg_ocglistarg_seq\l_tempa_tl{
+    \fxocg_process_ocgref:NN\l_fxocg_toshow_tl\l_tempa_tl
+  }
+  \tl_set:Nn\l_fxocg_tohide_tl{}
+  \seq_set_split:Nnn\l_fxocg_ocglistarg_seq{~}{#3}
+  \seq_map_variable:NNn\l_fxocg_ocglistarg_seq\l_tempa_tl{
+    \fxocg_process_ocgref:NN\l_fxocg_tohide_tl\l_tempa_tl
+  }
+  \leavevmode
+  \fxocg_pdflink:nn{
+    /Subtype/Link
+    /A <</S/SetOCGState
+      /State [
+        /Toggle~\l_fxocg_toswitch_tl~/ON~\l_fxocg_toshow_tl
+        /OFF~\l_fxocg_tohide_tl
+      ]
+    >>
+    /Border [0~0~0]
+  }{#4}
+}
+
+\cs_new:Nn\fxocg_process_ocgref:NN{
+  \tl_if_exist:cTF{OCGpdfobj#2}{\tl_put_right:Nx#1{~\use:c{OCGpdfobj#2}}}{
+    \msg_warning:nnx{fixocgx}{undefined~OCG}{#2}
+    \cs_if_exist:NF\g_fxocg_refundefwarned_tl{
+      \tl_new:N\g_fxocg_refundefwarned_tl
+      \AtEndDocument{\msg_warning:nn{fixocgx}{undefined~OCGs}}
+    }
+  }
+}
+
+\define@choicekey*[ocgp]{ocg}{viewocg}[\l_fxocg_viewbin_tl\l_fxocg_viewno_tl]{always,never,ifvisible}[ifvisible]{%
+  \if_case:w\l_fxocg_viewno_tl
+    \def\l_fxocg_view_tl{/View<</ViewState/ON>>}
+  \or:%
+    \def\l_fxocg_view_tl{/View<</ViewState/OFF>>}
+  \or:
+    \def\l_fxocg_view_tl{}
+  \fi:
+}
+\presetkeys[ocgp]{ocg}{viewocg=ifvisible,printocg=ifvisible,exportocg=ifvisible,listintoolbar=iffirstuse}{}
+
+\group_begin:
+\char_set_catcode_active:N\+\let+\space
+\tl_gset:Nx\g_fxocg_gsoldwarning_tl{
+  {product~(Ghostscript)~search~{pop~pop~pop~true}{pop~false}ifelse~
+   revision~915~lt~and~{
+  (\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
+  @@++++++++++++Warning:+Ghostscript+too+old!++++++++++++++++@@\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
+  @@+++++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+Package+`fixocgx'+requires+Ghostscript+version+>=+9.15.+@@\token_to_str:N\n
+  @@+Otherwise,+PDF+layers+will+not+work.++++++++++++++++++++@@\token_to_str:N\n
+  @@+++++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+Get+current+version+from++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+http://www.ghostscript.com/download+++++++++++++++++++++@@\token_to_str:N\n
+  @@+++++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n)
+  print}~if}~?pdfmark
+}
+\group_end:
+
+\AtBeginDocument{
+  \ifpdf\else
+    \bool_if:NF\g_mix_dvipdfmx_bool{
+      \AtEndDvi{\special{ps::[nobreak]\g_fxocg_gsoldwarning_tl}}
+    }
+  \fi
+}
+
+\msg_set:nnn{fixocgx}{rerun}{Rerun~to~get~OCG~references~right!}
+\msg_set:nnn{fixocgx}{undefined~OCG}{
+  Line~\msg_line_number: :~OCG~`#1'~is~not~defined.
+}
+\msg_set:nnn{fixocgx}{undefined~OCGs}{There~were~undefined~OCGs!}
+

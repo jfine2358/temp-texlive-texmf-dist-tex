@@ -1,0 +1,2811 @@
+%%
+%% This is file `rubikcube.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% rubikcube.dtx  (with options: `rubikcube')
+%% 
+%% -----------------------------------------------------------------
+%%   Authors: RWD Nickalls (dick@nickalls.org)
+%%           and Apostolos Syropoulos (asyropoulos@yahoo.com)
+%% 
+%%   Copyright   February 25, 2018  RWD Nickalls and A Syropoulos
+%% 
+%%   VERSION 5.0
+%% 
+%%   This work may be distributed and/or modified under the
+%%   conditions of the LaTeX Project Public License, either
+%%   version 1.3c of this license or (at your option) any
+%%   later version: <http://www.latex-project.org/lppl.txt>
+%% 
+%%   This work consists of the files listed in the README file.
+%% -----------------------------------------------------------------
+%% 
+%%   This is a LaTeX/TikZ package for drawing Rubik cubes
+%%   Please report errors or suggestions for improvement to
+%% 
+%%          RWD Nickalls  (dick@nickalls.org)
+%%          Apostolos Syropoulos (asyropoulos@yahoo.com)
+%% 
+%%   This package requires the basic TikZ package to be loaded already
+%% ------------------------------------------------------------------
+%%% \CheckSum{6231}
+%%% \CharacterTable
+%%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%%   Digits        \0\1\2\3\4\5\6\7\8\9
+%%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%%   Dollar        \$     Percent       \%     Ampersand     \&
+%%   Acute accent  \'     Left paren    \(     Right paren   \)
+%%   Asterisk      \*     Plus          \+     Comma         \,
+%%   Minus         \-     Point         \.     Solidus       \/
+%%   Colon         \:     Semicolon     \;     Less than     \<
+%%   Equals        \=     Greater than  \>     Question mark \?
+%%   Commercial at \@     Left bracket  \[     Backslash     \\
+%%   Right bracket \]     Circumflex    \^     Underscore    \_
+%%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%%   Right brace   \}     Tilde         \~}
+
+
+%% \textsc{white space}: \
+
+
+%%  \DescribeMacro{\RubikCubeSolvedWB}
+
+\def\RCfileversion{5.0}%
+\def\RCfiledate{2018/02/25}% February 25, 2018
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{rubikcube}[\RCfiledate\space (v\RCfileversion)]
+\@ifpackageloaded{tikz}{}{%
+  \typeout{---rubikcube requires the TikZ package.}%
+  \RequirePackage{tikz}}%
+\@ifpackageloaded{forarray}{}{%
+  \typeout{---rubikcube requires the Forarray package.}%
+  \RequirePackage{forarray}}%
+\@ifpackageloaded{ifthen}{}{%
+  \typeout{---rubikcube requires the IfThen package.}%
+  \RequirePackage{ifthen}}%
+\newcommand{\rubikcube}{\textsc{rubikcube}}%
+\newcommand{\Rubikcube}{\textsc{Rubikcube}}%
+\definecolor{R}{HTML}{C41E33}%
+\definecolor{G}{HTML}{00BE38}%
+\definecolor{B}{HTML}{0051BA}%
+\definecolor{Y}{HTML}{FFFF00}%
+\colorlet{X}{black!30}% grey
+\colorlet{O}{orange}%
+\colorlet{W}{white}%
+\newcommand{\@rubikfont}{\fontsize{10}{12pt}\usefont{T1}{cmss}{bx}{n}}
+\newcommand{\@rubikfontFNS}{\fontsize{8}{12pt}\usefont{T1}{cmss}{bx}{n}}
+\newcommand{\@rubikprime}{'}
+\newlength{\@showcubewidth}%
+\newcommand{\ShowCube}[3]{%
+  \setlength{\fboxsep}{0cm}%
+  \setlength{\@showcubewidth}{#1}%
+  \advance\@showcubewidth by 1.6pt\relax%
+  \begin{minipage}{\the\@showcubewidth}%
+  \centering%
+  \begin{tikzpicture}[scale=#2]%
+  #3%
+  \end{tikzpicture}%
+  \end{minipage}%
+}%
+\newcommand{\ShowCubeF}[3]{%
+  \setlength{\fboxsep}{0cm}%
+  \setlength{\fboxrule}{0.4pt}%
+  \setlength{\@showcubewidth}{#1}%
+  \advance\@showcubewidth by 1.6pt\relax%
+  \framebox{%
+  \begin{minipage}{\the\@showcubewidth}%
+  \centering%
+  \begin{tikzpicture}[scale=#2]%
+  #3%
+  \end{tikzpicture}%
+  \end{minipage}%
+}}%
+\newcommand{\x}{\thislevelitem}
+\newcommand{\xcount}{\thislevelcount}
+\newcommand{\ShowSequence}[3]{%
+   \ForEachX{,}{%
+    {\ifthenelse{\xcount=1}{#2{\x}}{#1#2{\x}}}%
+    }{#3}%
+}%
+\newcommand{\ShowSequenceF}[3]{%
+\fbox{%
+   \ForEachX{,}{%
+    {\ifthenelse{\xcount=1}{#2{\x}}{#1#2{\x}}}%
+    }{#3}%
+}}%
+\newcommand{\ShowSequencef}[3]{%
+   \ForEachX{,}{%
+    {\ifthenelse{\xcount=1}{\fbox{#2{\x}}}{#1{\fbox{#2{\x}}}}}%
+    }{#3}%
+}%
+\newcommand{\SequenceInfo}{{}}%   %% INFO only
+\newcommand{\SequenceName}{{}}%   %% NAME only
+\newcommand{\SequenceShort}{{}}%  %% original SHORT seq but with NO NAME
+\newcommand{\SequenceLong}{{}}%   %% just the LONG string \& no name
+\newcommand{\SequenceBraceA}[2]{$\overbrace{\mbox{#2}}^{\mbox{#1}}$}%
+\newcommand{\SequenceBraceB}[2]{$\underbrace{\mbox{#2}}_{\mbox{#1}}$}%
+\newcommand{\SequenceBraceAF}[2]{\fbox{$\overbrace{\mbox{#2}}^{\mbox{#1}}$}}%
+\newcommand{\SequenceBraceBF}[2]{\fbox{$\underbrace{\mbox{#2}}_{\mbox{#1}}$}}%
+
+\newcommand{\RubikFaceUp}[9]{%
+\def\Ult{#1}\def\Umt{#2}\def\Urt{#3}%
+\def\Ulm{#4}\def\Umm{#5}\def\Urm{#6}%
+\def\Ulb{#7}\def\Umb{#8}\def\Urb{#9}%
+}
+\newcommand{\RubikFaceFront}[9]{%
+\def\Flt{#1}\def\Fmt{#2}\def\Frt{#3}%
+\def\Flm{#4}\def\Fmm{#5}\def\Frm{#6}%
+\def\Flb{#7}\def\Fmb{#8}\def\Frb{#9}%
+}
+\newcommand{\RubikFaceRight}[9]{%
+\def\Rlt{#1}\def\Rmt{#2}\def\Rrt{#3}%
+\def\Rlm{#4}\def\Rmm{#5}\def\Rrm{#6}%
+\def\Rlb{#7}\def\Rmb{#8}\def\Rrb{#9}%
+}
+\newcommand{\RubikFaceDown}[9]{%
+\def\Dlt{#1}\def\Dmt{#2}\def\Drt{#3}%
+\def\Dlm{#4}\def\Dmm{#5}\def\Drm{#6}%
+\def\Dlb{#7}\def\Dmb{#8}\def\Drb{#9}%
+}
+\newcommand{\RubikFaceLeft}[9]{%
+\def\Llt{#1}\def\Lmt{#2}\def\Lrt{#3}%
+\def\Llm{#4}\def\Lmm{#5}\def\Lrm{#6}%
+\def\Llb{#7}\def\Lmb{#8}\def\Lrb{#9}%
+}
+\newcommand{\RubikFaceBack}[9]{%
+\def\Blt{#1}\def\Bmt{#2}\def\Brt{#3}%
+\def\Blm{#4}\def\Bmm{#5}\def\Brm{#6}%
+\def\Blb{#7}\def\Bmb{#8}\def\Brb{#9}%
+}
+\newcommand{\RubikFaceUpAll}[1]{%
+\def\Ult{#1}\def\Umt{#1}\def\Urt{#1}%
+\def\Ulm{#1}\def\Umm{#1}\def\Urm{#1}%
+\def\Ulb{#1}\def\Umb{#1}\def\Urb{#1}%
+}
+\newcommand{\RubikFaceFrontAll}[1]{%
+\def\Flt{#1}\def\Fmt{#1}\def\Frt{#1}%
+\def\Flm{#1}\def\Fmm{#1}\def\Frm{#1}%
+\def\Flb{#1}\def\Fmb{#1}\def\Frb{#1}%
+}
+\newcommand{\RubikFaceRightAll}[1]{%
+\def\Rlt{#1}\def\Rmt{#1}\def\Rrt{#1}%
+\def\Rlm{#1}\def\Rmm{#1}\def\Rrm{#1}%
+\def\Rlb{#1}\def\Rmb{#1}\def\Rrb{#1}%
+}
+\newcommand{\RubikFaceLeftAll}[1]{%
+\def\Llt{#1}\def\Lmt{#1}\def\Lrt{#1}%
+\def\Llm{#1}\def\Lmm{#1}\def\Lrm{#1}%
+\def\Llb{#1}\def\Lmb{#1}\def\Lrb{#1}%
+}
+\newcommand{\RubikFaceDownAll}[1]{%
+\def\Dlt{#1}\def\Dmt{#1}\def\Drt{#1}%
+\def\Dlm{#1}\def\Dmm{#1}\def\Drm{#1}%
+\def\Dlb{#1}\def\Dmb{#1}\def\Drb{#1}%
+}
+\newcommand{\RubikFaceBackAll}[1]{%
+\def\Blt{#1}\def\Bmt{#1}\def\Brt{#1}%
+\def\Blm{#1}\def\Bmm{#1}\def\Brm{#1}%
+\def\Blb{#1}\def\Bmb{#1}\def\Brb{#1}%
+}
+\RubikFaceUpAll{X}%
+\RubikFaceDownAll{X}%
+\RubikFaceLeftAll{X}%
+\RubikFaceRightAll{X}%
+\RubikFaceFrontAll{X}%
+\RubikFaceBackAll{X}%
+\newcommand{\RubikCubeGrey}{%
+  \RubikFaceRight{X}{X}{X}{X}{G}{X}{X}{X}{X}%
+  \RubikFaceLeft {X}{X}{X}{X}{B}{X}{X}{X}{X}%
+  \RubikFaceUp   {X}{X}{X}{X}{W}{X}{X}{X}{X}%
+  \RubikFaceDown {X}{X}{X}{X}{Y}{X}{X}{X}{X}%
+  \RubikFaceFront{X}{X}{X}{X}{O}{X}{X}{X}{X}%
+  \RubikFaceBack {X}{X}{X}{X}{R}{X}{X}{X}{X}%
+}
+\newcommand{\RubikCubeGray}{\RubikCubeGrey}
+\newcommand{\RubikCubeGreyWY}{\RubikCubeGrey}
+\newcommand{\RubikCubeGrayWY}{\RubikCubeGreyWY}
+%%
+\newcommand{\RubikCubeGreyWB}{%
+  \RubikFaceRight{X}{X}{X}{X}{R}{X}{X}{X}{X}%
+  \RubikFaceLeft {X}{X}{X}{X}{O}{X}{X}{X}{X}%
+  \RubikFaceUp   {X}{X}{X}{X}{W}{X}{X}{X}{X}%
+  \RubikFaceDown {X}{X}{X}{X}{B}{X}{X}{X}{X}%
+  \RubikFaceFront{X}{X}{X}{X}{G}{X}{X}{X}{X}%
+  \RubikFaceBack {X}{X}{X}{X}{Y}{X}{X}{X}{X}%
+}
+\newcommand{\RubikCubeGrayWB}{\RubikCubeGreyWB}
+\newcommand{\RubikSolvedConfig}[6]{%
+  \RubikFaceRightAll{#1}%
+  \RubikFaceLeftAll{#2}%
+  \RubikFaceUpAll{#3}%
+  \RubikFaceDownAll{#4}%
+  \RubikFaceFrontAll{#5}%
+  \RubikFaceBackAll{#6}%
+}
+\newcommand{\RubikCubeGreyAll}{\RubikSolvedConfig{X}{X}{X}{X}{X}{X}}%
+\newcommand{\RubikCubeGrayAll}{\RubikCubeGreyAll}
+\newcommand{\RubikCubeSolved}{\RubikSolvedConfig{G}{B}{W}{Y}{O}{R}}%
+\newcommand{\RubikCubeSolvedWY}{\RubikCubeSolved}%
+\newcommand{\RubikCubeSolvedWB}{\RubikSolvedConfig{R}{O}{W}{B}{G}{Y}}%
+\newcommand{\RubikSliceTopR}[6]{%
+\def\Flt{#1}\def\Fmt{#2}\def\Frt{#3}%
+\def\Rlt{#4}\def\Rmt{#5}\def\Rrt{#6}%
+}
+\newcommand{\RubikSliceTopL}[6]{%
+\def\Llt{#1}\def\Lmt{#2}\def\Lrt{#3}%
+\def\Flt{#4}\def\Fmt{#5}\def\Frt{#6}%
+}
+\newcommand{\RubikSliceMiddleR}[6]{%
+\def\Flm{#1}\def\Fmm{#2}\def\Frm{#3}%
+\def\Rlm{#4}\def\Rmm{#5}\def\Rrm{#6}%
+}
+\newcommand{\RubikSliceMiddleL}[6]{%
+\def\Llm{#1}\def\Lmm{#2}\def\Lrm{#3}%
+\def\Flm{#4}\def\Fmm{#5}\def\Frm{#6}%
+}
+\newcommand{\RubikSliceEquatorR}[6]{%
+\def\Flm{#1}\def\Fmm{#2}\def\Frm{#3}%
+\def\Rlm{#4}\def\Rmm{#5}\def\Rrm{#6}%
+}
+\newcommand{\RubikSliceEquatorL}[6]{%
+\def\Llm{#1}\def\Lmm{#2}\def\Lrm{#3}%
+\def\Flm{#4}\def\Fmm{#5}\def\Frm{#6}%
+}
+\newcommand{\RubikSliceBottomR}[6]{%
+\def\Flb{#1}\def\Fmb{#2}\def\Frb{#3}%
+\def\Rlb{#4}\def\Rmb{#5}\def\Rrb{#6}%
+}
+\newcommand{\RubikSliceBottomL}[6]{%
+\def\Llb{#1}\def\Lmb{#2}\def\Lrb{#3}%
+\def\Flb{#4}\def\Fmb{#5}\def\Frb{#6}%
+}
+\newcommand{\DrawRubikCubeFrontFace}{%
+\draw[line join=round,line cap=round,ultra thick,fill=\Flt]%
+(0,2) -- (0, 3) -- (1,3) -- (1,2)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Fmt]%
+(1,2) -- (1, 3) -- (2,3) -- (2,2) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Frt]%
+(2,2) -- (2, 3) -- (3,3) -- (3,2) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Flm]%
+(0,1) -- (0, 2) -- (1,2) -- (1,1)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Fmm]%
+(1,1) -- (1, 2) -- (2,2) -- (2,1) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Frm]%
+(2,1) -- (2, 2) -- (3,2) -- (3,1) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Flb]%
+(0,0) -- (0, 1) -- (1,1) -- (1,0)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Fmb]%
+(1,0) -- (1, 1) -- (2,1) -- (2,0) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Frb]%
+(2,0) -- (2, 1) -- (3,1) -- (3,0) -- cycle;
+}
+\newcommand{\DrawRubikCubeRU}{%
+\DrawRubikCubeFrontFace %% frontface
+%%-----------Up face----------
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Ult]%
+(0.66,3.66) -- (1,4) -- (2,4) -- (1.66,3.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Umt]%
+(1.66,3.66) -- (2,4) -- (3,4) -- (2.66,3.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Urt]%
+(2.66,3.66) -- (3,4) -- (4,4) -- (3.66,3.66)  -- cycle;
+%%---middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Ulm]%
+(0.33,3.33) -- (0.66,3.66) -- (1.66,3.66) -- (1.33,3.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Umm]%
+(1.33,3.33) -- (1.66,3.66) -- (2.66,3.66) -- (2.33,3.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Urm]%
+(2.33,3.33) -- (2.66,3.66) -- (3.66,3.66) -- (3.33,3.33)  -- cycle;
+%%---bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Ulb]%
+(0,3) -- (0.33,3.33) -- (1.33,3.33) -- (1,3)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Umb]%
+(1,3) -- (1.33,3.33) -- (2.33,3.33) -- (2,3)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Urb]%
+(2,3) -- (2.33,3.33) -- (3.33,3.33) -- (3,3)  -- cycle;
+%%-----------Right face----------
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Rlt]%
+(3,2) -- (3, 3) -- (3.33,3.33) -- (3.33,2.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rmt]%
+(3.33,2.33) -- (3.33, 3.33) -- (3.66,3.66) -- (3.66,2.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rrt]%
+(3.66,2.66) -- (3.66, 3.66) -- (4,4) -- (4,3)  -- cycle;
+%%---middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Rlm]%
+(3,1) -- (3, 2) -- (3.33,2.33) -- (3.33,1.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rmm]%
+(3.33,1.33) -- (3.33, 2.33) -- (3.66,2.66) -- (3.66,1.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rrm]%
+(3.66,1.66) -- (3.66, 2.66) -- (4,3) -- (4,2)  -- cycle;
+%%---bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Rlb]%
+(3,0) -- (3, 1) -- (3.33,1.33) -- (3.33,0.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rmb]%
+(3.33,0.33) -- (3.33, 1.33) -- (3.66,1.66) -- (3.66,0.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rrb]%
+(3.66,0.66) -- (3.66, 1.66) -- (4,2) -- (4,1)  -- cycle;
+}
+\newcommand{\DrawRubikCube}{\DrawRubikCubeRU}
+\newcommand{\DrawRubikCubeRD}{%
+\DrawRubikCubeFrontFace %% frontface
+%%----------Right face--------
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Rlt]%
+(3,2) -- (3, 3) -- (3.33,2.66) -- (3.33,1.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rmt]%
+(3.33,1.66) -- (3.33, 2.66) -- (3.66,2.33) -- (3.66,1.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rrt]%
+(3.66,1.33) -- (3.66, 2.33) -- (4,2) -- (4,1)  -- cycle;
+%%---middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Rlm]%
+(3,1) -- (3, 2) -- (3.33,1.66) -- (3.33,0.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rmm]%
+(3.33,0.66) -- (3.33, 1.66) -- (3.66,1.33) -- (3.66,0.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rrm]%
+(3.66,0.33) -- (3.66, 1.33) -- (4,1) -- (4,0)  -- cycle;
+%%---bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Rlb]%
+(3,0) -- (3, 1) -- (3.33,0.66) -- (3.33,-0.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rmb]%
+(3.33,-0.33) -- (3.33, 0.66) -- (3.66,0.33) -- (3.66,-0.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rrb]%
+(3.66,-0.66) -- (3.66, 0.33) -- (4,0) -- (4,-1)  -- cycle;
+%%-----------Down face---------
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Dlt]%
+(0.33,-0.33) -- (0, 0) -- (1,0) -- (1.33,-0.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Dmt]%
+(1.33,-0.33) -- (1, 0) -- (2,0) -- (2.33,-0.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Drt]%
+(2.33,-0.33) -- (2, 0) -- (3,0) -- (3.33,-0.33)  -- cycle;
+%%---middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Dlm]%
+(0.66,-0.66) -- (0.33, -0.33) -- (1.33,-0.33) -- (1.66,-0.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Dmm]%
+(1.66,-0.66) -- (1.33, -0.33) -- (2.33,-0.33) -- (2.66,-0.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Drm]%
+(2.66,-0.66) -- (2.33, -0.33) -- (3.33,-0.33) -- (3.66,-0.66)  -- cycle;
+%%---bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Dlb]%
+(1,-1) -- (0.66, -0.66) -- (1.66,-0.66) -- (2,-1)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Dmb]%
+(2,-1) -- (1.66, -0.66) -- (2.66,-0.66) -- (3,-1)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Drb]%
+(3,-1) -- (2.66, -0.66) -- (3.66,-0.66) -- (4,-1)  -- cycle;
+}
+\newcommand{\DrawRubikCubeLD}{%
+\DrawRubikCubeFrontFace %% frontface
+%%------------Left face--------
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Llt]%
+(-1,1) -- (-1, 2) -- (-0.66,2.33) -- (-0.66,1.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lmt]%
+(-0.66,1.33) -- (-0.66, 2.33) -- (-0.33,2.66) -- (-0.33,1.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lrt]%
+(-0.33,1.66) -- (-0.33, 2.66) -- (0,3) -- (0,2)  -- cycle;
+%%---middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Llm]%
+(-1,0) -- (-1, 1) -- (-0.66,1.33) -- (-0.66,0.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lmm]%
+(-0.66,0.33) -- (-0.66, 1.33) -- (-0.33,1.66) -- (-0.33,0.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lrm]%
+(-0.33,0.66) -- (-0.33, 1.66) -- (0,2) -- (0,1)  -- cycle;
+%%---bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Llb]%
+(-1,-1) -- (-1, 0) -- (-0.66,0.33) -- (-0.66,-0.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lmb]%
+(-0.66,-0.66) -- (-0.66, 0.33) -- (-0.33,0.66) -- (-0.33,-0.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lrb]%
+(-0.33,-0.33) -- (-0.33, 0.66) -- (0,1) -- (0,0)  -- cycle;
+%%------------Down face----------
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Dlt]%
+(-0.33,-0.33) -- (0, 0) -- (1,0) -- (0.66,-0.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Dmt]%
+(0.66,-0.33) -- (1, 0) -- (2,0) -- (1.66,-0.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Drt]%
+(1.66,-0.33) -- (2, 0) -- (3,0) -- (2.66,-0.33)  -- cycle;
+%%---middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Dlm]%
+(-0.66,-0.66) -- (-0.33, -0.33) -- (0.66,-0.33) -- (0.33,-0.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Dmm]%
+(0.33,-0.66) -- (0.66, -0.33) -- (1.66,-0.33) -- (1.33,-0.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Drm]%
+(1.33,-0.66) -- (1.66, -0.33) -- (2.66,-0.33) -- (2.33,-0.66)  -- cycle;
+%%---bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Dlb]%
+(-1,-1) -- (-0.66, -0.66) -- (0.33,-0.66) -- (0,-1)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Dmb]%
+(0,-1) -- (0.33, -0.66) -- (1.33,-0.66) -- (1,-1)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Drb]%
+(1,-1) -- (1.33, -0.66) -- (2.33,-0.66) -- (2,-1)  -- cycle;
+}
+\newcommand{\DrawRubikCubeLU}{%
+\DrawRubikCubeFrontFace %% frontface
+%%-----------Left face-----------
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Llt]%
+(-1,3) -- (-1, 4) -- (-0.66,3.66) -- (-0.66,2.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lmt]%
+(-0.66,2.66) -- (-0.66, 3.66) -- (-0.33,3.33) -- (-0.33,2.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lrt]%
+(-0.33,2.33) -- (-0.33, 3.33) -- (0,3) -- (0,2)  -- cycle;
+%%---middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Llm]%
+(-1,2) -- (-1, 3) -- (-0.66,2.66) -- (-0.66,1.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lmm]%
+(-0.66,1.66) -- (-0.66, 2.66) -- (-0.33,2.33) -- (-0.33,1.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lrm]%
+(-0.33,1.33) -- (-0.33, 2.33) -- (0,2) -- (0,1)  -- cycle;
+%%---bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Llb]%
+(-1,1) -- (-1, 2) -- (-0.66,1.66) -- (-0.66,0.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lmb]%
+(-0.66,0.66) -- (-0.66, 1.66) -- (-0.33,1.33) -- (-0.33,0.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lrb]%
+(-0.33,0.33) -- (-0.33, 1.33) -- (0,1) -- (0,0)  -- cycle;
+%%-----------Up face---------
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Ult]%
+(-0.66,3.66) -- (-1, 4) -- (0,4) -- (0.33,3.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Umt]%
+(0.33,3.66) -- (0, 4) -- (1,4) -- (1.33,3.66)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Urt]%
+(1.33,3.66) -- (1, 4) -- (2,4) -- (2.33,3.66)  -- cycle;
+%%---middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Ulm]%
+(-0.33,3.33) -- (-0.66, 3.66) -- (0.33,3.66) -- (0.66,3.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Umm]%
+(0.66,3.33) -- (0.33, 3.66) -- (1.33,3.66) -- (1.66,3.33)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Urm]%
+(1.66,3.33) -- (1.33, 3.66) -- (2.33,3.66) -- (2.66,3.33)  -- cycle;
+%%---bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Ulb]%
+(0,3) -- (-0.33, 3.33) -- (0.66,3.33) -- (1,3)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Umb]%
+(1,3) -- (0.66, 3.33) -- (1.66,3.33) -- (2,3)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Urb]%
+(2,3) -- (1.66, 3.33) -- (2.66,3.33) -- (3,3)  -- cycle;%
+\ %%trailing space
+}
+\newcommand{\DrawRubikFlatUp}[2]{%
+\pgfmathsetmacro{\ux}{#1}%
+\pgfmathsetmacro{\uy}{#2}%
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Ult]%
+(\ux + 0,\uy + 2) -- (\ux + 0,\uy + 3) -- (\ux + 1,\uy + 3)%
+ -- (\ux + 1,\uy + 2)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Umt]%
+(\ux + 1,\uy + 2) -- (\ux + 1,\uy + 3) -- (\ux + 2,\uy + 3)%
+ -- (\ux + 2,\uy + 2) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Urt]%
+(\ux + 2,\uy + 2) -- (\ux + 2,\uy + 3) -- (\ux + 3,\uy + 3)%
+ -- (\ux + 3,\uy + 2) -- cycle;
+%%-----middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Ulm]%
+(\ux + 0,\uy + 1) -- (\ux + 0,\uy + 2) -- (\ux + 1,\uy + 2)%
+ -- (\ux + 1,\uy + 1)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Umm]%
+(\ux + 1,\uy + 1) -- (\ux + 1,\uy + 2) -- (\ux + 2,\uy + 2)%
+ -- (\ux + 2,\uy + 1) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Urm]%
+(\ux + 2,\uy + 1) -- (\ux + 2,\uy + 2) -- (\ux + 3,\uy + 2)%
+ -- (\ux + 3,\uy + 1) -- cycle;
+%%----bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Ulb]%
+(\ux + 0,\uy + 0) -- (\ux + 0,\uy + 1) -- (\ux + 1,\uy + 1)%
+ -- (\ux + 1,\uy + 0)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Umb]%
+(\ux + 1,\uy + 0) -- (\ux + 1,\uy + 1) -- (\ux + 2,\uy + 1)%
+ -- (\ux + 2,\uy + 0) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Urb]%
+(\ux + 2,\uy + 0) -- (\ux + 2,\uy + 1) -- (\ux + 3,\uy + 1)%
+ -- (\ux + 3,\uy + 0) -- cycle;
+}
+%%-------------------------
+\newcommand{\DrawRubikFlatDown}[2]{%
+\pgfmathsetmacro{\ddx}{#1}%
+\pgfmathsetmacro{\ddy}{#2}%
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Dlt]%
+(\ddx + 0,\ddy + 2) -- (\ddx + 0,\ddy + 3) -- (\ddx + 1,\ddy + 3)%
+ -- (\ddx + 1,\ddy + 2)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Dmt]%
+(\ddx + 1,\ddy + 2) -- (\ddx + 1,\ddy + 3) -- (\ddx + 2,\ddy + 3)%
+ -- (\ddx + 2,\ddy + 2) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Drt]%
+(\ddx + 2,\ddy + 2) -- (\ddx + 2,\ddy + 3) -- (\ddx + 3,\ddy + 3)%
+ -- (\ddx + 3,\ddy + 2) -- cycle;
+%%-----middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Dlm]%
+(\ddx + 0,\ddy + 1) -- (\ddx + 0,\ddy + 2) -- (\ddx + 1,\ddy + 2)%
+ -- (\ddx + 1,\ddy + 1)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Dmm]%
+(\ddx + 1,\ddy + 1) -- (\ddx + 1,\ddy + 2) -- (\ddx + 2,\ddy + 2)%
+ -- (\ddx + 2,\ddy + 1) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Drm]%
+(\ddx + 2,\ddy + 1) -- (\ddx + 2,\ddy + 2) -- (\ddx + 3,\ddy + 2)%
+ -- (\ddx + 3,\ddy + 1) -- cycle;
+%%----bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Dlb]%
+(\ddx + 0,\ddy + 0) -- (\ddx + 0,\ddy + 1) -- (\ddx + 1,\ddy + 1)%
+ -- (\ddx + 1,\ddy + 0)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Dmb]%
+(\ddx + 1,\ddy + 0) -- (\ddx + 1,\ddy + 1) -- (\ddx + 2,\ddy + 1)%
+ -- (\ddx + 2,\ddy + 0) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Drb]%
+(\ddx + 2,\ddy + 0) -- (\ddx + 2,\ddy + 1) -- (\ddx + 3,\ddy + 1)%
+ -- (\ddx + 3,\ddy + 0) -- cycle;
+}
+%%-------------------------
+\newcommand{\DrawRubikFlatLeft}[2]{%
+\pgfmathsetmacro{\lx}{#1}%
+\pgfmathsetmacro{\ly}{#2}%
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Llt]%
+(\lx + 0, \ly + 2) -- (\lx + 0, \ly + 3) -- (\lx + 1, \ly + 3)%
+ -- (\lx + 1, \ly + 2)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lmt]%
+(\lx + 1, \ly + 2) -- (\lx + 1, \ly + 3) -- (\lx + 2, \ly + 3)%
+ -- (\lx + 2, \ly + 2) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lrt]%
+(\lx + 2, \ly + 2) -- (\lx + 2, \ly + 3) -- (\lx + 3, \ly + 3)%
+ -- (\lx + 3, \ly + 2) -- cycle;
+%%-----middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Llm]%
+(\lx + 0, \ly + 1) -- (\lx + 0, \ly + 2) -- (\lx + 1, \ly + 2)%
+ -- (\lx + 1, \ly + 1)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lmm]%
+(\lx + 1, \ly + 1) -- (\lx + 1, \ly + 2) -- (\lx + 2, \ly + 2)%
+ -- (\lx + 2, \ly + 1) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lrm]%
+(\lx + 2, \ly + 1) -- (\lx + 2, \ly + 2) -- (\lx + 3, \ly + 2)%
+ -- (\lx + 3, \ly + 1) -- cycle;
+%%----bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Llb]%
+(\lx + 0, \ly + 0) -- (\lx + 0, \ly + 1) -- (\lx + 1, \ly + 1)%
+ -- (\lx + 1, \ly + 0)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lmb]%
+(\lx + 1, \ly + 0) -- (\lx + 1, \ly + 1) -- (\lx + 2, \ly + 1)%
+ -- (\lx + 2, \ly + 0) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Lrb]%
+(\lx + 2, \ly + 0) -- (\lx + 2, \ly + 1) -- (\lx + 3, \ly + 1)%
+ -- (\lx + 3, \ly + 0) -- cycle;
+}
+%%--------------------------
+\newcommand{\DrawRubikFlatRight}[2]{%
+\pgfmathsetmacro{\rx}{#1}%
+\pgfmathsetmacro{\ry}{#2}%
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Rlt]%
+(\rx + 0, \ry + 2) -- (\rx + 0,  \ry + 3) -- (\rx + 1, \ry + 3)%
+ -- (\rx + 1, \ry + 2)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rmt]%
+(\rx + 1, \ry + 2) -- (\rx + 1, \ry + 3) -- (\rx + 2, \ry + 3)%
+ -- (\rx + 2, \ry + 2) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rrt]%
+(\rx + 2, \ry + 2) -- (\rx + 2, \ry + 3) -- (\rx + 3, \ry + 3)%
+ -- (\rx + 3, \ry + 2) -- cycle;
+%%-----middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Rlm]%
+(\rx + 0, \ry + 1) -- (\rx + 0, \ry + 2) -- (\rx + 1, \ry + 2)%
+ -- (\rx + 1, \ry + 1)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rmm]%
+(\rx + 1, \ry + 1) -- (\rx + 1, \ry + 2) -- (\rx + 2, \ry + 2)%
+ -- (\rx + 2, \ry + 1) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rrm]%
+(\rx + 2, \ry + 1) -- (\rx + 2, \ry + 2) -- (\rx + 3, \ry + 2)%
+ -- (\rx + 3, \ry + 1) -- cycle;
+%%----bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Rlb]%
+(\rx + 0, \ry + 0) -- (\rx + 0, \ry + 1) -- (\rx + 1, \ry + 1)%
+ -- (\rx + 1, \ry + 0)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rmb]%
+(\rx + 1, \ry + 0) -- (\rx + 1, \ry + 1) -- (\rx + 2, \ry + 1)%
+ -- (\rx + 2, \ry + 0) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Rrb]%
+(\rx + 2, \ry + 0) -- (\rx + 2, \ry + 1) -- (\rx + 3, \ry + 1)%
+ -- (\rx + 3, \ry + 0) -- cycle;
+}
+%%-----------------------
+\newcommand{\DrawRubikFlatFront}{%
+%% This command is used /only/ by  the \cmd{\DrawRubikCubeF} command.
+%% NOTE: x, y variables not implemented as not required here
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Flt]%
+(0,2) -- (0, 3) -- (1,3) -- (1,2)  -- cycle;
+%%
+\draw[line join=round,line cap=round,ultra thick,fill=\Fmt]%
+(1,2) -- (1, 3) -- (2,3) -- (2,2) -- cycle;
+%%
+\draw[line join=round,line cap=round,ultra thick,fill=\Frt]%
+(2,2) -- (2, 3) -- (3,3) -- (3,2) -- cycle;
+%%-----middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Flm]%
+(0,1) -- (0, 2) -- (1,2) -- (1,1)  -- cycle;
+%%
+\draw[line join=round,line cap=round,ultra thick,fill=\Fmm]%
+(1,1) -- (1, 2) -- (2,2) -- (2,1) -- cycle;
+%%
+\draw[line join=round,line cap=round,ultra thick,fill=\Frm]%
+(2,1) -- (2, 2) -- (3,2) -- (3,1) -- cycle;
+%%----bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Flb]%
+(0,0) -- (0, 1) -- (1,1) -- (1,0)  -- cycle;
+%%
+\draw[line join=round,line cap=round,ultra thick,fill=\Fmb]%
+(1,0) -- (1, 1) -- (2,1) -- (2,0) -- cycle;
+%%
+\draw[line join=round,line cap=round,ultra thick,fill=\Frb]%
+(2,0) -- (2, 1) -- (3,1) -- (3,0) -- cycle;
+}
+%%-------------------------
+\newcommand{\DrawRubikFlatBack}[2]{%
+\pgfmathsetmacro{\bx}{#1}%
+\pgfmathsetmacro{\by}{#2}%
+%%---top row
+\draw[line join=round,line cap=round,ultra thick,fill=\Blt]%
+(\bx + 0,\by + 2) -- (\bx + 0,\by + 3) -- (\bx + 1,\by + 3)%
+ -- (\bx + 1,\by + 2)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Bmt]%
+(\bx + 1,\by + 2) -- (\bx + 1,\by + 3) -- (\bx + 2,\by + 3)%
+ -- (\bx + 2,\by + 2) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Brt]%
+(\bx + 2,\by + 2) -- (\bx + 2,\by + 3) -- (\bx + 3,\by + 3)%
+ -- (\bx + 3,\by + 2) -- cycle;
+%%-----middle row
+\draw[line join=round,line cap=round,ultra thick,fill=\Blm]%
+(\bx + 0,\by + 1) -- (\bx + 0,\by + 2) -- (\bx + 1,\by + 2)%
+ -- (\bx + 1,\by + 1)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Bmm]%
+(\bx + 1,\by + 1) -- (\bx + 1,\by + 2) -- (\bx + 2,\by + 2)%
+ -- (\bx + 2,\by + 1) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Brm]%
+(\bx + 2,\by + 1) -- (\bx + 2,\by + 2) -- (\bx + 3,\by + 2)%
+ -- (\bx + 3,\by + 1) -- cycle;
+%%----bottom row
+\draw[line join=round,line cap=round,ultra thick,fill=\Blb]%
+(\bx + 0,\by + 0) -- (\bx + 0,\by + 1) -- (\bx + 1,\by + 1)%
+ -- (\bx + 1,\by + 0)  -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Bmb]%
+(\bx + 1,\by + 0) -- (\bx + 1,\by + 1) -- (\bx + 2,\by + 1)%
+ -- (\bx + 2,\by + 0) -- cycle;
+\draw[line join=round,line cap=round,ultra thick,fill=\Brb]%
+(\bx + 2,\by + 0) -- (\bx + 2,\by + 1) -- (\bx + 3,\by + 1)%
+ -- (\bx + 3,\by + 0) -- cycle;
+}
+\newcommand{\DrawRubikCubeF}{%
+  \DrawRubikFlatUp{0}{3}%
+  \DrawRubikFlatDown{0}{-3}%
+  \DrawRubikFlatLeft{-3}{0}%
+  \DrawRubikFlatFront%
+  \DrawRubikFlatRight{3}{0}%
+  \DrawRubikFlatBack{6}{0}%
+}
+\newcommand{\DrawRubikCubeSF}{%
+  \DrawRubikCubeRU%
+  \DrawRubikFlatDown{0}{-3}%
+  \DrawRubikFlatLeft{-3}{0}%
+  \DrawRubikFlatBack{4}{1}%
+}
+\newcommand{\DrawRubikFaceUpSide}{%
+\DrawRubikFlatUp{0}{0}%
+\side@barT{1}{\Brt}
+\side@barT{2}{\Bmt}
+\side@barT{3}{\Blt}
+\side@barL{1}{\Lrt}
+\side@barL{2}{\Lmt}
+\side@barL{3}{\Llt}
+\side@barR{1}{\Rlt}
+\side@barR{2}{\Rmt}
+\side@barR{3}{\Rrt}
+\side@barB{1}{\Flt}
+\side@barB{2}{\Fmt}
+\side@barB{3}{\Frt}
+}
+\newcommand{\DrawRubikFaceFrontSide}{%
+\DrawRubikFlatFront{0}{0}%
+\side@barT{1}{\Ulb}
+\side@barT{2}{\Umb}
+\side@barT{3}{\Urb}
+\side@barL{1}{\Lrb}
+\side@barL{2}{\Lrm}
+\side@barL{3}{\Lrt}
+\side@barR{1}{\Rlb}
+\side@barR{2}{\Rlm}
+\side@barR{3}{\Rlt}
+\side@barB{1}{\Dlt}
+\side@barB{2}{\Dmt}
+\side@barB{3}{\Drt}
+}
+\newcommand{\DrawRubikFaceRightSide}{%
+\DrawRubikFlatRight{0}{0}%
+\side@barT{1}{\Urb}
+\side@barT{2}{\Urm}
+\side@barT{3}{\Urt}
+\side@barL{1}{\Frb}
+\side@barL{2}{\Frm}
+\side@barL{3}{\Frt}
+\side@barR{1}{\Blb}
+\side@barR{2}{\Blm}
+\side@barR{3}{\Blt}
+\side@barB{1}{\Drt}
+\side@barB{2}{\Drm}
+\side@barB{3}{\Drb}
+}
+\newcommand{\DrawRubikFaceLeftSide}{%
+\DrawRubikFlatLeft{0}{0}%
+\side@barT{1}{\Ult}
+\side@barT{2}{\Ulm}
+\side@barT{3}{\Ulb}
+\side@barL{1}{\Brb}
+\side@barL{2}{\Brm}
+\side@barL{3}{\Brt}
+\side@barR{1}{\Flb}
+\side@barR{2}{\Flm}
+\side@barR{3}{\Flt}
+\side@barB{1}{\Dlb}
+\side@barB{2}{\Dlm}
+\side@barB{3}{\Dlt}
+}
+\newcommand{\DrawRubikFaceBackSide}{%
+\DrawRubikFlatBack{0}{0}%
+\side@barT{1}{\Urt}
+\side@barT{2}{\Umt}
+\side@barT{3}{\Ult}
+\side@barL{1}{\Rrb}
+\side@barL{2}{\Rrm}
+\side@barL{3}{\Rrt}
+\side@barR{1}{\Llb}
+\side@barR{2}{\Llm}
+\side@barR{3}{\Llt}
+\side@barB{1}{\Drb}
+\side@barB{2}{\Dmb}
+\side@barB{3}{\Dlb}
+}
+\newcommand{\DrawRubikFaceDownSide}{%
+\DrawRubikFlatDown{0}{0}%
+\side@barT{1}{\Flb}
+\side@barT{2}{\Fmb}
+\side@barT{3}{\Frb}
+\side@barL{1}{\Llb}
+\side@barL{2}{\Lmb}
+\side@barL{3}{\Lrb}
+\side@barR{1}{\Rrb}
+\side@barR{2}{\Rmb}
+\side@barR{3}{\Rlb}
+\side@barB{1}{\Brb}
+\side@barB{2}{\Bmb}
+\side@barB{3}{\Blb}
+}
+\newcommand{\DrawRubikFaceUp}{\DrawRubikFlatUp{0}{0}}
+\newcommand{\DrawRubikFaceDown}{\DrawRubikFlatDown{0}{0}}
+\newcommand{\DrawRubikFaceLeft}{\DrawRubikFlatLeft{0}{0}}
+\newcommand{\DrawRubikFaceRight}{\DrawRubikFlatRight{0}{0}}
+\newcommand{\DrawRubikFaceFront}{\DrawRubikFlatFront{0}{0}}
+\newcommand{\DrawRubikFaceBack}{\DrawRubikFlatBack{0}{0}}
+%% RWDN19A  Finally, we create the short-hand versions.
+\newcommand{\DrawRubikFaceU}{\DrawRubikFaceUp}
+\newcommand{\DrawRubikFaceD}{\DrawRubikFaceDown}
+\newcommand{\DrawRubikFaceL}{\DrawRubikFaceLeft}
+\newcommand{\DrawRubikFaceR}{\DrawRubikFaceRight}
+\newcommand{\DrawRubikFaceF}{\DrawRubikFaceFront}
+\newcommand{\DrawRubikFaceB}{\DrawRubikFaceBack}
+\newcommand{\DrawRubikFaceUS}{\DrawRubikFaceUpSide}
+\newcommand{\DrawRubikFaceDS}{\DrawRubikFaceDownSide}
+\newcommand{\DrawRubikFaceLS}{\DrawRubikFaceLeftSide}
+\newcommand{\DrawRubikFaceRS}{\DrawRubikFaceRightSide}
+\newcommand{\DrawRubikFaceFS}{\DrawRubikFaceFrontSide}
+\newcommand{\DrawRubikFaceBS}{\DrawRubikFaceBackSide}
+\newcommand{\RubikSidebarWidth}[1]{\pgfmathsetmacro{\bw}{#1}}
+\newcommand{\RubikSidebarLength}[1]{\pgfmathsetmacro{\bl}{#1}}
+\newcommand{\RubikSidebarSep}[1]{\pgfmathsetmacro{\bs}{#1}}
+\RubikSidebarWidth{0.3}%
+\RubikSidebarLength{1}%
+\RubikSidebarSep{0.3}%
+\newcommand{\RubikSideBarWidth}[1]{\pgfmathsetmacro{\bw}{#1}}
+\newcommand{\RubikSideBarLength}[1]{\pgfmathsetmacro{\bl}{#1}}
+\newcommand{\RubikSideBarSep}[1]{\pgfmathsetmacro{\bs}{#1}}
+
+\def\no@sidebar{}%
+\newcommand{\NoSidebar}[1]{\def\no@sidebar{#1}}
+\newcommand{\side@barL}[2]{%
+  %% #1 = cubie possn no, #2 = colour
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{0 - \bs - \bw}%
+  \pgfmathsetmacro{\dy}{#1-1+0.5-\blh}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bl)
+  -- (\dx+\bw,\dy+\bl) -- (\dx+\bw,\dy) -- cycle;
+}}
+\newcommand{\side@barR}[2]{%
+  %% #1 = cubie possn no, #2 = colour
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{3 + \bs}%
+  \pgfmathsetmacro{\dy}{#1 -1+0.5-\blh}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bl)
+  -- (\dx+\bw,\dy+\bl) -- (\dx+\bw,\dy) -- cycle;
+}}
+\newcommand{\side@barT}[2]{%
+  %% #1 = cubie possn no, #2 = colour
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{#1 -1+0.5-\blh}%
+  \pgfmathsetmacro{\dy}{3 +\bs}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bw)
+  -- (\dx+\bl,\dy+\bw) -- (\dx+\bl,\dy) -- cycle;
+}}
+\newcommand{\side@barB}[2]{%
+  %% #1 = cubie possn no, #2 = colour
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{#1 -1+0.5-\blh}%
+  \pgfmathsetmacro{\dy}{0 -\bs-\bw}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bw)
+  -- (\dx+\bl,\dy+\bw) -- (\dx+\bl,\dy) -- cycle;
+}}
+\newcommand{\side@barRubikRbackRU}[2]{%
+  %% #1 = cubie possn no, #2 = colour
+  %% dx --> dx+1
+  %% dy --> dy+1
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{3 + \bs +1}%
+  \pgfmathsetmacro{\dy}{#1 -1+0.5-\blh +1}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bl)
+  -- (\dx+\bw,\dy+\bl) -- (\dx+\bw,\dy) -- cycle;
+}}
+\newcommand{\DrawRubikCubeSidebarRBRU}{%
+\side@barRubikRbackRU{3}{\Blt}%
+\side@barRubikRbackRU{2}{\Blm}%
+\side@barRubikRbackRU{1}{\Blb}%
+}
+\newcommand{\DrawRubikCubeSidebarBRRU}{\DrawRubikCubeSidebarRBRU}
+\newcommand{\DrawRubikCubeSidebarRB}[1]{\@join{\DrawRubikCubeSidebarRB}{#1}}
+\newcommand{\DrawRubikCubeSidebarBR}[1]{\@join{\DrawRubikCubeSidebarBR}{#1}}
+\newcommand{\side@barRubikTbackRU}[2]{%
+  %% #1 = cubie possn no; #2 = colour
+  %% dx --> dx+1
+  %% dy --> dy+1
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{#1 -1+0.5-\blh +1}%
+  \pgfmathsetmacro{\dy}{3 +\bs +1}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bw)
+  -- (\dx+\bl,\dy+\bw) -- (\dx+\bl,\dy) -- cycle;
+}}
+\newcommand{\DrawRubikCubeSidebarUBRU}{%
+\side@barRubikTbackRU{1}{\Brt}%
+\side@barRubikTbackRU{2}{\Bmt}%
+\side@barRubikTbackRU{3}{\Blt}%
+}
+\newcommand{\DrawRubikCubeSidebarBURU}{\DrawRubikCubeSidebarUBRU}
+\newcommand{\DrawRubikCubeSidebarUB}[1]{\@join{\DrawRubikCubeSidebarUB}{#1}}
+\newcommand{\DrawRubikCubeSidebarBU}[1]{\@join{\DrawRubikCubeSidebarBU}{#1}}
+\newcommand{\DrawRubikCubeSidebarFLRU}{%
+\side@barL{3}{\Lrt}%
+\side@barL{2}{\Lrm}%
+\side@barL{1}{\Lrb}%
+}
+\newcommand{\DrawRubikCubeSidebarLFRU}{\DrawRubikCubeSidebarFLRU}
+\newcommand{\DrawRubikCubeSidebarFL}[1]{\@join{\DrawRubikCubeSidebarFL}{#1}}
+\newcommand{\DrawRubikCubeSidebarLF}[1]{\@join{\DrawRubikCubeSidebarLF}{#1}}
+\newcommand{\DrawRubikCubeSidebarFDRU}{%
+\side@barB{1}{\Dlt}%
+\side@barB{2}{\Dmt}%
+\side@barB{3}{\Drt}%
+}
+\newcommand{\DrawRubikCubeSidebarDFRU}{\DrawRubikCubeSidebarFDRU}
+\newcommand{\DrawRubikCubeSidebarFD}[1]{\@join{\DrawRubikCubeSidebarFD}{#1}}
+\newcommand{\DrawRubikCubeSidebarDF}[1]{\@join{\DrawRubikCubeSidebarDF}{#1}}
+\newcommand{\DrawRubikCubeSidebarDFLU}{\DrawRubikCubeSidebarDFRU}
+\newcommand{\DrawRubikCubeSidebarFDLU}{\DrawRubikCubeSidebarFDRU}
+\newcommand{\side@barRubikLbackLU}[2]{%
+  %% #1 = cubie possn no, #2 = colour
+  %% dx --> dx-1
+  %% dy --> dy+1
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{0 - \bs -\bw -1}%
+  \pgfmathsetmacro{\dy}{#1 -1+0.5-\blh +1}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bl)
+  -- (\dx+\bw,\dy+\bl) -- (\dx+\bw,\dy) -- cycle;
+}}
+\newcommand{\DrawRubikCubeSidebarLBLU}{%
+\side@barRubikLbackLU{3}{\Brt}%
+\side@barRubikLbackLU{2}{\Brm}%
+\side@barRubikLbackLU{1}{\Brb}%
+}
+\newcommand{\DrawRubikCubeSidebarBLLU}{\DrawRubikCubeSidebarLBLU}
+\newcommand{\DrawRubikCubeSidebarLB}[1]{\@join{\DrawRubikCubeSidebarLB}{#1}}
+\newcommand{\DrawRubikCubeSidebarBL}[1]{\@join{\DrawRubikCubeSidebarBL}{#1}}
+\newcommand{\side@barRubikTbackLU}[2]{%
+  %% #1 = cubie possn no; #2 = colour
+  %% dx --> dx-1
+  %% dy --> dy+1
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{#1 -1+0.5-\blh -1}%
+  \pgfmathsetmacro{\dy}{3 +\bs +1}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bw)
+  -- (\dx+\bl,\dy+\bw) -- (\dx+\bl,\dy) -- cycle;
+}}
+\newcommand{\DrawRubikCubeSidebarUBLU}{%
+\side@barRubikTbackLU{1}{\Brt}%
+\side@barRubikTbackLU{2}{\Bmt}%
+\side@barRubikTbackLU{3}{\Blt}%
+}
+\newcommand{\DrawRubikCubeSidebarBULU}{\DrawRubikCubeSidebarUBLU}
+\newcommand{\DrawRubikCubeSidebarFRLU}{%
+\side@barR{3}{\Rlt}%
+\side@barR{2}{\Rlm}%
+\side@barR{1}{\Rlb}%
+}
+\newcommand{\DrawRubikCubeSidebarRFLU}{\DrawRubikCubeSidebarFRLU}
+\newcommand{\DrawRubikCubeSidebarFR}[1]{\@join{\DrawRubikCubeSidebarFR}{#1}}
+\newcommand{\DrawRubikCubeSidebarRF}[1]{\@join{\DrawRubikCubeSidebarRF}{#1}}
+\newcommand{\DrawRubikCubeSidebarFURD}{%
+\side@barT{1}{\Ulb}%
+\side@barT{2}{\Umb}%
+\side@barT{3}{\Urb}%
+}
+\newcommand{\DrawRubikCubeSidebarUFRD}{\DrawRubikCubeSidebarFURD}
+\newcommand{\DrawRubikCubeSidebarFU}[1]{\@join{\DrawRubikCubeSidebarFU}{#1}}
+\newcommand{\DrawRubikCubeSidebarUF}[1]{\@join{\DrawRubikCubeSidebarUF}{#1}}
+\newcommand{\DrawRubikCubeSidebarFLRD}{\DrawRubikCubeSidebarFLRU}
+\newcommand{\DrawRubikCubeSidebarLFRD}{\DrawRubikCubeSidebarLFRU}
+\newcommand{\side@barRubikRbackRD}[2]{%
+  %% #1 = cubie possn no, #2 = colour
+  %% dx --> dx+1
+  %% dy --> dy-1
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{3 + \bs +1}%
+  \pgfmathsetmacro{\dy}{#1 -1+0.5-\blh -1}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bl)
+  -- (\dx+\bw,\dy+\bl) -- (\dx+\bw,\dy) -- cycle;
+}}
+\newcommand{\DrawRubikCubeSidebarRBRD}{%
+\side@barRubikRbackRD{3}{\Blt}%
+\side@barRubikRbackRD{2}{\Blm}%
+\side@barRubikRbackRD{1}{\Blb}%
+}
+\newcommand{\DrawRubikCubeSidebarBRRD}{\DrawRubikCubeSidebarRBRD}
+\newcommand{\side@barRubikBbackRD}[2]{%
+  %% #1 = cubie possn no; #2 = colour
+  %% dx --> dx+1
+  %% dy --> dy-1
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{#1 -1+0.5-\blh +1}%
+  \pgfmathsetmacro{\dy}{0 -\bs - \bw -1}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bw)
+  -- (\dx+\bl,\dy+\bw) -- (\dx+\bl,\dy) -- cycle;
+}}
+\newcommand{\DrawRubikCubeSidebarDBRD}{%
+\side@barRubikBbackRD{1}{\Brb}%
+\side@barRubikBbackRD{2}{\Bmb}%
+\side@barRubikBbackRD{3}{\Blb}%
+}
+\newcommand{\DrawRubikCubeSidebarBDRD}{\DrawRubikCubeSidebarDBRD}
+\newcommand{\DrawRubikCubeSidebarDB}[1]{\@join{\DrawRubikCubeSidebarDB}{#1}}
+\newcommand{\DrawRubikCubeSidebarBD}[1]{\@join{\DrawRubikCubeSidebarBD}{#1}}
+\newcommand{\DrawRubikCubeSidebarFULD}{\DrawRubikCubeSidebarFURD}
+\newcommand{\DrawRubikCubeSidebarUFLD}{\DrawRubikCubeSidebarUFRD}
+\newcommand{\DrawRubikCubeSidebarFRLD}{\DrawRubikCubeSidebarFRLU}
+\newcommand{\DrawRubikCubeSidebarRFLD}{\DrawRubikCubeSidebarRFLU}
+\newcommand{\side@barRubikLbackLD}[2]{%
+  %% #1 = cubie possn no, #2 = colour
+  %% dx --> dx-1
+  %% dy --> dy-1
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{0 - \bs -\bw -1}%
+  \pgfmathsetmacro{\dy}{#1 -1+0.5-\blh -1}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bl)
+  -- (\dx+\bw,\dy+\bl) -- (\dx+\bw,\dy) -- cycle;
+}}
+\newcommand{\DrawRubikCubeSidebarLBLD}{%
+\side@barRubikLbackLD{3}{\Brt}%
+\side@barRubikLbackLD{2}{\Brm}%
+\side@barRubikLbackLD{1}{\Brb}%
+}
+\newcommand{\DrawRubikCubeSidebarBLLD}{\DrawRubikCubeSidebarLBLD}
+\newcommand{\side@barRubikBbackLD}[2]{%
+  %% #1 = cubie possn no; #2 = colour
+  %% dx --> dx-1
+  %% dy --> dy-1
+  \ifthenelse{\equal{#2}{\no@sidebar}}{}{%
+  \pgfmathsetmacro{\blh}{\bl*(0.5)}%
+  \pgfmathsetmacro{\dx}{#1 -1+0.5-\blh -1}%
+  \pgfmathsetmacro{\dy}{0 -\bs - \bw -1}%
+  \draw[fill=#2] (\dx,\dy) -- (\dx,\dy + \bw)
+  -- (\dx+\bl,\dy+\bw) -- (\dx+\bl,\dy) -- cycle;
+}}
+\newcommand{\DrawRubikCubeSidebarDBLD}{%
+\side@barRubikBbackLD{1}{\Brb}%
+\side@barRubikBbackLD{2}{\Bmb}%
+\side@barRubikBbackLD{3}{\Blb}%
+}
+\newcommand{\DrawRubikCubeSidebarBDLD}{\DrawRubikCubeSidebarDBLD}
+\newcommand{\DrawNCubeAll}[4]{%
+   \pgfmathsetmacro{\ncubes}{#1-1}%
+%% need to subtract 1 from the given number of cubies per side
+%% to avoid the origin of the initial cube to be displaced
+    \foreach \x in {0,...,\ncubes}{%
+      \foreach \y in {0,...,\ncubes}{%
+        \foreach \z in {0,...,\ncubes}{%
+          \cube@dxdydz{1}{#2}{#3}{#4}{\x}{\y}{\z}%
+  }}}}
+\newcommand{\cube@dxdydz}[7]{%
+   \pgfmathsetmacro{\dx}{#1+#5}%
+%% calculates the 'displacement' (distance from the origin) of the
+%% far corners of the cube along the x axis from the arguments
+   \pgfmathsetmacro{\dy}{#1+#6}%
+%% calculates the 'displacement' (distance from the origin) of the
+%% far corners of the cube along the y axis from the arguments
+   \pgfmathsetmacro{\dz}{#1+#7}%
+%% calculates the 'displacement' (distance from the origin) of the
+%% far corners of the cube along the z axis from the arguments
+%% Draw FRONT face   (using the X colour = #4)
+    \draw[line join=round,line cap=round,ultra thick,fill=#4]%
+ (#5,#6,\dz) -- (\dx,#6,\dz) -- (\dx,\dy,\dz) -- (#5,\dy,\dz) -- cycle;
+%% The 'rectangle' command does not work with 3D coordinates,
+%% so this is the way to draw the squares with space coordinates
+%% Draw UP face (using the Y colour = #3)
+   \draw[line join=round,line cap=round,ultra thick,fill=#3]%
+ (#5,\dy,\dz) -- (\dx,\dy,\dz) -- (\dx,\dy,#7) -- (#5,\dy,#7) -- cycle;
+%% Draw RIGHT face   (using the X colour = #2)
+ \draw[line join=round,line cap=round,ultra thick,fill=#2]%
+ (\dx,#6,\dz) -- (\dx,#6,#7) -- (\dx,\dy,#7) -- (\dx,\dy,\dz) -- cycle;
+    }
+\newcommand{\Cubiedx}[1]{\pgfmathsetmacro{\cx}{#1}}
+\newcommand{\Cubiedy}[1]{\pgfmathsetmacro{\cy}{#1}}
+\Cubiedx{0.4}
+\Cubiedy{0.4}
+\newcommand{\DrawCubieRU}[3]{%
+%% Front face (z)
+\draw[line join=round,line cap=round,ultra thick,fill=#3]%
+ (0,0) -- (0, 1) -- (1, 1) -- (1,0) -- cycle;
+%% Up face(y)
+\draw[line join=round,line cap=round,ultra thick,fill=#2]%
+ (0,1) -- (\cx, 1+\cy) -- (1+\cx,1+\cy) -- (1,1) -- cycle;
+%% Right face(x)
+\draw[line join=round,line cap=round,ultra thick,fill=#1]%
+ (1,0) -- (1,1) -- (1+\cx,1+\cy) -- (1+\cx, \cy) -- cycle;
+}
+\newcommand{\DrawCubieRD}[3]{%
+%% Front face (z)
+\draw[line join=round,line cap=round,ultra thick,fill=#3]%
+ (0,0) -- (0, 1) -- (1, 1) -- (1,0) -- cycle;
+%% Down face (y)
+\draw[line join=round,line cap=round,ultra thick,fill=#2]%
+ (\cx,-\cy) -- (0, 0) -- (1,0) -- (1+\cx,-\cy) -- cycle;
+%% Right face (x)
+\draw[line join=round,line cap=round,ultra thick,fill=#1]%
+ (1,0) -- (1,1) -- (1+\cx,-\cy+1) -- (1+\cx, -\cy) -- cycle;
+}
+\newcommand{\DrawCubieLD}[3]{%
+%% Front face (z)
+\draw[line join=round,line cap=round,ultra thick,fill=#3]%
+ (0,0) -- (0, 1) -- (1, 1) -- (1,0) -- cycle;
+%% Down face (y)
+\draw[line join=round,line cap=round,ultra thick,fill=#2]%
+ (-\cx,-\cy) -- (0, 0) -- (1,0) -- (1-\cx,-\cy) -- cycle;
+%% Left face (x)
+\draw[line join=round,line cap=round,ultra thick,fill=#1]%
+ (-\cx,-\cy) -- (-\cx,-\cy+1) -- (0,1) -- (0,0) -- cycle;
+}
+\newcommand{\DrawCubieLU}[3]{%
+%% Front face (z)
+\draw[line join=round,line cap=round,ultra thick,fill=#3]%
+ (0,0) -- (0, 1) -- (1, 1) -- (1,0) -- cycle;
+%% Up face (y)
+\draw[line join=round,line cap=round,ultra thick,fill=#2]%
+ (-\cx,1+\cy) -- (1-\cx, 1+\cy) -- (1,1) -- (0,1) -- cycle;
+%% Left face (x)
+\draw[line join=round,line cap=round,ultra thick,fill=#1]%
+ (-\cx, \cy) -- (-\cx,\cy+1) -- (0,1) -- (0,0) -- cycle;
+}
+\newcommand{\textCubieRU}[3]{%
+\begin{minipage}{0.66cm}
+\centering
+\begin{tikzpicture}[scale=0.5]
+\Cubiedx{0.4}\Cubiedy{0.4}
+\DrawCubieRU{#1}{#2}{#3}
+\end{tikzpicture}%
+\end{minipage}
+}
+\newcommand{\textCubieRD}[3]{%
+\begin{minipage}{0.66cm}
+\centering
+\begin{tikzpicture}[scale=0.5]
+\Cubiedx{0.4}\Cubiedy{0.4}
+\DrawCubieRD{#1}{#2}{#3}
+\end{tikzpicture}%
+\end{minipage}
+}
+\newcommand{\textCubieLD}[3]{%
+\begin{minipage}{0.66cm}
+\centering
+\begin{tikzpicture}[scale=0.5]
+\Cubiedx{0.4}\Cubiedy{0.4}
+\DrawCubieLD{#1}{#2}{#3}
+\end{tikzpicture}%
+\end{minipage}
+}
+\newcommand{\textCubieLU}[3]{%
+\begin{minipage}{0.66cm}
+\centering
+\begin{tikzpicture}[scale=0.5]
+\Cubiedx{0.4}\Cubiedy{0.4}
+\DrawCubieLU{#1}{#2}{#3}
+\end{tikzpicture}%
+\end{minipage}
+}
+\newcommand{\DrawNotationBox}{%
+  \draw [thick] (0,0) -- (0,1) -- (1,1) -- (1,0) -- (0,0) -- (0,1)%
+}
+\pgfmathsetmacro{\@sd}{0.25}    % a small horiz space
+\pgfmathsetmacro{\@sdd}{2*\@sd}  % 2x horiz space
+\pgfmathsetmacro{\@sddd}{3*\@sd} % 3x horiz space
+\pgfmathsetmacro{\@sh}{0.6} % height
+\pgfmathsetmacro{\@sb}{0.2} % base
+\pgfmathsetmacro{\@sbh}{\@sb + \@sh} % UP
+\pgfmathsetmacro{\@scx}{\@sdd+0.2} % Start of CircleX arc
+\pgfmathsetmacro{\@scy}{\@sd*2/3}  % Start of CircleY arc
+\pgfmathsetmacro{\@sqcx}{\@scx-0.13} %% SQuare CenterX coord
+\pgfmathsetmacro{\@sqcy}{\@scy+0.25} %% SQuare CenterY cpprd
+\newcommand{\@rr}[1]{{\@rubikfont #1}}
+\newcommand{\@rrp}[1]{{\@rubikfont #1\@rubikprime}}
+\newcommand{\@rrw}[1]{{\@rubikfont #1{\@rubikfontFNS w}}}
+\newcommand{\@rrwp}[1]{{\@rubikfont #1{\@rubikfontFNS w}\@rubikprime}}
+\newcommand{\@rrs}[1]{{\@rubikfont #1{\@rubikfontFNS s}}}
+\newcommand{\@rrsp}[1]{{\@rubikfont #1{\@rubikfontFNS s}\@rubikprime}}
+\newcommand{\@rra}[1]{{\@rubikfont #1{\@rubikfontFNS a}}}
+\newcommand{\@rrap}[1]{{\@rubikfont #1{\@rubikfontFNS a}\@rubikprime}}
+\newcommand{\@rru}[1]{{\@rubikfont #1{\@rubikfontFNS u}}}
+\newcommand{\@rrup}[1]{{\@rubikfont #1{\@rubikfontFNS u}\@rubikprime}}
+\newcommand{\@rrd}[1]{{\@rubikfont #1{\@rubikfontFNS d}}}
+\newcommand{\@rrdp}[1]{{\@rubikfont #1{\@rubikfontFNS d}\@rubikprime}}
+\newcommand{\@rrl}[1]{{\@rubikfont #1{\@rubikfontFNS l}}}
+\newcommand{\@rrlp}[1]{{\@rubikfont #1{\@rubikfontFNS l}\@rubikprime}}
+\newcommand{\@rrr}[1]{{\@rubikfont #1{\@rubikfontFNS r}}}
+\newcommand{\@rrrp}[1]{{\@rubikfont #1{\@rubikfontFNS r}\@rubikprime}}
+\newcommand{\@rrf}[1]{{\@rubikfont #1{\@rubikfontFNS f}}}
+\newcommand{\@rrfp}[1]{{\@rubikfont #1{\@rubikfontFNS f}\@rubikprime}}
+\newcommand{\@rrb}[1]{{\@rubikfont #1{\@rubikfontFNS b}}}
+\newcommand{\@rrbp}[1]{{\@rubikfont #1{\@rubikfontFNS b}\@rubikprime}}
+\newcommand{\@rrc}[1]{{\@rubikfont #1{\@rubikfontFNS c}}}
+\newcommand{\@rrcp}[1]{{\@rubikfont #1{\@rubikfontFNS c}\@rubikprime}}
+\newcommand{\@rrm}[1]{{\@rubikfont #1{\@rubikfontFNS m}}}
+\newcommand{\@rrmp}[1]{{\@rubikfont #1{\@rubikfontFNS m}\@rubikprime}}
+\newcommand{\@xyzh}[1]{[{\@rubikfont #1}]}
+\newcommand{\@xyzhp}[1]{[{\@rubikfont #1\raisebox{-0.6pt}{\@rubikprime}}]}
+\newcommand{\@xyzRubik}[1]%
+   {\raisebox{3.45pt}{[{\@rubikfont #1}]}}
+\newcommand{\@xyzRubikp}[1]%
+   {\raisebox{3.45pt}{[{\@rubikfont #1\raisebox{-0.6pt}{\@rubikprime}}]}}
+\newcommand{\@xyzhbdfl}[1]%
+   {[\raisebox{-0.6pt}{{\@rubikfont #1}}]}
+\newcommand{\@xyzhbdflp}[1]%
+   {[\raisebox{-0.6pt}{{\@rubikfont #1\@rubikprime}}]}
+\newcommand{\@xyzbdflRubik}[1]%
+   {\raisebox{3.45pt}{[\raisebox{-0.6pt}{{\@rubikfont #1}}]}}
+\newcommand{\@xyzbdflRubikp}[1]%
+   {\raisebox{3.45pt}{[\raisebox{-0.6pt}{{\@rubikfont #1\@rubikprime}}]}}
+\newcommand{\@SquareLetter}[1]{\setlength{\fboxsep}{2.5pt}%
+   \setlength{\fboxrule}{0.8pt}%
+   \fbox{\rule[-1pt]{0pt}{8.5pt}\raisebox{-0.5pt}{#1}}}
+\newlength\@hRubik%
+\setlength{\@hRubik}{0.185cm}%
+\newcommand{\@tlen}{\hspace{1pt}}%
+\newcommand*\@join[2]{%
+    \csname\expandafter\@gobble\string#1#2\endcsname}
+\newcommand*{\Rubik}[1]{\@join{\Rubik}{#1}}
+\newcommand*{\textRubik}[1]{\@join{\textRubik}{#1}}
+\newcommand*{\rr}[1]{\@join{\rr}{#1}}
+\newcommand*{\rrh}[1]{\@join{\rrh}{#1}}
+\newcommand{\rrB}{\@rr{B}}
+\newcommand{\SquareB}{\@tlen\@SquareLetter{\rrB}\@tlen}
+\newcommand{\rrhB}{\raisebox{-0.25mm}{\SquareB}}
+\newcommand{\RubikB}{\raisebox{\@hRubik}{\SquareB}}
+\newcommand{\textRubikB}{\rrhB}
+\newcommand{\rrBp}{\@rrp{B}}
+\newcommand{\SquareBp}{\@tlen\@SquareLetter{\rrBp}\@tlen}
+\newcommand{\rrhBp}{\raisebox{-0.25mm}{\SquareBp}}
+\newcommand{\RubikBp}{\raisebox{\@hRubik}{\SquareBp}}
+\newcommand{\textRubikBp}{\rrhBp}
+\newcommand{\rrBw}{\@rrw{B}}
+\newcommand{\SquareBw}{\@tlen\@SquareLetter{\rrBw}\@tlen}
+\newcommand{\rrhBw}{\raisebox{-0.25mm}{\SquareBw}}
+\newcommand{\RubikBw}{\raisebox{\@hRubik}{\SquareBw}}
+\newcommand{\textRubikBw}{\rrhBw}
+\newcommand{\rrBwp}{\@rrwp{B}}
+\newcommand{\SquareBwp}{\@tlen\@SquareLetter{\rrBwp}\@tlen}
+\newcommand{\rrhBwp}{\raisebox{-0.25mm}{\SquareBwp}}
+\newcommand{\RubikBwp}{\raisebox{\@hRubik}{\SquareBwp}}
+\newcommand{\textRubikBwp}{\rrhBwp}
+\newcommand{\rrBs}{\@rrs{B}}
+\newcommand{\SquareBs}{\@tlen\@SquareLetter{\rrBs}\@tlen}
+\newcommand{\rrhBs}{\raisebox{-0.25mm}{\SquareBs}}
+\newcommand{\RubikBs}{\raisebox{\@hRubik}{\SquareBs}}
+\newcommand{\textRubikBs}{\rrhBs}
+\newcommand{\rrBsp}{\@rrsp{B}}
+\newcommand{\SquareBsp}{\@tlen\@SquareLetter{\rrBsp}\@tlen}
+\newcommand{\rrhBsp}{\raisebox{-0.25mm}{\SquareBsp}}
+\newcommand{\RubikBsp}{\raisebox{\@hRubik}{\SquareBsp}}
+\newcommand{\textRubikBsp}{\rrhBsp}
+\newcommand{\rrBa}{\@rra{B}}
+\newcommand{\SquareBa}{\@tlen\@SquareLetter{\rrBa}\@tlen}
+\newcommand{\rrhBa}{\raisebox{-0.25mm}{\SquareBa}}
+\newcommand{\RubikBa}{\raisebox{\@hRubik}{\SquareBa}}
+\newcommand{\textRubikBa}{\rrhBa}
+\newcommand{\rrBap}{\@rrap{B}}
+\newcommand{\SquareBap}{\@tlen\@SquareLetter{\rrBap}\@tlen}
+\newcommand{\rrhBap}{\raisebox{-0.25mm}{\SquareBap}}
+\newcommand{\RubikBap}{\raisebox{\@hRubik}{\SquareBap}}
+\newcommand{\textRubikBap}{\rrhBap}
+\newcommand{\rrD}{\@rr{D}}
+%%
+\newcommand{\SquareD}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick, ->]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhD}{\raisebox{-0.333\height}{\@tlen\SquareD\@tlen}}
+%%
+\newcommand{\RubikD}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareD\\
+\rrD%
+\end{minipage}%
+}}
+\newcommand{\textRubikD}{\rrD\,\rrhD}
+\newcommand{\rrDp}{\@rrp{D}}
+%%
+\newcommand{\SquareDp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick]     (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd)  -- (\@sbh, \@sdd);
+\draw [thick, <-] (\@sb,\@sd)   -- (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhDp}{\raisebox{-0.333\height}{\@tlen\SquareDp\@tlen}}
+%%
+\newcommand{\RubikDp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareDp\\
+\rrDp%
+\end{minipage}%
+}}
+\newcommand{\textRubikDp}{\rrDp\,\rrhDp}
+\newcommand{\rrDw}{\@rrw{D}}
+%%
+\newcommand{\SquareDw}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick]     (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick, ->] (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick, ->] (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhDw}{\raisebox{-0.333\height}{\@tlen\SquareDw\@tlen}}
+%%
+\newcommand{\RubikDw}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareDw\\
+\rrDw%
+\end{minipage}%
+}}
+\newcommand{\textRubikDw}{\rrDw\,\rrhDw}
+\newcommand{\rrDwp}{\@rrwp{D}}
+%%
+\newcommand{\SquareDwp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick]     (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick, <-] (\@sb,\@sdd)  -- (\@sbh, \@sdd);
+\draw [thick, <-] (\@sb,\@sd)   -- (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhDwp}{\raisebox{-0.333\height}{\@tlen\SquareDwp\@tlen}}
+%%
+\newcommand{\RubikDwp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareDwp\\
+\rrDwp%
+\end{minipage}%
+}}
+\newcommand{\textRubikDwp}{\rrDwp\,\rrhDwp}
+\newcommand{\rrDs}{\@rrs{D}}
+%%
+\newcommand{\SquareDs}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, ->] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick, ->]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhDs}{\raisebox{-0.333\height}{\@tlen\SquareDs\@tlen}}
+%%
+\newcommand{\RubikDs}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareDs\\
+\rrDs%
+\end{minipage}%
+}}
+\newcommand{\textRubikDs}{\rrDs\,\rrhDs}
+\newcommand{\rrDsp}{\@rrsp{D}}
+%%
+\newcommand{\SquareDsp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick, <-]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhDsp}{\raisebox{-0.333\height}{\@tlen\SquareDsp\@tlen}}
+%%
+\newcommand{\RubikDsp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareDsp\\
+\rrDsp%
+\end{minipage}%
+}}
+\newcommand{\textRubikDsp}{\rrDsp\,\rrhDsp}
+\newcommand{\rrDa}{\@rra{D}}
+%%
+\newcommand{\SquareDa}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick, ->]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhDa}{\raisebox{-0.333\height}{\@tlen\SquareDa\@tlen}}
+%%
+\newcommand{\RubikDa}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareDa\\
+\rrDa%
+\end{minipage}%
+}}
+\newcommand{\textRubikDa}{\rrDa\,\rrhDa}
+\newcommand{\rrDap}{\@rrap{D}}
+%%
+\newcommand{\SquareDap}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, ->] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick, <-]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhDap}{\raisebox{-0.333\height}{\@tlen\SquareDap\@tlen}}
+%%
+\newcommand{\RubikDap}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareDap\\
+\rrDap%
+\end{minipage}%
+}}
+\newcommand{\textRubikDap}{\rrDap\,\rrhDap}
+\newcommand{\rrE}{\@rr{E}}
+%%
+\newcommand{\SquareE}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick, ->]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhE}{\raisebox{-0.333\height}{\@tlen\SquareE\@tlen}}
+%%
+\newcommand{\RubikE}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareE\\
+\rrE%
+\end{minipage}%
+}}
+\newcommand{\textRubikE}{\rrE\,\rrhE}
+\newcommand{\rrEp}{\@rrp{E}}
+%%
+\newcommand{\SquareEp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick, <-]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhEp}{\raisebox{-0.333\height}{\@tlen\SquareEp\@tlen}}
+%%
+\newcommand{\RubikEp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareEp\\
+\rrEp%
+\end{minipage}%
+}}
+\newcommand{\textRubikEp}{\rrEp\,\rrhEp}
+\newcommand{\rrF}{\@rr{F}}
+%%
+\newcommand{\SquareF}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@scx, \@scy) arc[radius=0.35, start angle=-60, delta angle=290];
+\end{tikzpicture}%
+}
+\newcommand{\rrhF}{\raisebox{-0.333\height}{\@tlen\SquareF\@tlen}}
+%%
+\newcommand{\RubikF}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareF\\
+\rrF%
+\end{minipage}%
+}}
+\newcommand{\textRubikF}{\rrF\,\rrhF}
+\newcommand{\rrFp}{\@rrp{F}}
+%%
+\newcommand{\SquareFp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, ->] (\@scx, \@scy) arc[radius=0.35, start angle=-60, delta angle=290];
+\end{tikzpicture}%
+}
+\newcommand{\rrhFp}{\raisebox{-0.333\height}{\@tlen\SquareFp\@tlen}}
+%%
+\newcommand{\RubikFp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareFp\\
+\rrFp%
+\end{minipage}%
+}}
+\newcommand{\textRubikFp}{\rrFp\,\rrhFp}
+\newcommand{\rrFw}{\@rrw{F}}
+%%
+\newcommand{\SquareFw}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@scx, \@scy) arc[radius=0.35, start angle=-60, delta angle=290];
+\draw [thick] (\@sqcx,\@sqcy) arc[radius=0.1, start angle=-60, delta angle=360];
+\end{tikzpicture}%
+}
+\newcommand{\rrhFw}{\raisebox{-0.333\height}{\@tlen\SquareFw\@tlen}}
+%%
+\newcommand{\RubikFw}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareFw\\
+\rrFw%
+\end{minipage}%
+}}
+\newcommand{\textRubikFw}{\rrFw\,\rrhFw}
+\newcommand{\rrFwp}{\@rrwp{F}}
+%%
+\newcommand{\SquareFwp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, ->] (\@scx, \@scy) arc[radius=0.35, start angle=-60, delta angle=290];
+\draw [thick] (\@sqcx,\@sqcy) arc[radius=0.1, start angle=-60, delta angle=360];
+\end{tikzpicture}%
+}
+\newcommand{\rrhFwp}{\raisebox{-0.333\height}{\@tlen\SquareFwp\@tlen}}
+%%
+\newcommand{\RubikFwp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareFwp\\
+\rrFwp%
+\end{minipage}%
+}}
+\newcommand{\textRubikFwp}{\rrFwp\,\rrhFwp}
+%%
+\newcommand{\rrFs}{\@rrs{F}}
+\newcommand{\SquareFs}{\@tlen\@SquareLetter{\rrFs}\@tlen}
+\newcommand{\rrhFs}{\raisebox{-0.25mm}{\SquareFs}}
+\newcommand{\RubikFs}{\raisebox{\@hRubik}{\SquareFs}}
+\newcommand{\textRubikFs}{\rrhFs}
+\newcommand{\rrFsp}{\@rrsp{F}}
+\newcommand{\SquareFsp}{\@tlen\@SquareLetter{\rrFsp}\@tlen}
+\newcommand{\rrhFsp}{\raisebox{-0.25mm}{\SquareFsp}}
+\newcommand{\RubikFsp}{\raisebox{\@hRubik}{\SquareFsp}}
+\newcommand{\textRubikFsp}{\rrhFsp}
+\newcommand{\rrFa}{\@rra{F}}
+\newcommand{\SquareFa}{\@tlen\@SquareLetter{\rrFa}\@tlen}
+\newcommand{\rrhFa}{\raisebox{-0.25mm}{\SquareFa}}
+\newcommand{\RubikFa}{\raisebox{\@hRubik}{\SquareFa}}
+\newcommand{\textRubikFa}{\rrhFa}
+\newcommand{\rrFap}{\@rrap{F}}
+\newcommand{\SquareFap}{\@tlen\@SquareLetter{\rrFap}\@tlen}
+\newcommand{\rrhFap}{\raisebox{-0.25mm}{\SquareFap}}
+\newcommand{\RubikFap}{\raisebox{\@hRubik}{\SquareFap}}
+\newcommand{\textRubikFap}{\rrhFap}
+\newcommand{\rrL}{\@rr{L}}
+%%
+\newcommand{\SquareL}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhL}{\raisebox{-0.333\height}{\@tlen\SquareL\@tlen}}
+%%
+\newcommand{\RubikL}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareL\\
+\rrL%
+\end{minipage}%
+}}
+\newcommand{\textRubikL}{\rrL\,\rrhL}
+\newcommand{\rrLp}{\@rrp{L}}
+%%
+\newcommand{\SquareLp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick,->] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhLp}{\raisebox{-0.333\height}{\@tlen\SquareLp\@tlen}}
+%%
+\newcommand{\RubikLp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareLp\\
+\rrLp%
+\end{minipage}%
+}}
+\newcommand{\textRubikLp}{\rrLp\,\rrhLp}
+\newcommand{\rrLw}{\@rrw{L}}
+%%
+\newcommand{\SquareLw}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick, <-] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhLw}{\raisebox{-0.333\height}{\@tlen\SquareLw\@tlen}}
+%%
+\newcommand{\RubikLw}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareLw\\
+\rrLw%
+\end{minipage}%
+}}
+\newcommand{\textRubikLw}{\rrLw\,\rrhLw}
+\newcommand{\rrLwp}{\@rrwp{L}}
+%%
+\newcommand{\SquareLwp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick,->] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick,->] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhLwp}{\raisebox{-0.333\height}{\@tlen\SquareLwp\@tlen}}
+%%
+\newcommand{\RubikLwp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareLwp\\
+\rrLwp%
+\end{minipage}%
+}}
+\newcommand{\textRubikLwp}{\rrLwp\,\rrhLwp}
+\newcommand{\rrLs}{\@rrs{L}}
+%%
+\newcommand{\SquareLs}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick, <-] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhLs}{\raisebox{-0.333\height}{\@tlen\SquareLs\@tlen}}
+%%
+\newcommand{\RubikLs}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareLs\\
+\rrLs%
+\end{minipage}%
+}}
+\newcommand{\textRubikLs}{\rrLs\,\rrhLs}
+\newcommand{\rrLsp}{\@rrsp{L}}
+%%
+\newcommand{\SquareLsp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, ->] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick, ->] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhLsp}{\raisebox{-0.333\height}{\@tlen\SquareLsp\@tlen}}
+%%
+\newcommand{\RubikLsp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareLsp\\
+\rrLsp%
+\end{minipage}%
+}}
+\newcommand{\textRubikLsp}{\rrLsp\,\rrhLsp}
+\newcommand{\rrLa}{\@rra{L}}
+%%
+\newcommand{\SquareLa}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick, ->] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhLa}{\raisebox{-0.333\height}{\@tlen\SquareLa\@tlen}}
+%%
+\newcommand{\RubikLa}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareLa\\
+\rrLa%
+\end{minipage}%
+}}
+\newcommand{\textRubikLa}{\rrLa\,\rrhLa}
+\newcommand{\rrLap}{\@rrap{L}}
+%%
+\newcommand{\SquareLap}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, ->] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick, <-] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhLap}{\raisebox{-0.333\height}{\@tlen\SquareLap\@tlen}}
+%%
+\newcommand{\RubikLap}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareLap\\
+\rrLap%
+\end{minipage}%
+}}
+\newcommand{\textRubikLap}{\rrLap\,\rrhLap}
+\newcommand{\rrM}{\@rr{M}}
+%%
+\newcommand{\SquareM}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick, <-] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhM}{\raisebox{-0.333\height}{\@tlen\SquareM\@tlen}}
+%%
+\newcommand{\RubikM}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareM\\
+\rrM%
+\end{minipage}%
+}}
+\newcommand{\textRubikM}{\rrM\,\rrhM}
+\newcommand{\rrMp}{\@rrp{M}}
+%%
+\newcommand{\SquareMp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick,->] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhMp}{\raisebox{-0.333\height}{\@tlen\SquareMp\@tlen}}
+%%
+\newcommand{\RubikMp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareMp\\
+\rrMp%
+\end{minipage}%
+}}
+\newcommand{\textRubikMp}{\rrMp\,\rrhMp}
+\newcommand{\rrR}{\@rr{R}}
+%%
+\newcommand{\SquareR}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+%% draw three lines in the square, one with an arrow
+\draw [thick] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick, ->] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhR}{\raisebox{-0.333\height}{\@tlen\SquareR\@tlen}}
+%%
+\newcommand{\RubikR}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareR\\
+\rrR%
+\end{minipage}%
+}}
+\newcommand{\textRubikR}{\rrR\,\rrhR}
+\newcommand{\rrRp}{\@rrp{R}}
+%%
+\newcommand{\SquareRp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick, <-] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhRp}{\raisebox{-0.333\height}{\@tlen\SquareRp\@tlen}}
+%%
+\newcommand{\RubikRp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareRp\\
+\rrRp%
+\end{minipage}%
+}}
+\newcommand{\textRubikRp}{\rrRp\,\rrhRp}
+\newcommand{\rrRw}{\@rrw{R}}
+%%
+\newcommand{\SquareRw}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick, ->] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick, ->] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhRw}{\raisebox{-0.333\height}{\@tlen\SquareRw\@tlen}}
+%%
+\newcommand{\RubikRw}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareRw\\
+\rrRw%
+\end{minipage}%
+}}
+\newcommand{\textRubikRw}{\rrRw\,\rrhRw}
+\newcommand{\rrRwp}{\@rrwp{R}}
+%%
+\newcommand{\SquareRwp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick, <-] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick, <-] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhRwp}{\raisebox{-0.333\height}{\@tlen\SquareRwp\@tlen}}
+%%
+\newcommand{\RubikRwp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareRwp\\
+\rrRwp%
+\end{minipage}%
+}}
+\newcommand{\textRubikRwp}{\rrRwp\,\rrhRwp}
+\newcommand{\rrRs}{\@rrs{R}}
+%%
+\newcommand{\SquareRs}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick,->] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick,->] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhRs}{\raisebox{-0.333\height}{\@tlen\SquareRs\@tlen}}
+%%
+\newcommand{\RubikRs}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareRs\\
+\rrRs%
+\end{minipage}%
+}}
+\newcommand{\textRubikRs}{\rrRs\,\rrhRs}
+\newcommand{\rrRsp}{\@rrsp{R}}
+%%
+\newcommand{\SquareRsp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick,<-] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick,<-] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhRsp}{\raisebox{-0.333\height}{\@tlen\SquareRsp\@tlen}}
+%%
+\newcommand{\RubikRsp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareRsp\\
+\rrRsp%
+\end{minipage}%
+}}
+\newcommand{\textRubikRsp}{\rrRsp\,\rrhRsp}
+\newcommand{\rrRa}{\@rra{R}}
+%%
+\newcommand{\SquareRa}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick,<-] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick,->] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhRa}{\raisebox{-0.333\height}{\@tlen\SquareRa\@tlen}}
+%%
+\newcommand{\RubikRa}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareRa\\
+\rrRa%
+\end{minipage}%
+}}
+\newcommand{\textRubikRa}{\rrRa\,\rrhRa}
+\newcommand{\rrRap}{\@rrap{R}}
+%%
+\newcommand{\SquareRap}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick,->] (\@sd, \@sb) -- (\@sd, \@sbh);
+\draw [thick] (\@sdd,\@sb) -- (\@sdd, \@sbh);
+\draw [thick,<-] (\@sddd, \@sb) -- (\@sddd, \@sbh);
+\end{tikzpicture}%
+}
+\newcommand{\rrhRap}{\raisebox{-0.333\height}{\@tlen\SquareRap\@tlen}}
+%%
+\newcommand{\RubikRap}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareRap\\
+\rrRap%
+\end{minipage}%
+}}
+\newcommand{\textRubikRap}{\rrRap\,\rrhRap}
+\newcommand{\rrS}{\@rr{S}}
+\newcommand{\SquareS}{\@tlen\@SquareLetter{\rrS}\@tlen}
+\newcommand{\rrhS}{\raisebox{-0.25mm}{\SquareS}}
+\newcommand{\RubikS}{\raisebox{\@hRubik}{\SquareS}}
+\newcommand{\textRubikS}{\rrhS}
+\newcommand{\rrSp}{\@rrp{S}}
+\newcommand{\SquareSp}{\@tlen\@SquareLetter{\rrSp}\@tlen}
+\newcommand{\rrhSp}{\raisebox{-0.25mm}{\SquareSp}}
+\newcommand{\RubikSp}{\raisebox{\@hRubik}{\SquareSp}}
+\newcommand{\textRubikSp}{\rrhSp}
+\newcommand{\rrSu}{\@rru{S}}
+\newcommand{\rrhSu}{\rrhEp}%
+\newcommand{\RubikSu}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareEp\\
+\rrSu%
+\end{minipage}%
+}}
+\newcommand{\textRubikSu}{\rrSu\,\rrhEp}
+\newcommand{\rrSup}{\@rrup{S}}
+\newcommand{\rrhSup}{\rrhE}%
+\newcommand{\RubikSup}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareE\\
+\rrSup%
+\end{minipage}%
+}}
+\newcommand{\textRubikSup}{\rrSup\,\rrhE}
+\newcommand{\rrSd}{\@rrd{S}}
+\newcommand{\rrhSd}{\rrhE}%
+\newcommand{\RubikSd}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareE\\
+\rrSd%
+\end{minipage}%
+}}
+\newcommand{\textRubikSd}{\rrSd\,\rrhE}
+\newcommand{\rrSdp}{\@rrdp{S}}
+\newcommand{\rrhSdp}{\rrhEp}%
+\newcommand{\RubikSdp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareEp\\
+\rrSdp%
+\end{minipage}%
+}}
+\newcommand{\textRubikSdp}{\rrSdp\,\rrhEp}
+\newcommand{\rrSl}{\@rrl{S}}
+\newcommand{\rrhSl}{\rrhM}%
+\newcommand{\RubikSl}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareM\\
+\rrSl%
+\end{minipage}%
+}}
+\newcommand{\textRubikSl}{\rrSl\,\rrhM}
+\newcommand{\rrSlp}{\@rrlp{S}}
+\newcommand{\rrhSlp}{\rrhMp}%
+\newcommand{\RubikSlp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareMp\\
+\rrSlp%
+\end{minipage}%
+}}
+\newcommand{\textRubikSlp}{\rrSlp\,\rrhMp}
+\newcommand{\rrSr}{\@rrr{S}}
+\newcommand{\rrhSr}{\rrhMp}%
+\newcommand{\RubikSr}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareMp\\
+\rrSr%
+\end{minipage}%
+}}
+\newcommand{\textRubikSr}{\rrSr\,\rrhMp}
+\newcommand{\rrSrp}{\@rrrp{S}}
+\newcommand{\rrhSrp}{\rrhM}%
+\newcommand{\RubikSrp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareM\\
+\rrSrp%
+\end{minipage}%
+}}
+\newcommand{\textRubikSrp}{\rrSrp\,\rrhM}
+\newcommand{\rrSf}{\@rrf{S}}
+\newcommand{\SquareSf}{\@tlen\@SquareLetter{\rrSf}\@tlen}
+\newcommand{\rrhSf}{\raisebox{-0.25mm}{\SquareSf}}
+\newcommand{\RubikSf}{\raisebox{\@hRubik}{\SquareSf}}
+\newcommand{\textRubikSf}{\rrhSf}
+\newcommand{\rrSfp}{\@rrfp{S}}
+\newcommand{\SquareSfp}{\@tlen\@SquareLetter{\rrSfp}\@tlen}
+\newcommand{\rrhSfp}{\raisebox{-0.25mm}{\SquareSfp}}
+\newcommand{\RubikSfp}{\raisebox{\@hRubik}{\SquareSfp}}
+\newcommand{\textRubikSfp}{\rrhSfp}
+\newcommand{\rrSb}{\@rrb{S}}
+\newcommand{\SquareSb}{\@tlen\@SquareLetter{\rrSb}\@tlen}
+\newcommand{\rrhSb}{\raisebox{-0.25mm}{\SquareSb}}
+\newcommand{\RubikSb}{\raisebox{\@hRubik}{\SquareSb}}
+\newcommand{\textRubikSb}{\rrhSb}
+\newcommand{\rrSbp}{\@rrbp{S}}
+\newcommand{\SquareSbp}{\@tlen\@SquareLetter{\rrSbp}\@tlen}
+\newcommand{\rrhSbp}{\raisebox{-0.25mm}{\SquareSbp}}
+\newcommand{\RubikSbp}{\raisebox{\@hRubik}{\SquareSbp}}
+\newcommand{\textRubikSbp}{\rrhSbp}
+\newcommand{\rrU}{\@rr{U}}
+%%
+\newcommand{\SquareU}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhU}{\raisebox{-0.333\height}{\@tlen\SquareU\@tlen}}
+%%
+\newcommand{\RubikU}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareU\\
+\rrU%
+\end{minipage}%%
+}}
+\newcommand{\textRubikU}{\rrU\,\rrhU}
+\newcommand{\rrUw}{\@rrw{U}}
+%%
+\newcommand{\SquareUw}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick, <-] (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhUw}{\raisebox{-0.333\height}{\@tlen\SquareUw\@tlen}}
+%%
+\newcommand{\RubikUw}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareUw\\
+\rrUw%
+\end{minipage}%%
+}}
+%%
+\newcommand{\textRubikUw}{\rrUw\,\rrhUw}
+\newcommand{\rrUp}{\@rrp{U}}
+%%
+\newcommand{\SquareUp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, ->] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhUp}{\raisebox{-0.333\height}{\@tlen\SquareUp\@tlen}}
+%%
+\newcommand{\RubikUp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareUp\\
+\rrUp%
+\end{minipage}%%
+}}
+\newcommand{\textRubikUp}{\rrUp\,\rrhUp}
+\newcommand{\rrUwp}{\@rrwp{U}}
+%%
+\newcommand{\SquareUwp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, ->] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick, ->] (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhUwp}{\raisebox{-0.333\height}{\@tlen\SquareUwp\@tlen}}
+%%
+\newcommand{\RubikUwp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareUwp\\
+\rrUwp%
+\end{minipage}%%
+}}
+\newcommand{\textRubikUwp}{\rrUwp\,\rrhUwp}
+\newcommand{\rrUs}{\@rrs{U}}
+%%
+\newcommand{\SquareUs}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick, <-]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhUs}{\raisebox{-0.333\height}{\@tlen\SquareUs\@tlen}}
+%%
+\newcommand{\RubikUs}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareUs\\
+\rrUs%
+\end{minipage}%
+}}
+\newcommand{\textRubikUs}{\rrUs\,\rrhUs}
+\newcommand{\rrUsp}{\@rrsp{U}}
+%%
+\newcommand{\SquareUsp}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, ->] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick, ->]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhUsp}{\raisebox{-0.333\height}{\@tlen\SquareUsp\@tlen}}
+%%
+\newcommand{\RubikUsp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareUsp\\
+\rrUsp%
+\end{minipage}%
+}}
+\newcommand{\textRubikUsp}{\rrUsp\,\rrhUsp}
+\newcommand{\rrUa}{\@rra{U}}
+%%
+\newcommand{\SquareUa}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, <-] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick, ->]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhUa}{\raisebox{-0.333\height}{\@tlen\SquareUa\@tlen}}
+%%
+\newcommand{\RubikUa}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareUa\\
+\rrUa%
+\end{minipage}%
+}}
+\newcommand{\textRubikUa}{\rrUa\,\rrhUa}
+\newcommand{\rrUap}{\@rrap{U}}
+%%
+\newcommand{\SquareUap}{%
+\begin{tikzpicture}[scale=0.5]
+\DrawNotationBox;
+\draw [thick, ->] (\@sb,\@sddd) -- (\@sbh, \@sddd);
+\draw [thick]     (\@sb,\@sdd) --  (\@sbh, \@sdd);
+\draw [thick, <-]     (\@sb,\@sd) --   (\@sbh, \@sd);
+\end{tikzpicture}%
+}
+\newcommand{\rrhUap}{\raisebox{-0.333\height}{\@tlen\SquareUap\@tlen}}
+%%
+\newcommand{\RubikUap}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareUap\\
+\rrUap%
+\end{minipage}%
+}}
+\newcommand{\textRubikUap}{\rrUap\,\rrhUap}
+\newcommand{\rrx}{\@rr{x}}
+\newcommand{\Rubikx}{\@xyzRubik{x}}
+\newcommand{\rrhx}{\@xyzh{x}}
+\newcommand{\rrxp}{\@rrp{x}}
+\newcommand{\Rubikxp}{\@xyzRubikp{x}}
+\newcommand{\rrhxp}{\@xyzhp{x}}
+\newcommand{\rry}{\@rr{y}}
+\newcommand{\Rubiky}{\@xyzRubik{y}}
+\newcommand{\rrhy}{\@xyzh{y}}
+\newcommand{\rryp}{\@rrp{y}}
+\newcommand{\Rubikyp}{\@xyzRubikp{y}}
+\newcommand{\rrhyp}{\@xyzhp{y}}
+\newcommand{\rrz}{\@rr{z}}
+\newcommand{\Rubikz}{\@xyzRubik{z}}
+\newcommand{\rrhz}{\@xyzh{z}}
+\newcommand{\rrzp}{\@rrp{z}}
+\newcommand{\Rubikzp}{\@xyzRubikp{z}}
+\newcommand{\rrhzp}{\@xyzhp{z}}
+\newcommand{\rru}{\@rr{u}}
+\newcommand{\rrup}{\@rrp{u}}
+\newcommand{\rrhu}{\@xyzh{u}}
+\newcommand{\rrhup}{\@xyzhp{u}}
+\newcommand{\Rubiku}{\@xyzRubik{u}}
+\newcommand{\Rubikup}{\@xyzRubikp{u}}
+\newcommand{\rrd}{\@rr{d}}
+\newcommand{\rrdp}{\@rrp{d}}
+\newcommand{\rrhd}{\@xyzhbdfl{d}}
+\newcommand{\rrhdp}{\@xyzhbdflp{d}}
+\newcommand{\Rubikd}{\@xyzbdflRubik{d}}
+\newcommand{\Rubikdp}{\@xyzbdflRubikp{d}}
+\newcommand{\rrl}{\@rr{l}}
+\newcommand{\rrlp}{\@rrp{l}}
+\newcommand{\rrhl}{\@xyzhbdfl{l}}
+\newcommand{\rrhlp}{\@xyzhbdflp{l}}
+\newcommand{\Rubikl}{\@xyzbdflRubik{l}}
+\newcommand{\Rubiklp}{\@xyzbdflRubikp{l}}
+\newcommand{\rrr}{\@rr{r}}
+\newcommand{\rrrp}{\@rrp{r}}
+\newcommand{\rrhr}{\@xyzh{r}}
+\newcommand{\rrhrp}{\@xyzhp{r}}
+\newcommand{\Rubikr}{\@xyzRubik{r}}
+\newcommand{\Rubikrp}{\@xyzRubikp{r}}
+\newcommand{\rrf}{\@rr{f}}
+\newcommand{\rrfp}{\@rrp{f}}
+\newcommand{\rrhf}{\@xyzhbdfl{f}}
+\newcommand{\rrhfp}{\@xyzhbdflp{f}}
+\newcommand{\Rubikf}{\@xyzbdflRubik{f}}
+\newcommand{\Rubikfp}{\@xyzbdflRubikp{f}}
+\newcommand{\rrb}{\@rr{b}}
+\newcommand{\rrbp}{\@rrp{b}}
+\newcommand{\rrhb}{\@xyzhbdfl{b}}
+\newcommand{\rrhbp}{\@xyzhbdflp{b}}
+\newcommand{\Rubikb}{\@xyzbdflRubik{b}}
+\newcommand{\Rubikbp}{\@xyzbdflRubikp{b}}
+\newcommand{\@xyzhc}[1]{[\raisebox{-1.2pt}%
+   {{\@rubikfont #1\@rubikfontFNS c}}]}
+\newcommand{\@xyzhcp}[1]{[\raisebox{-1.2pt}%
+   {{\@rubikfont #1{\@rubikfontFNS c}\@rubikprime}}]}
+\newcommand{\@xyzRubikc}[1]{\raisebox{3.45pt}%
+   {[\raisebox{-1.2pt}{{\@rubikfont #1\@rubikfontFNS c}}]}}
+\newcommand{\@xyzRubikcp}[1]{\raisebox{3.45pt}%
+   {[\raisebox{-1.2pt}{{\@rubikfont #1{\@rubikfontFNS c}\@rubikprime}}]}}
+\newcommand{\rrRc}{\@rrc{R}}
+\newcommand{\RubikRc}{\@xyzRubikc{R}}
+\newcommand{\rrhRc}{\@xyzhc{R}}
+\newcommand{\rrRcp}{\@rrcp{R}}
+\newcommand{\RubikRcp}{\@xyzRubikcp{R}}
+\newcommand{\rrhRcp}{\@xyzhcp{R}}
+\newcommand{\rrLc}{\@rrc{L}}
+\newcommand{\RubikLc}{\@xyzRubikc{L}}
+\newcommand{\rrhLc}{\@xyzhc{L}}
+\newcommand{\rrLcp}{\@rrcp{L}}
+\newcommand{\RubikLcp}{\@xyzRubikcp{L}}
+\newcommand{\rrhLcp}{\@xyzhcp{L}}
+\newcommand{\rrUc}{\@rrc{U}}
+\newcommand{\RubikUc}{\@xyzRubikc{U}}
+\newcommand{\rrhUc}{\@xyzhc{U}}
+\newcommand{\rrUcp}{\@rrcp{U}}
+\newcommand{\RubikUcp}{\@xyzRubikcp{U}}
+\newcommand{\rrhUcp}{\@xyzhcp{U}}
+\newcommand{\rrDc}{\@rrc{D}}
+\newcommand{\RubikDc}{\@xyzRubikc{D}}
+\newcommand{\rrhDc}{\@xyzhc{D}}
+\newcommand{\rrDcp}{\@rrcp{D}}
+\newcommand{\RubikDcp}{\@xyzRubikcp{D}}
+\newcommand{\rrhDcp}{\@xyzhcp{D}}
+\newcommand{\rrFc}{\@rrc{F}}
+\newcommand{\RubikFc}{\@xyzRubikc{F}}
+\newcommand{\rrhFc}{\@xyzhc{F}}
+\newcommand{\rrFcp}{\@rrcp{F}}
+\newcommand{\RubikFcp}{\@xyzRubikcp{F}}
+\newcommand{\rrhFcp}{\@xyzhcp{F}}
+\newcommand{\rrBc}{\@rrc{B}}
+\newcommand{\RubikBc}{\@xyzRubikc{B}}
+\newcommand{\rrhBc}{\@xyzhc{B}}
+\newcommand{\rrBcp}{\@rrcp{B}}
+\newcommand{\RubikBcp}{\@xyzRubikcp{B}}
+\newcommand{\rrhBcp}{\@xyzhcp{B}}
+\newcommand{\rrRm}{\@rrm{R}}
+\newcommand{\rrhRm}{\rrhMp}%
+\newcommand{\RubikRm}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareMp\\
+\rrRm%
+\end{minipage}%
+}}
+\newcommand{\textRubikRm}{\rrRm\,\rrhMp}
+\newcommand{\rrRmp}{\@rrmp{R}}
+\newcommand{\rrhRmp}{\rrhM}%
+\newcommand{\RubikRmp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareM\\
+\rrRmp%
+\end{minipage}%
+}}
+\newcommand{\textRubikRmp}{\rrRmp\,\rrhM}
+\newcommand{\rrLm}{\@rrm{L}}
+\newcommand{\rrhLm}{\rrhM}%
+\newcommand{\RubikLm}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareM\\
+\rrLm%
+\end{minipage}%
+}}
+\newcommand{\textRubikLm}{\rrLm\,\rrhM}
+\newcommand{\rrLmp}{\@rrmp{L}}
+\newcommand{\rrhLmp}{\rrhMp}%
+\newcommand{\RubikLmp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareMp\\
+\rrLmp%
+\end{minipage}%
+}}
+\newcommand{\textRubikLmp}{\rrLmp\,\rrhMp}
+\newcommand{\rrUm}{\@rrm{U}}
+\newcommand{\rrhUm}{\rrhEp}%
+\newcommand{\RubikUm}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareEp\\
+\rrUm%
+\end{minipage}%
+}}
+\newcommand{\textRubikUm}{\rrUm\,\rrhEp}
+\newcommand{\rrUmp}{\@rrmp{U}}
+\newcommand{\rrhUmp}{\rrhE}%
+\newcommand{\RubikUmp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareE\\
+\rrUmp%
+\end{minipage}%
+}}
+\newcommand{\textRubikUmp}{\rrUmp\,\rrhE}
+\newcommand{\rrDm}{\@rrm{D}}
+\newcommand{\rrhDm}{\rrhE}%
+\newcommand{\RubikDm}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareE\\
+\rrDm%
+\end{minipage}%
+}}
+\newcommand{\textRubikDm}{\rrDm\,\rrhE}
+\newcommand{\rrDmp}{\@rrmp{D}}
+\newcommand{\rrhDmp}{\rrhEp}%
+\newcommand{\RubikDmp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareEp\\
+\rrDmp%
+\end{minipage}%
+}}
+\newcommand{\textRubikDmp}{\rrDmp\,\rrhEp}
+\newcommand{\rrFm}{\@rrm{F}}
+\newcommand{\SquareFm}{\@tlen\@SquareLetter{\rrFm}\@tlen}
+\newcommand{\rrhFm}{\raisebox{-0.25mm}{\SquareFm}}
+\newcommand{\RubikFm}{\raisebox{\@hRubik}{\SquareFm}}
+\newcommand{\textRubikFm}{\rrhFm}
+\newcommand{\rrFmp}{\@rrmp{F}}
+\newcommand{\SquareFmp}{\@tlen\@SquareLetter{\rrFmp}\@tlen}
+\newcommand{\rrhFmp}{\raisebox{-0.25mm}{\SquareFmp}}
+\newcommand{\RubikFmp}{\raisebox{\@hRubik}{\SquareFmp}}
+\newcommand{\textRubikFmp}{\rrhFmp}
+\newcommand{\rrBm}{\@rrm{B}}
+\newcommand{\SquareBm}{\@tlen\@SquareLetter{\rrBm}\@tlen}
+\newcommand{\rrhBm}{\raisebox{-0.25mm}{\SquareBm}}
+\newcommand{\RubikBm}{\raisebox{\@hRubik}{\SquareBm}}
+\newcommand{\textRubikBm}{\rrhBm}
+\newcommand{\rrBmp}{\@rrmp{B}}
+\newcommand{\SquareBmp}{\@tlen\@SquareLetter{\rrBmp}\@tlen}
+\newcommand{\rrhBmp}{\raisebox{-0.25mm}{\SquareBmp}}
+\newcommand{\RubikBmp}{\raisebox{\@hRubik}{\SquareBmp}}
+\newcommand{\textRubikBmp}{\rrhBmp}
+\newcommand{\@randhc}[1]{[\raisebox{-1.2pt}{{\@rubikfont C#1}}]}
+\newcommand{\@randhcp}[1]{[\raisebox{-1.2pt}{{\@rubikfont C#1\@rubikprime}}]}
+\newcommand{\@randRubikc}[1]%
+   {\raisebox{3.45pt}{[\raisebox{-1.2pt}{{\@rubikfont C#1}}]}}
+\newcommand{\@randRubikcp}[1]%
+   {\raisebox{3.45pt}{[\raisebox{-1.2pt}{{\@rubikfont C#1\@rubikprime}}]}}
+\newcommand{\rrCR}{\@rr{CR}}
+\newcommand{\RubikCR}{\@randRubikc{R}}
+\newcommand{\rrhCR}{\@randhc{R}}
+\newcommand{\rrCRp}{\@rrp{CR}}
+\newcommand{\RubikCRp}{\@randRubikcp{R}}
+\newcommand{\rrhCRp}{\@randhcp{R}}
+\newcommand{\rrCL}{\@rr{CL}}
+\newcommand{\RubikCL}{\@randRubikc{L}}
+\newcommand{\rrhCL}{\@randhc{L}}
+\newcommand{\rrCLp}{\@rrp{CL}}
+\newcommand{\RubikCLp}{\@randRubikcp{L}}
+\newcommand{\rrhCLp}{\@randhcp{L}}
+\newcommand{\rrCU}{\@rr{CU}}
+\newcommand{\RubikCU}{\@randRubikc{U}}
+\newcommand{\rrhCU}{\@randhc{U}}
+\newcommand{\rrCUp}{\@rrp{CU}}
+\newcommand{\RubikCUp}{\@randRubikcp{U}}
+\newcommand{\rrhCUp}{\@randhcp{U}}
+\newcommand{\rrCD}{\@rr{CD}}
+\newcommand{\RubikCD}{\@randRubikc{D}}
+\newcommand{\rrhCD}{\@randhc{D}}
+\newcommand{\rrCDp}{\@rrp{CD}}
+\newcommand{\RubikCDp}{\@randRubikcp{D}}
+\newcommand{\rrhCDp}{\@randhcp{D}}
+\newcommand{\rrCF}{\@rr{CF}}
+\newcommand{\RubikCF}{\@randRubikc{F}}
+\newcommand{\rrhCF}{\@randhc{F}}
+\newcommand{\rrCFp}{\@rrp{CF}}
+\newcommand{\RubikCFp}{\@randRubikcp{F}}
+\newcommand{\rrhCFp}{\@randhcp{F}}
+\newcommand{\rrCB}{\@rr{CB}}
+\newcommand{\RubikCB}{\@randRubikc{B}}
+\newcommand{\rrhCB}{\@randhc{B}}
+\newcommand{\rrCBp}{\@rrp{CB}}
+\newcommand{\RubikCBp}{\@randRubikcp{B}}
+\newcommand{\rrhCBp}{\@randhcp{B}}
+\newcommand{\rrMR}{\@rr{MR}}
+\newcommand{\rrhMR}{\rrhMp}%
+\newcommand{\RubikMR}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareMp\\
+\rrMR%
+\end{minipage}%
+}}
+\newcommand{\textRubikMR}{\rrMR\,\rrhMp}
+\newcommand{\rrMRp}{\@rrp{MR}}
+\newcommand{\rrhMRp}{\rrhM}%
+\newcommand{\RubikMRp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareM\\
+\rrMRp%
+\end{minipage}%
+}}
+\newcommand{\textRubikMRp}{\rrMRp\,\rrhM}
+\newcommand{\rrML}{\@rr{ML}}
+\newcommand{\rrhML}{\rrhM}%
+\newcommand{\RubikML}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareM\\
+\rrML%
+\end{minipage}%
+}}
+\newcommand{\textRubikML}{\rrML\,\rrhM}
+\newcommand{\rrMLp}{\@rrp{ML}}
+\newcommand{\rrhMLp}{\rrhMp}%
+\newcommand{\RubikMLp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareMp\\
+\rrMLp%
+\end{minipage}%
+}}
+\newcommand{\textRubikMLp}{\rrMLp\,\rrhMp}
+\newcommand{\rrMU}{\@rr{MU}}
+\newcommand{\rrhMU}{\rrhEp}%
+\newcommand{\RubikMU}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareEp\\
+\rrMU%
+\end{minipage}%
+}}
+\newcommand{\textRubikMU}{\rrMU\,\rrhEp}
+\newcommand{\rrMUp}{\@rrp{MU}}
+\newcommand{\rrhMUp}{\rrhE}%
+\newcommand{\RubikMUp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareE\\
+\rrMUp%
+\end{minipage}%
+}}
+\newcommand{\textRubikMUp}{\rrMUp\,\rrhE}
+\newcommand{\rrMD}{\@rr{MD}}
+\newcommand{\rrhMD}{\rrhE}%
+\newcommand{\RubikMD}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareE\\
+\rrMD%
+\end{minipage}%
+}}
+\newcommand{\textRubikMD}{\rrMD\,\rrhE}
+\newcommand{\rrMDp}{\@rrp{MD}}
+\newcommand{\rrhMDp}{\rrhEp}%
+\newcommand{\RubikMDp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareEp\\
+\rrMDp%
+\end{minipage}%
+}}
+\newcommand{\textRubikMDp}{\rrMDp\,\rrhEp}
+\newcommand{\rrMF}{\@rr{MF}}
+\newcommand{\SquareMF}{\@tlen\@SquareLetter{\rrMF}\@tlen}
+\newcommand{\rrhMF}{\raisebox{-0.25mm}{\SquareMF}}
+\newcommand{\RubikMF}{\raisebox{\@hRubik}{\SquareMF}}
+\newcommand{\textRubikMF}{\rrhMF}
+\newcommand{\rrMFp}{\@rrp{MF}}
+\newcommand{\SquareMFp}{\@tlen\@SquareLetter{\rrMFp}\@tlen}
+\newcommand{\rrhMFp}{\raisebox{-0.25mm}{\SquareMFp}}
+\newcommand{\RubikMFp}{\raisebox{\@hRubik}{\SquareMFp}}
+\newcommand{\textRubikMFp}{\rrhMFp}
+\newcommand{\rrMB}{\@rr{MB}}
+\newcommand{\SquareMB}{\@tlen\@SquareLetter{\rrMB}\@tlen}
+\newcommand{\rrhMB}{\raisebox{-0.25mm}{\SquareMB}}
+\newcommand{\RubikMB}{\raisebox{\@hRubik}{\SquareMB}}
+\newcommand{\textRubikMB}{\rrhMB}
+\newcommand{\rrMBp}{\@rrp{MB}}
+\newcommand{\SquareMBp}{\@tlen\@SquareLetter{\rrMBp}\@tlen}
+\newcommand{\rrhMBp}{\raisebox{-0.25mm}{\SquareMBp}}
+\newcommand{\RubikMBp}{\raisebox{\@hRubik}{\SquareMBp}}
+\newcommand{\textRubikMBp}{\rrhMBp}
+\newcommand{\@rrT}[1]{{\@rubikfont T#1}}
+\newcommand{\@rrhT}[1]{\@join{\rrh#1}{w}}%
+\newcommand{\@textRubikT}[1]{\@rrT{#1}\,\@join{\rrh#1}{w}}
+\newcommand{\@RubikT}[1]{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%%
+\@join{\Square#1}{w}\\%
+\@rrT{#1}%%
+\end{minipage}%
+}}
+%%
+\newcommand{\@rrTp}[1]{{\@rubikfont T#1\@rubikprime}}
+\newcommand{\@rrhTp}[1]{\@join{\rrh#1}{wp}}%
+\newcommand{\@textRubikTp}[1]{\@rrTp{#1}\,\@join{\rrh#1}{wp}}
+%%
+\newcommand{\@RubikTp}[1]{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%%
+\@join{\Square#1}{wp}\\%
+\@rrTp{#1}%%
+\end{minipage}%
+}}
+\newcommand{\rrTL}{\@rrT{L}}% = rrLw
+\newcommand{\rrhTL}{\@rrhT{L}}
+\newcommand{\textRubikTL}{\@textRubikT{L}}
+\newcommand{\RubikTL}{\@RubikT{L}}
+\newcommand{\rrTLp}{\@rrTp{L}}
+\newcommand{\rrhTLp}{\@rrhTp{L}}
+\newcommand{\textRubikTLp}{\@textRubikTp{L}}
+\newcommand{\RubikTLp}{\@RubikTp{L}}
+\newcommand{\rrTR}{\@rrT{R}}
+\newcommand{\rrhTR}{\@rrhT{R}}
+\newcommand{\textRubikTR}{\@textRubikT{R}}
+\newcommand{\RubikTR}{\@RubikT{R}}
+\newcommand{\rrTRp}{\@rrTp{R}}
+\newcommand{\rrhTRp}{\@rrhTp{R}}
+\newcommand{\textRubikTRp}{\@textRubikTp{R}}
+\newcommand{\RubikTRp}{\@RubikTp{R}}
+\newcommand{\rrTU}{\@rrT{U}}
+\newcommand{\rrhTU}{\@rrhT{U}}
+\newcommand{\textRubikTU}{\@textRubikT{U}}
+\newcommand{\RubikTU}{\@RubikT{U}}
+\newcommand{\rrTUp}{\@rrTp{U}}
+\newcommand{\rrhTUp}{\@rrhTp{U}}
+\newcommand{\textRubikTUp}{\@textRubikTp{U}}
+\newcommand{\RubikTUp}{\@RubikTp{U}}
+\newcommand{\rrTD}{\@rrT{D}}
+\newcommand{\rrhTD}{\@rrhT{D}}
+\newcommand{\textRubikTD}{\@textRubikT{D}}
+\newcommand{\RubikTD}{\@RubikT{D}}
+\newcommand{\rrTDp}{\@rrTp{D}}
+\newcommand{\rrhTDp}{\@rrhTp{D}}
+\newcommand{\textRubikTDp}{\@textRubikTp{D}}
+\newcommand{\RubikTDp}{\@RubikTp{D}}
+\newcommand{\rrTF}{\@rrT{F}}
+\newcommand{\rrhTF}{\@rrhT{F}}
+\newcommand{\textRubikTF}{\@textRubikT{F}}
+\newcommand{\RubikTF}{\@RubikT{F}}
+\newcommand{\rrTFp}{\@rrTp{F}}
+\newcommand{\rrhTFp}{\@rrhTp{F}}
+\newcommand{\textRubikTFp}{\@textRubikTp{F}}
+\newcommand{\RubikTFp}{\@RubikTp{F}}
+\newcommand{\rrTB}{\@rrT{B}}
+\newcommand{\SquareTB}{\@tlen\@SquareLetter{\rrTB}\@tlen}
+\newcommand{\rrhTB}{\raisebox{-0.25mm}{\SquareTB}}
+\newcommand{\textRubikTB}{\rrhTB}
+\newcommand{\RubikTB}{\raisebox{\@hRubik}{\SquareTB}}
+\newcommand{\rrTBp}{\@rrTp{B}}
+\newcommand{\SquareTBp}{\@tlen\@SquareLetter{\rrTBp}\@tlen}
+\newcommand{\rrhTBp}{\raisebox{-0.25mm}{\SquareTBp}}
+\newcommand{\textRubikTBp}{\rrhTBp}
+\newcommand{\RubikTBp}{\raisebox{\@hRubik}{\SquareTBp}}
+\newcommand{\rrSR}{\@rr{SR}}
+\newcommand{\rrhSR}{\rrhRs}%
+\newcommand{\RubikSR}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareRs\\
+\rrSR%
+\end{minipage}%
+}}
+\newcommand{\textRubikSR}{\rrSR\,\rrhRs}
+\newcommand{\rrSRp}{\@rrp{SR}}
+\newcommand{\rrhSRp}{\rrhRsp}%
+\newcommand{\RubikSRp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareRsp\\
+\rrSRp%
+\end{minipage}%
+}}
+\newcommand{\textRubikSRp}{\rrSRp\,\rrhRsp}
+\newcommand{\rrSL}{\@rr{SL}}
+\newcommand{\rrhSL}{\rrhLs}%
+\newcommand{\RubikSL}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareLs\\
+\rrSL%
+\end{minipage}%
+}}
+\newcommand{\textRubikSL}{\rrSL\,\rrhLs}
+\newcommand{\rrSLp}{\@rrp{SL}}
+\newcommand{\rrhSLp}{\rrhLsp}%
+\newcommand{\RubikSLp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareLsp\\
+\rrSLp%
+\end{minipage}%
+}}
+\newcommand{\textRubikSLp}{\rrSLp\,\rrhLsp}
+\newcommand{\rrSU}{\@rr{SU}}
+\newcommand{\rrhSU}{\rrhUs}%
+\newcommand{\RubikSU}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareUs\\
+\rrSU%
+\end{minipage}%
+}}
+\newcommand{\textRubikSU}{\rrSU\,\rrhUs}
+\newcommand{\rrSUp}{\@rrp{SU}}
+\newcommand{\rrhSUp}{\rrhUsp}%
+\newcommand{\RubikSUp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareUsp\\
+\rrSUp%
+\end{minipage}%
+}}
+\newcommand{\textRubikSUp}{\rrSUp\,\rrhUsp}
+\newcommand{\rrSD}{\@rr{SD}}
+\newcommand{\rrhSD}{\rrhDs}%
+\newcommand{\RubikSD}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareDs\\
+\rrSD%
+\end{minipage}%
+}}
+\newcommand{\textRubikSD}{\rrSD\,\rrhDs}
+\newcommand{\rrSDp}{\@rrp{SD}}
+\newcommand{\rrhSDp}{\rrhDsp}%
+\newcommand{\RubikSDp}{%
+{\@rubikfont%
+\begin{minipage}{0.6cm}
+\centering%
+\SquareDsp\\
+\rrSDp%
+\end{minipage}%
+}}
+\newcommand{\textRubikSDp}{\rrSDp\,\rrhDsp}
+\newcommand{\rrSF}{\@rr{SF}}
+\newcommand{\SquareSF}{\@tlen\@SquareLetter{\rrSF}\@tlen}
+\newcommand{\rrhSF}{\raisebox{-0.25mm}{\SquareSF}}
+\newcommand{\RubikSF}{\raisebox{\@hRubik}{\SquareSF}}
+\newcommand{\textRubikSF}{\rrhSF}
+\newcommand{\rrSFp}{\@rrp{SF}}
+\newcommand{\SquareSFp}{\@tlen\@SquareLetter{\rrSFp}\@tlen}
+\newcommand{\rrhSFp}{\raisebox{-0.25mm}{\SquareSFp}}
+\newcommand{\RubikSFp}{\raisebox{\@hRubik}{\SquareSFp}}
+\newcommand{\textRubikSFp}{\rrhSFp}
+\newcommand{\rrSB}{\@rr{SB}}
+\newcommand{\SquareSB}{\@tlen\@SquareLetter{\rrSB}\@tlen}
+\newcommand{\rrhSB}{\raisebox{-0.25mm}{\SquareSB}}
+\newcommand{\RubikSB}{\raisebox{\@hRubik}{\SquareSB}}
+\newcommand{\textRubikSB}{\rrhSB}
+\newcommand{\rrSBp}{\@rrp{SB}}
+\newcommand{\SquareSBp}{\@tlen\@SquareLetter{\rrSBp}\@tlen}
+\newcommand{\rrhSBp}{\raisebox{-0.25mm}{\SquareSBp}}
+\newcommand{\RubikSBp}{\raisebox{\@hRubik}{\SquareSBp}}
+\newcommand{\textRubikSBp}{\rrhSBp}
+\newcommand{\textRubikx}{\rrhx}
+\newcommand{\textRubikxp}{\rrhxp}
+\newcommand{\textRubiky}{\rrhy}
+\newcommand{\textRubikyp}{\rrhyp}
+\newcommand{\textRubikz}{\rrhz}
+\newcommand{\textRubikzp}{\rrhzp}
+\newcommand{\textRubikl}{\rrhl}
+\newcommand{\textRubiklp}{\rrhlp}
+\newcommand{\textRubikr}{\rrhr}
+\newcommand{\textRubikrp}{\rrhrp}
+\newcommand{\textRubiku}{\rrhu}
+\newcommand{\textRubikup}{\rrhup}
+\newcommand{\textRubikd}{\rrhd}
+\newcommand{\textRubikdp}{\rrhdp}
+\newcommand{\textRubikf}{\rrhf}
+\newcommand{\textRubikfp}{\rrhfp}
+\newcommand{\textRubikb}{\rrhb}
+\newcommand{\textRubikbp}{\rrhbp}
+\newcommand{\textRubikLc}{\rrhLc}
+\newcommand{\textRubikLcp}{\rrhLcp}
+\newcommand{\textRubikRc}{\rrhRc}
+\newcommand{\textRubikRcp}{\rrhRcp}
+\newcommand{\textRubikUc}{\rrhUc}
+\newcommand{\textRubikUcp}{\rrhUcp}
+\newcommand{\textRubikDc}{\rrhDc}
+\newcommand{\textRubikDcp}{\rrhDcp}
+\newcommand{\textRubikFc}{\rrhFc}
+\newcommand{\textRubikFcp}{\rrhFcp}
+\newcommand{\textRubikBc}{\rrhBc}
+\newcommand{\textRubikBcp}{\rrhBcp}
+\newcommand{\textRubikCL}{\rrhCL}
+\newcommand{\textRubikCLp}{\rrhCLp}
+\newcommand{\textRubikCR}{\rrhCR}
+\newcommand{\textRubikCRp}{\rrhCRp}
+\newcommand{\textRubikCU}{\rrhCU}
+\newcommand{\textRubikCUp}{\rrhCUp}
+\newcommand{\textRubikCD}{\rrhCD}
+\newcommand{\textRubikCDp}{\rrhCDp}
+\newcommand{\textRubikCF}{\rrhCF}
+\newcommand{\textRubikCFp}{\rrhCFp}
+\newcommand{\textRubikCB}{\rrhCB}
+\newcommand{\textRubikCBp}{\rrhCBp}
+\endinput
+%%
+%% End of file `rubikcube.sty'.

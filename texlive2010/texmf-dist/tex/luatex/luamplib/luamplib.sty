@@ -1,0 +1,173 @@
+%%
+%% This is file `luamplib.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% luamplib.dtx  (with options: `package')
+%% This is a generated file.
+%% 
+%% Copyright (C) 2008-2009 by Hans Hagen, Taco Hoekwater and Elie Roux
+%% <elie.roux@telecom-bretagne.eu>.
+%% 
+%% This work is under the CC0 license.
+%% 
+%% This Current Maintainer of this work is Elie Roux.
+%% 
+%% This work consists of the main source file luamplib.dtx
+%% and the derived files
+%%    luamplib.sty, luamplib.lua, luamplib-createmem.lua and luamplib.pdf.
+%% 
+
+\expandafter\ifx\csname ProvidesPackage\endcsname\relax
+  \input luatexbase-modutils.sty
+\else
+  \NeedsTeXFormat{LaTeX2e}
+  \ProvidesPackage{luamplib}
+    [2010/05/10 v1.03 mplib package for LuaTeX.]
+  \RequirePackage{luatexbase-modutils}
+  \RequirePackage{fancyvrb}
+\fi
+
+
+\luatexUseModule{luamplib}
+
+
+\def\mplibsetformat#1{\directlua{luamplib.setformat([[#1]])}}
+
+\def\mplibsetmemfile#1{\directlua{luamplib.setmemfile([[#1]])}}
+
+
+\ifnum\pdfoutput>0
+    \let\mplibtoPDF\pdfliteral
+\else
+    %\def\MPLIBtoPDF#1{\special{pdf:literal direct #1}} % not ok yet
+    \def\mplibtoPDF#1{}
+    \expandafter\ifx\csname PackageWarning\endcsname\relax
+      \write16{}
+      \write16{Warning: MPLib only works in PDF mode, no figure will be output.}
+      \write16{}
+    \else
+      \PackageWarning{mplib}{MPLib only works in PDF mode, no figure will be output.}
+    \fi
+\fi
+
+
+\expandafter\ifx\csname ProvidesPackage\endcsname\relax
+
+\def\mplibsetupcatcodes{
+  \catcode`\{=12 \catcode`\}=12 \catcode`\#=12 \catcode`\^=12 \catcode`\~=12
+  \catcode`\_=12 \catcode`\%=12 \catcode`\&=12 \catcode`\$=12
+}
+
+\def\mplibcode{%
+  \bgroup %
+  \mplibsetupcatcodes %
+  \mplibdocode %
+}
+
+\long\def\mplibdocode#1\endmplibcode{%
+  \egroup %
+  \mplibprocess{#1}%
+}
+
+\long\def\mplibprocess#1{%
+  \directlua{luamplib.process([[#1]])}%
+}
+
+\else
+
+
+\makeatletter
+\begingroup
+\catcode`\,=13
+\catcode`\-=13
+\gdef\FV@hack{%
+  \def,{\string,}%
+  \def-{\string-}%
+}
+\endgroup
+
+
+\newcommand\mplibaddlines[1]{%
+  \begingroup %
+  \FV@hack %
+  \def\FV@ProcessLine##1{%
+    \directlua{luamplib.addline([[##1]])}%
+  }%
+  \csname FV@SV@#1\endcsname %
+  \endgroup %
+}
+
+\makeatother
+
+
+\newenvironment{mplibcode}{%
+  \VerbatimEnvironment %
+  \begin{SaveVerbatim}{memoire}%
+}{%
+  \end{SaveVerbatim}%
+  \mplibaddlines{memoire}%
+  \luadirect{luamplib.processlines()}%
+}
+
+\fi
+
+
+\ifx\mplibscratchbox\undefined \newbox\mplibscratchbox \fi
+
+
+\def\mplibstarttoPDF#1#2#3#4{
+  \hbox\bgroup
+  \xdef\MPllx{#1}\xdef\MPlly{#2}%
+  \xdef\MPurx{#3}\xdef\MPury{#4}%
+  \xdef\MPwidth{\the\dimexpr#3bp-#1bp\relax}%
+  \xdef\MPheight{\the\dimexpr#4bp-#2bp\relax}%
+  \parskip0pt%
+  \leftskip0pt%
+  \parindent0pt%
+  \everypar{}%
+  \setbox\mplibscratchbox\vbox\bgroup
+  \noindent
+}
+
+\def\mplibstoptoPDF{%
+  \egroup %
+  \setbox\mplibscratchbox\hbox %
+    {\hskip-\MPllx bp%
+     \raise-\MPlly bp%
+     \box\mplibscratchbox}%
+  \setbox\mplibscratchbox\vbox to \MPheight
+    {\vfill
+     \hsize\MPwidth
+     \wd\mplibscratchbox0pt%
+     \ht\mplibscratchbox0pt%
+     \dp\mplibscratchbox0pt%
+     \box\mplibscratchbox}%
+  \wd\mplibscratchbox\MPwidth
+  \ht\mplibscratchbox\MPheight
+  \box\mplibscratchbox
+  \egroup
+}
+
+
+\def\mplibtextext#1#2#3#4#5{%
+  \begingroup
+  \setbox\mplibscratchbox\hbox
+    {\font\temp=#1 at #2bp%
+     \temp
+     #3}%
+  \setbox\mplibscratchbox\hbox
+    {\hskip#4 bp%
+     \raise#5 bp%
+     \box\mplibscratchbox}%
+  \wd\mplibscratchbox0pt%
+  \ht\mplibscratchbox0pt%
+  \dp\mplibscratchbox0pt%
+  \box\mplibscratchbox
+  \endgroup
+}
+
+\endinput
+%%
+%% End of file `luamplib.sty'.

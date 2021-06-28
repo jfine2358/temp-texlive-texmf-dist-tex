@@ -1,0 +1,660 @@
+%% LaTeX package crossreftools - version 0.9 (2019/01/03 -- 15:57:43)
+%% Source file for crossreftools.sty
+%%
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2017 -- 2019 by Dr. Christian Hupfer <typography dot with dot latex at gmail dot com>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%%
+%% This work has the LPPL maintenance status `author-maintained`
+%%
+%%
+
+\def\crossreftoolspackageversion{0.9}
+\NeedsTeXFormat{LaTeX2e}[1995/12/01]
+
+\ProvidesPackage{crossreftools}[2019/01/03 - v\crossreftoolspackageversion]
+
+\newif\ifcrtfinal
+\newif\ifcleverefcompatmode
+
+\DeclareOption{final}{\global\crtfinaltrue}
+\DeclareOption{cleverefcompat}{\global\cleverefcompatmodetrue}
+\DeclareOption{draft}{\global\crtfinalfalse}
+
+\ProcessOptions*
+
+% Some helper macros
+
+\newcommand{\crt@refundefined}{[UNDEFINED]}
+
+\newcommand{\crtrefundefinedtext}[1]{\renewcommand{\crt@refundefined}{#1}}
+
+\newcommand{\crt@crefundefinedcountervalue}{1977}
+\newcommand{\crtcrefundefinedcountervalue}[1]{\renewcommand{\crt@refundefinedcountervalue}{#1}}
+
+
+
+\@onlypreamble\crtrefundefined
+\@onlypreamble\crtcrefundefinedcountervalue
+
+
+
+% Splitters for cleveref
+
+\def\crt@@cref@@splitter@@first[#1][#2][#3]#4\@nil{%
+  #1%
+}
+
+\def\crt@@cref@@splitter@@second[#1][#2][#3]#4\@nil{%
+  #2%
+}
+
+\def\crt@@cref@@splitter@@third[#1][#2][#3]#4\@nil{%
+  #3%
+}
+
+\def\crt@@cref@@splitter@@fourth[#1][#2][#3]#4\@nil{%
+  #4%
+}
+
+
+\def\crt@cref@splitter@firstarg#1#2{%
+  \expandafter\crt@@cref@@splitter@@first#1\@nil
+}
+
+\def\crt@cref@splitter@secondarg#1#2{%
+  \expandafter\crt@@cref@@splitter@@second#1\@nil%
+}
+
+
+\def\crt@cref@splitter@thirdarg#1#2{%
+  \expandafter\crt@@cref@@splitter@@third#1\@nil%
+}
+
+
+\def\crt@cref@splitter@fourtharg#1#2{%
+  \expandafter\crt@@cref@@splitter@@fourth#1\@nil%
+}
+
+\def\crt@cref@splitter@firstargument{%
+  \@firstoftwo%
+}
+
+
+\ifcleverefcompatmode
+\def\crt@cref@splitter@pageref{%
+  \@secondoftwo%
+}
+\else
+\def\crt@cref@splitter@pageref#1#2{%
+  \expandafter\crt@@cref@@splitter@@fourth#2\@nil%  
+}
+\fi
+
+
+\newcommand{\crtcrefname}[1]{%
+  \expandafter\csname cref@#1@name\endcsname%
+}
+
+\newcommand{\crtcrefpluralname}[1]{%
+  \csname cref@#1@name@plural\endcsname%
+}
+
+\newcommand{\crtCrefpluralname}[1]{%
+  \csname Cref@#1@name@plural\endcsname%
+}
+
+\newcommand{\crtCrefname}[1]{%
+  \csname Cref@#1@name\endcsname%
+}
+
+\newcommand{\crtcrefnamebylabel}[1]{%
+  \@ifundefined{r@#1}{UNDEFINED LABEL}{%
+    \expandafter\csname cref@\@@crtextr@ct@cref{counter}{#1}@name\endcsname%
+  }%
+}
+
+\newcommand{\crtCrefnamebylabel}[1]{%
+  \@ifundefined{r@#1}{UNDEFINED LABEL}{%
+    \expandafter\csname Cref@\@@crtextr@ct@cref{counter}{#1}@name\endcsname%
+  }%
+}
+
+\def\@@crt@@cref@@suffix{cref}
+
+\let\crt@cref@splitter@counter\crt@cref@splitter@firstarg
+\let\crt@cref@splitter@number\crt@cref@splitter@secondarg
+\let\crt@cref@splitter@result\crt@cref@splitter@thirdarg
+\let\crt@cref@splitter@reference\crt@cref@splitter@fourtharg
+\let\crt@cref@splitter@page\crt@cref@splitter@pageref
+
+
+\newcommand{\@@crtextr@ct@cref}[2]{%
+  \expandafter\ifx\csname r@#2@\@@crt@@cref@@suffix\endcsname\relax
+  \crt@refundefined%
+  \else
+  \expandafter\expandafter\expandafter\expandafter\expandafter\csname crt@cref@splitter@#1\expandafter\endcsname\csname r@#2@\@@crt@@cref@@suffix\endcsname%
+  \fi
+}
+
+\newcommand{\crtextractcref}[2]{%
+  \@@crtextr@ct@cref{#1}{#2}%
+}
+
+\newcommand{\crtcrefcounter}[1]{%
+  \@@crtextr@ct@cref{counter}{#1}%
+}  
+
+\newcommand{\crtcrefnumber}[1]{%
+  \@@crtextr@ct@cref{number}{#1}%
+}  
+
+\newcommand{\crtcrefresult}[1]{%
+  \@@crtextr@ct@cref{result}{#1}%
+}  
+
+\newcommand{\crtcrefreference}[1]{%
+  \@@crtextr@ct@cref{reference}{#1}%
+}  
+
+
+\newcommand{\crtcrefpage}[1]{%
+  \@@crtextr@ct@cref{page}{#1}%
+}  
+
+%%%%%%%%%%%%%%%%
+%%%% A macro that returns \crtcrefnumber - like the counter value if the label exists 
+%%%% otherwise some default value in order to be able to calculate with the return value
+%%%%
+
+
+
+\newcommand{\crtcrefcountervalue}[1]{%
+  \crtcrefifundefinedlabel{#1}{%
+    \crt@crefundefinedcountervalue%
+  }{%
+    \crtcrefnumber{#1}%
+  }%
+}
+
+
+
+%%%%%%%%%%%%%%%%
+
+% Default cref format
+
+\newcommand{\crtcref}[1]{%
+  \expandafter\ifx\csname r@#1@cref\endcsname\relax
+  \crt@refundefined%
+  \else
+  \crtcrefnamebylabel{#1} \crtcrefreference{#1}%
+  \fi
+}
+
+\newcommand{\crtCref}[1]{%
+  \expandafter\ifx\csname r@#1@cref\endcsname\relax
+  \crt@refundefined%
+  \else
+  \crtCrefnamebylabel{#1} \crtcrefreference{#1}%
+  \fi
+}
+
+
+%%%%%
+
+
+%%%%%
+
+% refcount - like support
+
+
+\newif\if@crt@hyperrefloaded
+
+
+\@ifpackageloaded{hyperref}{\global\@crt@hyperrefloadedtrue}{}
+
+
+\AtBeginDocument{%
+  \if@crt@hyperrefloaded
+  \def\crt@@ref@@splitter@@first#1#2#3#4#5\@nil{%
+    #1%
+  }
+  
+  \def\crt@@ref@@splitter@@second#1#2#3#4#5\@nil{%
+    #2%
+  }
+  
+  \def\crt@@ref@@splitter@@third#1#2#3#4#5\@nil{%
+    #3%
+  }
+  
+  \def\crt@@ref@@splitter@@fourth#1#2#3#4#5\@nil{%
+    #4%
+  }
+  
+  \def\crt@@ref@@splitter@@fifth#1#2#3#4#5\@nil{%
+    #5%
+  }
+  \else
+  % No hyperref
+  \def\crt@@ref@@splitter@@first#1#2\@nil{%
+    #1%
+  }
+  
+  \def\crt@@ref@@splitter@@second#1#2\@nil{%
+    #2%
+  }
+  
+  \def\crt@@ref@@splitter@@third#1#2\@nil{%
+    % Nothing for convenience
+  }
+  
+  \def\crt@@ref@@splitter@@fourth#1#2\@nil{%
+    % Nothing for convenience
+  }
+  
+  \def\crt@@ref@@splitter@@fifth#1#2\@nil{%
+    % Nothing for convenience
+  }
+  \fi
+}
+
+  \def\crt@ref@splitter@firstarg#1{%
+    \expandafter\crt@@ref@@splitter@@first#1\@nil%
+  }
+  
+  \def\crt@ref@splitter@secondarg#1{%
+    \expandafter\crt@@ref@@splitter@@second#1\@nil%
+  }
+  
+  \def\crt@ref@splitter@thirdarg#1{%
+    \expandafter\crt@@ref@@splitter@@third#1\@nil%
+  }
+
+  \def\crt@ref@splitter@fourtharg#1{%
+    \expandafter\crt@@ref@@splitter@@fourth#1\@nil%
+  }
+  
+  \def\crt@ref@splitter@fiftharg#1{%
+    \expandafter\crt@@ref@@splitter@@fifth#1\@nil%
+  }
+  
+
+\newcommand{\@@crtextr@ct@ref}[2]{%
+  \expandafter\ifx\csname r@#2\endcsname\relax
+  \crt@refundefined%
+  \else
+  \expandafter\expandafter\csname crt@ref@splitter@#1\endcsname\csname r@#2\endcsname%
+  \fi
+}
+
+\let\crt@ref@splitter@reference\crt@ref@splitter@firstarg
+\let\crt@ref@splitter@page\crt@ref@splitter@secondarg
+\let\crt@ref@splitter@name\crt@ref@splitter@thirdarg
+\let\crt@ref@splitter@anchor\crt@ref@splitter@fourtharg
+\let\crt@ref@splitter@unused\crt@ref@splitter@fiftharg
+
+
+\newcommand{\crtextractref}[2]{%
+  \@@crtextr@ct@ref{#1}{#2}% 
+}
+
+
+\newcommand{\crtrefnumber}[1]{%
+  \@@crtextr@ct@ref{reference}{#1}% 
+}
+
+
+\newcommand{\crtrefpage}[1]{%
+  \@@crtextr@ct@ref{page}{#1}% 
+}
+
+\newcommand{\crtrefanchor}[1]{%
+  \@@crtextr@ct@ref{anchor}{#1}% 
+}
+
+\newcommand{\crtrefname}[1]{%
+  \@@crtextr@ct@ref{name}{#1}% 
+}
+
+%%%
+
+\def\crt@split@@@anchor#1.#2\@nil{#1}
+\def\crt@split@@anchor#1#2#3#4#5{\crt@split@@@anchor#4\@nil}
+\def\crt@split@anchor#1{%
+  \expandafter\crt@split@@anchor#1%
+}
+
+\newcommand{\crtrefcounter}[1]{%
+  \if@crt@hyperrefloaded
+  \@ifundefined{r@#1}{\crt@refundefined}{%
+    \expandafter\crt@split@anchor\expandafter{\csname r@#1\endcsname}%
+  }%
+  \else
+  \fi
+}
+
+
+%%% Hyperref wrappers, not expandable. 
+
+
+\newcommand{\crthyperlink}[2]{%
+  \if@crt@hyperrefloaded
+  \hyperlink{#1}{#2}%
+  \else
+  #2%
+  \fi
+}
+
+\newcommand{\crthypercref}[1]{%
+  \crthyperlink{\crtrefanchor{#1}}{\crtcref{#1}}%
+}
+
+\newcommand{\crthyperCref}[1]{%
+  \crthyperlink{\crtrefanchor{#1}}{\crtCref{#1}}%
+}
+
+%%% Support for list of labels
+
+\providecommand*{\listoflabelsname}{List of labels}
+
+\@ifclassloaded{book}{
+  \providecommand*{\listoflabelstructurelevel}{%
+    chapter%
+  }
+}{%
+  \providecommand*{\listoflabelstructurelevel}{%
+    section%
+  }
+}
+
+
+\newcommand{\crt@listoflabelsfileextension}{lla}
+\newcommand{\crt@listoflabelsstructurelevel}{section}
+
+\newcommand{\crtlistoflabelsstructurelevel}[1]{%
+  \renewcommand{\crt@listoflabelsstructurelevel}{#1}%
+}
+
+\newcommand{\crtlistoflabelsfileextension}[1]{%
+  \renewcommand{\crt@listoflabelsfileextension}{#1}%
+}
+
+
+
+
+\newcommand{\crtlistoflabels@unstarred}{%
+  \addcontentsline{toc}{\listoflabelstructurelevel}{\listoflabelsname}%
+  \@crt@listofl@bels%
+}
+
+
+\newcommand{\crtlistoflabels@starred}{%
+  \@crt@listofl@bels%
+}
+
+
+\newcommand{\@crt@listofl@bels}{%
+  \begingroup
+  \makeatletter
+  % In case of loading tcolorbox documentation mode
+  \@ifundefined{tcb@cs}{}{% Redefine \tcb@cs to gobble its argument
+    \renewcommand{\tcb@cs}[1]{}%
+  }%
+  \@input{\jobname.\crt@listoflabelsfileextension}
+  \if@filesw
+  \expandafter\newwrite\csname tf@\crt@listoflabelsfileextension\endcsname
+  \immediate\openout \csname tf@\crt@listoflabelsfileextension\endcsname \jobname.\crt@listoflabelsfileextension\relax
+  \fi
+  \endgroup
+}
+
+
+
+\newcommand{\crtlistoflabels}{%
+  \ifcrtfinal
+  \else
+  \csname\listoflabelstructurelevel\endcsname*{\listoflabelsname\@mkboth{\MakeUppercase{\listoflabelsname}}{\MakeUppercase{\listoflabelsname}}}%
+  \@ifstar{\crtlistoflabels@starred}{\crtlistoflabels@unstarred}%
+  \fi
+}
+
+
+\newcommand{\crtaddlabeltotoc}[1]{%
+  \ifcrtfinal
+  \else
+  \addcontentsline{\crt@listoflabelsfileextension}{\crt@listoflabelsstructurelevel}{\protect\numberline{\expandafter\crtrefnumber{#1}}#1}%
+  \fi
+}
+
+
+\@onlypreamble{\crtlistoflabelsstructurelevel}
+
+\providecommand{\crtprelabelhook}[1]{}
+\providecommand{\crtpostlabelhook}[1]{}
+
+
+%%%%%%%%%%%%%% Support for generic labels
+
+
+
+\newcommand{\crtprovidecurrentlabelname}[1]{%
+  \protected@edef\@currentlabelname{#1}%
+}
+
+\newcommand{\crtprovidecurrentlabel}[1]{%
+  \protected@edef\@currentlabel{#1}%
+}
+
+\newcommand{\crtprovidecurrentlabelinfo}[2]{%
+  \if@crt@hyperrefloaded
+  \phantomsection%
+  \fi
+  \protected@edef\@currentlabel{#1}%
+  \protected@edef\@currentlabelname{#2}%
+}
+
+
+
+\def\crt@@genericl@belopt@rgi[#1]#2{%
+  \crtprovidecurrentlabelinfo{#2}{#1}%
+  #1%
+  \@ifnextchar[{\crt@@genericl@belopt@rgii}{}
+}
+
+
+\def\scrt@@genericl@belopt@rgi[#1]#2{%
+  \crtprovidecurrentlabelinfo{#2}{#1}%
+  \@ifnextchar[{\crt@@genericl@belopt@rgii}{}
+}
+
+
+\def\crt@@genericl@belopt@rgii[#1]{%
+  \label{#1}%
+}
+
+  
+
+\def\crt@@genericl@belnoopt#1{%
+  \crtprovidecurrentlabelinfo{#1}{#1}%
+  #1%
+  \@ifnextchar[{\crt@@genericl@belopt@rgii}{}%
+}
+
+\def\scrt@@genericl@belnoopt#1{%
+  \crtprovidecurrentlabelinfo{#1}{#1}%
+  \@ifnextchar[{\crt@@genericl@belopt@rgii}{}%
+}
+
+
+\newcommand{\crtcrossreflabel}{%
+  \@ifstar{%
+    \@ifnextchar[{\scrt@@genericl@belopt@rgi}{\scrt@@genericl@belnoopt}%
+  }{%
+    \@ifnextchar[{\crt@@genericl@belopt@rgi}{\crt@@genericl@belnoopt}%
+  }%
+}
+
+
+%%%%
+
+% First lower case and first uppercase support
+
+
+\def\crt@first@up#1#2\relax{\uppercase{#1}#2}%
+\def\crt@first@low#1#2\relax{\lowercase{#1}#2}
+
+\newcommand{\crt@firstupper}[1]{\expandafter\expandafter\expandafter\crt@first@up#1\relax}%
+\newcommand{\crt@firstlower}[1]{\expandafter\expandafter\expandafter\crt@first@low#1\relax}%
+
+\def\crt@@lowercase@@splitter#1#2#3#4#5\@nil{%
+  \crt@firstlower{#3}%
+}
+
+\def\crt@@uppercase@@splitter#1#2#3#4#5\@nil{%
+  \crt@firstupper{#3}%
+}
+
+
+\newcommand{\crt@lowercasesplitter}[1]{%
+  \expandafter\crt@@lowercase@@splitter#1\@nil%
+}
+\newcommand{\crt@uppercasesplitter}[1]{%
+  \expandafter\crt@@uppercase@@splitter#1\@nil%
+}
+
+
+\newcommand{\crtlnameref}{%
+  \@ifstar{\@crtlnameref@starred}{\@crtlnameref@unstarred}
+}
+
+\newcommand{\@crtlnameref@starred}[1]{%
+  \crtifdefinedlabel{#1}{%
+    \expandafter\crt@lowercasesplitter\csname r@#1\endcsname%
+  }{}%
+}
+
+\newcommand{\@crtlnameref@unstarred}[1]{%
+  \crtifdefinedlabel{#1}{%
+    \if@crt@hyperrefloaded    
+    \hyperlink{\crtrefanchor{#1}}{\expandafter\crt@lowercasesplitter\csname r@#1\endcsname}%
+    \else
+    \@crtlnameref@starred{#1}%
+    \fi
+  }{}%
+}
+
+
+
+\newcommand{\crtunameref}{%
+  \@ifstar{\@crtunameref@starred}{\@crtunameref@unstarred}
+}
+
+\newcommand{\@crtunameref@starred}[1]{%
+  \crtifdefinedlabel{#1}{%
+    \expandafter\crt@uppercasesplitter\csname r@#1\endcsname%
+  }{}%
+}
+
+\newcommand{\@crtunameref@unstarred}[1]{%
+  \crtifdefinedlabel{#1}{%
+    \if@crt@hyperrefloaded
+    \hyperlink{\crtrefanchor{#1}}{\expandafter\crt@uppercasesplitter\csname r@#1\endcsname}%
+    \else
+    \@crtunameref@starred{#1}%
+    \fi
+  }{}%
+}
+
+%%%%%
+
+% Convenience wrappers 
+
+\newcommand{\crtnameref}{%
+  \crt@nameref%
+}
+
+\newcommand{\crt@nameref}{%
+  \@ifstar{\crt@nameref@starred}{\crt@nameref@unstarred}
+}
+
+\newcommand{\crt@nameref@starred}[1]{%
+  \crtifdefinedlabel{#1}{%
+    \crtrefname{#1}%
+  }{}
+}
+
+\newcommand{\crt@nameref@unstarred}[1]{%
+  \crtifdefinedlabel{#1}{%
+    \if@crt@hyperrefloaded
+    \hyperlink{\crtrefanchor{#1}}{\crtrefname{#1}}%
+    \else
+    \crt@nameref@starred{#1}%
+    \fi
+  }{}%
+}
+  
+  
+
+%%%%%%%%%%%%%%%%%
+
+%%% Checking for existence of a label
+
+
+\newcommand{\crtifdefinedlabel}[3]{%
+  \@ifundefined{r@#1}{#3}{#2}%
+}
+
+\newcommand{\crtifundefinedlabel}[3]{%
+  \@ifundefined{r@#1}{#2}{#3}%
+}
+
+
+\newcommand{\crtcrefifdefinedlabel}[3]{%
+  \@ifundefined{r@#1@cref}{#3}{#2}%
+}
+
+\newcommand{\crtcrefifundefinedlabel}[3]{%
+  \@ifundefined{r@#1@cref}{#2}{#3}%
+}
+
+
+%%%%%%%%%%%%%%
+
+
+
+\AtBeginDocument{%
+
+  \let\crt@l@bels@fe\label
+
+  \newcommand{\l@belwithopt@rg}[2][]{%
+    \crtprelabelhook{#2}%
+    \crt@l@bels@fe[#1]{#2}%
+    \crtaddlabeltotoc{#2}%
+    \crtpostlabelhook{#2}%
+  }
+  \newcommand{\l@belwithoutopt@rg}[1]{%
+    \crtprelabelhook{#1}%
+    \crt@l@bels@fe{#1}%
+    \crtaddlabeltotoc{#1}%
+    \crtpostlabelhook{#1}%
+  }
+
+  \renewcommand{\label}{%
+    \@ifnextchar[{\l@belwithopt@rg}{\l@belwithoutopt@rg}%
+  }
+}
+
+\endinput
+
+

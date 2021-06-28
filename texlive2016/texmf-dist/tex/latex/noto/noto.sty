@@ -1,0 +1,106 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{noto}
+    [2016/03/21 (Bob Tennent)  Supports Noto fonts for all LaTeX engines.]
+
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+
+\newif\ifnoto@otf 
+\ifxetex
+  \noto@otftrue
+\else\ifluatex
+  \noto@otftrue
+\else  % [pdf]LaTeX
+  \noto@otffalse
+\fi\fi
+
+\newif\ifnoto@sfdefault \noto@sfdefaultfalse
+\newif\ifnoto@sf \noto@sftrue
+\newif\ifnoto@rm \noto@rmtrue
+
+
+\newcommand*{\NotoSans@scale}{1}
+\DeclareOptionX{scaled}{\renewcommand*{\NotoSans@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\NotoSans@scale}{#1}}
+
+\DeclareOptionX{sf}{\noto@sftrue\noto@rmfalse}
+\DeclareOptionX{rm}{\noto@rmtrue\noto@sffalse}
+
+\DeclareOptionX{sfdefault}{\noto@sfdefaulttrue}
+\DeclareOptionX{type1}{\noto@otffalse}
+
+\ProcessOptionsX\relax
+
+\ifnoto@otf
+  \def\noto@boldstyle{Bold}
+  \def\noto@regstyle{Regular}
+\else % type1
+  \def\bfseries@sf{b}
+  \def\mdseries@sf{m}
+\fi
+
+\ifnoto@otf\else % type1
+    \def\noto@figurestyle{LF}
+    \def\noto@figurealign{T}
+\fi
+
+
+\ifnoto@otf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes,mweights}
+\fi
+
+\ifnoto@otf
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+        Ligatures = TeX ,
+        Scale     = \NotoSans@scale ,
+        Extension = .otf }
+  \ifnoto@sf
+    \setsansfont
+        [ UprightFont    = *-\noto@regstyle ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-\noto@boldstyle , 
+          BoldItalicFont = *-\noto@boldstyle Italic ]
+        {NotoSans}
+  \fi
+  \ifnoto@rm
+     \setmainfont 
+        [ UprightFont    = *-\noto@regstyle ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-\noto@boldstyle , 
+          BoldItalicFont = *-\noto@boldstyle Italic ]
+        {NotoSerif}
+  \fi
+  % grab current family in case of subsequent change:
+  \let\notosansfamily\sfdefault  
+  \ifnoto@sfdefault\renewcommand*\familydefault{\notosansfamily}\fi
+  \newfontfamily\notosans
+        [ UprightFont    = *-\noto@regstyle ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-\noto@boldstyle , 
+          BoldItalicFont = *-\noto@boldstyle Italic ]
+        {NotoSans}
+  \newfontfamily\notoserif
+        [ UprightFont    = *-\noto@regstyle ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-\noto@boldstyle , 
+          BoldItalicFont = *-\noto@boldstyle Italic ]
+        {NotoSerif}
+\else % type1
+  \def\notosansfamily{NotoSans-\noto@figurealign\noto@figurestyle}
+  \def\notoseriffamily{NotoSerif-\noto@figurealign\noto@figurestyle}
+  \newcommand*\notoserif{\fontfamily{\notoseriffamily}\selectfont}
+  \newcommand*\notosans{\fontfamily{\notosansfamily}\selectfont}
+  \ifnoto@rm \def\rmdefault{\notoseriffamily} \fi
+  \ifnoto@sf \def\sfdefault{\notosansfamily} \fi 
+  \ifnoto@sfdefault\edef\familydefault{\sfdefault}\fi
+\fi
+
+
+\ifnoto@otf
+  % turn off defaults in case other fonts are selected:
+  \defaultfontfeatures{}
+\fi
+
+\endinput

@@ -1,0 +1,61 @@
+% Note that tableau requires arydshln, which must be loaded after longtable
+
+\ProvidesPackage{ot-tableau}
+
+\RequirePackage{tipa,ifthen,pifont,substr,bbding,suffix}
+\RequirePackage{colortbl}
+\RequirePackage{arydshln}
+
+% IPA typesetting macros
+\def\ipa#1{\textipa{#1}}
+\def\ip#1{[\textipa{#1}]}
+\def\ips#1{/\textipa{#1}/}
+
+% OT tableaux
+\newcounter{tableaurow}
+
+\newcolumntype{s}{>{\ShadeTheCell}c}
+
+
+\def\ShadedCells{no}
+\def\ShadingOn{\def\ShadedCells{yes}}
+\def\ShadingOff{\def\ShadedCells{no}}
+
+\def\CellShading{0.9}
+\def\SetCellShading#1{\def\CellShading{#1}}
+\def\ShadeTheCell{\cellcolor[gray]{\CellShading}}
+
+\def\UnshadeTheCell{\cellcolor[gray]{1}}
+
+\def\Excl{no}
+
+\def\fingerfirst{yes}
+\def\FingerBeforeLetter{\def\fingerfirst{yes}}
+\def\LetterBeforeFinger{\def\fingerfirst{no}}
+
+\newcommand*{\rowletter}{\stepcounter{tableaurow}\alph{tableaurow}. }
+\newenvironment{tableau}[1]{\setcounter{tableaurow}{0}%
+				\dashlinegap=2pt%
+				\ifthenelse{\equal{\fingerfirst}{yes}}%
+					{\begin{tabular}{|r@{\hspace{4pt}}l@{\hspace{3pt}}l||#1|}}%then
+					{\begin{tabular}{|l@{\hspace{2pt}}r@{\hspace{4pt}}l||#1|}}%else
+				}{\\\hline\end{tabular}}
+
+\def\properlines{\ifthenelse{\thetableaurow=0}{\\\hline\hline}{\\\hline}}
+
+\newcommand\cand[2][]{\properlines\ifthenelse{\equal{\fingerfirst}{yes}}{#1&\rowletter}{\rowletter&#1}&\ipa{#2}\gdef\Excl{no}}
+\WithSuffix\newcommand\cand*[2][]{\properlines\ifthenelse{\equal{\fingerfirst}{yes}}{#1&\rowletter}{\rowletter&#1}&#2\gdef\Excl{no}}
+
+\def\vio#1{&#1\ifthenelse{\equal{\Excl}{yes}\and\equal{\ShadedCells}{yes}}{\ShadeTheCell}{}\ifthenelse{\equal{\Excl}{yes}}{}{\IfSubStringInString{!}{#1}{\gdef\Excl{yes}}{\gdef\Excl{no}}}}
+
+\newcommand\inp[1]{\hline\multicolumn{3}{|l||}{#1}}
+
+\newcommand\const[1]{&\textsc{#1}\UnshadeTheCell}
+\WithSuffix\newcommand\const*[1]{&#1\UnshadeTheCell}
+
+
+% \begin{tableau}{c:c}
+% \inp{input}		\constraint{One}	\constraint{Two}
+% \cand{input}		\vio{*!}		\vio{*}
+% \optcand{inp\super hut}	\vio{}			\vio{*}
+% \end{tableau}

@@ -1,0 +1,91 @@
+\ProvidesFile{ext-dashed-common.bbx}
+  [2019/04/04 v0.7a common files for extended biblatex
+   dashed bibliography styles (MW)]
+
+\blx@inputonce{ext-biblatex-aux.def}{auxiliary code for ext-biblatex}
+  {}{}{}{}
+
+% \DeclareBibliographyOption checks if an option is already defined.
+% if we want to overwrite the definition we need to trick it into
+% thinking the option has not been defined yet.
+\csundef{KV@blx@opt@pre@dashed}
+% We want to define 'dashed' with a new type, so we need to make
+% biblatex forget about the old type when it passes the options over to
+% Biber.
+\ifundef\listcsremove
+  {\extblx@warning@noline{%
+     'etoolbox' does not provide '\string\listcsremove'.\MessageBreak
+     Please update 'etoolbox' to v2.4 (2017-01-02)\MessageBreak
+     or later}}
+  {\listcsremove{blx@globalopts@boolean}{dashed}}
+
+\extblx@DeclareBTEOption[string]{dashed}[true]{%
+  \ifcsdef{extblx@opt@dashed@#1}
+    {\csuse{extblx@opt@dashed@#1}}
+    {\extblx@warning@noline{%
+       Invalid value '#1' for option 'dashed'.\MessageBreak
+       Possible values are 'fullhash', 'true',\MessageBreak
+       'bibnamehash', 'false'.\MessageBreak
+       Falling back to 'dashed=false'}%
+     \csuse{extblx@opt@dashed@false}}}
+
+\csdef{extblx@opt@dashed@fullhash}{%
+  \ExecuteBibliographyOptions{pagetracker}%
+  \renewbibmacro*{bbx:savehash}{\savefield{fullhash}{\bbx@lasthash}}%
+  \renewbibmacro*{bbx:dashcheck}[2]{%
+    \ifboolexpr{
+      test {\iffieldequals{fullhash}{\bbx@lasthash}}
+      and
+      not test \iffirstonpage
+      and
+      (
+         not bool {bbx@inset}
+         or
+         test {\iffieldequalstr{entrysetcount}{1}}
+      )
+    }
+      {##1}
+      {##2}}}
+\csletcs{extblx@opt@dashed@true}{extblx@opt@dashed@fullhash}
+
+\csdef{extblx@opt@dashed@bibnamehash}{%
+  \ExecuteBibliographyOptions{pagetracker}%
+  \renewbibmacro*{bbx:savehash}{\savefield{bibnamehash}{\bbx@lasthash}}%
+  \renewbibmacro*{bbx:dashcheck}[2]{%
+    \ifboolexpr{
+      test {\iffieldequals{bibnamehash}{\bbx@lasthash}}
+      and
+      not test \iffirstonpage
+      and
+      (
+         not bool {bbx@inset}
+         or
+         test {\iffieldequalstr{entrysetcount}{1}}
+      )
+    }
+      {##1}
+      {##2}}}
+
+\csdef{extblx@opt@dashed@false}{%
+  \renewbibmacro*{bbx:savehash}{}%
+  \renewbibmacro*{bbx:dashcheck}[2]{##2}}
+
+% We need to execute the options that were already executed
+% by the standard styles again, because we changed the
+% underlying definitions.
+\ExecuteBibliographyOptions{dashed=true}%
+
+\endinput
+%
+% This file is part of the biblatex-ext bundle.
+% biblatex-ext is released under the LaTeX Project Public License v1.3c
+% or later.
+%
+% A complete list of files included in that package can be found in
+% README.md or - failing that - in ext-standard.bbx.
+%
+% Official releases of this package are on CTAN
+%   https://www.ctan.org/pkg/biblatex-ext
+% development takes place on GitHub
+%   https://github.com/moewew/biblatex-ext
+%

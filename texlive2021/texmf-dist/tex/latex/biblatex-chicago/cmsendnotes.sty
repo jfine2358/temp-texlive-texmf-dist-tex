@@ -1,0 +1,560 @@
+% Copyright (c) 2003 John Lavagnino
+%               2003 Ulrich Dirr
+%               2020 David Fussner
+%
+% This package is currently maintained by David Fussner.
+%
+% This work may be copied, distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.  The latest
+% version of this license is in http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.  This software is provided as is,
+% without warranty of any kind, either expressed or implied,
+% including, but not limited to, the implied warranties of
+% merchantability and fitness for a particular purpose.
+
+% This package is ultimately based on John Lavagnino's "endnotes"
+% package, and also on Ulrich Dirr's code, from comp.text.tex, adding
+% hyperref support to Lavagnino's package.  Dirr's code has never, to
+% my knowledge, been released as a separate package.  My own
+% contribution is to allow users easily to split the endnotes by part,
+% chapter, section, or subsection when they are printed all at once at
+% the end of a document, which is the arrangement the Chicago Manual
+% envisages for books by a single author.  This arrangement was
+% possible before by using the \addtoendnotes command in your
+% document, but this was tricky to automate, hence the following.
+
+% Please see biblatex-chicago.pdf for details of how to use this
+% package.
+
+\ProvidesPackage{cmsendnotes}[2020/04/20 v 3.14 biblatex auxiliary package]
+
+\RequirePackage{kvoptions}
+\RequirePackage{endnotes}
+\RequirePackage{etoolbox}
+\RequirePackage{nameref}
+
+\SetupKeyvalOptions{%
+  family=cms@end,
+  prefix=cms@end@}%
+
+\DeclareStringOption{split}[chapter]
+
+\DeclareStringOption{headername}% 2
+
+\DeclareStringOption{subheadername}% 3
+
+\DeclareStringOption{runningname}% 4
+
+% \DeclareStringOption{introname}[\prefacename] (#5) now provided by
+% biblatex-chicago's noterefintro option
+
+%%% For general hyperref functionality
+
+\DeclareBoolOption[true]{hyper}%
+
+%%% Dirr's \ifenotelinks, "for back-links in the endnote section"
+
+\DeclareBoolOption[true]{enotelinks}%
+
+%%% In case users want to roll their own using \addtoendnotes or
+%%% separate sectioning commands
+
+\DeclareBoolOption{noheader}%
+
+%%% Stops the printing of the subhead when using split endnotes
+
+\DeclareBoolOption{nosubheader}%
+
+%%% Provides flush-left block formatting for endnote text, instead of
+%%% usual first-line indent
+
+\DeclareBoolOption{blocknotes}%
+
+%%% For attempting more elegantly to hide the zeros in section numbers
+
+%% \DeclareBoolOption{hidezeros}% Moved to cbx.
+
+\ProcessKeyvalOptions*
+
+%%% Dirr's hyperendnotes.sty, with CMS extensions, starts here
+
+\providetoggle{cms@entheader}
+\newcounter{Hendnote}
+\newcounter{cms@enttotal}
+\newcounter{cms@entprinted}
+
+%%%   Hyperendnotes redefines portions of the endnotes package, now
+%%%   further redefined for CMS
+
+%% The absence of a Roman zero messes with .ent file creation and
+%% printing, so we reluctantly redefine \thepart here
+
+\renewcommand{\thepart}{%
+  \ifnumequal{\csuse{c@part}}{0}%
+  {\@arabic{\c@part}}%
+  {\@Roman{\c@part}}}
+
+\let\cms@entlist\@empty
+
+% This allows splitting by "part" to work, suboptimally, with babel's
+% French option
+
+\ifdef{\ifFBPartNameFull}{\FBPartNameFullfalse}{}%
+
+%% This creates as many .ent files as there are different relevant
+%% sections, the relevant section being that given by the "split"
+%% option.  It uses biblatex commands to patch the relevant section
+%% commands when they appear in the document.  In the absence of the
+%% "split" option, it reverts to standard endnotes package .ent file
+%% handling.
+
+\ifx\cms@end@split\@empty
+\def\@openenotes{%
+  \immediate\openout\@enotes=\jobname.ent\relax
+  \global\@enotesopentrue}%
+\else
+\AtEndPreamble{%
+  \ifdefstring{\cms@end@split}{section}%
+  {\blx@refpatch@sect{section}{\cms@closechap}{1}%
+    \ifundef\chapter
+    {}%
+    {\blx@refpatch@chapter\cms@closechap}}%
+  {\ifdefstring{\cms@end@split}{subsection}%
+    {\blx@refpatch@sect{subsection}{\cms@closechap}{1}%
+      \ifundef\chapter
+      {}%
+      {\blx@refpatch@chapter\cms@closechap}}%
+    {\ifboolexpr{%
+        test {\ifdefstring{\cms@end@split}{chapter}}%
+        or
+        test {\ifdefstring{\cms@end@split}{part}}%
+      }%
+      {\csuse{blx@refpatch@\cms@end@split}\cms@closechap}%
+      {}}}}%
+\def\@openenotes{%
+  \stepcounter{cms@enttotal}%
+  \listxadd\cms@entlist{\csuse{the\cms@end@split}}%
+  \immediate\openout\@enotes=\jobname\csuse{the\cms@end@split}.ent\relax
+  \global\@enotesopentrue}%
+\fi
+
+\def\cms@closechap{%
+  \immediate\closeout\@enotes
+  \global\@enotesopenfalse}
+
+\long\def\addtoendnotes#1{%
+  \if@enotesopen \else \@openenotes \fi
+  \begingroup
+  \newlinechar='40
+  \let\protect\string
+  \immediate\write\@enotes{#1}%
+  \endgroup}
+
+\let\savedhref\href
+\let\savedurl\url
+
+\def\endnotemark{%
+  \@ifnextchar[%]
+  \@xendnotemark{%
+    \stepcounter{endnote}%
+    \protected@xdef\@theenmark{\theendnote}%
+    \protected@xdef\@theenvalue{\number\c@endnote}%
+    \@endnotemark}}%
+
+\def\@xendnotemark[#1]{%
+  \begingroup\c@endnote#1\relax
+  \unrestored@protected@xdef\@theenmark{\theendnote}%
+  \unrestored@protected@xdef\@theenvalue{\number\c@endnote}%
+  \endgroup
+  \@endnotemark}%
+
+\def\endnotetext{%
+  \@ifnextchar[%]
+  \@xendnotenext{%
+    \protected@xdef\@theenmark{\theendnote}%
+    \protected@xdef\@theenvalue{\number\c@endnote}%
+    \@endnotetext}}%
+
+\def\@xendnotenext[#1]{%
+  \begingroup
+  \c@endnote=#1\relax
+  \unrestored@protected@xdef\@theenmark{\theendnote}%
+  \unrestored@protected@xdef\@theenvalue{\number\c@endnote}%
+  \endgroup
+  \@endnotetext}%
+
+\def\endnote{%
+  \@ifnextchar[%]
+  \@xendnote{%
+    \stepcounter{endnote}%
+    \protected@xdef\@theenmark{\theendnote}%
+    \protected@xdef\@theenvalue{\number\c@endnote}%
+    \@endnotemark\@endnotetext}}%
+
+\def\@xendnote[#1]{%
+  \begingroup
+  \c@endnote=#1\relax
+  \unrestored@protected@xdef\@theenmark{\theendnote}%
+  \unrestored@protected@xdef\@theenvalue{\number\c@endnote}%
+  \show\@theenvalue
+  \endgroup
+  \@endnotemark\@endnotetext}%
+
+%% This macro is part of the core of the endnotes and hyperendnotes
+%% code, with cmsendnotes booleans to control when the hyper
+%% extensions are used.
+
+\def\@endnotemark{%
+  \leavevmode
+  \ifhmode
+  \edef\@x@sf{\the\spacefactor}\nobreak
+  \fi
+  \ifcms@end@hyper
+  \ifcms@end@enotelinks
+  \expandafter\@firstofone
+  \else
+  \expandafter\@gobble
+  \fi
+  {%
+    \Hy@raisedlink{%
+      \hyper@@anchor{Hendnotepage.\@theenvalue}{\empty}%
+    }%
+  }%
+  \hyper@linkstart{link}{Hendnote.\@theenvalue}%
+  \makeenmark
+  \hyper@linkend
+  \else
+  \makeenmark
+  \fi
+  \ifhmode
+  \spacefactor\@x@sf
+  \fi
+  \relax}%
+
+\long\def\@endnotetext#1{%
+  \if@enotesopen
+  \else
+  \@openenotes
+  \fi
+  \immediate\write\@enotes{%
+    \@doanenote{\@theenmark}{\@theenvalue}%
+  }%
+  \begingroup
+  \def\next{#1}%
+  \newlinechar='40
+  \immediate\write\@enotes{\meaning\next}%
+  \endgroup
+  \immediate\write\@enotes{%
+    \@endanenote}}%
+
+%%   This new command prints each .ent file separately, with
+%%   configurable headings.  With an optional argument, it prints only
+%%   that particular .ent file, again with configurable heading.  If
+%%   the "split" option isn't set, it reverts to the standard endnotes
+%%   package command \theendnotes.  The starred version prints no
+%%   headings at all, just the notes.
+
+\newrobustcmd*{\theendnotesbypart}{\@ifstar\@theendnotesbypart%
+  \@@theendnotesbypart}%
+
+\newcommand*{\@@theendnotesbypart}[1][]{%
+  \ifcsvoid{cms@end@split}%
+  {\theendnotes}%
+  {\ifblank{#1}%
+    {\def\do##1{%
+        \IfFileExists{\jobname##1.ent}%
+        {\theendnotesbypart@i[##1]%
+          \stepcounter{cms@entprinted}}%
+        {}}%
+      \dolistcsloop{cms@entlist}}%
+    {\toggletrue{cms@entheader}%
+      \theendnotesbypart@i[#1]%
+      \togglefalse{cms@entheader}}}}%
+
+\newcommand*{\@theendnotesbypart}[1][]{%
+  \cms@end@noheadertrue
+  \ifcsvoid{cms@end@split}%
+  {\theendnotes}%
+  {\ifblank{#1}%
+    {\def\do##1{%
+        \IfFileExists{\jobname##1.ent}%
+        {\theendnotesbypart@i[##1]%
+          \stepcounter{cms@entprinted}}%
+        {}}%
+      \dolistcsloop{cms@entlist}}%
+    {\toggletrue{cms@entheader}%
+      \cms@end@nosubheadertrue%
+      \theendnotesbypart@i[#1]%
+      \togglefalse{cms@entheader}%
+      \cms@end@nosubheaderfalse}}\cms@end@noheaderfalse}%
+
+\def\theendnotesbypart@i[#1]{%
+  \ifx\cms@end@headername\@empty
+  \def\cms@end@headername{\notesname}\fi
+  \theendnotesbypart@ii[#1]{\cms@end@headername}}%
+
+\def\cms@choose@subhead{%
+  \ifcsname \cms@end@split name\endcsname%
+  \csuse{\csuse{cms@end@split}name}%
+  \else
+  \cms@end@split%
+  \fi}
+
+\def\cms@localize@subhead{%
+  \ifcsname \cms@end@subheadername name\endcsname%
+  \csuse{\csuse{cms@end@subheadername}name}%
+  \else
+  \cms@end@subheadername%
+  \fi}
+
+\def\theendnotesbypart@ii[#1]#2{%
+  \ifx\cms@end@subheadername\@empty
+  \theendnotesbypart@iii[#1]#2{\cms@choose@subhead}%
+  \else
+  \theendnotesbypart@iii[#1]#2{\cms@localize@subhead}%
+  \fi}
+
+\def\theendnotesbypart@iii[#1]#2#3{%
+  \ifx\cms@end@runningname\@empty
+  \def\cms@end@runningname{Notes to}\fi
+  \theendnotesbypart@iv[#1]#2#3{\cms@end@runningname}}%
+
+\def\cms@localize@introname{%
+  \ifcsname \cms@note@introname name\endcsname%
+  \csuse{\csuse{cms@note@introname}name}%
+  \else
+  \cms@note@introname%
+  \fi}
+
+\def\theendnotesbypart@iv[#1]#2#3#4{%
+  \ifdefvoid{\cms@note@introname}%
+  {\theendnotesbypart@v[#1]#2#3#4[]}%
+  {\theendnotesbypart@v[#1]#2#3#4[\cms@localize@introname]}}%
+
+%%% [sec. no.]{gen. title}{sec. title}{#2 + prepos.}[intro. name]
+
+\def\theendnotesbypart@v[#1]#2#3#4[#5]{%
+  \immediate\closeout\@enotes
+  \global\@enotesopenfalse
+  \begingroup
+  \makeatletter
+  \edef\@tempa{`\string>}%
+  \ifnum\catcode\@tempa=12
+  \let\@ResetGT\relax
+  \else
+  \edef\@ResetGT{\noexpand\catcode\@tempa=\the\catcode\@tempa}%
+  \@makeother\>%
+  \fi
+  \def\@doanenote##1##2##3>{%
+    \def\@theenmark{##1}%
+    \def\@theenvalue{##2}%
+    \par
+    \enoteskip% Configurable vertical gap between endnotes
+    \begingroup
+    \def\href{\expandafter\savedhref}%
+    \def\url{\expandafter\savedurl}%
+    \@ResetGT
+    \edef\@currentlabel{\csname p@endnote\endcsname\@theenmark}%
+    \toggletrue{blx@footnote}\toggletrue{cms@endnote}%
+    \enoteformat
+  }%
+  \def\@endanenote{%
+    \par\endgroup
+  }%
+  % Redefine, how numbers are formatted in the endnotes-section:
+  \renewcommand*\@makeenmark{%
+    \hbox{\normalfont\@theenmark.~}%
+  }%
+  % header(s) of endnote section(s)
+  \def\enoteheader{\section*{\MakeCapital{#2}}}%
+  \def\enotesubheader{%
+    \subsection*{\MakeCapital{#3}\ \zero@sect{#1}}%
+      \@mkboth{\MakeUppercase{#4\ #3}\ \zero@sect{#1}}%
+      {\MakeUppercase{#4\ #3}\ \zero@sect{#1}}%
+    \mbox{}\par\vskip-\baselineskip}%
+  \def\enotepartheader{%
+    \subsection*{\MakeCapital{#3}\ \zero@sect{#1}}%
+      \@mkboth{\MakeUppercase{#4\ #3}\ \zero@sect{#1}}%
+      {\MakeUppercase{#4\ #3}\ \zero@sect{#1}}%
+    \mbox{}\par\vskip-\baselineskip}%
+  \def\intropartheader{%
+    \subsection*{\MakeCapital{#5},\ \zeri@intro{#1}}%
+      \@mkboth{\MakeUppercase{#4\ #5}\ \zeri@intro{#1}}%
+      {\MakeUppercase{#4\ #5}\ \zeri@intro{#1}}%
+    \mbox{}\par\vskip-\baselineskip}%
+  \def\introsubheader{%
+    \subsection*{\MakeCapital{#5}}%
+      \@mkboth{\MakeUppercase{#4\ #5}}%
+      {\MakeUppercase{#4\ #5}}%
+    \mbox{}\par\vskip-\baselineskip}%
+  % Tests for which header(s), if any, to print
+  \ifcms@end@noheader
+  \let\enoteheader\relax\fi
+  \ifcms@end@nosubheader
+  \ifcms@end@noheader
+  \else
+  \iftoggle{cms@entheader}%
+  {}%
+  {\ifnumgreater{\value{cms@entprinted}}{0}%
+    {}%
+    {\enoteheader\mbox{}\par\vskip-\baselineskip}}\fi%
+  \else
+  \ifboolexpr{%
+    test {\ifblank{#5}}%
+    or
+    not test {\IfBeginWith{#1}{0}}%
+  }%
+  {\iftoggle{cms@entheader}%
+    {\enotepartheader}%
+    {\ifnumgreater{\value{cms@entprinted}}{0}%
+      {\enotesubheader}%
+      {\enoteheader\enotesubheader}}}%
+  {\ifboolexpr{%
+      test {\IfBeginWith{#1}{0.}}%
+      or
+      test {\IfBeginWith{#1}{0,}}%
+    }%
+    {\IfInteger{#1}
+      {\iftoggle{cms@entheader}%
+        {\introsubheader}%
+        {\ifnumgreater{\value{cms@entprinted}}{0}%
+          {\introsubheader}%
+          {\enoteheader\introsubheader}}}%
+      {\StrGobbleLeft{\@xs@afterinteger}{1}[\temp@r]%
+        \IfEq{\temp@r}{0}%
+        {\iftoggle{cms@entheader}%
+          {\introsubheader}%
+          {\ifnumgreater{\value{cms@entprinted}}{0}%
+            {\introsubheader}%
+            {\enoteheader\introsubheader}}}%
+        {\iftoggle{cms@entheader}%
+          {\intropartheader}%
+          {\ifnumgreater{\value{cms@entprinted}}{0}%
+            {\intropartheader}%
+            {\enoteheader\intropartheader}}}}}%
+    {\iftoggle{cms@entheader}%
+      {\introsubheader}%
+      {\ifnumgreater{\value{cms@entprinted}}{0}%
+        {\introsubheader}%
+        {\enoteheader\introsubheader}}}}\fi%
+  % font-size of endnotes -- by default set to \small
+  \enotesize
+  \input{\jobname#1.ent}%\cms@input@ent%
+  \endgroup}%
+
+%% An inelegant kludge attempting to remove zeros from section numbers
+%% while retaining minimal descriptive accuracy
+
+%\newrobustcmd*{\cmspref}{\emph{pref}}% Moved to .cbx file
+
+\newrobustcmd*{\zero@sect}[1]{%
+  \IfBeginWith{#1}{0}%
+  {#1}%
+  {\iftoggle{cms@hidezeros}
+    {\StrSubstitute{#1}{.0.0}{.1\ (\cmspref)}[\temp@a]%
+      \StrSubstitute{\temp@a}{,0,0}{,1\ (\cmspref)}[\temp@a]%
+      \StrSubstitute{\temp@a}{.0.}{.\cmspref.}[\temp@a]%
+      \StrSubstitute{\temp@a}{,0,}{,\cmspref,}[\temp@a]%
+      \StrSubstitute{\temp@a}{.0}{.1\ (\cmspref)}[\temp@a]%
+      \StrSubstitute{\temp@a}{,0}{,1\ (\cmspref)}}%
+    {#1}}}%
+
+\newrobustcmd*{\zeri@intro}[1]{%
+  \cmsintrosection\ \StrGobbleLeft{#1}{2}}%
+
+\def\enoteheading{\section*{\notesname}
+  \@mkboth{\MakeUppercase{\notesname}}%
+  {\MakeUppercase{\notesname}}%
+  \mbox{}\par\vskip-\baselineskip}
+
+\def\theendnotes{%
+  \immediate\closeout\@enotes
+  \global\@enotesopenfalse
+  \begingroup
+  \makeatletter
+  \edef\@tempa{`\string>}%
+  \ifnum\catcode\@tempa=12
+  \let\@ResetGT\relax
+  \else
+  \edef\@ResetGT{\noexpand\catcode\@tempa=\the\catcode\@tempa}%
+  \@makeother\>%
+  \fi
+  \def\@doanenote##1##2##3>{%
+    \def\@theenmark{##1}%
+    \def\@theenvalue{##2}%
+    \par
+    \enoteskip% Configurable vertical gap between endnotes
+    \begingroup
+    \def\href{\expandafter\savedhref}%
+    \def\url{\expandafter\savedurl}%
+    \@ResetGT
+    \edef\@currentlabel{\csname p@endnote\endcsname\@theenmark}%
+    \enoteformat
+  }%
+  \def\@endanenote{%
+    \par\endgroup
+  }%
+  % Redefine, how numbers are formatted in the endnotes-section:
+  \renewcommand*\@makeenmark{%
+    \hbox{\normalfont\@theenmark.~}%
+  }%
+  % header of endnotes-section, defined by endnotes.sty, with CMS
+  % option not to print it at all
+  \ifcms@end@noheader
+  \else
+  \enoteheading
+  \fi
+  % font-size of endnotes
+  \enotesize
+  \input{\jobname.ent}%\cms@input@ent%
+  \endgroup}%
+
+%% The second core part of the hyperendnotes code, again with CMS
+%% booleans to control when the hyperref functionality is switched on
+
+\def\enoteformat{%
+  \ifcms@end@blocknotes
+  \rightskip\z@
+  \leftskip1.8em
+  \parindent\z@
+  \else
+  \rightskip\z@
+  \leftskip\z@
+  \parindent1.8em
+  \fi
+  \leavevmode\llap{%
+    \setcounter{Hendnote}{\@theenvalue}%
+    \addtocounter{Hendnote}{-1}%
+    \refstepcounter{Hendnote}%
+    \ifcms@end@hyper
+    \ifcms@end@enotelinks
+    \expandafter\@secondoftwo
+    \else
+    \expandafter\@firstoftwo
+    \fi
+    {\@firstofone}%
+    {\hyperlink{Hendnotepage.\@theenvalue}}%
+    {\makeenmark}%
+    \else
+    \makeenmark
+    \fi}}%
+
+%%% Here the hyperendnotes code stops redefining portions of
+%%% the endnotes package
+
+%%% This sets the CMS default, which is to turn on both the general
+%%% hyperref functionality and the back-links from the endnotes
+%%% section to the main text, assuming that the hyperref package is
+%%% loaded.  If it isn't, we don't.  Also, set defaults for two
+%%% formatting macros.
+
+\AtEndPreamble{%
+  \@ifpackageloaded{hyperref}%
+  {}{\cms@end@hyperfalse}}%
+
+\def\enotesize{\small}
+\let\enoteskip\relax
+
+\endinput

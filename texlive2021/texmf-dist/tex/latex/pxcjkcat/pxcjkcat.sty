@@ -1,0 +1,700 @@
+%
+% pxcjkcat.sty
+%
+%%%% package declaration
+\NeedsTeXFormat{pLaTeX2e}
+\ProvidesPackage{pxcjkcat}[2018/04/01 v1.1 PX cjk-category mode]
+%\RequirePackage{ifuptex}[2008/03/14]\RequirenativeupTeX
+
+
+%%%% error messages
+\def\pxkc@pkgname{pxcjkcat}
+\def\pxkc@error{\PackageError\pxkc@pkgname}
+\def\pxkc@err@ivcsy#1{\pxkc@error
+  {Invalid name (#1) for cjk-category}%
+  {It was replaced by 18(cjk).}}
+\def\pxkc@err@ivbsy#1{\pxkc@error
+  {Invalid name (#1) for Unicode block}\@eha}
+\def\pxkc@err@ivmsy#1{\pxkc@error
+  {Invalid name (#1) for cjk-category mode}\@eha}
+\def\pxkc@warn@dfblk#1{%
+  \PackageWarning\pxkc@pkgname
+   {Defunct Unicode block '#1' is\MessageBreak
+    specified}}
+\ifx\bxUseDebug\@undefined
+\let\pxkc@debug\@gobble
+\else
+\def\pxkc@debug#1{\typeout{**[\pxkc@pkgname] #1}}
+\fi
+
+%%%% environment check
+\@tempswafalse
+\ifx\ucs\@undefined\else \ifnum\ucs"3000="3000
+    \@tempswatrue
+\fi\fi
+\if@tempswa\else
+  \pxkc@error{Native upTeX is required.}%
+    {Package loading is aborted.}
+\expandafter\endinput\fi\relax
+
+%--------------------------------------- general
+
+%% variables
+\newif\ifpxkc@ok
+\newif\ifpxkc@warn@defunct \pxkc@warn@defuncttrue
+\let\pxkc@arg\relax
+\let\pxkc@blk\relax
+\let\pxkc@grp\relax
+\let\pxkc@cc\relax
+
+%% \pxkc@letcs\CSa{<csname-b>}
+\def\pxkc@letcs#1#2{%
+  \expandafter\let\expandafter#1\csname#2\endcsname}
+%% \pxkc@expanded{<text>}
+\def\pxkc@expanded#1{%
+  \edef\pxkc@nxt{#1}\pxkc@nxt}
+
+%---------------------------------------
+
+%%%% option handler
+\chardef\pxkc@mccv=1
+\DeclareOption{ccv1}{\chardef\pxkc@mccv=1 }
+\DeclareOption{ccv2}{\chardef\pxkc@mccv=2 }
+\DeclareOption{ccv3}{\chardef\pxkc@mccv=3 }
+\DeclareOption{ccv+}{\chardef\pxkc@mccv=0 }
+\let\pxkc@ccmode\relax
+\DeclareOption*{\edef\pxkc@ccmode{\CurrentOption}}
+\ProcessOptions\relax
+
+%%-------- classification version check
+
+%% \pxkc@issameblock
+\def\pxkc@issameblock#1#2{%
+  \pxkc@okfalse{\kcatcode#1=16\kcatcode#2=17\relax
+    \ifnum\kcatcode#1=17 \aftergroup\pxkc@oktrue\fi}}
+\pxkc@issameblock{"FF01}{"FF11}\ifpxkc@ok
+  \chardef\pxkc@ccv=1     % v0.11+
+\else
+  \pxkc@issameblock{"A0}{"C0}\ifpxkc@ok
+    \chardef\pxkc@ccv=2   % v0.29+
+  \else
+    \chardef\pxkc@ccv=3   % v1.23+
+  \fi
+\fi
+\ifx\bxDebugCcv\@undefined\else
+  \chardef\pxkc@ccv=\bxDebugCcv\relax
+\fi
+\ifnum\pxkc@mccv=\z@ \let\pxkc@mccv\pxkc@ccv \fi
+\pxkc@debug{CJK category version \number\pxkc@ccv}
+%
+\ifnum\pxkc@mccv>\pxkc@ccv
+  \pxkc@error{Invalid mode-CCV option (ccv\number\pxkc@mccv)}%
+  {The mode-CCV value given (\number\pxkc@mccv) is
+  larger than the real CCV (\number\pxkc@ccv).\MessageBreak
+  I assume the mode-CCV equals the real CCV.}
+  \let\pxkc@mccv\pxkc@ccv
+\fi
+
+%%------ \setcjkcategory, etc.
+
+%% \pxkc@kcatcode
+\ifx\bxUseDebug\@undefined
+\def\pxkc@kcatcode#1#2{\kcatcode#1=#2\relax}
+\else
+\def\pxkc@kcatcode#1#2{\kcatcode#1=#2\relax
+  \chardef\pxkc@xa=#1\chardef\pxkc@xb=#2\relax
+  \expandafter\pxkc@kcatcode@a\meaning\pxkc@xa\@nil}
+\def\pxkc@kcatcode@a#1"#2\@nil{%
+  \pxkc@debug{\string\kcatcode"#2 set to \number\pxkc@xb}}
+\fi
+
+%--------------------------------------- data tables
+
+%%%% table
+\def\pxkc@bval#1#2#3#4{% #4 is unused for now
+  \ifnum#1>\pxkc@ccv\else
+    \ifnum#1<\tw@ \pxkc@okfalse
+    \else
+      \@tempcnta=#3\relax \@tempcntb\@tempcnta \advance\@tempcntb\m@ne
+      \pxkc@issameblock\@tempcnta\@tempcntb
+    \fi
+    \ifpxkc@ok \pxkc@debug{defunct: #2}%
+      \@namedef{pxkc@B@@#2}{-1}% invalid
+    \else
+      \@namedef{pxkc@B@@#2}{#3}%
+      \edef\pxkc@bslst{\pxkc@bslst\pxkc@sep#2}\def\pxkc@sep{,}%
+    \fi
+  \fi}
+\def\pxkc@bslst{}\def\pxkc@sep{}
+\def\pxkc@cval#1#2{\@namedef{pxkc@C@@#1}{#2}}
+\def\pxkc@gval#1#2#3{\@namedef{pxkc@G@@#1}{#2}}
+
+\pxkc@cval{noncjk}{15}
+\pxkc@cval{kanji}{16}
+\pxkc@cval{han}{16}
+\pxkc@cval{kana}{17}
+\pxkc@cval{cjk}{18}
+\pxkc@cval{hangul}{19}
+
+%--------------------------------------- block tables
+
+%=======================================
+\pxkc@bval{1}{latn}{"0}         {Basic Latin}
+\pxkc@bval{1}{latn1}{"80}       {Latin-1 Supplement}
+\pxkc@bval{1}{latnA}{"100}      {Latin Extended-A}
+\pxkc@bval{1}{latnB}{"180}      {Latin Extended-B}
+\pxkc@bval{1}{latn2}{"250}      {IPA Extensions}
+\pxkc@bval{1}{sym01}{"2B0}      {Spacing Modifier Letters}
+\pxkc@bval{1}{sym02}{"300}      {Combining Diacritical Marks}
+\pxkc@bval{1}{grek}{"370}       {Greek and Coptic}
+\pxkc@bval{1}{cyrl}{"400}       {Cyrillic}
+\pxkc@bval{1}{cyrl1}{"500}      {Cyrillic Supplement}
+\pxkc@bval{1}{armn}{"530}       {Armenian}
+\pxkc@bval{1}{hebr}{"590}       {Hebrew}
+\pxkc@bval{1}{arab}{"600}       {Arabic}
+\pxkc@bval{1}{syrc}{"700}       {Syriac}
+\pxkc@bval{1}{arab1}{"750}      {Arabic Supplement}
+\pxkc@bval{1}{thaa}{"780}       {Thaana}
+\pxkc@bval{1}{nkoo}{"7C0}       {NKo}
+\pxkc@bval{2}{samr}{"800}       {Samaritan}
+\pxkc@bval{2}{mand}{"840}       {Mandaic}
+\pxkc@bval{3}{syrc1}{"860}      {Syriac Supplement}
+\pxkc@bval{2}{arabA}{"8A0}      {Arabic Extended-A}
+\pxkc@bval{1}{deva}{"900}       {Devanagari}
+\pxkc@bval{1}{beng}{"980}       {Bengali}
+\pxkc@bval{1}{guru}{"A00}       {Gurmukhi}
+\pxkc@bval{1}{gujr}{"A80}       {Gujarati}
+\pxkc@bval{1}{orya}{"B00}       {Oriya}
+\pxkc@bval{1}{taml}{"B80}       {Tamil}
+\pxkc@bval{1}{telu}{"C00}       {Telugu}
+\pxkc@bval{1}{knda}{"C80}       {Kannada}
+\pxkc@bval{1}{mlym}{"D00}       {Malayalam}
+\pxkc@bval{1}{sinh}{"D80}       {Sinhala}
+\pxkc@bval{1}{thai}{"E00}       {Thai}
+\pxkc@bval{1}{laoo}{"E80}       {Lao}
+\pxkc@bval{1}{tibt}{"F00}       {Tibetan}
+\pxkc@bval{1}{mymr}{"1000}      {Myanmar}
+\pxkc@bval{1}{geor}{"10A0}      {Georgian}
+\pxkc@bval{1}{hang1}{"1100}     {Hangul Jamo}
+\pxkc@bval{1}{ethi}{"1200}      {Ethiopic}
+\pxkc@bval{1}{ethi1}{"1380}     {Ethiopic Supplement}
+\pxkc@bval{1}{cher}{"13A0}      {Cherokee}
+\pxkc@bval{1}{cans}{"1400}      {Unified Canadian Aboriginal Syllabics}
+\pxkc@bval{1}{ogam}{"1680}      {Ogham}
+\pxkc@bval{1}{runr}{"16A0}      {Runic}
+\pxkc@bval{1}{tglg}{"1700}      {Tagalog}
+\pxkc@bval{1}{hano}{"1720}      {Hanunoo}
+\pxkc@bval{1}{buhd}{"1740}      {Buhid}
+\pxkc@bval{1}{tagb}{"1760}      {Tagbanwa}
+\pxkc@bval{1}{khmr}{"1780}      {Khmer}
+\pxkc@bval{1}{mong}{"1800}      {Mongolian}
+\pxkc@bval{2}{cans1}{"18B0}     {Unified Canadian Aboriginal Syllabics Extended}
+\pxkc@bval{1}{limb}{"1900}      {Limbu}
+\pxkc@bval{1}{tale}{"1950}      {Tai Le}
+\pxkc@bval{1}{talu}{"1980}      {New Tai Lue}
+\pxkc@bval{1}{khmr1}{"19E0}     {Khmer Symbols}
+\pxkc@bval{1}{bugi}{"1A00}      {Buginese}
+\pxkc@bval{2}{lana}{"1A20}      {Tai Tham}
+\pxkc@bval{2}{sym52}{"1AB0}     {Combining Diacritical Marks Extended}
+\pxkc@bval{1}{bali}{"1B00}      {Balinese}
+\pxkc@bval{2}{sund}{"1B80}      {Sundanese}
+\pxkc@bval{2}{batk}{"1BC0}      {Batak}
+\pxkc@bval{2}{lepc}{"1C00}      {Lepcha}
+\pxkc@bval{2}{olck}{"1C50}      {Ol Chiki}
+\pxkc@bval{2}{cyrlC}{"1C80}     {Cyrillic Extended-C}
+\pxkc@bval{2}{sund1}{"1CC0}     {Sundanese Supplement}
+\pxkc@bval{2}{sym38}{"1CD0}     {Vedic Extensions}
+\pxkc@bval{1}{latn4}{"1D00}     {Phonetic Extensions}
+\pxkc@bval{1}{latn5}{"1D80}     {Phonetic Extensions Supplement}
+\pxkc@bval{1}{sym03}{"1DC0}     {Combining Diacritical Marks Supplement}
+\pxkc@bval{1}{latn3}{"1E00}     {Latin Extended Additional}
+\pxkc@bval{1}{grek1}{"1F00}     {Greek Extended}
+\pxkc@bval{1}{sym04}{"2000}     {General Punctuation}
+\pxkc@bval{1}{sym05}{"2070}     {Superscripts and Subscripts}
+\pxkc@bval{1}{sym06}{"20A0}     {Currency Symbols}
+\pxkc@bval{1}{sym07}{"20D0}     {Combining Diacritical Marks for Symbols}
+\pxkc@bval{1}{sym08}{"2100}     {Letterlike Symbols}
+\pxkc@bval{1}{sym09}{"2150}     {Number Forms}
+\pxkc@bval{1}{sym10}{"2190}     {Arrows}
+\pxkc@bval{1}{sym11}{"2200}     {Mathematical Operators}
+\pxkc@bval{1}{sym12}{"2300}     {Miscellaneous Technical}
+\pxkc@bval{1}{sym13}{"2400}     {Control Pictures}
+\pxkc@bval{1}{sym14}{"2440}     {Optical Character Recognition}
+\pxkc@bval{1}{sym15}{"2460}     {Enclosed Alphanumerics}
+\pxkc@bval{1}{sym16}{"2500}     {Box Drawing}
+\pxkc@bval{1}{sym17}{"2580}     {Block Elements}
+\pxkc@bval{1}{sym18}{"25A0}     {Geometric Shapes}
+\pxkc@bval{1}{sym19}{"2600}     {Miscellaneous Symbols}
+\pxkc@bval{1}{sym20}{"2700}     {Dingbats}
+\pxkc@bval{1}{sym21}{"27C0}     {Miscellaneous Mathematical Symbols-A}
+\pxkc@bval{1}{sym22}{"27F0}     {Supplemental Arrows-A}
+\pxkc@bval{1}{brai}{"2800}      {Braille Patterns}
+\pxkc@bval{1}{sym23}{"2900}     {Supplemental Arrows-B}
+\pxkc@bval{1}{sym24}{"2980}     {Miscellaneous Mathematical Symbols-B}
+\pxkc@bval{1}{sym25}{"2A00}     {Supplemental Mathematical Operators}
+\pxkc@bval{1}{sym26}{"2B00}     {Miscellaneous Symbols and Arrows}
+\pxkc@bval{1}{glag}{"2C00}      {Glagolitic}
+\pxkc@bval{1}{latnC}{"2C60}     {Latin Extended-C}
+\pxkc@bval{1}{copt}{"2C80}      {Coptic}
+\pxkc@bval{1}{geor1}{"2D00}     {Georgian Supplement}
+\pxkc@bval{1}{tfng}{"2D30}      {Tifinagh}
+\pxkc@bval{1}{ethi2}{"2D80}     {Ethiopic Extended}
+\pxkc@bval{2}{cyrlA}{"2DE0}     {Cyrillic Extended-A}
+\pxkc@bval{1}{sym27}{"2E00}     {Supplemental Punctuation}
+\pxkc@bval{1}{cjk01}{"2E80}     {CJK Radicals Supplement}
+\pxkc@bval{1}{cjk02}{"2F00}     {Kangxi Radicals}
+\pxkc@bval{1}{cjk03}{"2FF0}     {Ideographic Description Characters}
+\pxkc@bval{1}{cjk04}{"3000}     {CJK Symbols and Punctuation}
+\pxkc@bval{1}{hira}{"3040}      {Hiragana}
+\pxkc@bval{1}{kana}{"30A0}      {Katakana}
+\pxkc@bval{1}{bopo}{"3100}      {Bopomofo}
+\pxkc@bval{1}{hang2}{"3130}     {Hangul Compatibility Jamo}
+\pxkc@bval{1}{cjk05}{"3190}     {Kanbun}
+\pxkc@bval{1}{bopo1}{"31A0}     {Bopomofo Extended}
+\pxkc@bval{1}{cjk06}{"31C0}     {CJK Strokes}
+\pxkc@bval{1}{kana1}{"31F0}     {Katakana Phonetic Extensions}
+\pxkc@bval{1}{cjk07}{"3200}     {Enclosed CJK Letters and Months}
+\pxkc@bval{1}{cjk08}{"3300}     {CJK Compatibility}
+\pxkc@bval{1}{haniA}{"3400}     {CJK Unified Ideographs Extension A}
+\pxkc@bval{1}{sym28}{"4DC0}     {Yijing Hexagram Symbols}
+\pxkc@bval{1}{hani}{"4E00}      {CJK Unified Ideographs}
+\pxkc@bval{1}{yiii}{"A000}      {Yi Syllables}
+\pxkc@bval{1}{yiii1}{"A490}     {Yi Radicals}
+\pxkc@bval{2}{lisu}{"A4D0}      {Lisu}
+\pxkc@bval{2}{vaii}{"A500}      {Vai}
+\pxkc@bval{2}{cyrlB}{"A640}     {Cyrillic Extended-B}
+\pxkc@bval{2}{bamu}{"A6A0}      {Bamum}
+\pxkc@bval{1}{sym29}{"A700}     {Modifier Tone Letters}
+\pxkc@bval{1}{latnD}{"A720}     {Latin Extended-D}
+\pxkc@bval{1}{sylo}{"A800}      {Syloti Nagri}
+\pxkc@bval{2}{sym39}{"A830}     {Common Indic Number Forms}
+\pxkc@bval{1}{phag}{"A840}      {Phags-pa}
+\pxkc@bval{2}{saur}{"A880}      {Saurashtra}
+\pxkc@bval{2}{deva1}{"A8E0}     {Devanagari Extended}
+\pxkc@bval{2}{kali}{"A900}      {Kayah Li}
+\pxkc@bval{2}{rjng}{"A930}      {Rejang}
+\pxkc@bval{2}{hangA}{"A960}     {Hangul Jamo Extended-A}
+\pxkc@bval{2}{java}{"A980}      {Javanese}
+\pxkc@bval{2}{mymrB}{"A9E0}     {Myanmar Extended-B}
+\pxkc@bval{2}{cham}{"AA00}      {Cham}
+\pxkc@bval{2}{mymrA}{"AA60}     {Myanmar Extended-A}
+\pxkc@bval{2}{tavt}{"AA80}      {Tai Viet}
+\pxkc@bval{2}{mtei1}{"AAE0}     {Meetei Mayek Extensions}
+\pxkc@bval{2}{ethiA}{"AB00}     {Ethiopic Extended-A}
+\pxkc@bval{2}{latnE}{"AB30}     {Latin Extended-E}
+\pxkc@bval{2}{cher1}{"AB70}     {Cherokee Supplement}
+\pxkc@bval{2}{mtei}{"ABC0}      {Meetei Mayek}
+\pxkc@bval{1}{hang}{"AC00}      {Hangul Syllables}
+\pxkc@bval{2}{hangB}{"D7B0}     {Hangul Jamo Extended-B}
+\pxkc@bval{1}{spc01}{"D800}     {High Surrogates}
+\pxkc@bval{1}{spc02}{"DB80}     {High Private Use Surrogates}
+\pxkc@bval{1}{spc03}{"DC00}     {Low Surrogates}
+\pxkc@bval{1}{spc04}{"E000}     {Private Use Area}
+\pxkc@bval{1}{hani1}{"F900}     {CJK Compatibility Ideographs}
+\pxkc@bval{1}{latn6}{"FB00}     {Alphabetic Presentation Forms}
+\pxkc@bval{1}{arab2}{"FB50}     {Arabic Presentation Forms-A}
+\pxkc@bval{1}{spc05}{"FE00}     {Variation Selectors}
+\pxkc@bval{1}{cjk09}{"FE10}     {Vertical Forms}
+\pxkc@bval{1}{sym30}{"FE20}     {Combining Half Marks}
+\pxkc@bval{1}{cjk10}{"FE30}     {CJK Compatibility Forms}
+\pxkc@bval{1}{cjk11}{"FE50}     {Small Form Variants}
+\pxkc@bval{1}{arab3}{"FE70}     {Arabic Presentation Forms-B}
+\pxkc@bval{1}{cjk12}{"FF00}     {Halfwidth and Fullwidth Forms}
+\pxkc@bval{1}{spc06}{"FFF0}     {Specials}
+\pxkc@bval{1}{linb}{"10000}     {Linear B Syllabary}
+\pxkc@bval{1}{linb1}{"10080}    {Linear B Ideograms}
+\pxkc@bval{1}{sym31}{"10100}    {Aegean Numbers}
+\pxkc@bval{1}{grek2}{"10140}    {Ancient Greek Numbers}
+\pxkc@bval{2}{sym40}{"10190}    {Ancient Symbols}
+\pxkc@bval{2}{sym41}{"101D0}    {Phaistos Disc}
+\pxkc@bval{2}{lyci}{"10280}     {Lycian}
+\pxkc@bval{2}{cari}{"102A0}     {Carian}
+\pxkc@bval{2}{copt1}{"102E0}    {Coptic Epact Numbers}
+\pxkc@bval{1}{ital}{"10300}     {Old Italic}
+\pxkc@bval{1}{goth}{"10330}     {Gothic}
+\pxkc@bval{2}{perm}{"10350}     {Old Permic}
+\pxkc@bval{1}{ugar}{"10380}     {Ugaritic}
+\pxkc@bval{1}{xpeo}{"103A0}     {Old Persian}
+\pxkc@bval{1}{dsrt}{"10400}     {Deseret}
+\pxkc@bval{1}{shaw}{"10450}     {Shavian}
+\pxkc@bval{1}{osma}{"10480}     {Osmanya}
+\pxkc@bval{2}{osge}{"104B0}     {Osage}
+\pxkc@bval{2}{elba}{"10500}     {Elbasan}
+\pxkc@bval{2}{aghb}{"10530}     {Caucasian Albanian}
+\pxkc@bval{2}{lina}{"10600}     {Linear A}
+\pxkc@bval{1}{cprt}{"10800}     {Cypriot Syllabary}
+\pxkc@bval{2}{armi}{"10840}     {Imperial Aramaic}
+\pxkc@bval{2}{palm}{"10860}     {Palmyrene}
+\pxkc@bval{2}{nbat}{"10880}     {Nabataean}
+\pxkc@bval{2}{hatr}{"108E0}     {Hatran}
+\pxkc@bval{1}{phnx}{"10900}     {Phoenician}
+\pxkc@bval{2}{lydi}{"10920}     {Lydian}
+\pxkc@bval{2}{mero}{"10980}     {Meroitic Hieroglyphs}
+\pxkc@bval{2}{merc}{"109A0}     {Meroitic Cursive}
+\pxkc@bval{1}{khar}{"10A00}     {Kharoshthi}
+\pxkc@bval{2}{sarb}{"10A60}     {Old South Arabian}
+\pxkc@bval{2}{narb}{"10A80}     {Old North Arabian}
+\pxkc@bval{2}{mani}{"10AC0}     {Manichaean}
+\pxkc@bval{2}{avst}{"10B00}     {Avestan}
+\pxkc@bval{2}{prti}{"10B40}     {Inscriptional Parthian}
+\pxkc@bval{2}{phli}{"10B60}     {Inscriptional Pahlavi}
+\pxkc@bval{2}{phlp}{"10B80}     {Psalter Pahlavi}
+\pxkc@bval{2}{orkh}{"10C00}     {Old Turkic}
+\pxkc@bval{2}{hung}{"10C80}     {Old Hungarian}
+\pxkc@bval{2}{sym42}{"10E60}    {Rumi Numeral Symbols}
+\pxkc@bval{2}{brah}{"11000}     {Brahmi}
+\pxkc@bval{2}{kthi}{"11080}     {Kaithi}
+\pxkc@bval{2}{sora}{"110D0}     {Sora Sompeng}
+\pxkc@bval{2}{cakm}{"11100}     {Chakma}
+\pxkc@bval{2}{mahj}{"11150}     {Mahajani}
+\pxkc@bval{2}{shrd}{"11180}     {Sharada}
+\pxkc@bval{2}{sinh1}{"111E0}    {Sinhala Archaic Numbers}
+\pxkc@bval{2}{khoj}{"11200}     {Khojki}
+\pxkc@bval{2}{mult}{"11280}     {Multani}
+\pxkc@bval{2}{sind}{"112B0}     {Khudawadi}
+\pxkc@bval{2}{gran}{"11300}     {Grantha}
+\pxkc@bval{2}{newa}{"11400}     {Newa}
+\pxkc@bval{2}{tirh}{"11480}     {Tirhuta}
+\pxkc@bval{2}{sidd}{"11580}     {Siddham}
+\pxkc@bval{2}{modi}{"11600}     {Modi}
+\pxkc@bval{2}{mong1}{"11660}    {Mongolian Supplement}
+\pxkc@bval{2}{takr}{"11680}     {Takri}
+\pxkc@bval{2}{ahom}{"11700}     {Ahom}
+\pxkc@bval{2}{wara}{"118A0}     {Warang Citi}
+\pxkc@bval{3}{zanb}{"11A00}     {Zanabazar Square}
+\pxkc@bval{3}{soyo}{"11A50}     {Soyombo}
+\pxkc@bval{2}{pauc}{"11AC0}     {Pau Cin Hau}
+\pxkc@bval{2}{bhks}{"11C00}     {Bhaiksuki}
+\pxkc@bval{2}{marc}{"11C70}     {Marchen}
+\pxkc@bval{3}{gonm}{"11D00}     {Masaram Gondi}
+\pxkc@bval{1}{xsux}{"12000}     {Cuneiform}
+\pxkc@bval{1}{xsux1}{"12400}    {Cuneiform Numbers and Punctuation}
+\pxkc@bval{2}{xsux2}{"12480}    {Early Dynastic Cuneiform}
+\pxkc@bval{2}{egyp}{"13000}     {Egyptian Hieroglyphs}
+\pxkc@bval{2}{hluw}{"14400}     {Anatolian Hieroglyphs}
+\pxkc@bval{2}{bamu1}{"16800}    {Bamum Supplement}
+\pxkc@bval{2}{mroo}{"16A40}     {Mro}
+\pxkc@bval{2}{bass}{"16AD0}     {Bassa Vah}
+\pxkc@bval{2}{hmng}{"16B00}     {Pahawh Hmong}
+\pxkc@bval{2}{plrd}{"16F00}     {Miao}
+\pxkc@bval{2}{cjk14}{"16FE0}    {Ideographic Symbols and Punctuation}
+\pxkc@bval{2}{tang}{"17000}     {Tangut}
+\pxkc@bval{2}{tang1}{"18800}    {Tangut Components}
+\pxkc@bval{2}{kana2}{"1B000}    {Kana Supplement}
+\pxkc@bval{3}{kanaA}{"1B100}    {Kana Extended-A}
+\pxkc@bval{3}{nshu}{"1B170}     {Nushu}
+\pxkc@bval{2}{dupl}{"1BC00}     {Duployan}
+\pxkc@bval{2}{sym53}{"1BCA0}    {Shorthand Format Controls}
+\pxkc@bval{1}{sym32}{"1D000}    {Byzantine Musical Symbols}
+\pxkc@bval{1}{sym33}{"1D100}    {Musical Symbols}
+\pxkc@bval{1}{sym34}{"1D200}    {Ancient Greek Musical Notation}
+\pxkc@bval{1}{sym35}{"1D300}    {Tai Xuan Jing Symbols}
+\pxkc@bval{1}{sym36}{"1D360}    {Counting Rod Numerals}
+\pxkc@bval{1}{sym37}{"1D400}    {Mathematical Alphanumeric Symbols}
+\pxkc@bval{2}{sgnw}{"1D800}     {Sutton SignWriting}
+\pxkc@bval{2}{glag1}{"1E000}    {Glagolitic Supplement}
+\pxkc@bval{2}{mend}{"1E800}     {Mende Kikakui}
+\pxkc@bval{2}{adlm}{"1E900}     {Adlam}
+\pxkc@bval{2}{sym51}{"1EE00}    {Arabic Mathematical Alphabetic Symbols}
+\pxkc@bval{2}{sym43}{"1F000}    {Mahjong Tiles}
+\pxkc@bval{2}{sym44}{"1F030}    {Domino Tiles}
+\pxkc@bval{2}{sym46}{"1F0A0}    {Playing Cards}
+\pxkc@bval{2}{sym45}{"1F100}    {Enclosed Alphanumeric Supplement}
+\pxkc@bval{2}{cjk13}{"1F200}    {Enclosed Ideographic Supplement}
+\pxkc@bval{2}{sym47}{"1F300}    {Miscellaneous Symbols and Pictographs}
+\pxkc@bval{2}{sym48}{"1F600}    {Emoticons}
+\pxkc@bval{2}{sym54}{"1F650}    {Ornamental Dingbats}
+\pxkc@bval{2}{sym49}{"1F680}    {Transport and Map Symbols}
+\pxkc@bval{2}{sym50}{"1F700}    {Alchemical Symbols}
+\pxkc@bval{2}{sym55}{"1F780}    {Geometric Shapes Extended}
+\pxkc@bval{2}{sym56}{"1F800}    {Supplemental Arrows-C}
+\pxkc@bval{2}{sym57}{"1F900}    {Supplemental Symbols and Pictographs}
+\pxkc@bval{1}{haniB}{"20000}    {CJK Unified Ideographs Extension B}
+\pxkc@bval{2}{haniC}{"2A700}    {CJK Unified Ideographs Extension C}
+\pxkc@bval{2}{haniD}{"2B740}    {CJK Unified Ideographs Extension D}
+\pxkc@bval{2}{haniE}{"2B820}    {CJK Unified Ideographs Extension E}
+\pxkc@bval{3}{haniF}{"2CEB0}    {CJK Unified Ideographs Extension F}
+\pxkc@bval{1}{hani2}{"2F800}    {CJK Compatibility Ideographs Supplement}
+\pxkc@bval{1}{spc07}{"E0000}    {Tags}
+\pxkc@bval{1}{spc08}{"E0100}    {Variation Selectors Supplement}
+\pxkc@bval{1}{spc09}{"F0000}    {Supplementary Private Use Area-A}
+\pxkc@bval{1}{spc10}{"100000}   {Supplementary Private Use Area-B}
+%=======================================
+\ifnum\pxkc@ccv<2 \else
+\pxkc@gval{cjk12}{cjk1a,cjk1b,cjk1c}{Halfwidth and Fullwidth Forms}
+\pxkc@bval{0}{cjk1a}{"FF01}{Halfwidth and Fullwidth Forms/Other}
+\pxkc@bval{0}{cjk1b}{"FF10}{Halfwidth and Fullwidth Forms/Latin}
+\pxkc@bval{0}{cjk1c}{"FF66}{Halfwidth and Fullwidth Forms/Kana}
+\fi
+\ifnum\pxkc@ccv<3 \else
+\pxkc@gval{latn1}{latnx,latny}{Latin-1 Supplement}
+\pxkc@bval{0}{latnx}{"00A0}{Latin-1 Supplement/Other}
+\pxkc@bval{0}{latny}{"00C0}{Latin-1 Supplement/Latin}
+\fi
+  %
+\edef\pxkc@foreachblk{\noexpand\@for\noexpand\x:={\pxkc@bslst}}
+\let\pxkc@bval\relax\let\pxkc@cval\relax\let\pxkc@bslst\relax
+
+%--------------------------------------- public interfaces
+
+%%<*> \cjkcategory{<block>}{<category>}
+% Sets the kcatcode of block <block> to <category>.
+% Here <block> is given as a block name or a single character in the
+% block to be specified; <category> is given as a category name or
+% a number ranged in 15--19.
+\def\cjkcategory{%
+  \bgroup\forcecjktoken\pxkc@cjkcategory@oa}
+\def\pxkc@cjkcategory@oa#1{%
+  \gdef\pxkc@nxt{\pxkc@cjkcategory@ob{#1}}%
+  \egroup\pxkc@nxt}
+\def\pxkc@cjkcategory@ob#1#2{%
+  \ifnum2<1#2 \edef\pxkc@arg{#2}%
+  \else\@ifundefined{pxkc@C@@#2}%
+   {\pxkc@err@ivcsy{#2}\def\pxkc@arg{18}}%
+   {\edef\pxkc@arg{\@nameuse{pxkc@C@@#2}}}\fi
+  \pxkc@cjkcategory@a{#1}}
+\chardef\pxkc@la="7F
+\def\pxkc@cjkcategory@a#1{%
+  \@for\pxkc@x:={#1}\do{%
+    \expandafter\pxkc@cjkcategory@b\expandafter{\pxkc@x}}}
+\def\pxkc@cjkcategory@b#1{%
+  \pxkc@chkchr{#1}\ifnum\pxkc@cc>\pxkc@la
+    \pxkc@kcatcode{\pxkc@cc}{\pxkc@arg}%
+  \else
+    \pxkc@cjkcategory@c{#1}%
+  \fi}
+\def\pxkc@cjkcategory@c#1{%
+  \pxkc@letcs\pxkc@grp{pxkc@G@@#1}%
+  \ifx\pxkc@grp\relax
+    \pxkc@letcs\pxkc@blk{pxkc@B@@#1}%
+    \ifx\pxkc@blk\relax
+      \pxkc@err@ivbsy{#1}%
+    \else\ifnum\pxkc@blk<\z@
+      \ifpxkc@warn@defunct \pxkc@warn@dfblk{#1}\fi
+    \else
+      \pxkc@kcatcode{\pxkc@blk}{\pxkc@arg}%
+    \fi\fi
+  \else
+    \pxkc@expanded{\noexpand\pxkc@cjkcategory@a{\pxkc@grp}}%
+  \fi}
+
+%%<*> \pxkc@cjkcategory{<block>}{<kcatcode>}
+%%<*> \pxkc@cjkcategory@mccv{<mccv>}{<block>}{<kcatcode>}
+% Another entry point for internal use.
+\def\pxkc@cjkcategory#1#2{%
+  \edef\pxkc@arg{#2}%
+  \pxkc@cjkcategory@c{#1}}
+\def\pxkc@cjkcategory@mccv#1#2#3#4{%
+  \ifnum#1>\pxkc@mccv\else \ifnum#2<\pxkc@mccv\else
+    \pxkc@cjkcategory{#3}{#4}%
+  \fi\fi}
+
+%% \pxkc@chkchr{<arg>}
+\def\pxkc@chkchr#1{%
+  \afterassignment\pxkc@chkchr@a\chardef\pxkc@cc=`#1?\relax}
+\def\pxkc@chkchr@a#1\relax{}
+
+%%<*> \cjkcategorymode{<mode>}
+% Invokes the cjk-category mode <mode>.
+\def\cjkcategorymode#1{%
+  \pxkc@letcs\pxkc@nxt{pxkc@M@@#1}%
+  \ifx\pxkc@nxt\relax
+    \pxkc@err@ivmsy
+  \else
+    \pxkc@warn@defunctfalse
+    \pxkc@nxt
+    \pxkc@warn@defuncttrue
+  \fi}
+
+%--------------------------------------- CJK category modes
+
+%% Invariant blocks
+\def\do#1#2{\expandafter\chardef\csname pxkc@K@@#1\endcsname=#2 }
+%=======================================
+\do{latn}  {15} % Basic Latin
+\do{hang1} {19} % Hangul Jamo
+\do{sym15} {18} % Enclosed Alphanumerics
+\do{cjk01} {16} % CJK Radicals Supplement
+\do{cjk02} {16} % Kangxi Radicals
+\do{cjk03} {16} % Ideographic Description Characters
+\do{cjk04} {18} % CJK Symbols and Punctuation
+\do{hira}  {17} % Hiragana
+\do{kana}  {17} % Katakana
+\do{bopo}  {16} % Bopomofo
+\do{hang2} {19} % Hangul Compatibility Jamo
+\do{cjk05} {16} % Kanbun
+\do{bopo1} {16} % Bopomofo Extended
+\do{cjk06} {16} % CJK Strokes
+\do{kana1} {17} % Katakana Phonetic Extensions
+\do{cjk07} {18} % Enclosed CJK Letters and Months
+\do{cjk08} {18} % CJK Compatibility
+\do{haniA} {16} % CJK Unified Ideographs Extension A
+\do{hani}  {16} % CJK Unified Ideographs
+\do{yiii}  {18} % Yi Syllables
+\do{yiii1} {18} % Yi Radicals
+\do{hangA} {19} % Hangul Jamo Extended-A
+\do{hang}  {19} % Hangul Syllables
+\do{hangB} {19} % Hangul Jamo Extended-B
+\do{hani1} {16} % CJK Compatibility Ideographs
+\do{cjk09} {18} % Vertical Forms
+\do{cjk10} {18} % CJK Compatibility Forms
+\do{cjk11} {18} % Small Form Variants
+\do{cjk12} {18} % Halfwidth and Fullwidth Forms
+\do{cjk1a} {18} % Halfwidth and Fullwidth Forms/Other
+\do{cjk1b} {17} % Halfwidth and Fullwidth Forms/Latin
+\do{cjk1c} {17} % Halfwidth and Fullwidth Forms/Kana
+\do{cjk14} {18} % Ideographic Symbols and Punctuation
+\do{tang}  {18} % Tangut
+\do{tang1} {18} % Tangut Components
+\do{kana2} {17} % Kana Supplement
+\do{kanaA} {17} % Kana Extended-A
+\do{nshu}  {18} % Nushu
+\do{sym45} {18} % Enclosed Alphanumeric Supplement
+\do{cjk13} {18} % Enclosed Ideographic Supplement
+\do{haniB} {16} % CJK Unified Ideographs Extension B
+\do{haniC} {16} % CJK Unified Ideographs Extension C
+\do{haniD} {16} % CJK Unified Ideographs Extension D
+\do{haniE} {16} % CJK Unified Ideographs Extension E
+\do{haniF} {16} % CJK Unified Ideographs Extension F
+\do{hani2} {16} % CJK Compatibility Ideographs Supplement
+%=======================================
+
+%%%% cjkcategory modes
+\def\pxkc@resetcjkcat#1{%
+  \chardef\pxkc@base@cat=#1\relax
+  \pxkc@foreachblk\do{%
+    \pxkc@letcs\pxkc@cat{pxkc@K@@\x}%
+    \ifx\pxkc@cat\relax \let\pxkc@cat\pxkc@base@cat \fi
+    \pxkc@kcatcode{\@nameuse{pxkc@B@@\x}}{\pxkc@cat}}%
+  \ifnum\pxkc@mccv<2
+    \pxkc@cjkcategory{cjk12}{18}%
+  \fi}
+
+%=======================================
+%% 'forcecjk'
+\def\pxkc@M@@forcecjk{%
+  \pxkc@resetcjkcat{18}%
+}
+%% 'prefercjk'
+\def\pxkc@M@@prefercjk{%
+  \pxkc@M@@prefercjkvar
+  \pxkc@cjkcategory{grek}{18}%
+  \pxkc@cjkcategory{cyrl}{18}%
+  \pxkc@cjkcategory{grek1}{18}%
+}
+%% 'prefercjkvar'
+\def\pxkc@M@@prefercjkvar{%
+  \pxkc@M@@japanesevar
+  \pxkc@cjkcategory@mccv{3}{3}{latny}{18}%
+  \pxkc@cjkcategory{latnA}{18}%
+  \pxkc@cjkcategory{latnB}{18}%
+  \pxkc@cjkcategory{latn2}{18}%
+  \pxkc@cjkcategory{sym01}{18}%
+  \pxkc@cjkcategory{sym02}{18}%
+  \pxkc@cjkcategory{latn3}{18}%
+  \pxkc@cjkcategory{sym05}{18}%
+  \pxkc@cjkcategory{sym06}{18}%
+  \pxkc@cjkcategory{latn6}{18}%
+}
+%% 'japanese'
+\def\pxkc@M@@japanese{%
+  \pxkc@M@@japanesevar
+  \pxkc@cjkcategory{grek}{18}%
+  \pxkc@cjkcategory{cyrl}{18}%
+}
+%% 'japanesevar'
+\def\pxkc@M@@japanesevar{%
+  \pxkc@M@@prefernoncjk
+  \pxkc@cjkcategory@mccv{1}{2}{latn1}{18}%
+  \pxkc@cjkcategory@mccv{3}{3}{latnx}{18}%
+  \pxkc@cjkcategory{sym04}{18}%
+  \pxkc@cjkcategory{sym07}{18}%
+  \pxkc@cjkcategory{sym08}{18}%
+  \pxkc@cjkcategory{sym09}{18}%
+  \pxkc@cjkcategory{sym10}{18}%
+  \pxkc@cjkcategory{sym11}{18}%
+  \pxkc@cjkcategory{sym12}{18}%
+  \pxkc@cjkcategory{sym13}{18}%
+  \pxkc@cjkcategory{sym16}{18}%
+  \pxkc@cjkcategory{sym17}{18}%
+  \pxkc@cjkcategory{sym18}{18}%
+  \pxkc@cjkcategory{sym19}{18}%
+  \pxkc@cjkcategory{sym20}{18}%
+  \pxkc@cjkcategory{sym23}{18}%
+  \pxkc@cjkcategory{sym24}{18}%
+  \pxkc@cjkcategory{sym26}{18}%
+  \pxkc@cjkcategory{spc04}{18}%
+}
+%% 'prefernoncjk'
+\def\pxkc@M@@prefernoncjk{%
+  \pxkc@resetcjkcat{15}%
+}
+%=======================================
+%% 'default'
+\def\pxkc@M@@default{%
+  \pxkc@M@@forcecjk
+  \pxkc@cjkcategory@mccv{3}{3}{latny}{15}%
+  \pxkc@cjkcategory@mccv{3}{3}{latnA}{15}%
+}
+
+%%%% \showcjkcategory
+\def\showcjkcategory{%
+  \pxkc@foreachblk\do{%
+    \expandafter\ifx\csname pxkc@G@@\x\endcsname\relax
+      \typeout{\x\space= \the\kcatcode\@nameuse{pxkc@B@@\x}}%
+    \fi}}
+
+%%-------- \withcjktokendisabled, etc.
+
+%% \pxkc@genprobe
+\def\pxkc@genprobe{%
+  \edef\pxkc@tmpa{\expandafter\string\csname
+   pxkc@@\string ^^e3\string ^^81\string ^^82%
+   \string ^^e3\string ^^82\string ^^a2\endcsname}}
+\bgroup \kcatcode"3040=15\kcatcode"30A0=18
+  \disablecjktoken\pxkc@genprobe \global\let\pxkc@prb@d\pxkc@tmpa
+  \enablecjktoken\pxkc@genprobe  \global\let\pxkc@prb@e\pxkc@tmpa
+  \forcecjktoken\pxkc@genprobe   \global\let\pxkc@prb@f\pxkc@tmpa
+\egroup
+
+%% \pxkc@getcjktokmod\CS
+\def\pxkc@getcjktokmod#1{%
+  \bgroup \kcatcode"3040=15\kcatcode"30A0=18\pxkc@genprobe
+    \ifx\pxkc@tmpa\pxkc@prb@d \global\chardef\pxkc@gtmpa\z@
+    \else\ifx\pxkc@tmpa\pxkc@prb@e \global\chardef\pxkc@gtmpa\@ne
+    \else\ifx\pxkc@tmpa\pxkc@prb@f \global\chardef\pxkc@gtmpa\tw@
+    \else \global\let\pxkc@gtmpa\m@ne \fi\fi\fi
+  \egroup \let#1\pxkc@gtmpa}
+
+%%<+> \getcjktokenmode
+% Returns the value showing current mode to \thecjktokenmode
+%  0: \disablecjktoken
+%  1: \enablecjktoken
+%  2: \forcecjktoken
+\def\getcjktokenmode{\pxkc@getcjktokmod\thecjktokenmode}
+
+%%<*> \setcjktokenmode{<val>}
+\def\pxkc@setcjktokmod#1{%
+  \ifcase#1\disablecjktoken\or\enablecjktoken\or\forcecjktoken\fi}
+
+%%<*> \withcjktokendisabled, etc.
+\def\withcjktokendisabled{\pxkc@withcjktokmod\disablecjktoken\@iden}
+\def\withcjktokenenabled{\pxkc@withcjktokmod\enablecjktoken\@iden}
+\def\withcjktokenforced{\pxkc@withcjktokmod\forcecjktoken\@iden}
+\def\withcjktokendisabledex{\pxkc@withcjktokmod\disablecjktoken}
+\def\withcjktokenenabledex{\pxkc@withcjktokmod\enablecjktoken}
+\def\withcjktokenforcedex{\pxkc@withcjktokmod\forcecjktoken}
+\def\pxkc@withcjktokmod#1{%
+  \pxkc@getcjktokmod\pxkc@tokmod #1\pxkc@withcjktokmod@a}
+\def\pxkc@withcjktokmod@a#1#2{%
+  #1{#2}\pxkc@setcjktokmod\pxkc@tokmod}
+
+%%------ initial setup
+
+\ifx\pxkc@ccmode\relax\else
+\cjkcategorymode{\pxkc@ccmode}
+\fi
+
+%%------ all done
+\endinput
+%% EOF

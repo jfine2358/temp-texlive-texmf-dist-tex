@@ -1,0 +1,531 @@
+% knitting.sty
+%
+% Provides commands useful for writing knitting patterns in LaTeX,
+% including commands to typeset knit charts, and to switch to larger
+% pages mid-document.
+%
+% author: Ariel Barton
+%
+% Copyright Ariel Barton, 2010
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either
+% version 1.3 of this license or (at your option) any
+% later version.
+% The latest version of the license is in
+%    http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of
+% LaTeX version 2003/06/01 or later.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The complete list of files considered part of this work is in
+% the file `knitting-doc.pdf' and its source code `knitting-doc.tex'.
+%
+
+\ProvidesPackage{knitting}[2010/01/17]
+
+%\pdfmapfile{+knitfont.map}
+
+\RequirePackage{color}
+
+\definecolor{purlgray}{gray}{0.65}
+\definecolor{knitlinecolor}{rgb}{0.7,0,0}
+\definecolor{gridcolor}{gray}{0.3}
+
+\newif\ifchartsonly\chartsonlyfalse
+\DeclareOption{chartsonly}{\chartsonlytrue}
+
+\ProcessOptions
+
+% Every dimension I could think of affecting the
+% main page body. It's an environment instead of a command since I want 
+% a way to switch back to normal pages. Dimensions I don't change are
+% \marginparsep,\marginparwidth,\marginparpush,\paperheight,\paperwidth
+
+\newenvironment{fullpages}{
+	\clearpage
+	\pagestyle{plain}
+	\setlength{\hoffset}{0pt}
+	\setlength{\voffset}{0pt}
+	\setlength{\oddsidemargin}{0pt}
+	\setlength{\evensidemargin}{0pt}
+	\setlength{\topmargin}{0pt}
+	\setlength{\headheight}{0pt}
+	\setlength{\headsep}{0pt}
+	\setlength{\textheight}{\paperheight}
+		\addtolength{\textheight}{-\footskip}
+		\addtolength{\textheight}{-2in}
+	\setlength{\textwidth}{\paperwidth}
+		\addtolength{\textwidth}{-2in}
+	% This bit is borrowed from Peter Wilson's chngpage.sty
+	% package. I didn't want to just \usepackage{chngpage} because it
+	% behaves like \addtolength and I wanted \setlength, and loading the
+	% whole package for one eight-line snippet of code just seemed
+	% needlessly complicated.
+	\setlength{\@colht}{\textheight}\setlength{\@colroom}{\textheight}%
+	\setlength{\vsize}{\textheight}\setlength{\columnwidth}{\textwidth}%
+	\if@twocolumn%
+		\advance\columnwidth-\columnsep \divide\columnwidth\tw@%
+		\@firstcolumntrue%
+	\fi%
+	\setlength{\hsize}{\columnwidth}%
+	\setlength{\linewidth}{\hsize}%
+	}
+	{\clearpage}
+
+\newif \ifpdf@knit
+\pdf@knittrue
+\ifx \pdfoutput \undefined \pdf@knitfalse \fi
+\ifx \pdfoutput \relax     \pdf@knitfalse \fi
+
+\newif \ifgrid
+\newif \ifresetrn \resetrntrue
+\newif \ifleftrn@knit
+
+\newlength\leftgap@knit
+\newlength\bgshift@knit
+\newlength\chartwidth@knit
+
+\newbox\bgbox@knit
+\newbox\fgbox@knit
+\newbox\ggbox@knit
+
+\newcounter{rownumber}
+\newcounter{tempcounterknit}
+\newcounter{rownumberskip} \setcounter{rownumberskip}{1}
+\def\passnum@knit{2} 
+
+\newcommand\stitchwd{\fontdimen6\csname U/knit/\series@knit/n/\f@size\endcsname}
+\newcommand\stitchdp{\fontdimen8\csname U/knit/\series@knit/n/\f@size\endcsname}
+\newcommand\stitchht{\fontdimen9\csname U/knit/\series@knit/n/\f@size\endcsname}
+\newcommand\gridwidth{\fontdimen10\csname U/knit/\series@knit/n/\f@size\endcsname}
+\newcommand\knitlinewd{\fontdimen11\csname U/knit/\series@knit/n/\f@size\endcsname}
+\newcommand\narrowincraise@knit{\fontdimen12\the\font} % The rest of them aren't \the\font because I want them to still work outside of a chart
+\newcommand\fontvoffset@knit{\fontdimen13\the\font}
+\newcommand\purlextend@knit{\fontdimen14\csname U/knit/\series@knit/n/\f@size\endcsname}
+\newcommand\rownumberwd{\fontdimen6\csname U/knit/\series@knit/n/10\endcsname}
+
+\DeclareTextFontCommand {\knitsfsmall@knit}{\dimen0=\f@size pt\fontfamily{cmss}\fontseries{m}\fontshape{n}\fontsize{0.8\dimen0}{\f@baselineskip}\selectfont}
+\DeclareTextFontCommand     {\cablesf@knit}{\dimen0=\f@size pt\fontfamily{cmss}\fontseries{m}\fontshape{n}\fontsize{0.8\dimen0}{\f@baselineskip}\selectfont}
+\DeclareTextFontCommand{\cablesfsmall@knit}{\dimen0=\f@size pt\fontfamily{cmss}\fontseries{m}\fontshape{n}\fontsize{0.6\dimen0}{\f@baselineskip}\selectfont}
+
+\newcommand\knitnogrid{\gridfalse\def\series@knit{n}{\fontencoding{U}\fontfamily{knit}\fontseries{\series@knit}\fontshape{n}\selectfont}}
+\newcommand  \knitgrid{\gridtrue \def\series@knit{g}{\fontencoding{U}\fontfamily{knit}\fontseries{\series@knit}\fontshape{n}\selectfont}}
+\newcommand  \knitwide{\gridtrue \def\series@knit{w}{\fontencoding{U}\fontfamily{knit}\fontseries{\series@knit}\fontshape{n}\selectfont}}
+% Some extra effort is made to make sure that the fonts actually exist.
+% This is done so that the fonts are defined before they are used,
+% which is necessary to make \gridwidth work
+
+\newcommand\purlpass[2][]{\ifnum\passnum@knit = 0 #2\else #1\fi}
+\newcommand\gridpass[2][]{\ifnum\passnum@knit = 1 #2\else #1\fi}
+\newcommand\mainpass[2][]{\ifnum\passnum@knit = 2 #2\else #1\fi}
+
+\knitgrid
+
+\newcommand\textknit[1]{\mbox{\fontencoding{U}\fontfamily{knit}\fontseries{\series@knit}%
+	\rlap{\def\passnum@knit{0}\color{purlgray}\fontshape{n}\selectfont\fontshape{p}\selectfont#1}%
+	\ifgrid\rlap{\def\passnum@knit{1}\color{gridcolor}\fontshape{g}\selectfont#1}\fi
+	\def\passnum@knit{2}\fontshape{n}\selectfont#1}}
+
+\def\do@endofpar@knit#1{\def\par{#1\endgraf\let\par\endgraf}}
+
+% Special symbols
+
+\newcommand \narrowdecrease[1]{\char1\ifnum \passnum@knit = 2 \llap{\lower\stitchdp\vbox to\stitchht{\vss\vskip\fontvoffset@knit\hbox to \stitchwd{\hfil\knitsfsmall@knit{#1}\hfil}\vskip-\narrowincraise@knit\vss}}\fi}
+\newcommand\pnarrowdecrease[1]{\char2\ifnum \passnum@knit = 2 \llap{\lower\stitchdp\vbox to\stitchht{\vss\vskip\fontvoffset@knit\hbox to \stitchwd{\hfil\knitsfsmall@knit{#1}\hfil}\vskip-\narrowincraise@knit\vss}}\fi}
+\newcommand \narrowincrease[1]{\char3\ifnum \passnum@knit = 2 \llap{\lower\stitchdp\vbox to\stitchht{\vss\vskip\fontvoffset@knit\hbox to \stitchwd{\hfil\knitsfsmall@knit{#1}\hfil}\vskip \narrowincraise@knit\vss}}\fi}
+\newcommand\pnarrowincrease[1]{\char4\ifnum \passnum@knit = 2 \llap{\lower\stitchdp\vbox to\stitchht{\vss\vskip\fontvoffset@knit\hbox to \stitchwd{\hfil\knitsfsmall@knit{#1}\hfil}\vskip \narrowincraise@knit\vss}}\fi}
+\newcommand\bobble[1]{\char0         \ifnum \passnum@knit = 2 \llap{\lower\stitchdp\vbox to\stitchht{\vss\vskip\fontvoffset@knit\hbox to \stitchwd{\hfil\knitsfsmall@knit{#1}\hfil}\vss}}\fi}
+
+\newcommand\wideincrease[1]{\strut@knit%
+	\hbox to #1\stitchwd{\char25\leaders\hbox{\char22}\hfil\char29\leaders\hbox{\char22}\hfil\char26}}
+\newcommand\widedecrease[1]{\strut@knit%
+	\ifnum #1 = 5 \char31\else
+	\hbox to #1\stitchwd{\char27\leaders\hbox{\char22}\hfil\char30\leaders\hbox{\char22}\hfil\char28}\fi}
+
+% Standard chart commands
+
+% \obeylines is normally defined with \let^^M\par, not \def^^M{\par};
+% doing it this way makes it cooperate with \do@endofpar.
+
+{\catcode`\^^M = \active \catcode`\| = \active
+\global\def\commands@knit{%
+	\let\[\pnarrowincrease
+	\let\]\pnarrowdecrease
+	\let\<\narrowincrease
+	\let\>\narrowdecrease
+	\let\@\bobble
+	\let \! \barthin@knit
+	\let \| \bar@knit
+	\let | \bar@knit
+	\let\par\endgraf %Just in case someone's redefined it
+	\leftgap@knit=0pt
+	\def~{\ifvmode \advance \leftgap@knit by \stitchwd
+		\else \kern \stitchwd \fi}%
+	\def^^M{\par}%
+	\def\\{\par}%
+	\let\_\horizline@knit
+	\let\=\horizlinewide@knit
+	\let\-\horizlinenarrow@knit
+	\let\overline\overline@knit
+	\let\underline\underline@knit
+	\let\rn\rn@knit
+	\let\rnbox\rnbox@knit
+	\let\rnboxleft\rnboxleft@knit
+	\let\rnboxright\rnboxright@knit
+	\let\rnleft\rnleft@knit
+	\let\rnright\rnright@knit
+	\let\rncore@save@knit \rncore@knit
+	\let\nonumber\relax
+	}%
+}
+
+\def\strut@knit{\rule[-\stitchdp]{0pt}{\stitchht}}
+
+% Drawing lines on the chart
+
+\def        \horizline@knit{\ifvmode\nonumber\leavevmode\fi \dimen0 =   \stitchwd \advance \dimen0 \knitlinewd 
+	\ifnum\passnum@knit = 2
+	\hskip -0.5\knitlinewd\smash{{\color{knitlinecolor}\vrule width \dimen0 height 0.5\knitlinewd depth 0.5\knitlinewd}}\hskip -0.5\knitlinewd
+	\else\hskip \stitchwd \fi}
+\def\horizlinenarrow@knit#1{\ifvmode\nonumber\leavevmode\fi \dimen0 = #1\stitchwd \advance \dimen0 \gridwidth  
+	\ifnum\passnum@knit = 2
+	\hskip -0.5\gridwidth \smash{{\color{knitlinecolor}\vrule width \dimen0 height 0.5\knitlinewd depth 0.5\knitlinewd}}\hskip -0.5\gridwidth
+	\else\hskip #1\stitchwd \fi}
+\def  \horizlinewide@knit#1{\ifvmode\nonumber\leavevmode\fi \dimen0 = #1\stitchwd \advance \dimen0 \knitlinewd 
+ 	\ifnum\passnum@knit = 2
+                         \smash{{\color{knitlinecolor}\vrule width \dimen0 height 0.5\knitlinewd depth 0.5\knitlinewd}}
+	\else\hskip \dimen0 \fi}
+	
+\def\bar@knit{\ifvmode\leavevmode\fi\ifgrid
+		\ifnum \passnum@knit = 0
+		\hbox{\color{knitlinecolor}\rule[-\stitchdp]{\knitlinewd}{\stitchht}}%
+		\else
+		\kern \knitlinewd
+		\fi
+	\else
+		\ifnum \passnum@knit = 2
+		\hbox{\color{knitlinecolor}\rule[-\stitchdp]{\knitlinewd}{\stitchht}}%
+		\else
+		\kern \knitlinewd
+		\fi
+	\fi}
+
+\def\barthin@knit{\ifvmode\leavevmode\fi
+	\ifnum \passnum@knit = 2
+	\hbox to 0pt{\hss\color{knitlinecolor}\rule[-\stitchdp]{\knitlinewd}{\stitchht}\hss}%
+	\else \strut@knit\fi}
+
+\def\overline@knit#1{\setbox0 = \hbox{#1}%
+	\leavevmode
+	\ifgrid
+	\ifnum \passnum@knit = 0
+		\dimen1=\wd0 \advance\dimen1 by \gridwidth
+		{\rlap{\hskip -0.5\gridwidth\color{knitlinecolor}\rule[\ht0]{\dimen1}{\knitlinewd}}}
+	\else
+		\rule[\ht0]{0pt}{\knitlinewd}
+	\fi
+	\else
+	\ifnum \passnum@knit = 2
+		\dimen1=\wd0 \advance\dimen1 by \gridwidth
+		{\rlap{\hskip -0.5\gridwidth\color{knitlinecolor}\rule[\ht0]{\dimen1}{\knitlinewd}}}%
+	\else
+		\rule[\ht0]{0pt}{\knitlinewd}
+	\fi
+	\fi
+	#1}
+
+\def\underline@knit#1{\setbox0 = \hbox{#1}%
+	\leavevmode
+	\dimen1=\wd0 \advance\dimen1 by \gridwidth
+	\ifgrid
+	\ifnum \passnum@knit = 0
+	\rlap{\raisebox{-\dp0}{\hskip -0.5\gridwidth\color{knitlinecolor}\rule[-\knitlinewd]{\dimen1}{\knitlinewd}\hskip -0.5\gridwidth}}%
+	\else
+	\rlap{\raisebox{-\dp0}{\vrule width 0pt height 0pt depth \knitlinewd}}%
+	\fi
+	\else
+	\ifnum \passnum@knit = 2
+	\rlap{\raisebox{-\dp0}{\hskip -0.5\gridwidth\color{knitlinecolor}\vrule width \dimen1 height 0pt depth \knitlinewd \hskip -0.5\gridwidth}}%
+	\else
+	\rlap{\raisebox{-\dp0}{\vrule width 0pt height 0pt depth \knitlinewd}}%
+	\fi
+	\fi
+	\copy0
+	}
+
+% Fancy cabling
+
+\def\overcableleft@knit#1{%
+	\setbox0=\hbox{#1}%
+	\rlap{#1}%
+	\hbox to \wd0{\leaders\hbox to \stitchwd{\hfil\char5}\hfil\hskip\stitchwd\char10}}
+\def\undercableleft@knit#1{%
+	\setbox0=\hbox{#1}%
+	\rlap{#1}%
+	\hbox to \wd0{\leaders\hbox to \stitchwd{\hfil\char6}\hfil\hskip\stitchwd\char9}}
+\def\undercableright@knit#1{%
+	\setbox0=\hbox{#1}%
+	\rlap{#1}%
+	\hbox to \wd0{\char13\char12\hskip\stitchwd\leaders\hbox to \stitchwd{\char8\hfil}\hfil}}
+\def\overcableright@knit#1{%
+	\setbox0=\hbox{#1}%
+	\rlap{#1}%
+	\hbox to \wd0{\char14\char11\hskip\stitchwd\leaders\hbox to \stitchwd{\char7\hfil}\hfil}}
+
+\newcommand\cableleft[2]{{\def\series@knit{n}\fontencoding{U}\fontfamily{knit}\fontseries{n}\ifvmode\leavevmode\fi 
+	\ifcase\passnum@knit 
+	\hbox{\gridfalse \fontshape{p}\selectfont #1#2}
+	\or
+	\setbox0=\hbox{\gridfalse \fontshape{p}\selectfont #1#2} \rule{\wd0}{0pt} \vrule width 0pt height \ht0 depth \dp0
+	\else
+	\hbox{\gridfalse \let \textsf \cablesf@knit \let \knitsfsmall@knit \cablesfsmall@knit {\fontshape{l}\selectfont \overcableleft@knit{#1}}{\fontshape{r}\selectfont \undercableright@knit{#2}}}
+	\fi}}
+\newcommand\cableright[2]{{\def\series@knit{n}\fontencoding{U}\fontfamily{knit}\fontseries{n}\ifvmode\leavevmode\fi
+	\ifcase\passnum@knit 
+	\hbox{\gridfalse \fontshape{p}\selectfont #1#2}
+	\or
+	\setbox0=\hbox{\gridfalse \fontshape{p}\selectfont #1#2} \rule{\wd0}{0pt} \vrule width 0pt height \ht0 depth \dp0
+	\else
+	\hbox{\gridfalse \let \textsf \cablesf@knit \let \knitsfsmall@knit \cablesfsmall@knit {\fontshape{r}\selectfont \undercableleft@knit{#1}}{\fontshape{l}\selectfont \overcableright@knit{#2}}}\fi}}
+
+% Knit, purl, knitboxes
+
+\newcommand\knit[1]{\strut@knit\hbox to #1\stitchwd{\leaders\hbox{-}\hfil}}
+\newcommand\purl[1]{\strut@knit\hbox to #1\stitchwd{\leaders\hbox{=}\hfil}}
+
+\newcommand\Knit[2]{\strut@knit%
+	\setbox0 = \vbox to\stitchht{\vss\hbox{\fontseries{m}\fontshape{n}\textsf{#1}}\vss}
+	\ifcase \passnum@knit 
+	\rule{#2\stitchwd}{0pt}%
+	\or
+	\rlap{\hbox to #2\stitchwd{\leaders\hbox{\char5}\hfil}}%
+	\hbox to #2\stitchwd{\leaders\hbox to \stitchwd{\char6\hfil\char6}\hfil\hskip\wd0\leaders\hbox to \stitchwd{\char6\hfil\char6}\hfil}%
+	\or
+	\hbox to #2\stitchwd{\leaders\hbox{-}\hfil \lower\stitchdp\box0\leaders\hbox{-}\hfil}
+	\fi}
+\newcommand\Purl[2]{\strut@knit%
+	\setbox0 = \vbox to\stitchht{\vss\hbox{\fontseries{m}\fontshape{n}\textsf{#1}}\vss}
+	\ifcase \passnum@knit 
+	\purlbackground{\rule[-\stitchdp]{#2\stitchwd}{\stitchht}}%
+	\or
+	\rlap{\hbox to #2\stitchwd{\leaders\hbox{\char5}\hfil}}%
+	\hbox to #2\stitchwd{\leaders\hbox to \stitchwd{\char6\hfil\char6}\hfil\hskip\wd0\leaders\hbox to \stitchwd{\char6\hfil\char6}\hfil}%
+	\or
+	\hbox to #2\stitchwd{\leaders\hbox{=}\hfil \lower\stitchdp\box0\leaders\hbox{=}\hfil}
+	\fi}
+
+\newcommand\knitbox[2]{\strut@knit%
+	\ifcase \passnum@knit 
+	\rule{#2\stitchwd}{0pt}%
+	\or
+	\hbox to #2\stitchwd{\char6\leaders\hbox{\char5}\hfil\char6}%
+	\or
+	\hbox to #2\stitchwd{\hfil \lower\stitchdp\vbox to\stitchht{\vss\vskip\fontvoffset@knit\hbox{\fontseries{m}\fontshape{n}\textsf{#1}}\vss}\hfil}%
+	\fi}
+\newcommand\purlbox[2]{\strut@knit%
+	\ifcase \passnum@knit 
+	\purlbackground{\rule[-\stitchdp]{#2\stitchwd}{\stitchht}}%
+	\or
+	\hbox to #2\stitchwd{\char6\leaders\hbox{\char5}\hfil\char6}%
+	\or
+	\hbox to #2\stitchwd{\hfil \lower\stitchdp\vbox to\stitchht{\vss\vskip\fontvoffset@knit\hbox{\fontseries{m}\fontshape{n}\textsf{#1}}\vss}\hfil}%
+	\fi}
+
+\newcommand\purlbackground[1]{\ifvmode\leavevmode\fi\setbox0=\hbox{#1}%
+	\dimen0 = \wd0 \advance\dimen0 2\purlextend@knit
+	\dimen1 = \stitchht \advance\dimen1 \purlextend@knit
+	\dimen2 = \stitchdp \advance\dimen2 \purlextend@knit
+	\ifnum \passnum@knit = 0  \kern-\purlextend@knit
+		\vrule width 0pt height \ht0 depth \dp0
+		\smash{\rule[-\dimen2]{\dimen0}{\dimen1}}%
+		\kern-\purlextend@knit
+		\else\box0\fi}
+
+% Row number commands
+
+\newcommand\numberrow[3]{\ifvmode\nonumber\leavevmode\fi
+	\strut@knit
+	\count255=#1
+	\hbox to \stitchwd{\hss\ifnum \passnum@knit = 2 \textnormal{#1}\fi\hss}%
+	\advance\count255 -1
+	\loop \ifnum \count255>#3
+	\c@tempcounterknit = \count255
+	\divide\c@tempcounterknit #2
+	\multiply \c@tempcounterknit #2
+	\ifnum\c@tempcounterknit = \count255
+	\hbox to \stitchwd{\hss\ifnum \passnum@knit = 2 \textnormal{\the\count255}\fi \hss}%
+	\else
+	\kern\stitchwd
+	\fi
+	\advance\count255 -1
+	\repeat
+	\hbox to \stitchwd{\hss\ifnum \passnum@knit = 2 \textnormal{#3}\fi \hss}%
+	}
+
+\newcommand\rnoddonly{\def\rncore@knit{\ifnum \passnum@knit = 2  \ifodd\value{rownumber}\textnormal{\arabic{rownumber}}\fi\fi \rnstep@knit}}
+\newcommand\rnevenonly{\def\rncore@knit{\ifnum \passnum@knit = 2  \ifodd\value{rownumber}\else\textnormal{\arabic{rownumber}}\fi\fi \rnstep@knit}}
+\newcommand\rnnormal{\def\rncore@knit{\ifnum \passnum@knit = 2  \textnormal{\arabic{rownumber}}\fi \rnstep@knit}}
+
+\def\rncore@knit{\ifnum \passnum@knit = 2 \textnormal{\arabic{rownumber}}\fi \rnstep@knit}
+\def\rnstep@knit{\ifnum \passnum@knit = 2 \addtocounter{rownumber}{-\value{rownumberskip}}\fi
+				 \ifnum \passnum@knit = 0 \addtocounter{rownumber}{-\value{rownumberskip}}\fi}
+
+\def\rn@knit{\ifvmode\leavevmode\fi
+	\hbox to \rownumberwd{\hss\rncore@knit\hss}}
+\def\rnleft@knit{\ifvmode\leavevmode\fi
+	\hbox to \rownumberwd{\hss\rnmiddle@knit\llap{\rncore@knit}\hss}}
+\def\rnright@knit{\ifvmode\leavevmode\fi
+	\hbox to \rownumberwd{\hss\rlap{\rncore@knit}\rnmiddle@knit\hss}}
+\def\rnbox@knit#1{\ifvmode\leavevmode\fi\hbox to \rownumberwd{\hss\mainpass{\textnormal{#1}}\hss}}
+\def\rnboxleft@knit#1{\ifvmode\leavevmode\fi\hbox to \rownumberwd{\hss\rnmiddle@knit\llap{\mainpass{\textnormal{#1}}}\hss}}
+\def\rnboxright@knit#1{\ifvmode\leavevmode\fi\hbox to \rownumberwd{\hss\rnmiddle@knit\llap{\mainpass{\textnormal{#1}}}\hss}}
+
+% The chart commands
+
+\newcommand\chart[1][]{\smallpage@knit\obeylines \catcode`\|=\active \chart@knit{#1}}
+
+% Some special stuff for chartsonly mode
+\let\extracommands@knit\relax
+\def\smallpage@knit{\ifvmode\noindent\fi\hbox\bgroup}
+\let\endsmallpage@knit\egroup
+
+% The chart command proper
+\long\def\chart@knit#1#2{%
+	\global \chartwidth@knit = 0pt
+	\ifresetrn \setcounter{rownumber}{0}\else \setcounter{tempcounterknit}{\value{rownumber}}\fi
+	\setbox1=\hbox{\textnormal{5}}%
+	\edef\rnmiddle@knit{\hskip \the\wd1}%
+	\setbox\bgbox@knit=\vbox{\def\passnum@knit{0}\hsize=\maxdimen
+		\fontencoding{U}\fontfamily{knit}\fontseries{\series@knit}\fontshape{n}\selectfont % This is kind of silly, but to make \stitchht work, we need to be sure that the foreground font exists.
+		\fontencoding{U}\fontfamily{knit}\fontseries{\series@knit}\fontshape{p}\selectfont
+		\lineskip=0pt
+		\parskip=0pt
+		\baselineskip=0pt
+		\parindent=0pt
+		\emergencystretch = \stitchwd
+		\leftskip=0pt
+		\rightskip=0pt
+		\parfillskip = 0pt plus 1fil
+		\ifresetrn\else\let\rnstep@knit\relax\fi
+		\commands@knit\extracommands@knit
+		\global \bgshift@knit = \rownumberwd
+		\csname auto#1@knit\endcsname #2\par}%
+	\ifresetrn \setcounter{rownumber}{-\value{rownumber}}\else
+	           \setcounter{rownumber}{\value{tempcounterknit}}\fi
+	\csname setbgshift#1@knit\endcsname
+	\ifgrid
+		\setbox\ggbox@knit=\vbox{\def\passnum@knit{1}\hsize=\maxdimen
+		\fontencoding{U}\fontfamily{knit}\fontseries{\series@knit}\fontshape{g}\selectfont
+		\lineskip=0pt
+		\parskip=0pt
+		\baselineskip=0pt
+		\parindent=0pt
+		\emergencystretch = \stitchwd
+		\leftskip=0pt
+		\rightskip=0pt
+		\parfillskip = 0pt plus 1fil
+		\commands@knit\extracommands@knit
+		\csname auto#1@knit\endcsname #2\par}%
+	\fi
+	\setbox\fgbox@knit=\vbox{\def\passnum@knit{2}\hsize=\maxdimen
+		\fontencoding{U}\fontfamily{knit}\fontseries{\series@knit}\fontshape{n}\selectfont
+		\lineskip=0pt
+		\parskip=0pt
+		\baselineskip=0pt
+		\parindent=0pt
+		\emergencystretch = \stitchwd
+		\leftskip=0pt
+		\rightskip=0pt
+		\parfillskip = 0pt plus 1fil
+		\commands@knit\extracommands@knit
+		\csname auto#1@knit\endcsname #2\par}%
+	\hbox to \chartwidth@knit{%
+	\rlap{\color{purlgray}\hskip -\bgshift@knit \box\bgbox@knit}%
+	\ifgrid\rlap{\color{gridcolor}\box\ggbox@knit}\fi
+	\box\fgbox@knit%
+	\hss}%
+	\ifchartsonly \vskip 0.5\gridwidth \fi \endsmallpage@knit
+	}
+
+% Special charts only macros
+
+\ifchartsonly
+	\ifpdf@knit\else\errmessage{\chartsonly should only be used with pdfTeX.}\fi%
+	\hoffset=-1in
+	\voffset=-1in
+		\oddsidemargin=0pt
+		\evensidemargin=0pt
+		\topmargin=0pt
+		\headheight=0pt
+		\headsep=0pt
+		\footskip=0pt
+		\textheight = 120in
+	\newenvironment{smallpage}{\clearpage \hsize=\textwidth \columnwidth = \textwidth
+		\global\chartwidth@knit=0pt \setbox0 = \vbox\bgroup}
+	{\egroup%
+		%
+		\ifdim\chartwidth@knit>0pt \pdfpagewidth = \chartwidth@knit \else
+		\pdfpagewidth=\wd0 \fi
+		%
+		\dimen0=\ht0 \advance \dimen0 by \dp0
+		\pdfpageheight=\dimen0
+		%
+		\ifdim\pdfpageheight>\textheight
+		\typeout{}
+		\typeout{You need to increase \string\textheight\space in the preamble.}
+		\typeout{What do you want such a big chart for, anyway?}
+		\typeout{}
+		\fi
+		%
+		\box0
+		\vfil\break
+		}
+	\let\smallpage@knit\smallpage
+	\let\endsmallpage@knit\endsmallpage
+	\def\extracommands@knit{\hsize=\maxdimen
+		\leftskip = 0.5\gridwidth
+		\rightskip = 0.5\gridwidth
+		\vskip 0.5\gridwidth
+		}
+\else
+	\let\smallpage\begingroup
+	\let\endsmallpage\endgroup
+\fi
+
+% Autonumbering macros
+
+\def\everypar@knit{\hskip\leftgap@knit \leftgap@knit=0pt \relax}
+
+\def        \auto@knit{\let\nonumber\relax \everypar={\everypar@knit\do@endofpar@knit{\adjustchartwidth@knit}}}
+\def    \autoleft@knit{\def\nonumber{\def\rncore@knit{\global\let\rncore@knit\rncore@save@knit}}\everypar={\everypar@knit\rnleft@knit\do@endofpar@knit{\adjustchartwidth@knit}}}
+\def   \autoright@knit{\def\nonumber{\def\rncore@knit{\global\let\rncore@knit\rncore@save@knit}}\everypar={\everypar@knit\do@endofpar@knit{\rnright@knit\adjustchartwidth@knit}}}
+\def \autooddleft@knit{\def\nonumber{\def\rncore@knit{\global\let\rncore@knit\rncore@save@knit}}\everypar={\everypar@knit\ifodd \value{rownumber}\relax \rnleft@knit\do@endofpar@knit{\adjustchartwidth@knit}\else\do@endofpar@knit{\rnright@knit\adjustchartwidth@knit}\kern\rownumberwd\fi}}
+\def\autooddright@knit{\def\nonumber{\def\rncore@knit{\global\let\rncore@knit\rncore@save@knit}}\everypar={\everypar@knit\ifodd \value{rownumber}\relax \do@endofpar@knit{\rnright@knit\adjustchartwidth@knit}\kern\rownumberwd\else\rnleft@knit\do@endofpar@knit{\adjustchartwidth@knit}\fi}}
+\let\autoevenleft@knit\autooddright@knit
+\let\autoevenright@knit\autooddleft@knit
+
+\def         \setbgshift@knit{\leftrn@knitfalse \global \bgshift@knit = 0pt}
+\def     \setbgshiftleft@knit{\leftrn@knittrue \resetrnwidth@knit \global \advance \bgshift@knit -\rownumberwd}
+\def    \setbgshiftright@knit{\leftrn@knitfalse\resetrnwidth@knit \global \bgshift@knit = 0pt}
+\def  \setbgshiftoddleft@knit{\leftrn@knittrue \resetrnwidth@knit \global \advance \bgshift@knit -\rownumberwd}
+\def \setbgshiftoddright@knit{\leftrn@knittrue \resetrnwidth@knit \global \advance \bgshift@knit -\rownumberwd}
+\def \setbgshiftevenleft@knit{\leftrn@knittrue \resetrnwidth@knit \global \advance \bgshift@knit -\rownumberwd}
+\def\setbgshiftevenright@knit{\leftrn@knittrue \resetrnwidth@knit \global \advance \bgshift@knit -\rownumberwd}
+
+% Make wider boxes if we've got autonumbered rows.
+% We don't do this for \chart so that the rownumbers on the left
+% can be aligned to with ~.
+\def\resetrnwidth@knit{%
+	\setbox1=\hbox{\textnormal{5}}%
+	\setbox0=\hbox{\hskip \bgshift@knit \hskip -\wd1 \textnormal{\arabic{rownumber}}}%
+	\edef\rownumberwd{\the\wd0}
+	\setbox1=\hbox{\textnormal{\arabic{rownumber}}}%
+	\edef\rnmiddle@knit{\hskip\the\wd1}}
+
+\def\adjustchartwidth@knit{\endgraf
+	\ifnum \passnum@knit = 2 \setbox0=\lastbox
+	\setbox1=\hbox{\unhcopy0\unskip}%
+	\box0
+	\ifdim\wd1 >\chartwidth@knit \global\chartwidth@knit=\wd1\fi\fi}

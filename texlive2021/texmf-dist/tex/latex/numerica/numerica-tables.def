@@ -1,0 +1,1138 @@
+% This is file `numerica-tables.def',
+% part of the `numerica' package.
+%
+% This work may be distributed and/or modified under the conditions
+% of the LaTeX Project Public License, either version 1.3c of this 
+% license or any later version; see
+% http://www.latex-project.org/lppl.txt
+%
+% Andrew Parsloe (ajparsloe@gmail.com)
+%
+\RequirePackage{booktabs}
+%
+\ProvidesExplFile
+  {numerica-tables.def}
+  {2021/02/15}
+  {1.0.0}
+  {Create tables of function values}
+%----------------------------------------------------------
+\cs_new_protected:Npn \__nmc_table_prepad:Nnn #1#2#3
+  { 
+    \tl_put_left:Nx #1 { \prg_replicate:nn 
+        { \int_max:nn { #2 - \tl_count:N #1 } { 0 } } { #3 } }
+  }
+\cs_new:Npn \__nmc_sci_num_table_plus:nn #1#2
+  { % #1 significand, #2 exponent
+    \fp_compare:nTF { #1 >= 0 }
+      { ( #2 )\,{ \__nmc_sci_num_table:n { #1 } } }
+      { ( #2 )\,{ #1 } }
+  }
+\cs_new:Npn \__nmc_sci_num_table:n #1
+  {  
+    \int_compare:nNnF { \l__nmc_num_sgn_int } < { 0 }
+      { 
+        \int_case:nn { \l__nmc_table_signs_int }
+          {
+            {-2 } { \exp_not:N \hphantom{-} }
+            {-1 } { \bool_if:NTF \l__nmc_table_signs_bool 
+                        { + }{ \exp_not:N \hphantom{-} } }
+            { 1 } { \bool_if:NT \l__nmc_table_signs_bool { + } }
+            { 2 } { + }
+          }
+      } 
+    #1
+  }
+%--------------------------------------
+\tl_new:N \l__nmc_x_tl 
+\seq_new:N \l_tmpd_seq
+\tl_const:Nn \c__nmc_r_tl { r }
+\tl_const:Nn \c__nmc_l_tl { l }
+\bool_new:N \l__nmc_table_clist_bool
+\clist_new:N \l__nmc_formula_clist
+\tl_new:N \l__nmc_table_valign_tl
+\seq_new:N \l_nmc_table_reuse_seq
+
+\tl_new:N \l__nmc_table_rvar_tl
+\tl_new:N \l__nmc_table_rvari_tl
+\tl_new:N \l__nmc_table_rstart_tl
+\tl_new:N \l__nmc_table_rstop_tl
+\tl_new:N \l__nmc_table_rstep_tl
+\fp_new:N \l__nmc_table_rstart_fp
+\fp_new:N \l__nmc_table_rstop_fp
+\fp_new:N \l__nmc_table_rstep_fp
+\fp_new:N \l__nmc_table_r_fp
+\fp_new:N \l__nmc_table_c_fp
+\int_new:N \l__nmc_table_rnum_int
+\clist_new:N \l__nmc_table_rspec_clist
+\bool_new:N \l__nmc_table_rspec_bool
+
+\tl_new:N \l__nmc_table_cvar_tl
+\tl_new:N \l__nmc_table_cstart_tl
+\tl_new:N \l__nmc_table_cstop_tl
+\tl_new:N \l__nmc_table_cstep_tl
+\fp_new:N \l__nmc_table_cstart_fp
+\fp_new:N \l__nmc_table_cstop_fp
+\fp_new:N \l__nmc_table_cstep_fp
+\int_new:N \l__nmc_table_cnum_int
+\clist_new:N \l__nmc_table_cspec_clist
+\bool_new:N \l__nmc_table_cspec_bool
+
+\seq_new:N \l__nmc_table_rvraw_seq
+\seq_new:N \l__nmc_table_rvcol_seq
+\seq_new:N \l__nmc_table_rvcoli_seq
+\seq_new:N \l__nmc_table_this_col_seq
+\seq_new:N \l__nmc_table_body_cols_seq
+\seq_new:N \l__nmc_table_body_rows_seq
+
+\seq_new:N \l__nmc_table_header_seq
+\tl_new:N  \l__nmc_table_header_tl
+\tl_new:N \l__nmc_table_rfont_tl
+\tl_new:N \l__nmc_table_rhead_tl
+\tl_new:N \l__nmc_table_rheadi_tl
+\tl_new:N \l__nmc_table_rhnudge_tl
+\tl_new:N \l__nmc_table_rhnudgei_tl
+\int_new:N \l__nmc_table_chround_int
+\int_new:N \l__nmc_table_chstyle_int
+\tl_new:N \l__nmc_table_chnudge_tl
+
+\tl_new:N \l__nmc_table_ctitle_tl
+\bool_new:N \l__nmc_table_ctitle_bool 
+\bool_new:N \l__nmc_table_ctitle_vv_bool 
+\int_new:N \l__nmc_table_rules_int
+\tl_new:N \l__nmc_table_footer_tl
+\bool_new:N \l__nmc_table_foot_bool
+\bool_new:N \l__nmc_table_footops_bool
+\tl_new:N \l__nmc_table_csum_tl
+\tl_new:N \l__nmc_table_cave_tl
+\tl_new:N \l__nmc_table_cmax_tl
+\tl_new:N \l__nmc_table_cmin_tl
+\tl_new:N \l__nmc_table_cdel_tl
+\tl_new:N \l__nmc_table_rbloc_tl
+\tl_new:N \l__nmc_table_rblock_tl
+\int_new:N \l__nmc_table_rbloc_int
+\clist_new:N \l__nmc_table_rbloc_clist
+
+\int_new:N \l__nmc_table_signs_int
+\int_new:N \l__nmc_table_tsigns_int
+\int_new:N \l__nmc_table_c_int
+\int_new:N \l__nmc_table_b_int
+\int_new:N \l__nmc_table_a_int
+\bool_new:N \l__nmc_table_signs_bool
+\bool_new:N \l__nmc_table_diffs_bool
+\tl_new:N \l__nmc_table_diff_tl
+\tl_new:N \l__nmc_table_diff_null_tl
+
+\tl_new:N \l__nmc_table_Q_tl
+\tl_new:N \l__nmc_table_A_tl
+\fp_new:N \l__nmc_table_max_fp
+\fp_new:N \l__nmc_table_min_fp
+\bool_new:N \l__nmc_table_QA_max_bool
+\bool_new:N \l__nmc_table_QA_min_bool
+\bool_new:N \l__nmc_table_QA_bool
+\bool_new:N \l__nmc_table_num_only_bool 
+\tl_new:N \l__nmc_table_num_only_tl
+\tl_new:N \l__nmc_table_query_tl
+%------------------------------------------------
+\nmc_define:nnN { \nmcTabulate } { table } \tabulate
+
+\cs_new_protected:Npn \__nmc_table_settings_digest:
+  { 
+    \bool_set_false:N \l__nmc_allow_TF_out_bool
+    \int_compare:nTF { 0 <= \l__nmc_table_rpos_int <= 4 }
+      { 
+        \int_compare:nNnT { \l__nmc_table_rpos_int } = { 4 }
+          { \int_incr:N \l__nmc_table_rpos_int }
+      }
+      { \int_set:Nn \l__nmc_table_rpos_int { 1 } }
+    \clist_if_empty:NF \l__nmc_table_rspec_clist
+      { \__nmc_table_settings_spec:N r }
+    \clist_if_empty:NF \l__nmc_table_cspec_clist
+      { \__nmc_table_settings_spec:N c }
+    \tl_if_empty:NT \l__nmc_table_rhead_tl
+      { \tl_set_eq:NN \l__nmc_table_rhead_tl \l__nmc_table_rvar_tl }
+    \tl_if_empty:NT \l__nmc_table_rheadi_tl
+      { 
+        \tl_if_empty:NTF \l__nmc_table_rvari_tl
+          { \tl_set_eq:NN \l__nmc_table_rheadi_tl \l__nmc_table_rhead_tl } 
+          { \tl_set_eq:NN \l__nmc_table_rheadi_tl \l__nmc_table_rvari_tl }
+      }
+    \tl_if_empty:NT \l__nmc_table_rhnudgei_tl
+      { \tl_set_eq:NN \l__nmc_table_rhnudgei_tl \l__nmc_table_rhnudge_tl }
+
+    \tl_if_empty:NF \l__nmc_table_ctitle_tl
+      { \l__nmc_table_settings_ctitle: }
+    \tl_if_empty:NTF \l__nmc_table_Q_tl
+      { \tl_set:Nn \l__nmc_table_query_tl { *~option~ } }
+      { 
+        \tl_set:Nn \l__nmc_table_query_tl { table~value~satisfies~ }
+        \__nmc_table_settings_QA: 
+      }
+    \clist_if_empty:NTF \l__nmc_table_rbloc_clist
+      { \tl_set:Nn \l__nmc_table_rbloc_tl { 10000 } }
+      { \clist_pop:NN \l__nmc_table_rbloc_clist \l__nmc_table_rbloc_tl }
+    \tl_set_eq:NN \l__nmc_table_rblock_tl \l__nmc_table_rbloc_tl
+    \int_set:Nn \l__nmc_table_rbloc_int { \l__nmc_table_rbloc_tl }
+
+    \__nmc_table_settings_rules:
+    \int_if_zero:nTF \l__nmc_table_diffs_int
+      { \bool_set_false:N \l__nmc_table_diffs_bool } 
+      { \bool_set_true:N \l__nmc_table_diffs_bool  }
+    \tl_if_empty:NF \l__nmc_table_chead_tl
+      { \int_set:Nn \l__nmc_table_chstyle_int { 4 } }
+    \tl_if_empty:NF \l__nmc_table_footer_tl
+      { 
+        \tl_if_eq:VnTF \l__nmc_table_footer_tl { * }
+          { \bool_set_true:N \l__nmc_table_foot_bool }
+          { \__nmc_table_footer:N \l__nmc_table_footer_tl }
+      }
+  }
+\cs_new_protected:Npn \l__nmc_table_settings_ctitle:
+  {
+    \bool_set_true:N \l__nmc_table_ctitle_bool
+    \tl_if_head_eq_charcode:VNT \l__nmc_table_ctitle_tl *
+      {
+        \tl_if_eq:VnT \l__nmc_table_ctitle_tl { ** }
+          { \bool_set_true:N \l__nmc_table_ctitle_vv_bool }
+        \tl_if_head_eq_charcode:VNT \l__nmc_table_ctitle_tl *
+          { 
+            \tl_set:Nn \l__nmc_table_ctitle_tl 
+              { \exp_not:o \l__nmc_formula_dup_tl }
+          }
+      }
+  }
+\cs_new_protected:Npn \__nmc_table_settings_rules:
+  {
+    \tl_replace_once:Nnn \l__nmc_table_rules_tl { T } { *2 }
+    \tl_replace_once:Nnn \l__nmc_table_rules_tl { t } { *3 }
+    \tl_replace_once:Nnn \l__nmc_table_rules_tl { h } { *5 }
+    \tl_replace_once:Nnn \l__nmc_table_rules_tl { f } { *7 }
+    \tl_replace_once:Nnn \l__nmc_table_rules_tl { B } { *11 }
+    \int_set:Nn \l__nmc_table_rules_int { 1 \l__nmc_table_rules_tl }
+  }
+\cs_new_protected:Npn \__nmc_table_settings_QA:
+  {
+    \bool_set_true:N \l__nmc_table_QA_bool
+    \regex_replace_all:nnN { (\@) } { \c{l_tmpb_fp} } \l__nmc_table_Q_tl
+    \tl_set_rescan:Nno \l__nmc_table_Q_tl { \ExplSyntaxOn } \l__nmc_table_Q_tl
+    \regex_replace_all:nnN { (\cC.) } { \c{exp_not:N}\1 } \l__nmc_table_A_tl
+    \regex_replace_all:nnN { (\@) } { \c{l_tmpb_tl} } \l__nmc_table_A_tl
+    \tl_if_in:NnT \l__nmc_table_Q_tl { MAX }
+      { 
+        \bool_set_true:N \l__nmc_table_QA_max_bool 
+        \regex_replace_all:nnN { MAX } { \c{l__nmc_table_max_fp} }
+            \l__nmc_table_Q_tl
+        \fp_set:Nn \l__nmc_table_max_fp { -inf }    
+      }
+    \tl_if_in:NnT \l__nmc_table_Q_tl { MIN }
+      { 
+        \bool_set_true:N \l__nmc_table_QA_min_bool 
+        \regex_replace_all:nnN { MIN } { \c{l__nmc_table_min_fp} }
+            \l__nmc_table_Q_tl
+        \fp_set:Nn \l__nmc_table_min_fp { inf }    
+      }
+  }
+\cs_new_protected:Npn \__nmc_table_footer:N #1
+  {
+    \tl_set_eq:NN \l_tmpa_tl #1
+    \regex_replace_all:nnN { SUM } { \c{l__nmc_table_csum_tl} } #1
+    \regex_replace_all:nnN { AVE } { \c{l__nmc_table_cave_tl} } #1
+    \regex_replace_all:nnN { MAX } { \c{l__nmc_table_cmax_tl} } #1
+    \regex_replace_all:nnN { MIN } { \c{l__nmc_table_cmin_tl} } #1
+    \regex_replace_all:nnN { DEL } { \c{l__nmc_table_cdel_tl} } #1
+    \tl_if_eq:NNF \l_tmpa_tl #1
+      { \bool_set_true:N \l__nmc_table_footops_bool }
+  }
+\cs_new_protected:Npn \__nmc_table_settings_spec:N #1  
+  {
+    \bool_set_true:c { l__nmc_table_ #1 spec_bool }
+    \clist_pop:cc { l__nmc_table_#1spec_clist } { l__nmc_table_ #1 var_tl }
+    \clist_pop:cc { l__nmc_table_ #1 spec_clist } { l__nmc_table_ #1 step_tl }
+    \clist_pop:cN { l__nmc_table_ #1 spec_clist } \l_tmpa_tl
+    \tl_if_head_eq_charcode:VNTF \l_tmpa_tl (
+      { 
+        \int_set:cn { l__nmc_table_ #1 num_int } 
+            { \exp_last_unbraced:NV \__nmc_paren_arg:w \l_tmpa_tl } 
+      }
+      { \tl_set_eq:cN { l__nmc_table_ #1 stop_tl } \l_tmpa_tl }
+  }
+\cs_new:Npn \__nmc_paren_arg:w (#1) { #1 }
+ 
+\cs_new_protected:Npn \__nmc_table_vv_digest:N #1
+  {
+    \bool_if:NTF \l__nmc_multitok_bool
+      { 
+        \clist_push:NV \l__nmc_formula_tl \l__nmc_table_cvar_tl
+        \clist_push:NV \l__nmc_formula_tl \l__nmc_table_rvar_tl
+        \__nmc_vv_digest:N #1
+        \clist_pop:NN \l__nmc_formula_tl \l__nmc_table_rvar_tl
+        \tl_if_empty:NF \l__nmc_table_cvar_tl
+          { \clist_pop:NN \l__nmc_formula_tl \l__nmc_table_cvar_tl }
+       }
+      { \__nmc_vv_digest:N #1 }
+    \seq_gpop:NN \g__nmc_error_where_seq \l__nmc_toss_tl
+    \__nmc_table_get_ini_vals:
+    \bool_if:nT
+        { 
+          \int_if_zero_p:n { \l__nmc_table_rpos_int } &&
+          \int_if_zero_p:n { \l__nmc_table_cnum_int }
+        }
+      { \__nmc_error_what:n { Null~table~specified~in } }
+    \bool_if:NF \g__nmc_error_bool
+      {
+        \bool_if:NT \l__nmc_table_ctitle_vv_bool 
+          {
+            \exp_args:NNnx\tl_replace_once:Nnn \l__nmc_vv_inline_tl { vv } 
+                { \seq_use:Nn \l__nmc_vv_visible_seq { , } }
+            \tl_put_right:Nn \l__nmc_table_ctitle_tl 
+                { \exp_not:o \l__nmc_vv_inline_tl }
+          }
+       }
+  }
+\cs_new_protected:Npn \__nmc_table_get_ini_vals:
+  {
+    \__nmc_error_where:n { settings }
+    \__nmc_table_get_ini_vals_aux:N r 
+    \tl_if_empty:NTF \l__nmc_table_cvar_tl
+      { 
+        \int_set:Nn \l__nmc_table_cnum_int
+          {
+            \int_compare:nNnTF { \l__nmc_table_cnum_int } = { -1 }
+              { 1 } { \int_min:nn { 1 } 
+                      { \int_abs:n { \l__nmc_table_cnum_int } } } 
+          }
+      }
+      { \__nmc_table_get_ini_vals_aux:N c }
+    \seq_gpop:NN \g__nmc_error_where_seq \l__nmc_toss_tl
+  }
+\cs_new_protected:Npn \__nmc_table_get_ini_vals_aux:N #1
+  { 
+    \prop_get:NvNTF \g__nmc_subst_var_prop { l__nmc_table_ #1 var_tl } \l_tmpa_tl
+      { 
+        \fp_set:cn { l__nmc_table_ #1 start_fp } { \l_tmpa_tl }
+        \bool_if:cTF { l__nmc_table_ #1 spec_bool }
+          { 
+            \__nmc_fpify_set:cc { l__nmc_table_ #1 step_fp } 
+                { l__nmc_table_ #1 step_tl }
+            \int_compare:vNnT { l__nmc_table_ #1 num_int } = { -1 }
+              {
+                \__nmc_fpify_set:cc { l__nmc_table_ #1 stop_fp } 
+                    { l__nmc_table_ #1 stop_tl }
+                \l__nmc_table_calc_num:cnnn { l__nmc_table_ #1 num_int } 
+                    { l__nmc_table_ #1 stop_fp } { l__nmc_table_ #1 start_fp } 
+                    { l__nmc_table_ #1 step_fp }  
+              }
+          }
+          { \__nmc_table_get_individual_ini_vals:N #1 }
+        }
+      { \__nmc_error_what:n { No~ \__nmc_table_rc:N #1 ~variable~specified~in } }
+  }
+\cs_new:Npn \__nmc_table_rc:N #1
+  { \tl_if_eq:NNTF #1 \c__nmc_r_tl { row } { column } }
+  
+\cs_new_protected:Npn \l__nmc_table_calc_num:Nnnn #1#2#3#4
+  { 
+    \int_set:Nn #1 { \fp_to_int:n { ( \exp_not:v { #2 } - \exp_not:v { #3 } )
+        / \exp_not:v { #4 } } + 1 } 
+  }
+\cs_generate_variant:Nn \l__nmc_table_calc_num:Nnnn { c }
+
+\cs_new_protected:Npn  \__nmc_table_get_individual_ini_vals:N #1
+  {      
+    \int_case:vnTF { l__nmc_table_ #1 num_int } 
+      {
+        { -1 }
+          { 
+            \__nmc_fpify_set:cc { l__nmc_table_ #1 step_fp } 
+                { l__nmc_table_ #1 step_tl }
+            \bool_if:NF \g__nmc_error_bool
+              { \__nmc_fpify_set:cc { l__nmc_table_ #1 stop_fp } 
+                    { l__nmc_table_ #1 stop_tl } }
+            \bool_if:NF \g__nmc_error_bool
+              {        
+                \l__nmc_table_calc_num:cnnn { l__nmc_table_ #1 num_int } 
+                        { l__nmc_table_ #1 stop_fp } { l__nmc_table_ #1 start_fp } 
+                        { l__nmc_table_ #1 step_fp }
+              }
+          }
+        { 0 }
+          { 
+            \fp_set:cn { l__nmc_table_ #1 stop_fp } 
+                { \exp_not:v { l__nmc_table_ #1 start_fp } - 1 }
+            \fp_set:cn { l__nmc_table_ #1 step_fp } { 1 }
+          }
+        { 1 }
+          {
+            \fp_set_eq:cc { l__nmc_table_ #1 stop_fp } 
+                { l__nmc_table_ #1 start_fp }
+            \fp_set:cn { l__nmc_table_ #1 step_fp } { 1 }
+          }
+      }
+      { 
+        \bool_if:NT \g__nmc_error_bool
+          { \__nmc_error_what:n {  Missing~ 
+              \__nmc_table_rc:N #1-related~variable~in } }
+      }
+      {
+        \int_compare:vNnTF { l__nmc_table_ #1 num_int } > { 1 }
+          { \__nmc_fpify_set:cc { l__nmc_table_ #1 step_fp } 
+              { l__nmc_table_ #1 step_tl } }
+          { \__nmc_error_what:n { Check~number~of~
+              \__nmc_table_rc:N #1s~specified~in } }
+      }
+  }
+%----------------------------------------------------------
+\cs_new_protected:Npn \__nmc_table_process:
+  {
+    \__nmc_error_where:n { formula }
+    \__nmc_table_calc_rvar_col:
+    \seq_clear:N \l__nmc_table_header_seq
+    \tl_if_head_eq_charcode:VNT \l__nmc_formula_tl ,
+      { \__nmc_table_multifn: }
+    \__nmc_table_calc_cvar_cols:
+    \tl_clear:N \l_nmc_result_tl
+    \__nmc_table_form_body:N \l_nmc_result_tl
+    \tl_set_eq:NN \l__nmc_fp_expr_tl \l__nmc_fp_exprn_tl
+    \bool_if:NT \l__nmc_num_only_bool
+      { 
+        \bool_if:NTF \l__nmc_table_num_only_bool
+          { 
+            \tl_set_eq:NN \l_nmc_result_tl \l__nmc_table_num_only_tl
+            \tl_gset_eq:NN \g__nmc_reuse_tl \l__nmc_table_num_only_tl
+          }
+          {
+            \__nmc_error_where:n { settings }
+            \__nmc_error_what:n  
+                { No~ \l__nmc_table_query_tl query~\__nmc_verb:n {Q?}~in }
+            \tl_clear:N \l_nmc_result_tl
+          }
+      }
+  }
+\cs_new_protected:Npn \__nmc_table_multifn:
+  {
+    \bool_set_true:N \l__nmc_table_clist_bool
+    \clist_set:NV \l__nmc_formula_clist \l__nmc_formula_tl
+    \seq_set_from_clist:NN \l__nmc_table_header_seq \l__nmc_formula_clist
+    \int_set:Nn \l__nmc_table_cnum_int 
+      { \clist_count:N \l__nmc_formula_clist }
+    \fp_set:Nn \l__nmc_table_cstep_fp { 0 }
+    \fp_set:Nn \l__nmc_table_cstart_fp { 0 }
+    \tl_set:Nn \l__nmc_table_cvar_tl { \l__nmc_x_tl }
+    \prop_put:Nnn \g__nmc_subst_var_prop { \l__nmc_x_tl } { 1 }
+    \int_set:Nn \l__nmc_table_chstyle_int { 4 }
+  }
+\cs_new_protected:Npn \__nmc_table_calc_rvar_col:
+  { 
+    \fp_set_eq:NN \l__nmc_table_r_fp \l__nmc_table_rstart_fp
+    \int_step_inline:nnnn { 1 } { 1 } { \l__nmc_table_rnum_int }
+      { 
+        \seq_put_right:NV \l__nmc_table_rvraw_seq \l__nmc_table_r_fp
+        \fp_add:Nn \l__nmc_table_r_fp { \l__nmc_table_rstep_fp }
+      }
+  }
+\cs_new:Npn \__nmc_table_calc_cvar_cols:
+  {
+    \fp_set_eq:NN \l__nmc_table_c_fp \l__nmc_table_cstart_fp
+    \int_step_inline:nn { \l__nmc_table_cnum_int }
+      { 
+        \bool_if:NTF \l__nmc_table_clist_bool
+          { \clist_pop:NN \l__nmc_formula_clist \l__nmc_formula_tl }
+          { \seq_put_right:NV \l__nmc_table_header_seq { \l__nmc_table_c_fp } }
+        \bool_if:NF \g__nmc_error_bool
+          {
+            \seq_clear:N \l__nmc_table_this_col_seq 
+            \fp_set_eq:NN \l__nmc_table_r_fp \l__nmc_table_rstart_fp
+            \int_step_function:nN { \l__nmc_table_rnum_int }
+                \__nmc_table_rvar_step_fn:n
+          }
+        \bool_if:NF \g__nmc_error_bool
+          {
+            \seq_put_right:NV \l__nmc_table_body_cols_seq 
+                \l__nmc_table_this_col_seq
+            \fp_add:Nn \l__nmc_table_c_fp \l__nmc_table_cstep_fp
+            \__nmc_table_prop_mode:n {\l__nmc_mode_int}
+                \l__nmc_table_rvar_tl \l__nmc_table_rstart_fp
+            \__nmc_calc_fn_val:VNnN \l__nmc_table_cvar_tl \l__nmc_formula_tl
+                 { \l__nmc_table_c_fp } \l__nmc_table_fn_val_fp
+          }
+      }
+  }
+\cs_new:Npn \__nmc_table_prop_mode:n #1
+  { 
+    \int_if_zero:nTF { #1 }
+      { \prop_put:NVV \g__nmc_subst_var_prop } 
+      { \prop_put:NVV \l__nmc_vv_change_prop }
+  }
+\cs_new_protected:Npn \__nmc_table_rvar_step_fn:n #1
+  { 
+    \bool_if:NF \g__nmc_error_bool
+      { 
+        \__nmc_calc_fn_val:VNnN \l__nmc_table_rvar_tl
+             \l__nmc_formula_tl { \l__nmc_table_r_fp } \l_tmpa_fp
+        \seq_put_right:NV \l__nmc_table_this_col_seq \l_tmpa_fp
+        \bool_if:NT \l__nmc_table_QA_bool
+          { \__nmc_table_maxmin_do:n { \l_tmpa_fp } }
+        \fp_add:Nn \l__nmc_table_r_fp { \l__nmc_table_rstep_fp }
+      }
+  }
+\cs_new_protected:Npn \__nmc_table_maxmin_do:n #1
+  {
+    \bool_if:NT \l__nmc_table_QA_max_bool
+      { \fp_set:Nn \l__nmc_table_max_fp 
+            { \fp_max:nn { \l__nmc_table_max_fp } { #1} } }
+    \bool_if:NT \l__nmc_table_QA_min_bool
+      { \fp_set:Nn \l__nmc_table_min_fp 
+            { \fp_min:nn { \l__nmc_table_min_fp } { #1 } } }
+  }
+%----------------------------------------------------------
+\cs_new_protected:Npn \__nmc_table_display:
+  {  
+    \bool_if:NF \l__nmc_num_only_bool
+      {
+        \__nmc_table_headercnum:
+        \tl_set:Nx \l__nmc_table_header_tl { \__nmc_table_header: }
+        \bool_if:NT \l__nmc_table_foot_bool
+          {
+            \seq_set_split:NnV \l_tmpa_seq { & }\l__nmc_table_header_tl
+            \seq_reverse:N \l_tmpa_seq 
+            \tl_set:Nx \l__nmc_table_footer_tl { \seq_use:Nn \l_tmpa_seq { & } }
+          }
+        \tl_put_left:Nx \l_nmc_result_tl 
+          { 
+            \__nmc_table_upper: 
+            \exp_not:o \l__nmc_table_header_tl
+            \tabularnewline
+            \__nmc_if_mod_zero:nnT { \l__nmc_table_rules_int } { 5 }
+              { \exp_not:N \midrule }
+          }
+        \tl_put_right:Nx \l_nmc_result_tl { \__nmc_table_form_lower: }
+        \__nmc_table_reuse:
+      }
+    \l_nmc_result_tl
+  }
+\cs_new:Npn \__nmc_table_upper:
+  { 
+    \exp_not:n { \begin{tabular} }
+    \exp_not:o \l__nmc_table_valign_tl 
+    { 
+      \int_if_odd:nT { \l__nmc_table_rpos_int }
+        { \l__nmc_table_rcalign_tl } 
+      \prg_replicate:nn 
+        { \l__nmc_table_cnum_int } \l__nmc_table_ccalign_tl
+      \int_compare:nNnT { \l__nmc_table_rpos_int } > { 1 }
+        { \l__nmc_table_rcalign_tl }
+    }
+    \__nmc_if_mod_zero:nnT { \l__nmc_table_rules_int } { 2 }
+      { \exp_not:N \toprule }
+    \bool_if:NT \l__nmc_table_ctitle_bool
+      { \__nmc_table_form_ctitle:  } 
+  }
+\cs_new:Npn \__nmc_table_form_ctitle:
+  {
+    \int_compare:nNnTF { \l__nmc_table_rpos_int } = { 0 }
+      { 
+        \int_compare:nNnF { \l__nmc_table_cnum_int } = { 1 }
+          {
+            \__nmc_table_form_ctitle:nnnn {} {} { 1 }
+                { \l__nmc_table_cnum_int } 
+          }
+      }
+      { 
+        \int_compare:nNnT { \l__nmc_table_cnum_int } > { 1 }
+          { 
+            \int_case:nnF { \l__nmc_table_rpos_int }
+              { 
+                { 1 } { \__nmc_table_form_ctitle:nnnn { & } {} { 2 }
+                          { \l__nmc_table_cnum_int + 1 } }
+                { 2 } { \__nmc_table_form_ctitle:nnnn {} { & } { 1 }
+                          { \l__nmc_table_cnum_int } }
+              } 
+              { % 3,4/5
+                 \__nmc_table_form_ctitle:nnnn { & } { & } { 2 }
+                      { \l__nmc_table_cnum_int + 1 } 
+              }
+          }
+      }
+  }
+\cs_new:Npn \__nmc_table_form_ctitle:nnnn #1#2#3#4
+  {
+    #1 \exp_not:N \multicolumn
+    { \int_eval:n { \l__nmc_table_cnum_int } } { c }
+    { $ \l__nmc_table_ctitle_tl $  }
+    #2 \tabularnewline
+    \__nmc_if_mod_zero:nnT { \l__nmc_table_rules_int } { 3 }
+      {
+        \exp_not:N \cmidrule(lr)
+        { #3-\int_eval:n { #4 } }
+      }
+  }
+%%%%%%%%%%%%%%%%%%%%
+\cs_new:Npn \__nmc_table_header:
+  { 
+    \int_if_zero:nTF { \l__nmc_table_cnum_int }
+      { 
+        \__nmc_table_header_rvar:nn { \exp_not:o \l__nmc_table_rhead_tl }
+            \l__nmc_table_rhnudge_tl 
+      }
+      { 
+        \int_case:nnF { \l__nmc_table_rpos_int }
+          {
+            { 0 } { \exp_not:o \l__nmc_table_chead_tl }
+            { 1 } 
+              { 
+                \__nmc_table_header_rvar:nn 
+                    { \exp_not:o \l__nmc_table_rhead_tl } 
+                        \l__nmc_table_rhnudge_tl
+                & \exp_not:o \l__nmc_table_chead_tl
+              }
+            { 2 }
+              { 
+                \exp_not:o \l__nmc_table_chead_tl & 
+                \__nmc_table_header_rvar:nn 
+                    { \exp_not:o \l__nmc_table_rhead_tl } 
+                        \l__nmc_table_rhnudge_tl 
+              }
+          }
+          { % 3,4/5
+            \__nmc_table_header_rvar:nn 
+                { \exp_not:o \l__nmc_table_rhead_tl } 
+                    \l__nmc_table_rhnudge_tl 
+            & \exp_not:o \l__nmc_table_chead_tl & 
+            \__nmc_table_header_rvar:nn 
+                { \exp_not:o  \l__nmc_table_rheadi_tl }
+                    \l__nmc_table_rhnudgei_tl 
+          }
+      }
+  }
+\cs_new:Npn \__nmc_table_headercnum:
+  {
+    \int_compare:nNnTF { \l__nmc_table_cnum_int } = { 1 }
+      { \__nmc_table_headeri: }
+      { \__nmc_table_headern: }
+  }
+\cs_new:Npn \__nmc_table_header_rvar:nn #1#2
+  { \__nmc_table_header_nudge:Nnn r { #1 } { #2 } }
+
+\cs_new:Npn \__nmc_table_headeri:
+  { 
+    \tl_if_empty:NT \l__nmc_table_chead_tl
+      {
+        \tl_set:Nx \l__nmc_table_chead_tl 
+          {
+            \__nmc_table_header_nudge:Nnn c  
+              {
+                \bool_if:NTF \l__nmc_table_ctitle_bool
+                  { \exp_not:o \l__nmc_table_ctitle_tl }
+                  { \exp_not:o \l__nmc_formula_dup_tl }
+              } 
+              \l__nmc_table_chnudge_tl
+          }
+      }
+  }
+\cs_new:Npn \__nmc_table_headern:
+  { 
+    \tl_if_empty:NT \l__nmc_table_chead_tl
+      {
+        \seq_clear:N \l_tmpa_seq
+        \bool_set_true:N \l__nmc_table_coli_only_bool
+        \bool_if:NTF \l__nmc_table_clist_bool
+          {
+            \seq_map_inline:Nn \l__nmc_table_header_seq
+              { \__nmc_table_header_auxi:Nn \l_tmpa_seq { ##1 } }
+          }
+          { 
+            \seq_map_inline:Nn \l__nmc_table_header_seq
+              { 
+                \__nmc_num_format:nNnN { ##1 } \l_tmpb_tl 
+                    { \l__nmc_table_chround_int } \l__nmc_sci_num_out_bool
+                \__nmc_table_chstyler:NN \l_tmpa_seq \l_tmpb_tl
+              }
+          }
+        \tl_set:Nx \l__nmc_table_chead_tl { \seq_use:Nn \l_tmpa_seq { & }  }
+      }
+  }
+\cs_new_protected:Npn \__nmc_table_chstyler:NN #1 #2
+  {
+    \int_case:nnF { \l__nmc_table_chstyle_int }
+      {
+        { 0 } { \__nmc_table_header_auxi:NV #1 #2 }
+        { 1 } 
+          {
+            \bool_if:NTF \l__nmc_table_coli_only_bool
+              { 
+                \__nmc_table_header_auxi:Nx #1 { \l__nmc_table_cvar_tl = #2 } 
+                \bool_set_false:N \l__nmc_table_coli_only_bool
+              }
+              { \seq_put_right:NV #1 #2 }
+          }
+        { 2 } { \__nmc_table_header_auxi:Nx #1 { \l__nmc_table_cvar_tl = #2 } }
+        { 3 } { \__nmc_table_header_auxiii:NV #1 #2 }
+        { 4 } { \seq_set_split:NnV #1 { & } \l__nmc_table_chead_tl }
+      }
+      { \__nmc_table_header_auxi:NV #1 #2 }
+  }
+\cs_new_protected:Npn \__nmc_table_header_auxi:Nn #1#2
+  { 
+    \seq_put_right:Nx #1 { \__nmc_table_header_nudge:Nnn c
+         { \exp_not:n { #2 } } \l__nmc_table_chnudge_tl }
+  }
+\cs_generate_variant:Nn \__nmc_table_header_auxi:Nn { NV,Nx }
+
+\cs_new_protected:Npn \__nmc_table_header_auxiii:Nn #1#2
+  { 
+    \tl_set_eq:NN \l_tmpa_tl \l__nmc_formula_dup_tl
+    \regex_replace_all:nnNT { \u{l__nmc_table_cvar_tl} } { #2 } \l_tmpa_tl
+      { \__nmc_table_header_auxi:NV #1 \l_tmpa_tl }
+  }
+\cs_generate_variant:Nn \__nmc_table_header_auxiii:Nn { NV }
+
+\cs_new:Npn \__nmc_table_header_nudge:Nnn #1#2#3
+  { % #1=r(ow)/c(ol), #2=var, #3=nudge
+   \tl_if_eq:cNTF { l__nmc_table_ #1 calign_tl } \c__nmc_r_tl
+      { $  #2 #3 $ }
+      { 
+        \tl_if_eq:cNTF { l__nmc_table_ #1 calign_tl } \c__nmc_l_tl
+          { $ #3 #2 $ } { $ #2 $ }
+      }
+  }
+%%%%%%%%%%  
+\cs_new_protected:Npn \__nmc_table_form_body:N #1
+  { % #1 \l_nmc_result_tl
+    \int_if_zero:nF { \l__nmc_table_rpos_int }
+      { 
+        \__nmc_table_form_rvcol:NN 
+            \l__nmc_table_rvraw_seq \l__nmc_table_rvcol_seq 
+      } 
+    \int_zero:N \l__nmc_table_rbloc_int
+    \int_if_zero:nTF { \l__nmc_table_cnum_int }
+      { \__nmc_table_form_body_rvcol_only:N #1 } 
+      { \__nmc_table_form_body_cvcols:N #1 }
+  }
+\cs_new_protected:Npn \__nmc_table_form_rvcol:NN #1#2
+  { 
+    \seq_clear:N \l_tmpb_seq
+    \seq_map_variable:NNn #1 \l_tmpa_tl
+      {
+        \__nmc_num_format:nNnN \l_tmpa_tl \l_tmpb_tl 
+            { \l__nmc_table_rround_int } \c_false_bool
+        \seq_put_right:Nx \l_tmpb_seq 
+            { \exp_not:o \l__nmc_table_rfont_tl { \l_tmpb_tl } }
+      }
+    \seq_set_eq:NN #2 \l_tmpb_seq 
+    \int_compare:nNnTF { \l__nmc_table_rpos_int } > { 3 }
+      { \__nmc_table_form_rvcoli:NN #1 #2 } % reverse/pivot
+      { \seq_set_eq:NN \l__nmc_table_rvcoli_seq #2 }
+  }
+\cs_new_protected:Npn \__nmc_table_form_rvcoli:NN #1 #2
+  {
+    \seq_clear:N \l__nmc_table_rvcoli_seq
+    \seq_map_variable:NNn #1 \l_tmpa_tl
+      { 
+        \__nmc_calc_fn_val:VNnN \l__nmc_table_rvar_tl 
+              \l__nmc_table_rvari_tl \l_tmpa_tl \l_tmpa_fp
+        \__nmc_num_format:nNnN { \l_tmpa_fp } \l_tmpb_tl 
+            { \l__nmc_table_rround_int } \c_false_bool
+        \seq_put_right:Nx \l__nmc_table_rvcoli_seq 
+          { \exp_not:o \l__nmc_table_rfont_tl { \l_tmpb_tl } }
+      }
+  }
+\cs_new_protected:Npn \__nmc_table_form_body_rvcol_only:N #1
+  { % #1 = \l_nmc_result_tl
+    \seq_clear:N \l_tmpb_seq
+    \seq_map_variable:NNn \l__nmc_table_rvcol_seq \l_tmpa_tl
+      {
+        \tl_put_right:Nx #1 
+            { \exp_not:o \l_tmpa_tl \tabularnewline }
+        \__nmc_table_rbloc_spc:NN \l__nmc_table_rbloc_int \l_tmpa_bool
+        \bool_if:NT \l_tmpa_bool
+          { 
+            \tl_put_right:Nx #1
+              { \exp_not:o \addlinespace[\l__nmc_table_blocsep_tl] }
+          }
+      }
+  }
+\cs_new_protected:Npn \__nmc_table_form_body_cvcols:N #1
+  { % #1 \l_nmc_result_tl
+    \seq_clear:N \l_tmpd_seq
+    \seq_map_variable:NNn \l__nmc_table_body_cols_seq \l_tmpa_seq 
+      { 
+        \seq_clear:N \l_tmpb_seq
+        \__nmc_table_form_cols:NN \l_tmpa_seq \l_tmpb_seq 
+        \seq_put_right:NV \l_tmpd_seq \l_tmpb_seq
+      }
+    \bool_if:NT \l__nmc_table_footops_bool
+      { \__nmc_table_footops:N \l_tmpd_seq }
+    \__nmc_table_transpose:NN \l_tmpd_seq \l__nmc_table_body_rows_seq
+    
+    \seq_map_variable:NNn \l__nmc_table_body_rows_seq \l_tmpa_seq
+      {
+        \__nmc_table_rbloc_spc:NN \l__nmc_table_rbloc_int \l_tmpa_bool
+        \tl_put_right:Nx #1
+          { 
+            \seq_use:Nn \l_tmpa_seq { & }
+            \tabularnewline
+            \bool_if:NT \l_tmpa_bool
+              { \exp_not:o \addlinespace[\l__nmc_table_blocsep_tl] }
+          }
+      }
+  }
+\cs_new_protected:Npn \__nmc_table_footops:N #1
+  {
+    \group_begin:
+    \seq_clear:N \l_tmpb_seq
+    \seq_set_split:NnV \l_tmpa_seq { & } \l__nmc_table_footer_tl
+    \int_if_odd:nT { \l__nmc_table_rpos_int }
+      { 
+        \seq_pop:NN \l_tmpa_seq \l_tmpa_tl 
+        \seq_put_left:NV \l_tmpb_seq \l_tmpa_tl
+      }
+    \seq_mapthread_function:NNN #1 \l_tmpa_seq \__nmc_table_footops:nn
+    \int_compare:nNnT { \l__nmc_table_rpos_int } > { 1 }
+      { 
+        \seq_pop:NN \l_tmpa_seq \l_tmpa_tl 
+        \seq_put_right:NV \l_tmpb_seq \l_tmpa_tl
+      }
+    \tl_set:Nx \l__nmc_table_footer_tl { \seq_use:Nn \l_tmpb_seq { & } }
+    \exp_args:NNNV
+    \group_end:
+        \tl_set:Nn \l__nmc_table_footer_tl \l__nmc_table_footer_tl
+  }
+\cs_new_protected:Npn \__nmc_table_footops:nn #1#2
+  { 
+    \tl_set:Nn \l_tmpc_seq { #1 }
+    \tl_set:Nx \l_tmpa_tl { \seq_use:Nn \l_tmpc_seq { + } }
+    \fp_set:Nn \l_tmpa_fp { \l_tmpa_tl }
+    \fp_set:Nn \l_tmpb_fp { \l_tmpa_fp / \l__nmc_table_rnum_int }
+    \__nmc_num_format:nNnN \l_tmpa_fp \l__nmc_table_csum_tl
+      { \l__nmc_round_int } \l__nmc_sci_num_out_bool
+    \__nmc_num_format:nNnN \l_tmpb_fp \l__nmc_table_cave_tl
+      { \l__nmc_round_int } \l__nmc_sci_num_out_bool
+    \tl_set:Nx \l_tmpa_tl { max(\seq_use:Nn \l_tmpc_seq { , }) }
+    \fp_set:Nn \l_tmpa_fp { \l_tmpa_tl }
+    \__nmc_num_format:nNnN \l_tmpa_fp \l__nmc_table_cmax_tl
+      { \l__nmc_round_int } \l__nmc_sci_num_out_bool
+    \tl_set:Nx \l_tmpa_tl { min(\seq_use:Nn \l_tmpc_seq { , }) }
+    \fp_set:Nn \l_tmpb_fp { \l_tmpa_tl }
+    \__nmc_num_format:nNnN \l_tmpb_fp \l__nmc_table_cmin_tl
+      { \l__nmc_round_int } \l__nmc_sci_num_out_bool
+    \__nmc_num_format:nNnN { \l_tmpa_fp - \l_tmpb_fp } \l__nmc_table_cdel_tl
+      { \l__nmc_round_int } \l__nmc_sci_num_out_bool  
+    \seq_put_right:Nx \l_tmpb_seq { $ #2 $ }
+  }
+\cs_new_protected:Npn \__nmc_table_transpose:NN #1#2
+  { % #1 seq of seq in #2 seq of seq out
+    \int_if_zero:nF { \l__nmc_table_rpos_int }
+      {
+        \int_compare:nNnF { \l__nmc_table_rpos_int } = { 2 }
+          {  \seq_put_left:NV #1 \l__nmc_table_rvcol_seq }
+        \int_compare:nNnT { \l__nmc_table_rpos_int } > { 1 }
+          { \seq_put_right:NV #1 \l__nmc_table_rvcoli_seq } 
+      }
+    \int_step_inline:nn { \l__nmc_table_rnum_int }
+      {
+        \seq_clear:N \l_tmpb_seq
+        \seq_clear:N \l_tmpc_seq
+        \seq_map_variable:NNn #1 \l_tmpa_seq
+          {  
+            \seq_pop:NN \l_tmpa_seq \l_tmpa_tl
+            \seq_put_right:Nx \l_tmpb_seq { $\exp_not:o\l_tmpa_tl $ }
+            \seq_put_right:NV \l_tmpc_seq \l_tmpa_seq
+          }
+        \seq_put_right:NV \l__nmc_table_body_rows_seq \l_tmpb_seq
+        \seq_set_eq:NN #1 \l_tmpc_seq        
+      }
+  }
+\cs_new:Npn \__nmc_table_rbloc_spc:NN #1#2
+  { %
+    \int_incr:N #1 
+    \bool_set_false:N #2
+    \int_compare:nNnT { #1 } = { \l__nmc_table_rblock_tl }
+      { 
+        \int_compare:nNnF { #1 } = { \l__nmc_table_rnum_int }
+          { \bool_set_true:N #2 }
+        \clist_if_empty:NF \l__nmc_table_rbloc_clist
+          { \clist_pop:NN \l__nmc_table_rbloc_clist \l__nmc_table_rbloc_tl }
+        \tl_set:Nx \l__nmc_table_rblock_tl 
+            { \int_eval:n { \l__nmc_table_rblock_tl + \l__nmc_table_rbloc_tl } }
+      }
+  } 
+\cs_new_protected:Npn \__nmc_table_form_cols:NN #1#2
+  { % #1 raw cseq, #2 <--formatted cseq
+    \int_case:nnF { \l__nmc_table_rnum_int }
+      {
+        { 0 } { \prg_do_nothing: }
+        { 1 } { \__nmc_table_form_cols_ri:NN #1#2 }
+        { 2 } { \__nmc_table_form_cols_rii:NN #1#2 }
+      }
+      { \__nmc_table_form_cols_riii:NN #1#2 }
+  }
+\cs_new_protected:Npn \__nmc_table_form_cols_ri:NN #1#2
+  {
+    \seq_pop:NN #1 \l_tmpb_fp
+    \__nmc_num_format:nNnN \l_tmpb_fp \l_tmpb_tl 
+        { \l__nmc_round_int } \l__nmc_sci_num_table_bool
+    \bool_if:NT \l__nmc_table_QA_bool
+      { \__nmc_table_QA:N \l_tmpb_tl }
+    \seq_put_right:Nx #2 {  \exp_not:o \l_tmpb_tl  }
+  }
+\cs_new_protected:Npn \__nmc_table_form_cols_rii:NN #1#2
+  { 
+    \__nmc_table_form_cols_rii_aux:NN #1#2
+    \__nmc_table_signs:
+    \__nmc_num_format:nNnN \l_tmpb_fp \l_tmpb_tl 
+        { \l__nmc_round_int } \l__nmc_sci_num_out_bool
+    \__nmc_table_num_format:N \l_tmpb_tl
+    \seq_put_right:Nx #2 
+        {  \exp_not:o \l_tmpb_tl  \exp_not:o \l__nmc_table_diff_tl  }
+  }
+\cs_new_protected:Npn \__nmc_table_form_cols_rii_aux:NN #1#2
+  { 
+    \seq_pop:NN #1 \l_tmpb_fp
+    \int_if_zero:nF \l__nmc_table_diffs_int
+      { \__nmc_table_form_diffs_null:n { \l__nmc_table_diffs_int } }
+    \seq_pop:NN #1 \l_tmpa_fp
+    \int_set:Nn \l__nmc_table_c_int { 1 }    
+    \int_set:Nn \l__nmc_table_b_int { \fp_sign:n { \l_tmpb_fp } }
+    \int_set:Nn \l__nmc_table_a_int { \fp_sign:n { \l_tmpa_fp } }
+    \__nmc_table_signs:
+    \__nmc_num_format:nNnN \l_tmpb_fp \l_tmpb_tl 
+        { \l__nmc_round_int } \l__nmc_sci_num_out_bool
+    \__nmc_table_num_format:N \l_tmpb_tl
+    \seq_put_right:Nx #2 
+        {  \exp_not:o \l_tmpb_tl \exp_not:o \l__nmc_table_diff_tl  }
+    \int_if_zero:nF \l__nmc_table_diffs_int
+      { \__nmc_table_calc_diffs:nn 
+          { \l_tmpb_fp } { \l_tmpa_fp } }
+    \fp_set_eq:NN \l_tmpb_fp \l_tmpa_fp 
+  }
+\cs_new_protected:Npn \__nmc_table_form_cols_riii:NN #1#2
+  { 
+    \__nmc_table_form_cols_rii_aux:NN #1#2
+    \int_set_eq:NN \l__nmc_table_c_int \l__nmc_table_b_int
+    \int_set_eq:NN \l__nmc_table_b_int \l__nmc_table_a_int 
+    \seq_map_variable:NNn #1 \l_tmpa_fp
+      { 
+        \int_set:Nn \l__nmc_table_a_int { \fp_sign:n { \l_tmpa_fp } } 
+        \__nmc_table_signs:
+        \__nmc_num_format:nNnN \l_tmpb_fp \l_tmpb_tl 
+            { \l__nmc_round_int } \l__nmc_sci_num_out_bool
+        \__nmc_table_num_format:N \l_tmpb_tl
+        \seq_put_right:Nx #2 
+            {  \exp_not:o \l_tmpb_tl \exp_not:o \l__nmc_table_diff_tl  }
+        \int_if_zero:nF \l__nmc_table_diffs_int
+          { \__nmc_table_calc_diffs:nn { \l_tmpb_fp } { \l_tmpa_fp } }
+        \fp_set_eq:NN \l_tmpb_fp \l_tmpa_fp
+        \int_set_eq:NN \l__nmc_table_c_int \l__nmc_table_b_int
+        \int_set_eq:NN \l__nmc_table_b_int \l__nmc_table_a_int 
+      }
+    \int_set:Nn \l__nmc_table_a_int { 1 } 
+    \__nmc_table_signs:
+    \__nmc_num_format:nNnN \l_tmpb_fp \l_tmpb_tl 
+        { \l__nmc_round_int } \l__nmc_sci_num_out_bool
+    \__nmc_table_num_format:N \l_tmpb_tl
+    \seq_put_right:Nx #2 
+        {  \exp_not:o \l_tmpb_tl \exp_not:o \l__nmc_table_diff_tl }
+  }
+\cs_new_protected:Npn \__nmc_table_num_format:N #1
+  { 
+    \bool_if:NTF \l__nmc_sci_num_table_bool
+      { 
+        \tl_if_head_eq_charcode:VNTF #1 ( 
+          { % for nums in [1,10)
+            \exp_last_unbraced:NV 
+                \__nmc_table_t_format:wN #1\q_stop \l_tmpa_tl
+            \tl_set_eq:NN #1 \l_tmpa_tl
+          }
+          { \tl_set:Nx #1 { \__nmc_sci_num_table:n { #1 } } }
+      }
+      { \tl_set:Nx #1 { \__nmc_sci_num_table:n { #1 } } }
+    \bool_if:NT \l__nmc_table_QA_bool
+      { \__nmc_table_QA:N #1 }
+  }
+\cs_new_protected:Npn \__nmc_table_QA:N #1
+  {
+    \fp_compare:nNnT { \l__nmc_table_Q_tl } = { 1 }
+      { 
+        \bool_lazy_and:nnT 
+            { \l__nmc_num_only_bool } { !\l__nmc_table_num_only_bool }
+          { 
+            \tl_set_eq:NN \l__nmc_table_num_only_tl \l_tmpb_tl 
+            \bool_set_true:N \l__nmc_table_num_only_bool
+          }
+        \tl_set:Nx #1 { \l__nmc_table_A_tl }
+      }
+  }
+\cs_new_protected:Npn \__nmc_table_t_format:wN (#1)#2#3\q_stop #4
+  { 
+    \tl_set:Nn \l__nmc_toss_tl { #1 }
+   \__nmc_table_prepad:Nnn \l__nmc_toss_tl
+     { \l__nmc_table_tsigns_int } { \exp_not:o \hphantom{-} }
+    \tl_set:Nx #4 { \__nmc_sci_num_table_plus:nn 
+        { #3 } { \exp_not:o\l__nmc_toss_tl } }
+  } 
+\cs_new_protected:Npn \__nmc_table_signs:
+  { % A prev, B current, C next
+    \int_compare:nNnTF \l__nmc_table_b_int > { -1 } 
+      {
+        \bool_lazy_or:nnTF
+            { \int_compare_p:nNn \l__nmc_table_a_int = { -1 } }
+            { \int_compare_p:nNn \l__nmc_table_c_int = { -1 } }
+          { \bool_set_true:N \l__nmc_table_signs_bool }
+          { \bool_set_false:N \l__nmc_table_signs_bool }
+      }
+      { \bool_set_false:N \l__nmc_table_signs_bool }
+  }
+%%%%%%%%%%
+\cs_new_protected:Npn \__nmc_table_calc_diffs:nn #1#2
+  { 
+    \__nmc_num_format:nNnN 
+      { \fp_abs:n {round( #1,\l__nmc_round_int ) 
+          - round( #2, \l__nmc_round_int) } } \l_tmpb_tl
+        { \l__nmc_round_int } \c_false_bool    
+    \tl_set:Nx \l_tmpb_tl { \fp_eval:n { round( 10^{ \l__nmc_round_int }
+        * \l_tmpb_tl, \l__nmc_round_int + 1) } }
+    \__nmc_table_prepad:Nnn \l_tmpb_tl { \l__nmc_table_diffs_int } { 0 }
+    \tl_set:Nx \l__nmc_table_diff_tl { ^{\,^{ \l_tmpb_tl } } }
+  }
+\cs_new_protected:Npn \__nmc_table_form_diffs_null:n #1
+  {
+    \tl_set:Nn \l_tmpb_tl { 0 }
+    \__nmc_table_prepad:Nnn \l_tmpb_tl { #1 } { 0 }
+    \tl_set:Nx \l__nmc_table_diff_tl 
+        { ^{\,^{ \exp_not:o \hphantom{ \l_tmpb_tl } } } }
+  }
+%%%%%%%%%%%%%%%%%%%
+\cs_new:Npn \__nmc_table_form_lower:
+  { 
+    \tl_if_empty:NF \l__nmc_table_footer_tl
+      { 
+        \__nmc_if_mod_zero:nnT { \l__nmc_table_rules_int } { 7 }
+          { \exp_not:N \midrule[\cmidrulewidth] }
+        \exp_not:o \l__nmc_table_footer_tl \tabularnewline
+      }
+    \__nmc_if_mod_zero:nnT { \l__nmc_table_rules_int } { 11 }
+      { \exp_not:N \bottomrule }  
+    \exp_not:n { \end{tabular} }
+  } 
+%%%%%%%%%%%%%%%%%%%
+\cs_new_protected:Npn \__nmc_table_reuse:
+  {
+    \bool_if:NF \l__nmc_num_only_bool
+      {
+        \int_case:nnF { \int_sign:n { \l__nmc_table_reuse_int } }
+          {
+            { -1 } { \__nmc_table_reuse_row:n { \l__nmc_table_reuse_int } } 
+             
+            {  1 } { \__nmc_table_reuse_col:n { \l__nmc_table_reuse_int } } 
+          }
+          { \tl_gset_eq:NN \g__nmc_reuse_tl \l_nmc_result_tl }
+      }
+  }
+\cs_new_protected:Npn \__nmc_table_reuse_row:n #1
+  { 
+    \tl_set:Nx \l_tmpa_seq 
+        { \seq_item:Nn \l__nmc_table_body_rows_seq { -#1 } }
+    \tl_gset:Nx \g__nmc_reuse_tl { \seq_use:Nn \l_tmpa_seq { , } }
+  }
+\cs_new_protected:Npn \__nmc_table_reuse_col:n #1
+  {
+    \int_zero:N \l_tmpa_int
+    \seq_map_variable:NNn \l__nmc_table_body_cols_seq \l_tmpa_seq
+      { 
+        \int_incr:N \l_tmpa_int
+        \int_compare:nNnT { \l_tmpa_int } = { #1 }
+          {
+            \seq_mapthread_function:NNN \l__nmc_table_rvraw_seq  
+                \l_tmpa_seq \__nmc_table_reuse:nn
+            \seq_map_break:
+          }
+      }
+  }
+\cs_new_protected:Npn \__nmc_table_reuse:nn #1#2
+  { 
+    \__nmc_num_format:nNnN { #1 } \l_tmpa_tl 
+        { \l__nmc_table_rround_int } \c_false_bool
+    \__nmc_num_format:nNnN { #2 } \l_tmpb_tl 
+        { \l__nmc_round_int } \l__nmc_sci_num_out_bool
+    \int_if_zero:nTF \l__nmc_table_rpos_int
+      { \seq_put_right:NV \l_nmc_table_reuse_seq \l_tmpb_tl }
+      { 
+        \seq_put_right:Nx \l_nmc_table_reuse_seq 
+            { { \l_tmpa_tl , \l_tmpb_tl } }
+      }
+    \tl_gset:Nx \g__nmc_reuse_tl { \seq_use:Nn \l_nmc_table_reuse_seq {,} }
+  }
+%------------------------------------------------
+\keys_define:nn { numerica }
+  { 
+    table-rvar-rounding .int_set:N = \l__nmc_table_rround_int,
+    table-rvar-col-pos  .int_set:N = \l__nmc_table_rpos_int,
+    table-rvar-align     .tl_set:N = \l__nmc_table_rcalign_tl,
+    table-cvar-align     .tl_set:N = \l__nmc_table_ccalign_tl,
+    table-block-sep      .tl_set:N = \l__nmc_table_blocsep_tl,
+    table-rules          .tl_set:N = \l__nmc_table_rules_tl,
+    table-form-diffs    .int_set:N = \l__nmc_table_diffs_int,
+    table-reuse         .int_set:N = \l__nmc_table_reuse_int,
+    table-rvar-rounding .default:n = 1,
+    table-rvar-align    .default:n = r,
+    table-rvar-col-pos  .default:n = 1,
+    table-cvar-align    .default:n = r,
+    table-block-sep     .default:n = 1ex,
+    table-rules         .default:n = ThB,
+    table-form-diffs    .default:n = 0,
+    table-reuse         .default:n = 0
+  }
+\keys_set_known:nn { numerica } 
+  { 
+    table-rvar-rounding,table-rvar-align,table-rvar-col-pos,
+    table-cvar-align,table-block-sep,table-rules,table-fontsize,
+    table-form-diffs,table-reuse
+  }
+\keys_define:nn { numerica/table }
+  {
+    rvar     .tl_set:N = \l__nmc_table_rvar_tl,
+    rstop    .tl_set:N = \l__nmc_table_rstop_tl,
+    rstep    .tl_set:N = \l__nmc_table_rstep_tl,
+    rows    .int_set:N = \l__nmc_table_rnum_int,
+    rows    .initial:n = -1,
+    rspec .clist_set:N = \l__nmc_table_rspec_clist,
+    rround  .int_set:N = \l__nmc_table_rround_int,
+    rfont      .code:n = \tl_set:Nn \l__nmc_table_rfont_tl 
+                              { \use:c { math#1 } },
+    ralign   .tl_set:N = \l__nmc_table_rcalign_tl,
+    rhead    .tl_set:N = \l__nmc_table_rhead_tl,
+    rhnudge    .code:n = \tl_set:Nn \l__nmc_table_rhnudge_tl 
+                             { \mkern #1 mu },
+    rpos    .int_set:N = \l__nmc_table_rpos_int,
+    rvar'    .tl_set:N = \l__nmc_table_rvari_tl,
+    rhead'   .tl_set:N = \l__nmc_table_rheadi_tl,
+    rhnudge'   .code:n = \tl_set:Nn \l__nmc_table_rhnudgei_tl 
+                             { \mkern #1 mu },
+%
+    cvar     .tl_set:N = \l__nmc_table_cvar_tl,
+    cstop    .tl_set:N = \l__nmc_table_cstop_tl,
+    cstep    .tl_set:N = \l__nmc_table_cstep_tl,
+    cols    .int_set:N = \l__nmc_table_cnum_int,
+    cols    .initial:n = -1,
+    cspec .clist_set:N = \l__nmc_table_cspec_clist,
+    calign   .tl_set:N = \l__nmc_table_ccalign_tl,
+    chstyle .int_set:N = \l__nmc_table_chstyle_int,
+    chnudge    .code:n = \tl_set:Nn \l__nmc_table_chnudge_tl 
+                             { \mkern #1 mu },
+    chead    .tl_set:N = \l__nmc_table_chead_tl,
+    chround .int_set:N = \l__nmc_table_chround_int,
+%
+    ctitle   .tl_set:N = \l__nmc_table_ctitle_tl,
+    rules    .tl_set:N = \l__nmc_table_rules_tl,
+    foot     .tl_set:N = \l__nmc_table_footer_tl,
+    rbloc .clist_set:N = \l__nmc_table_rbloc_clist,
+    rblocsep .tl_set:N = \l__nmc_table_blocsep_tl,
+    signs   .int_set:N = \l__nmc_table_signs_int,
+    (pad)   .int_set:N = \l__nmc_table_tsigns_int,
+    diffs   .int_set:N = \l__nmc_table_diffs_int,
+%
+    Q?       .tl_set:N = \l__nmc_table_Q_tl,
+    A!       .tl_set:N = \l__nmc_table_A_tl,
+    reuse   .int_set:N = \l__nmc_table_reuse_int,
+    valign     .code:n = \tl_set:Nn \l__nmc_table_valign_tl { [#1] },
+  }
+% end of `numerica-tables.def'

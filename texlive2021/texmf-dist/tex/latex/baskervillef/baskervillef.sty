@@ -1,0 +1,193 @@
+%%
+\NeedsTeXFormat{LaTeX2e}
+\def\fileversion{1.043}
+\def\filedate{2017/03/10}
+\ProvidesPackage{baskervillef}
+    [\filedate\space v\fileversion.  Style file for BaskervilleF.]
+
+\RequirePackage[LY1,T1]{fontenc}
+\RequirePackage{textcomp}
+\IfFileExists{mweights.sty}{\RequirePackage{mweights}}{}
+\RequirePackage{etoolbox,xstring,ifthen}
+\IfFileExists{fontaxes.sty}{
+    \RequirePackage{fontaxes}
+    \DeclareRobustCommand\swshape{\not@math@alphabet\swshape\relax
+        \fontprimaryshape\itdefault\fontsecondaryshape\swdefault\selectfont}
+    \fa@naming@exception{shape}{{n}{sw}}{nw}
+    \fa@naming@exception{shape}{{it}{sw}}{sw}
+
+    \fa@naming@exception{figures}{{superior}{proportional}}{Sup}
+    \fa@naming@exception{figures}{{superior}{tabular}}{Sup}
+    \def\sufigures{\@nomath\sufigures
+        \fontfigurestyle{superior}\selectfont}
+    \DeclareTextFontCommand{\textsu}{\sufigures}
+    \let\textsuperior\textsu
+
+    \fa@naming@exception{figures}{{denominators}{proportional}}{Dnom}
+    \fa@naming@exception{figures}{{denominators}{tabular}}{Dnom}
+    \def\defigures{\@nomath\defigures
+        \fontfigurestyle{denominators}\selectfont}
+    \DeclareTextFontCommand{\textde}{\defigures}
+    \let\textdenominators\textde
+}{}
+%\providecommand*{\textfrac}[2]{%
+%    \textsu{#1}\kern0em\textfractionsolidus\kern0em\textde{#2}}
+
+%Variant of Todd Lehman's macro
+\newcommand{\textfrac}[3][]{% like \textfrac[1]{7}{8}
+  \mbox{%
+    \ifthenelse{\not\equal{#1}{}}%Test for integer portion [optional #1]
+      {\textlf{#1}\kern.05em}{}%         
+    \textsu{#2}%
+    \StrRight{#2}{1}[\@digit@]%
+    % look for  1, 2, 3, 4, 7
+    \ifcase\@digit@\or\kern.02em\or\kern.03em\or\kern.01em\or\kern.02em\or\or\or\kern-.09em\fi%
+    \kern.03em\textfractionsolidus\kern.02em%
+    \StrLeft{#3}{1}[\@digit@]%
+    % look for 1, 4, 5, 7
+    \ifcase\@digit@\or\kern.02em\or\or\or\kern-.06em\or\kern-.04em\or\or\kern.06em\fi%
+    \textde{#3}%       denominator [#3]
+  }%
+}
+
+
+
+\IfFileExists{xkeyval.sty}{
+    \newcommand*{\BaskervilleF@scale}{1}
+    \RequirePackage{xkeyval}
+    \DeclareOptionX{scale}{\renewcommand*{\BaskervilleF@scale}{##1}}
+    \DeclareOptionX{scaled}{\renewcommand*{\BaskervilleF@scale}{##1}}
+}{
+    \let\DeclareOptionX\DeclareOption
+    \let\ExecuteOptionsX\ExecuteOptions
+    \let\ProcessOptionsX\ProcessOptions
+}
+\let\orig@footnote=\thefootnote
+\let\orig@makefnmark=\@makefnmark
+\def\bfseries@rm{b}
+\def\mdseries@rm{m}
+
+\newif\ifBaskervilleF@thrm
+\newif\ifBaskervilleF@sups
+\newif\ifBaskervilleF@scosf
+\def\useosf{\edef\BaskervilleF@figurestyle{OsF}}
+\@onlypreamble\useosf
+\def\useproportional{\edef\BaskervilleF@figurealign{}}
+\@onlypreamble\useproportional
+%\newif\ifBaskervilleF@babel
+%\ifdefined\bbl@tempa \BaskervilleF@babeltrue\fi
+
+\def\BaskervilleF@sp{.26em}
+\def\BaskervilleF@stretch{.13em}
+\def\BaskervilleF@shrink{.08em}
+
+\DeclareOptionX{spacing}[.26em]{\gdef\BaskervilleF@sp{#1}}
+\DeclareOptionX{stretch}[.13em]{\gdef\BaskervilleF@stretch{#1}}
+\DeclareOptionX{shrink}[.08em]{\gdef\BaskervilleF@shrink{#1}}
+\DeclareOptionX{theoremfont}{\BaskervilleF@thrmtrue}
+\DeclareOptionX{lining}{\edef\BaskervilleF@figurestyle{LF}}
+\DeclareOptionX{lf}{\edef\BaskervilleF@figurestyle{LF}}
+\DeclareOptionX{oldstyle}{\edef\BaskervilleF@figurestyle{OsF}}
+\DeclareOptionX{osf}{\edef\BaskervilleF@figurestyle{OsF}}
+\DeclareOptionX{tabular}{\edef\BaskervilleF@figurealign{T}}
+\DeclareOptionX{t}{\edef\BaskervilleF@figurealign{T}}
+\DeclareOptionX{proportional}{\edef\BaskervilleF@figurealign{}}
+\DeclareOptionX{p}{\edef\BaskervilleF@figurealign{}}
+\DeclareOptionX{sups}{\BaskervilleF@supstrue}
+\DeclareOptionX{scosf}{\BaskervilleF@scosftrue}
+\ExecuteOptionsX{lining,tabular}
+\ProcessOptionsX\relax
+
+\def\BaskervilleF@spc{%
+	\fontdimen2\font=\BaskervilleF@sp
+	\fontdimen3\font=\BaskervilleF@stretch
+	\fontdimen4\font=\BaskervilleF@shrink
+} % used to change default text spacing via fd files
+\ifBaskervilleF@thrm
+	\ifdefined\newtheoremstyle
+	\newtheoremstyle{plain}
+	{\topsep}   % ABOVESPACE
+    {\topsep}   % BELOWSPACE
+    {\slshape}  % BODYFONT--\slshape is defined to be \itshape with upright figures and punctuation
+    {}       % INDENT (empty value is the same as 0pt)
+    {\bfseries} % HEADFONT--you may want to add \tlfstyle so the number is tab lining, regardless of text figure selection
+    {.}         % HEADPUNCT
+    {5pt plus 1pt minus 1pt} % HEADSPACE
+    {}          % CUSTOM-HEAD-SPEC\newtheorem{thm}{Theorem}[section]
+    \fi%
+\fi
+
+\DeclareRobustCommand{\lfstyle}{%
+  \not@math@alphabet\lfstyle\relax
+  \fontfamily{BaskervilleF-LF}\selectfont %
+}% to get lf
+\DeclareRobustCommand{\tlfstyle}{%
+  \not@math@alphabet\tlfstyle\relax
+  \fontfamily{BaskervilleF-TLF}\selectfont %
+}% to get tlf
+\DeclareRobustCommand{\osfstyle}{%
+  \not@math@alphabet\osfstyle\relax
+  \fontfamily{BaskervilleF-OsF}\selectfont %
+}% to get osf
+\DeclareRobustCommand{\tosfstyle}{%
+  \not@math@alphabet\tosfstyle\relax
+  \fontfamily{BaskervilleF-TOsF}\selectfont %
+}% to get tosf
+\DeclareRobustCommand{\textlf}[1]{%
+  {\lfstyle #1}%
+}% to get lf
+\DeclareRobustCommand{\texttlf}[1]{%
+  {\tlfstyle #1}%
+}% to get tlf
+\DeclareRobustCommand{\textosf}[1]{%
+  {\osfstyle #1}%
+}% to get osf
+\DeclareRobustCommand{\texttosf}[1]{%
+  {\tosfstyle #1}%
+}% to get tosf
+\ifBaskervilleF@scosf %
+\DeclareRobustCommand{\textsc}[1]{%
+{\fontfamily{BaskervilleF-\BaskervilleF@figurealign%
+OsF}\fontshape{n}\selectfont #1}%
+}\fi% use OsF in small caps
+
+\renewcommand*{\rmdefault}{BaskervilleF-TLF} % always TLF in math
+\renewcommand*{\familydefault}{\rmdefault}
+
+\let\textcircled\undefined
+\newcommand{\textcircled}[1]{\hmode@bgroup
+   \ooalign{%
+      \hfil \raise .38ex\hbox {\footnotesize\scshape \lowercase{#1}}\hfil \crcr
+     {\fontencoding{TS1}\fontseries{m}\fontshape{n}\selectfont \char"4F}%\textbigcircle   % bigcircle
+   }%
+ \egroup}
+
+\ifBaskervilleF@sups %
+ \ifdefined\sufigures
+  \def\f@@tn@te{footnote}
+  \def\@makefnmark{%
+    \ifx\@mpfn\f@@tn@te%
+      \ifx\thefootnote\orig@footnote%
+        \hbox{\sufigures\hspace*{.04em}\@thefnmark\hspace*{.04em}}%
+      \else%
+        \orig@makefnmark%
+      \fi
+    \else%
+      \orig@makefnmark%
+    \fi}%
+ \fi%
+\fi
+
+%\ifBaskervilleF@babel
+%    \renewcommand*{\rmdefault}{BaskervilleF-\BaskervilleF@figurealign%
+%	\BaskervilleF@figurestyle}
+%	\normalfont
+%\else
+	\AtEndPreamble{%
+	\renewcommand*{\rmdefault}{BaskervilleF-\BaskervilleF@figurealign%
+	\BaskervilleF@figurestyle}
+	\normalfont}
+%\fi
+\renewcommand*{\familydefault}{\rmdefault}
+
+\endinput

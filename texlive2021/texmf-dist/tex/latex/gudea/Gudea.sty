@@ -1,0 +1,50 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{Gudea}
+    [2021/01/09 (Carl-Clemens Ebinger & autoinst)  Style file for Gudea fonts.]
+
+\RequirePackage{xkeyval}
+\newcommand*{\Gudea@scale}{1}
+\DeclareOptionX{scale}{\renewcommand*{\Gudea@scale}{#1}}
+\DeclareOptionX{scaled}{\renewcommand*{\Gudea@scale}{#1}}
+
+\DeclareOptionX{lining}{\edef\Gudea@figurestyle{LF}}
+\DeclareOptionX{tabular}{\edef\Gudea@figurealign{T}}
+\DeclareOptionX{mainfont}{
+    \renewcommand{\familydefault}{\rmdefault}
+}
+\DeclareOptionX{bold}{\edef\bfseries@rm{bold}}
+\DeclareOptionX{regular}{\edef\mdseries@rm{regular}}
+\ExecuteOptionsX{lining,tabular}
+\ProcessOptionsX\relax
+
+\RequirePackage{fontenc,textcomp}
+\RequirePackage{ifthen}
+\RequirePackage{mweights}
+
+\IfFileExists{fontaxes.sty}{
+    \RequirePackage{fontaxes}
+}{}
+
+%   Here we implement the scale=MatchLowercase option.
+%   If this is given, we must compute the correct value of
+%   the "\Gudea@scale" parameter before loading the .fd files;
+%   but to determine that value we of course need the font's x-height.
+%   To avoid triggering the loading of .fd files,
+%   we use plain TeX's \font primitive to load the testfont.
+%   We then compute the ratio of the current x-height to our font's x-height;
+%   this is the "\Gudea@scale" we will pass to the .fd files.
+\ifthenelse{\equal{\Gudea@scale}{MatchLowercase}}
+    {   \newlength{\Gudea@currentx}
+        \settoheight{\Gudea@currentx}{x}
+        \newlength{\Gudea@xheight}
+        \settoheight{\Gudea@xheight}
+            {{\font\testfont=Gudea-tlf-ot1 at \f@size pt\testfont x}}
+        \renewcommand*{\Gudea@scale}
+            {\strip@pt\dimexpr\number\numexpr\number\dimexpr\Gudea@currentx\relax*65536/\number\dimexpr\Gudea@xheight\relax\relax sp\relax}}
+    {}
+
+\renewcommand*
+    {\rmdefault}
+    {Gudea-\Gudea@figurealign\Gudea@figurestyle}
+
+\endinput

@@ -1,0 +1,142 @@
+%% Copyright (C) 2011, 2018 by Marco Daniel
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%
+%%    http://www.latex-project.org/lppl.txt
+%%
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2008/05/04 or later.
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The Current Maintainer of this work is Marco Daniel.
+%%
+%% This work consists of the files nejm.bbx, nejm.cbx, biblatex-nejm.tex
+%% and biblatex-nejm.pdf
+
+%%$Id: nejm.bbx 30 2018-07-28 11:01:00Z marco $
+%%$Rev: 30 $
+%%$Author: marco $
+%%$Date: 2018-07-28 13:01:00Z +0200 (Sa, 28. Jul 2018) $
+\def\biblatexnejmversionbbx{v0.5}
+\def\biblatexnejmpackagenamebbx{nejm.bbx}
+\def\biblatexnejmsvnbbx$#1: #2 #3 #4-#5-#6 #7 #8${#4/#5/#6\space }
+\ProvidesFile{nejm.bbx}[\biblatexnejmsvnbbx$Id: nejm.bbx 30 2018-07-28 11:01:00Z marco $ \biblatexnejmversionbbx: \biblatexnejmpackagenamebbx]
+
+%use numeric.cbx as base
+%Warning if backend isn't biber
+\RequireBiber[2]
+%need style:
+\RequireBibliographyStyle{numeric}
+
+\providetoggle{bbx:articledoi}
+\DeclareBibliographyOption[boolean]{articledoi}[true]{%
+  \settoggle{bbx:articledoi}{#1}}
+
+\providetoggle{bbx:articlein}
+\DeclareBibliographyOption[boolean]{articlein}[true]{%
+  \settoggle{bbx:articlein}{#1}}
+
+\providetoggle{bbx:printlang}
+\DeclareBibliographyOption[boolean]{printlang}[true]{%
+  \settoggle{bbx:printlang}{#1}}
+
+%set options to biblatex
+\ExecuteBibliographyOptions
+  {
+    isbn         = false ,
+    labelnumber  = true ,
+    minnames     = 3 ,
+    maxnames     = 6 ,
+    giveninits   = true ,
+    terseinits   = true ,
+    sorting      = none ,
+    date         = year ,
+    articledoi   = false,
+    articlein    = false,
+    printlang    = false,
+  }
+
+
+\AtBeginDocument{%
+  \iftoggle{bbx:printlang}
+    {}
+    {\DeclareStyleSourcemap{
+       \maps[datatype=bibtex]{
+         \map{
+           \step[fieldset=language, null]
+         }
+       }
+     }}%
+}
+
+%remove punctuation and space after initials -- require biber
+\renewrobustcmd*{\bibinitperiod}{}
+%separator printed before the pages field
+\renewcommand*{\bibpagespunct}{\addcolon}
+%no bracktes in thebibliography and add dot
+\DeclareFieldFormat{labelnumberwidth}{#1\adddot}
+%not formating pages
+\DeclareFieldFormat*{pages}{\mkcomprange{#1}}
+%not formated journaltitle
+\DeclareFieldFormat*{journaltitle}{#1}
+%not formated title
+\DeclareFieldFormat*{title}{#1}
+
+
+%Set name format
+\DeclareNameAlias{default}{family-given}
+\DeclareNameAlias{sortname}{family-given}
+
+%remove comma between family name and given name
+\renewcommand*{\revsdnamepunct}{}
+
+%option articledoi -- no doi / eprint / url in article
+\letbibmacro{doi+eprint+url-use}{doi+eprint+url}
+
+\renewbibmacro*{doi+eprint+url}{%
+  \ifboolexpr{test {\ifentrytype{article}} and not togl {bbx:articledoi}}
+    {}
+    {\usebibmacro{doi+eprint+url-use}}%
+}
+
+%no bibstring in in article:
+\renewbibmacro*{in:}{%
+  \ifboolexpr{test {\ifentrytype{article}} and not togl {bbx:articlein}}
+    {}
+    {\printtext{\bibstring{in}\intitlepunct}}%
+}
+
+%no number in ouput of bibliography
+\renewbibmacro*{volume+number+eid}{%
+  \printfield{volume}%
+%  \setunit*{\adddot}%
+%  \printfield{number}%
+  \setunit{\addcomma\space}%
+  \printfield{eid}}
+
+%Order year;volume:page
+\renewbibmacro*{issue+date}{%
+  \printfield{issue}%
+  \setunit*{\addspace}%
+  \usebibmacro{date}%
+  \newunit}
+
+\renewbibmacro*{journal+issuetitle}{%
+  \usebibmacro{journal}%
+  \iffieldundef{series}
+    {}
+    {\newunit
+     \printfield{series}}%
+  \setunit*{\addspace}%
+  \usebibmacro{issue+date}%
+  \setunit*{\addsemicolon}
+  \usebibmacro{volume+number+eid}%
+  \setunit{\addcomma\space}%
+  \usebibmacro{issue}%
+  \newunit}
+
+\endinput

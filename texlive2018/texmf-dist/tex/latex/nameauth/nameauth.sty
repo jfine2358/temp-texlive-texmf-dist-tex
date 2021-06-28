@@ -1,0 +1,1569 @@
+%%
+%% This is file `nameauth.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% nameauth.dtx  (with options: `package')
+%% 
+%% --------:| ----------------------------------------------------------------
+%% nameauth:| Name authority mechanism for consistency in text and index
+%%   Author:| Charles P. Schaum
+%%   E-mail:| charles dot schaum at comcast dot net
+%%  License:| Released under the LaTeX Project Public License 1.3c or later
+%%      See:| http://www.latex-project.org/lppl.txt
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{nameauth}
+    [2017/03/22 3.2 Name authority mechanism for consistency in text and index]
+\newif\if@nameauth@InAKA
+\newif\if@nameauth@InName
+\newif\if@nameauth@Xref
+\newif\if@nameauth@Lock
+\newif\if@nameauth@InHook
+\newif\if@nameauth@DoIndex
+\newif\if@nameauth@SkipIndex
+\newif\if@nameauth@JustIndex
+\newif\if@nameauth@Pretag
+\newif\if@nameauth@SeeAlso
+\newif\if@nameauth@MainFormat
+\newif\if@nameauth@AKAFormat
+\newif\if@nameauth@LocalNames
+\newif\if@nameauth@Forget
+\newif\if@nameauth@Subvert
+\newif\if@nameauth@FirstFormat
+\newif\if@nameauth@AlwaysFormat
+\newif\if@nameauth@AlwaysComma
+\newif\if@nameauth@ShowComma
+\newif\if@nameauth@NoComma
+\newif\if@nameauth@NBSP
+\newif\if@nameauth@NBSPX
+\newif\if@nameauth@Punct
+\newif\if@nameauth@FullName
+\newif\if@nameauth@FirstName
+\newif\if@nameauth@AltAKA
+\newif\if@nameauth@OldAKA
+\newif\if@nameauth@ShortSNN
+\newif\if@nameauth@EastFN
+\newif\if@nameauth@RevAll
+\newif\if@nameauth@RevThis
+\newif\if@nameauth@AllCaps
+\newif\if@nameauth@AllThis
+\newif\if@nameauth@RevAllComma
+\newif\if@nameauth@RevThisComma
+\newif\if@nameauth@DoCaps
+\newif\if@nameauth@UTF
+\newif\if@nameauth@Accent
+\newif\if@nameauth@AltFormat
+\newif\if@nameauth@DoAlt
+\newif\if@nameauth@Verbose
+\newtoks\@nameauth@toksa%
+\newtoks\@nameauth@toksb%
+\newtoks\@nameauth@toksc%
+\newtoks\@nameauth@etoksb%
+\newtoks\@nameauth@etoksc%
+\newtoks\@nameauth@etoksd%
+\newcommand*\NamesFormat{}
+\newcommand*\MainNameHook{}
+\newcommand*\FrontNamesFormat{}
+\newcommand*\FrontNameHook{}
+\newcommand*\NameauthName{\@nameauth@Name}
+\newcommand*\NameauthLName{\@nameauth@Name}
+\newcommand*\NameauthFName{\@nameauth@Name}
+\DeclareOption{comma}{\@nameauth@AlwaysCommatrue}
+\DeclareOption{nocomma}{\@nameauth@AlwaysCommafalse}
+\DeclareOption{mainmatter}{\@nameauth@MainFormattrue}
+\DeclareOption{frontmatter}{\@nameauth@MainFormatfalse}
+\DeclareOption{formatAKA}{\@nameauth@AKAFormattrue}
+\DeclareOption{oldAKA}{\@nameauth@OldAKAtrue}
+\DeclareOption{index}{\@nameauth@DoIndextrue}
+\DeclareOption{noindex}{\@nameauth@DoIndexfalse}
+\DeclareOption{pretag}{\@nameauth@Pretagtrue}
+\DeclareOption{nopretag}{\@nameauth@Pretagfalse}
+\DeclareOption{allcaps}{\@nameauth@AllCapstrue}
+\DeclareOption{normalcaps}{\@nameauth@AllCapsfalse}
+\DeclareOption{allreversed}%
+  {\@nameauth@RevAlltrue\@nameauth@RevAllCommafalse}
+\DeclareOption{allrevcomma}%
+  {\@nameauth@RevAllfalse\@nameauth@RevAllCommatrue}
+\DeclareOption{notreversed}%
+  {\@nameauth@RevAllfalse\@nameauth@RevAllCommafalse}
+\DeclareOption{alwaysformat}{\@nameauth@AlwaysFormattrue}
+\DeclareOption{smallcaps}{\renewcommand*\NamesFormat{\scshape}}
+\DeclareOption{italic}{\renewcommand*\NamesFormat{\itshape}}
+\DeclareOption{boldface}{\renewcommand*\NamesFormat{\bfseries}}
+\DeclareOption{noformat}{\renewcommand*\NamesFormat{}}
+\DeclareOption{verbose}{\@nameauth@Verbosetrue}
+\DeclareOption{altformat}{%
+  \@nameauth@AltFormattrue\@nameauth@DoAlttrue}
+\ExecuteOptions%
+  {nocomma,mainmatter,index,pretag,%
+   normalcaps,notreversed,noformat}
+\ProcessOptions\relax
+\RequirePackage{etoolbox}
+\RequirePackage{suffix}
+\RequirePackage{trimspaces}
+\RequirePackage{xargs}
+\newcommand*\@nameauth@Clean[1]
+  {\expandafter\zap@space\detokenize{#1} \@empty}
+\newcommand*\@nameauth@Root[1]{\@nameauth@@Root#1,\\}
+\def\@nameauth@@Root#1,#2\\{\trim@spaces{#1}}
+\newcommand*\@nameauth@TrimTag[1]{\@nameauth@@TrimTag#1|\\}
+\def\@nameauth@@TrimTag#1|#2\\{#1}
+\newcommand*\@nameauth@Suffix[1]{\@nameauth@@Suffix#1,,\\}
+\def\@nameauth@@Suffix#1,#2,#3\\%
+  {\ifx\\#2\\\@empty\else\trim@spaces{#2}\fi}
+\newcommand*\@nameauth@GetSuff[1]{\@nameauth@@GetSuff#1,,\\}
+\def\@nameauth@@GetSuff#1,#2,#3\\{#2}
+\newcommand*\@nameauth@TestToks[1]
+{%
+  \toks@\expandafter{\@car#1\@nil}%
+  \edef\one{\the\toks@}%
+  \toks@\expandafter{\@carß\@nil}%
+  \edef\two{\the\toks@}%
+  \ifx\one\two\@nameauth@UTFtrue\else\@nameauth@UTFfalse\fi
+}
+\newcommand*\@nameauth@UTFtest[1]
+{%
+  \def\testarg{#1}%
+  \ifdefined\Umathchar
+    \@nameauth@UTFfalse%
+  \else
+    \ifdefined\UTFviii@two@octets
+      \if@nameauth@Accent
+        \@nameauth@UTFtrue\@nameauth@Accentfalse%
+      \else
+        \expandafter\@nameauth@TestToks\expandafter{\testarg}%
+      \fi
+    \else
+      \@nameauth@UTFfalse%
+    \fi
+  \fi
+}
+\newcommand*\@nameauth@UTFtestS[1]
+{%
+  \let\ex\expandafter%
+  \ex\def\ex\testarg\ex{\@nameauth@GetSuff{#1}}%
+  \ex\toks@\ex\ex\ex{\testarg}%
+  \ex\def\ex\test@rg\ex{\the\toks@}%
+  \ifdefined\Umathchar
+    \@nameauth@UTFfalse%
+  \else
+    \ifdefined\UTFviii@two@octets
+      \if@nameauth@Accent
+        \@nameauth@UTFtrue\@nameauth@Accentfalse%
+      \else
+        \expandafter\@nameauth@TestToks\expandafter{\test@rg}%
+      \fi
+    \else
+      \@nameauth@UTFfalse%
+    \fi
+  \fi
+}
+\newcommand*\@nameauth@Cap[1]{\@nameauth@C@p#1\\}
+\def\@nameauth@C@p#1#2\\%
+  {\expandafter\trim@spaces\expandafter{\MakeUppercase{#1}#2}}
+\newcommand*\@nameauth@CapUTF[1]{\@nameauth@C@pUTF#1\\}
+\def\@nameauth@C@pUTF#1#2#3\\%
+  {\expandafter\trim@spaces\expandafter{\MakeUppercase{#1#2}#3}}
+\newcommand*\@nameauth@TestDot[1]
+{%
+  \def\TestDot##1.\TestEnd##2\\{\TestPunct{##2}}%
+  \def\TestPunct##1{%
+    \ifx\TestPunct##1\TestPunct%
+    \else
+      \@nameauth@Puncttrue%
+    \fi
+  }%
+  \@nameauth@Punctfalse%
+  \TestDot#1\TestEnd.\TestEnd\\%
+}
+\newcommand*\@nameauth@CheckDot%
+  {\futurelet\@token\@nameauth@EvalDot}
+\newcommand*\@nameauth@EvalDot%
+{%
+  \let\@period=.%
+  \ifx\@token\@period\expandafter\@gobble \fi
+}
+\newcommand*\@nameauth@Error[2]
+{%
+  \edef\msga{#2 SNN field empty}%
+  \edef\msgb{#2 SNN field malformed}%
+  \protected@edef\testname{\trim@spaces{#1}}%
+  \protected@edef\testroot{\@nameauth@Root{#1}}%
+  \ifx\testname\@empty
+    \PackageError{nameauth}{\msga}%
+  \fi
+  \ifx\testroot\@empty
+      \PackageError{nameauth}{\msgb}%
+  \fi
+}
+\newcommandx*\@nameauth@Name[3][1=\@empty, 3=\@empty]
+{%
+  \unless\if@nameauth@Lock
+    \@nameauth@Locktrue%
+    \@nameauth@InNametrue%
+    \@nameauth@Error{#2}{macro \string\@nameauth@name}%
+    \if@nameauth@JustIndex
+      \IndexName[#1]{#2}[#3]%
+      \@nameauth@InNamefalse%
+      \@nameauth@Lockfalse%
+      \@nameauth@JustIndexfalse%
+    \else
+      \if@nameauth@Forget
+        \ForgetName[#1]{#2}[#3]%
+      \else
+        \if@nameauth@Subvert
+          \SubvertName[#1]{#2}[#3]%
+        \fi
+      \fi
+      \leavevmode\hbox{}%
+      \unless\if@nameauth@SkipIndex\IndexName[#1]{#2}[#3]\fi
+      \if@nameauth@MainFormat
+        \@nameauth@Parse[#1]{#2}[#3]{!MN}%
+      \else
+        \@nameauth@Parse[#1]{#2}[#3]{!NF}%
+      \fi
+      \unless\if@nameauth@SkipIndex\IndexName[#1]{#2}[#3]\fi
+      \@nameauth@SkipIndexfalse%
+      \@nameauth@Forgetfalse%
+      \@nameauth@Subvertfalse%
+      \@nameauth@Lockfalse%
+      \@nameauth@InNamefalse%
+      \@nameauth@NBSPfalse%
+      \@nameauth@NBSPXfalse%
+      \@nameauth@DoCapsfalse%
+      \@nameauth@Accentfalse%
+      \@nameauth@AllThisfalse%
+      \@nameauth@ShowCommafalse%
+      \@nameauth@NoCommafalse%
+      \@nameauth@RevThisfalse%
+      \@nameauth@RevThisCommafalse%
+      \@nameauth@ShortSNNfalse%
+      \@nameauth@EastFNfalse%
+    \fi
+  \fi
+  \if@nameauth@Punct\expandafter\@nameauth@CheckDot\fi
+}
+\newcommandx*\@nameauth@Parse[4][1=\@empty, 3=\@empty]
+{%
+  \if@nameauth@Lock
+    \let\ex\expandafter%
+    \protected@edef\arga{\trim@spaces{#1}}%
+    \protected@edef\rootb{\@nameauth@Root{#2}}%
+    \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+    \protected@edef\argc{\trim@spaces{#3}}%
+    \if@nameauth@AllCaps\@nameauth@AllThistrue\fi
+    \if@nameauth@RevAll\@nameauth@RevThistrue\fi
+    \if@nameauth@RevAllComma\@nameauth@RevThisCommatrue\fi
+    \def\csb{\@nameauth@Clean{#2}}%
+    \def\csbc{\@nameauth@Clean{#2,#3}}%
+    \def\csab{\@nameauth@Clean{#1!#2}}%
+    \@nameauth@toksa\expandafter{#1}%
+    \@nameauth@toksb\expandafter{#2}%
+    \@nameauth@toksc\expandafter{#3}%
+    \if@nameauth@DoCaps
+      \let\carga\arga%
+      \let\crootb\rootb%
+      \let\csuffb\suffb%
+      \let\cargc\argc%
+      \unless\if@nameauth@AltFormat
+        \unless\ifx\arga\@empty
+          \def\test{#1}%
+          \ex\@nameauth@UTFtest\ex{\test}%
+          \if@nameauth@UTF
+            \ex\def\ex\carga\ex{\ex\@nameauth@CapUTF\ex{\test}}%
+          \else
+            \ex\def\ex\carga\ex{\ex\@nameauth@Cap\ex{\test}}%
+          \fi
+        \fi
+        \def\test{#2}%
+        \ex\@nameauth@UTFtest\ex{\test}%
+        \if@nameauth@UTF
+          \ex\def\ex\crootb\ex{\ex\@nameauth@CapUTF\ex{\rootb}}%
+        \else
+          \ex\def\ex\crootb\ex{\ex\@nameauth@Cap\ex{\rootb}}%
+        \fi
+        \unless\ifx\suffb\@empty
+          \def\test{#2}%
+          \ex\@nameauth@UTFtestS\ex{\test}%
+          \protected@edef\test{\@nameauth@GetSuff{#2}}%
+          \if@nameauth@UTF
+            \protected@edef\test{\@nameauth@Suffix{#2}}%
+            \ex\def\ex\csuffb\ex{\ex\@nameauth@CapUTF\ex{\test}}%
+          \else
+            \edef\test{\@nameauth@Suffix{#2}}%
+            \ex\def\ex\csuffb\ex{\ex\@nameauth@Cap\ex{\test}}%
+          \fi
+        \fi
+        \unless\ifx\argc\@empty
+          \def\test{#3}%
+          \ex\@nameauth@UTFtest\ex{\test}%
+          \if@nameauth@UTF
+            \ex\def\ex\cargc\ex{\ex\@nameauth@CapUTF\ex{\test}}%
+          \else
+            \ex\def\ex\cargc\ex{\ex\@nameauth@Cap\ex{\test}}%
+          \fi
+        \fi
+      \fi
+      \let\arga\carga%
+      \let\rootb\crootb%
+      \let\suffb\csuffb%
+      \let\argc\cargc%
+    \fi
+    \if@nameauth@AllThis
+      \protected@edef\rootb{\MakeUppercase{\@nameauth@Root{#2}}}%
+    \fi
+    \edef\Space{\space}%
+    \edef\SpaceX{\space}%
+    \if@nameauth@NBSP\edef\Space{\nobreakspace}\fi
+    \if@nameauth@NBSPX\edef\SpaceX{\nobreakspace}\fi
+    \unless\ifx\arga\@empty
+      \if@nameauth@AlwaysComma
+        \edef\Space{,\space}%
+        \if@nameauth@NBSP\edef\Space{,\nobreakspace}\fi
+      \fi
+      \if@nameauth@ShowComma
+        \edef\Space{,\space}%
+        \if@nameauth@NBSP\edef\Space{,\nobreakspace}\fi
+      \fi
+      \if@nameauth@NoComma
+        \edef\Space{\space}%
+        \if@nameauth@NBSP\edef\Space{\nobreakspace}\fi
+      \fi
+    \fi
+    \let\SNN\rootb%
+    \ifx\arga\@empty
+      \ifx\argc\@empty
+        \let\FNN\suffb%
+        \let\SNN\rootb%
+        \@nameauth@NonWest{\csb#4}%
+      \else
+        \ifx\suffb\@empty
+          \let\FNN\argc%
+          \let\SNN\rootb%
+          \@nameauth@NonWest{\csbc#4}%
+        \else
+          \let\FNN\argc%
+          \let\SNN\rootb%
+          \@nameauth@NonWest{\csb#4}%
+        \fi
+      \fi
+    \else
+      \ifx\argc\@empty
+        \let\FNN\arga%
+      \else
+        \let\FNN\argc%
+      \fi
+      \unless\ifx\suffb\@empty
+        \def\SNN{\rootb\Space\suffb}%
+        \if@nameauth@ShortSNN\let\SNN\rootb\fi
+      \fi
+      \@nameauth@West{\csab#4}%
+    \fi
+  \fi
+}
+\newcommand*\@nameauth@NonWest[1]
+{%
+  \if@nameauth@Lock
+    \unless\ifcsname#1\endcsname
+      \@nameauth@FirstFormattrue%
+    \fi
+    \if@nameauth@InAKA
+      \if@nameauth@AltAKA
+        \if@nameauth@OldAKA\@nameauth@EastFNtrue\fi
+        \@nameauth@FullNamefalse%
+        \@nameauth@FirstNametrue%
+      \else
+        \@nameauth@FullNametrue%
+        \@nameauth@FirstNamefalse%
+      \fi
+    \else
+      \unless\ifcsname#1\endcsname
+        \@nameauth@FullNametrue%
+        \@nameauth@FirstNamefalse%
+      \fi
+    \fi
+    \if@nameauth@FirstName
+      \@nameauth@FullNamefalse%
+    \fi
+    \ifx\FNN\@empty
+      \@nameauth@Hook{\SNN}%
+    \else
+      \if@nameauth@FullName
+        \if@nameauth@RevThis
+          \@nameauth@Hook{\FNN\Space\SNN}%
+        \else
+          \@nameauth@Hook{\SNN\Space\FNN}%
+        \fi
+      \else
+        \if@nameauth@FirstName
+          \if@nameauth@EastFN
+            \@nameauth@Hook{\FNN}%
+          \else
+            \@nameauth@Hook{\SNN}%
+          \fi
+        \else
+          \@nameauth@Hook{\SNN}%
+        \fi
+      \fi
+    \fi
+    \unless\ifcsname#1\endcsname
+      \unless\if@nameauth@InAKA\csgdef{#1}{}\fi
+    \fi
+    \@nameauth@FullNamefalse%
+    \@nameauth@FirstNamefalse%
+  \fi
+}
+\newcommand*\@nameauth@West[1]
+{%
+  \if@nameauth@Lock
+    \unless\ifcsname#1\endcsname
+      \@nameauth@FirstFormattrue%
+    \fi
+    \if@nameauth@InAKA
+      \if@nameauth@AltAKA
+        \@nameauth@FullNamefalse%
+        \@nameauth@FirstNametrue%
+      \else
+        \@nameauth@FullNametrue%
+        \@nameauth@FirstNamefalse%
+      \fi
+    \else
+      \unless\ifcsname#1\endcsname
+        \@nameauth@FullNametrue%
+        \@nameauth@FirstNamefalse%
+      \fi
+    \fi
+    \if@nameauth@FirstName
+      \@nameauth@FullNamefalse%
+    \fi
+    \if@nameauth@FullName
+      \if@nameauth@RevThis
+        \@nameauth@Hook{\SNN\SpaceX\FNN}%
+      \else
+        \if@nameauth@RevThisComma
+          \edef\RevSpace{,\SpaceX}%
+          \@nameauth@Hook{\SNN\RevSpace\FNN}%
+        \else
+          \@nameauth@Hook{\FNN\SpaceX\SNN}%
+        \fi
+      \fi
+    \else
+      \if@nameauth@FirstName
+        \@nameauth@Hook{\FNN}%
+      \else
+        \@nameauth@Hook{\rootb}%
+      \fi
+    \fi
+    \unless\ifcsname#1\endcsname
+      \unless\if@nameauth@InAKA\csgdef{#1}{}\fi
+    \fi
+    \@nameauth@FullNamefalse%
+    \@nameauth@FirstNamefalse%
+  \fi
+}
+\newcommand*\@nameauth@Hook[1]
+{%
+  \if@nameauth@Lock
+    \@nameauth@InHooktrue%
+    \protected@edef\test{#1}%
+    \expandafter\@nameauth@TestDot\expandafter{\test}%
+    \if@nameauth@InAKA
+      \if@nameauth@AlwaysFormat
+        \@nameauth@FirstFormattrue%
+      \else
+        \unless\if@nameauth@AKAFormat
+        \@nameauth@FirstFormatfalse\fi
+      \fi
+      \if@nameauth@MainFormat
+        \if@nameauth@FirstFormat
+          \bgroup\NamesFormat{#1}\egroup%
+        \else
+          \bgroup\MainNameHook{#1}\egroup%
+        \fi
+      \else
+        \if@nameauth@FirstFormat
+          \bgroup\FrontNamesFormat{#1}\egroup%
+        \else
+          \bgroup\FrontNameHook{#1}\egroup%
+        \fi
+      \fi
+    \else
+      \if@nameauth@AlwaysFormat
+        \@nameauth@FirstFormattrue%
+      \fi
+      \if@nameauth@MainFormat
+        \if@nameauth@FirstFormat
+          \bgroup\NamesFormat{#1}\egroup%
+        \else
+          \bgroup\MainNameHook{#1}\egroup%
+        \fi
+      \else
+        \if@nameauth@FirstFormat
+          \bgroup\FrontNamesFormat{#1}\egroup%
+        \else
+          \bgroup\FrontNameHook{#1}\egroup%
+        \fi
+      \fi
+    \fi
+    \@nameauth@FirstFormatfalse%
+    \@nameauth@InHookfalse%
+  \fi
+}
+\newcommand*\@nameauth@Index[2]
+{%
+  \def\cseq{#1}%
+  \let\ex\expandafter%
+  \ifcsname\cseq!TAG\endcsname
+    \protected@edef\Tag{\csname#1!TAG\endcsname}%
+    \ex\def\ex\ShortTag\ex{\ex\@nameauth@TrimTag\ex{\Tag}}%
+  \fi
+  \if@nameauth@DoIndex
+    \ifcsname\cseq!TAG\endcsname
+      \ifcsname\cseq!PRE\endcsname
+        \if@nameauth@Xref%
+          \index%
+          {\csname\cseq!PRE\endcsname#2\ShortTag}%
+        \else
+          \index%
+          {\csname\cseq!PRE\endcsname#2\csname\cseq!TAG\endcsname}%
+        \fi
+      \else
+        \if@nameauth@Xref
+          \index{#2\ShortTag}%
+        \else
+          \index{#2\csname\cseq!TAG\endcsname}%
+        \fi
+      \fi
+    \else
+      \ifcsname\cseq!PRE\endcsname
+        \index{\csname\cseq!PRE\endcsname#2}%
+      \else
+        \index{#2}%
+      \fi
+    \fi
+  \fi
+}
+\newcommand*\@nameauth@Actual{@}
+\newcommand*\CapThis{\@nameauth@DoCapstrue}
+\newcommand*\AccentCapThis%
+  {\@nameauth@Accenttrue\@nameauth@DoCapstrue}
+\newcommand*\CapName{\@nameauth@AllThistrue}
+\newcommand*\AllCapsInactive{\@nameauth@AllCapsfalse}
+\newcommand*\AllCapsActive{\@nameauth@AllCapstrue}
+\newcommand*\RevName{\@nameauth@RevThistrue}
+\newcommand*\ReverseInactive{\@nameauth@RevAllfalse}
+\newcommand*\ReverseActive{\@nameauth@RevAlltrue}
+\newcommand*\ForceFN{\@nameauth@EastFNtrue}
+\newcommand*\RevComma%
+  {\@nameauth@RevThisCommatrue}
+\newcommand*\ReverseCommaInactive%
+  {\@nameauth@RevAllCommafalse}
+\newcommand*\ReverseCommaActive%
+  {\@nameauth@RevAllCommatrue}
+\newcommand*\AltFormatActive{%
+  \global\@nameauth@AltFormattrue%
+  \global\@nameauth@DoAlttrue%
+}
+\WithSuffix{\newcommand*}\AltFormatActive*{%
+  \global\@nameauth@AltFormattrue%
+  \global\@nameauth@DoAltfalse%
+}
+\newcommand*\AltFormatInactive{%
+  \global\@nameauth@AltFormatfalse%
+  \global\@nameauth@DoAltfalse%
+}
+\newcommand*\AltOn{%
+  \if@nameauth@InHook
+    \if@nameauth@AltFormat\@nameauth@DoAlttrue\fi
+  \fi
+}
+\newcommand*\AltOff{%
+  \if@nameauth@InHook
+    \if@nameauth@AltFormat\@nameauth@DoAltfalse\fi
+  \fi
+}
+\newcommand*\AltCaps[1]{%
+  \if@nameauth@InHook
+    \if@nameauth@DoCaps\MakeUppercase{#1}\else#1\fi
+  \else#1%
+  \fi
+}
+\newcommand*\textSC[1]{%
+  \if@nameauth@DoAlt\textsc{#1}\else#1\fi}
+\newcommand*\textUC[1]{%
+  \if@nameauth@DoAlt\MakeUppercase{#1}\else#1\fi}
+\newcommand*\textIT[1]{%
+  \if@nameauth@DoAlt\textit{#1}\else#1\fi}
+\newcommand*\textBF[1]{%
+  \if@nameauth@DoAlt\textbf{#1}\else#1\fi}
+\newcommand*\ShowComma{\@nameauth@ShowCommatrue}
+\newcommand*\NoComma{\@nameauth@NoCommatrue}
+\newcommand*\DropAffix{\@nameauth@ShortSNNtrue}
+\newcommand*\KeepAffix{\@nameauth@NBSPtrue}
+\newcommand*\KeepName{\@nameauth@NBSPtrue\@nameauth@NBSPXtrue}
+\newcommand*\NamesInactive{\@nameauth@MainFormatfalse}
+\newcommand*\NamesActive{\@nameauth@MainFormattrue}
+\newcommand*\ForgetThis{\@nameauth@Forgettrue}
+\newcommand*\SubvertThis{\@nameauth@Subverttrue}
+\newcommand*\ForceName{\@nameauth@FirstFormattrue}
+\newcommand*\LocalNames{\global\@nameauth@LocalNamestrue}
+\newcommand*\GlobalNames{\global\@nameauth@LocalNamesfalse}
+\newcommand*\IndexInactive{\@nameauth@DoIndexfalse}
+\newcommand*\SkipIndex{\@nameauth@SkipIndextrue}
+\newcommand*\JustIndex{\@nameauth@JustIndextrue}
+\newcommand*\IndexActive{\@nameauth@DoIndextrue}
+\newcommand*\IndexActual[1]
+  {\global\renewcommand*\@nameauth@Actual{#1}}
+\newcommand*\SeeAlso{\@nameauth@SeeAlsotrue}
+\newcommand*\NameParser
+{%
+  \if@nameauth@InHook
+    \let\SNN\rootb%
+    \ifx\arga\@empty
+      \ifx\argc\@empty
+        \let\FNN\suffb%
+      \else
+        \let\FNN\argc%
+      \fi
+      \ifx\suffb\@empty
+        \ifx\FNN\@empty
+          \SNN%
+        \else
+          \if@nameauth@FullName%
+            \if@nameauth@RevThis
+              \FNN\Space\SNN%
+            \else
+              \SNN\Space\FNN%
+            \fi
+          \else
+            \if@nameauth@FirstName
+              \if@nameauth@EastFN
+                \FNN%
+              \else
+                \SNN%
+              \fi
+            \else
+              \SNN%
+            \fi
+          \fi
+        \fi
+      \else
+        \if@nameauth@FullName
+          \if@nameauth@RevThis
+            \FNN\Space\SNN%
+          \else
+            \SNN\Space\FNN%
+          \fi
+        \else
+          \if@nameauth@FirstName
+            \if@nameauth@EastFN
+              \FNN%
+            \else
+              \SNN%
+            \fi
+          \else
+            \SNN%
+          \fi
+        \fi
+      \fi
+    \else
+      \ifx\argc\@empty
+        \let\FNN\arga%
+      \else
+        \let\FNN\argc%
+      \fi
+      \unless\ifx\suffb\@empty
+        \def\SNN{\rootb\Space\suffb}%
+        \if@nameauth@ShortSNN\let\SNN\rootb\fi%
+      \fi
+      \if@nameauth@FullName
+        \if@nameauth@RevThis
+          \SNN\SpaceX\FNN%
+        \else
+          \if@nameauth@RevThisComma
+            \SNN\RevSpace\FNN%
+          \else
+            \FNN\SpaceX\SNN%
+          \fi
+        \fi
+      \else
+        \if@nameauth@FirstName
+          \FNN%
+        \else
+          \let\SNN\rootb%
+          \SNN%
+        \fi
+      \fi
+    \fi
+  \fi
+}
+\newcommand\Name{\NameauthName}
+\WithSuffix{\newcommand*}\Name*%
+  {\@nameauth@FullNametrue\NameauthLName}
+\newcommand\FName{\@nameauth@FirstNametrue\NameauthFName}
+\WithSuffix{\newcommand*}\FName*%
+  {\@nameauth@FirstNametrue\NameauthFName}
+\newcommandx*\IndexName[3][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\rootb{\@nameauth@Root{#2}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\IndexName}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \ifcsname\csb!PN\endcsname
+        \if@nameauth@Verbose
+          \PackageWarning{nameauth}%
+          {macro \IndexName: XRef: #2 exists}%
+        \fi
+      \else
+        \ifx\suffb\@empty
+          \@nameauth@Index{\csb}{\rootb}%
+        \else
+          \@nameauth@Index{\csb}{\rootb\space\suffb}%
+        \fi
+      \fi
+    \else
+      \ifx\suffb\@empty
+        \ifcsname\csbc!PN\endcsname
+          \if@nameauth@Verbose
+            \PackageWarning{nameauth}%
+            {macro \IndexName: XRef: #2 #3 exists}%
+          \fi
+        \else
+          \@nameauth@Index{\csbc}{\rootb\space\argc}%
+        \fi
+      \else
+        \ifcsname\csb!PN\endcsname
+          \if@nameauth@Verbose
+            \PackageWarning{nameauth}%
+            {macro \IndexName: XRef: #2 exists}%
+          \fi
+        \else
+          \@nameauth@Index{\csb}{\rootb\space\suffb}%
+        \fi
+      \fi
+    \fi
+  \else
+    \ifcsname\csab!PN\endcsname
+      \if@nameauth@Verbose
+        \PackageWarning{nameauth}%
+        {macro \IndexName: XRef: #1 #2 exists}%
+      \fi
+    \else
+      \ifx\suffb\@empty
+        \@nameauth@Index{\csab}%
+        {\rootb,\space\arga}%
+      \else
+        \@nameauth@Index{\csab}%
+        {\rootb,\space\arga,\space\suffb}%
+      \fi
+    \fi
+  \fi
+}
+\newcommandx*\IndexRef[4][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\rootb{\@nameauth@Root{#2}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\target{#4}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \let\ex\expandafter%
+  \@nameauth@Error{#2}{macro \string\IndexRef}%
+  \@nameauth@Xreftrue%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \ifcsname\csb!PN\endcsname
+        \if@nameauth@Verbose
+          \PackageWarning{nameauth}%
+          {macro \IndexRef: XRef: #2 exists}%
+        \fi
+      \else
+        \ifx\suffb\@empty
+          \if@nameauth@SeeAlso
+            \@nameauth@Index{\csb}{\rootb|seealso{\target}}%
+          \else
+            \@nameauth@Index{\csb}{\rootb|see{\target}}%
+          \fi
+        \else
+          \if@nameauth@SeeAlso
+            \@nameauth@Index{\csb}{\rootb\space\suffb|seealso{\target}}%
+          \else
+            \@nameauth@Index{\csb}{\rootb\space\suffb|see{\target}}%
+          \fi
+        \fi
+        \csgdef{\csb!PN}{}%
+      \fi
+    \else
+      \ifx\suffb\@empty
+        \ifcsname\csbc!PN\endcsname
+          \if@nameauth@Verbose
+            \PackageWarning{nameauth}%
+            {macro \IndexRef: XRef: #2 #3 exists}%
+          \fi
+        \else
+          \if@nameauth@SeeAlso
+            \@nameauth@Index{\csbc}%
+              {\rootb\space\argc|seealso{\target}}%
+          \else
+            \@nameauth@Index{\csbc}%
+              {\rootb\space\argc|see{\target}}%
+          \fi
+          \csgdef{\csbc!PN}{}%
+        \fi
+      \else
+        \ifcsname\csb!PN\endcsname
+          \if@nameauth@Verbose
+            \PackageWarning{nameauth}%
+            {macro \IndexRef: XRef: #2 exists}%
+          \fi
+        \else
+          \if@nameauth@SeeAlso
+            \@nameauth@Index{\csb}%
+              {\rootb\space\suffb|seealso{\target}}%
+          \else
+            \@nameauth@Index{\csb}%
+              {\rootb\space\suffb|see{\target}}%
+          \fi
+          \csgdef{\csb!PN}{}%
+        \fi
+      \fi
+    \fi
+  \else
+    \ifcsname\csab!PN\endcsname
+      \if@nameauth@Verbose
+        \PackageWarning{nameauth}%
+        {macro \IndexRef: XRef: #1 #2 exists}%
+      \fi
+    \else
+      \ifx\suffb\@empty
+        \if@nameauth@SeeAlso
+          \@nameauth@Index{\csab}%
+          {\rootb,\space\arga|seealso{\target}}%
+        \else
+          \@nameauth@Index{\csab}%
+          {\rootb,\space\arga|see{\target}}%
+        \fi
+      \else
+        \if@nameauth@SeeAlso
+          \@nameauth@Index{\csab}%
+          {\rootb,\space\arga,\space\suffb|seealso{\target}}%
+        \else
+          \@nameauth@Index{\csab}%
+          {\rootb,\space\arga,\space\suffb|see{\target}}%
+        \fi
+      \fi
+      \csgdef{\csab!PN}{}%
+    \fi
+  \fi
+  \@nameauth@SeeAlsofalse%
+  \@nameauth@Xreffalse%
+}
+\newcommandx*\ExcludeName[3][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\ExcludeName}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \if@nameauth@Verbose
+        \ifcsname\csb!MN\endcsname
+          \PackageWarning{nameauth}%
+          {macro \ExcludeName: Reference: #2 exists}%
+        \fi
+        \ifcsname\csb!NF\endcsname
+          \PackageWarning{nameauth}%
+          {macro \ExcludeName: Reference: #2 exists}%
+        \fi
+      \fi
+      \ifcsname\csb!PN\endcsname
+        \if@nameauth@Verbose
+          \PackageWarning{nameauth}%
+          {macro \ExcludeName: Xref: #2 exists}%
+        \fi
+      \else
+        \csgdef{\csb!PN}{!}%
+      \fi
+    \else
+      \ifx\suffb\@empty
+        \if@nameauth@Verbose
+          \ifcsname\csbc!MN\endcsname
+            \PackageWarning{nameauth}%
+            {macro \ExcludeName: Reference: #2 #3 exists}%
+          \fi
+          \ifcsname\csbc!NF\endcsname
+            \PackageWarning{nameauth}%
+            {macro \ExcludeName: Reference: #2 #3 exists}%
+          \fi
+        \fi
+        \csgdef{\csbc!PN}{!}%
+        \ifcsname\csbc!PN\endcsname
+          \if@nameauth@Verbose
+            \PackageWarning{nameauth}%
+            {macro \ExcludeName: Xref: #2 exists}%
+          \fi
+        \else
+          \csgdef{\csbc!PN}{!}%
+        \fi
+      \else
+        \if@nameauth@Verbose
+          \ifcsname\csb!MN\endcsname
+            \PackageWarning{nameauth}%
+            {macro \ExcludeName: Reference: #2 exists}%
+          \fi
+          \ifcsname\csb!NF\endcsname
+            \PackageWarning{nameauth}%
+            {macro \ExcludeName: Reference: #2 exists}%
+          \fi
+        \fi
+        \ifcsname\csb!PN\endcsname
+          \if@nameauth@Verbose
+            \PackageWarning{nameauth}%
+            {macro \ExcludeName: Xref: #2 exists}%
+          \fi
+        \else
+          \csgdef{\csb!PN}{!}%
+        \fi
+      \fi
+    \fi
+  \else
+    \if@nameauth@Verbose
+      \ifcsname\csab!MN\endcsname
+        \PackageWarning{nameauth}%
+        {macro \ExcludeName: Reference: #1 #2 exists}%
+      \fi
+      \ifcsname\csab!NF\endcsname
+        \PackageWarning{nameauth}%
+        {macro \ExcludeName: Reference: #1 #2 exists}%
+      \fi
+    \fi
+    \ifcsname\csab!PN\endcsname
+      \if@nameauth@Verbose
+        \PackageWarning{nameauth}%
+        {macro \ExcludeName: Xref: #2 exists}%
+      \fi
+    \else
+      \csgdef{\csab!PN}{!}%
+    \fi
+  \fi
+}
+\newcommandx*\IncludeName[3][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\IncludeName}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \ifcsname\csb!PN\endcsname
+        \edef\testex{\csname\csb!PN\endcsname}%
+        \unless\ifx\testex\@empty\global\csundef{\csb!PN}\fi
+      \fi
+    \else
+      \ifx\suffb\@empty
+        \ifcsname\csbc!PN\endcsname
+          \edef\testex{\csname\csbc!PN\endcsname}%
+          \unless\ifx\testex\@empty\global\csundef{\csbc!PN}\fi
+        \fi
+      \else
+        \ifcsname\csb!PN\endcsname
+          \edef\testex{\csname\csb!PN\endcsname}%
+          \unless\ifx\testex\@empty\global\csundef{\csb!PN}\fi
+        \fi
+      \fi
+    \fi
+  \else
+    \ifcsname\csab!PN\endcsname
+      \edef\testex{\csname\csab!PN\endcsname}%
+      \unless\ifx\testex\@empty\global\csundef{\csab!PN}\fi
+    \fi
+  \fi
+}
+\WithSuffix{\newcommandx*}\IncludeName*[3][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\IncludeName*}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \global\csundef{\csb!PN}%
+    \else
+      \ifx\suffb\@empty
+        \global\csundef{\csbc!PN}%
+      \else
+        \global\csundef{\csb!PN}%
+      \fi
+    \fi
+  \else
+    \global\csundef{\csab!PN}%
+  \fi
+}
+\newcommandx*\PretagName[4][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\PretagName}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \ifcsname\csb!PN\endcsname
+        \if@nameauth@Verbose
+          \PackageWarning{nameauth}%
+          {macro \PretagName: tagging xref: #2}%
+        \fi
+      \fi
+      \if@nameauth@Pretag\csgdef{\csb!PRE}{#4\@nameauth@Actual}\fi
+    \else
+      \ifx\suffb\@empty
+        \ifcsname\csbc!PN\endcsname
+          \if@nameauth@Verbose
+            \PackageWarning{nameauth}%
+            {macro \PretagName: tagging xref: #2 #3}%
+          \fi
+        \fi
+        \if@nameauth@Pretag\csgdef{\csbc!PRE}{#4\@nameauth@Actual}\fi
+      \else
+        \ifcsname\csb!PN\endcsname
+          \if@nameauth@Verbose
+            \PackageWarning{nameauth}%
+            {macro \PretagName: tagging xref: #2}%
+          \fi
+        \fi
+        \if@nameauth@Pretag\csgdef{\csb!PRE}{#4\@nameauth@Actual}\fi
+      \fi
+    \fi
+  \else
+    \ifcsname\csab!PN\endcsname
+      \if@nameauth@Verbose
+        \PackageWarning{nameauth}%
+        {macro \PretagName: tagging xref: #1 #2}%
+      \fi
+    \fi
+    \if@nameauth@Pretag\csgdef{\csab!PRE}{#4\@nameauth@Actual}\fi
+  \fi
+}
+\newcommandx*\TagName[4][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\TagName}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \ifcsname\csb!PN\endcsname
+        \if@nameauth@Verbose
+          \PackageWarning{nameauth}%
+          {macro \TagName: not tagging xref: #2}%
+        \fi
+      \else
+        \csgdef{\csb!TAG}{#4}%
+      \fi
+    \else
+      \ifx\suffb\@empty
+        \ifcsname\csbc!PN\endcsname
+          \if@nameauth@Verbose
+            \PackageWarning{nameauth}%
+            {macro \TagName: not tagging xref: #2 #3}%
+          \fi
+        \else
+          \csgdef{\csbc!TAG}{#4}%
+        \fi
+      \else
+        \ifcsname\csb!PN\endcsname
+          \if@nameauth@Verbose
+            \PackageWarning{nameauth}%
+            {macro \TagName: not tagging xref: #2}%
+          \fi
+        \else
+          \csgdef{\csb!TAG}{#4}%
+        \fi
+      \fi
+    \fi
+  \else
+    \ifcsname\csab!PN\endcsname
+      \if@nameauth@Verbose
+        \PackageWarning{nameauth}%
+        {macro \TagName: not tagging xref: #1 #2}%
+      \fi
+    \else
+      \csgdef{\csab!TAG}{#4}%
+    \fi
+  \fi
+}
+\newcommandx*\UntagName[3][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\UntagName}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \global\csundef{\csb!TAG}%
+    \else
+      \ifx\suffb\@empty
+        \global\csundef{\csbc!TAG}%
+      \else
+        \global\csundef{\csb!TAG}%
+      \fi
+    \fi
+  \else
+    \global\csundef{\csab!TAG}%
+  \fi
+}
+\newcommandx\NameAddInfo[4][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\Suff{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\NameAddInfo}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \csgdef{\csb!DB}{#4}%
+    \else
+      \ifx\Suff\@empty
+        \csgdef{\csbc!DB}{#4}%
+      \else
+        \csgdef{\csb!DB}{#4}%
+      \fi
+    \fi
+  \else
+    \csgdef{\csab!DB}{#4}%
+  \fi
+}
+\newcommandx*\NameQueryInfo[3][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\Suff{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\NameQueryInfo}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \ifcsname\csb!DB\endcsname\csname\csb!DB\endcsname\fi
+    \else
+      \ifx\Suff\@empty
+        \ifcsname\csbc!DB\endcsname\csname\csbc!DB\endcsname\fi
+      \else
+        \ifcsname\csb!DB\endcsname\csname\csb!DB\endcsname\fi
+      \fi
+    \fi
+  \else
+    \ifcsname\csab!DB\endcsname\csname\csab!DB\endcsname\fi
+  \fi
+}
+\newcommandx*\NameClearInfo[3][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\Suff{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\NameClearInfo}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \global\csundef{\csb!DB}%
+    \else
+      \ifx\Suff\@empty
+        \global\csundef{\csbc!DB}%
+      \else
+        \global\csundef{\csb!DB}%
+      \fi
+    \fi
+  \else
+    \global\csundef{\csab!DB}%
+  \fi
+}
+\newcommandx\IfMainName[5][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\IfMainName}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \ifcsname\csb!MN\endcsname{#4}\else{#5}\fi
+    \else
+      \ifx\suffb\@empty
+        \ifcsname\csbc!MN\endcsname{#4}\else{#5}\fi
+      \else
+        \ifcsname\csb!MN\endcsname{#4}\else{#5}\fi
+      \fi
+    \fi
+  \else
+    \ifcsname\csab!MN\endcsname{#4}\else{#5}\fi
+  \fi
+}
+\newcommandx\IfFrontName[5][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\IfFrontName}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \ifcsname\csb!NF\endcsname{#4}\else{#5}\fi
+    \else
+      \ifx\suffb\@empty
+        \ifcsname\csbc!NF\endcsname{#4}\else{#5}\fi
+      \else
+        \ifcsname\csb!NF\endcsname{#4}\else{#5}\fi
+      \fi
+    \fi
+  \else
+    \ifcsname\csab!NF\endcsname{#4}\else{#5}\fi
+  \fi
+}
+\newcommandx\IfAKA[6][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\IfAKA}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \ifcsname\csb!PN\endcsname
+        \edef\testex{\csname\csb!PN\endcsname}%
+        \ifx\testex\@empty{#4}\else{#6}\fi
+      \else{#5}\fi
+    \else
+      \ifx\suffb\@empty
+        \ifcsname\csbc!PN\endcsname
+          \edef\testex{\csname\csbc!PN\endcsname}%
+          \ifx\testex\@empty{#4}\else{#6}\fi
+        \else{#5}\fi
+      \else
+        \ifcsname\csb!PN\endcsname
+          \edef\testex{\csname\csb!PN\endcsname}%
+          \ifx\testex\@empty{#4}\else{#6}\fi
+        \else{#5}\fi
+      \fi
+    \fi
+  \else
+    \ifcsname\csab!PN\endcsname
+      \edef\testex{\csname\csab!PN\endcsname}%
+      \ifx\testex\@empty{#4}\else{#6}\fi
+    \else{#5}\fi
+  \fi
+}
+\newcommandx*\ForgetName[3][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\ForgetName}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \if@nameauth@LocalNames
+        \if@nameauth@MainFormat
+          \global\csundef{\csb!MN}%
+        \else
+          \global\csundef{\csb!NF}%
+        \fi
+      \else
+        \global\csundef{\csb!MN}%
+        \global\csundef{\csb!NF}%
+      \fi
+    \else
+      \ifx\suffb\@empty
+        \if@nameauth@LocalNames
+          \if@nameauth@MainFormat
+            \global\csundef{\csbc!MN}%
+          \else
+            \global\csundef{\csbc!NF}%
+          \fi
+        \else
+          \global\csundef{\csbc!MN}%
+          \global\csundef{\csbc!NF}%
+        \fi
+      \else
+        \if@nameauth@LocalNames
+          \if@nameauth@MainFormat
+            \global\csundef{\csb!MN}%
+          \else
+            \global\csundef{\csb!NF}%
+          \fi
+        \else
+          \global\csundef{\csb!MN}%
+          \global\csundef{\csb!NF}%
+        \fi
+      \fi
+    \fi
+  \else
+    \if@nameauth@LocalNames
+      \if@nameauth@MainFormat
+        \global\csundef{\csab!MN}%
+      \else
+        \global\csundef{\csab!NF}%
+      \fi
+    \else
+      \global\csundef{\csab!MN}%
+      \global\csundef{\csab!NF}%
+    \fi
+  \fi
+}
+\newcommandx*\SubvertName[3][1=\@empty, 3=\@empty]
+{%
+  \protected@edef\arga{\trim@spaces{#1}}%
+  \protected@edef\argc{\trim@spaces{#3}}%
+  \protected@edef\suffb{\@nameauth@Suffix{#2}}%
+  \def\csb{\@nameauth@Clean{#2}}%
+  \def\csbc{\@nameauth@Clean{#2,#3}}%
+  \def\csab{\@nameauth@Clean{#1!#2}}%
+  \@nameauth@Error{#2}{macro \string\SubvertName}%
+  \ifx\arga\@empty
+    \ifx\argc\@empty
+      \if@nameauth@LocalNames
+        \if@nameauth@MainFormat
+          \csgdef{\csb!MN}{}%
+        \else
+          \csgdef{\csb!NF}{}%
+        \fi
+      \else
+        \csgdef{\csb!MN}{}%
+        \csgdef{\csb!NF}{}%
+      \fi
+    \else
+      \ifx\suffb\@empty
+        \if@nameauth@LocalNames
+          \if@nameauth@MainFormat
+            \csgdef{\csbc!MN}{}%
+          \else
+            \csgdef{\csbc!NF}{}%
+          \fi
+        \else
+          \csgdef{\csbc!MN}{}%
+          \csgdef{\csbc!NF}{}%
+        \fi
+      \else
+        \if@nameauth@LocalNames
+          \if@nameauth@MainFormat
+            \csgdef{\csb!MN}{}%
+          \else
+            \csgdef{\csb!NF}{}%
+          \fi
+        \else
+          \csgdef{\csb!MN}{}%
+          \csgdef{\csb!NF}{}%
+        \fi
+      \fi
+    \fi
+  \else
+    \if@nameauth@LocalNames
+      \if@nameauth@MainFormat
+        \csgdef{\csab!MN}{}%
+      \else
+        \csgdef{\csab!NF}{}%
+      \fi
+    \else
+      \csgdef{\csab!MN}{}%
+      \csgdef{\csab!NF}{}%
+    \fi
+  \fi
+}
+\newcommandx*\AKA[5][1=\@empty, 3=\@empty, 5=\@empty]
+{%
+  \unless\if@nameauth@Lock
+  \@nameauth@Locktrue%
+  \@nameauth@JustIndexfalse%
+  \@nameauth@InAKAtrue%
+  \@nameauth@Error{#2}{macro \string\AKA}%
+  \@nameauth@Error{#4}{macro \string\AKA}%
+  \leavevmode\hbox{}%
+  \protected@edef\argi{\trim@spaces{#1}}%
+  \protected@edef\rooti{\@nameauth@Root{#2}}%
+  \protected@edef\suffi{\@nameauth@Suffix{#2}}%
+  \@nameauth@Parse[#3]{#4}[#5]{!PN}%
+  \unless\if@nameauth@SkipIndex
+    \ifx\argi\@empty
+      \ifx\suffi\@empty
+        \IndexRef[#3]{#4}[#5]{\rooti}%
+      \else
+        \IndexRef[#3]{#4}[#5]{\rooti\space\suffi}%
+      \fi
+    \else
+      \ifx\suffi\@empty
+        \IndexRef[#3]{#4}[#5]{\rooti,\space\argi}%
+      \else
+        \IndexRef[#3]{#4}[#5]{\rooti,\space\argi,\space\suffi}%
+      \fi
+    \fi
+  \fi
+  \@nameauth@SkipIndexfalse%
+  \@nameauth@Lockfalse%
+  \@nameauth@InAKAfalse%
+  \@nameauth@AltAKAfalse%
+  \@nameauth@NBSPfalse%
+  \@nameauth@NBSPXfalse%
+  \@nameauth@DoCapsfalse%
+  \@nameauth@Accentfalse%
+  \@nameauth@AllThisfalse%
+  \@nameauth@ShowCommafalse%
+  \@nameauth@NoCommafalse%
+  \@nameauth@RevThisfalse%
+  \@nameauth@RevThisCommafalse%
+  \@nameauth@ShortSNNfalse%
+  \@nameauth@EastFNfalse%
+  \fi
+  \if@nameauth@Punct\expandafter\@nameauth@CheckDot\fi
+}
+\WithSuffix{\newcommand*}\AKA*{\@nameauth@AltAKAtrue\AKA}
+\newcommandx*\PName[5][1=\@empty,3=\@empty,5=\@empty]
+{%
+  \@nameauth@JustIndexfalse%
+  \if@nameauth@SkipIndex
+    \NameauthName[#1]{#2}\space(\SkipIndex\AKA[#1]{#2}[#3]{#4}[#5])%
+  \else
+    \NameauthName[#1]{#2}\space(\AKA[#1]{#2}[#3]{#4}[#5])%
+  \fi
+}
+\WithSuffix{\newcommand*}\PName*{\@nameauth@FullNametrue\PName}
+\newenvironment{nameauth}{%
+  \begingroup%
+  \let\ex\expandafter%
+  \csdef{<}##1&##2&##3&##4>{%
+    \protected@edef\@arga{\trim@spaces{##1}}%
+    \protected@edef\@testb{\trim@spaces{##2}}%
+    \protected@edef\@testd{\trim@spaces{##4}}%
+    \@nameauth@etoksb\expandafter{##2}%
+    \@nameauth@etoksc\expandafter{##3}%
+    \@nameauth@etoksd\expandafter{##4}%
+    \ifx\@arga\@empty
+      \PackageError{nameauth}%
+      {environment nameauth: Control sequence missing}%
+    \fi
+    \@nameauth@Error{##3}{environment nameauth}%
+    \ifcsname\@arga\endcsname
+      \PackageWarning{nameauth}%
+      {environment nameauth: Shorthand macro already exists}%
+   \fi
+   \ifx\@testd\@empty
+      \ifx\@testb\@empty
+        \ex\csgdef\ex{\ex\@arga\ex}\ex{\ex\NameauthName\ex{%
+          \the\@nameauth@etoksc}}%
+        \ex\csgdef\ex{\ex L\ex\@arga\ex}\ex{%
+          \ex\@nameauth@FullNametrue%
+          \ex\NameauthLName\ex{\the\@nameauth@etoksc}}%
+        \ex\csgdef\ex{\ex S\ex\@arga\ex}\ex{%
+          \ex\@nameauth@FirstNametrue%
+          \ex\NameauthFName\ex{\the\@nameauth@etoksc}}%
+      \else
+        \ex\ex\ex\csgdef\ex\ex\ex{\ex\ex\ex\@arga\ex\ex\ex}%
+          \ex\ex\ex{\ex\ex\ex\NameauthName\ex\ex\ex[%
+          \ex\the\ex\@nameauth@etoksb\ex]\ex{\the\@nameauth@etoksc}}%
+        \ex\ex\ex\csgdef\ex\ex\ex{\ex\ex\ex L\ex\ex\ex\@arga%
+          \ex\ex\ex}\ex\ex\ex{\ex\ex\ex\@nameauth@FullNametrue%
+          \ex\ex\ex\NameauthLName\ex\ex\ex[%
+          \ex\the\ex\@nameauth@etoksb\ex]\ex{\the\@nameauth@etoksc}}%
+        \ex\ex\ex\csgdef\ex\ex\ex{\ex\ex\ex S\ex\ex\ex\@arga%
+          \ex\ex\ex}\ex\ex\ex{\ex\ex\ex\@nameauth@FirstNametrue%
+          \ex\ex\ex\NameauthFName\ex\ex\ex[%
+          \ex\the\ex\@nameauth@etoksb\ex]\ex{\the\@nameauth@etoksc}}%
+      \fi
+    \else
+      \ifx\@testb\@empty
+        \ex\ex\ex\csgdef\ex\ex\ex{\ex\ex\ex\@arga\ex\ex\ex}%
+          \ex\ex\ex{\ex\ex\ex\NameauthName\ex\ex\ex{%
+          \ex\the\ex\@nameauth@etoksc\ex}\ex[\the\@nameauth@etoksd]}%
+        \ex\ex\ex\csgdef\ex\ex\ex{\ex\ex\ex L\ex\ex\ex\@arga%
+          \ex\ex\ex}\ex\ex\ex{\ex\ex\ex\@nameauth@FullNametrue%
+          \ex\ex\ex\NameauthLName\ex\ex\ex{%
+          \ex\the\ex\@nameauth@etoksc\ex}\ex[\the\@nameauth@etoksd]}%
+        \ex\ex\ex\csgdef\ex\ex\ex{\ex\ex\ex S\ex\ex\ex\@arga%
+          \ex\ex\ex}\ex\ex\ex{\ex\ex\ex\@nameauth@FirstNametrue%
+          \ex\ex\ex\NameauthFName\ex\ex\ex{%
+          \ex\the\ex\@nameauth@etoksc\ex}\ex[\the\@nameauth@etoksd]}%
+      \else
+        \ex\ex\ex\ex\ex\ex\ex\csgdef\ex\ex\ex\ex\ex\ex\ex{%
+          \ex\ex\ex\ex\ex\ex\ex\@arga\ex\ex\ex\ex\ex\ex\ex}%
+          \ex\ex\ex\ex\ex\ex\ex{\ex\ex\ex\ex\ex\ex\ex\NameauthName%
+          \ex\ex\ex\ex\ex\ex\ex[\ex\ex\ex\the\ex\ex\ex\@nameauth@etoksb%
+          \ex\ex\ex]\ex\ex\ex{\ex\the\ex\@nameauth@etoksc\ex}\ex[%
+          \the\@nameauth@etoksd]}%
+        \ex\ex\ex\ex\ex\ex\ex\csgdef\ex\ex\ex\ex\ex\ex\ex{%
+          \ex\ex\ex\ex\ex\ex\ex L\ex\ex\ex\ex\ex\ex\ex\@arga%
+          \ex\ex\ex\ex\ex\ex\ex}\ex\ex\ex\ex\ex\ex\ex{%
+          \ex\ex\ex\ex\ex\ex\ex\@nameauth@FullNametrue%
+          \ex\ex\ex\ex\ex\ex\ex\NameauthLName\ex\ex\ex\ex\ex\ex\ex[%
+          \ex\ex\ex\the\ex\ex\ex\@nameauth@etoksb%
+          \ex\ex\ex]\ex\ex\ex{\ex\the\ex\@nameauth@etoksc\ex}\ex[%
+          \the\@nameauth@etoksd]}%
+        \ex\ex\ex\ex\ex\ex\ex\csgdef\ex\ex\ex\ex\ex\ex\ex{%
+          \ex\ex\ex\ex\ex\ex\ex S\ex\ex\ex\ex\ex\ex\ex\@arga%
+          \ex\ex\ex\ex\ex\ex\ex}\ex\ex\ex\ex\ex\ex\ex{%
+          \ex\ex\ex\ex\ex\ex\ex\@nameauth@FirstNametrue%
+          \ex\ex\ex\ex\ex\ex\ex\NameauthFName\ex\ex\ex\ex\ex\ex\ex[%
+          \ex\ex\ex\the\ex\ex\ex\@nameauth@etoksb\ex\ex\ex]%
+          \ex\ex\ex{\ex\the\ex\@nameauth@etoksc\ex}\ex[%
+          \the\@nameauth@etoksd]}%
+      \fi
+    \fi
+    \ignorespaces%
+  }\ignorespaces%
+}{\endgroup\ignorespaces}
+%% 
+%% Copyright (C) 2017 by Charles P. Schaum <charles dot schaum at comcast dot net>
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License (LPPL), either
+%% version 1.3c of this license or (at your option) any later
+%% version.  The latest version of this license is in the file:
+%% 
+%% http://www.latex-project.org/lppl.txt
+%% 
+%% This work is "maintained" (as per LPPL maintenance status) by
+%% Charles P. Schaum.
+%% 
+%% This work consists of the files nameauth.dtx, examples.tex, and a Makefile.
+%% Running "make" generates the derived files README, nameauth.pdf and
+%% nameauth.sty. Running "make inst" installs the files in the user's TeX tree.
+%% Running "make install" installs the files in the local TeX tree.
+%% 
+%%
+%% End of file `nameauth.sty'.

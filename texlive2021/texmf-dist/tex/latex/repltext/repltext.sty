@@ -1,0 +1,71 @@
+%%
+%% This is file `repltext.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% repltext.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2014-2020 by Scott Pakin <scott+repl@pakin.org>
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.3c of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3c or later is part of all distributions of LaTeX version
+%% 2006/05/20 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{repltext}
+    [2020/09/25 v1.1 PDF replacement text]
+\providecommand{\@ifdefined}[3]{\@ifundefined{#1}{#3}{#2}}
+\@ifdefined{pdfliteral}{%
+  \let\repl@literal=\pdfliteral
+}{%
+  \@ifdefined{pdfextension}{%
+    \protected\def\repl@literal{\pdfextension literal}%
+  }{%
+    \PackageError{repltext}{Unrecognized TeX engine}{%
+      The repltext package currently works only with pdfLaTeX and\MessageBreak
+      LuaLaTeX.\space\space Please use of those engines to build your document.%
+    }%
+  }%
+}%
+\RequirePackage{etoolbox}
+\AtEndPreamble{%
+  \@ifpackageloaded{hyperref}{}{\RequirePackage{hyperref}}%
+}
+\RequirePackage{graphicx}
+\newtoks\repl@text@toks
+\newcommand{\repltext}{%
+  \bgroup
+  \let\do=\@makeother
+  \dospecials
+  \catcode`\{=1
+  \catcode`\}=2
+  \afterassignment\repl@text@i
+  \global\repl@text@toks=%
+}
+\newcommand{\repl@text@i}{%
+  \egroup
+  \repl@text@ii
+}
+\newcommand{\repl@text@ii}[1]{%
+  \Hy@pstringdef\repl@escaped{\the\repl@text@toks}%
+  \repl@literal{
+    /Span << /ActualText (\repl@escaped) >>
+    BDC
+  }%
+  #1%
+  \scalebox{0.000001}{-}%
+  \repl@literal{EMC}%
+}
+\newcommand{\prevrepl}{%
+  \expandafter\scantokens\expandafter{\the\repl@text@toks}%
+}
+\endinput
+%%
+%% End of file `repltext.sty'.

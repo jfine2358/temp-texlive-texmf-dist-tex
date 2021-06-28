@@ -1,0 +1,160 @@
+% LaTeX-Package for libertine
+%
+% $Id: libertine.sty 58 2010-08-31 08:30:31Z michael $
+%
+% Michael Niedermair m.g.n@gmx.de
+%
+% (License GPL)
+%
+\def\libertineVersion{4.8.7}%
+\def\libertineVersionDate{2010/08/30}
+%
+\ProvidesPackage{libertine}[%
+   \libertineVersionDate\space-\space\libertineVersion:
+   Font libertine - (License GPL) Michael Niedermair]
+%
+\RequirePackage{keyval,ifxetex,ifluatex}
+%
+%\XeTeXtracingfonts=1
+%
+\def\fxl@scale{1}%      scale factor
+\def\fxl@default{0}%    nf, osf, ss, osfss
+%
+\define@key{fxl}{scaled}[1]{\def\fxl@scale{#1}}
+\define@key{fxl}{default}[0]{\def\fxl@default{0}}
+\define@key{fxl}{osf}[true]{\def\fxl@default{1}}
+\define@key{fxl}{ss}[true]{\def\fxl@default{2}}
+\define@key{fxl}{osfss}[true]{\def\fxl@default{3}}
+\define@key{fxl}{nf}[true]{\def\fxl@default{0}}
+
+\def\ProcessOptionsWithKV#1{%
+  \let\@tempc\relax
+  \let\fxl@tempa\@empty
+  \@for\CurrentOption:=\@classoptionslist\do{%
+    \@ifundefined{KV@#1@\CurrentOption}%
+    {}%
+    {%
+      \edef\fxl@tempa{\fxl@tempa,\CurrentOption,}%
+      \@expandtwoargs\@removeelement\CurrentOption
+        \@unusedoptionlist\@unusedoptionlist
+    }%
+  }%
+  \edef\fxl@tempa{%
+    \noexpand\setkeys{#1}{%
+      \fxl@tempa\@ptionlist{\@currname.\@currext}%
+    }%
+  }%
+  \fxl@tempa
+  \let\CurrentOption\@empty
+}
+\ProcessOptionsWithKV{fxl}
+\AtEndOfPackage{%
+  \let\@unprocessedoptions\relax
+}
+%
+\def\libertine@param{}
+\def\biolinum@param{}
+%
+\ifxetex
+  \RequirePackage{xltxtra}
+  % Font
+  \def\libertine@param{Mapping=tex-text,RawFeature=+liga}
+  \def\biolinum@param{Mapping=tex-text,RawFeature=+liga}
+  \ifcase\fxl@default% nf
+    \def\libertine@param{Mapping=tex-text,RawFeature=+liga}
+    \def\biolinum@param{Mapping=tex-text,RawFeature=+liga}
+  \or% osf
+    \def\libertine@param{Mapping=tex-text,RawFeature=+liga;+onum}
+    \def\biolinum@param{Mapping=tex-text,RawFeature=+liga;+onum}
+  \or% ss
+    \def\libertine@param{Mapping=tex-text,RawFeature=+liga;+ss04}
+    \def\biolinum@param{Mapping=tex-text,RawFeature=+liga;+ss04}
+  \or% osfss
+    \def\libertine@param{Mapping=tex-text,RawFeature=+liga;+onum;+ss04}
+    \def\biolinum@param{Mapping=tex-text,RawFeature=+liga;+onum;+ss04}
+  \fi
+  \setromanfont[\libertine@param]{Linux Libertine O}
+  \setsansfont[\biolinum@param]{Linux Biolinum O}
+  \newfontfamily\biolinum[\biolinum@param]{Linux Biolinum O}
+  \newfontfamily\libertine[\libertine@param]{Linux Libertine O}
+  %
+  \ProvideTextCommand{\glqq}{EU1}{\textormath{\quotedblbase}{\mbox{\quotedblbase}}}
+  \ProvideTextCommand{\grqq}{EU1}{\textormath{\textquotedblleft}{\mbox{\textquotedblleft}}}
+  %
+  \DeclareRobustCommand*\libertineGlyph[1]{{%
+    \libertine%
+    \@tempcnta=\XeTeXglyphindex "#1"\relax%
+    \ifnum\@tempcnta>0%
+      \XeTeXglyph\@tempcnta%
+    \fi
+  }}
+  \DeclareRobustCommand*\biolinumGlyph[1]{{%
+    \biolinum%
+    \@tempcnta=\XeTeXglyphindex "#1"\relax%
+    \ifnum\@tempcnta>0%
+      \XeTeXglyph\@tempcnta%
+    \fi
+  }}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
+\else
+   % latex
+   %
+   \def\libertine@param{}
+   \def\biolinum@param{}
+   % ------------------------------------------------
+   % default
+   \ifcase\fxl@default% nf
+      \def\libertine@param{fxl}
+      \def\biolinum@param{fxb}
+   \or% osf
+      \def\libertine@param{fxlj}
+      \def\biolinum@param{fxbj}
+   \or% ss
+      \def\libertine@param{fxlo}
+      \def\biolinum@param{fxbo}
+   \or% osfss
+      \def\libertine@param{fxljo}
+      \def\biolinum@param{fxbjo}
+   \fi
+   \renewcommand\rmdefault{\libertine@param}%
+   \renewcommand\sfdefault{\biolinum@param}%
+
+   \def\libertine{\fontfamily{\libertine@param}\selectfont}
+   \def\biolinum{\fontfamily{\biolinum@param}\selectfont}
+   %
+
+   \ifluatex
+      \RequirePackage{luaotfload}
+      \newcommand*\DeclareTextGlyphY[3]{%
+        % \DeclareTextGlyphY{fxl}{s_t}{64262}
+        % #1=basefont #2=glyphname, #3=position
+        \@namedef{#1@#2}{\fontfamily{#1}\selectfont\char#3}}
+      \DeclareRobustCommand*\libertineGlyph[1]{\@nameuse{fxl@#1}}
+      \DeclareRobustCommand*\biolinumGlyph[1]{\@nameuse{fxb@#1}}
+      %
+      \input{fxluni.inc}
+      \input{fxbuni.inc}
+
+      \ProvideTextCommand{\glqq}{EU2}{\textormath{\quotedblbase}{\mbox{\quotedblbase}}}
+      \ProvideTextCommand{\grqq}{EU2}{\textormath{\textquotedblleft}{\mbox{\textquotedblleft}}}
+
+   \else
+      % latex, pdflatex
+      % ---------------------------------------------------------
+      \newcommand*\DeclareTextGlyphX[5]{%
+        % \DeclareTextGlyphX{fxl}{U}{fxla7}{uniA7F1}{241}
+        % #1=basefont #2=encoding #3=fontfamily #4=glyphname, #5=position
+        \@namedef{#1@#4}{\fontfamily{#3}\fontencoding{#2}\selectfont\char#5}}
+      \DeclareRobustCommand*\libertineGlyph[1]{\@nameuse{fxl@#1}}
+      \DeclareRobustCommand*\biolinumGlyph[1]{\@nameuse{fxb@#1}}
+      %
+      \input{fxl.inc}
+      \input{fxb.inc}
+      %
+   \fi
+\fi
+%
+\DeclareTextCommandDefault{\texteuro}{{\libertineGlyph{Euro}}}
+%
+\endinput

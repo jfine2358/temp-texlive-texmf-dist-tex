@@ -1,0 +1,321 @@
+%%
+%% This is file `tocdata.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% tocdata.dtx  (with options: `package')
+%% This is a generated file.
+%% Copyright 2016 Brian Dunn
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{tocdata}
+    [2019/03/21 v2.02 Adds author/artist to TOC entries.]
+
+
+\RequirePackage{xparse}
+\RequirePackage{etoolbox}
+\RequirePackage{xpatch}
+
+\@ifpackageloaded{titletoc}{
+    \PackageError{tocdata}
+        {%
+            Load titletoc after tocdata%
+        }
+        {%
+            Move \protect\usepackage{titletoc} after \protect\usepackage{tocdata}.%
+        }
+}{}
+\@ifpackageloaded{tocloft}{
+    \PackageError{tocdata}
+        {%
+            Load tocloft after tocdata%
+        }
+        {%
+            Move \protect\usepackage{tocloft} after \protect\usepackage{tocdata}.%
+        }
+}{}
+
+\AtBeginDocument{
+\@ifpackageloaded{titletoc}{
+    \@ifpackageloaded{tocloft}{
+        \PackageError{tocdata}
+            {%
+                Both titletoc and tocloft are being used.\MessageBreak
+                Load only one%
+            }
+            {%
+                The tocdata package may use the default LaTeX formatting,\MessageBreak
+                or either one of titletoc or tocloft.
+            }
+    }{}
+}{}
+}
+
+\newcommand{\TD@thistocdata}{}
+
+\newcommand{\settocdata}[1]{\renewcommand{\TD@thistocdata}{#1}}
+
+\newcommand{\tocdata}[2]{%
+    \@bsphack\addtocontents{#1}{\protect\settocdata{#2}}\@esphack%
+}
+\newcommand{\tocdatafont}[1]{{\normalfont\textit{\small#1}}}
+\newcommand{\TD@usetocdata}{%
+    \tocdatafont{\TD@thistocdata}%
+    \global\def\TD@thistocdata{}%
+}
+
+\xpatchcmd{\@dottedtocline}
+    {\hfill\nobreak}
+    {\hfill\TD@usetocdata\nobreak}
+    {}%
+    {%
+        \PackageWarningNoLine{tocdata}{%
+            Could not patch LaTeX core \protect\@dottedtocline.\MessageBreak
+            Authors may not appear in TOC, LOF}
+    }%
+
+\xpatchcmd{\l@part}
+    {\hfil}
+    {\hfil\TD@usetocdata}
+    {}%
+    {%
+        \PackageWarningNoLine{tocdata}{%
+            Could not patch LaTeX core \protect\l@part.\MessageBreak
+            Authors may not appear in TOC parts}
+    }%
+
+\@ifundefined{chapter}
+{}
+{
+\xpatchcmd{\l@chapter}
+    {\hfil\nobreak}
+    {\hfil\TD@usetocdata\nobreak}
+    {}%
+    {%
+        \PackageWarningNoLine{tocdata}{%
+            Could not patch LaTeX core \protect\l@chapter.\MessageBreak
+            Authors may not appear in TOC chapters}
+    }%
+}
+
+\xpatchcmd{\l@section}
+    {\hfil\nobreak}
+    {\hfil\TD@usetocdata\nobreak}
+    {}%
+    {%
+        \PackageWarningNoLine{tocdata}{%
+            Could not patch LaTeX core \protect\l@section.\MessageBreak
+            Authors may not appear in TOC sections}
+    }%
+
+\AtBeginDocument{
+\@ifpackageloaded{titletoc}{
+
+\newcommand*{\TD@titletoc@patch}[1]{%
+    \expandafter\xpatchcmd\csname ttl@savel@#1\endcsname
+        {\nobreak\hfil\nobreak}
+        {\nobreak\hfil\TD@usetocdata\nobreak}
+        {}
+        {}
+    \expandafter\xpatchcmd\csname l@#1\endcsname
+        {\contentspage}
+        {\TD@usetocdata\contentspage}
+        {}
+        {}
+}
+
+\TD@titletoc@patch{part}
+\@ifundefined{chapter}{}{\TD@titletoc@patch{chapter}}
+\TD@titletoc@patch{section}
+\TD@titletoc@patch{subsection}
+\TD@titletoc@patch{subsubsection}
+\TD@titletoc@patch{paragraph}
+\TD@titletoc@patch{subparagraph}
+\TD@titletoc@patch{figure}
+\TD@titletoc@patch{table}
+}% end of titletoc loaded
+{% titletoc is not loaded
+}% end of \@ifpackageloaded{titletoc}
+}% end of \AtBeginDocument
+
+\AtBeginDocument{
+\@ifpackageloaded{tocloft}
+{
+\appto{\cftpartleader}{\TD@usetocdata}
+\if@cfthaschapter
+    \appto{\cftchapleader}{\TD@usetocdata}
+\fi
+\appto{\cftsecleader}{\TD@usetocdata}
+\appto{\cftsubsecleader}{\TD@usetocdata}
+\appto{\cftsubsubsecleader}{\TD@usetocdata}
+\appto{\cftparaleader}{\TD@usetocdata}
+\appto{\cftsubparaleader}{\TD@usetocdata}
+\appto{\cftfigleader}{\TD@usetocdata}
+\appto{\cfttableader}{\TD@usetocdata}
+\appto{\cftsubfigleader}{\TD@usetocdata}
+\appto{\cftsubtableader}{\TD@usetocdata}
+
+}% end of tocloft patches
+{}% tocloft not loaded
+}% \AtBeginDocument
+\newcommand{\TD@optionalname}[1]
+{%
+    \ifblank{#1}%
+    {}%
+    {#1~}%
+}
+\newrobustcmd{\tocdatapartprint}[4]
+{%
+    \par\unskip\noindent%
+    {%
+        \normalfont\normalsize%
+        \textit{%
+            \hspace*{4em}--- %
+            \TD@optionalname{#1}\TD@optionalname{#2}#3#4%
+        }%
+    }%
+}
+\@ifundefined{chapter}
+{}% if no chapters
+{% only of chapters exists in this documentclass:
+    \let\tocdatachapterprint\tocdatapartprint
+}% end of chapters-only
+\let\tocdatasectionprint\tocdatapartprint
+\let\tocdatasubsectionprint\tocdatapartprint
+\newcommand{\TD@artistauthorprint}[5]{%
+    \begin{minipage}{\linewidth}%
+    \csuse{TD@#1align}%
+    \footnotesize\normalfont%
+    \textsc{{\TD@optionalname{#2}\TD@optionalname{#3}#4#5}}%
+    \end{minipage}%
+    \par%
+    \addvspace{2ex}%
+}
+\newcommand{\tocdataartistprint}{%
+    \par\smallskip%
+    \TD@artistauthorprint{artist}%
+}
+\newcommand{\tocdataauthorprint}{%
+    \par\smallskip%
+    \TD@artistauthorprint{author}%
+}
+\newcommand{\TD@artistauthortextprint}[2]{%
+    \addvspace{2ex}%
+    \begin{minipage}{\linewidth}%
+    \csuse{TD@#1textalign}%
+    \footnotesize\normalfont%
+    \setlength{\parskip}{1.5ex}%
+    \setlength{\parindent}{0em}%
+    #2%
+    \end{minipage}%
+    \par%
+    \addvspace{2ex}%
+}
+\newcommand{\tocdataartisttextprint}{\TD@artistauthortextprint{artist}}
+\newcommand{\tocdataauthortextprint}{\TD@artistauthortextprint{author}}
+\NewDocumentCommand{\TD@sectionauthor}{m s o m O{} m m O{}}{%
+    \IfBooleanTF{#2}%
+    {% star:
+        \csuse{#1}*{#4\nopagebreak\csuse{tocdata#1print}{#5}{#6}{#7}{#8}}%
+    }%
+    {% no star:
+        \tocdata{toc}{#6 #7}%
+        \IfValueTF{#3}%
+            {\csuse{#1}[#3]{#4\nopagebreak\csuse{tocdata#1print}{#5}{#6}{#7}{#8}}}%
+            {\csuse{#1}[#4]{#4\nopagebreak\csuse{tocdata#1print}{#5}{#6}{#7}{#8}}}%
+    }% no star
+    \ifblank{#6}%
+        {\index{#7}}%
+        {\index{#7, #6}}%
+}
+\newcommand*{\partauthor}{\TD@sectionauthor{part}}
+\@ifundefined{chapter}
+{}% if no chapters
+{% only of chapters exists in this documentclass:
+    \newcommand*{\chapterauthor}{\TD@sectionauthor{chapter}}
+}
+\newcommand*{\sectionauthor}{\TD@sectionauthor{section}}
+\newcommand*{\subsectionauthor}{\TD@sectionauthor{subsection}}
+\newcommand{\TD@artistalign}{\centering}
+\newcommand{\tdartistjustify}{%
+    \renewcommand{\TD@artistalign}{}%
+}
+\newcommand{\tdartistcenter}{%
+    \renewcommand{\TD@artistalign}{\centering}%
+}
+\newcommand{\tdartistleft}{%
+    \renewcommand{\TD@artistalign}{\raggedright}%
+}
+\newcommand{\tdartistright}{%
+    \renewcommand{\TD@artistalign}{\raggedleft}%
+}
+\newcommand{\TD@authoralign}{\raggedleft}
+\newcommand{\tdauthorjustify}{%
+    \renewcommand{\TD@authoralign}{}%
+}
+\newcommand{\tdauthorcenter}{%
+    \renewcommand{\TD@authoralign}{\centering}%
+}
+\newcommand{\tdauthorleft}{%
+    \renewcommand{\TD@authoralign}{\raggedright}%
+}
+\newcommand{\tdauthorright}{%
+    \renewcommand{\TD@authoralign}{\raggedleft}%
+}
+\newcommand{\TD@artisttextalign}{\centering}
+\newcommand{\tdartisttextjustify}{%
+    \renewcommand{\TD@artisttextalign}{}%
+}
+\newcommand{\tdartisttextcenter}{%
+    \renewcommand{\TD@artisttextalign}{\centering}%
+}
+\newcommand{\tdartisttextleft}{%
+    \renewcommand{\TD@artisttextalign}{\raggedright}%
+}
+\newcommand{\tdartisttextright}{%
+    \renewcommand{\TD@artisttextalign}{\raggedleft}%
+}
+\newcommand{\TD@authortextalign}{\centering}
+\newcommand{\tdauthortextjustify}{%
+    \renewcommand{\TD@authortextalign}{}%
+}
+\newcommand{\tdauthortextcenter}{%
+    \renewcommand{\TD@authortextalign}{\centering}%
+}
+\newcommand{\tdauthortextleft}{%
+    \renewcommand{\TD@authortextalign}{\raggedright}%
+}
+\newcommand{\tdauthortextright}{%
+    \renewcommand{\TD@authortextalign}{\raggedleft}%
+}
+\NewDocumentCommand{\TD@captionartistauthor}{m s o m +O{} O{} m m O{}}{%
+    \csuse{tocdata#1print}{#6}{#7}{#8}{#9}%
+    \ifblank{#5}%
+        {}%
+        {\par\csuse{tocdata#1textprint}{#5}}%
+    \unskip%
+    \IfBooleanTF{#2}%
+        {% starred
+            \IfValueTF{#3}{\caption*[#3]{#4}}{\caption*{#4}}%
+        }% starred
+        {% not starred
+            \tocdata{\csuse{ext@\@captype}}{#7 #8}%
+            \IfValueTF{#3}{\caption[#3]{#4}}{\caption{#4}}%
+        }% not starred
+    \ifblank{#7}%
+        {\index{#8}}%
+        {\index{#8, #7}}%
+}
+\newcommand*{\captionartist}{\TD@captionartistauthor{artist}}
+\newcommand*{\captionauthor}{\TD@captionartistauthor{author}}
+\endinput
+%%
+%% End of file `tocdata.sty'.

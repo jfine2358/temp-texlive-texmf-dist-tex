@@ -1,0 +1,126 @@
+%D \module
+%D   [       file=char-ini,
+%D        version=2006.08.20,
+%D          title=\CONTEXT\ Character Support,
+%D       subtitle=Initialization,
+%D         author=Hans Hagen,
+%D           date=\currentdate,
+%D      copyright={PRAGMA ADE \& \CONTEXT\ Development Team}]
+%C
+%C This module is part of the \CONTEXT\ macro||package and is
+%C therefore copyrighted by \PRAGMA. See mreadme.pdf for
+%C details.
+
+\writestatus{loading}{ConTeXt Character Support / Initialization}
+
+\registerctxluafile{char-fio}{}
+\registerctxluafile{char-map}{} % maybe we will load this someplace else
+\registerctxluafile{char-tex}{autosuffix}
+\registerctxluafile{char-ent}{}
+
+\unprotect
+
+% ¨äëïöüÿ
+% ´áćéíĺńóŕśúýź
+% ˙ċėġiż
+% ¯āēīōū
+% ˝őű
+% ˆâĉêĝĥîĵôŝûŵŷ
+% `àèìòùỳ
+% ¸çķļņŗşţ
+% ˛ąęįų
+% ˚åů
+% ˘ăĕğĭŏŭ
+% ˇčďěľňřšťž
+% ˜ãĩñõũ
+
+% \def\checkedchar#1% #2%
+%   {\relax\iffontchar\font#1 \expandafter\firstoftwoarguments\else\expandafter\secondoftwoarguments\fi{\char#1}}
+%
+% impossible in math mode so there always fallback (till we have gyre):
+%
+% use \normalUchar when possible .. the next one is nice for documents and it also accepts
+% 0x prefixed numbers
+
+\permanent\def\utfchar #1{\clf_utfchar {#1}} % todo: define public at lua end
+\permanent\def\safechar#1{\clf_safechar{#1}} % todo: define public at lua end
+
+\permanent\protected\def\Ux #1{\Uchar\numexpr"#1\relax} % used in xml (sometimes overloaded)
+\permanent          \def\eUx#1{\Uchar\numexpr"#1\relax} % used in xml (sometimes overloaded)
+
+\permanent\def\expandUx{\enforced\let\Ux\eUx}
+
+\permanent          \def\checkedchar        {\relax\ifmmode\expandafter\checkedmathchar\else\expandafter\checkedtextchar\fi} % #1#2
+\permanent          \def\checkedmathchar#1#2{#2}
+\permanent\protected\def\checkedtextchar  #1{\clf_doifelsecharinfont\numexpr#1\relax{\char#1}} % {#2}
+
+\newconditional\prefermathovertextchar
+
+\permanent\protected\def\textormathchar#1%
+  {\begingroup
+   \scratchcounter#1\relax
+   \ifmmode
+     \char\scratchcounter
+   \else
+      \ifconditional\prefermathovertextchar
+        % dirty trick .. maybe let this adapt to bf too ?
+        \setfontid\fontid\textfont\c_font_fam_mr
+      \fi
+      \iffontchar\font\scratchcounter
+        \char\scratchcounter
+      \else
+        \normalstartimath\char\scratchcounter\normalstopimath
+      \fi
+   \fi
+   \endgroup}
+
+\permanent\protected\def\textormathchars#1%
+  {{\font_text_or_mathchars#1\relax}}
+
+\protected\def\font_text_or_mathchars#1#2\relax
+  {\relax\ifmmode
+     #1#2%
+   \orelse\iffontchar\font`#1\relax
+     #1#2\relax
+   \else
+     \normalstartimath#1#2\normalstopimath
+   \fi}
+
+%D The codes are stored in the format, so we don't need to reinitialize them (unless
+%D of course we have adapted the table). It is on the agenda to do this with \type
+%D {tex.lccode} cum suis once they're available.
+
+% Is setting up vrb tpa and tpb needed?
+
+% move to lua side
+
+\clf_setlettercatcodes\texcatcodes
+\clf_setlettercatcodes\ctxcatcodes
+\clf_setlettercatcodes\notcatcodes
+%clf_setlettercatcodes\mthcatcodes
+\clf_setlettercatcodes\vrbcatcodes % hm ... we need to  hyphemate
+\clf_setlettercatcodes\prtcatcodes
+\clf_setlettercatcodes\tpacatcodes % hm
+\clf_setlettercatcodes\tpbcatcodes % hm
+\clf_setlettercatcodes\txtcatcodes
+
+\clf_setothercatcodes \rlncatcodes
+
+\clf_setactivecatcodes\ctxcatcodes
+\clf_setactivecatcodes\notcatcodes
+\clf_setactivecatcodes\prtcatcodes
+
+\clf_setcharacternames\ctxcatcodes
+
+\permanent\def\chardescription#1{\clf_chardescription#1\relax}
+
+% experiment (watch out: this is global and very font dependent when used with
+% casing mechanisms)
+%
+% \overloaduppercase{0xDF}{0x1E9E}}
+% \overloaduppercase{0xDF}{0x53,0x53}
+
+\permanent\protected\def\overloaduppercase{\clf_overloaduppercase} % todo: define public at lua end
+\permanent\protected\def\overloadlowercase{\clf_overloadlowercase} % todo: define public at lua end
+
+\protect \endinput

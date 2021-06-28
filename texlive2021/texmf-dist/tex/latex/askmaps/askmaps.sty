@@ -1,0 +1,547 @@
+%%
+%% askmaps.sty
+%%
+%% American Style K-maps (1, 2, 3, 4 and 5 variables)
+%%
+%% (c)2020 Jesse op den Brouw, <J.E.J.opdenBrouw@hhs.nl>
+%%
+%% LPPL LaTeX Public Project License
+%%
+%%
+%% Original rel 0.1 : 2013-12-04
+%% Update   rel 0.2 : 2020-10-23
+%%   added option oldstylef
+%%   added option newstylef
+%%   added askmapi - a K-map for one variable
+%%   added askmapiiialt - alternate (vertical) version op K-map III
+%%   added formatting index size, contents size and bit combination size.
+%%   added support for \kvindex and \nokvindex macros when kvmacros.tex is
+%%     loaded
+%%   added formatting for left-placed variables
+%%   implemented a debug possibility
+%%   implemented linelength of variable separator
+%%   resolved an issue with multiple overfull \hbox'es
+%%   added a section on creating covers
+%%   changed the use of \askmapindexsize et al. to include the size and
+%%     shape of the fonts used
+%%   
+%%  
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+%% Version and date
+\gdef\askmapsversion{0.2}
+\gdef\askmapsdate{2020/10/23}
+%
+\ProvidesPackage{askmaps}[\askmapsdate\space Version \askmapsversion\space
+      LaTeX package for drawing American Style Karnaugh maps]
+  
+%% This package provides 1, 2, 3, 4 and 5 variable Karnaugh maps that can
+%% be found in numerous american text books on digital design. Note
+%% that it is possible to draw many different K-maps that are all
+%% legitimate as long as a square (minterm) differs only in one
+%% literal with its adjacent squares. There is an alternate form of the
+%% 3 variable K-map available.
+%% This package draws K-maps where the most significant input variables
+%% are placed on top of the columns and the least significant variables
+%% are placed left of the rows.
+
+%% Packages needed
+\RequirePackage{pict2e}
+
+%% Get the only possible option
+\newcommand{\askmap@usecapf}{\askmap@optftrue}
+\DeclareOption{disablef}{\renewcommand{\askmap@usecapf}{\askmap@optffalse}}
+\DeclareOption*{\PackageWarning{askmaps}{Unknown '\CurrentOption' in package askmaps}}
+\ProcessOptions\relax
+
+%% For debugging purposes, currently draw rectangles around the maps
+%% Use only for debugging purposes
+\newif\ifaskmap@debug\askmap@debugfalse
+
+%% The macros \askmapargumentstring, \askmapgetchar and \askmapgetonechar are
+%% needed to process the variable-length parameters in \askmapxxx:
+%% These routine politely reused from karnaugh package
+\def\askmapargumentstring#1{\gdef\askmapdummystring{#1{}\noexpand\end}}
+\def\askmapgetchar{\expandafter\askmapgetonechar\askmapdummystring}
+\def\askmapgetonechar#1#2\end{{#1}\gdef\askmapdummystring{#2\noexpand\end}}%
+
+%% Dimension for length of one square
+\newdimen\askmapunitlength
+\askmapunitlength=10mm
+
+%% The sizes (and shapes) of the text in the maps
+\newcommand{\askmapindexsize}{\scriptsize\slshape}
+\newcommand{\askmapcontentsize}{\normalsize}
+\newcommand{\askmapbitcombinationsize}{\footnotesize}
+
+%% Length of the line separating the input variables top-right and
+%% middle-left
+\newcommand{\askmapvarsep}{0.70}
+
+%% Some use options
+\newif\ifaskmap@opti% want indexes
+\newif\ifaskmap@optf% want output function printed
+\newif\ifaskmap@optb% want input variable bit combinations at columns and rows
+
+%% Process user options
+\def\askmap@processoptions#1{%
+    \askmap@optifalse\askmap@usecapf\askmap@optbtrue%
+	\@tfor\askmap@opt:=#1\do{%
+		\if i\askmap@opt\askmap@optitrue\fi%
+		\if I\askmap@opt\askmap@optifalse\fi%
+		\if f\askmap@opt\askmap@optftrue\fi%
+		\if F\askmap@opt\askmap@optffalse\fi%
+		\if b\askmap@opt\askmap@optbtrue\fi%
+		\if B\askmap@opt\askmap@optbfalse\fi%
+		\if c\askmap@opt\askmap@optitrue\askmap@optftrue\askmap@optbtrue\fi%
+		\if C\askmap@opt\askmap@optifalse\askmap@optffalse\askmap@optbfalse\fi%
+	}%
+}%
+
+%% Replacement for macros from karnaugh package
+%% #1 = number of input variables
+%% #2 = function output variable
+%% #3 = function input variables
+%% #4 = list of function values
+%% #5 = user picture commands
+%\newcommand{\askmap}[5]{}%
+% Starred version or not
+%\@ifstar{\gdef\askmap@printoutputname{f}\askmap@askmap}{\gdef\askmap@printoutputname{F}\askmap@askmap}%
+%}
+%\newcommand{\askmap@askmap}[5]{%
+\newcommand{\askmap}[5]{%
+\def\askmap@printoutputname{f}
+%% Check if the \kvcurrentindex is set to using indexes
+\def\askmap@printindex{i}
+\ifx\kvcurrentindex\undefined
+\def\askmap@printindex{I}
+\else
+\ifx\kvcurrentindex\empty
+\def\askmap@printindex{I}
+\fi
+\fi
+%% Sort out the 'call' to the right macro
+\ifcase#1\relax
+	\PackageWarning{askmaps}{Sorry, no K-maps with #1 variables supported by
+package askmaps!}
+\or
+	\askmapi{#2}{#3}{\askmap@printoutputname\askmap@printindex}{#4}{#5}%
+\or
+	\askmapii{#2}{#3}{\askmap@printoutputname\askmap@printindex}{#4}{#5}%
+\or
+	\askmapiii{#2}{#3}{\askmap@printoutputname\askmap@printindex}{#4}{#5}%
+\or
+	\askmapiv{#2}{#3}{\askmap@printoutputname\askmap@printindex}{#4}{#5}%
+\or
+	\askmapv{#2}{#3}{\askmap@printoutputname\askmap@printindex}{#4}{#5}%
+\else
+	\PackageWarning{askmaps}{Sorry, no K-maps with #1 variables supported by
+package askmaps!}
+\fi	
+}%	
+
+%% #1= output function variable
+%% #2= 1 input variable
+%% #3= options list
+%% #4= 2 function values
+%% #5= user defined picture commands
+\newcommand{\askmapi}[5]{%
+{\unitlength\askmapunitlength%
+\askmap@processoptions{#3}%
+\ifaskmap@debug\fboxsep0pt\fbox{\else\fi%
+\begin{picture}(4.4,2)(-1.2,0)%
+\linethickness{1pt}%
+\put(0,0){\framebox(2,1){}}%
+\put(1,0){\line(0,1){1}}%
+\ifaskmap@optf%
+\put(2.35,1.25){\askmapcontentsize#1}%
+\put(1.9,0.9){\line(1,1){0.4}}%
+\fi%
+\askmapargumentstring{#2}%
+\put(-0.4,1.55){\askmapcontentsize\askmapgetchar}%
+\ifaskmap@opti%
+\put(0.01,0.03){\askmapindexsize 0}%
+\put(1.03,0.03){\askmapindexsize 1}%
+\fi%
+\ifaskmap@optb%
+\put(0.5,1.1){\makebox(0,0)[b]{\askmapbitcombinationsize 0}}%
+\put(1.5,1.1){\makebox(0,0)[b]{\askmapbitcombinationsize 1}}%
+\fi%
+\askmapargumentstring{#4}%
+\put(0.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\thicklines%
+\put(0,1){\line(-1,1){\askmapvarsep}}%
+\thinlines%
+#5%
+\end{picture}%
+\ifaskmap@debug}\else\fi%
+}%
+}% end \askmapi
+
+%% #1= output function variable
+%% #2= 2 input variables
+%% #3= options list
+%% #4= 4 function values
+%% #5= user defined picture commands
+\newcommand{\askmapii}[5]{%
+{\unitlength\askmapunitlength%
+\askmap@processoptions{#3}%
+\ifaskmap@debug\fboxsep0pt\fbox{\else\fi%
+\begin{picture}(4.4,3)(-1.2,0)%
+\linethickness{1pt}%
+\put(0,0){\framebox(2,2){}}%
+\put(1,0){\line(0,1){2}}%
+\put(0,1){\line(1,0){2}}%
+\ifaskmap@optf%
+\put(2.35,2.25){\askmapcontentsize#1}%
+\put(1.9,1.9){\line(1,1){0.4}}%
+\fi%
+\askmapargumentstring{#2}%
+\put(-0.4,2.55){\askmapcontentsize\askmapgetchar}%
+%\put(-0.9,2.1){\askmapcontentsize\askmapgetchar}%
+%\put(-1.0,1.9){\framebox(0.5,0.5)[r]{\askmapcontentsize\askmapgetchar}}%
+\put(-0.5,2.1){\makebox(0.0,0.0)[r]{\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+%\put(-0.9,2.1){\makebox(0.5,0){\askmapcontentsize\askmapgetchar}}%
+\ifaskmap@opti%
+\put(0.01,1.05){\askmapindexsize 0}% a little bit to the edge because
+\put(0.01,0.03){\askmapindexsize 1}% the edge line is thick
+\put(1.03,1.05){\askmapindexsize 2}%
+\put(1.03,0.03){\askmapindexsize 3}%
+\fi%
+\ifaskmap@optb%
+\put(-0.6,1.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 0}}%
+\put(-0.6,0.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 1}}%
+\put(0.5,2.1){\makebox(0,0)[b]{\askmapbitcombinationsize 0}}%
+\put(1.5,2.1){\makebox(0,0)[b]{\askmapbitcombinationsize 1}}%
+\fi%
+\askmapargumentstring{#4}%
+\put(0.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(0.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\thicklines%
+\put(0,2){\line(-1,1){\askmapvarsep}}%
+\thinlines%
+#5%
+\end{picture}%
+\ifaskmap@debug}\else\fi%
+}% end \askmapii
+}
+
+%% #1= output function variable
+%% #2= 3 input variables
+%% #3= options list
+%% #4= 8 function values
+%% #5= user defined picture commands
+\newcommand{\askmapiii}[5]{%
+{\unitlength\askmapunitlength%
+\askmap@processoptions{#3}%
+\ifaskmap@debug\fboxsep0pt\fbox{\else\fi%
+\begin{picture}(6.4,3)(-1.2,0)%
+\linethickness{1pt}%
+\put(0,0){\framebox(4,2){}}%
+\multiput(1,0)(1,0){3}{\line(0,1){2}}%
+\put(0,1){\line(1,0){4}}%
+\ifaskmap@optf%
+\put(4.35,2.25){\askmapcontentsize#1}%
+\put(3.9,1.9){\line(1,1){0.4}}%
+\fi%
+\askmapargumentstring{#2}%
+\put(-0.4,2.55){\askmapcontentsize\askmapgetchar\askmapgetchar}%
+%\put(-0.9,2.1){\framebox(0.5,0.5)[rt]{\askmapcontentsize\askmapgetchar}}%
+%\put(-1.0,1.9){\framebox(0.5,0.5)[rt]{\askmapcontentsize\askmapgetchar}}%
+%\put(-1.0,1.9){\framebox(0.5,0.5)[r]{\askmapcontentsize\askmapgetchar}}%
+%\put(-0.9,2.1){\askmapcontentsize\askmapgetchar}%
+%\put(-0.9,2.1){\makebox(0.5,0){\askmapcontentsize\askmapgetchar}}%
+\put(-0.5,2.1){\makebox(0.0,0.0)[r]{\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+%\put(-1.0,1.9){\makebox(0.5,0.45)[rt]{\askmapcontentsize\askmapgetchar}}%
+\ifaskmap@opti%
+\put(0.01,1.05){\askmapindexsize 0}%
+\put(0.01,0.03){\askmapindexsize 1}%
+\put(1.03,1.05){\askmapindexsize 2}%
+\put(1.03,0.03){\askmapindexsize 3}%
+\put(3.03,1.05){\askmapindexsize 4}%
+\put(3.03,0.03){\askmapindexsize 5}%
+\put(2.03,1.05){\askmapindexsize 6}%
+\put(2.03,0.03){\askmapindexsize 7}%
+\fi%
+\askmapargumentstring{#4}%
+\put(0.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(0.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(3.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(3.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(2.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(2.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\ifaskmap@optb%
+\put(-0.6,1.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 0}}%
+\put(-0.6,0.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 1}}%
+\put(0.5,2.1){\makebox(0,0)[b]{\askmapbitcombinationsize 00}}%
+\put(1.5,2.1){\makebox(0,0)[b]{\askmapbitcombinationsize 01}}%
+\put(2.5,2.1){\makebox(0,0)[b]{\askmapbitcombinationsize 11}}%
+\put(3.5,2.1){\makebox(0,0)[b]{\askmapbitcombinationsize 10}}%
+\fi%
+\thicklines%
+\put(0,2){\line(-1,1){\askmapvarsep}}%
+\thinlines%
+#5%
+\end{picture}%
+\ifaskmap@debug}\else\fi%
+}%
+}% end \askmapiii
+
+%% #1= output function variable
+%% #2= 4 input variables
+%% #3= options list
+%% #4= 16 function values
+%% #5= user defined picture commands
+\newcommand{\askmapiiialt}[5]{%
+{\unitlength\askmapunitlength%
+\askmap@processoptions{#3}%
+\ifaskmap@debug\fboxsep0pt\fbox{\else\fi%
+\begin{picture}(4.4,5)(-1.2,0)%
+\linethickness{1pt}%
+\put(0,0){\framebox(2,4){}}%
+\put(1,0){\line(0,1){4}}%
+\multiput(0,1)(0,1){3}{\line(1,0){2}}%
+\ifaskmap@optf%
+\put(2.35,4.25){\askmapcontentsize#1}%
+\put(1.9,3.9){\line(1,1){0.4}}%
+\fi%
+\askmapargumentstring{#2}%
+\put(-0.4,4.55){\askmapcontentsize\askmapgetchar}%
+%\put(-1.0,4.1){\framebox(0.5,0){\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+%\put(-1.0,3.9){\framebox(0.5,0.5)[r]{\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+\put(-0.5,4.1){\makebox(0.0,0.0)[r]{\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+%\put(-0.9,4.1){\makebox(0.5,0){\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+\ifaskmap@opti%
+\put(0.01,3.05){\askmapindexsize 0}%
+\put(0.01,2.05){\askmapindexsize 1}%
+\put(0.01,0.03){\askmapindexsize 2}%
+\put(0.01,1.05){\askmapindexsize 3}%
+\put(1.03,3.05){\askmapindexsize 4}%
+\put(1.03,2.05){\askmapindexsize 5}%
+\put(1.03,0.03){\askmapindexsize 6}%
+\put(1.03,1.05){\askmapindexsize 7}%
+\fi%
+\askmapargumentstring{#4}%
+\put(0.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(0.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(0.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(0.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\ifaskmap@optb%
+\put(-0.6,3.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 00}}%
+\put(-0.6,2.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 01}}%
+\put(-0.6,1.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 11}}%
+\put(-0.6,0.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 10}}%
+\put(0.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 0}}%
+\put(1.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 1}}%
+\fi
+\thicklines%
+\put(0,4){\line(-1,1){\askmapvarsep}}%
+\thinlines%
+#5%
+\end{picture}%
+\ifaskmap@debug}\else\fi%
+}%
+}% end \askmapiiialt
+
+%% #1= output function variable
+%% #2= 4 input variables
+%% #3= options list
+%% #4= 16 function values
+%% #5= user defined picture commands
+\newcommand{\askmapiv}[5]{%
+{\unitlength\askmapunitlength%
+\askmap@processoptions{#3}%
+\ifaskmap@debug\fboxsep0pt\fbox{\else\fi%
+\begin{picture}(6.4,5)(-1.2,0)%
+\linethickness{1pt}%
+\put(0,0){\framebox(4,4){}}%
+\multiput(1,0)(1,0){3}{\line(0,1){4}}%
+\multiput(0,1)(0,1){3}{\line(1,0){4}}%
+\ifaskmap@optf%
+\put(4.35,4.25){\askmapcontentsize#1}%
+\put(3.9,3.9){\line(1,1){0.4}}%
+\fi%
+\askmapargumentstring{#2}%
+\put(-0.4,4.55){\askmapcontentsize\askmapgetchar\askmapgetchar}%
+%\put(-1.0,4.1){\framebox(0.5,0){\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+\put(-0.5,4.1){\makebox(0.0,0.0)[r]{\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+%\put(-1.0,4.1){\makebox(0.5,0){\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+\ifaskmap@opti%
+\put(0.01,3.05){\askmapindexsize  0}%
+\put(0.01,2.05){\askmapindexsize  1}%
+\put(0.01,0.03){\askmapindexsize  2}%
+\put(0.01,1.05){\askmapindexsize  3}%
+\put(1.03,3.05){\askmapindexsize  4}%
+\put(1.03,2.05){\askmapindexsize  5}%
+\put(1.03,0.03){\askmapindexsize  6}%
+\put(1.03,1.05){\askmapindexsize  7}%
+\put(3.03,3.05){\askmapindexsize  8}%
+\put(3.03,2.05){\askmapindexsize  9}%
+\put(3.03,0.03){\askmapindexsize 10}%
+\put(3.03,1.05){\askmapindexsize 11}%
+\put(2.03,3.05){\askmapindexsize 12}%
+\put(2.03,2.05){\askmapindexsize 13}%
+\put(2.03,0.03){\askmapindexsize 14}%
+\put(2.03,1.05){\askmapindexsize 15}%
+\fi%
+\askmapargumentstring{#4}%
+\put(0.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(0.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(0.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(0.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(3.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(3.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(3.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(3.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(2.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(2.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(2.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(2.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\ifaskmap@optb%
+\put(-0.6,3.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 00}}%
+\put(-0.6,2.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 01}}%
+\put(-0.6,1.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 11}}%
+\put(-0.6,0.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 10}}%
+\put(0.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 00}}%
+\put(1.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 01}}%
+\put(2.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 11}}%
+\put(3.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 10}}%
+\fi
+\thicklines%
+\put(0,4){\line(-1,1){\askmapvarsep}}%
+\thinlines%
+#5%
+\end{picture}%
+\ifaskmap@debug}\else\fi%
+}%
+}% end \askmapiv
+
+%% #1= output function variable
+%% #2= 5 input variables
+%% #3= options list
+%% #4= 32 function values
+%% #5= user defined picture commands
+\newcommand{\askmapv}[5]{%
+{\unitlength\askmapunitlength%
+\askmap@processoptions{#3}%
+\ifaskmap@debug\fboxsep0pt\fbox{\else\fi%
+\begin{picture}(10.4,5)(-1.2,0)%
+\linethickness{1pt}%
+\put(0,0){\framebox(8,4){}}%
+\multiput(1,0)(1,0){7}{\line(0,1){4}}%
+\multiput(0,1)(0,1){3}{\line(1,0){8}}%
+\ifaskmap@optf%
+\put(8.35,4.25){\askmapcontentsize#1}%
+\put(7.9,3.9){\line(1,1){0.4}}%
+\fi%
+\askmapargumentstring{#2}%
+\put(-0.4,4.55){\askmapcontentsize\askmapgetchar\askmapgetchar\askmapgetchar}%
+%\put(-1.0,3.9){\framebox(0.5,0.5)[r]{\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+%\put(-1.0,4.1){\framebox(0.5,0)[r]{\askmapcontentsize\askmapgetchar\askmapgetchar}}
+\put(-0.5,4.1){\makebox(0.0,0.0)[r]{\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+%\put(-1.0,4.1){\makebox(0.5,0){\askmapcontentsize\askmapgetchar\askmapgetchar}}%
+\ifaskmap@opti%
+\put(0.01,3.05){\askmapindexsize  0}%
+\put(0.01,2.05){\askmapindexsize  1}%
+\put(0.01,0.03){\askmapindexsize  2}%
+\put(0.01,1.05){\askmapindexsize  3}%
+\put(1.03,3.05){\askmapindexsize  4}%
+\put(1.03,2.05){\askmapindexsize  5}%
+\put(1.03,0.03){\askmapindexsize  6}%
+\put(1.03,1.05){\askmapindexsize  7}%
+\put(3.03,3.05){\askmapindexsize  8}%
+\put(3.03,2.05){\askmapindexsize  9}%
+\put(3.03,0.03){\askmapindexsize 10}%
+\put(3.03,1.05){\askmapindexsize 11}%
+\put(2.03,3.05){\askmapindexsize 12}%
+\put(2.03,2.05){\askmapindexsize 13}%
+\put(2.03,0.03){\askmapindexsize 14}%
+\put(2.03,1.05){\askmapindexsize 15}%
+\put(7.03,3.05){\askmapindexsize 16}%
+\put(7.03,2.05){\askmapindexsize 17}%
+\put(7.03,0.03){\askmapindexsize 18}%
+\put(7.03,1.05){\askmapindexsize 19}%
+\put(6.03,3.05){\askmapindexsize 20}%
+\put(6.03,2.05){\askmapindexsize 21}%
+\put(6.03,0.03){\askmapindexsize 22}%
+\put(6.03,1.05){\askmapindexsize 23}%
+\put(4.03,3.05){\askmapindexsize 24}%
+\put(4.03,2.05){\askmapindexsize 25}%
+\put(4.03,0.03){\askmapindexsize 26}%
+\put(4.03,1.05){\askmapindexsize 27}%
+\put(5.03,3.05){\askmapindexsize 28}%
+\put(5.03,2.05){\askmapindexsize 29}%
+\put(5.03,0.03){\askmapindexsize 30}%
+\put(5.03,1.05){\askmapindexsize 31}%
+\fi%
+\askmapargumentstring{#4}%
+\put(0.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(0.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(0.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(0.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(1.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(3.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(3.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(3.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(3.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(2.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(2.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(2.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(2.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(7.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(7.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(7.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(7.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(6.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(6.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(6.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(6.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(4.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(4.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(4.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(4.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(5.5,3.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(5.5,2.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(5.5,0.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\put(5.5,1.5){\makebox(0,0){\askmapcontentsize\askmapgetchar}}%
+\ifaskmap@optb%
+\put(-0.6,3.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 00}}%
+\put(-0.6,2.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 01}}%
+\put(-0.6,1.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 11}}%
+\put(-0.6,0.5){\makebox(0.5,0)[r]{\askmapbitcombinationsize 10}}%
+\put(0.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 000}}%
+\put(1.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 001}}%
+\put(2.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 011}}%
+\put(3.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 010}}%
+\put(4.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 110}}%
+\put(5.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 111}}%
+\put(6.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 101}}%
+\put(7.5,4.1){\makebox(0,0)[b]{\askmapbitcombinationsize 100}}%
+\fi%
+\thicklines%
+\put(0,4){\line(-1,1){\askmapvarsep}}%
+\thinlines%
+#5%
+\end{picture}%
+\ifaskmap@debug}\else\fi%
+}%
+}% end \askmapv
+
+\endinput
+%%
+%% End of file 'askmaps.sty'.

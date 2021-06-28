@@ -1,0 +1,1412 @@
+%% DC-PiCTeX
+%% Copyright (c) 1990-2013 Pedro Quaresma, University of Coimbra, Portugal
+%% 11/1990 (version 1.0); 
+%%   10/1991 (version 1.1);
+%%    9/1993 (version 1.2);  
+%%    3/1995 (version 1.3);
+%%  7/1996 (version 2.1);
+%%  5/2001 (version 3.0); 
+%%   11/2001 (version 3.1);
+%%    1/2002 (version 3.2)
+%%  5/2002 (version 4.0); 
+%%    3/2003 (version 4.1); 
+%%      12/2004 (version 4.1.1)
+%%    3/2007 (version 4.2)
+%%       5/2008 (version 4.2.1)
+%%    8/2008 (version 4.3)
+%%      12/2008 (version 4.3.1)
+%%      12/2009 (version 4.3.2)
+%%    4/2013 (version 4.4.0) 
+%%    5/2013 (version 5.0)
+
+\immediate\write10{Package DCpic 2013/05/01 v5.0}
+
+\ProvidesPackage{dcpic}[2013/05/01 v5.0]
+
+%% Version X.Y.Z
+%%   X - major versions
+%%   Y - minor versions
+%%   Z - bug corrections
+%%
+%% Copyright (c) 1990-2013 Pedro Quaresma <pedro@mat.uc.pt>
+%%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+% 
+% The Current Maintainer of this work is Pedro Quaresma (pedro@mat.uc.pt).
+%
+% This work consists of the files dcpic.sty.
+%%
+%% Coimbra, 1st of May, 2013 (2013/05/01)
+%% Pedro Quaresma
+%%
+%%  DCpic is a package of \TeX\ macros for graph modelling in a
+%%  (La)\TeX\ or Con\TeX t document. Its distinguishing features are:
+%%  the use of \PiCTeX\ a powerful graphical engine, and a simple
+%%  specification syntax. A graph is described in terms of its objects
+%%  and its edges. The objects are textual elements and the edges can
+%%  have various straight or curved forms. 
+%%
+%%
+%%  A graph in DCpic is a "picture" in \PiCTeX, in which we place our
+%%  {\em objects} and {\em morphisms} (edges). The user's commands in
+%%  DCpic are: {\tt begindc} and {\tt enddc} which establishe the
+%%  coordinate system where the objects will by placed; {\tt obj}, the
+%%  command which defines the place and the contents of each object;
+%%  {\tt mor}, and {\tt cmor}, the commands which define the
+%%  morphisms, linear and curved edges, and its labels. 
+%%
+%%  Example:
+%%   \begindc{\commdiag}[30]
+%%    \obj(10,15){$A$}
+%%    \obj(25,15){$B$}
+%%    \obj(40,15){$C$}
+%%    \mor{$A$}{$B$}{$f$}
+%%    \mor{$B$}{$C$}{$g$}
+%%    \cmor((10,11)(11,7)(15,6)(25,6)(35,6)(39,7)(40,11))
+%%     \pup(25,3){$g\circ f$}
+%%   \enddc
+%%
+%% NOTES: 
+%%    all the numeric values should be integer values.
+%% 
+%% Available commands:
+%%
+%% The environment:
+%%   \begindc{#1}[#2]
+%%        #1 - Graph type
+%%          0 = "commdiag" (commutative diagram)
+%%          1 = "digraph" (direct graph)
+%%          2 = "undigraph" (undirect graph)
+%%          3 = "cdigraph" with incircled objects
+%%          4 = "cundigraph" with incircled objects
+%%        (optional) #2 - magnification factor (default value, 300)
+%%
+%%   \enddc
+%%
+%% Objects:
+%%   \obj(#1,#2)[#3]{#4}[#5]
+%%            #1 and #2 - coordenates
+%% (optional) #3 - Label, to be used in the morphims command, if not
+%%                 present the #4 will be used to that purpose
+%%            #4 - Object contents
+%% (optional) #5 - placement of the object (default value \north)
+%%                   0="\pcent", center
+%%                   1="\north", north
+%%                   2="\northeast", northeast
+%%                   3="\east", east
+%%                   4="\southeast", southeast
+%%                   5="\south", south
+%%                   6="\southwest", southwest
+%%                   7="\west", west
+%%                   8="\northwest", northwest
+%%  !!! Note !!!
+%%  if you omit the #3 argument (label) and the #4 argument is a
+%%  complex LaTeX command this can cause this command to crash. In
+%%  this case you must specify a label (the empty label [], if you do
+%%  needed it it for nothing).
+%%
+%% Morphims (linear edges). This commando has to two major variants
+%% i) Starting and Ending objects specification
+%%   \mor{#1}{#2}[#5,#6]{#7}[#8,#9]
+%%
+%% As you can see this first form is (intencionaly) badly formed, the
+%% arguments #3 and #4 are missing (the actual command is correctly
+%% formed). 
+%% 
+%%        #1 - The starting object reference
+%%        #2 - The ending object reference
+%%
+%% from this two we will obtain the objects coordinates, and also the
+%% dimensions of the enclosing box. 
+%%
+%% The objects box dimensions are used to do an automatic adjustment of
+%% the edge width.
+%%
+%% from #1 we obtain (x,y), (#1,#2) in the second form
+%% from #2 we obtain (x',y'), (#3,#4) in the second form
+%%
+%% this values will be passed to the command second form
+%%
+%%ii) Two points coordinates specification
+%%   \mor(#1,#2)(#3,#4)[#5,#6]{#7}[#8,#9]
+%%
+%% Now we can describe all the arguments
+%%
+%%          #1 and #2 - coordinates (beginning)
+%%          #3 and #4 - coordinates (ending)
+%%(optional)#5,#6 - correction factors (defaul values, 100 and 100 (10pt))
+%%          #5 - actual beginning of the edge 
+%%          #6 - actual ending of the edge 
+%%          #7 - text (morphism label)
+%%(optional)#8,#9
+%%          #8 - label placement
+%%               1 = "\atright", at right, default value
+%%              -1 = "\atleft", at left
+%%          #9 - edge type 
+%%               0 = "\solidarrow", default edge
+%%               1 = "\dashArrow"
+%%               2 = "\dotArrow (thanks to Xingliang Liang <jkl9543@gmail.com>)
+%%               3 = "\solidline"
+%%               4 = "\dashline"
+%%               5 = "\dotline"
+%%               6 = "\injectionarrow"  
+%%               7 = "\aplicationarrow" 
+%%               8 = "\surjectivearrow" 
+%%               9 = "\equalline" (thanks to Ruben Debeerst <debeerst@mathematik.uni-kassel.de>)
+%%              10 = "\doublearrow" 
+%%              11 = "\doubleopposite" 
+%%              12 = "\nullarrow" (to allow adding labels to existing arrows)
+%%
+%% Notes: the equalline "arrow" does not provide a second label.
+%%
+%% Curved Morphisms (quadratic edges):
+%%   \cmor(#1) #2(#3,#4){#5}[#6]
+%%          #1 - list of points (odd number)
+%%          #2 - tip direction
+%%              0 = "\pup", pointing up
+%%              1 = "\pdown", pointing down
+%%              2 = "\pright", pointing right
+%%              3 = "\pleft",  pointing left
+%%          #3 and #4 - coordenates of the label
+%%          #5 - morphism label
+%%(optional)#6 - edge type
+%%              0 ="\solidarrow", default value
+%%              1 = "\dashArrow"
+%%              2 = "\solidline"
+%%
+%% Notes: insert a space after the command.
+%%        the space after the list of points is mandatory
+%%
+%% Examples:
+%% \documentclass[a4paper,11pt]{article}
+%% \usepackage{dcpic,pictexwd}
+%%
+%% \begin{document}
+%% \begindc[3]
+%% \obj(14,11){$A$}
+%% \obj(39,11){$B$}
+%% \mor(14,12)(39,12){$f$}%[\atright,\solidarrow]
+%% \mor(39,10)(14,10){$g$}%[\atright,\solidarrow]
+%% \cmor((10,10)(6,11)(5,15)(6,19)(10,20)(14,19)(15,15)) 
+%%   \pdown(2,20){$id_A$}
+%% \cmor((40,7)(41,3)(45,2)(49,3)(50,7)(49,11)(45,12)) 
+%%   \pleft(54,3){$id_B$}
+%% \enddc
+%%
+%% \begindc{\commdiag}[3]
+%% \obj(10,15)[A]{$A$}
+%% \obj(40,15)[Aa]{$A$}
+%% \obj(25,15)[B]{$B$}
+%% \mor{A}{B}{$f$}%[\atright,\solidarrow]
+%% \mor{B}{Aa}{$g$}%[\atright,\solidarrow]
+%% \cmor((10,11)(11,7)(15,6)(25,6)(35,6)(39,7)(40,11)) 
+%%   \pup(25,3){$id_A$}
+%% \enddc
+%%
+%% \newcommand{\barraA}{\vrule height2em width0em depth0em}
+%% \newcommand{\barraB}{\vrule height1.6em width0em depth0em}
+%% \begindc{\commdiag}[35]
+%% \obj(1,1)[Gr]{$G$}
+%% \obj(3,1)[Grstar]{$G_{r^*}$}
+%% \obj(5,1)[H]{$H$}
+%% \obj(2,2)[SigmaG]{$\Sigma^G$}
+%% \obj(6,2)[SigmaH]{$\Sigma^H$}
+%% \obj(1,3)[Lm]{$L_m$}
+%% \obj(3,3)[Krm]{$K_{r,m}$}
+%% \obj(5,3)[Rmstar]{$R_{m^*}$}
+%% \obj(1,5)[L]{$L$}
+%% \obj(3,5)[Lr]{$L_r$}
+%% \obj(5,5)[R]{$R$}
+%% \obj(2,6)[SigmaL]{$\Sigma^L$}
+%% \obj(6,6)[SigmaR]{$\Sigma^R$}
+%% \mor{Gr}{SigmaG}{$\lambda^G$}
+%% \mor{Grstar}{Gr}{$i_5$}[\atleft,\aplicationarrow]
+%% \mor{Grstar}{H}{$r^*$}[\atright,\solidarrow]
+%% \mor{H}{SigmaH}{$\lambda^H$}[\atright,\dashArrow]
+%% \mor{SigmaG}{SigmaH}{$\varphi^{r^*}$}[\atright,\solidarrow]
+%% \mor{Lm}{Gr}{$m$}[\atright,\solidarrow]
+%% \mor{Lm}{L}{$i_2$}[\atleft,\aplicationarrow]
+%% \mor{Krm}{Lm}{$i_3\quad$}[\atright,\aplicationarrow]
+%% \mor{Krm}{Rmstar}{$r$}
+%% \mor{Krm}{Lr}{$i_4$}[\atright,\aplicationarrow]
+%% \mor{Krm}{Grstar}{$m$}
+%% \mor{Rmstar}{R}{$i_6$}[\atright,\aplicationarrow]
+%% \mor{Rmstar}{H}{$m^*$}
+%% \mor{L}{SigmaL}{$\lambda^L$}
+%% \mor{Lr}{L}{$i_1\quad$}[\atright,\aplicationarrow]
+%% \mor{Lr}{R}{$r$}
+%% \mor{R}{SigmaR}{$\lambda^R$}[\atright,\solidarrow]
+%% \mor{SigmaL}{SigmaG}{$\varphi^m$}[\atright,\solidarrow]
+%% \mor{SigmaL}{SigmaR}{$\varphi^r$}
+%% \mor{SigmaR}{SigmaH}{$\varphi^{m^*}$}
+%% \enddc
+%% 
+%% \end{document}
+%%-----------------//-------------
+%% Modifications (9/1993)
+%%       argument "distance" between de tip of the arrow and the objects
+%%       became optional; a new option for the "arrows" (option 3)
+%%
+%% 2/3/1995 (version 1.3) 
+%%       adds "the aplication arrow" (option 4); the distance between
+%%       the label and the "arrow" is now a fixed value (100 units).
+%% 15/7/1996 (version 2.1)
+%%       The comand "\mor" has a new sintax. The 5th and 6th
+%%       parameters are now the distance between the two objects and
+%%       the arrow tips. The 7th parameter is the label. The 8th e 9th
+%%       parameters (label position and type of arrow) are now optional
+%%
+%% 5/2001 (version 3.0)
+%%       Implementation of the comand "\cmor" based on the quadratic
+%%       curver comand of PiCTeX
+%%
+%% 11/2001 (version 3.1)
+%%       Changes on the tips of the arrow to became more LaTeX style
+%%       (after a conversation on EuroTeX 2001).
+%%
+%% 1/2002  (version 3.2)
+%%       Modification of the commands "obj" and "mor" in such a way
+%%       that allows the logical specification of the morphisms, that
+%%       is, it is now possible to specify the starting object and the
+%%       ending object instead of specify the coordinates.
+%%
+%%       The length of the arrows is automatically trimmed to the
+%%       objects' size.
+%%
+%% 5/2002 (version 4.0)
+%%       New syntax for the commands "begindc" e "obj"
+%% !!! New syntax !!!
+%%       The command "begindc" now have an obligatory argument, this
+%%       argument allows the specification of the graph type
+%%         "commdiag" (0), commutative diagrams
+%%         "digraph" (1), directed graphs
+%%         "undigraph" (2), undirected graphs
+%%       The command "obj" has a new syntax: after the coordinates
+%%       specification, an optional argument specifying a label, an
+%%       obligatory argument given the "value" of the object and the
+%%       final optional argument used in the graphs to set the
+%%       relative position of the "value" to the "dot" defining the
+%%       objects position, the default value is "north".
+%%
+%% 3/2003 (version 4.1)
+%%       Responding to a request of Jon Barker <jeb1@soton.ac.uk> I
+%%       create a new type of arrow, the surjective arrow.
+%%       For now only horizontal and vertical versions, other angles
+%%       are poorly rendered.
+%% 12/2004 (version 4.1.1)
+%%       New version for the surjective arrows, solve the problems
+%%       with the first implementation of this option.
+%% 3/2007 (version 4.2)
+%%       Adds the "providespackage" directive that was missing.
+%%       Adds dashed lines, and dotted lines.
+%% 5/2008 (version 4.2.1)
+%%       Deleting some counters, trying to avoid the problem "running
+%%       out of counters", that occurs because of the use of PiCTeX
+%%       and DCpic (only two...)
+%% 8/2008 (version 4.3)
+%%       Thanks to Ruben Debeerst (debeerst@mathematik.uni-kassel.de),
+%%       he added a new arrow "equalline". After that I
+%%       decided to add: the doublearrow; the doublearrow with
+%%       opposite directions; the null arrow. This last can be used as
+%%       a simple form of adding new labels.
+%%12/2008 (version 4.3.1)
+%%       The comand \id is internalised (\!id), it should be that way
+%%       from the begining because it is not to be used from the
+%%       outside.
+%%       The comand \dasharrow was changed to \dashArrow to avoid a
+%%       clash with the AMS command with the same name.
+%%12/2009 (version 4.3.2)
+%%       There is a conflict between dcpic.sty and hyperref in current
+%%        texlive-2009 due to the one letter macro \d (thanks Thorsten
+%%        S <thorsten.schwander@gmail.com>).
+%%        The \d changed to \deuc (Euclidian Distance). The \x and \y
+%%        changed to \xO \yO
+%% 4/2013 (version 4.4.0)
+%%       Thanks to Xingliang Liang <jkl9543@gmail.com>. He added a new
+%%       arrow "dotarrow". 
+%% 5/2013 (version 5.0)
+%%       The base scale of the graph has changed from 1pt to .1pt to
+%%       solve a problem with the implementation of the oblique
+%%       equalline (Thanks to Antonio de Nicola).
+%%       The LaTeX circle and oval commands where replaced by the
+%%       PiCTeX circulararc and ellipticalarc commands to avoid
+%%       differences in scales.
+%%-----------------//-------------
+
+\catcode`!=11 %  ***** THIS MUST NEVER BE OMITTED (See PiCTeX)
+
+\newcount\aux%
+\newcount\auxa%
+\newcount\auxb%
+\newcount\xO%
+\newcount\yO%
+\newcount\xl%
+\newcount\yl%
+\newcount\deuc%
+\newcount\dnm%
+\newcount\xa%
+\newcount\xb%
+\newcount\xmed%
+\newcount\xc%
+\newcount\xd%
+\newcount\xe
+\newcount\xf
+\newcount\ya%
+\newcount\yb%
+\newcount\ymed%
+\newcount\yc%
+\newcount\yd
+\newcount\ye
+\newcount\yf
+%% "global variables"
+\newcount\expansao%
+\newcount\tipografo%       version 4.0
+\newcount\distanciaobjmor% version 4.0
+\newcount\tipoarco%        version 4.0
+\newif\ifpara%
+%% version 3.2
+\newbox\caixa%
+\newbox\caixaaux%
+\newif\ifnvazia%
+\newif\ifvazia%
+\newif\ifcompara%
+\newif\ifdiferentes%
+\newcount\xaux%
+\newcount\yaux%
+\newcount\guardaauxa%
+\newcount\alt%
+\newcount\larg%
+\newcount\prof%
+%% for the triming 
+\newcount\auxqx
+\newcount\auxqy
+\newif\ifajusta%
+\newif\ifajustadist
+\def\objPartida{}%
+\def\objChegada{}%
+\def\objNulo{}%
+
+%% 
+%% Stack specification
+%%
+
+%%
+%% Emtpy stack
+%%
+\def\!vazia{:}
+
+%%
+%% Is Empty? : Stack -> Bool
+%%
+%% nvazia - True if Not Empy
+%% vazia  - True if Empty
+\def\!pilhanvazia#1{\let\arg=#1%
+\if:\arg\ \nvaziafalse\vaziatrue \else \nvaziatrue\vaziafalse\fi}
+
+%%
+%% Push : Elems x Stack -> Stack
+%%
+\def\!coloca#1#2{\edef\pilha{#1.#2}}
+
+%%
+%% Top : Stack -> Elems
+%%
+%% the empty stack is not taken care
+%% the element is "kept" ("guardado") 
+\def\!guarda(#1)(#2,#3)(#4,#5,#6){\def\!id{#1}%
+\xaux=#2%
+\yaux=#3%
+\alt=#4%
+\larg=#5%
+\prof=#6%
+}
+
+\def\!topaux#1.#2:{\!guarda#1}
+\def\!topo#1{\expandafter\!topaux#1}
+
+%%
+%% Pop : Stack -> Stack
+%%
+%% the empty stack is not taken care
+\def\!popaux#1.#2:{\def\pilha{#2:}}
+\def\!retira#1{\expandafter\!popaux#1}
+
+%%
+%% Compares words : Word x Word -> Bool
+%%
+%% compara - True if equal
+%% diferentes - True if not equal
+\def\!comparaaux#1#2{\let\argA=#1\let\argB=#2%
+\ifx\argA\argB\comparatrue\diferentesfalse\else\comparafalse\diferentestrue\fi}
+
+\def\!compara#1#2{\!comparaaux{#1}{#2}}
+
+%% Private Macro
+%% Absolute Value)
+%% \absoluto{n}{absn}
+%% input
+%%  n - integer
+%% output
+%%  absn - |n|
+\def\!absoluto#1#2{\aux=#1%
+  \ifnum \aux > 0
+    #2=\aux
+  \else
+    \multiply \aux by -1
+    #2=\aux
+  \fi}
+
+%% Name definitions for edge types and directions
+\def\solidarrow{0}
+\def\dashArrow{1}
+\def\dotArrow{2}
+\def\solidline{3}
+\def\dashline{4}
+\def\dotline{5}
+\def\injectionarrow{6}
+\def\aplicationarrow{7}
+\def\surjectivearrow{8}
+\def\equalline{9}
+\def\doublearrow{10}
+\def\doubleopposite{11}
+\def\nullarrow{12}
+
+%% Name definitions for edge label placement
+\def\atright{-1}
+\def\atleft{1}
+%% Tip direction for curved edges
+\def\pup{0}
+\def\pdown{1}
+\def\pright{2}
+\def\pleft{3}
+%% Type of graph
+\def\commdiag{0}
+\def\digraph{1}
+\def\undigraph{2}
+\def\cdigraph{3}
+\def\cundigraph{4}
+%% Positioning of labels in graphs
+\def\pcent{0}
+\def\north{1}
+\def\northeast{2}
+\def\east{3}
+\def\southeast{4}
+\def\south{5}
+\def\southwest{6}
+\def\west{7}
+\def\northwest{8}
+
+%%Private Macro 
+%% Adjust the distance between the arrows and the objects regarding
+%% the dimensions of the objects.
+%% 
+%% \ajusta{x}{xl}{y}{yl}{d}{Object} (ajusta = adjust)
+%%
+%% Input
+%%  (x,y) e (xl,yl) -  start, end coordinates of arrow
+%%  d - distance specified by the user (default value, 100)
+%%  Objecto - reference of the object pointed by the arrow 
+%% Output
+%%  d - adjusted distance
+%% 
+%% The adjusted distance is the greatest value between 100 and the
+%% object's box dimensions. If the user specify a value this is not
+%% altered. 
+%%
+%% If the arrow is horizontal the length is used.
+%% If the arrow is vertical the height is used for arrows in the 1st
+%% or 2nd quadrante, or the depth if the arrow is in the 3rd or 4th
+%% quadrante. If the arrow is oblique the value is chosen accordingly: 
+%%  from 315 to  45 degrees length is used
+%%  from  45 to 135 degrees height is used
+%%  from 135 to 225 degrees length is used
+%%  from 225 to 315 degrees depth is used
+\def\!ajusta#1#2#3#4#5#6{\aux=#5%
+  \let\auxobj=#6%
+  \ifcase \tipografo    % commutative diagrams
+    \ifnum\number\aux=100 
+      \ajustadisttrue % if needed, adjust
+    \else
+      \ajustadistfalse  % if not, keeps unchanged
+    \fi
+  \else  % graphs (directed, undirected, with frames)
+   \ajustadistfalse
+  \fi
+  \ifajustadist
+   \let\pilhaaux=\pilha%
+   \loop%
+     \!topo{\pilha}%
+     \!retira{\pilha}%
+     \!compara{\!id}{\auxobj}%
+     \ifcompara\nvaziafalse \else\!pilhanvazia\pilha \fi%
+     \ifnvazia%
+   \repeat%
+%% push the values into the stack
+   \let\pilha=\pilhaaux%
+   \ifvazia%
+    \ifdiferentes%
+%%
+%% It is not possible to make de adjustment given the fact that the
+%% user did not provide a label for the object in question. We set a
+%% value equal to the default value (100)
+%%
+     \larg=131072% these values are for unit of .1pt
+     \prof=65536%
+     \alt=65536%
+    \fi%
+   \fi%
+   \divide\larg by 13107% these values are for unit of .1pt
+   \divide\prof by 6553%
+   \divide\alt by 6553%
+   \ifnum\number\yO=\number\yl
+%% Case 1 -- horizontal arrow
+%%
+%% with the division by 13107 we get half the size of the box, for a
+%% centered text, the adding of 30 is an empirical adjustment.
+    \advance\larg by 30
+    \ifnum\number\larg>\aux
+     #5=\larg
+    \fi
+   \else
+    \ifnum\number\xO=\number\xl
+     \ifnum\number\yl>\number\yO
+%% Case 2.1 -- vertical arrow, down direction
+%%
+      \ifnum\number\alt>\aux
+       #5=\alt
+      \fi
+     \else
+%% Case 2.2 -- vertical arrow, up direction
+%%
+%% with the division by 6553 we get the box height. The adjustment
+%% of 50 is an empirical adjustment.
+      \advance\prof by 50
+      \ifnum\number\prof>\aux
+       #5=\prof
+      \fi
+     \fi
+    \else
+%% Case 3 -- oblique arrow
+%% Case 3.1 --- from 315o to 45o; |x-xl|>|y-yl| 
+%% Case 3.3 --- from 135o to 225o; |x-xl|>|y-yl|; Length
+     \auxqx=\xO
+     \advance\auxqx by -\xl
+     \!absoluto{\auxqx}{\auxqx}%
+     \auxqy=\yO
+     \advance\auxqy by -\yl
+     \!absoluto{\auxqy}{\auxqy}%
+     \ifnum\auxqx>\auxqy
+      \ifnum\larg<100
+       \larg=100
+      \fi
+      \advance\larg by 30
+      #5=\larg
+     \else
+%% Case 3.2 --- from  45o to 135o; |x-xl|<|y-yl| e y>0; Length
+      \ifnum\yl>\yO
+       \ifnum\larg<100
+        \larg=100
+       \fi
+      \advance\alt by 60
+       #5=\alt
+      \else
+%% Case 3.4 -- from 225o to 315o; |x-xl|<|y-yl| e y<0; Depth
+      \advance\prof by 110
+       #5=\prof
+      \fi
+     \fi
+    \fi
+   \fi
+\fi} % the branch else is missing
+
+%%Private Macro 
+%% Square root 
+%% raiz{n}{m} (raiz = root)
+%% ->
+%%   n - natural number
+%% <-
+%%   n - natural number
+%%   m - greatest natural number less then the square root of n
+\def\!raiz#1#2{\auxa=#1%
+  \auxb=1%
+  \loop
+    \aux=\auxb%
+    \advance \aux by 1%
+    \multiply \aux by \aux%
+    \ifnum \aux < \auxa%
+      \advance \auxb by 1%
+      \paratrue%
+    \else\ifnum \aux=\auxa%
+      \advance \auxb by 1%
+      \paratrue%
+       \else\parafalse%
+       \fi
+    \fi
+  \ifpara%
+  \repeat
+#2=\auxb}
+
+%%Private Macro 
+%% Find the starting and ending points of the "arrow" and also the
+%% label position (one coordinate at a time)
+%% 
+%% ucoord{x1}{x2}{x3}{x4}{x5}{x6}{+|- 1}
+%% Input
+%%   x1,x2,x3,x4,x5
+%% Output
+%%   x6
+%%  
+%%              x2 - x1
+%%  x6 = x3 +|- ------- x4
+%%                 x5
+\def\!ucoord#1#2#3#4#5#6#7{\aux=#2%
+  \advance \aux by -#1%
+  \multiply \aux by #4%
+  \divide \aux by #5%
+  \ifnum #7 = -1 \multiply \aux by -1 \fi%
+  \advance \aux by #3%
+#6=\aux}
+
+%%Private Macro
+%% Euclidean distance between two points
+%%
+%% quadrado = square
+%% 
+%% quadrado{n}{m}{l}
+%% Input
+%%   n - natural number
+%%   m - natural number
+%% Output
+%%   l = (n-m)*(n-m)
+\def\!quadrado#1#2#3{\aux=#1%
+  \advance \aux by -#2%
+  \multiply \aux by \aux%
+#3=\aux}
+
+%%Private Macro
+%% Euclidean distance between arrows and its tags
+%%
+%% Input
+%%     (x,y), (x',y') morphism's name (tag)
+%% Output
+%%     dnm - distance between an arrow and its tags
+%%     (with a trim given by the tag's size
+%% Observations
+%%     The trimming is for horizontal and vertical arrows
+%%     only. Oblique arrows are dealt in a different way
+%%
+%% Algorithm
+%%  caixa0 <- morfism name 
+%%  if x-xl = 0 then                   {vertical arrow}
+%%     aux <- caixa0 width
+%%     dnm <- converstion-sp-pt(aux)/2+3
+%%  else                               {non-vertical arrow}
+%%     if y-yl = 0 then                {horizontal arrow}
+%%        aux <- caixa0 height+depth 
+%%        dnm <- converstion-sp-pt(aux)/2+3
+%%     else                            {oblique arrow}
+%%        dnm <- 3
+%%     endif
+%%  endif
+%% endalgorithm
+\def\!distnomemor#1#2#3#4#5#6{\setbox0=\hbox{#5}%
+  \aux=#1
+  \advance \aux by -#3
+  \ifnum \aux=0
+     \aux=\wd0 \divide \aux by 13107%2
+     \advance \aux by 30
+     #6=\aux
+  \else
+     \aux=#2
+     \advance \aux by -#4
+     \ifnum \aux=0
+        \aux=\ht0 \advance \aux by \dp0 \divide \aux by 13107%2
+        \advance \aux by 30
+        #6=\aux%
+     \else
+     #6=30
+     \fi
+   \fi
+}
+
+%%
+%% The environment "begindc...enddc"
+%%
+\def\begindc#1{\!ifnextchar[{\!begindc{#1}}{\!begindc{#1}[30]}}
+\def\!begindc#1[#2]{\beginpicture 
+  \let\pilha=\!vazia
+  \setcoordinatesystem units <.1pt,.1pt>
+  \expansao=#2
+  \ifcase #1
+    \distanciaobjmor=100
+    \tipoarco=0         % arrow
+    \tipografo=0        % commutative diagram
+  \or
+    \distanciaobjmor=20
+    \tipoarco=0         % arrow
+    \tipografo=1        % directed graph
+  \or
+    \distanciaobjmor=10
+    \tipoarco=3         % line
+    \tipografo=2        % undirected graph
+  \or
+    \distanciaobjmor=80
+    \tipoarco=0         % arrow 
+    \tipografo=3        % directed graph
+  \or
+    \distanciaobjmor=80
+    \tipoarco=3         % line
+    \tipografo=4        % undirected graph
+  \fi}
+
+\def\enddc{\endpicture}
+
+\def\drawarrowhead <#1> [#2,#3]{%
+  \!ifnextchar<{\!drawarrowhead{#1}{#2}{#3}}{\!drawarrowhead{#1}{#2}{#3}<\!zpt,\!zpt> }}
+
+% Xingliang Liang <jkl9543@gmail.com>
+%  **  \!ljoin (XCOORD,YCOORD)
+%  **  Draws a straight line starting at the last point specified
+%  **    by the most recent \!start, \!ljoin, or \!qjoin, and
+%  **    ending at (XCOORD,YCOORD).
+\def\!ljoindummy (#1,#2){%
+  \advance\!intervalno by 1
+  \!xE=\!M{#1}\!xunit \!yE=\!M{#2}\!yunit
+  \!rotateaboutpivot\!xE\!yE
+  \!xdiff=\!xE \advance \!xdiff by -\!xS%**  xdiff = xE - xS
+  \!ydiff=\!yE \advance \!ydiff by -\!yS%**  ydiff = yE - yS
+  \!Pythag\!xdiff\!ydiff\!arclength%     **  arclength = sqrt(xdiff**2+ydiff**2)
+  \global\advance \totalarclength by \!arclength%
+  %\!drawlinearsegment%   ** set by dashpat to \!linearsolid or \!lineardashed
+  \!xS=\!xE \!yS=\!yE%   ** shift ending points to starting points
+  \ignorespaces}
+
+%%
+%%	\!drawarrowhead{4pt}{DimC}{DimD} <xshift,yshift> from {\xa} {\ya} to {\xb} {\yb}
+%%
+\def\!drawarrowhead#1#2#3<#4,#5> from #6 #7 to #8 #9 {%
+%
+% ** convert to dimensions
+  \!xloc=\!M{#8}\!xunit
+  \!yloc=\!M{#9}\!yunit
+  \!dxpos=\!xloc  \!dimenA=\!M{#6}\!xunit  \advance \!dxpos -\!dimenA
+  \!dypos=\!yloc  \!dimenA=\!M{#7}\!yunit  \advance \!dypos -\!dimenA
+  \let\!MAH=\!M%                         ** save current c/d mode
+  \!setdimenmode%                        ** go into dimension mode
+%
+  \!xshift=#4\relax  \!yshift=#5\relax%  ** pick up shift
+  \!reverserotateonly\!xshift\!yshift%   ** back rotate shift
+  \advance\!xshift\!xloc  \advance\!yshift\!yloc
+%
+% **  draw shaft of arrow
+  \!xS=-\!dxpos  \advance\!xS\!xshift
+  \!yS=-\!dypos  \advance\!yS\!yshift
+  \!start (\!xS,\!yS)
+  \!ljoindummy (\!xshift,\!yshift)
+%
+% ** find 32*cosine and 32*sine of angle of rotation
+  \!Pythag\!dxpos\!dypos\!arclength
+  \!divide\!dxpos\!arclength\!dxpos
+  \!dxpos=32\!dxpos  \!removept\!dxpos\!!cos
+  \!divide\!dypos\!arclength\!dypos
+  \!dypos=32\!dypos  \!removept\!dypos\!!sin
+%
+% ** construct arrowhead
+  \!halfhead{#1}{#2}{#3}%                ** draw half of arrow head
+  \!halfhead{#1}{-#2}{-#3}%              ** draw other half
+%
+  \let\!M=\!MAH%                         ** restore old c/d mode
+  \ignorespaces}
+
+%% Public macro: "mor"
+%%
+%% Funtion to built the "arrow" between two points
+%%
+%% The points that are uses to built all the elements of the "arrows"
+%% are:
+%% 
+%%                (xc,yc)
+%%                   o
+%%                   |
+%%  o------o---------o---------o------o
+%%(x,y) (xa,ya)   (xm,ym)   (xb,yb)(xl,yl)
+%%
+%% auxa - distance between (x,y) and (xa,ya), 10pt by default
+%% auxb - distance between (xl,yl) and (xb,yb), 10pt by default
+%%
+\def\mor{%
+  \!ifnextchar({\!morxy}{\!morObjA}}
+\def\!morxy(#1,#2){%
+  \!ifnextchar({\!morxyl{#1}{#2}}{\!morObjB{#1}{#2}}}
+\def\!morxyl#1#2(#3,#4){%
+  \!ifnextchar[{\!mora{#1}{#2}{#3}{#4}}{\!mora{#1}{#2}{#3}{#4}[\number\distanciaobjmor,\number\distanciaobjmor]}}%
+\def\!morObjA#1{%
+ \let\pilhaaux=\pilha%
+ \def\objPartida{#1}%
+ \loop%
+    \!topo\pilha%
+    \!retira\pilha%
+    \!compara{\!id}{\objPartida}%
+    \ifcompara \nvaziafalse \else \!pilhanvazia\pilha \fi%
+   \ifnvazia%
+ \repeat%
+ \ifvazia%
+  \ifdiferentes%
+%%
+%% error message and ficticious parameters
+%%
+   Error: Incorrect label specification%
+   \xaux=1%
+   \yaux=1%
+  \fi%
+ \fi% 
+ \let\pilha=\pilhaaux%
+ \!ifnextchar({\!morxyl{\number\xaux}{\number\yaux}}{\!morObjB{\number\xaux}{\number\yaux}}}
+\def\!morObjB#1#2#3{%
+  \xO=#1
+  \yO=#2
+ \def\objChegada{#3}%
+ \let\pilhaaux=\pilha%
+ \loop
+    \!topo\pilha %
+    \!retira\pilha%
+    \!compara{\!id}{\objChegada}%
+    \ifcompara \nvaziafalse \else \!pilhanvazia\pilha \fi
+   \ifnvazia
+ \repeat
+ \ifvazia
+  \ifdiferentes%
+%%
+%% error message and ficticious parameters
+%%
+   Error: Incorrect label specification
+   \xaux=\xO%
+   \advance\xaux by \xO%
+   \yaux=\yO%
+   \advance\yaux by \yO%
+  \fi
+ \fi
+ \let\pilha=\pilhaaux
+ \!ifnextchar[{\!mora{\number\xO}{\number\yO}{\number\xaux}{\number\yaux}}{\!mora{\number\xO}{\number\yO}{\number\xaux}{\number\yaux}[\number\distanciaobjmor,\number\distanciaobjmor]}}
+\def\!mora#1#2#3#4[#5,#6]#7{%
+  \!ifnextchar[{\!morb{#1}{#2}{#3}{#4}{#5}{#6}{#7}}{\!morb{#1}{#2}{#3}{#4}{#5}{#6}{#7}[1,\number\tipoarco] }}
+\def\!morb#1#2#3#4#5#6#7[#8,#9]{\xO=#1%
+  \yO=#2%
+  \xl=#3%
+  \yl=#4%
+  \multiply \xO by \expansao%
+  \multiply \yO by \expansao%
+  \multiply \xl by \expansao%
+  \multiply \yl by \expansao%
+%%
+%% Euclidean distance between two points
+%% d = \sqrt((x-xl)^2+(y-yl)^2)
+%%
+  \!quadrado{\number\xO}{\number\xl}{\auxa}%
+  \!quadrado{\number\yO}{\number\yl}{\auxb}%
+  \deuc=\auxa%
+  \advance \deuc by \auxb%
+  \!raiz{\deuc}{\deuc}%
+%%
+%% the point (xa,ya) is at a distance #5 (default value 100) from the
+%% point (x,y)
+%%
+%% given the fact that we have two points (start,end) we need to
+%% recover their value searching the stack
+  \auxa=#5
+  \!compara{\objNulo}{\objPartida}%
+  \ifdiferentes% adjusting only when needed
+   \!ajusta{\xO}{\xl}{\yO}{\yl}{\auxa}{\objPartida}%
+   \ajustatrue
+   \def\objPartida{}% reset the value of the starting object
+  \fi
+%% save the value of aux (after adjustment) to be used in the case of
+%% an injective morphism
+  \guardaauxa=\auxa
+%%
+  \!ucoord{\number\xO}{\number\xl}{\number\xO}{\auxa}{\number\deuc}{\xa}{1}%
+  \!ucoord{\number\yO}{\number\yl}{\number\yO}{\auxa}{\number\deuc}{\ya}{1}%
+%% auxa has the value of the distance between the objects minus the
+%% distance between the arrow and the objects (100 default value)
+  \auxa=\deuc%
+%%
+%% the point (xb,yb) is at a distance #6 (default value 100) from the
+%% point (xl,yl)
+%%
+  \auxb=#6
+  \!compara{\objNulo}{\objChegada}%
+  \ifdiferentes% adjusting only when needed
+%  adjustment
+   \!ajusta{\xO}{\xl}{\yO}{\yl}{\auxb}{\objChegada}%
+   \def\objChegada{}% reset the value of the end object
+  \fi
+  \advance \auxa by -\auxb%
+  \!ucoord{\number\xO}{\number\xl}{\number\xO}{\number\auxa}{\number\deuc}{\xb}{1}%
+  \!ucoord{\number\yO}{\number\yl}{\number\yO}{\number\auxa}{\number\deuc}{\yb}{1}%
+  \xmed=\xa%
+  \advance \xmed by \xb%
+  \divide \xmed by 2
+  \ymed=\ya%
+  \advance \ymed by \yb%
+  \divide \ymed by 2
+%%
+%% find the coordinates of the label position: (xc,yc)
+%%
+%% after this the values of xmed and ymed are no longer important
+%%
+  \!distnomemor{\number\xO}{\number\yO}{\number\xl}{\number\yl}{#7}{\dnm}%
+  \!ucoord{\number\yO}{\number\yl}{\number\xmed}{\number\dnm}{\number\deuc}{\xc}{-#8}% 
+  \!ucoord{\number\xO}{\number\xl}{\number\ymed}{\number\dnm}{\number\deuc}{\yc}{#8}%
+%% 
+%% draw the "arrow"
+%%
+\ifcase #9            % 0=solid arrow
+  \arrow <4pt> [.2,1.1] from {\xa} {\ya} to {\xb} {\yb}
+\or                   % 1=dashed arrow
+  \setdashes <2pt>
+  \plot {\xa} {\ya}  {\xb} {\yb} /
+  \setsolid%
+  \drawarrowhead <4pt> [.2,1.1] from {\xa} {\ya} to {\xb} {\yb}
+\or                   % 2=dotted arrow (Xingliang Liang <jkl9543@gmail.com> - 4.4.0)
+  \setdots <2pt>
+  \plot {\xa} {\ya}  {\xb} {\yb} /
+  \setsolid%
+  \drawarrowhead <4pt> [.2,1.1] from {\xa} {\ya} to {\xb} {\yb}
+\or                   % 3=solid line
+  \setlinear
+  \plot {\xa} {\ya}  {\xb} {\yb} /
+\or                   % 4=dashed line
+  \setdashes <2pt>
+  \setlinear
+  \plot {\xa} {\ya}  {\xb} {\yb} /
+  \setsolid
+\or                   % 5=dotted line
+  \setdots <2pt>
+  \setlinear
+  \plot {\xa} {\ya}  {\xb} {\yb} /
+  \setsolid
+\or                   % 6=injective arrow
+%%
+%% 30 units, the radius for the tail of the arrow
+%%
+%% recover the value of auxa
+  \auxa=\guardaauxa
+%% makes an adjustment to cope with the tail of the arrow, giving
+%% space to the semi-circle
+  \advance \auxa by 30% 
+%%
+%% Note: the values of (xa,ya) will be modified, they will be
+%% "pushed" further away from (x,y) in order to acomodate the tail
+%% of the "arrow"
+%%
+%% find the point (xd,yd), the center of a 2pt (20*0.1) circle
+%%
+ \!ucoord{\number\xO}{\number\xl}{\number\xO}{\number\auxa}{\number\deuc}{\xa}{1}%
+ \!ucoord{\number\yO}{\number\yl}{\number\yO}{\number\auxa}{\number\deuc}{\ya}{1}%
+ \!ucoord{\number\yO}{\number\yl}{\number\xa}{20}{\number\deuc}{\xd}{-1}%
+ \!ucoord{\number\xO}{\number\xl}{\number\ya}{20}{\number\deuc}{\yd}{1}%
+%% building the "arrow"
+  \arrow <4pt> [.2,1.1] from {\xa} {\ya} to {\xb} {\yb}
+%% and its "tail"
+  \circulararc -180 degrees from {\xa} {\ya} center at {\xd} {\yd}
+\or                   % 7=maps "arrow" ("|-->")
+  \auxa=20 %
+%%
+%% Note: the values of xmed and ymed will be modified
+%% 
+%% find the two points that defines the tail of the arrow (segment
+%% (xmed,ymed)(xd,yd))
+ \!ucoord{\number\yO}{\number\yl}{\number\xa}{\number\auxa}{\number\deuc}{\xmed}{-1}%
+ \!ucoord{\number\xO}{\number\xl}{\number\ya}{\number\auxa}{\number\deuc}{\ymed}{1}%
+ \!ucoord{\number\yO}{\number\yl}{\number\xa}{\number\auxa}{\number\deuc}{\xd}{1}%
+ \!ucoord{\number\xO}{\number\xl}{\number\ya}{\number\auxa}{\number\deuc}{\yd}{-1}%
+%% building the "arrow"
+  \arrow <4pt> [.2,1.1] from {\xa} {\ya} to {\xb} {\yb}
+%% and its "tail"
+  \setlinear
+  \plot {\xmed} {\ymed}  {\xd} {\yd} /
+\or                   % 8=surjective arrow ("-->>")
+%% building arrow with the first tip
+  \arrow <4pt> [.2,1.1] from {\xa} {\ya} to {\xb} {\yb}
+%% and the second tip
+  \setlinear
+  \arrow <6pt> [0,.72] from {\xa} {\ya} to {\xb} {\yb}
+\or                   % 9=equalline
+%% by Ruben Debeerst: equal-line
+%%
+%% sets the separation (distance) between the two parallel lines, if
+%% horizontal or vertical 1pt (10*0.1) is enough, if not 1.1pt (11*0.1)
+\auxa=11
+\ifnum\number\yO=\number\yl
+\auxa=10
+\fi
+\ifnum\number\xO=\number\xl
+\auxa=10
+\fi
+%% the two parallel lines will be given by (xmed,ymed)(xd,yd), and
+%% (xe,ye)(xf,yf)
+  \!ucoord{\number\yO}{\number\yl}{\number\xa}{\number\auxa}{\number\deuc}{\xmed}{-1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\ya}{\number\auxa}{\number\deuc}{\ymed}{1}%
+  \!ucoord{\number\yO}{\number\yl}{\number\xa}{\number\auxa}{\number\deuc}{\xd}{1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\ya}{\number\auxa}{\number\deuc}{\yd}{-1}%
+  
+  \!ucoord{\number\yO}{\number\yl}{\number\xb}{\number\auxa}{\number\deuc}{\xe}{-1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\yb}{\number\auxa}{\number\deuc}{\ye}{1}%
+  \!ucoord{\number\yO}{\number\yl}{\number\xb}{\number\auxa}{\number\deuc}{\xf}{1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\yb}{\number\auxa}{\number\deuc}{\yf}{-1}%
+  \setlinear
+  \plot {\xmed} {\ymed}  {\xe} {\ye} /
+  \plot {\xd} {\yd}  {\xf} {\yf} /
+\or                   % 10=double arrow
+%%
+%% sets the separation (distance) between the two parallel lines, if
+%% horizontal or vertical 2pt is enough, if not 2.5pt. The extra space
+%% is needed because of the arrow tip.
+\auxa=25
+\ifnum\number\yO=\number\yl
+\auxa=20
+\fi
+\ifnum\number\xO=\number\xl
+\auxa=20
+\fi
+%% the two parallel lines will be given by (xmed,ymed)(xd,yd), and
+%% (xe,ye)(xf,yf)
+  \!ucoord{\number\yO}{\number\yl}{\number\xa}{\number\auxa}{\number\deuc}{\xmed}{-1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\ya}{\number\auxa}{\number\deuc}{\ymed}{1}%
+  \!ucoord{\number\yO}{\number\yl}{\number\xa}{\number\auxa}{\number\deuc}{\xd}{1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\ya}{\number\auxa}{\number\deuc}{\yd}{-1}%
+  
+  \!ucoord{\number\yO}{\number\yl}{\number\xb}{\number\auxa}{\number\deuc}{\xe}{-1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\yb}{\number\auxa}{\number\deuc}{\ye}{1}%
+  \!ucoord{\number\yO}{\number\yl}{\number\xb}{\number\auxa}{\number\deuc}{\xf}{1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\yb}{\number\auxa}{\number\deuc}{\yf}{-1}%
+  \arrow <4pt> [.2,1.1] from {\xmed} {\ymed} to {\xe} {\ye}
+  \arrow <4pt> [.2,1.1] from {\xd} {\yd} to {\xf} {\yf}
+\or                   % 10=double arrow, opposite directions
+%% 
+%% sets the separation (distance) between the two parallel lines, if
+%% horizontal or vertical 2pt is enough, if not 2.5pt. The extra space
+%% is needed because of the arrow tip.
+\auxa=22
+\ifnum\number\yO=\number\yl
+\auxa=20
+\fi
+\ifnum\number\xO=\number\xl
+\auxa=20
+\fi
+%% the two parallel lines will be given by (xmed,ymed)(xd,yd), and
+%% (xe,ye)(xf,yf)
+  \!ucoord{\number\yO}{\number\yl}{\number\xa}{\number\auxa}{\number\deuc}{\xmed}{-1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\ya}{\number\auxa}{\number\deuc}{\ymed}{1}%
+  \!ucoord{\number\yO}{\number\yl}{\number\xa}{\number\auxa}{\number\deuc}{\xd}{1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\ya}{\number\auxa}{\number\deuc}{\yd}{-1}%
+  
+  \!ucoord{\number\yO}{\number\yl}{\number\xb}{\number\auxa}{\number\deuc}{\xe}{-1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\yb}{\number\auxa}{\number\deuc}{\ye}{1}%
+  \!ucoord{\number\yO}{\number\yl}{\number\xb}{\number\auxa}{\number\deuc}{\xf}{1}%
+  \!ucoord{\number\xO}{\number\xl}{\number\yb}{\number\auxa}{\number\deuc}{\yf}{-1}%
+  \arrow <4pt> [.2,1.1] from {\xmed} {\ymed} to {\xe} {\ye}
+  \arrow <4pt> [.2,1.1] from {\xf} {\yf} to {\xd} {\yd}
+\or                   % 11=null arrow (no arrow, only a label)
+%%
+%% does not draw the arrow, it allows to put two labels in one "arrow"
+%%
+\fi
+%% The label positioning.
+%% If the arrows are horizontal or verticals the box is built centered
+%% in the object center. If the arrows are oblique the box is built in
+%% such a way to avoid the arrow label, having in account the
+%% quadrante and the relative position of the arrow and the
+%% corresponding label
+\auxa=\xl
+\advance \auxa by -\xO%
+\ifnum \auxa=0 
+  \put {#7} at {\xc} {\yc}
+\else
+  \auxb=\yl
+  \advance \auxb by -\yO%
+  \ifnum \auxb=0 \put {#7} at {\xc} {\yc}
+  \else 
+    \ifnum \auxa > 0 
+      \ifnum \auxb > 0
+        \ifnum #8=1
+          \put {#7} [rb] at {\xc} {\yc}
+        \else 
+          \put {#7} [lt] at {\xc} {\yc}
+        \fi
+      \else
+        \ifnum #8=1
+          \put {#7} [lb] at {\xc} {\yc}
+        \else 
+          \put {#7} [rt] at {\xc} {\yc}
+        \fi
+      \fi
+    \else
+      \ifnum \auxb > 0 
+        \ifnum #8=1
+          \put {#7} [rt] at {\xc} {\yc}
+        \else 
+          \put {#7} [lb] at {\xc} {\yc}
+        \fi
+      \else
+        \ifnum #8=1
+          \put {#7} [lt] at {\xc} {\yc}
+        \else 
+          \put {#7} [rb] at {\xc} {\yc}
+        \fi
+      \fi
+    \fi
+  \fi
+\fi
+}
+
+%%
+%% Curved arrow command
+%%
+%% \cmor(<list of points (n. odd)>){<label>}
+%%
+%% The plot must be changed in such a way that its syntax is coherent
+%% with the other commands
+%%
+\def\modifplot(#1{\!modifqcurve #1}
+\def\!modifqcurve(#1,#2){\xO=#1%
+  \yO=#2%
+  \multiply \xO by \expansao%
+  \multiply \yO by \expansao%
+  \!start (\xO,\yO)
+  \!modifQjoin}
+\def\!modifQjoin(#1,#2)(#3,#4){\xO=#1%
+  \yO=#2%
+  \xl=#3%
+  \yl=#4%
+  \multiply \xO by \expansao%
+  \multiply \yO by \expansao%
+  \multiply \xl by \expansao%
+  \multiply \yl by \expansao%
+  \!qjoin (\xO,\yO) (\xl,\yl)       % \!qjoin  is defined in QUADRATIC
+  \!ifnextchar){\!fim}{\!modifQjoin}}
+\def\!fim){\ignorespaces}
+
+%%
+%% The command to draw the arrow tip receives the list of points, get
+%% from it the last pair of points and depending of the user choice
+%% the arrow tip is drawn.
+%%
+\def\setaxy(#1{\!pontosxy #1}
+\def\!pontosxy(#1,#2){%
+  \!maispontosxy}
+\def\!maispontosxy(#1,#2)(#3,#4){%
+  \!ifnextchar){\!fimxy#3,#4}{\!maispontosxy}}
+\def\!fimxy#1,#2){\xO=#1%
+  \yO=#2
+  \multiply \xO by \expansao
+  \multiply \yO by \expansao
+  \xl=\xO%
+  \yl=\yO%
+  \aux=1%
+  \multiply \aux by \auxa%
+  \advance\xl by \aux%
+  \aux=1%
+  \multiply \aux by \auxb%
+  \advance\yl by \aux%
+  \arrow <4pt> [.2,1.1] from {\xO} {\yO} to {\xl} {\yl}}
+
+
+%%
+%% The definition of the command "cmor"
+%%
+\def\cmor#1 #2(#3,#4)#5{%
+  \!ifnextchar[{\!cmora{#1}{#2}{#3}{#4}{#5}}{\!cmora{#1}{#2}{#3}{#4}{#5}[0] }}
+\def\!cmora#1#2#3#4#5[#6]{%
+  \ifcase #2% "\pup" (pointing up)
+      \auxa=0% x do not change
+      \auxb=1% y "up" 
+    \or% \pdown" (pointing down)
+      \auxa=0% x do not change
+      \auxb=-1% y "down" 
+    \or%  "\pright" (pointing right)
+      \auxa=1% x "right"
+      \auxb=0% y do not change
+    \or% "\pleft" (pointing left)
+      \auxa=-1% x "left"
+      \auxb=0% y do not change
+    \fi  % the line
+  \ifcase #6  % arrow solid
+    \modifplot#1% draw the line
+    % and the arrow tip
+    \setaxy#1
+  \or  % arrow (with tip) dashed
+    \setdashes
+    \modifplot#1% draw the line
+    \setaxy#1
+    \setsolid
+  \or  % arrow (without tip)
+    \modifplot#1% draw the line
+  \fi  % injection morphism
+%% label
+  \xO=#3%  
+  \yO=#4%
+  \multiply \xO by \expansao%
+  \multiply \yO by \expansao%
+  \put {#5} at {\xO} {\yO}}
+
+%%
+%% Command to build the objects
+%%  \obj(x,y){<text>}[<label>]
+%% 
+\def\obj(#1,#2){%
+  \!ifnextchar[{\!obja{#1}{#2}}{\!obja{#1}{#2}[Nulo]}}
+\def\!obja#1#2[#3]#4{%
+  \!ifnextchar[{\!objb{#1}{#2}{#3}{#4}}{\!objb{#1}{#2}{#3}{#4}[1]}}
+\def\!objb#1#2#3#4[#5]{%
+  \xO=#1%
+  \yO=#2%
+  \def\!pinta{\normalsize$\bullet$}% sets the normal size of the bullet
+  \def\!nulo{Nulo}%
+  \def\!arg{#3}%
+  \!compara{\!arg}{\!nulo}%
+  \ifcompara\def\!arg{#4}\fi%
+  \multiply \xO by \expansao%
+  \multiply \yO by \expansao%
+  \setbox\caixa=\hbox{#4}%
+  \!coloca{(\!arg)(#1,#2)(\number\ht\caixa,\number\wd\caixa,\number\dp\caixa)}{\pilha}%
+  \auxa=\wd\caixa \divide \auxa by 13107%2 
+  \advance \auxa by 50
+  \auxb=\ht\caixa
+  \advance \auxb by \number\dp\caixa
+  \divide \auxb by 13107%2 
+  \advance \auxb by 50
+  \ifcase \tipografo    % commutative diagrams
+    \put{#4} at {\xO} {\yO}
+  \or                   % directed graphs
+    \ifcase #5 % c=0, placement of the object (c=center)
+      \put{#4} at {\xO} {\yO}
+    \or        % n=1
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \yO by \number\auxb  % height+depth+5
+      \put{#4} at {\xO} {\yO}
+    \or        % ne=2
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \auxa by -2  % para fazer o ajuste (imperfeito)
+      \advance \auxb by -2  % ao raio da circunferencia de centro (x,y)
+      \advance \xO by \number\auxa  % width+5
+      \advance \yO by \number\auxb  % height+depth+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % e=3
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \xO by \number\auxa  % width+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % se=4
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \auxa by -2  % para fazer o ajuste (imperfeito)
+      \advance \auxb by -2  % ao raio da circunferencia de centro (x,y)
+      \advance \xO by \number\auxa  % width+5
+      \advance \yO by -\number\auxb  % height+depth+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % s=5
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \yO by -\number\auxb  % height+depth+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % sw=6
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \auxa by -20  % adjusting to the radius of the circle
+      \advance \auxb by -20  % with center in (x,y)
+      \advance \xO by -\number\auxa  % width+5
+      \advance \yO by -\number\auxb  % height+depth+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % w=7
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \xO by -\number\auxa  % width+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % nw=8
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \auxa by -20  % adjusting to the radius of the circle
+      \advance \auxb by -20  % with center in (x,y)
+      \advance \xO by -\number\auxa  % width+5
+      \advance \yO by \number\auxb  % height+depth+5
+      \put{#4} at {\xO} {\yO}   
+    \fi
+  \or                   % undirect graphs
+    \ifcase #5 % c=0
+      \put{#4} at {\xO} {\yO}
+    \or        % n=1
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \yO by \number\auxb  % height+depth+5
+      \put{#4} at {\xO} {\yO}
+    \or        % ne=2
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \auxa by -20  % adjusting to the radius of the circle
+      \advance \auxb by -20  % with center in (x,y)
+      \advance \xO by \number\auxa  % width+5
+      \advance \yO by \number\auxb  % height+depth+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % e=3
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \xO by \number\auxa  % width+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % se=4
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \auxa by -20  % see above
+      \advance \auxb by -20
+      \advance \xO by \number\auxa  % width+5
+      \advance \yO by -\number\auxb % height+depth+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % s=5
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \yO by -\number\auxb % height+depth+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % sw=6
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \auxa by -20  % see above
+      \advance \auxb by -20
+      \advance \xO by -\number\auxa % width+5
+      \advance \yO by -\number\auxb % height+depth+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % w=7
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \xO by -\number\auxa % width+5
+      \put{#4} at {\xO} {\yO}   
+    \or        % nw=8
+      \put{\!pinta} at {\xO} {\yO}
+      \advance \auxa by -20  % see above
+      \advance \auxb by -20
+      \advance \xO by -\number\auxa % width+5
+      \advance \yO by \number\auxb  % height+depth+5
+      \put{#4} at {\xO} {\yO}   
+    \fi
+   \else % graphs with circular frames
+     \ifnum\auxa<\auxb % set aux to be the greatest dimension
+       \aux=\auxb
+     \else
+       \aux=\auxa
+     \fi
+% if the length of the box is less then 1em, the size of the circle is
+% adjust in order not to be less then 10pt
+     \ifdim\wd\caixa<1em
+       \dimen99 = 10pt
+       \aux=\dimen99 
+       \divide \aux by 13107
+       \advance \aux by 50
+     \fi    
+     \advance\aux by -20
+     \xl=\xO
+     \advance\xl by \aux
+     \ifnum\aux<120 % gives (more or less) three digits
+       \circulararc 360 degrees from {\xl} {\yO} center at {\xO} {\yO}
+     \else
+       \ellipticalarc axes ratio {\auxa}:{\auxb} 360 degrees from  {\xl} {\yO} center at {\xO} {\yO}
+     \fi
+     \put{#4} at {\xO} {\yO}
+   \fi   
+}
+
+
+\catcode`!=12 %  *****  THIS MUST NEVER BE OMITTED (see PiCTeX)

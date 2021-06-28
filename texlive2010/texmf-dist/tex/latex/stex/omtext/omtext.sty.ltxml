@@ -1,0 +1,266 @@
+package LaTeXML::Package::Pool;
+use strict;
+use LaTeXML::Package;
+use Cwd qw(cwd abs_path);
+DeclareOption('noindex','');
+RequirePackage('sref');
+Tag('omdoc:metadata',afterOpen=>\&numberIt,afterClose=>\&locateIt,autoClose=>1,autoOpen=>1);
+DefConstructor('\CMP@itemize@item[]',
+       "<omdoc:li>?#1(<dc:title ?#locator(stex:srcref='#locator')()>#1</dc:title>)()",
+       properties=>sub{ RefStepItemCounter(); });
+DefConstructor('\CMP@enumerate@item[]',
+       "<omdoc:li>?#1(<dc:title ?#locator(stex:srcref='#locator')()>#1</dc:title>)()",
+       properties=>sub{ RefStepItemCounter(); });
+DefConstructor('\CMP@description@item[]',
+       "<omdoc:di>"
+       . "?#1(<omdoc:dt>#1</omdoc:dt>)()<omdoc:dd>", # trust di and dt to autoclose
+       properties=>sub{ RefStepItemCounter(); });
+DefEnvironment('{CMP@itemize}',
+       "<omdoc:ul>#body</omdoc:ul>",
+       properties=>sub { beginItemize('CMP@itemize'); },
+       beforeDigest=>sub { Let(T_CS('\end{itemize}') =>T_CS('\end{CMP@itemize}')); });
+DefEnvironment('{CMP@enumerate}',
+       "<omdoc:ol xml:id='#id'>#body</omdoc:ol>",
+       properties=>sub { beginItemize('CMP@enumerate'); },
+       beforeDigest=>sub { Let(T_CS('\end{enumerate}') =>T_CS('\end{CMP@enumerate}')); });
+DefEnvironment('{CMP@description}',
+ "<omdoc:dl xml:id='#id'>#body</omdoc:dl>",
+       properties=>sub { beginItemize('CMP@description'); },
+       beforeDigest=>sub { Let(T_CS('\end{description}') =>T_CS('\end{CMP@description}'));});
+sub useCMPItemizations {
+    Let(T_CS('\begin{itemize}')    =>T_CS('\begin{CMP@itemize}'));
+    Let(T_CS('\begin{enumerate}')  =>T_CS('\begin{CMP@enumerate}'));
+    Let(T_CS('\begin{description}')=>T_CS('\begin{CMP@description}'));
+    return; }
+sub declareFunctions{
+  my ($stomach,$whatsit) = @_;
+  my $keyval = $whatsit->getArg(1);
+  my $funval = KeyVal($keyval,'functions') if KeyVal($keyval,'functions');
+  my @funsymbs = ParseKeyValList($funval);
+  #Unread the function declarations at the Gullet
+  foreach (@funsymbs) {
+    $stomach->getGullet->unread(Tokenize('\lxDeclare[role=FUNCTION]{$'.$_.'$}')->unlist);
+  }
+  return;
+}
+Tag('omdoc:CMP', afterOpen => sub {AssignValue('_LastSeenCMP', $_[1], 'global');return;});#$
+Tag('omdoc:li', autoClose=>1);
+Tag('omdoc:dd', autoClose=>1);
+Tag('omdoc:di', autoClose=>1);
+DefKeyVal('omtext','functions','Semiverbatim');
+DefKeyVal('omtext','display','Semiverbatim');
+DefKeyVal('omtext','for','Semiverbatim');
+DefKeyVal('omtext','from','Semiverbatim');
+DefKeyVal('omtext','type','Semiverbatim');
+DefKeyVal('omtext','title','Plain'); #Math mode in titles.
+DefKeyVal('omtext','theory','Semiverbatim');
+DefKeyVal('omtext','continues','Semiverbatim');
+DefKeyVal('omtext','verbalizes','Semiverbatim');
+DefCMPEnvironment('{omtext} OptionalKeyVals:omtext',
+  "<omdoc:omtext "
+     . "?&KeyVal(#1,'id')(xml:id='&KeyVal(#1,'id')')() "
+     . "?&KeyVal(#1,'type')(type='&KeyVal(#1,'type')')() "
+     . "?&KeyVal(#1,'for')(for='&KeyVal(#1,'for')')() "
+             . "?&KeyVal(#1,'from')(from='&KeyVal(#1,'from')')()>"
+  . "?&KeyVal(#1,'title')(<dc:title>&KeyVal(#1,'title')</dc:title>)()"
+  . "<omdoc:CMP>"
+                  .   "<omdoc:p>"
+                  .      "#body");
+sub DefCMPEnvironment {
+  my ($proto, $replacement, %options) = @_;
+  my @before = $options{beforeDigest} ? ($options{beforeDigest}) : ();
+  push(@before, \&useCMPItemizations);
+  $options{beforeDigest} = \@before;
+  my @after = $options{afterDigestBegin} ? ($options{afterDigestBegin}) : ();
+  push(@after, \&declareFunctions);
+  $options{afterDigestBegin} = \@after;
+  DefEnvironment($proto, $replacement, %options);
+}
+sub DefCMPConstructor {
+  my ($proto, $replacement, %options) = @_;
+  my @before = $options{beforeDigest} ? ($options{beforeDigest}) : ();
+  push(@before, \&useCMPItemizations);
+  $options{beforeDigest} = \@before;
+  DefConstructor($proto, $replacement, %options);
+}
+DefKeyVal('phrase','id','Semiverbatim');
+DefKeyVal('phrase','style','Semiverbatim');
+DefKeyVal('phrase','class','Semiverbatim');
+DefKeyVal('phrase','index','Semiverbatim');
+DefKeyVal('phrase','verbalizes','Semiverbatim');
+DefKeyVal('phrase','type','Semiverbatim');
+DefConstructor('\phrase OptionalKeyVals:phrase {}',
+       "<omdoc:phrase %&KeyVals(#1)>#2</omdoc:phrase>");
+DefConstructor('\nlex{}',
+   "<omdoc:phrase type='nlex'>#1</omdoc:phrase>");
+DefConstructor('\nlcex{}',
+   "<omdoc:phrase type='nlcex'>#1</omdoc:phrase>");
+DefConstructor('\sinlinequote [] {}',
+               "<omdoc:phrase type='inlinequote'>"
+               . "?#1(<dc:source ?#locator(stex:srcref='#locator')()>#1</dc:source>\n)()"
+               . "#2"
+             . "</omdoc:phrase>");
+DefEnvironment('{sblockquote} []',
+               "<omdoc:omgroup type='quote'"
+               . "?#1(<dc:source>#1</dc:source>\n)()"
+               . "#body"
+             . "</omdoc:omgroup>");
+DefConstructor('\lec{}',
+   "\n<omdoc:note type='line-end-comment'>#1</omdoc:note>");
+RawTeX('
+\newcommand\mygraphics[2][]{\includegraphics[#1]{#2}}
+\newcommand\mycgraphics[2][]{\begin{center}\includegraphics[#1]{#2}\end{center}}
+\newcommand\mybgraphics[2][]{\fbox{\includegraphics[#1]{#2}\end{center}}}
+');
+DefConstructor('\indextoo[]{}',
+       "<omdoc:idx>"
+      .  "<omdoc:idt>#2</omdoc:idt>"
+      .  "<omdoc:ide ?#1(sort-by='#1')()>"
+      .    "<omdoc:idp>#2</omdoc:idp>"
+      .  "</omdoc:ide>"
+      ."</omdoc:idx>");
+DefConstructor('\indexalt[]{}{}',
+       "<omdoc:idx>"
+      .  "<omdoc:idt>#2</omdoc:idt>"
+      .  "<omdoc:ide ?#1(sort-by='#1')()>"
+      .    "<omdoc:idp>#3</omdoc:idp>"
+      .  "</omdoc:ide>"
+      ."</omdoc:idx>");
+DefConstructor('\twintoo[]{}{}',
+       "<omdoc:idx>"
+      .  "<omdoc:idt>#2 #3</omdoc:idt>"
+      .  "<omdoc:ide ?#1(sort-by='#1')()>"
+      .    "<omdoc:idp>#2</omdoc:idp>"
+      .    "<omdoc:idp>#3</omdoc:idp>"
+      .  "</omdoc:ide>"
+      ."</omdoc:idx>");
+DefConstructor('\twinalt[]{}{}{}',
+       "<omdoc:idx>"
+      .  "<omdoc:idt>#2</omdoc:idt>"
+      .  "<omdoc:ide ?#1(sort-by='#1')()>"
+      .    "<omdoc:idp>#2</omdoc:idp>"
+      .    "<omdoc:idp>#3</omdoc:idp>"
+      .  "</omdoc:ide>"
+      ."</omdoc:idx>");
+DefConstructor('\atwintoo[]{}{}{}',
+       "<omdoc:idx>"
+      .  "<omdoc:idt>#2 #3</omdoc:idt>"
+      .  "<omdoc:ide ?#1(sort-by='#1')()>"
+      .    "<omdoc:idp>#2</omdoc:idp>"
+      .    "<omdoc:idp>#3</omdoc:idp>"
+      .    "<omdoc:idp>#4</omdoc:idp>"
+      .  "</omdoc:ide>"
+      ."</omdoc:idx>");
+
+DefConstructor('\atwinalt[]{}{}{}{}',
+       "<omdoc:idx>"
+      .  "<omdoc:idt>#2</omdoc:idt>"
+      .  "<omdoc:ide ?#1(sort-by='#1')()>"
+      .    "<omdoc:idp>#2</omdoc:idp>"
+      .    "<omdoc:idp>#3</omdoc:idp>"
+      .    "<omdoc:idp>#4</omdoc:idp>"
+      .  "</omdoc:ide>"
+      ."</omdoc:idx>");
+DefConstructor('\printindex','<omdoc:index/>');
+DefConstructor('\par',sub { $_[0]->maybeCloseElement('omdoc:p'); },
+                      alias=>"\\par\n");
+Tag('omdoc:p', autoClose=>1, autoOpen=>1);
+Tag('omdoc:CMP', autoClose=>1, autoOpen=>1);
+Tag('omdoc:omtext', autoClose=>1, autoOpen=>1);
+DefConstructor('\omspace{}','');
+DefConstructor('\emph{}',"<omdoc:phrase class='emphasis'>#1</omdoc:phrase>");
+DefConstructor('\em',"<omdoc:phrase class='emphasis'>");
+DefConstructor('\texttt{}',"<omdoc:phrase class='code'>#1</omdoc:phrase>");
+DefConstructor('\textbf{}',"<omdoc:phrase class='bold'>#1</omdoc:phrase>");
+Tag('omdoc:phrase', autoClose=>1);
+DefEnvironment('{center}','#body');
+DefEnvironment('{flushleft}','#body');
+DefEnvironment('{flushright}','#body');
+DefEnvironment('{minipage}[]{}','#body');
+DefEnvironment('{quote}',
+    "<omdoc:phrase type='quote' style='display:block'>"
+   .  "#body"
+   ."</omdoc:phrase>");
+DefEnvironment('{quotation}',
+    "<omdoc:phrase type='quote' style='display:block'>
+   .  "#body"
+   ."</omdoc:phrase>");
+DefEnvironment('{LARGE}','#body');
+DefEnvironment('{Large}','#body');
+DefEnvironment('{large}','#body');
+DefEnvironment('{small}','#body');
+DefEnvironment('{footnotesize}','#body');
+DefEnvironment('{tiny}','#body');
+DefEnvironment('{scriptsize}','#body');
+DefConstructor('\LARGE','');
+DefConstructor('\Large','');
+DefConstructor('\large','');
+DefConstructor('\small','');
+DefConstructor('\footnotesize','');
+DefConstructor('\scriptsize','');
+DefConstructor('\tiny','');
+DefConstructor('\fbox{}','#1');
+DefConstructor('\footnote[]{}',
+       "<omdoc:note class='foot' ?#1(mark='#1')>#2</omdoc:note>");
+DefConstructor('\footnotemark[]',"");
+DefConstructor('\footnotetext[]{}',
+       "<omdoc:note class='foot' ?#1(mark='#1')>#2</omdoc:note>");
+DefConstructor('\sf', '');
+DefConstructor('\sc', '');
+Tag('omdoc:p',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:omtext',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:omgroup',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:CMP',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:link',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:meta',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:resource',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:ul',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:li',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:di',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:dt',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:dd',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:ol',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:dl',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:idx',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:phrase',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('omdoc:note',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('ltx:tabular',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('ltx:thead',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('ltx:td',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('ltx:tr',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+Tag('ltx:caption',afterOpen=>\&numberIt,afterClose=>\&locateIt);
+sub numberIt {
+  my($document,$node,$whatsit)=@_;
+  my(@parents)=$document->findnodes('ancestor::*[@xml:id]',$node);
+  my $prefix= (@parents ? $parents[$#parents]->getAttribute('xml:id')."." : '');
+  my(@siblings)=$document->findnodes('preceding-sibling::*[@xml:id]',$node);
+  my $n = scalar(@siblings)+1;
+  my $id = ($node -> getAttribute('xml:id'));
+  $node->setAttribute('xml:id'=>$prefix."p$n") unless $id;
+  my $about = $node -> getAttribute('about');
+  $node->setAttribute('about'=>'#'.$node->getAttribute('xml:id')) unless $about;
+  #Also, provide locators:
+  my $locator = $whatsit->getProperty('locator');
+  #Need to inherit locators if missing:
+  $locator = (@parents ? $parents[$#parents]->getAttribute('stex:srcref') : '') unless $locator;
+  $node->setAttribute('stex:srcref'=>$locator) if $locator; }
+sub locateIt {
+  my($document,$node,$whatsit)=@_;
+  #Estimate trailer locator:
+  my $trailer = $whatsit->getProperty('trailer');
+  return unless $trailer; #Nothing we can do if the trailer isn't defined
+  $trailer = $trailer->getLocator;
+  return unless ($trailer &&  $trailer!~/^\s*$/); #Useless if broken
+  my $locator = $node->getAttribute('stex:srcref');
+  if ($locator) {
+    $locator =~ /^(.+from=\d+;\d+)/;
+    my $from = $1;
+    $trailer =~ /(,to=\d+;\d+.+)$/;
+    my $to = $1;
+    $locator = $from.$to;
+  } else {
+    $locator = $trailer; #This should never happen
+  }
+  $node->setAttribute('stex:srcref' => $locator);
+}
+1;

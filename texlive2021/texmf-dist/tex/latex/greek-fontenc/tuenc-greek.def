@@ -1,0 +1,937 @@
+% tuenc-greek.def
+% +++++++++++++++
+% Greek LICR definitions for XeTeX and LuaTeX
+% *******************************************
+%
+% :Copyright: © 2013 Günter Milde
+% :Licence:   This work may be distributed and/or modified under the
+%             conditions of the `LaTeX Project Public License`_, either
+%             version 1.3 of this license or any later version.
+% :Identification:
+%  ::
+
+\ProvidesFile{tuenc-greek.def}
+[2020/10/13 2.0 Greek LICRs for XeTeX and LuaTeX]
+
+% :abstract:
+%   Support for Greek LICR macros and upcasing of text
+%   with XeTeX and LuaTeX. Extends tuenc.def_.
+%   Used by babel-greek_ and textalpha_.
+%
+% **History**:
+%   .. class:: borderless
+%
+%   ====== ==========  ========================================================
+%   0.1    2013-07-16  initial version
+%   0.1.1  2013-07-18  bugfix: wrong breathings psilioxia -> dasiaoxia
+%   0.1.2  2013-07-19  bugfix: Disable composite defs starting with char macro,
+%          ..          fix "hiatus" handling.
+%   0.1.3  2013-07-24  fix "input" path.
+%   0.1.4  2013-10-01  remove clashing defs for legacy characters with oxia,
+%          ..          fix upcasing of ``\finalsigma``.
+%   0.11.1 2013-12-01  fix identification.
+%   0.11.2 2014-09-08  ``\textKoppa`` macro
+%   ..                 (Capital Koppa is not defined in LGR but Unicode).
+%   0.12   2014-12-12  Remove symbol macros for breathing accents.
+%   0.13   2015-08-07  ``\lccode``/``\uccode`` corrections from xgreek_.
+%   ..                 LICR macros for symbol variants.
+%   0.13.3 2018-01-06  Documentation update.
+%   0.14   2020-02-28  Rename to ``tuenc-greek.def``. Use ``\UTFencname``.
+%   1.0    2020-09-25  New package version. No changes in this file.
+%   2.0    2020-10-13  Move common alias definitions to ``greek-fontenc.def``.
+%   ..                 New compatiblity definitions.
+%   ..                 Use ``\UnicodeEncodingName`` instead of ``\UTFencname``.
+%   ..                 Make the file encoding-independent (required for input
+%                      in other encodings with `luainputenc`).
+%   ====== ==========  ========================================================
+%
+% .. contents::
+%
+% Motivation
+% ==========
+%
+% LICR macro definitions for the Greek script are missing in tuenc.def_ (as well
+% as the predecessors xunicode_, euenc_).
+%
+% This file defines `LaTeX Internal Character Representaction` (LICR) macros
+% for Greek letters and symbols. It works independed of xunicode_ using the
+% standard commands for `LaTeX2e font selection`_.
+%
+% Requirements
+% ============
+%
+% Requires XeTeX or LuaTeX (usually with fontspec_), the `LaTeX base`_
+% file _`tuenc.def` that sets up the `font encoding`_ TU, and a font with
+% Greek characters.
+%
+% See `<test-tuenc-greek.tex>`_ and `<test-tuenc-greek.pdf>`_ for setup and
+% usage examples.
+%
+%
+% Greek Diacritics
+% ================
+%
+% Define "named macros" for simple and combined diacritics.
+%
+% * Named accent macros can be used instead of the ``\@tabacckludge`` by
+%   to-LaTeX converters to ensure working also inside the tabbing environment.
+%
+% * Named macros are required for upcasing according to Greek typesetting
+%   conventions and in the definition of composite commands.
+%
+% Greek alias names for standard accents::
+
+\DeclareUnicodeAccent{\accvaria}    \UnicodeEncodingName{"0300}
+\DeclareUnicodeAccent{\acctonos}    \UnicodeEncodingName{"0301}
+\DeclareUnicodeAccent{\accdialytika}\UnicodeEncodingName{"0308}
+
+% The combining perispomeni character is normalized with Greek base letters,
+% while the (standard) combining tilde is not::
+
+\DeclareUnicodeAccent{\accperispomeni}\UnicodeEncodingName{"0342} % COMBINING GREEK PERISPOMENI
+
+% Breathings:
+%
+% ``\accpsili = \acckoronis`` but the COMBINING GREEK KORONIS is a legacy
+% character, discarded in favour of COMBINING COMMA ABOVE. ::
+
+\DeclareUnicodeAccent{\accpsili}\UnicodeEncodingName{"0313} % ψιλή spiritus lenis (smooth breathing)
+\DeclareUnicodeAccent{\accdasia}\UnicodeEncodingName{"0314} % δασεῖα spiritus asper (rough breathing)
+
+% Sub-iotas:
+%
+% ``\prosgegrammeni`` is a standard character (see below).
+% ``\ypogegrammeni`` is a postfix accent (ligature in LGR) ::
+
+\DeclareTextSymbol{\ypogegrammeni}{\UnicodeEncodingName}{0837} % COMBINING GREEK YPOGEGRAMMENI
+
+% Combined diacritics:
+%
+% ``\DeclareUnicodeAccent`` does not work with more than one argument::
+
+% The COMBINING DIALYTIKA TONOS is discarded and not well supported by fonts:
+\DeclareTextCommand{\accdialytikatonos}{\UnicodeEncodingName}[1]{#1\char"0308\char"0301}
+\DeclareTextCommand{\accdialytikavaria}{\UnicodeEncodingName}[1]{#1\char"0308\char"0300}
+\DeclareTextCommand{\accdialytikaperispomeni}{\UnicodeEncodingName}[1]{#1\char"0342\char"0308}
+
+\DeclareTextCommand{\accdasiaoxia}{\UnicodeEncodingName}[1]{#1\char"0314\char"0301}
+\DeclareTextCommand{\accdasiavaria}{\UnicodeEncodingName}[1]{#1\char"0314\char"0300}
+\DeclareTextCommand{\accdasiaperispomeni}{\UnicodeEncodingName}[1]{#1\char"0314\char"0342}
+
+\DeclareTextCommand{\accpsilioxia}{\UnicodeEncodingName}[1]{#1\char"0301\char"0313}
+\DeclareTextCommand{\accpsilivaria}{\UnicodeEncodingName}[1]{#1\char"0300\char"0313}
+\DeclareTextCommand{\accpsiliperispomeni}{\UnicodeEncodingName}[1]{#1\char"0342\char"0313}
+
+
+% Common Definitions
+% ==================
+%
+% Use the `common Greek font encoding definitions`_::
+
+\renewcommand*{\LastDeclaredEncoding}{\UnicodeEncodingName}
+\input{greek-fontenc.def}
+
+% Character Definitions
+% =====================
+%
+% Basic Latin
+% ~~~~~~~~~~~
+%
+% Compatibility def with LGR::
+
+\DeclareTextSymbol{\textsemicolon}\UnicodeEncodingName{"003B} % ;
+
+% Latin 1 Supplement
+% ~~~~~~~~~~~~~~~~~~
+%
+% Distinguish MICRO SIGN from letter mu::
+
+\DeclareTextSymbol{\textmicro}\UnicodeEncodingName{"00B5} % µ MICRO SIGN
+
+% IPA Extensions
+% ~~~~~~~~~~~~~~
+%
+% ::
+
+\DeclareTextSymbol{\textschwa}\UnicodeEncodingName{"0259} % ə
+
+% Greek and Coptic
+% ~~~~~~~~~~~~~~~~
+%
+% ::
+
+% NR    Unicode Name                                        %   babel name, % PU name
+% 0370  GREEK CAPITAL LETTER HETA                           % Ͱ
+% 0371  GREEK SMALL LETTER HETA                             % ͱ
+% 0372  GREEK CAPITAL LETTER ARCHAIC SAMPI                  % Ͳ
+% 0373  GREEK SMALL LETTER ARCHAIC SAMPI                    % ͳ
+\DeclareTextSymbol{\textdexiakeraia}\UnicodeEncodingName{"0374}    % ʹ \anwtonos, \textnumeralsigngreek
+\DeclareTextSymbol{\textaristerikeraia}\UnicodeEncodingName{"0375} % ͵\katwtonos, \textnumeralsignlowergreek
+% 0376  GREEK CAPITAL LETTER PAMPHYLIAN DIGAMMA             % Ͷ
+% 0377  GREEK SMALL LETTER PAMPHYLIAN DIGAMMA               % ͷ
+
+% \DeclareTextCompositeCommand{\@emty}\UnicodeEncodingName{\ypogegrammeni}{ͺ} % 037A  GREEK YPOGEGRAMMENI
+% \DeclareTextCompositeCommand{\textcompwordmark}\UnicodeEncodingName{\ypogegrammeni}{ͺ} % 037A  GREEK YPOGEGRAMMENI
+% 037B  GREEK SMALL REVERSED LUNATE SIGMA SYMBOL
+% 037C  GREEK SMALL DOTTED LUNATE SIGMA SYMBOL
+% 037D  GREEK SMALL REVERSED DOTTED LUNATE SIGMA SYMBOL
+\DeclareTextSymbol{\texterotimatiko}\UnicodeEncodingName{"003B} % use SEMICOLON, not 037E GREEK QUESTION MARK
+
+\DeclareUnicodeComposite{\acctonos}         {}            {"0384} % ΄ GREEK TONOS
+\DeclareUnicodeComposite{\accdialytikatonos}{}            {"0385} % ΅ GREEK DIALYTIKA TONOS
+\DeclareUnicodeComposite{\'}                {\textAlpha}  {"0386} % Ά 
+\DeclareTextSymbol{\textanoteleia}  \UnicodeEncodingName{"00B7} % use MIDDLE DOT, not 0387 GREEK ANO TELEIA
+\DeclareUnicodeComposite{\'}                {\textEpsilon}{"0388} % Έ
+\DeclareUnicodeComposite{\'}                {\textEta}    {"0389} % Ή
+\DeclareUnicodeComposite{\'}                {\textIota}   {"038A} % Ί
+\DeclareUnicodeComposite{\'}                {\textOmicron}{"038C} % Ό
+\DeclareUnicodeComposite{\'}                {\textUpsilon}{"038E} % Ύ
+\DeclareUnicodeComposite{\'}                {\textOmega}  {"038F} % Ώ
+% repeat with named accents (LuaTeX does not normalize to pre-composed chars):
+\DeclareUnicodeComposite{\acctonos}         {\textAlpha}  {"0386} % Ά
+\DeclareUnicodeComposite{\acctonos}         {\textEpsilon}{"0388} % Έ
+\DeclareUnicodeComposite{\acctonos}         {\textEta}    {"0389} % Ή
+\DeclareUnicodeComposite{\acctonos}         {\textIota}   {"038A} % Ί
+\DeclareUnicodeComposite{\acctonos}         {\textOmicron}{"038C} % Ό
+\DeclareUnicodeComposite{\acctonos}         {\textUpsilon}{"038E} % Ύ
+\DeclareUnicodeComposite{\acctonos}         {\textOmega}  {"038F} % Ώ
+\DeclareUnicodeComposite{\accdialytikatonos}{\textiota}   {"0390} % ΐ
+
+\DeclareTextSymbol{\textAlpha  }\UnicodeEncodingName{"0391} % Α
+\DeclareTextSymbol{\textBeta   }\UnicodeEncodingName{"0392} % Β
+\DeclareTextSymbol{\textGamma  }\UnicodeEncodingName{"0393} % Γ
+\DeclareTextSymbol{\textDelta  }\UnicodeEncodingName{"0394} % Δ
+\DeclareTextSymbol{\textEpsilon}\UnicodeEncodingName{"0395} % Ε
+\DeclareTextSymbol{\textZeta   }\UnicodeEncodingName{"0396} % Ζ
+\DeclareTextSymbol{\textEta    }\UnicodeEncodingName{"0397} % Η
+\DeclareTextSymbol{\textTheta  }\UnicodeEncodingName{"0398} % Θ
+\DeclareTextSymbol{\textIota   }\UnicodeEncodingName{"0399} % Ι
+\DeclareTextSymbol{\textKappa  }\UnicodeEncodingName{"039A} % Κ
+\DeclareTextSymbol{\textLambda }\UnicodeEncodingName{"039B} % Λ
+\DeclareTextSymbol{\textMu     }\UnicodeEncodingName{"039C} % Μ
+\DeclareTextSymbol{\textNu     }\UnicodeEncodingName{"039D} % Ν
+\DeclareTextSymbol{\textXi     }\UnicodeEncodingName{"039E} % Ξ
+\DeclareTextSymbol{\textOmicron}\UnicodeEncodingName{"039F} % Ο
+\DeclareTextSymbol{\textPi     }\UnicodeEncodingName{"03A0} % Π
+\DeclareTextSymbol{\textRho    }\UnicodeEncodingName{"03A1} % Ρ
+\DeclareTextSymbol{\textSigma  }\UnicodeEncodingName{"03A3} % Σ
+\DeclareTextSymbol{\textTau    }\UnicodeEncodingName{"03A4} % Τ
+\DeclareTextSymbol{\textUpsilon}\UnicodeEncodingName{"03A5} % Υ
+\DeclareTextSymbol{\textPhi    }\UnicodeEncodingName{"03A6} % Φ
+\DeclareTextSymbol{\textChi    }\UnicodeEncodingName{"03A7} % Χ
+\DeclareTextSymbol{\textPsi    }\UnicodeEncodingName{"03A8} % Ψ
+\DeclareTextSymbol{\textOmega  }\UnicodeEncodingName{"03A9} % Ω
+
+\DeclareUnicodeComposite{\"}                {\textIota}   {"03AA} % Ϊ
+\DeclareUnicodeComposite{\"}                {\textIota}	  {"03AA} % Ϊ
+\DeclareUnicodeComposite{\"}                {\textUpsilon}{"03AB} % Ϋ
+\DeclareUnicodeComposite{\'}                {\textalpha}  {"03AC} % ά
+\DeclareUnicodeComposite{\'}                {\textepsilon}{"03AD} % έ
+\DeclareUnicodeComposite{\'}                {\texteta}    {"03AE} % ή
+\DeclareUnicodeComposite{\'}                {\textiota}	  {"03AF} % ί
+% repeat with named accents (LuaTeX does not normalize to pre-composed chars):
+\DeclareUnicodeComposite{\accdialytika}     {\textIota}   {"03AA} % Ϊ
+\DeclareUnicodeComposite{\accdialytika}     {\textIota}	  {"03AA} % Ϊ
+\DeclareUnicodeComposite{\accdialytika}     {\textUpsilon}{"03AB} % Ϋ
+\DeclareUnicodeComposite{\acctonos}         {\textalpha}  {"03AC} % ά
+\DeclareUnicodeComposite{\acctonos}         {\textepsilon}{"03AD} % έ
+\DeclareUnicodeComposite{\acctonos}         {\texteta}    {"03AE} % ή
+\DeclareUnicodeComposite{\acctonos}         {\textiota}	  {"03AF} % ί
+\DeclareUnicodeComposite{\accdialytikatonos}{\textupsilon}{"03B0} % ΰ
+
+\DeclareTextSymbol{\textalpha     }\UnicodeEncodingName{"03B1} % α
+\DeclareTextSymbol{\textbeta      }\UnicodeEncodingName{"03B2} % β
+\DeclareTextSymbol{\textgamma     }\UnicodeEncodingName{"03B3} % γ
+\DeclareTextSymbol{\textdelta     }\UnicodeEncodingName{"03B4} % δ
+\DeclareTextSymbol{\textepsilon   }\UnicodeEncodingName{"03B5} % ε
+\DeclareTextSymbol{\textzeta      }\UnicodeEncodingName{"03B6} % ζ
+\DeclareTextSymbol{\texteta       }\UnicodeEncodingName{"03B7} % η
+\DeclareTextSymbol{\texttheta     }\UnicodeEncodingName{"03B8} % θ
+\DeclareTextSymbol{\textiota      }\UnicodeEncodingName{"03B9} % ι
+\DeclareTextSymbol{\textkappa     }\UnicodeEncodingName{"03BA} % κ
+\DeclareTextSymbol{\textlambda    }\UnicodeEncodingName{"03BB} % λ
+\DeclareTextSymbol{\textmu        }\UnicodeEncodingName{"03BC} % μ % \textmugreek
+\DeclareTextSymbol{\textnu        }\UnicodeEncodingName{"03BD} % ν
+\DeclareTextSymbol{\textxi        }\UnicodeEncodingName{"03BE} % ξ
+\DeclareTextSymbol{\textomicron   }\UnicodeEncodingName{"03BF} % ο
+\DeclareTextSymbol{\textpi        }\UnicodeEncodingName{"03C0} % π
+\DeclareTextSymbol{\textrho       }\UnicodeEncodingName{"03C1} % ρ
+\DeclareTextSymbol{\textfinalsigma}\UnicodeEncodingName{"03C2} % ς % final sigma
+\DeclareTextSymbol{\textsigma     }\UnicodeEncodingName{"03C3} % σ
+\DeclareTextSymbol{\texttau       }\UnicodeEncodingName{"03C4} % τ
+\DeclareTextSymbol{\textupsilon   }\UnicodeEncodingName{"03C5} % υ
+\DeclareTextSymbol{\textphi       }\UnicodeEncodingName{"03C6} % φ
+\DeclareTextSymbol{\textchi       }\UnicodeEncodingName{"03C7} % χ
+\DeclareTextSymbol{\textpsi       }\UnicodeEncodingName{"03C8} % ψ
+\DeclareTextSymbol{\textomega     }\UnicodeEncodingName{"03C9} % ω
+
+\DeclareUnicodeComposite{\"}{\textiota}{"03CA} % ϊ
+\DeclareUnicodeComposite{\"}{\textupsilon}{"03CB} % ϋ
+\DeclareUnicodeComposite{\'}{\textomicron}{"03CC} % ό
+\DeclareUnicodeComposite{\'}{\textupsilon}{"03CD} % ύ
+\DeclareUnicodeComposite{\'}{\textomega}{"03CE} % ώ
+\DeclareUnicodeComposite{\accdialytika}{\textiota}{"03CA} % ϊ
+\DeclareUnicodeComposite{\accdialytika}{\textupsilon}{"03CB} % ϋ
+\DeclareUnicodeComposite{\acctonos}{\textomicron}{"03CC} % ό
+\DeclareUnicodeComposite{\acctonos}{\textupsilon}{"03CD} % ύ
+\DeclareUnicodeComposite{\acctonos}{\textomega}{"03CE} % ώ
+
+% Archaic letters (still used in Greek numerals)::
+
+\DeclareTextSymbol{\textQoppa        }\UnicodeEncodingName{"03D8} % Ϙ
+\DeclareTextSymbol{\textqoppa        }\UnicodeEncodingName{"03D9} % ϙ
+\DeclareTextSymbol{\textStigma       }\UnicodeEncodingName{"03DA} % Ϛ
+\DeclareTextSymbol{\textstigma       }\UnicodeEncodingName{"03DB} % ϛ
+\DeclareTextSymbol{\textDigamma      }\UnicodeEncodingName{"03DC} % Ϝ
+\DeclareTextSymbol{\textdigamma      }\UnicodeEncodingName{"03DD} % ϝ
+\DeclareTextSymbol{\textKoppa        }\UnicodeEncodingName{"03DE} % Ϟ in LGR identic to \textkoppa
+\DeclareTextSymbol{\textkoppa        }\UnicodeEncodingName{"03DF} % ϟ \koppa, \textqoppa [sic!]
+\DeclareTextSymbol{\textSampi        }\UnicodeEncodingName{"03E0} % Ϡ
+\DeclareTextSymbol{\textsampi        }\UnicodeEncodingName{"03E1} % ϡ
+
+% Symbol variants::
+
+\DeclareTextSymbol{\textbetasymbol   }\UnicodeEncodingName{"03D0} % ϐ
+\DeclareTextSymbol{\textkappasymbol  }\UnicodeEncodingName{"03F0} % ϰ
+\DeclareTextSymbol{\textThetasymbol  }\UnicodeEncodingName{"03F4} % ϴ
+\DeclareTextSymbol{\textthetasymbol  }\UnicodeEncodingName{"03D1} % ϑ
+\DeclareTextSymbol{\textphisymbol    }\UnicodeEncodingName{"03D5} % ϕ
+\DeclareTextSymbol{\textpisymbol     }\UnicodeEncodingName{"03D6} % ϖ
+\DeclareTextSymbol{\textrhosymbol    }\UnicodeEncodingName{"03F1} % ϱ
+\DeclareTextSymbol{\textepsilonsymbol}\UnicodeEncodingName{"03F5} % ϵ
+
+% Dummy definition (\textautosigma is lowercase of \textSigma)
+% TODO: implement autosigma for TU::
+
+\ProvideTextCommand{\textautosigma }\UnicodeEncodingName{\textsigma}
+
+
+% Greek Extended
+% ~~~~~~~~~~~~~~
+%
+% We skip definitions for characters "... WITH OXIA", because they would
+% overwrite the definitions for "... WITH TONOS" in the `Greek and Coptic`
+% block.
+%
+% ::
+
+\DeclareUnicodeComposite{\accpsili           }{\textalpha}{"1F00} % ἀ
+\DeclareUnicodeComposite{\accdasia           }{\textalpha}{"1F01} % ἁ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textalpha}{"1F02} % ἂ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textalpha}{"1F03} % ἃ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textalpha}{"1F04} % ἄ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textalpha}{"1F05} % ἅ
+\DeclareUnicodeComposite{\accpsiliperispomeni}{\textalpha}{"1F06} % ἆ
+\DeclareUnicodeComposite{\accdasiaperispomeni}{\textalpha}{"1F07} % ἇ
+\DeclareUnicodeComposite{\accpsili           }{\textAlpha}{"1F08} % Ἀ
+\DeclareUnicodeComposite{\accdasia           }{\textAlpha}{"1F09} % Ἁ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textAlpha}{"1F0A} % Ἂ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textAlpha}{"1F0B} % Ἃ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textAlpha}{"1F0C} % Ἄ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textAlpha}{"1F0D} % Ἅ
+\DeclareUnicodeComposite{\accpsiliperispomeni}{\textAlpha}{"1F0E} % Ἆ
+\DeclareUnicodeComposite{\accdasiaperispomeni}{\textAlpha}{"1F0F} % Ἇ
+
+\DeclareUnicodeComposite{\accpsili           }{\textepsilon}{"1F10} % ἐ
+\DeclareUnicodeComposite{\accdasia           }{\textepsilon}{"1F11} % ἑ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textepsilon}{"1F12} % ἒ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textepsilon}{"1F13} % ἓ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textepsilon}{"1F14} % ἔ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textepsilon}{"1F15} % ἕ
+\DeclareUnicodeComposite{\accpsili           }{\textEpsilon}{"1F18} % Ἐ
+\DeclareUnicodeComposite{\accdasia           }{\textEpsilon}{"1F19} % Ἑ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textEpsilon}{"1F1A} % Ἒ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textEpsilon}{"1F1B} % Ἓ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textEpsilon}{"1F1C} % Ἔ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textEpsilon}{"1F1D} % Ἕ
+
+\DeclareUnicodeComposite{\accpsili           }{\texteta}{"1F20} % ἠ
+\DeclareUnicodeComposite{\accdasia           }{\texteta}{"1F21} % ἡ
+\DeclareUnicodeComposite{\accpsilivaria      }{\texteta}{"1F22} % ἢ
+\DeclareUnicodeComposite{\accdasiavaria      }{\texteta}{"1F23} % ἣ
+\DeclareUnicodeComposite{\accpsilioxia       }{\texteta}{"1F24} % ἤ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\texteta}{"1F25} % ἥ
+\DeclareUnicodeComposite{\accpsiliperispomeni}{\texteta}{"1F26} % ἦ
+\DeclareUnicodeComposite{\accdasiaperispomeni}{\texteta}{"1F27} % ἧ
+\DeclareUnicodeComposite{\accpsili           }{\textEta}{"1F28} % Ἠ
+\DeclareUnicodeComposite{\accdasia           }{\textEta}{"1F29} % Ἡ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textEta}{"1F2A} % Ἢ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textEta}{"1F2B} % Ἣ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textEta}{"1F2C} % Ἤ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textEta}{"1F2D} % Ἥ
+\DeclareUnicodeComposite{\accpsiliperispomeni}{\textEta}{"1F2E} % Ἦ
+\DeclareUnicodeComposite{\accdasiaperispomeni}{\textEta}{"1F2F} % Ἧ
+
+\DeclareUnicodeComposite{\accpsili           }{\textiota}{"1F30} % ἰ
+\DeclareUnicodeComposite{\accdasia           }{\textiota}{"1F31} % ἱ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textiota}{"1F32} % ἲ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textiota}{"1F33} % ἳ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textiota}{"1F34} % ἴ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textiota}{"1F35} % ἵ
+\DeclareUnicodeComposite{\accpsiliperispomeni}{\textiota}{"1F36} % ἶ
+\DeclareUnicodeComposite{\accdasiaperispomeni}{\textiota}{"1F37} % ἷ
+\DeclareUnicodeComposite{\accpsili           }{\textIota}{"1F38} % Ἰ
+\DeclareUnicodeComposite{\accdasia           }{\textIota}{"1F39} % Ἱ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textIota}{"1F3A} % Ἲ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textIota}{"1F3B} % Ἳ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textIota}{"1F3C} % Ἴ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textIota}{"1F3D} % Ἵ
+\DeclareUnicodeComposite{\accpsiliperispomeni}{\textIota}{"1F3E} % Ἶ
+\DeclareUnicodeComposite{\accdasiaperispomeni}{\textIota}{"1F3F} % Ἷ
+
+\DeclareUnicodeComposite{\accpsili           }{\textomicron}{"1F40} % ὀ
+\DeclareUnicodeComposite{\accdasia           }{\textomicron}{"1F41} % ὁ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textomicron}{"1F42} % ὂ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textomicron}{"1F43} % ὃ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textomicron}{"1F44} % ὄ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textomicron}{"1F45} % ὅ
+\DeclareUnicodeComposite{\accpsili           }{\textOmicron}{"1F48} % Ὀ
+\DeclareUnicodeComposite{\accdasia           }{\textOmicron}{"1F49} % Ὁ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textOmicron}{"1F4A} % Ὂ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textOmicron}{"1F4B} % Ὃ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textOmicron}{"1F4C} % Ὄ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textOmicron}{"1F4D} % Ὅ
+
+\DeclareUnicodeComposite{\accpsili           }{\textupsilon}{"1F50} % ὐ
+\DeclareUnicodeComposite{\accdasia           }{\textupsilon}{"1F51} % ὑ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textupsilon}{"1F52} % ὒ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textupsilon}{"1F53} % ὓ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textupsilon}{"1F54} % ὔ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textupsilon}{"1F55} % ὕ
+\DeclareUnicodeComposite{\accpsiliperispomeni}{\textupsilon}{"1F56} % ὖ
+\DeclareUnicodeComposite{\accdasiaperispomeni}{\textupsilon}{"1F57} % ὗ
+\DeclareUnicodeComposite{\accdasia           }{\textUpsilon}{"1F59} % Ὑ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textUpsilon}{"1F5B} % Ὓ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textUpsilon}{"1F5D} % Ὕ
+\DeclareUnicodeComposite{\accdasiaperispomeni}{\textUpsilon}{"1F5F} % Ὗ
+
+\DeclareUnicodeComposite{\accpsili           }{\textomega}{"1F60} % ὠ
+\DeclareUnicodeComposite{\accdasia           }{\textomega}{"1F61} % ὡ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textomega}{"1F62} % ὢ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textomega}{"1F63} % ὣ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textomega}{"1F64} % ὤ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textomega}{"1F65} % ὥ
+\DeclareUnicodeComposite{\accpsiliperispomeni}{\textomega}{"1F66} % ὦ
+\DeclareUnicodeComposite{\accdasiaperispomeni}{\textomega}{"1F67} % ὧ
+\DeclareUnicodeComposite{\accpsili           }{\textOmega}{"1F68} % Ὠ
+\DeclareUnicodeComposite{\accdasia           }{\textOmega}{"1F69} % Ὡ
+\DeclareUnicodeComposite{\accpsilivaria      }{\textOmega}{"1F6A} % Ὢ
+\DeclareUnicodeComposite{\accdasiavaria      }{\textOmega}{"1F6B} % Ὣ
+\DeclareUnicodeComposite{\accpsilioxia       }{\textOmega}{"1F6C} % Ὤ
+\DeclareUnicodeComposite{\accdasiaoxia       }{\textOmega}{"1F6D} % Ὥ
+\DeclareUnicodeComposite{\accpsiliperispomeni}{\textOmega}{"1F6E} % Ὦ
+\DeclareUnicodeComposite{\accdasiaperispomeni}{\textOmega}{"1F6F} % Ὧ
+
+\DeclareUnicodeComposite{\`}                  {\textalpha}  {"1F70} % ὰ
+\DeclareUnicodeComposite{\`}                  {\textepsilon}{"1F72} % ὲ
+\DeclareUnicodeComposite{\`}                  {\texteta}    {"1F74} % ὴ
+\DeclareUnicodeComposite{\`}                  {\textiota}   {"1F76} % ὶ
+\DeclareUnicodeComposite{\`}                  {\textomicron}{"1F78} % ὸ
+\DeclareUnicodeComposite{\`}                  {\textupsilon}{"1F7A} % ὺ
+\DeclareUnicodeComposite{\`}                  {\textomega}  {"1F7C} % ὼ
+% repeat with named accents (LuaTeX does not normalize to pre-composed chars):
+\DeclareUnicodeComposite{\accvaria}           {\textalpha}  {"1F70} % ὰ
+\DeclareUnicodeComposite{\accvaria}           {\textepsilon}{"1F72} % ὲ
+\DeclareUnicodeComposite{\accvaria}           {\texteta}    {"1F74} % ὴ
+\DeclareUnicodeComposite{\accvaria}           {\textiota}   {"1F76} % ὶ
+\DeclareUnicodeComposite{\accvaria}           {\textomicron}{"1F78} % ὸ
+\DeclareUnicodeComposite{\accvaria}           {\textupsilon}{"1F7A} % ὺ
+\DeclareUnicodeComposite{\accvaria}           {\textomega}  {"1F7C} % ὼ
+
+
+% Skipping pre-composed characters with sub-iota (ypogegrammeni/prosgegrammeni).
+
+\DeclareUnicodeComposite{\u}                  {\textalpha}{"1FB0} % ᾰ
+\DeclareUnicodeComposite{\=}                  {\textalpha}{"1FB1} % ᾱ
+% ᾲ
+% ᾳ
+% ᾴ
+\DeclareUnicodeComposite{\accperispomeni}     {\textalpha}{"1FB6} % ᾶ
+\DeclareUnicodeComposite{\~}                  {\textalpha}{"1FB6} % ᾶ
+% ᾷ
+\DeclareUnicodeComposite{\u}                  {\textAlpha}{"1FB8} % Ᾰ
+\DeclareUnicodeComposite{\=}                  {\textAlpha}{"1FB9} % Ᾱ
+\DeclareUnicodeComposite{\`}                  {\textAlpha}{"1FBA} % Ὰ
+\DeclareUnicodeComposite{\accvaria}           {\textAlpha}{"1FBA} % Ὰ
+% ᾼ
+\DeclareUnicodeComposite{\accpsili}           {}          {"1FBD} % ᾽
+\DeclareTextSymbol{\prosgegrammeni}\UnicodeEncodingName {"1FBE} % ι
+\DeclareUnicodeComposite{\accpsili}           {}          {"1FBF} % ᾿
+
+\DeclareUnicodeComposite{\accperispomeni}     {}          {"1FC0} % ῀
+\DeclareUnicodeComposite{\accdialytikaperispomeni}{}      {"1FC1} % ῁
+% ῂ
+% ῃ
+% ῄ
+\DeclareUnicodeComposite{\accperispomeni}         {\texteta}    {"1FC6} % ῆ
+\DeclareUnicodeComposite{\~}                      {\texteta}    {"1FC6} % ῆ
+% ῇ
+\DeclareUnicodeComposite{\`}                      {\textEpsilon}{"1FC8} % Ὲ
+\DeclareUnicodeComposite{\accvaria}               {\textEpsilon}{"1FC8} % Ὲ
+\DeclareUnicodeComposite{\`}                      {\textEta}    {"1FCA} % Ὴ
+\DeclareUnicodeComposite{\accvaria}               {\textEta}    {"1FCA} % Ὴ
+% ῌ
+\DeclareUnicodeComposite{\accpsilivaria}          {}            {"1FCD} % ῍
+\DeclareUnicodeComposite{\accpsilioxia}           {}            {"1FCE} % ῎
+\DeclareUnicodeComposite{\accpsiliperispomeni}    {}            {"1FCF} % ῏
+
+\DeclareUnicodeComposite{\u}                      {\textiota}   {"1FD0} % ῐ
+\DeclareUnicodeComposite{\=}                      {\textiota}   {"1FD1} % ῑ
+\DeclareUnicodeComposite{\accdialytikavaria}      {\textiota}   {"1FD2} % ῒ
+\DeclareUnicodeComposite{\accdialytikaoxia}       {\textiota}   {"1FD3} % ΐ
+\DeclareUnicodeComposite{\accperispomeni}         {\textiota}   {"1FD6} % ῖ
+\DeclareUnicodeComposite{\~}                      {\textiota}   {"1FD6} % ῖ
+\DeclareUnicodeComposite{\~}                      {ι}           {"1FD6} % ῖ
+\DeclareUnicodeComposite{\accdialytikaperispomeni}{\textiota}   {"1FD7} % ῗ
+\DeclareUnicodeComposite{\u}                      {\textIota}   {"1FD8} % Ῐ
+\DeclareUnicodeComposite{\=}                      {\textIota}   {"1FD9} % Ῑ
+\DeclareUnicodeComposite{\`}                      {\textIota}   {"1FDA} % Ὶ
+\DeclareUnicodeComposite{\accvaria}               {\textIota}   {"1FDA} % Ὶ
+\DeclareUnicodeComposite{\accdasiavaria}          {}            {"1FDD} % ῝
+\DeclareUnicodeComposite{\accdasiaoxia}           {}            {"1FDE} % ῞
+\DeclareUnicodeComposite{\accdasiaperispomeni}    {}            {"1FDF} % ῟
+
+\DeclareUnicodeComposite{\u}                      {\textupsilon}{"1FE0} % ῠ
+\DeclareUnicodeComposite{\=}                      {\textupsilon}{"1FE1} % ῡ
+\DeclareUnicodeComposite{\accdialytikavaria}      {\textupsilon}{"1FE2} % ῢ
+\DeclareUnicodeComposite{\accdialytikaoxia}       {\textupsilon}{"1FE3} % ΰ
+\DeclareUnicodeComposite{\accpsili}               {\textrho}    {"1FE4} % ῤ
+\DeclareUnicodeComposite{\accdasia}               {\textrho}    {"1FE5} % ῥ
+\DeclareUnicodeComposite{\~}                      {\textupsilon}{"1FE6} % ῦ
+\DeclareUnicodeComposite{\accperispomeni}         {\textupsilon}{"1FE6} % ῦ
+\DeclareUnicodeComposite{\accdialytikaperispomeni}{\textupsilon}{"1FE7} % ῧ
+\DeclareUnicodeComposite{\u}                      {\textUpsilon}{"1FE8} % Ῠ
+\DeclareUnicodeComposite{\=}                      {\textUpsilon}{"1FE9} % Ῡ
+\DeclareUnicodeComposite{\`}                      {\textUpsilon}{"1FEA} % Ὺ
+\DeclareUnicodeComposite{\accvaria}               {\textUpsilon}{"1FEA} % Ὺ
+% Ύ
+\DeclareUnicodeComposite{\accdasia}               {\textRho}    {"1FEC} % Ῥ
+\DeclareUnicodeComposite{\accdialytikavaria}      {}            {"1FED} % ῭
+\DeclareUnicodeComposite{\accdialytikaoxia}       {}            {"1FEE} % ΅
+% `
+
+% ῲ
+% ῳ
+% ῴ
+\DeclareUnicodeComposite{\accperispomeni}         {\textomega}  {"1FF6} % ῶ
+\DeclareUnicodeComposite{\~}                      {\textomega}  {"1FF6} % ῶ
+% ῷ
+\DeclareUnicodeComposite{\`}                      {\textOmicron}{"1FF8} % Ὸ
+\DeclareUnicodeComposite{\accvaria}               {\textOmicron}{"1FF8} % Ὸ
+\DeclareUnicodeComposite{\`}                      {\textOmega}  {"1FFA} % Ὼ
+\DeclareUnicodeComposite{\accvaria}               {\textOmega}  {"1FFA} % Ὼ
+% ῼ
+\DeclareUnicodeComposite{\accoxia}                {}            {"1FFD} % ´
+\DeclareUnicodeComposite{\accdasia}               {}            {"1FFE} % ῾
+
+
+% Diacritics on literal Unicode characters::
+
+% \DeclareUnicodeComposite{\~}{α}{"1FB6} % ᾶ
+% \DeclareUnicodeComposite{\~}{η}{"1FC6} % ῆ
+% \DeclareUnicodeComposite{\~}{υ}{"1FE6} % ῦ
+% \DeclareUnicodeComposite{\~}{ω}{"1FF6} % ῶ
+
+
+% Letterlike Symbols
+% ~~~~~~~~~~~~~~~~~~
+% ::
+
+\DeclareTextSymbol{\textohm}\UnicodeEncodingName{"03A9} % OHM SIGN, use 03A9 Omega
+
+% Ancient Greek Numbers
+% ~~~~~~~~~~~~~~~~~~~~~
+% TODO: map other chars to corresponding Greek letters.
+% See also the grnumalt_ package.
+%
+% Definition with literal Unicode characters, because the code-point has 5
+% hexadecimal digits:
+%
+% ::
+
+\DeclareTextSymbol{\textpentedeka   }\UnicodeEncodingName{"10144} % GREEK ACROPHONIC ATTIC FIFTY
+\DeclareTextSymbol{\textpentehekaton}\UnicodeEncodingName{"10145} % GREEK ACROPHONIC ATTIC FIVE HUNDRED
+\DeclareTextSymbol{\textpenteqilioi }\UnicodeEncodingName{"10146} % GREEK ACROPHONIC ATTIC FIVE THOUSAND
+\DeclareTextSymbol{\textpentemuria  }\UnicodeEncodingName{"10147} % GREEK ACROPHONIC ATTIC FIFTY THOUSAND
+
+
+% UPPERCASE
+% =========
+%
+% Greek letters drop diacritics (eccept dialytika and sub-iota) in UPPERCASE.
+%
+% uc/lc values
+% ~~~~~~~~~~~~
+%
+% ``\lccode`` and ``\uccode`` corrections from the xgreek_ package by Apostolos Syropoulos::
+
+\global\lccode"0370="0371 \global\uccode"0370="0370
+\global\lccode"0371="0371 \global\uccode"0371="0370
+\global\lccode"0372="0373 \global\uccode"0372="0372
+\global\lccode"0373="0373 \global\uccode"0373="0372
+\global\lccode"0376="0377 \global\uccode"0376="0376
+\global\lccode"0377="0377 \global\uccode"0377="0376
+\global\lccode"03FD="037B \global\uccode"03FD="03FD
+\global\lccode"037B="037B \global\uccode"037B="03FD
+\global\lccode"03FE="037C \global\uccode"03FE="03FE
+\global\lccode"037C="037C \global\uccode"037C="03FE
+\global\lccode"03FF="037D \global\uccode"03FF="03FF
+\global\lccode"037D="037D \global\uccode"037D="03FF
+\global\lccode"0386="03AC \global\uccode"0386="0391
+\global\lccode"0388="03AD \global\uccode"0388="0395
+\global\lccode"0389="03AC \global\uccode"0389="0397
+\global\lccode"038A="03AF \global\uccode"038A="0399
+\global\lccode"038C="03CC \global\uccode"038C="039F
+\global\lccode"038E="03CD \global\uccode"038E="03A5
+\global\lccode"038F="03CE \global\uccode"038F="03A9
+\global\lccode"0390="0390 \global\uccode"0390="03AA
+\global\lccode"0391="03B1 \global\uccode"0391="0391
+\global\lccode"0392="03B2 \global\uccode"0392="0392
+\global\lccode"0393="03B3 \global\uccode"0393="0393
+\global\lccode"0394="03B4 \global\uccode"0394="0394
+\global\lccode"0395="03B5 \global\uccode"0395="0395
+\global\lccode"0396="03B6 \global\uccode"0396="0396
+\global\lccode"0397="03B7 \global\uccode"0397="0397
+\global\lccode"0398="03B8 \global\uccode"0398="0398
+\global\lccode"0399="03B9 \global\uccode"0399="0399
+\global\lccode"039A="03BA \global\uccode"039A="039A
+\global\lccode"039B="03BB \global\uccode"039B="039B
+\global\lccode"039C="03BC \global\uccode"039C="039C
+\global\lccode"039D="03BD \global\uccode"039D="039D
+\global\lccode"039E="03BE \global\uccode"039E="039E
+\global\lccode"039F="03BF \global\uccode"039F="039F
+\global\lccode"03A0="03C0 \global\uccode"03A0="03A0
+\global\lccode"03A1="03C1 \global\uccode"03A1="03A1
+\global\lccode"03A3="03C3 \global\uccode"03A3="03A3
+\global\lccode"03A4="03C4 \global\uccode"03A4="03A4
+\global\lccode"03A5="03C5 \global\uccode"03A5="03A5
+\global\lccode"03A6="03C6 \global\uccode"03A6="03A6
+\global\lccode"03A7="03C7 \global\uccode"03A7="03A7
+\global\lccode"03A8="03C8 \global\uccode"03A8="03A8
+\global\lccode"03A9="03C9 \global\uccode"03A9="03A9
+\global\lccode"03AA="03CA \global\uccode"03AA="03AA
+\global\lccode"03AB="03CB \global\uccode"03AB="03AB
+\global\lccode"03AC="03AC \global\uccode"03AC="0391
+\global\lccode"03AD="03AD \global\uccode"03AD="0395
+\global\lccode"03AE="03AE \global\uccode"03AE="0397
+\global\lccode"03AF="03AF \global\uccode"03AF="0399
+\global\lccode"03B0="03B0 \global\uccode"03B0="03AB
+\global\lccode"03B1="03B1 \global\uccode"03B1="0391
+\global\lccode"03B2="03B2 \global\uccode"03B2="0392
+\global\lccode"03B3="03B3 \global\uccode"03B3="0393
+\global\lccode"03B4="03B4 \global\uccode"03B4="0394
+\global\lccode"03B5="03B5 \global\uccode"03B5="0395
+\global\lccode"03B6="03B6 \global\uccode"03B6="0396
+\global\lccode"03B7="03B7 \global\uccode"03B7="0397
+\global\lccode"03B8="03B8 \global\uccode"03B8="0398
+\global\lccode"03B9="03B9 \global\uccode"03B9="0399
+\global\lccode"03BA="03BA \global\uccode"03BA="039A
+\global\lccode"03BB="03BB \global\uccode"03BB="039B
+\global\lccode"03BC="03BC \global\uccode"03BC="039C
+\global\lccode"03BD="03BD \global\uccode"03BD="039D
+\global\lccode"03BE="03BE \global\uccode"03BE="039E
+\global\lccode"03BF="03BF \global\uccode"03BF="039F
+\global\lccode"03C0="03C0 \global\uccode"03C0="03A0
+\global\lccode"03C1="03C1 \global\uccode"03C1="03A1
+\global\lccode"03C2="03C2 \global\uccode"03C2="03A3
+\global\lccode"03C3="03C3 \global\uccode"03C3="03A3
+\global\lccode"03C4="03C4 \global\uccode"03C4="03A4
+\global\lccode"03C5="03C5 \global\uccode"03C5="03A5
+\global\lccode"03C6="03C6 \global\uccode"03C6="03A6
+\global\lccode"03C7="03C7 \global\uccode"03C7="03A7
+\global\lccode"03C8="03C8 \global\uccode"03C8="03A8
+\global\lccode"03C9="03C9 \global\uccode"03C9="03A9
+\global\lccode"03CA="03CA \global\uccode"03CA="03AA
+\global\lccode"03CB="03CB \global\uccode"03CB="03AB
+\global\lccode"03CC="03CC \global\uccode"03CC="039F
+\global\lccode"03CD="03CD \global\uccode"03CD="03A5
+\global\lccode"03CE="03CE \global\uccode"03CE="03A9
+\global\lccode"03D0="03D0 \global\uccode"03D0="0392
+\global\lccode"03D1="03D1 \global\uccode"03D1="0398
+\global\lccode"03D2="03C5 \global\uccode"03D2="03A5
+\global\lccode"03D3="03CD \global\uccode"03D3="03A5
+\global\lccode"03D4="03CB \global\uccode"03D4="03AB
+\global\lccode"03D5="03C6 \global\uccode"03D5="03A6
+\global\lccode"03D6="03C0 \global\uccode"03D6="03A0
+\global\lccode"03DA="03DB \global\uccode"03DA="03DA
+\global\lccode"03DB="03DB \global\uccode"03DB="03DA
+\global\lccode"03DC="03DD \global\uccode"03DC="03DC
+\global\lccode"03DD="03DD \global\uccode"03DD="03DC
+\global\lccode"03DE="03DF \global\uccode"03DE="03DE
+\global\lccode"03DF="03DF \global\uccode"03DF="03DE
+\global\lccode"03E0="03E1 \global\uccode"03E0="03E0
+\global\lccode"03E1="03E1 \global\uccode"03E1="03E0
+\global\lccode"03F0="03BA \global\uccode"03F0="039A
+\global\lccode"03F1="03C1 \global\uccode"03F1="03A1
+\global\lccode"03F2="03F2 \global\uccode"03F2="03F9
+\global\lccode"03F9="03F2 \global\uccode"03F9="03F9
+\global\lccode"1F00="1F00 \global\uccode"1F00="0391
+\global\lccode"1F01="1F01 \global\uccode"1F01="0391
+\global\lccode"1F02="1F02 \global\uccode"1F02="0391
+\global\lccode"1F03="1F03 \global\uccode"1F03="0391
+\global\lccode"1F04="1F04 \global\uccode"1F04="0391
+\global\lccode"1F05="1F05 \global\uccode"1F05="0391
+\global\lccode"1F06="1F06 \global\uccode"1F06="0391
+\global\lccode"1F07="1F07 \global\uccode"1F07="0391
+\global\lccode"1F08="1F00 \global\uccode"1F08="0391
+\global\lccode"1F09="1F01 \global\uccode"1F09="0391
+\global\lccode"1F0A="1F02 \global\uccode"1F0A="0391
+\global\lccode"1F0B="1F03 \global\uccode"1F0B="0391
+\global\lccode"1F0C="1F04 \global\uccode"1F0C="0391
+\global\lccode"1F0D="1F05 \global\uccode"1F0D="0391
+\global\lccode"1F0E="1F06 \global\uccode"1F0E="0391
+\global\lccode"1F0F="1F07 \global\uccode"1F0F="0391
+\global\lccode"1F10="1F10 \global\uccode"1F10="0395
+\global\lccode"1F11="1F11 \global\uccode"1F11="0395
+\global\lccode"1F12="1F12 \global\uccode"1F12="0395
+\global\lccode"1F13="1F13 \global\uccode"1F13="0395
+\global\lccode"1F14="1F14 \global\uccode"1F14="0395
+\global\lccode"1F15="1F15 \global\uccode"1F15="0395
+\global\lccode"1F18="1F10 \global\uccode"1F18="0395
+\global\lccode"1F19="1F11 \global\uccode"1F19="0395
+\global\lccode"1F1A="1F12 \global\uccode"1F1A="0395
+\global\lccode"1F1B="1F13 \global\uccode"1F1B="0395
+\global\lccode"1F1C="1F14 \global\uccode"1F1C="0395
+\global\lccode"1F1D="1F15 \global\uccode"1F1D="0395
+\global\lccode"1F20="1F20 \global\uccode"1F20="0397
+\global\lccode"1F21="1F21 \global\uccode"1F21="0397
+\global\lccode"1F22="1F22 \global\uccode"1F22="0397
+\global\lccode"1F23="1F23 \global\uccode"1F23="0397
+\global\lccode"1F24="1F24 \global\uccode"1F24="0397
+\global\lccode"1F25="1F25 \global\uccode"1F25="0397
+\global\lccode"1F26="1F26 \global\uccode"1F26="0397
+\global\lccode"1F27="1F27 \global\uccode"1F27="0397
+\global\lccode"1F28="1F20 \global\uccode"1F28="0397
+\global\lccode"1F29="1F21 \global\uccode"1F29="0397
+\global\lccode"1F2A="1F22 \global\uccode"1F2A="0397
+\global\lccode"1F2B="1F23 \global\uccode"1F2B="0397
+\global\lccode"1F2C="1F24 \global\uccode"1F2C="0397
+\global\lccode"1F2D="1F25 \global\uccode"1F2D="0397
+\global\lccode"1F2E="1F26 \global\uccode"1F2E="0397
+\global\lccode"1F2F="1F27 \global\uccode"1F2F="0397
+\global\lccode"1F30="1F30 \global\uccode"1F30="0399
+\global\lccode"1F31="1F31 \global\uccode"1F31="0399
+\global\lccode"1F32="1F32 \global\uccode"1F32="0399
+\global\lccode"1F33="1F33 \global\uccode"1F33="0399
+\global\lccode"1F34="1F34 \global\uccode"1F34="0399
+\global\lccode"1F35="1F35 \global\uccode"1F35="0399
+\global\lccode"1F36="1F36 \global\uccode"1F36="0399
+\global\lccode"1F37="1F37 \global\uccode"1F37="0399
+\global\lccode"1F38="1F30 \global\uccode"1F38="0399
+\global\lccode"1F39="1F31 \global\uccode"1F39="0399
+\global\lccode"1F3A="1F32 \global\uccode"1F3A="0399
+\global\lccode"1F3B="1F33 \global\uccode"1F3B="0399
+\global\lccode"1F3C="1F34 \global\uccode"1F3C="0399
+\global\lccode"1F3D="1F35 \global\uccode"1F3D="0399
+\global\lccode"1F3E="1F36 \global\uccode"1F3E="0399
+\global\lccode"1F3F="1F37 \global\uccode"1F3F="0399
+\global\lccode"1F40="1F40 \global\uccode"1F40="039F
+\global\lccode"1F41="1F41 \global\uccode"1F41="039F
+\global\lccode"1F42="1F42 \global\uccode"1F42="039F
+\global\lccode"1F43="1F43 \global\uccode"1F43="039F
+\global\lccode"1F44="1F44 \global\uccode"1F44="039F
+\global\lccode"1F45="1F45 \global\uccode"1F45="039F
+\global\lccode"1F48="1F40 \global\uccode"1F48="039F
+\global\lccode"1F49="1F41 \global\uccode"1F49="039F
+\global\lccode"1F4A="1F42 \global\uccode"1F4A="039F
+\global\lccode"1F4B="1F43 \global\uccode"1F4B="039F
+\global\lccode"1F4C="1F44 \global\uccode"1F4C="039F
+\global\lccode"1F4D="1F45 \global\uccode"1F4D="039F
+\global\lccode"1F50="1F50 \global\uccode"1F50="03A5
+\global\lccode"1F51="1F51 \global\uccode"1F51="03A5
+\global\lccode"1F52="1F52 \global\uccode"1F52="03A5
+\global\lccode"1F53="1F53 \global\uccode"1F53="03A5
+\global\lccode"1F54="1F54 \global\uccode"1F54="03A5
+\global\lccode"1F55="1F55 \global\uccode"1F55="03A5
+\global\lccode"1F56="1F56 \global\uccode"1F56="03A5
+\global\lccode"1F57="1F57 \global\uccode"1F57="03A5
+\global\lccode"1F59="1F51 \global\uccode"1F59="03A5
+\global\lccode"1F5B="1F53 \global\uccode"1F5B="03A5
+\global\lccode"1F5D="1F55 \global\uccode"1F5D="03A5
+\global\lccode"1F5F="1F57 \global\uccode"1F5F="03A5
+\global\lccode"1F60="1F60 \global\uccode"1F60="03A9
+\global\lccode"1F61="1F61 \global\uccode"1F61="03A9
+\global\lccode"1F62="1F62 \global\uccode"1F62="03A9
+\global\lccode"1F63="1F63 \global\uccode"1F63="03A9
+\global\lccode"1F64="1F64 \global\uccode"1F64="03A9
+\global\lccode"1F65="1F65 \global\uccode"1F65="03A9
+\global\lccode"1F66="1F66 \global\uccode"1F66="03A9
+\global\lccode"1F67="1F67 \global\uccode"1F67="03A9
+\global\lccode"1F68="1F60 \global\uccode"1F68="03A9
+\global\lccode"1F69="1F61 \global\uccode"1F69="03A9
+\global\lccode"1F6A="1F62 \global\uccode"1F6A="03A9
+\global\lccode"1F6B="1F63 \global\uccode"1F6B="03A9
+\global\lccode"1F6C="1F64 \global\uccode"1F6C="03A9
+\global\lccode"1F6D="1F65 \global\uccode"1F6D="03A9
+\global\lccode"1F6E="1F66 \global\uccode"1F6E="03A9
+\global\lccode"1F6F="1F67 \global\uccode"1F6F="03A9
+\global\lccode"1F70="1F70 \global\uccode"1F70="0391
+\global\lccode"1F71="1F71 \global\uccode"1F71="0391
+\global\lccode"1F72="1F72 \global\uccode"1F72="0395
+\global\lccode"1F73="1F73 \global\uccode"1F73="0395
+\global\lccode"1F74="1F74 \global\uccode"1F74="0397
+\global\lccode"1F75="1F75 \global\uccode"1F75="0397
+\global\lccode"1F76="1F76 \global\uccode"1F76="0399
+\global\lccode"1F77="1F77 \global\uccode"1F77="0399
+\global\lccode"1F78="1F78 \global\uccode"1F78="039F
+\global\lccode"1F79="1F79 \global\uccode"1F79="039F
+\global\lccode"1F7A="1F7A \global\uccode"1F7A="03A5
+\global\lccode"1F7B="1F7B \global\uccode"1F7B="03A5
+\global\lccode"1F7C="1F7C \global\uccode"1F7C="03A9
+\global\lccode"1F7D="1F7D \global\uccode"1F7D="03A9
+\global\lccode"1F80="1F80 \global\uccode"1F80="1FBC
+\global\lccode"1F81="1F81 \global\uccode"1F81="1FBC
+\global\lccode"1F82="1F82 \global\uccode"1F82="1FBC
+\global\lccode"1F83="1F83 \global\uccode"1F83="1FBC
+\global\lccode"1F84="1F84 \global\uccode"1F84="1FBC
+\global\lccode"1F85="1F85 \global\uccode"1F85="1FBC
+\global\lccode"1F86="1F86 \global\uccode"1F86="1FBC
+\global\lccode"1F87="1F87 \global\uccode"1F87="1FBC
+\global\lccode"1F88="1F80 \global\uccode"1F88="1FBC
+\global\lccode"1F89="1F81 \global\uccode"1F89="1FBC
+\global\lccode"1F8A="1F82 \global\uccode"1F8A="1FBC
+\global\lccode"1F8B="1F83 \global\uccode"1F8B="1FBC
+\global\lccode"1F8C="1F84 \global\uccode"1F8C="1FBC
+\global\lccode"1F8D="1F85 \global\uccode"1F8D="1FBC
+\global\lccode"1F8E="1F86 \global\uccode"1F8E="1FBC
+\global\lccode"1F8F="1F87 \global\uccode"1F8F="1FBC
+\global\lccode"1F90="1F90 \global\uccode"1F90="1FCC
+\global\lccode"1F91="1F91 \global\uccode"1F91="1FCC
+\global\lccode"1F92="1F92 \global\uccode"1F92="1FCC
+\global\lccode"1F93="1F93 \global\uccode"1F93="1FCC
+\global\lccode"1F94="1F94 \global\uccode"1F94="1FCC
+\global\lccode"1F95="1F95 \global\uccode"1F95="1FCC
+\global\lccode"1F96="1F96 \global\uccode"1F96="1FCC
+\global\lccode"1F97="1F97 \global\uccode"1F97="1FCC
+\global\lccode"1F98="1F90 \global\uccode"1F98="1FCC
+\global\lccode"1F99="1F91 \global\uccode"1F99="1FCC
+\global\lccode"1F9A="1F92 \global\uccode"1F9A="1FCC
+\global\lccode"1F9B="1F93 \global\uccode"1F9B="1FCC
+\global\lccode"1F9C="1F94 \global\uccode"1F9C="1FCC
+\global\lccode"1F9D="1F95 \global\uccode"1F9D="1FCC
+\global\lccode"1F9E="1F96 \global\uccode"1F9E="1FCC
+\global\lccode"1F9F="1F97 \global\uccode"1F9F="1FCC
+\global\lccode"1FA0="1FA0 \global\uccode"1FA0="1FFC
+\global\lccode"1FA1="1FA1 \global\uccode"1FA1="1FFC
+\global\lccode"1FA2="1FA2 \global\uccode"1FA2="1FFC
+\global\lccode"1FA3="1FA3 \global\uccode"1FA3="1FFC
+\global\lccode"1FA4="1FA4 \global\uccode"1FA4="1FFC
+\global\lccode"1FA5="1FA5 \global\uccode"1FA5="1FFC
+\global\lccode"1FA6="1FA6 \global\uccode"1FA6="1FFC
+\global\lccode"1FA7="1FA7 \global\uccode"1FA7="1FFC
+\global\lccode"1FA8="1FA0 \global\uccode"1FA8="1FFC
+\global\lccode"1FA9="1FA1 \global\uccode"1FA9="1FFC
+\global\lccode"1FAA="1FA2 \global\uccode"1FAA="1FFC
+\global\lccode"1FAB="1FA3 \global\uccode"1FAB="1FFC
+\global\lccode"1FAC="1FA4 \global\uccode"1FAC="1FFC
+\global\lccode"1FAD="1FA5 \global\uccode"1FAD="1FFC
+\global\lccode"1FAE="1FA6 \global\uccode"1FAE="1FFC
+\global\lccode"1FAF="1FA7 \global\uccode"1FAF="1FFC
+\global\lccode"1FB0="1FB0 \global\uccode"1FB0="1FB8
+\global\lccode"1FB1="1FB1 \global\uccode"1FB1="1FB9
+\global\lccode"1FB2="1FB2 \global\uccode"1FB2="1FBC
+\global\lccode"1FB3="1FB3 \global\uccode"1FB3="1FBC
+\global\lccode"1FB4="1FB4 \global\uccode"1FB4="1FBC
+\global\lccode"1FB6="1FB6 \global\uccode"1FB6="0391
+\global\lccode"1FB7="1FB7 \global\uccode"1FB7="1FBC
+\global\lccode"1FB8="1FB0 \global\uccode"1FB8="1FB8
+\global\lccode"1FB9="1FB1 \global\uccode"1FB9="1FB9
+\global\lccode"1FBA="1F70 \global\uccode"1FBA="0391
+\global\lccode"1FBB="1F71 \global\uccode"1FBB="0391
+\global\lccode"1FBC="1FB3 \global\uccode"1FBC="1FBC
+\global\lccode"1FBD="1FBD \global\uccode"1FBD="1FBD
+\global\lccode"1FC2="1FC2 \global\uccode"1FC2="1FCC
+\global\lccode"1FC3="1FC3 \global\uccode"1FC3="1FCC
+\global\lccode"1FC4="1FC4 \global\uccode"1FC4="1FCC
+\global\lccode"1FC6="1FC6 \global\uccode"1FC6="0397
+\global\lccode"1FC7="1FC7 \global\uccode"1FC7="1FCC
+\global\lccode"1FC8="1F72 \global\uccode"1FC8="0395
+\global\lccode"1FC9="1F73 \global\uccode"1FC9="0395
+\global\lccode"1FCA="1F74 \global\uccode"1FCA="0397
+\global\lccode"1FCB="1F75 \global\uccode"1FCB="0397
+\global\lccode"1FCC="1FC3 \global\uccode"1FCC="1FCC
+\global\lccode"1FD0="1FD0 \global\uccode"1FD0="1FD8
+\global\lccode"1FD1="1FD1 \global\uccode"1FD1="1FD9
+\global\lccode"1FD2="1FD2 \global\uccode"1FD2="03AA
+\global\lccode"1FD3="1FD3 \global\uccode"1FD3="03AA
+\global\lccode"1FD6="1FD6 \global\uccode"1FD6="0399
+\global\lccode"1FD7="1FD7 \global\uccode"1FD7="03AA
+\global\lccode"1FD8="1FD0 \global\uccode"1FD8="1FD8
+\global\lccode"1FD9="1FD1 \global\uccode"1FD9="1FD9
+\global\lccode"1FDA="1F76 \global\uccode"1FDA="0399
+\global\lccode"1FDB="1F77 \global\uccode"1FDB="0399
+\global\lccode"1FE0="1FE0 \global\uccode"1FE0="1FE8
+\global\lccode"1FE1="1FE1 \global\uccode"1FE1="1FE9
+\global\lccode"1FE2="1FE2 \global\uccode"1FE2="03AB
+\global\lccode"1FE3="1FE3 \global\uccode"1FE3="03AB
+\global\lccode"1FE4="1FE4 \global\uccode"1FE4="03A1
+\global\lccode"1FE5="1FE5 \global\uccode"1FE5="03A1
+\global\lccode"1FE6="1FE6 \global\uccode"1FE6="03A5
+\global\lccode"1FE7="1FE7 \global\uccode"1FE7="03AB
+\global\lccode"1FE8="1FE0 \global\uccode"1FE8="1FE8
+\global\lccode"1FE9="1FE1 \global\uccode"1FE9="1FE9
+\global\lccode"1FEA="1F7A \global\uccode"1FEA="03A5
+\global\lccode"1FEB="1F7B \global\uccode"1FEB="03A5
+\global\lccode"1FEC="1FE5 \global\uccode"1FEC="03A1
+\global\lccode"1FF2="1FF2 \global\uccode"1FF2="1FFC
+\global\lccode"1FF3="1FF3 \global\uccode"1FF3="1FFC
+\global\lccode"1FF4="1FF4 \global\uccode"1FF4="1FFC
+\global\lccode"1FF6="1FF6 \global\uccode"1FF6="03A9
+\global\lccode"1FF7="1FF7 \global\uccode"1FF7="1FFC
+\global\lccode"1FF8="1F78 \global\uccode"1FF8="039F
+\global\lccode"1FF9="1F79 \global\uccode"1FF9="039F
+\global\lccode"1FFA="1F7C \global\uccode"1FFA="03A9
+\global\lccode"1FFB="1F7D \global\uccode"1FFB="03A9
+\global\lccode"1FFC="1FF3 \global\uccode"1FFC="1FFC
+
+
+% uclclist
+% ~~~~~~~~
+%
+% The common Greek font encoding definitions in greek-fontenc.def_ extend the
+% `uclclist` with Greek LICR macros. Here, we add Unicode-specific "hiatus_"
+% handling (copied from lgrenc.def_ and changed
+% Latin transcription to Unicode literals).
+%
+% The hiatus definition modifications::
+
+\DeclareTextCommand{\LGR@A@hiatus}{\UnicodeEncodingName}{%
+  \LGR@ifnextchar{Ι}{\textAlpha\"}{%
+    \LGR@ifnextchar{Υ}{\textAlpha\"}{%
+      \LGR@ifnextchar{\textIota}{\textAlpha\"}{%
+        \LGR@ifnextchar{\textUpsilon}{\textAlpha\"}{\textAlpha}%
+      }%
+    }%
+  }%
+}
+\DeclareTextCommand{\LGR@E@hiatus}{\UnicodeEncodingName}{%
+  \LGR@ifnextchar{Ι}{\textEpsilon\"}{%
+    \LGR@ifnextchar{Υ}{\textEpsilon\"}{%
+      \LGR@ifnextchar{\textIota}{\textEpsilon\"}{%
+        \LGR@ifnextchar{\textUpsilon}{\textEpsilon\"}{\textEpsilon}%
+      }%
+    }%
+  }%
+}
+
+% .. References
+%
+% .. _LaTeX Project Public License: http://www.latex-project.org/lppl.txt
+% .. _babel-greek: http://ctan.org/pkg/babel-greek
+% .. _euenc: http://ctan.org/pkg/euenc
+% .. _fontspec: http://ctan.org/pkg/fontspec
+% .. _greek-fontenc: http://ctan.org/pkg/greek-fontenc
+% .. _grnumalt: http://ctan.org/pkg/grnumalt
+% .. _inputenc: http://ctan.org/pkg/inputenc
+% .. _textalpha: textalpha.sty.html
+% .. _xgreek: http://ctan.org/pkg/xgreek
+% .. _xunicode: http://ctan.org/pkg/xunicode
+%
+% .. _latex base: http://ctan.org/pkg/latex-base
+% .. _font encoding: http://ctan.org/pkg/encguide
+% .. _LaTeX2e font selection:
+%    http://mirror.ctan.org/macros/latex/base/fntguide.pdf
+% .. _common Greek font encoding definitions:
+% .. _greek-fontenc.def: greek-fontenc.def.html
+% .. _lgrenc.def: lgrenc.def.html
+% .. _hiatus: greek-fontenc.def.html#mark-hiatus

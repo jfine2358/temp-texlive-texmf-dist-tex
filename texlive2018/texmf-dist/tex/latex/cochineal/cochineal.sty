@@ -1,0 +1,162 @@
+%% cochineal.sty
+%%
+\NeedsTeXFormat{LaTeX2e}
+\def\fileversion{1.042}
+\def\filedate{2017/03/10}
+\ProvidesPackage{cochineal}
+    [\filedate\space v\fileversion.]
+
+\RequirePackage[T1]{fontenc}
+\RequirePackage{textcomp}
+\IfFileExists{mweights.sty}{\RequirePackage{mweights}}{}
+\RequirePackage{etoolbox}
+\IfFileExists{fontaxes.sty}{
+    \RequirePackage{fontaxes}
+    \fa@naming@exception{figures}{{superior}{proportional}}{Sup}
+    \fa@naming@exception{figures}{{superior}{tabular}}{Sup}
+    \def\sufigures{\@nomath\sufigures
+        \fontfigurestyle{superior}\selectfont}
+    \DeclareTextFontCommand{\textsu}{\sufigures}
+    \let\textsuperior\textsu
+
+    \fa@naming@exception{figures}{{inferior}{proportional}}{Inf}
+    \fa@naming@exception{figures}{{inferior}{tabular}}{Inf}
+    \def\infigures{\@nomath\infigures
+        \fontfigurestyle{inferior}\selectfont}
+    \DeclareTextFontCommand{\textin}{\infigures}
+    \let\textinferior\textin
+
+
+    \fa@naming@exception{figures}{{denominators}{proportional}}{Dnom}
+    \fa@naming@exception{figures}{{denominators}{tabular}}{Dnom}
+    \def\defigures{\@nomath\defigures
+        \fontfigurestyle{denominators}\selectfont}
+    \DeclareTextFontCommand{\textde}{\defigures}
+    \let\textdenominators\textde
+
+}{}
+\providecommand*{\textfrac}[2]{%
+    \textsu{#1}\kern0em\textfractionsolidus\kern0em\textde{#2}}
+
+\IfFileExists{xkeyval.sty}{
+    \newcommand*{\Cochineal@scale}{1}
+    \RequirePackage{xkeyval}
+    \DeclareOptionX{scale}{\renewcommand*{\Cochineal@scale}{##1}}
+    \DeclareOptionX{scaled}{\renewcommand*{\Cochineal@scale}{##1}}
+}{
+    \let\DeclareOptionX\DeclareOption
+    \let\ExecuteOptionsX\ExecuteOptions
+    \let\ProcessOptionsX\ProcessOptions
+}
+\let\orig@footnote=\thefootnote
+\let\orig@makefnmark=\@makefnmark
+\def\bfseries@rm{b}
+\def\mdseries@rm{m}
+
+\newif\if@Cochineal@swashQ
+\newif\if@Cochineal@thrm
+\newif\if@Cochineal@sups
+\newif\if@Cochineal@scosf
+\def\useosf{\edef\Cochineal@figurestyle{OsF}}
+\@onlypreamble\useosf
+\def\useproportional{\edef\Cochineal@figurealign{}}
+\@onlypreamble\useproportional
+%\newif\ifCochineal@babel
+%\ifdefined\bbl@tempa \Cochineal@babeltrue\fi
+
+\DeclareOptionX{lining}{\edef\Cochineal@figurestyle{LF}}
+\DeclareOptionX{lf}{\edef\Cochineal@figurestyle{LF}}
+\DeclareOptionX{oldstyle}{\edef\Cochineal@figurestyle{OsF}}
+\DeclareOptionX{osf}{\edef\Cochineal@figurestyle{OsF}}
+\DeclareOptionX{tabular}{\edef\Cochineal@figurealign{T}}
+\DeclareOptionX{p}{\useproportional}
+\DeclareOptionX{proportional}{\useproportional}
+\DeclareOptionX{theoremfont}{\@Cochineal@thrmtrue}
+\DeclareOptionX{swashQ}{\@Cochineal@swashQtrue}
+\DeclareOptionX{sups}{\@Cochineal@supstrue}
+\DeclareOptionX{scosf}{\@Cochineal@scosftrue}
+\DeclareOptionX{bold}{\edef\bfseries@rm{b}}
+\DeclareOptionX{regular}{\edef\mdseries@rm{m}}
+\ExecuteOptionsX{lining,tabular}
+\ProcessOptionsX\relax
+
+\if@Cochineal@thrm
+	\ifdefined\newtheoremstyle
+	\newtheoremstyle{plain}
+	{\topsep}   % ABOVESPACE
+    {\topsep}   % BELOWSPACE
+    {\slshape}  % BODYFONT--\slshape is defined to be \itshape with upright figures and punctuation
+    {}       % INDENT (empty value is the same as 0pt)
+    {\bfseries} % HEADFONT--you may want to add \tlfstyle so the number is tab lining, regardless of text figure selection
+    {.}         % HEADPUNCT
+    {5pt plus 1pt minus 1pt} % HEADSPACE
+    {}          % CUSTOM-HEAD-SPEC\newtheorem{thm}{Theorem}[section]
+    \fi%
+\fi
+\DeclareRobustCommand{\lfstyle}{%
+  \not@math@alphabet\lfstyle\relax
+  \fontfamily{Cochineal-LF}\selectfont %
+}% to get lf
+\DeclareRobustCommand{\tlfstyle}{%
+  \not@math@alphabet\tlfstyle\relax
+  \fontfamily{Cochineal-TLF}\selectfont %
+}% to get tlf
+\DeclareRobustCommand{\osfstyle}{%
+  \not@math@alphabet\osfstyle\relax
+  \fontfamily{Cochineal-OsF}\selectfont %
+}% to get osf
+\DeclareRobustCommand{\tosfstyle}{%
+  \not@math@alphabet\tosfstyle\relax
+  \fontfamily{Cochineal-TOsF}\selectfont %
+}% to get tosf
+\DeclareRobustCommand{\textlf}[1]{%
+  {\lfstyle #1}%
+}% to get lf
+\DeclareRobustCommand{\texttlf}[1]{%
+  {\tlfstyle #1}%
+}% to get tlf
+\DeclareRobustCommand{\textosf}[1]{%
+  {\osfstyle #1}%
+}% to get osf
+\DeclareRobustCommand{\texttosf}[1]{%
+  {\tosfstyle #1}%
+}% to get tosf
+\if@Cochineal@scosf %
+\DeclareRobustCommand{\textsc}[1]{%
+{\fontfamily{Cochineal-\Cochineal@figurealign%
+OsF}\fontshape{sc}\selectfont #1}%
+}\fi% use OsF in small caps
+\renewcommand*{\rmdefault}{Cochineal-TLF} % always TLF in math
+\renewcommand*{\familydefault}{\rmdefault}
+\newcommand{\Qswash}{{\fontencoding{TS1}\fontfamily{Cochineal-LF}\selectfont \char59 }}
+\newcommand{\Qnoswash}{{\fontencoding{TS1}\fontfamily{Cochineal-LF}\selectfont \char58 }}
+
+\if@Cochineal@sups %
+ \ifdefined\sufigures
+  \def\f@@tn@te{footnote}
+  \def\@makefnmark{%
+    \ifx\@mpfn\f@@tn@te%
+      \ifx\thefootnote\orig@footnote%
+        \hbox{\sufigures\hspace*{.04em}\@thefnmark\hspace*{.04em}}%
+      \else%
+        \orig@makefnmark%
+      \fi
+    \else%
+      \orig@makefnmark%
+    \fi}%
+ \fi%
+\fi
+
+%\ifCochineal@babel
+%    \renewcommand*{\rmdefault}{Cochineal-\Cochineal@figurealign%
+%	\Cochineal@figurestyle}
+%	\normalfont
+%\else
+	\AtEndPreamble{%
+	\renewcommand*{\rmdefault}{Cochineal-\Cochineal@figurealign%
+	\Cochineal@figurestyle}
+	\normalfont}
+%\fi
+\renewcommand*{\familydefault}{\rmdefault}
+
+\endinput

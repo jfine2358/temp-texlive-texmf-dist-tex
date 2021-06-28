@@ -1,0 +1,1541 @@
+%% Style file `paracol'.
+%% Copyright (C) 2005-2012
+%%   Hiroshi Nakashima <h.nakashima@DOMAIN;  DOMAIN=media.kyoto-u.ac.jp>
+%%   (Kyoto University)
+%% This program can be redistributed and/or modified under the terms
+%% of the LaTeX Project Public License distributed from CTAN
+%% archives in directory macros/latex/base/lppl.txt; either
+%% version 1 of the License, or any later version.
+
+\NeedsTeXFormat{LaTeX2e}[1994/12/01]
+\ProvidesPackage{paracol}
+[2013/05/11 v1.2 ]
+
+%% Register Declaration
+
+\newcount\pcol@currcol \global\pcol@currcol\z@
+\newcount\pcol@nextcol
+\newcount\pcol@ncol
+\newcount\pcol@page
+\newcount\pcol@basepage
+\newcount\pcol@toppage
+\newcount\pcol@footnotebase
+\newcount\pcol@nfootnotes
+\newif\ifpcol@output \global\pcol@outputfalse
+\newif\ifpcol@nospan
+\newif\ifpcol@sync \pcol@syncfalse
+\newif\ifpcol@mctext \pcol@mctextfalse
+\newif\ifpcol@clear \pcol@clearfalse
+\newif\ifpcol@flush
+\newif\ifpcol@outputflt
+\newif\ifpcol@lastpage
+\newif\ifpcol@lastpagesave
+\newif\ifpcol@scfnote \pcol@scfnotefalse
+\newif\ifpcol@mgfnote \pcol@mgfnotefalse
+\newif\ifpcol@fncounteradjustment \pcol@fncounteradjustmentfalse
+\newif\ifpcol@swapcolumn \global\pcol@swapcolumnfalse
+\newdimen\pcol@prevdepth
+\newdimen\pcol@colht
+\newdimen\pcol@textfloatsep
+\newdimen\pcol@lrmargin
+\newskip\pcol@topskip
+\newbox\pcol@topfnotes
+
+%% Logging Tools
+
+\def\pcol@ShowBox#1{\message{(\the\ht#1+\the\dp#1)x(\the\wd#1)}%
+  {\showboxdepth\@M \showboxbreadth\@M \setbox\z@\vbox to\z@{\unvcopy#1}}}
+\def\pcol@LogLevel#1#2#3{%
+  \pcol@iLogLevel{#1}{pcol@Log}%
+  \pcol@iLogLevel{#2}{pcol@Logstart}%
+  \pcol@iLogLevel{#2}{pcol@Logend}%
+  \pcol@iLogLevel{#3}{pcol@Logfn}}
+\def\pcol@iLogLevel#1#2{%
+  \expandafter\let\expandafter\reserved@a
+    \csname #2@\romannumeral#1\endcsname
+  \expandafter\let\csname #2\endcsname\reserved@a}
+\def\pcol@Log@iii#1#2#3{\message{\string#1{#2%
+    (\number\pcol@page:\number\pcol@currcol/\number\pcol@toppage)}}%
+  \pcol@ShowBox#3\message{end\string#1}}
+\def\pcol@Log@ii#1#2#3{\message{\string#1{#2%
+    (\number\pcol@page:\number\pcol@currcol/\number\pcol@toppage)}=\the\ht#3}}
+\def\pcol@Log@i#1#2#3{}
+\def\pcol@Logstart@ii#1{\message{S\string#1}}
+\def\pcol@Logend@ii#1{\message{E\string#1}}
+\def\pcol@Logstart@i#1{}
+\def\pcol@Logend@i#1{}
+\def\pcol@Logfn@ii#1{\message{\string#1}}
+\def\pcol@Logfn@i#1{}
+\pcol@LogLevel111
+
+%% \output Routine
+
+\def\pcol@ovf{%
+  \PackageError{paracol}{Too many unprocessed columns/floats}\@ehb}
+
+\def\pcol@output{\let\par\@@par
+  \pcol@Logstart{\pcol@output\number\outputpenalty}%
+  \ifnum\outputpenalty<-\@M
+    \pcol@specialoutput
+  \else\ifpcol@output
+    \pcol@makecol
+    \pcol@opcol
+    \pcol@startcolumn\@ne
+    \@whilesw\if@fcolmade\fi{\pcol@opcol \pcol@startcolumn\@ne}%
+  \else
+    \@twocolumnfalse \let\@combinefloats\pcol@@combinefloats
+    \@makecol
+    \@opcol
+    \@startcolumn
+    \@whilesw\if@fcolmade\fi{\@opcol\@startcolumn}%
+  \fi\fi
+  \global\maxdepth\@maxdepth
+  \ifnum\outputpenalty>-\@Miv
+    \ifdim\@colroom<1.5\baselineskip
+      \ifdim\@colroom<\textheight
+        \@latex@warning@no@line{Text page \thepage\space
+                                contains only floats}%
+        \@emptycol
+      \else
+        \global\vsize\@colroom
+      \fi
+    \else
+      \global\vsize\@colroom
+    \fi
+  \else
+    \global\vsize\maxdimen
+  \fi
+  \pcol@Logend\pcol@output}
+
+%% Completing Column-Page
+
+\def\pcol@@makecol{\@makecol
+  \setbox\@outputbox\vbox to\@colht{\boxmaxdepth\@maxdepth \unvbox\@outputbox}}
+\def\pcol@makecol{\let\pcol@textbottom\@textbottom
+  \ifdim\pcol@textfloatsep=\maxdimen\else
+    \def\@textbottom{\vskip\z@\@plus.0001fil\@minus.0001fil}\fi
+  \def\pcol@currfoot{\voidb@x}%
+  \ifpcol@scfnote \ifvoid\footins\else
+    \pcol@shrinkcolbyfn\footins
+    \setbox\@cclv\vbox{\pcol@unvbox@cclv\footins}%
+    \ifnum\pcol@page=\pcol@toppage
+      \pcol@Log\pcol@makecol{save}\footins
+      \pcol@savefootins\pcol@currfoot
+    \else
+      \pcol@Log\pcol@makecol{discard}\footins
+      \setbox\@tempboxa\box\footins
+    \fi
+  \fi\fi
+  \pcol@Logstart\pcol@makecol
+  \ifvoid\footins\else \pcol@Log\@makecol{put}\footins \fi
+  \@makecol
+  \pcol@Logend\pcol@makecol
+  \let\@textbottom\pcol@textbottom}
+\def\pcol@combinefloats{%
+  \global\maxdepth\@maxdepth
+  \ifx\@toplist\@empty\else
+    \ifdim\pcol@textfloatsep=\maxdimen \@cflt \else \pcol@cflt \fi
+  \fi
+  \ifx\@botlist\@empty\else \@cflb
+    \ifpcol@lastpage
+      \setbox\@outputbox\vbox{\box\@outputbox \vskip\textfloatsep}%
+    \fi
+  \fi}
+\def\pcol@cflt{%
+  \let\@elt\@comflelt
+  \setbox\@tempboxa\vbox{}%
+  \@toplist
+  \setbox\@outputbox\vbox{
+    \boxmaxdepth\@maxdepth
+    \box\@tempboxa
+    \vskip-\floatsep
+    \ifdim\pcol@textfloatsep>5000\p@
+      \advance\pcol@textfloatsep-\@M\p@
+    \else
+      \topfigrule
+    \fi
+    \vskip\pcol@textfloatsep
+    \unvbox\@outputbox}%
+  \let\@elt\relax
+  \xdef\@freelist{\@freelist\@toplist}%
+  \global\let\@toplist\@empty}
+
+\def\pcol@opcol{%
+  \@next\@currbox\@freelist{\global\setbox\@currbox\vbox to\@colht{
+      \boxmaxdepth\@maxdepth
+      \pcol@clearcst@unvbox\@outputbox}}\pcol@ovf
+  \expandafter\@cons\csname pcol@shipped\number\pcol@currcol\endcsname\@currbox
+  \ifnum\pcol@currcol=\z@ \pcol@setpageno \fi
+  \pcol@nextpage
+  \pcol@checkshipped
+  \if@tempswa \pcol@outputpage\z@ \fi
+  \ifnum\pcol@page>\pcol@toppage \pcol@startpage
+  \else                          \pcol@getcurrpage
+  \fi
+  \pcol@floatplacement}
+
+\def\pcol@setpageno{\begingroup
+  \@tempcnta\pcol@page \advance\@tempcnta-\pcol@basepage
+  \edef\reserved@a{\pcol@pages\pcol@currpage}%
+  \global\let\pcol@pages\@empty \global\let\pcol@currpage\@empty
+  \let\@elt\pcol@setpnoelt \reserved@a
+  \endgroup}
+\def\pcol@setpnoelt#1#2#3{%
+  {\let\@elt\relax \xdef\pcol@pages{\pcol@pages\pcol@currpage}}%
+  \ifnum\@tempcnta>\z@ \gdef\pcol@currpage{\@elt{#1}#2#3}%
+  \else \pcol@defcurrpage{\number\c@page}{#2}{#3}%
+    \advance\c@page\@ne
+  \fi
+  \advance\@tempcnta\m@ne}
+\def\pcol@defcurrpage#1#2#3{{%
+  \let\@elt\relax \xdef\pcol@currpage{\@elt{#1}#2#3}}}
+
+\def\pcol@nextpage{\begingroup
+  \@tempcnta\pcol@page \advance\@tempcnta-\pcol@basepage
+  \@tempswatrue
+  \let\@elt\pcol@nextpelt \pcol@pages
+  \global\advance\pcol@page\@ne
+  \endgroup}
+\def\pcol@nextpelt#1#2#3{%
+  \ifnum\@tempcnta<\z@
+    \ifvoid#2\@tempswafalse
+    \else\ifdim\dimen#1<\z@
+      \if@tempswa \global\advance\pcol@page\@ne \fi
+    \else \@tempswafalse
+    \fi\fi
+  \fi
+  \advance\@tempcnta\m@ne}
+
+\def\pcol@checkshipped{\@tempswatrue
+  \@tempcnta\z@ \@whilenum\@tempcnta<\pcol@ncol\do{%
+    \expandafter\ifx\csname pcol@shipped\number\@tempcnta\endcsname\@empty
+      \@tempswafalse \fi
+   \advance\@tempcnta\@ne}}
+
+\def\pcol@getcurrpage{\begingroup
+  \@tempcnta\pcol@page \advance\@tempcnta-\pcol@basepage
+  \let\@elt\pcol@getpelt \pcol@pages\pcol@currpage
+  \endgroup}
+\def\pcol@getpelt#1#2#3{%
+  \ifnum\@tempcnta=\z@
+    \pcol@getpinfo{#1}#2#3{\global\c@page}{\global\@colht}{\global\topskip}\fi
+  \advance\@tempcnta\m@ne}
+\def\pcol@getpinfo#1#2#3#4#5#6{\pcol@nospantrue
+  \gdef\pcol@spanning{#2}\gdef\pcol@footins{#3}%
+  #4#1\relax
+  \ifvoid#2\relax #5\textheight #6\pcol@topskip
+  \else #5\dimen#2\relax #6\skip#2\relax \pcol@nospanfalse
+  \fi}
+\def\pcol@getcurrpinfo{%
+  \edef\reserved@a{\expandafter\@cdr\pcol@currpage\@nil}%
+  \expandafter\pcol@getpinfo\reserved@a}
+
+%% Starting New Page
+
+\def\pcol@startpage{%
+  \global\let\pcol@firstprevdepth\relax
+  \global\pcol@toppage\pcol@page
+  \ifx\pcol@currpage\@empty\else
+    \pcol@getcurrpinfo{\global\c@page}\@tempdima\@tempskipa
+    \@cons\pcol@pages{{\number\c@page}\pcol@spanning\pcol@currfoot}%
+    \stepcounter{page}%
+  \fi
+  \global\@colht\textheight
+  \global\topskip\pcol@topskip
+  \@dblfloatplacement
+  \@tryfcolumn\@dbldeferlist
+  \@whilesw\if@fcolmade\fi{%
+    \@next\@currbox\@freelist{%
+      \global\setbox\@currbox\box\@outputbox}\pcol@ovf
+    \global\dimen\@currbox-\maxdimen
+    \global\skip\@currbox\pcol@topskip
+    \@cons\pcol@pages{{\number\c@page}\@currbox\voidb@x}
+    \stepcounter{page}%
+    \global\advance\pcol@page\@ne \global\pcol@toppage\pcol@page
+    \@tryfcolumn\@dbldeferlist}%
+  \begingroup
+    \let\reserved@b\@dbldeferlist
+    \global\let\@dbldeferlist\@empty
+    \let\@elt\@sdblcolelt
+    \reserved@b
+  \endgroup
+  \ifx\@dbltoplist\@empty
+    \pcol@defcurrpage{\number\c@page}\voidb@x\voidb@x
+  \else
+    \setbox\@tempboxa\vbox{}%
+    \begingroup
+      \let\@elt\@comdblflelt
+      \@dbltoplist
+      \let\@elt\relax
+      \xdef\@freelist{\@freelist\@dbltoplist}%
+      \global\let\@dbltoplist\@empty
+      \@next\@currbox\@freelist{%
+        \global\setbox\@currbox\vbox{%
+          \unvbox\@tempboxa \vskip-\dblfloatsep \dblfigrule
+          \vskip\dbltextfloatsep}}%
+        \pcol@ovf
+      \global\dimen\@currbox\@colht
+      \global\skip\@currbox\pcol@topskip
+      \pcol@defcurrpage{\number\c@page}\@currbox\voidb@x
+    \endgroup
+  \fi
+  \gdef\pcol@footins{\voidb@x}}
+
+%% Shipping Page Out
+
+\def\pcol@outputpage#1{\begingroup
+  \def\@elt{\pcol@outputelt#1}\@tempswatrue \pcol@outputflttrue
+  \let\reserved@b\pcol@pages \gdef\pcol@pages{}%
+  \reserved@b
+  \endgroup}
+\def\pcol@outputelt#1#2#3#4{%
+  \setbox\@outputbox\box\voidb@x
+  \pcol@getpinfo{#2}#3#4\c@page\@tempdima\@tempskipa
+  \ifdim\@tempdima<\z@
+    \ifpcol@outputflt
+      \setbox\@outputbox\box\pcol@spanning
+      \@cons\@freelist\pcol@spanning
+    \else
+      \@cons\pcol@pages{{#2}#3#4}
+    \fi
+  \else\if@tempswa
+    \ifnum#1=\z@ \@tempswafalse \fi
+    \pcol@Logstart\pcol@outputelt
+    \setbox\@outputbox\vbox to\textheight{%
+      \ifpcol@nospan\else
+        \@cons\@freelist\pcol@spanning
+        \unvbox\pcol@spanning
+      \fi
+      \hb@xt@\textwidth{%
+        \let\pcol@hfil\relax
+        \@tempcnta\z@ \@whilenum\@tempcnta<\pcol@ncol\do{%
+          \pcol@swapcolumn\@tempcnta\@tempcntb
+          \expandafter\@next\expandafter\@currbox
+            \csname pcol@shipped\number\@tempcntb\endcsname
+            \relax{\let\@currbox\voidb@x}%
+          \ifvoid\@currbox\else \@cons\@freelist\@currbox \fi
+          \expandafter\@tempdima
+            \csname pcol@columnwidth\number\@tempcntb \endcsname
+          \pcol@hfil \hb@xt@\@tempdima{\box\@currbox\hss}%
+          \let\pcol@hfil\hfil
+         \advance\@tempcnta\@ne}}%
+      \ifvoid\pcol@footins\else
+        \pcol@Log\pcol@outputelt{output}\pcol@footins
+        \pcol@putfootins\pcol@footins
+        \@cons\@freelist\pcol@footins
+      \fi
+      \boxmaxdepth\@maxdepth}%
+    \pcol@Logend\pcol@outputelt
+  \else
+    \pcol@outputfltfalse
+    \@cons\pcol@pages{{#2}#3#4}%
+  \fi\fi
+  \ifvoid\@outputbox\else
+    \@outputpage \global\advance\pcol@basepage\@ne
+  \fi}
+
+%% Starting New Column Page
+
+\def\pcol@startcolumn#1{%
+  \@tempdima\@colht \@tempdimb\z@
+  \ifvoid\pcol@footins\else \pcol@shrinkcolbyfn\pcol@footins \fi
+  \global\@colroom\@colht
+  \@tryfcolumn\@deferlist
+  \if@fcolmade\else
+    \pcol@trynextcolumn
+    \ifpcol@scfnote \ifnum#1>\z@
+      \ifvoid\pcol@footins\else
+        \edef\pcol@currfoot{\pcol@footins}%
+        \pcol@getcurrfoot\copy
+        \pcol@Log\pcol@startcolumn{insert}\footins
+        \insert\footins{\unvbox\footins}%
+      \fi
+      \ifnum\pcol@page=\pcol@toppage
+        \pcol@deferredfootins\pcol@startcolumn \fi
+    \fi\fi
+  \fi
+  \advance\@tempdima-\@colht
+  \global\advance\@colroom\@tempdima
+  \global\advance\@colht\@tempdima
+  \pcol@savecolorstack}
+\def\pcol@trynextcolumn{\begingroup
+  \let\reserved@b\@deferlist
+  \global\let\@deferlist\@empty
+  \let\@elt\@scolelt
+  \reserved@b
+  \endgroup}
+
+%% Special Output Routines: Dispatcher
+
+\def\pcol@op@start{-10010}
+\def\pcol@op@switch{-10011}
+\def\pcol@op@flush{-10012}
+\def\pcol@op@clear{-10013}
+\def\pcol@op@end{-10014}
+\def\pcol@specialoutput{%
+  \ifnum\outputpenalty=\pcol@op@start\relax
+    \let\reserved@a\pcol@output@start
+  \else\ifnum\outputpenalty=\pcol@op@switch\relax
+    \let\reserved@a\pcol@output@switch
+  \else\ifnum\outputpenalty=\pcol@op@flush\relax
+    \let\reserved@a\pcol@output@flush
+  \else\ifnum\outputpenalty=\pcol@op@clear\relax
+    \let\reserved@a\pcol@output@clear
+  \else\ifnum\outputpenalty=\pcol@op@end\relax
+    \let\reserved@a\pcol@output@end
+  \else \let\reserved@a\@specialoutput
+  \fi\fi\fi\fi\fi
+  \ifnum\outputpenalty=-\@Miv\relax
+    \ifvoid\footins\else \pcol@Log\dummy{dummy}\footins
+  \fi\fi
+  \ifx\reserved@a\@specialoutput\else
+    \global\setbox\@holdpg\vbox{\unvbox\@holdpg \unvbox\@cclv
+      \setbox\@tempboxa\lastbox \unskip}%
+    \outputpenalty-\@M
+  \fi
+  \reserved@a}
+
+%% Special Output Routines: Building First Page
+
+\def\pcol@output@start{%
+  \global\pcol@outputtrue
+  \global\pcol@page\z@ \global\pcol@toppage\z@ \global\pcol@basepage\z@
+  \global\let\pcol@pages\@empty
+  \global\let\@dbldeferlist\@deferlist \global\let\@deferlist\@empty
+  \setbox\z@\box\pcol@topfnotes
+  \@tempdima\@colroom
+  \advance\@tempdima-\ht\@holdpg \advance\@tempdima-\dp\@holdpg
+  \ifvoid\footins\else
+    \advance\@tempdima-\skip\footins
+    \advance\@tempdima-\ht\footins \advance\@tempdima-\dp\footins
+  \fi
+  \ifx\@botlist\@empty\else \advance\@tempdima-\textfloatsep \fi
+  \ifdim\@tempdima<1.5\baselineskip
+    \pcol@makenormalcol\z@
+    \@outputpage
+    \global\let\pcol@currpage\@empty \pcol@startpage
+    \global\topskip\pcol@topskip
+  \else
+    \pcol@makenormalcol\@ne
+    \@tempdima\ht\@outputbox \advance\@tempdima\dp\@outputbox
+    \global\advance\@colht-\@tempdima
+    \@next\@currbox\@freelist{\global\setbox\@currbox\box\@outputbox}\pcol@ovf
+    \global\dimen\@currbox\@colht
+    \ifdim\@tempdima=\z@ \@tempskipa\topskip \else \@tempskipa\z@ \fi
+    \global\skip\@currbox\@tempskipa \global\topskip\@tempskipa
+    \pcol@defcurrpage{\number\c@page}\@currbox\voidb@x
+  \fi
+  \global\@colroom\@colht
+  \pcol@floatplacement
+  \pcol@currcol\z@ \@whilenum\pcol@currcol<\pcol@ncol\do{%
+    \@next\@currbox\@freelist{\global\setbox\@currbox\vbox{%
+      \ifdim\topskip=\z@ \hrule\@height\z@\@width\z@
+      \fi}}\pcol@ovf
+    \pcol@setcurrcolnf
+    \global\count\@currbox\z@
+    \global\dimen\@currbox\@colroom
+    \expandafter\gdef\csname pcol@shipped\number\pcol@currcol\endcsname{}%
+   \advance\pcol@currcol\@ne}%
+  \global\pcol@currcol\z@
+  \pcol@getcurrcol
+  \gdef\pcol@colorstack{}\pcol@savecolorstack
+  \@cons\@freelist\@currbox \unvbox\@currbox
+  \ifvoid\footins\else
+    \pcol@Log\pcol@output@start{insert}\footins
+    \insert\footins{\box\footins\penalty\interlinepenalty}%
+  \fi}
+
+\def\pcol@makenormalcol#1{%
+  \ifvoid\footins \@tempswafalse \else \@tempswatrue \fi
+  \ifpcol@mgfnote \ifnum#1=\@ne \@tempswafalse \fi\fi
+  \if@tempswa
+    \pcol@Log\pcol@makenormalcol{output}\footins
+    \pcol@combinefootins\@holdpg\footins
+  \else
+    \setbox\@outputbox\box\@holdpg
+  \fi
+  \let\@elt\relax
+  \xdef\@freelist{\@freelist\@midlist}%
+  \global\let\@midlist\@empty
+  \ifnum#1=\@ne \pcol@lastpagetrue \fi
+  \pcol@combinefloats \pcol@lastpagefalse}
+
+\def\pcol@floatplacement{%
+  \global\@mparbottom\z@ \global\@textfloatsheight\z@
+  \global\pcol@textfloatsep\maxdimen
+  \@floatplacement}
+
+%% Special Output Routines: Column-Switching
+
+\def\pcol@output@switch{%
+  \@next\@currbox\@freelist{\global\setbox\@currbox\vbox{
+      \pcol@clearcst@unvbox\@holdpg}}\pcol@ovf
+  \def\pcol@currfoot{\voidb@x}%
+  \ifvoid\footins\else
+    \ifpcol@scfnote
+      \ifnum\pcol@page=\pcol@toppage
+        \pcol@getcurrpinfo\@tempcnta\@tempdima\@tempskipa
+        \pcol@Log\pcol@output@switch{save}\footins
+        \pcol@savefootins\pcol@footins
+        \pcol@defcurrpage{\number\@tempcnta}\pcol@spanning\pcol@footins
+      \else
+        \pcol@Log\pcol@output@switch{discard}\footins
+        \setbox\@tempboxa\box\footins
+      \fi
+    \else
+      \pcol@Log\pcol@output@switch{save}\footins
+      \pcol@savefootins\pcol@currfoot
+    \fi
+  \fi
+  \ifnum\pcol@currcol=\z@ \pcol@setpageno \fi
+  \pcol@setcurrcol
+  \global\count\@currbox\pcol@page
+  \global\dimen\@currbox\@colroom
+  \@tempswafalse
+  \let\reserved@a\@nobreakfalse \let\reserved@b\@afterindentfalse
+  \ifpcol@sync
+    \ifpcol@mctext
+      \if@nobreak \let\reserved@a\@nobreaktrue \fi
+      \if@afterindent \let\reserved@b\@afterindenttrue \fi
+      \@temptokena\everypar
+      \pcol@currcol\z@ \@whilenum\pcol@currcol<\pcol@ncol\do{%
+        \pcol@getcurrcol \reserved@a \reserved@b \everypar\@temptokena
+        \pcol@setcurrcol
+       \advance\pcol@currcol\@ne}%
+    \fi
+    \@tempswatrue
+    \global\pcol@mctextfalse
+  \fi
+  \ifpcol@clear \@tempswatrue \fi
+  \if@tempswa \pcol@sync \fi
+  \@tempswatrue
+  \ifpcol@clear \ifpcol@sync\else \@tempswafalse \fi\fi
+  \if@tempswa \pcol@restartcolumn \fi
+  \global\pcol@syncfalse}
+
+\def\pcol@restartcolumn{%
+  \global\pcol@currcol\pcol@nextcol
+  \pcol@getcurrcol
+  \global\pcol@page\count\@currbox
+  \global\@colroom\dimen\@currbox
+  \@cons\@freelist\@currbox
+  \pcol@getcurrpage
+  \@tempswafalse
+  \ifpcol@scfnote
+    \edef\pcol@currfoot{\pcol@footins}%
+    \ifnum\pcol@page=\pcol@toppage\else \@tempswatrue \fi
+  \fi
+  \if@tempswa\else
+    \pcol@restorecst@restart
+    \if@nobreak \nobreak \else \addpenalty\interlinepenalty \fi
+  \fi
+  \@tempdima\@colht \@tempdimb\z@
+  \ifvoid\pcol@currfoot\else
+    \if@tempswa
+      \pcol@getcurrfoot\copy
+      \pcol@Log\pcol@restartcolumn{insdmy}\footins
+    \else
+      \pcol@getcurrfoot\box \@cons\@freelist\pcol@currfoot
+      \pcol@Log\pcol@restartcolumn{insert}\footins
+    \fi
+    \pcol@shrinkcolbyfn\footins
+    \insert\footins{\unvbox\footins}%
+  \fi
+  \if@tempswa
+    \pcol@restorecst@restart
+    \if@nobreak \nobreak \else \addpenalty\interlinepenalty \fi
+  \fi
+  \ifpcol@scfnote \ifnum\pcol@page=\pcol@toppage
+    \pcol@deferredfootins\pcol@restartcolumn
+  \fi\fi
+  \@colht\@tempdima}
+
+\def\pcol@getcurrcol{%
+  \expandafter\expandafter\expandafter\pcol@igetcurrcol
+    \csname pcol@col\number\pcol@currcol\endcsname
+  \expandafter\global\expandafter\columnwidth
+    \csname pcol@columnwidth\number\pcol@currcol\endcsname}
+\def\pcol@igetcurrcol#1#2#3#4#5#6#7#8#9{%
+  \def\@currbox{#1}\def\pcol@currfoot{#2}\global\pcol@prevdepth#3sp\relax
+  \gdef\@toplist{#4}\gdef\@midlist{#5}\gdef\@botlist{#6}\gdef\@deferlist{#7}%
+  \global\pcol@textfloatsep#8sp\pcol@iigetcurrcol#9}
+\def\pcol@iigetcurrcol#1#2#3#4#5#6#7#8#9{%
+  \global\@textfloatsheight#1sp\relax \global\@mparbottom#2sp\relax
+  \global\@topnum#3\relax \global\@toproom#4sp\relax
+  \global\@botnum#5\relax \global\@botroom#6sp\relax
+  \global\@colnum#7\relax
+  \global\@afterindentfalse \@nobreaktrue
+  \ifcase#8
+    \@nobreakfalse \or
+    \global\@afterindenttrue \else
+    \relax
+  \fi
+  \global\everypar{#9}}
+\def\pcol@getcurrfoot#1{%
+  \ifvoid\pcol@currfoot \global\setbox\footins\box\voidb@x
+  \else
+    \global\setbox\footins#1\pcol@currfoot
+    \global\count\footins\count\pcol@currfoot
+    \global\dimen\footins\dimen\pcol@currfoot
+    \global\skip\footins\skip\pcol@currfoot
+  \fi}
+\def\pcol@setcurrcol{{\let\@elt\relax
+  \@tempcnta\if@nobreak\if@afterindent\@ne\else\tw@\fi\else\z@\fi
+  \expandafter\xdef\csname pcol@col\number\pcol@currcol\endcsname{%
+    {\@currbox}{\pcol@currfoot}{\number\pcol@prevdepth}%
+    {\@toplist}{\@midlist}{\@botlist}{\@deferlist}{\number\pcol@textfloatsep}%
+    {{\number\@textfloatsheight}{\number\@mparbottom}%
+     {\number\@topnum}{\number\@toproom}{\number\@botnum}{\number\@botroom}%
+     {\number\@colnum}{\number\@tempcnta}{\the\everypar}}}}}
+\def\pcol@setcurrcolnf{\def\pcol@currfoot{\voidb@x}\pcol@setcurrcol}
+
+%% Special Output Routines: Color
+
+\def\pcol@set@color@push{\pcol@set@color
+  \@cons\pcol@colorstack{{\current@color}}}
+\def\pcol@reset@color@pop{\pcol@reset@color \begingroup
+  \let\reserved@a\pcol@colorstack
+  \gdef\pcol@colorstack{}\let\@elt\pcol@reset@color@elt
+  \reserved@a\@elt\@nil \endgroup}
+\def\pcol@reset@color@elt#1\@elt#2{\def\reserved@b{#2}%
+  \ifx\reserved@b\@nnil \let\reserved@b\relax
+  \else \@cons\pcol@colorstack{{#1}}\def\reserved@b{\@elt{#2}}%
+  \fi
+  \reserved@b}
+
+\def\pcol@magicpenalty{12345}
+\def\pcol@ifempty#1#2#3{%
+  \setbox\@tempboxa\vbox{\penalty\pcol@magicpenalty
+    \unvcopy#1\xdef\@gtempa{\number\lastpenalty}}%
+  \ifnum\@gtempa=\pcol@magicpenalty\relax \def\reserved@a{#2}%
+  \else                                   \def\reserved@a{#3}%
+  \fi
+  \reserved@a}
+
+\def\pcol@clearcst@unvbox#1{%
+  \pcol@ifempty#1\relax
+   {\pcol@restorecst\pcol@colorstack@saved
+    \unvbox#1\pcol@clearcolorstack}}
+\def\pcol@clearcolorstack{{\def\@elt##1{\pcol@reset@color}%
+  \pcol@colorstack@full}}
+
+\def\pcol@restorecst@restart{%
+  \pcol@ifempty\@currbox
+    \pcol@savecolorstack
+   {\gdef\pcol@colorstack@saved{}\unvbox\@currbox \pcol@restorecolorstack}}
+\def\pcol@restorecolorstack{\pcol@restorecst\pcol@colorstack@full}
+\def\pcol@restorecst#1{{\let\@elt\pcol@set@color@elt#1}}
+\def\pcol@set@color@elt#1{\def\current@color{#1}\let\aftergroup\@gobble
+  \pcol@set@color}
+
+\def\pcol@savecolorstack{{\let\@elt\relax
+  \xdef\pcol@colorstack@saved{\pcol@colorstack@full}}}
+\def\pcol@colorstack@full{%
+  \expandafter\ifx\csname pcol@columncolor\number\pcol@currcol\endcsname\relax
+    \@empty
+  \else \@nameuse{pcol@columncolor\number\pcol@currcol}\fi
+  \pcol@colorstack}
+
+\def\columncolor{\@ifnextchar[%]
+  \pcol@xcolumncolor\pcol@ycolumncolor}
+\def\pcol@xcolumncolor[#1]#2{\pcol@columncolor{\color[#1]{#2}}}
+\def\pcol@ycolumncolor#1{\pcol@columncolor{\color{#1}}}
+\def\pcol@columncolor#1{\@ifnextchar[%]
+  {\pcol@icolumncolor{#1}}{\pcol@icolumncolor{#1}[\number\pcol@currcol]}}
+\def\normalcolumncolor{\@ifnextchar[%]
+  {\pcol@icolumncolor\normalcolor}%
+  {\pcol@icolumncolor\normalcolor[\number\pcol@currcol]}}
+\def\pcol@icolumncolor#1[#2]{%
+  \ifx\set@color\relax\else
+    \ifx\pcol@paracol\paracol\else \pcol@clearcolorstack \fi
+    \begingroup
+    \let\@elt\relax \let\set@color\relax #1%
+    \expandafter\xdef\csname pcol@columncolor#2\endcsname
+      {\@elt{\current@color}}%
+    \endgroup
+    \ifx\pcol@paracol\paracol\else \pcol@restorecolorstack \fi
+  \fi}
+
+%% Special Output Routines: Footnote Handling
+
+\def\pcol@savefootins#1{%
+  \@next#1\@freelist{%
+    \global\setbox#1\box\footins
+    \global\count#1\count\footins
+    \global\dimen#1\dimen\footins
+    \global\skip#1\skip\footins}{\def#1{\voidb@x}\pcol@ovf}}
+
+\def\pcol@shrinkcolbyfn#1{%
+  \@tempdimb-\skip#1\relax
+  \advance\@colht-\ht#1\advance\@colht-\dp#1\advance\@colht\@tempdimb}
+\def\pcol@unvbox@cclv#1{%
+  \@tempdima\dp\@cclv \unvbox\@cclv
+  \vskip \ifdim\@tempdima>\@maxdepth -\@maxdepth \else -\@tempdima \fi
+  \vskip\skip#1\@tempdima\skip#1\vskip-\@tempdima}
+
+\def\pcol@deferredfootins#1{%
+  \ifdim\@tempdimb=\z@ \@tempdimb-\skip\footins \fi
+  \advance\@tempdimb\@colht\relax
+  \ifvoid\pcol@topfnotes\else \ifdim\@tempdimb>\z@
+    \begingroup
+      \splitmaxdepth\@maxdepth \splittopskip\z@ \vbadness\@M
+      \setbox\@tempboxa\vsplit\pcol@topfnotes to\@tempdimb
+      \ifvoid\pcol@topfnotes\else
+        \global\setbox\pcol@topfnotes\vbox{\penalty\interlinepenalty
+          \unvbox\pcol@topfnotes}%
+      \fi
+      \setbox\@tempboxa\vbox{\unvbox\@tempboxa}%
+      \ifdim\ht\@tempboxa>\z@
+        \pcol@Log#1{add}\@tempboxa
+        \insert\footins{\unvbox\@tempboxa}%
+      \fi
+    \endgroup
+  \fi\fi}
+
+\def\pcol@combinefootins#1#2{%
+  \setbox\@outputbox\vbox{
+    \boxmaxdepth\@maxdepth
+    \unvbox#1\relax
+    \pcol@putfootins#2\unskip}}
+\def\pcol@putfootins#1{%
+  \vskip\skip#1\relax
+  \color@begingroup
+    \normalcolor
+    \footnoterule
+    \unvbox#1\relax
+  \color@endgroup \vskip\z@}
+
+%% Special Output Routines: Synchronization
+
+\def\pcol@sync{%
+  \pcol@currcol\z@ \@whilenum\pcol@currcol<\pcol@ncol\do\pcol@flushcolumn
+  \pcol@outputpage\@ne
+  \pcol@getcurrpinfo{\global\c@page}{\global\@colht}{\global\topskip}%
+  \@tempdima-\maxdimen \@tempdimb-\maxdimen \pcol@colht-\maxdimen
+  \@pageht-\maxdimen \@tempdimc\maxdimen \@pagedp\maxdimen \@tempcntb\z@
+  \pcol@currcol\z@ \@whilenum\pcol@currcol<\pcol@ncol\do\pcol@measurecolumn
+  \@tempswatrue \global\pcol@flushfalse
+  \ifpcol@clear
+    \ifpcol@lastpage \@tempdimb\pcol@colht \else \@tempdimb\@pageht \fi
+    \ifpcol@sync \@tempswafalse \fi
+  \else
+    \ifdim\@tempdima<\z@      \@tempswafalse
+    \else\ifdim\@tempdimb<\z@ \@tempdimb\@tempdima
+    \else                     \advance\@tempdimb\@tempdima
+    \fi\fi
+  \fi
+  \ifpcol@scfnote\ifvoid\pcol@footins\else
+    \ifdim\@tempdimb<\z@ \@tempdimb\z@ \fi
+    \advance\@tempdimb\ht\pcol@footins \advance\@tempdimb\dp\pcol@footins
+    \advance\@tempdimb\skip\pcol@footins
+  \fi\fi
+  \ifdim\@tempdimb>\@colht
+    \global\pcol@flushtrue \@tempswafalse \pcol@nextcol\@tempcntb
+  \fi
+  \ifdim\@tempdimb<\z@\else \if@tempswa
+    \pcol@currcol\z@ \@whilenum\pcol@currcol<\pcol@ncol\do\pcol@synccolumn
+  \fi\fi}
+
+\def\pcol@flushcolumn{%
+  \pcol@getcurrcol
+  \ifnum\count\@currbox<\pcol@toppage
+    \ifpcol@lastpage \pcol@lastpagesavetrue \else \pcol@lastpagesavefalse \fi
+    \pcol@lastpagefalse
+    \pcol@page\count\@currbox
+    \setbox\@cclv\vbox{\unvbox\@currbox \vfil}%
+    \ifvoid\pcol@currfoot\else \@cons\@freelist\pcol@currfoot \fi
+    \pcol@getcurrfoot\box
+    \pcol@getcurrpage
+    \ifvoid\pcol@footins\else
+      \pcol@shrinkcolbyfn\pcol@footins
+      \setbox\@cclv\vbox{\pcol@unvbox@cclv\pcol@footins}%
+    \fi
+    \pcol@Logstart\pcol@flushcolumn
+    \ifdim\@toproom=\maxdimen
+      \setbox\@outputbox\pcol@makefcolpage \global\@toproom\z@
+    \else
+      \pcol@@makecol
+    \fi
+    \pcol@Logend\pcol@flushcolumn
+    \global\setbox\@currbox\box\@outputbox
+    \expandafter\@cons\csname pcol@shipped\number\pcol@currcol\endcsname
+      \@currbox
+    \advance\pcol@page\@ne
+    \ifx\@deferlist\@empty\else
+      \@whilenum\pcol@page<\pcol@toppage\do{%
+        \pcol@getcurrpage
+        \ifvoid\pcol@footins\else \pcol@shrinkcolbyfn\pcol@footins \fi
+        \@makefcolumn\@deferlist
+        \if@fcolmade
+          \@next\@currbox\@freelist{\global\setbox\@currbox\box\@outputbox}%
+            \pcol@ovf
+          \expandafter\@cons
+            \csname pcol@shipped\number\pcol@currcol\endcsname\@currbox
+        \fi
+       \advance\pcol@page\@ne}%
+    \fi
+    \ifpcol@lastpagesave \pcol@lastpagetrue \fi
+    \@next\@currbox\@freelist{\global\setbox\@currbox\vbox{}}\pcol@ovf
+    \pcol@getcurrpinfo\@tempcnta{\global\@colht}\@tempskipa
+    \@pageht\@colht
+    \ifvoid\pcol@footins\else \pcol@shrinkcolbyfn\pcol@footins \fi
+    \global\@colroom\@colht \pcol@floatplacement
+    \ifx\@deferlist\@empty\else
+      \ifpcol@clear
+        \pcol@makefcolumn \global\@colroom\@colht
+      \else
+        \pcol@trynextcolumn
+    \fi\fi
+    \pcol@setcurrcolnf
+    \global\count\@currbox\pcol@page
+    \advance\@pageht-\@colht \advance\@pageht\@colroom
+    \global\dimen\@currbox\@pageht
+  \fi %\ifnum\count\@currbox<\pcol@toppage
+  \advance\pcol@currcol\@ne}
+
+\def\pcol@makefcolumn{%
+  \ifpcol@lastpage \@tempdimc\floatsep \else \@tempdimc\@fpsep \fi
+  \@tempdima\@colht \advance\@tempdima\@tempdimc \global\@colroom-\@tempdimc
+  \begingroup
+    \let\@elt\pcol@makefcolelt
+    \let\reserved@b\@deferlist
+    \global\let\@deferlist\@empty
+    \reserved@b
+  \endgroup
+  \ifx\@toplist\@empty\else
+    \@tempswatrue
+    \ifpcol@lastpage \ifx\@deferlist\@empty \ifdim\@colroom<\@fpmin
+      \@tempswafalse \global\@toproom\maxdimen
+    \fi\fi\fi
+    \if@tempswa \global\setbox\@currbox\vbox{\pcol@makefcolpage} \fi
+  \fi}
+\def\pcol@makefcolelt#1{%
+  \@tempdimb\ht#1{}\advance\@tempdimb\dp#1{}\advance\@tempdimb\@tempdimc
+  \ifdim\@tempdimb>\@tempdima \@cons\@deferlist#1\relax
+    \@tempdima-\maxdimen
+  \else \@cons\@toplist#1\relax
+    \advance\@tempdima-\@tempdimb \global\advance\@colroom\@tempdimb
+  \fi}
+\def\pcol@makefcolpage{\vbox to\@colht{
+    \vskip\@fptop \vskip-\@fpsep
+    \def\@elt##1{\vskip\@fpsep\box##1}\@toplist \vskip\@fpbot}%
+  \xdef\@freelist{\@freelist\@toplist}\global\let\@toplist\@empty}
+
+\def\pcol@measurecolumn{%
+  \pcol@getcurrcol
+  \@tempswafalse
+  \dimen@\z@ \pcol@addflhd\@toplist\pcol@textfloatsep
+  \global\skip\@currbox\dimen@
+  \advance\dimen@\ht\@currbox \advance\dimen@\dp\@currbox \dimen@ii\dimen@
+  \pcol@ifempty\@currbox
+   {\global\pcol@prevdepth\maxdimen \pcol@setcurrcol}%
+   {\@tempswatrue}%
+  \pcol@measureupdate\@tempdima\dimen@ii\@tempdimc\pcol@prevdepth
+  \ifvoid\pcol@currfoot \dimen@\z@
+  \else
+    \dimen@\ht\pcol@currfoot \advance\dimen@\dp\pcol@currfoot
+    \advance\dimen@\skip\pcol@currfoot
+    \@tempswatrue
+  \fi
+  \pcol@addflhd\@botlist\maxdimen
+  \ifdim\dimen@>\@tempdimb \@tempdimb\dimen@ \fi
+  \advance\dimen@\dimen@ii
+  \if@tempswa \ifdim\dimen@>\@pageht
+    \@pageht\dimen@ \@tempcntb\pcol@currcol
+  \fi\fi
+  \dimen@ii\pcol@prevdepth
+  \ifvoid\pcol@currfoot\else \dimen@ii\dp\pcol@currfoot \fi
+  \ifx\@botlist\@empty\else \dimen@ii\z@ \advance\dimen@\textfloatsep \fi
+  \ifx\@deferlist\@empty\else \dimen@\@colht \dimen@ii\z@ \fi
+  \pcol@measureupdate\pcol@colht\dimen@\@pagedp\dimen@ii
+  \advance\pcol@currcol\@ne}
+\def\pcol@addflhd#1#2{%
+  \ifx#1\@empty\else
+    \@tempswatrue
+    \let\@elt\pcol@hdflelt
+    #1\advance\dimen@-\floatsep
+    \ifdim#2=\maxdimen \advance\dimen@\textfloatsep
+    \else
+      \advance\dimen@\pcol@textfloatsep
+      \ifdim\pcol@textfloatsep>5000\p@ \advance\dimen@-\@M\p@ \fi
+    \fi
+    \let\@elt\relax
+  \fi}
+\def\pcol@hdflelt#1{\advance\dimen@\ht#1\advance\dimen@\dp#1%
+  \advance\dimen@\floatsep}
+\def\pcol@measureupdate#1#2#3#4{\if@tempswa
+  \ifdim#1<#2\relax#1#2\relax#3#4\relax
+  \else\ifdim#1=#2\ifdim#3>#4\relax#3#4\fi\fi\fi\fi}
+
+\def\pcol@synccolumn{%
+  \pcol@getcurrcol
+  \ifpcol@clear
+    \global\pcol@prevdepth\@m\p@
+    \global\setbox\@currbox\vbox{\unvbox\@currbox
+      \ifdim\pcol@textfloatsep=\maxdimen \vfil
+      \else \vskip\z@\@plus1fil\@minus.0001fil
+      \fi}%
+  \else
+    \@tempdimb\@tempdima
+    \advance\@tempdimb-\skip\@currbox
+    \ifdim\@tempdimc=\maxdimen
+      \ifdim\pcol@textfloatsep=\maxdimen \begingroup
+        \ifx\@toplist\@empty
+          \textfloatsep\z@ \floatsep\z@ \let\topfigrule\relax
+        \fi
+        \@next\pcol@float\@freelist{\global\setbox\pcol@float\vbox to\z@{
+          \vskip-\floatsep \topfigrule \vskip\textfloatsep
+          \unvbox\@currbox \vss}}\pcol@ovf
+        \@cons\@toplist\pcol@float
+        \advance\@tempdimb\textfloatsep \advance\@tempdimb-\floatsep
+        \advance\@tempdimb\@M\p@
+        \global\pcol@prevdepth\@m\p@
+        \global\pcol@textfloatsep\@tempdimb
+      \endgroup \fi
+    \else
+      \global\pcol@prevdepth\@tempdimc
+      \ifdim\pcol@textfloatsep=\maxdimen
+        \global\pcol@textfloatsep\textfloatsep \fi
+      \global\setbox\@currbox\vbox{
+        \ifdim\@tempdimb<\topskip
+          \vbox to\topskip{\unvbox\@currbox \vskip\z@\@plus.0001fil}
+          \vskip-\topskip \vskip\@tempdimb
+        \else
+          \vbox to\@tempdimb{\unvbox\@currbox \vskip\z@\@plus.0001fil}
+        \fi}%
+    \fi
+  \fi
+  \global\@topnum\z@ \pcol@setcurrcol
+  \advance\pcol@currcol\@ne}
+
+%% Special Output Routines: Page Flushing
+
+\def\pcol@output@flush{%
+  \pcol@makeflushedpage\@colht
+  \pcol@Logstart\pcol@output@flush
+  \setbox\@outputbox\vbox to\textheight{\boxmaxdepth\@maxdepth
+    \unvbox\@outputbox}%
+  \pcol@Logend\pcol@output@flush
+  \@outputpage
+  \pcol@freshpage}
+
+\def\pcol@output@clear{%
+  \pcol@makeflushedpage\@colht
+  \pcol@Logstart\pcol@output@clear
+  \setbox\@outputbox\vbox to\textheight{\boxmaxdepth\@maxdepth
+    \unvbox\@outputbox}%
+  \pcol@Logend\pcol@output@clear
+  \@outputpage
+  \pcol@flushfloats
+  \begingroup
+    \@dblfloatplacement
+    \@makefcolumn\@dbldeferlist
+    \@whilesw\if@fcolmade\fi{\@outputpage \@makefcolumn\@dbldeferlist}%
+  \endgroup
+  \pcol@freshpage}
+
+\def\pcol@makeflushedpage#1{%
+  \pcol@cleartrue \pcol@output@switch \pcol@clearfalse
+  \pcol@getcurrpinfo{\global\c@page}{\global\@colht}\@tempskipa
+  \global\@fcolmadefalse
+  \setbox\@outputbox\vbox{%
+    \ifpcol@nospan\else
+      \unvbox\pcol@spanning
+      \@cons\@freelist\pcol@spanning
+    \fi
+    \ifdim#1=-\maxdimen
+      \pcol@currcol\z@ \@whilenum\pcol@currcol<\pcol@ncol\do{%
+        \pcol@getcurrcol
+        \ifx\@deferlist\@empty\else \global\@fcolmadetrue \fi
+       \advance\pcol@currcol\@ne}%
+    \else
+      \hb@xt@\textwidth{%
+        \ifvoid\pcol@footins\else \pcol@shrinkcolbyfn\pcol@footins \fi
+        \let\pcol@hfil\relax \@pageht\@colht \ifdim#1<\@colht \@colht#1\fi
+        \@tempcntb\z@ \@whilenum\@tempcntb<\pcol@ncol\do{%
+          \pcol@swapcolumn\@tempcntb\pcol@currcol
+          \pcol@getcurrcol
+          \ifx\@deferlist\@empty\else \global\@fcolmadetrue \fi
+          \setbox\@cclv\box\@currbox
+          \ifvoid\pcol@currfoot\else \@cons\@freelist\pcol@currfoot \fi
+          \pcol@getcurrfoot\box
+          \@tempswafalse
+          \begingroup
+            \ifdim\@toproom=\maxdimen
+              \let\topfigrule\relax \ifdim\@colht=\@pageht \@tempswatrue \fi
+            \fi
+            \if@tempswa
+              \pcol@Logstart{\pcol@makeflushedpage(1)}%
+              \setbox\@outputbox\pcol@makefcolpage
+              \pcol@Logend{\pcol@makeflushedpage(1)}%
+            \else
+              \pcol@Logstart{\pcol@makeflushedpage(2)}%
+              \pcol@@makecol
+              \pcol@Logend{\pcol@makeflushedpage(2)}%
+            \fi
+            \pcol@hfil \hb@xt@\columnwidth{\box\@outputbox\hss}%
+          \endgroup
+          \let\pcol@hfil\hfil
+          \pcol@setcurrcolnf
+         \advance\@tempcntb\@ne}}%
+    \fi
+    \ifvoid\pcol@footins\else
+      \@tempswatrue \ifpcol@mgfnote\ifpcol@lastpage \@tempswafalse \fi\fi
+      \if@tempswa
+        \pcol@Log\pcol@makeflushedpage{output}\pcol@footins
+        \pcol@putfootins\pcol@footins
+        \@cons\@freelist\pcol@footins \gdef\pcol@footins{\voidb@x}%
+        \ifpcol@lastpage \ifdim\pcol@colht=-\maxdimen
+          \global\pcol@colht\z@
+        \fi\fi
+      \fi
+    \fi}%
+  }
+
+\def\pcol@flushfloats{%
+  \global\@colht\textheight
+  \@whilesw\if@fcolmade\fi{%
+    \setbox\@outputbox\vbox{\hb@xt@\textwidth{%
+      \let\pcol@hfil\relax
+      \@tempswafalse
+      \@tempcntb\z@ \@whilenum\@tempcntb<\pcol@ncol\do{%
+        \pcol@swapcolumn\@tempcntb\pcol@currcol
+        \pcol@getcurrcol
+        \@makefcolumn\@deferlist
+        \pcol@hfil \hb@xt@\columnwidth{\if@fcolmade \box\@outputbox \fi \hss}%
+        \ifx\@deferlist\@empty\else \@tempswatrue \fi
+        \let\pcol@hfil\hfil
+        \pcol@setcurrcolnf
+       \advance\@tempcntb\@ne}%
+      \if@tempswa \global\@fcolmadetrue \else \global\@fcolmadefalse \fi}}%
+    \@outputpage}}
+
+\def\pcol@freshpage{%
+  \global\pcol@page\z@ \global\pcol@toppage\z@ \global\pcol@basepage\z@
+  \global\let\pcol@pages\@empty \global\let\pcol@currpage\@empty
+  \pcol@startpage \pcol@colht\@colht
+  \pcol@currcol\z@ \@whilenum\pcol@currcol<\pcol@ncol\do{%
+    \pcol@getcurrcol \pcol@page\z@ \@colroom\pcol@colht
+    \let\pcol@currboxsave\@currbox
+    \pcol@getcurrpage
+    \pcol@floatplacement
+    \pcol@startcolumn\z@
+    \@whilesw\if@fcolmade\fi{\pcol@opcol \pcol@startcolumn\z@}%
+    \let\@currbox\pcol@currboxsave
+    \global\setbox\@currbox\vbox{}%
+    \global\count\@currbox\pcol@page \global\dimen\@currbox\@colroom
+    \pcol@setcurrcolnf
+   \advance\pcol@currcol\@ne}%
+  \pcol@restartcolumn}
+
+%% Special Output Routines: Last Page
+
+\def\pcol@output@end{%
+  \pcol@Logstart\pcol@output@end
+  \pcol@makeflushedpage\pcol@colht
+  \global\pcol@outputfalse \@tempswafalse
+  \if@fcolmade
+    \ifdim\pcol@colht>-\maxdimen \@tempswatrue \fi
+    \ifpcol@nospan\else \@tempswatrue \fi
+    \ifvoid\pcol@footins\else \@tempswatrue \fi
+    \if@tempswa
+      \pcol@Logstart{\pcol@output@end(1)}%
+      \setbox\@outputbox\vbox to\textheight{\boxmaxdepth\@maxdepth
+        \unvbox\@outputbox \vfil
+        \ifvoid\pcol@footins\else
+          \pcol@Log\pcol@output@end{output}\pcol@footins
+          \pcol@putfootins\pcol@footins
+          \@cons\@freelist\pcol@footins \gdef\pcol@footins{\voidb@x}%
+        \fi}%
+      \pcol@Logend{\pcol@output@end(1)}%
+      \@outputpage
+    \fi
+    \pcol@flushfloats
+    \@tempswatrue \@pagedp\@m\p@
+  \else\ifdim\pcol@colht=-\maxdimen
+    \ifx\pcol@firstprevdepth\relax
+      \@tempswatrue \@pagedp\@m\p@
+      \ifpcol@nospan\else
+        \@next\@currbox\@freelist{\global\setbox\@currbox\vbox{
+          \unvbox\@outputbox \unskip}}\pcol@ovf
+        \count\@currbox10\relax
+        {\let\@elt\relax \xdef\@dbldeferlist{\@elt\@currbox\@dbldeferlist}}%
+      \fi
+    \else \unvbox\@outputbox \@pagedp\pcol@firstprevdepth sp\relax
+    \fi
+  \else
+    \topskip\z@ \box\@outputbox
+  \fi\fi
+  \ifvoid\pcol@footins\else
+    \pcol@Log\pcol@output@end{insert}\pcol@footins
+    \insert\footins{\unvbox\pcol@footins}\@cons\@freelist\pcol@footins
+  \fi
+  \ifvoid\pcol@topfnotes\else \insert\footins{\unvbox\pcol@topfnotes}\fi
+  \expandafter\let\csname pcol@columncolor\number\z@\endcsname\relax
+  \pcol@currcol\z@ \pcol@restorecolorstack
+  \@whilenum\pcol@currcol<\pcol@ncol\do{%
+    \pcol@getcurrcol \@cons\@freelist\@currbox
+   \advance\pcol@currcol\@ne}%
+  \global\pcol@prevdepth\@pagedp
+  \global\@colht\textheight
+  \global\@colroom\textheight
+  \global\let\@deferlist\@dbldeferlist \gdef\@dbldeferlist{}%
+  \pcol@floatplacement
+  \pcol@lastpagefalse
+  \if@tempswa
+    \@startcolumn \@whilesw\if@fcolmade\fi{\@opcol\@startcolumn}%
+  \fi
+  \pcol@Logend\pcol@output@end
+}
+
+%% Starting Environment
+
+\def\pcol@invokeoutput#1{%
+  \pcol@Logstart{\pcol@invokeoutput
+    {#1:\the\pcol@currcol/\the\pcol@nextcol%
+     \ifnum#1=-10011:\ifpcol@sync s\fi \ifpcol@clear c\fi\fi}}%
+  \penalty-\@Miv \global\pcol@prevdepth\prevdepth \vbox{}%
+  \penalty#1\relax \prevdepth\pcol@prevdepth
+  \linewidth\columnwidth \advance\linewidth-\pcol@lrmargin
+  \ifdim\pcol@lrmargin>\z@ \parshape\@ne\@totalleftmargin\linewidth \fi
+  \hsize\columnwidth
+  \pcol@Logend{\pcol@invokeoutput{#1}}}
+
+\def\paracol#1{\par
+  \global\pcol@ncol#1\relax
+  \global\let\pcol@counters\cl@@ckpt
+  \let\@elt\pcol@remctrelt \pcol@gcounters
+  \let\@elt\pcol@thectrelt \pcol@counters
+  \begingroup
+    \let\@elt\pcol@loadctrelt \csname pcol@counters0\endcsname
+    \let\@elt\pcol@cmpctrelt \global\let\@gtempa\@empty \pcol@counters
+    \pcol@synccounter\@gtempa
+  \endgroup
+  \global\@twocolumntrue \col@number\@ne
+  \pcol@swapcolumn\z@\@tempcntb
+  \ifnum\@tempcntb=\z@ \global\@firstcolumntrue \else \global\@firstcolumnfalse
+  \fi
+  \pcol@setcolumnwidth
+  \pcol@lrmargin\textwidth \advance\pcol@lrmargin-\linewidth
+  \global\pcol@topskip\topskip
+  \global\pcol@textfloatsep\maxdimen
+  \pcol@lastpagefalse \xdef\pcol@firstprevdepth{\number\prevdepth}%
+  \let\pcol@@combinefloats\@combinefloats \let\@combinefloats\pcol@combinefloats
+  \let\pcol@set@color\set@color \let\pcol@reset@color\reset@color
+  \ifx\set@color\relax\else
+    \let\set@color\pcol@set@color@push \let\reset@color\pcol@reset@color@pop
+  \fi
+  \pcol@footnotebase\c@footnote \global\pcol@nfootnotes\z@
+  \let\footnote\pcol@footnote
+  \let\footnotemark\pcol@footnotemark
+  \let\footnotetext\pcol@footnotetext
+  \ifpcol@scfnote
+    \def\footnoterule{{\columnwidth\textwidth \pcol@footnoterule}}%
+  \fi
+  \let\@footnotetext\pcol@fntext
+  \def\swapcolumninevenpages{\pcol@ignore\swapcolumninevenpages}%
+  \def\noswapcolumninevenpages{\pcol@ignore\noswapcolumninevenpages}%
+  \def\multicolumnfootnotes{\pcol@ignore\multicolumnfootnotes}%
+  \def\singlecolumnfootnotes{\pcol@ignore\singlecolumnfootnotes}%
+  \def\mergedfootnotes{\pcol@ignore\mergedfootnotes}%
+  \let\@elt\pcol@defcomelt \pcol@localcommands
+  \def\column{\pcol@com@column}%
+  \@namedef{column*}{\@nameuse{pcol@com@column*}}%
+  \global\let\pcol@com@column\pcol@defcolumn
+  \global\@namedef{pcol@com@column*}{\pcol@defcolumn
+    \@ifnextchar[%]
+     \pcol@mctext\relax}%
+  \def\paracol##1{\PackageError{paracol}{%
+    Environment paracol cannot be nested.}\@eha}%
+  \output{\pcol@output}%
+  \let\@elt\relax
+  \pcol@invokeoutput\pcol@op@start
+  \pcol@nextcol\z@
+  \@ifnextchar[%]
+    \pcol@mctext\relax}
+\let\pcol@paracol\paracol
+
+\def\columnratio{\gdef\pcol@columnratio}
+\columnratio{}
+\def\pcol@setcolumnwidth{
+  \@tempcntb\pcol@ncol \advance\@tempcntb\m@ne
+  \@tempdima-\columnsep \multiply\@tempdima\@tempcntb
+  \advance\@tempdima\textwidth \@tempdimb\@tempdima
+  \@tempcnta\z@
+  \@for\reserved@a:=\pcol@columnratio\do{%
+    \ifnum\@tempcnta<\@tempcntb
+      \@tempdimc\reserved@a\@tempdima
+      \expandafter\edef\csname pcol@columnwidth\number\@tempcnta\endcsname{%
+        \number\@tempdimc sp}%
+      \advance\@tempdimb-\@tempdimc
+      \advance\@tempcnta\@ne
+    \fi}%
+  \@tempcntb\pcol@ncol \advance\@tempcntb-\@tempcnta
+  \divide\@tempdimb\@tempcntb
+  \@whilenum\@tempcnta<\pcol@ncol\do{%
+    \expandafter\edef\csname pcol@columnwidth\number\@tempcnta\endcsname{%
+      \number\@tempdimb sp}%
+    \advance\@tempcnta\@ne}%
+}
+
+\def\pcol@ignore#1{\PackageWarning{paracol}{The command \string#1 is not
+  effective in paracol environment and thus ignored}}
+
+\def\pcol@localcommands{%
+  \@elt{switchcolumn}%
+  \@elt{endcolumn}\@elt{endcolumn*}%
+  \@elt{nthcolumn}\@elt{endnthcolumn}\@elt{nthcolumn*}\@elt{endnthcolumn*}%
+  \@elt{leftcolumn}\@elt{endleftcolumn}\@elt{leftcolumn*}\@elt{endleftcolumn*}%
+  \@elt{rightcolumn}\@elt{endrightcolumn}%
+    \@elt{rightcolumn*}\@elt{endrightcolumn*}%
+  \@elt{flushpage}\@elt{clearpage}%
+  \@elt{synccounter}\@elt{syncallcounters}}
+\def\pcol@defcomelt#1{%
+  \expandafter\let\expandafter\reserved@a\csname pcol@com@#1\endcsname
+  \expandafter\let\csname #1\endcsname\reserved@a}
+
+%% Counter Opearations
+
+\def\globalcounter#1{{%
+  \@tempswafalse \def\reserved@a{#1}%
+  \def\@elt##1{\def\reserved@b{##1}%
+    \ifx\reserved@a\reserved@b \@tempswatrue \fi}%
+  \pcol@gcounters
+  \if@tempswa\else \@cons\pcol@gcounters{{#1}}\fi}}
+\gdef\pcol@gcounters{\@elt{page}}
+\def\localcounter#1{%
+  \expandafter\ifx\csname c@#1\endcsname\c@page\else
+    \pcol@removecounter\pcol@gcounters{#1}%
+  \fi}
+\def\pcol@remctrelt#1{%
+  \expandafter\let\expandafter\reserved@a\csname cl@#1\endcsname
+  \expandafter\let\csname pcol@cl@#1\endcsname\reserved@a
+  \expandafter\ifx\csname c@#1\endcsname\c@page\else
+    \@namedef{cl@#1}{\pcol@stepcounter{#1}}%
+  \fi
+  \pcol@removecounter\pcol@counters{#1}}
+\def\pcol@removecounter#1#2{%
+  \def\reserved@a{#2}\let\reserved@b#1\relax \global\let#1\@empty
+  {\def\@elt{\pcol@iremctrelt#1}\reserved@b}}
+\def\pcol@iremctrelt#1#2{%
+  \def\reserved@b{#2}%
+  \ifx\reserved@a\reserved@b\else \@cons#1{{#2}}\fi}
+
+\def\definethecounter#1#2#3{\@namedef{pcol@thectr@#1#2}{#3}}
+\def\pcol@thectrelt#1{%
+  \expandafter\let\expandafter\reserved@a\csname the#1\endcsname
+  \expandafter\let\csname pcol@thectr@#1\endcsname\reserved@a
+  \expandafter\let\expandafter\reserved@a\csname pcol@thectr@#10\endcsname
+  \ifx\reserved@a\relax\else
+    \expandafter\let\csname the#1\endcsname\reserved@a
+  \fi}
+
+\def\pcol@loadctrelt#1#2{\@namedef{pcol@ctr@#1}{#2}}
+\def\pcol@storecounters{\pcol@sscounters\pcol@storectrelt}
+\def\pcol@storectrelt#1{\@cons\@gtempa{{#1}{\@nameuse{pcol@ctr@#1}}}}
+\def\pcol@savecounters{\pcol@sscounters\pcol@savectrelt}
+\def\pcol@savectrelt#1{\@cons\@gtempa{{#1}{\number\csname c@#1\endcsname}}}
+\def\pcol@sscounters#1{\begingroup
+  \global\let\@gtempa\@empty
+  \let\@elt#1\relax \pcol@counters
+  \let\@elt\relax
+  \expandafter\xdef\csname pcol@counters\number\pcol@currcol\endcsname{%
+    \@gtempa}%
+  \endgroup}
+
+\def\pcol@cmpctrelt#1{\@tempswafalse \@tempcnta\@nameuse{c@#1}%
+  \expandafter\ifx\csname pcol@ctr@#1\endcsname\relax \@tempswatrue
+  \else\ifnum\@nameuse{pcol@ctr@#1}=\@tempcnta\else \@tempswatrue
+  \fi\fi
+  \if@tempswa \@cons\@gtempa{{#1}}\fi}
+
+\def\pcol@com@synccounter#1{\pcol@synccounter{\@elt{#1}}}
+\def\pcol@synccounter#1{{%
+  \let\@elt\relax \edef\reserved@a{#1}%
+  \pcol@currcol\z@ \@whilenum\pcol@currcol<\pcol@ncol\do{%
+    \let\@elt\pcol@loadctrelt \@nameuse{pcol@counters\number\pcol@currcol}%
+    \let\@elt\pcol@syncctrelt \reserved@a
+    \pcol@storecounters
+    \advance\pcol@currcol\@ne}}}
+\def\pcol@syncctrelt#1{%
+    \expandafter\edef\csname pcol@ctr@#1\endcsname{\number\@nameuse{c@#1}}}
+
+\def\pcol@com@syncallcounters{{%
+  \pcol@currcol\z@ \@whilenum\pcol@currcol<\pcol@ncol\do{%
+    \pcol@savecounters \advance\pcol@currcol\@ne}}}
+
+\def\pcol@setctrelt#1#2{%
+  \global\csname c@#1\endcsname#2\relax
+  \expandafter\ifx\csname pcol@thectr@#1\number\pcol@currcol\endcsname\relax
+    \expandafter\let\expandafter\reserved@a\csname pcol@thectr@#1\endcsname
+  \else
+    \expandafter\let\expandafter\reserved@a
+      \csname pcol@thectr@#1\number\pcol@currcol\endcsname
+  \fi
+  \expandafter\let\csname the#1\endcsname\reserved@a}
+
+\def\pcol@stepcounter#1{\begingroup
+  \pcol@currcol\z@ \@whilenum\pcol@currcol<\pcol@ncol\do{%
+    \let\@elt\pcol@stpldelt \@nameuse{pcol@counters\number\pcol@currcol}%
+    \let\@elt\pcol@stpclelt \@nameuse{pcol@cl@#1}%
+    \pcol@savecounters
+   \advance\pcol@currcol\@ne}%
+  \endgroup
+  \let\@elt\@stpelt \@nameuse{pcol@cl@#1}}
+\def\pcol@stpldelt#1#2{\csname c@#1\endcsname#2\relax}
+\def\pcol@stpclelt#1{\csname c@#1\endcsname\z@}
+
+%% Column-Switching Commands and Environments
+
+\def\pcol@par{\ifvmode\else \par \fi}
+
+\def\pcol@com@switchcolumn{\pcol@par
+  \pcol@defcolumn
+  \@tempcnta\pcol@currcol \advance\@tempcnta\@ne
+  \ifnum\@tempcnta<\pcol@ncol\else \@tempcnta\z@ \fi
+  \@ifnextchar[%]
+    \pcol@switchcolumn{\pcol@switchcolumn[\@tempcnta]}}
+\def\pcol@switchcolumn[#1]{%
+  \pcol@nextcol#1\relax
+  \@tempswafalse
+  \ifnum#1<\z@ \@tempswatrue \fi
+  \ifnum#1<\pcol@ncol\else \@tempswatrue \fi
+  \if@tempswa
+    \PackageError{paracol}{%
+      Column number \number#1 must be less than\number\pcol@ncol}\@eha
+    \pcol@nextcol\z@
+  \fi
+  \@ifstar\pcol@iswitchcolumn\pcol@switchcol}
+\def\pcol@iswitchcolumn{%
+  \global\pcol@synctrue
+  \@ifnextchar[%]
+    \pcol@mctext\pcol@switchcol}
+
+\long\def\pcol@mctext[#1]{%
+  \@tempcnta\pcol@nextcol
+  \global\pcol@synctrue \pcol@swapcolumn\z@\pcol@nextcol
+  \pcol@switchcol
+  \begingroup
+    \columnwidth\textwidth \hsize\columnwidth
+    \linewidth\columnwidth \advance\linewidth-\pcol@lrmargin
+    \ifdim\pcol@lrmargin>\z@ \parshape\@ne\@totalleftmargin\linewidth \fi
+    \col@number\@ne #1\pcol@par
+    \global\pcol@mctexttrue
+    \expandafter\global\expandafter\everypar\expandafter{\the\everypar}%
+  \endgroup
+  \pcol@nextcol\@tempcnta \global\pcol@synctrue \pcol@switchcol}
+
+\def\pcol@switchcol{%
+  \pcol@savecounters
+  \ifpcol@sync
+    \global\pcol@syncfalse \pcol@visitallcols\@@par \global\pcol@synctrue
+    \pcol@invokeoutput\pcol@op@switch
+    \@whilesw\ifpcol@flush\fi{%
+      \vfil \penalty-\@M
+      \global\pcol@syncfalse \pcol@visitallcols\newpage \global\pcol@synctrue
+      \pcol@invokeoutput\pcol@op@switch}%
+  \else
+    \pcol@invokeoutput\pcol@op@switch
+  \fi
+  \pcol@swapcolumn\pcol@currcol\@tempcntb
+  \ifnum\@tempcntb=\z@ \global\@firstcolumntrue \else \global\@firstcolumnfalse
+  \fi
+  \let\@elt\pcol@setctrelt
+  \csname pcol@counters\number\pcol@currcol\endcsname
+  \let\@elt\pcol@aconlyelt \pcol@aconly
+  \let\@elt\relax}
+
+\def\pcol@visitallcols#1{\begingroup
+  \@tempcnta\z@ \@tempcntb\pcol@currcol
+  \@whilenum\@tempcnta<\pcol@ncol\do{%
+    \ifnum\@tempcnta=\@tempcntb\else
+      \pcol@nextcol\@tempcnta \pcol@invokeoutput\pcol@op@switch #1%
+    \fi
+    \advance\@tempcnta\@ne}%
+  \pcol@nextcol\@tempcntb \pcol@invokeoutput\pcol@op@switch
+  \endgroup}
+
+\def\pcol@defcolumn{%
+  \gdef\pcol@com@column{\pcol@switchenv{column}\relax}%
+  \global\@namedef{pcol@com@column*}{\pcol@switchenv{column*}*}}
+
+\def\pcol@com@nthcolumn#1{\pcol@switchenv{nthcolumn}[#1]\relax}
+\@namedef{pcol@com@nthcolumn*}#1{\pcol@switchenv{nthcolumn*}[#1]*}
+\def\pcol@com@leftcolumn{\pcol@switchenv{leftcolumn}[0]\relax}
+\@namedef{pcol@com@leftcolumn*}{\pcol@switchenv{leftcolumn*}[0]*}
+\def\pcol@com@rightcolumn{\pcol@switchenv{rightcolumn}[1]\relax}
+\@namedef{pcol@com@rightcolumn*}{\pcol@switchenv{rightcolumn*}[1]*}
+
+\def\pcol@switchenv#1{\let\reserved@a\switchcolumn
+  \def\switchcolumn{\PackageError{paracol}{%
+    Column swicthing commands and environments cannot be used in #1}\@eha}
+  \reserved@a}
+
+\def\pcol@com@endcolumn{\pcol@par
+  \expandafter\global\expandafter\everypar\expandafter{\the\everypar}}
+\expandafter\let\csname pcol@com@endcolumn*\endcsname\pcol@com@endcolumn
+\let\pcol@com@endnthcolumn\pcol@com@endcolumn
+\expandafter\let\csname pcol@com@endnthcolumn*\endcsname\pcol@com@endcolumn
+\let\pcol@com@endleftcolumn\pcol@com@endcolumn
+\expandafter\let\csname pcol@com@endleftcolumn*\endcsname\pcol@com@endcolumn
+\let\pcol@com@endrightcolumn\pcol@com@endcolumn
+\expandafter\let\csname pcol@com@endrightcolumn*\endcsname\pcol@com@endcolumn
+
+%% Disabling \addcontentsline
+
+\def\addcontentsonly#1#2{%
+  \@ifundefined{pcol@ac@def@#1}
+    {\PackageError{paracol}{Unknown contents type #1}\@eha}\relax
+  \@cons\pcol@aconly{{#1}{#2}}}
+\gdef\pcol@aconly{}
+
+\def\pcol@aconlyelt#1#2{%
+  \ifnum#2=\pcol@currcol \@nameuse{pcol@ac@def@#1}{enable}%
+  \else \@nameuse{pcol@ac@def@#1}{disable}%
+  \fi}
+\def\pcol@gobblethree#1#2#3{}
+\let\pcol@addcontentsline\addcontentsline
+
+\def\pcol@ac@def@toc#1{%
+  \expandafter\let\expandafter\@sect\csname pcol@ac@#1@toc\endcsname}
+\let\pcol@ac@enable@toc\@sect
+\def\pcol@ac@disable@toc#1#2#3#4#5#6[#7]#8{%
+  \let\addcontentsline\pcol@gobblethree
+  \pcol@ac@enable@toc{#1}{#2}{#3}{#4}{#5}{#6}[{#7}]{#8}%
+  \let\addcontentsline\pcol@addcontentsline}
+
+\def\pcol@ac@def@lof#1{\@nameuse{pcol@ac@caption@#1}{lof}}
+\def\pcol@ac@def@lot#1{\@nameuse{pcol@ac@caption@#1}{lot}}
+\def\pcol@ac@caption@enable{\pcol@ac@caption@def\@tempswatrue}
+\def\pcol@ac@caption@disable{\pcol@ac@caption@def\@tempswafalse}
+\def\pcol@ac@caption@def#1#2{\let\@caption\pcol@ac@caption
+ \expandafter\let\csname pcol@ac@caption@if@#2\endcsname#1}
+\let\pcol@ac@caption@if@lof\@tempswatrue
+\let\pcol@ac@caption@if@lot\@tempswatrue
+\long\def\pcol@ac@caption#1[#2]#3{%
+  \@nameuse{pcol@ac@caption@if@\@nameuse{ext@#1}}%
+  \if@tempswa\else \let\addcontentsline\pcol@gobblethree \fi
+  \pcol@ac@caption@latex{#1}[{#2}]{#3}%
+  \let\addcontentsline\pcol@addcontentsline}
+\let\pcol@ac@caption@latex\@caption
+
+%% Page Flushing Commands
+
+\def\pcol@com@flushpage{\pcol@flushclear\voidb@x
+  \pcol@invokeoutput\pcol@op@flush}
+\def\pcol@com@clearpage{\pcol@flushclear\voidb@x
+  \pcol@invokeoutput\pcol@op@clear}
+\def\pcol@flushclear#1{\pcol@par
+  \pcol@nextcol\pcol@currcol
+  \pcol@visitallcols\@@par
+  \pcol@cleartrue \global\pcol@synctrue
+  \ifpcol@lastpage \pcol@lastpagesavetrue \else \pcol@lastpagesavefalse \fi
+  \pcol@invokeoutput\pcol@op@switch \ifvoid#1\else \global\pcol@flushtrue \fi
+  \@whilesw\ifpcol@flush\fi{%
+    \pcol@lastpagefalse
+    \vfil \penalty-\@M \pcol@cleartrue \global\pcol@synctrue
+    \ifpcol@lastpagesave \pcol@lastpagetrue \fi
+    \pcol@invokeoutput\pcol@op@switch
+    \ifvoid#1\else \global\pcol@flushtrue \fi}%
+  \pcol@clearfalse}
+
+%% Commands for Footnotes
+
+\def\multicolumnfootnotes{\global\pcol@scfnotefalse \global\pcol@mgfnotefalse
+  \localcounter{footnote}\nofncounteradjustment}
+\def\singlecolumnfootnotes{\global\pcol@scfnotetrue \global\pcol@mgfnotefalse
+  \globalcounter{footnote}\fncounteradjustment}
+\def\mergedfootnotes{\singlecolumnfootnotes \global\pcol@mgfnotetrue}
+
+\def\pcol@fntext{%
+  \let\reserved@a\pcol@fntexttop
+  \ifpcol@scfnote \ifnum\pcol@page<\pcol@toppage
+    \let\reserved@a\pcol@fntextother
+  \fi\fi
+  \reserved@a}
+\long\def\pcol@fntexttop#1{%
+  \pcol@Logfn{\pcol@fntexttop{\@thefnmark}}%
+  \insert\footins{\pcol@fntextbody{#1}\penalty\interlinepenalty}}
+\long\def\pcol@fntextother#1{%
+  \global\setbox\pcol@topfnotes\vbox{\unvbox\pcol@topfnotes
+    \penalty\interlinepenalty\pcol@fntextbody{#1}}}
+\long\def\pcol@fntextbody#1{\setbox\@tempboxa\vbox{%
+    \reset@font\footnotesize
+    \interlinepenalty\interfootnotelinepenalty
+    \splittopskip\footnotesep
+    \splitmaxdepth\dp\strutbox \floatingpenalty\@MM
+    \hsize \ifpcol@scfnote \textwidth \else \columnwidth \fi
+    \@parboxrestore
+    \protected@edef\@currentlabel{\p@footnote\@thefnmark}%
+    \color@begingroup
+    \@makefntext{%
+      \rule\z@\footnotesep\ignorespaces#1\@finalstrut\strutbox}%
+    \color@endgroup}%
+  \@tempdima\ht\@tempboxa \advance\@tempdima\dp\@tempboxa
+  \@tempdimb\textheight \advance\@tempdimb-\skip\footins
+  \ifdim\@tempdima>\@tempdimb
+    \setbox\@tempboxa\vbox to\@tempdimb{\unvbox\@tempboxa\vss}%
+    \PackageWarning{paracol}{Too tall footnote}%
+  \fi
+  \box\@tempboxa}
+
+\def\fncounteradjustment{\global\pcol@fncounteradjustmenttrue}
+\def\nofncounteradjustment{\global\pcol@fncounteradjustmentfalse}
+\nofncounteradjustment
+
+\let\pcol@footnoterule\footnoterule
+\let\pcol@@footnote\footnote
+\let\pcol@@footnotemark\footnotemark
+\let\pcol@@footnotetext\footnotetext
+\def\pcol@footnote{\@ifstar{\pcol@adjustfnctr\pcol@ifootnote}\pcol@ifootnote}
+\def\pcol@ifootnote{\global\advance\pcol@nfootnotes\@ne \pcol@@footnote}
+\def\pcol@footnotemark{\@ifstar
+  {\pcol@adjustfnctr{\pcol@ifootnotemark\relax}}%
+  \pcol@ifootnotemark}
+\def\pcol@ifootnotemark{\global\advance\pcol@nfootnotes\@ne
+  \pcol@@footnotemark}
+\def\pcol@adjustfnctr#1{\@ifnextchar[%]
+  {\pcol@iadjustfnctr{#1}}{\pcol@iadjustfnctr{#1}[+1]}}
+\def\pcol@iadjustfnctr#1[#2]{\pcol@calcfnctr#2\@nil
+  \global\c@footnote\@tempcnta \global\advance\c@footnote\m@ne#1}
+\def\pcol@calcfnctr#1#2\@nil{\@tempcnta\c@footnote
+  \def\reserved@a{#1}\def\reserved@b{+}%
+  \ifx\reserved@a\reserved@b \advance\@tempcnta#2\relax
+  \else \def\reserved@b{-}%
+  \ifx\reserved@a\reserved@b \advance\@tempcnta-#2\relax
+  \else \@tempcnta\pcol@footnotebase \advance\@tempcnta#1#2\relax
+  \fi\fi}
+\def\pcol@footnotetext{\@ifstar\pcol@ifootnotetext\pcol@@footnotetext}
+\def\pcol@ifootnotetext{\@ifnextchar[%]
+  \pcol@iifootnotetext{\stepcounter{footnote}\pcol@@footnotetext}}
+\def\pcol@iifootnotetext[#1]{\pcol@calcfnctr#1\@nil
+  \expandafter\pcol@@footnotetext\expandafter[\number\@tempcnta]}
+
+%% Column Swapping
+
+\def\swapcolumninevenpages{\global\pcol@swapcolumntrue}
+\def\noswapcolumninevenpages{\global\pcol@swapcolumnfalse}
+\def\pcol@swapcolumn#1#2{%
+  \ifpcol@swapcolumn
+    \ifodd\c@page\relax #2#1\relax
+    \else #2\pcol@ncol \advance#2-#1\relax \advance#2\m@ne
+    \fi
+  \else #2#1\relax
+  \fi}
+
+%% Closing Environment
+
+\def\endparacol{\pcol@par
+  \pcol@nextcol\z@ \pcol@switchcol
+  \pcol@lastpagetrue
+  \ifpcol@mgfnote \pcol@flushclear\voidb@x
+  \else \pcol@flushclear\pcol@topfnotes
+  \fi
+  \pcol@invokeoutput\pcol@op@end
+  \global\columnwidth\textwidth
+  \global\@twocolumnfalse
+  \global\topskip\pcol@topskip
+  \ifpcol@fncounteradjustment
+    \global\c@footnote\pcol@footnotebase
+    \global\advance\c@footnote\pcol@nfootnotes
+  \fi}

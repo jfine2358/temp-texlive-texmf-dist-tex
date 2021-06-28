@@ -1,0 +1,372 @@
+%% musical.sty   version 3.1 (April 2020)
+%% Created by and copyright Dave Howell, February 2018
+%% Email: dh.musical@howell.seattle.wa.us
+%% This is a "maintained" package.
+%% Inspired primarily by stage.cls from Robert Jahrling
+
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, version 1.3
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+
+% This work consists of the files musical.sty and musical.pdf
+% Version 1.x: 2018/03/20 
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{musical}[2020/04/06 Manuscript Format for stage plays]
+
+% We provide a friendly warning when an option is specified;
+% since musical provides no options, all options return an error.
+\DeclareOption*{%
+	\ClassWarning{stage}{Unknown option `\CurrentOption'}%
+}
+
+% Required to process options, or not process them, I suppose. 
+\ProcessOptions\relax
+
+\RequirePackage{ifthen}
+\RequirePackage{fancyhdr}
+\RequirePackage{etoolbox}
+\RequirePackage{xspace}
+
+\newtoggle{stagedir} % true when we're inside a stage direction
+\newtoggle{dialog} % true when we're inside dialog
+\newtoggle{scaplyrics}
+\togglefalse{scaplyrics} % use \toggletrue{scaplyrics} to set lyrics in Cap/small cap style. 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%	PAGE FORMATTING
+% use fancy pagestyle
+\pagestyle{fancy}
+
+% Redefining \chapter and \section for acts and scenes.
+\RequirePackage{titlesec}
+\newcommand{\scripttitles}{% redefine  \scripttitles to change how chapters/acts and sections/scenes' headers look. 
+	\titlespacing*{\chapter}{0pt}{0cm}{0cm}%
+	\titleformat{\chapter}[block]{\center}{\LARGE\sc Act \Roman{actcounter}}{0pt}{}%
+	\titlespacing*{\section}{0pt}{0pt plus 1\baselineskip}{0pt}%
+    \titleformat{\section}[display]{\center}{\Large\sc Scene \arabic{scenecounter}}{4pt}{\sc}%
+	\setcounter{tocdepth}{1} % include acts and scenes in the Table of Contents
+}
+
+% If titlecontents for sections is 
+\titlecontents{chapter}[2em]{\pagebreak[2]\addvspace{1ex plus 2ex}}{}{}{\hfill}[\nopagebreak]%
+
+% page numbers are {act}--{scene}--{pagenumber}
+\newcommand{\themusicalpage}{\Roman{actcounter}--\arabic{scenecounter}--\arabic{page}}
+
+%%% Running heads
+\fancypagestyle{scriptheader}{%
+    \fancyhf{}% Reset headers and footers to blank to start
+    \fancyhead[LE,RO]{\themusicalpage}%
+    \fancyhead[RE,LO]{\it Act \Roman{actcounter}, Scene \arabic{scenecounter}%
+    	\ifx\sectionname\undefined\else
+    	    : \sectionname
+    	\fi%
+		}%
+}
+
+% empties center foot; otherwise, the page number would display here.
+\cfoot{}
+
+% Wrapped around the actual play's text. Prob. should 
+% include Dramatis Personae, but currently doesn't.  Hmm. 
+\newenvironment{script}{%
+    \begingroup
+	\setcounter{actcounter}{0}
+	\let\thepage=\themusicalpage
+	\scripttitles
+    \pagestyle{scriptheader}%
+	}{\endgroup
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%	ACTS AND SCENES (CHAPTERS AND SECTIONS)
+
+% Counts acts
+\newcounter{actcounter}
+% We need to initialize actcounter for page numbering.
+\setcounter{actcounter}{0}
+% Counts scenes per act
+\newcounter{scenecounter}[actcounter]
+
+% \act creates an act header with roman numerals, and redefines
+% the running heads to use theatrical-style page numbers 
+\newcommand{\act}{%
+	\stepcounter{actcounter}%
+	\newpage
+	\chapter[Act \Roman{actcounter}]{}
+}
+
+% \scene creates a scene header with arabic numerals
+% There's an optional title for the scene, and a required set description, so
+% \scene{George's Office}
+% \scene[Mad Hatter's Tea Party]{Mad Hatter's House, exterior}
+% if the required parameter is empty, (i.e. \scene{} ) then the Set:#2 won't appear. 
+% Start a new page for each scene except the first
+\newcommand{\scene}[2][\relax]{%
+	\gdef\sectionname{#1}
+	\stepcounter{scenecounter}%
+	\ifthenelse{\value{scenecounter} > 1}{\newpage}{}%
+	\noindent
+    \section{#1}%
+    \def\setdescription{#2}% this holds the setting for the scene
+    \ifdefempty{\setdescription}{}{\stdir{Set: #2}\par}%
+}
+
+\newcommand{\rehe@rsalmark}[1]{%
+    {(\textit{Rehearsal Mark} \fbox{#1})}%
+}
+
+% In sheet music, rehearsal marks are usually boxed letters, so we box it here to match.
+% An alternative would be to use \marginpar to float the rehearsal marks in the margin. 
+\newcommand{\rehearsalmark}[1]{%
+	{\raggedleft\small
+		\vspace{1ex}%
+		\rehe@rsalmark{#1}\par
+		\vspace{1ex}%
+	}
+}
+
+% To denote a transition of some kind. The optional parameter invokes \rehearsalmark on the same line.
+\newcommand{\transition}[1][\relax]{%
+    \noindent\hbox to \textwidth{\hfil*\hspace{2em}*\hspace{2em}*\hfil
+        \if#1\relax
+        \else
+            \hbox to 0pt{\hss\rehe@rsalmark{#1}}%
+        \fi
+    }\par
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%% PARAGRAPH-LEVEL COMMANDS
+
+% How far to inset dialog.
+% Lyrics are inset twice the speech margin. 
+\newlength{\speechmargin}
+\setlength{\speechmargin}{2em}
+
+% tcolorbox is probably overkill, but it made for such an easy solution to the problem.
+% It provides a 
+%   Character Name, continued
+% header for dialog that crosses a page break.
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable,skins}
+% standard dialog is inset by \speechmargin on both sides
+\newtcolorbox{spokentext}{breakable,frame hidden,interior hidden,boxrule=0pt,
+	boxsep=0pt,top=0pt,bottom=0pt,center title,
+    title={\charactername\strut },title after break={\center\charactername~(cont.)\strut },
+	colback=white,left={\speechmargin},right={\speechmargin},colbacktitle=white,coltitle=black,colframe=white
+}
+
+% lyrics ares inset by twice the \speechmargin on the left,
+% but in order to reduce awkward breaks mid-lyric, the right margin
+% goes to the page margin. Because the actual box is now offset to the right,
+% the title (aka the name of the character speaking) has to be offset the other way to 
+% keep it centered on the page.
+\newtcolorbox{lyrictext}{breakable,frame hidden,interior hidden,boxrule=0pt,
+	boxsep=0pt,top=0pt,bottom=0pt,center title,
+    title={\charactername\hspace{2\speechmargin}\strut},title after break={\center\charactername~(cont.)\hspace{2\speechmargin}\strut},
+	colback=white,left={2\speechmargin},right={0pt},colbacktitle=white,coltitle=black,colframe=white
+}
+
+
+% jiggery-pokery to try to make footnotes work reasonably close to usefully. 
+\usepackage[symbol,perpage,para,ragged,flushmargin]{footmisc}
+\DefineFNsymbols{dave}[text]{*†‡¤{**}{††}{‡‡}{¤¤}}
+\setfnsymbol{dave}
+\renewcommand{\thempfootnote}{\fnsymbol{mpfootnote}}
+
+% I've tried a couple of different things to get footnotes to come out right. 
+% Currently, I'm letting everything operate 'normally.'
+% If you want footnotes at the bottom of the dialog box, rather than the bottom of the page,
+% uncomment the \let command in the \dialog command.
+\let\di@logfootnotetext=\relax
+\newcommand{\dialogfootnote}[1]{%
+    \gdef\di@logfootnotetext{#1}%
+    \footnotemark
+}
+
+% \dialog sets the character's name above their speech.
+% the text is inset \speechmargin from the text margins.
+\newcommand{\dialog}[2]{%
+    %\let\footnote=\dialogfootnote
+	\toggletrue{dialog}%
+	\def\charactername{\textsc{#1}}% used by the spokentext environment
+	\vspace{1ex}%
+	\if\di@logfootnotetext\relax\else
+	    \footnotetext{\di@logfootnotetext}%
+	    \let\di@logfootnotetext=\relax
+	\fi
+	\begin{spokentext}
+		\raggedright
+		 #2
+	\end{spokentext}%
+	\togglefalse{dialog}%
+}
+
+% getting \obeylines to work on the input to \lyrics is tricky.
+% It has to be done *before* the command picks up the input.
+% so I pick up the first parameter (the speaker's id) and set
+% it aside, then invoke \obeylines, and have \@lyrics work on 
+% what's left.
+
+\newcommand{\@lyrics}[1]{%
+	\toggletrue{dialog}% change behavior of \stdir
+	\def\@lyricontents{{#1\par}}% pick up the lyrics
+	\vspace{1ex}%
+	\begin{lyrictext}
+	    \raggedright
+	    \iftoggle{scaplyrics}{\scshape}{}
+		\@lyricontents% put the lyrics down inside the lyrictext  box
+	\end{lyrictext}%
+	\togglefalse{dialog}%
+\egroup
+}
+
+\newcommand{\lyrics}[1]{\bgroup
+	\def\charactername{{\textsf\lyricsymbol} \textsc{#1} {\textsf\lyricsymbol}}%
+	\obeylines\@lyrics
+}
+
+% \spacer is intended to use inside \lyrics commands to maintain the structure of stanzas
+% across different speakers. Put whatever was spoken by a previous speaker inside the \spacer 
+% parameter, and the current text will be offset by that distance.
+
+\newbox\music@lbox
+
+\newcommand{\spacer}[1]{
+    \setbox\music@lbox\hbox{#1}%
+    \noindent\hbox to \wd\music@lbox{\strut\hfil}%
+}
+
+\newcommand{\stdir}[1]{%
+	\begingroup
+		\toggletrue{stagedir}%
+		\iftoggle{dialog}{% we're inside a dialog or lyric.
+			(\textit{#1})%
+		}{% or we're NOT inside a dialog or lyric.
+		    \vspace{1ex}%
+		    \raggedright
+			\noindent\textit{#1}\par%
+		}%
+	\endgroup\xspace
+}
+
+% Musical cue
+\newcommand{\music}[1]{%
+	{\raggedleft\small
+		\vspace{1ex}%
+		\addcontentsline{los}{section}{#1}%
+		\textit{Music Cue: “#1”}\par
+		\vspace{1ex}%
+	}
+}
+
+%Dance cue
+\newcommand{\dance}[1]{% a dance cue
+	{\raggedleft\small
+		\vspace{1ex}%
+		\addcontentsline{lod}{section}{#1}%
+		\textit{Dance Cue: “#1”}\par
+		\vspace{1ex}%
+	}
+}
+
+% \pause is just convenient.
+\newcommand{\pause}{\stdir{pause}}
+
+% \dialogue, for people who like that spelling better
+\newcommand{\dialogue}[1]{\dialog{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%% 	TABLES OF CONTENTS, CAST LIST, AND OTHER LISTS
+
+\newcommand{\listofsongs}{% generates a list of musicial cues
+    \section*{List of Songs}%
+    \@starttoc{los}%
+    }
+    
+\newcommand{\listofdances}{% generates a list of dance cues
+    \section*{List of Dances}%
+    \@starttoc{lod}%
+}
+
+% Yes, the following commands internally use "cast" when they're actually referring to 
+% the characters that cast members are playing. But "cast" is way shorter than "character," 
+% and "character" is much more likely to run into namespace collisions.
+
+\newsavebox{\c@stbox}
+\newlength{\c@stboxwidth} % how wide do the character name boxes need to be?
+\newlength{\c@stdescwidth} % the width of the box for the character's descriptive text.
+\setlength{\c@stboxwidth}{0pt} % default value to start
+\gdef\s@vedcastboxwidth{0pt} % the max width from the previous run
+
+
+% \@recallcastboxwidth is called from the .aux files as they're read back in.
+% When they're all processed, \s@vedcastboxwidth will contain the largest value 
+% passed to any of the \@recallcastboxwidth commands..
+\def\@recallcastboxwidth#1{%
+	\ifdim#1>\s@vedcastboxwidth
+	\setlength\c@stboxwidth{#1}%
+	\gdef\s@vedcastboxwidth{#1}
+	\fi}
+
+\newcommand{\addcharacter}[3][\relax]{%
+    % If the optional parameter is present, we need to define a command with that name.
+    % Normally, that command is equivalent to \dialog{Character Name}.
+    % If it appears in the body of a \dialog or \lyrics command, then it's just
+    % the character name (the 1st required parameter). If it's inside \stdir, then
+    % it's the character name in small caps. 
+	\if#1\relax\else% do we need to define the \charactername because the nickname parameter is present?
+		\expandafter\gdef\csname #1\endcsname{%
+			\iftoggle{stagedir}{% inside a stdir command
+				\textsc{#2\strut}\xspace% it's in small caps
+			}{\iftoggle{dialog}{% inside a dialog or lyrics command
+    			    #2\xspace% we leave the formatting to the environment it's in.
+    			}{% if it's in none of these, then it's being used AS a \dialog shortcut.
+	    			\dialog{#2}%
+    			}%
+			}%
+		}%
+	\fi 
+
+    % The \addcharacter command also typesets the Dramatis Personae list where it's used.
+    % Name on left, comments/explanations on right. To make page breaks simple, tables and tabs are
+    % avoided. Instead, names are measured in the first pass, and that width info is used on the
+    % second pass to make the alignment consistent.
+    
+    % put the final form of the character's name in a box for measuring
+	\sbox\c@stbox{\hspace{\parindent}\textsc{#2}\emspace\strut}%
+
+	% save the measured minimum width to determine \s@vedcastboxwidth for the next run
+	\protected@write\@auxout{}{\string\@recallcastboxwidth{\the\wd\c@stbox}}%
+
+	% check if this character's required box width is greater 
+	% than the width of the box we used for the previous character
+	\ifdim\wd\c@stbox>\c@stboxwidth \setlength{\c@stboxwidth}{\wd\c@stbox}\fi
+	
+	% check if the max box width from the last run is bigger than the current one
+	% (If the .aux files are read before this .sty file is loaded, this could be done just
+	% once. Are they?)
+	\ifdim\s@vedcastboxwidth>\c@stboxwidth \setlength{\c@stboxwidth}{\s@vedcastboxwidth}\fi
+
+	\setlength{\c@stdescwidth}{\textwidth}%
+	\addtolength{\c@stdescwidth}{-\c@stboxwidth}%
+	\medskip
+	\noindent\hbox to \c@stboxwidth{\usebox\c@stbox\hfill}%
+		\parbox[t]{\c@stdescwidth}{\raggedright #3}%
+}
+
+% used to add an all-caps/small-caps character name to stage directions
+\newcommand{\character}[1]{\textsc{#1}}
+
+% For adding comments into the script. Useful when some of the people working on the script
+% don't know TeX very well. The \comment{} command works like all the other TeX commands, instead
+% of having to remember to start EVERY line of a comment with a % sign. 
+\def\comment#1{}

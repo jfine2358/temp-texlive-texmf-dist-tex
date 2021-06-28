@@ -1,0 +1,2024 @@
+%%
+%% This is file 'pxchfon.sty'.
+%%
+%% Copyright (c) 2019 Takayuki YATO (aka. "ZR")
+%%   GitHub:   https://github.com/zr-tex8r
+%%   Twitter:  @zr_tex8r
+%%
+%% This package is distributed under the MIT License.
+%%
+
+%% package declaration
+\NeedsTeXFormat{pLaTeX2e}
+\ProvidesPackage{pxchfon}[2019/03/24 v1.4a]
+\def\pxcz@pkgname{pxchfon}
+
+%% preparations
+\def\pxcz@error{\PackageError\pxcz@pkgname}
+\def\pxcz@warn{\PackageWarning\pxcz@pkgname}
+\def\pxcz@info{\PackageInfo\pxcz@pkgname}
+
+%--------------------------------------- general
+
+%% variables
+\newif\ifpxcz@ok
+\newif\ifpxcz@utf
+\let\pxcz@pre\relax
+\let\pxcz@post\relax
+
+%% unique tokens
+\def\pxcz@end{\pxcz@end@}
+\def\pxcz@mt{\pxcz@mt@}
+
+%% \pxcz@csletcs{<cs1>}{<cs2>}
+\def\pxcz@csletcs#1#2{%
+  \expandafter\let\csname#1\expandafter\endcsname\csname#2\endcsname}
+
+%% \pxcz@cond\ifXXX...\fi{<true>}{<false>}
+\@gobbletwo\if\if \def\pxcz@cond#1\fi{%
+  #1\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
+
+%% \pxcz@onlypreamble@csdef{<csname>}
+\def\pxcz@onlypreamble@csdef#1{%
+  \expandafter\pxcz@onlypreamble@def\csname#1\endcsname}
+%% \pxcz@onlypreamble@def\CS
+\def\pxcz@onlypreamble@def#1{%
+  \@onlypreamble#1\def#1}
+
+%% \pxcz@csuse@or{<csname>}{<default>}
+\def\pxcz@csuse@or#1#2{%
+  \expandafter\ifx\csname#1\endcsname\relax \expandafter\@firstoftwo
+  \else \expandafter\@secondoftwo
+  \fi{#2}{\csname#1\endcsname}}
+
+%% \pxcz@lower\CS
+\def\pxcz@lower#1{%
+  \expandafter\pxcz@lower@a#1\pxcz@end#1}
+\def\pxcz@lower@a#1\pxcz@end#2{%
+  \lowercase{\def#2{#1}}}
+
+%% \pxcz@split{<at>}{<target>}
+\def\pxcz@split#1#2{%
+  \edef\pxcz@tmpx{{#1}{#2}}%
+  \expandafter\pxcz@split@a\pxcz@tmpx}
+\def\pxcz@split@a#1#2{%
+  \def\pxcz@tmpx##1#1##2\pxcz@end{\pxcz@split@b{##1}{##2}}%
+  \pxcz@tmpx#2\pxcz@mt#1\pxcz@end}
+\def\pxcz@split@b#1#2{%
+  \let\pxcz@pre\relax \let\pxcz@post\relax
+  \ifx\pxcz@end#2\pxcz@end\else
+    \pxcz@split@c#2\pxcz@end{#1}%
+  \fi}
+\def\pxcz@split@c#1\pxcz@mt#2\pxcz@end#3{%
+  \def\pxcz@pre{#3}\def\pxcz@post{#1}}
+
+%--------------------------------------- environment check
+
+%% check for 'pxjafont' package
+% if old version of pxjafont is loaded (probably this package is
+% required from pxjafont), then I abort here with an error message.
+\@ifpackageloaded{pxjafont}{%
+  \ifx\pxAliasedPxjafont\@undefined
+    \PackageError\pxcz@pkgname
+     {FATAL: Old 'pxjafont' is loaded}{\@ehc}
+  \expandafter\@@end\fi}{}
+
+%% \ifpxcz@uptex
+\newif\ifpxcz@uptex \pxcz@uptexfalse
+\edef\pxcz@tmpa{\string\ucs}\edef\pxcz@tmpb{\meaning\ucs}
+\ifx\pxcz@tmpa\pxcz@tmpb \pxcz@uptextrue \fi
+
+%% \ifpxcz@otf@deluxe
+\newif\ifpxcz@otf@deluxe \pxcz@otf@deluxefalse
+\@ifpackagewith{otf}{deluxe}{\pxcz@otf@deluxetrue}{}
+\@ifpackagewith{pxotf}{deluxe}{\pxcz@otf@deluxetrue}{}
+
+%% \ifpxcz@otf@multi
+\newif\ifpxcz@otf@multi \pxcz@otf@multifalse
+\@ifpackagewith{otf}{multi}{\pxcz@otf@multitrue}{}
+
+%% \ifpxcz@otf@expert
+\newif\ifpxcz@otf@expert \pxcz@otf@expertfalse
+\@ifpackagewith{otf}{expert}{\pxcz@otf@experttrue}{}
+
+%% \pxcz@pxufont@avail
+\IfFileExists{pxufont-ruby.sty}{\chardef\pxcz@pxufont@avail=2 }{%
+\IfFileExists{pxufont.sty}{\chardef\pxcz@pxufont@avail=1 }{%
+  \chardef\pxcz@pxufont@avail=0 }}
+
+%% \pxcz@pxufont@loaded
+\@ifpackageloaded{pxufont}{%
+  \ifx t\pxufontUseRubyFont \chardef\pxcz@pxufont@loaded=2
+  \else \chardef\pxcz@pxufont@loaded=1
+  \fi
+}{%else
+  \chardef\pxcz@pxufont@loaded=0
+}
+
+%--------------------------------------- handle options
+
+%% variables
+\newif\ifpxcz@enabled \pxcz@enabledtrue
+\let\pxcz@alphabet=n
+\newif\ifpxcz@otf \pxcz@otftrue
+\newif\ifpxcz@cmap@alpha
+\newif\ifpxcz@mmivjis
+\newif\ifpxcz@everypage
+\newif\ifpxcz@oneweight
+\newif\ifpxcz@uniquify
+\newif\ifpxcz@fullwidth
+\let\pxcz@directunicode\relax
+\let\pxcz@main@preset\relax
+\let\pxcz@file@preset\relax
+\newif\ifpxcz@file@preset@tl
+\newif\ifpxcz@alpha
+\newif\ifpxcz@rel
+\newif\ifpxcz@dumpmap
+\newif\ifpxcz@dumpmap@tl
+\newif\ifpxcz@switch@font \pxcz@switch@fonttrue
+\newif\ifpxcz@switch@font@xwid
+\newif\ifpxcz@switch@font@xjis
+\let\pxcz@strict@csi\relax
+\newif\ifpxcz@directunicode@default
+\let\pxcz@legacycode\relax
+\let\pxcz@expert\relax
+\newif\ifpxcz@glyphid
+
+%% process options
+% drivers
+\DeclareOption{nodvidriver}{\pxcz@enabledfalse}
+\DeclareOption{dvips}{\pxcz@enabledfalse}
+\DeclareOption{dviout}{\pxcz@enabledfalse}
+\DeclareOption{xdvi}{\pxcz@enabledfalse}
+\DeclareOption{dvipdfmx}{\pxcz@enabledtrue}
+% (no)alphabet / relfont
+\DeclareOption{alphabet}{\let\pxcz@alphabet=t}
+\DeclareOption{noalphabet}{\let\pxcz@alphabet=f}
+\DeclareOption{relfont}{\let\pxcz@alphabet=r}
+% (no)otf
+\DeclareOption{otf}{\pxcz@otftrue}
+\DeclareOption{nootf}{\pxcz@otffalse}
+\DeclareOption{utf}{\pxcz@otftrue}
+\DeclareOption{noutf}{\pxcz@otffalse}
+% (no)usecmapforalphabet
+\DeclareOption{usecmapforalphabet}{\pxcz@cmap@alphatrue}
+\DeclareOption{nousecmapforalphabet}{\pxcz@cmap@alphafalse}
+% (no)prefer2004jis / (no)jis2004
+\DeclareOption{prefer2004jis}{\pxcz@mmivjistrue}
+\DeclareOption{noprefer2004jis}{\pxcz@mmivjisfalse}
+\DeclareOption{jis2004}{\pxcz@mmivjistrue}
+\DeclareOption{nojis2004}{\pxcz@mmivjisfalse}
+% (no)everypage
+\DeclareOption{everypage}{\pxcz@everypagetrue}
+\DeclareOption{noeverypage}{\pxcz@everypagefalse}
+% (no)oneweight
+\DeclareOption{oneweight}{\pxcz@oneweighttrue}
+\DeclareOption{nooneweight}{\pxcz@oneweightfalse}
+% (no)directunicode / directunicode*
+\chardef\pxcz@directunicode@none=0
+\chardef\pxcz@directunicode@otf=1
+\chardef\pxcz@directunicode@all=2
+\chardef\pxcz@directunicode@full=3
+\DeclareOption{directunicode*}{\let\pxcz@directunicode\pxcz@directunicode@all}
+\DeclareOption{directunicode}{\let\pxcz@directunicode\pxcz@directunicode@otf}
+\DeclareOption{nodirectunicode}{\let\pxcz@directunicode\pxcz@directunicode@none}
+% (no)dumpmap
+\DeclareOption{dumpmap}{\pxcz@dumpmaptrue}
+\DeclareOption{nodumpmap}{\pxcz@dumpmapfalse}
+% (no)dumpmaptl
+\DeclareOption{dumpmaptl}{\pxcz@dumpmap@tltrue}
+\DeclareOption{nodumpmaptl}{\pxcz@dumpmap@tlfalse}
+% (no)switchfont
+\DeclareOption{switchfont}{\pxcz@switch@fonttrue}
+\DeclareOption{noswitchfont}{\pxcz@switch@fontfalse}
+% (no)strictcsi
+\DeclareOption{strictcsi}{\let\pxcz@strict@csi=t}
+\DeclareOption{nostrictcsi}{\let\pxcz@strict@csi=f}
+% XXXXX-legacycode
+\chardef\pxcz@legacycode@apply=0
+\chardef\pxcz@legacycode@ignore=1
+\chardef\pxcz@legacycode@suppress=2
+\chardef\pxcz@legacycode@replace=3
+\DeclareOption{apply-legacycode}{\let\pxcz@legacycode\pxcz@legacycode@apply}
+\DeclareOption{ignore-legacycode}{\let\pxcz@legacycode\pxcz@legacycode@ignore}
+\DeclareOption{suppress-legacycode}{\let\pxcz@legacycode\pxcz@legacycode@suppress}
+\DeclareOption{replace-legacycode}{\let\pxcz@legacycode\pxcz@legacycode@replace}
+% (no)expert
+\DeclareOption{expert}{\let\pxcz@expert=t}
+\DeclareOption{noexpert}{\let\pxcz@expert=f}
+% (no)glyphid
+\DeclareOption{glyphid}{\pxcz@glyphidtrue}
+\DeclareOption{noglyphid}{\pxcz@glyphidfalse}
+% preset spec options
+\pxcz@onlypreamble@def\pxcz@all@main@preset{%
+  noembed,%
+  %(uniweight)
+  ms,ipa,ipaex,%
+  %(multiweight)
+  ms-hg,ipa-hg,ipaex-hg,moga-mobo,moga-mobo-ex,moga-maruberi,ume,%
+  kozuka-pro,kozuka-pr6,kozuka-pr6n,hiragino-pro,hiragino-pron,%
+  hiragino-elcapitan-pro,hiragino-elcapitan-pron,%
+  morisawa-pro,morisawa-pr6n,yu-win,yu-win10,yu-win10+,yu-osx,%
+  sourcehan-otc,sourcehan,sourcehan-jp,noto-otc,noto,noto-jp,%
+  sourcehan-otc+,sourcehan+,noto-otc+,noto+,%
+  %(alias)
+  hiragino,noto-otf,%
+  noEmbed,kozuka,hiragino-elcapitan,morisawa}
+\pxcz@onlypreamble@def\pxcz@all@abolished@preset{%
+  ipa-otf,ipa-otf-dx,kozuka4,kozuka6,kozuka6n,
+  ms-dx,ipa-ttf,ipa-ttf-dx,ipav2,ipav2-dx,ipa-dx,hiragino-dx}
+  % But note, 'hiragino' != 'hiragino-pro'
+\def\pxcz@do#1{\DeclareOption{#1}{\def\pxcz@main@preset{#1}}}
+\@for\pxcz@x:=\pxcz@all@main@preset\do{%
+  \expandafter\pxcz@do\expandafter{\pxcz@x}}
+\@for\pxcz@x:=\pxcz@all@abolished@preset\do{%
+  \expandafter\pxcz@do\expandafter{\pxcz@x}}
+% others
+% The 'unicode' option means a Unicode-oriented mapping, and requires
+% dvipdfmx of version 20170627 or later. The 'unicode-fwid' is a variant.
+% The 'unicode*(-fwid)' option is a transitional (deteriorated) version
+% of 'unicode(-fwid)' and can work with dvipdfmx of version 20170318.
+\@namedef{pxcz@POPT/unicode}{%
+  \let\pxcz@directunicode\pxcz@directunicode@full}
+\@namedef{pxcz@POPT/unicode*}{%
+  \pxcz@uniquifytrue
+  \let\pxcz@directunicode\pxcz@directunicode@full}
+\@namedef{pxcz@POPT/unicode-fwid}{%
+  \pxcz@fullwidthtrue
+  \let\pxcz@directunicode\pxcz@directunicode@full}
+\@namedef{pxcz@POPT/unicode*-fwid}{%
+  \pxcz@fullwidthtrue \pxcz@uniquifytrue
+  \let\pxcz@directunicode\pxcz@directunicode@full}
+\DeclareOption*{%
+  \pxcz@csuse@or{pxcz@POPT/\CurrentOption}{%
+    \pxcz@parse@opt\CurrentOption
+    \ifpxcz@ok\else \@unknownoptionerror \fi}}
+\@onlypreamble\pxcz@parse@opt
+\def\pxcz@parse@opt#1{%
+  \expandafter\pxcz@parse@opt@a#1\@nnil}
+\@onlypreamble\pxcz@parse@opt@a
+\def\pxcz@parse@opt@a{%
+  \futurelet\pxcz@tok\pxcz@parse@opt@b}
+\@onlypreamble\pxcz@parse@opt@b
+\def\pxcz@parse@opt@b{%
+  \pxcz@okfalse
+  \let\pxcz@tmpa\remove@to@nnil
+  \ifx+\pxcz@tok
+    \pxcz@file@preset@tltrue \let\pxcz@tmpa\pxcz@parse@opt@c
+  \else\ifx*\pxcz@tok
+    \pxcz@file@preset@tlfalse \let\pxcz@tmpa\pxcz@parse@opt@c
+  \fi\fi \pxcz@tmpa}
+\@onlypreamble\pxcz@parse@opt@c
+\def\pxcz@parse@opt@c#1#2\@nnil{%
+  \pxcz@oktrue
+  \edef\pxcz@file@preset{#2}}
+% dispatch
+\ProcessOptions*
+
+%% 'everypage' needs 'atbegshi' package
+\ifpxcz@everypage
+\RequirePackage{atbegshi}
+\fi
+
+%% apply default value for \pxcz@directunicode
+\ifx\pxcz@directunicode\relax
+  \let\pxcz@directunicode\pxcz@directunicode@none
+  \ifnum\pxcz@pxufont@loaded>0
+    \PackageWarningNoLine\pxcz@pkgname
+     {Option 'unicode' is enabled, since the package\MessageBreak
+      'pxufont' is already loaded}
+    \let\pxcz@directunicode\pxcz@directunicode@full
+  \fi
+  \pxcz@directunicode@defaulttrue
+\fi
+
+%% set 'pxcz@alpha'
+\@tempswafalse
+\if\pxcz@main@preset\relax
+  \if\pxcz@file@preset\relax \@tempswatrue \fi
+\fi
+\if      t\pxcz@alphabet \pxcz@alphatrue
+\else\if f\pxcz@alphabet \pxcz@alphafalse
+\else\if r\pxcz@alphabet \pxcz@alphafalse
+\else\if@tempswa \pxcz@alphatrue
+\else  \pxcz@alphafalse
+\fi\fi\fi\fi
+\ifpxcz@alpha
+  \IfFileExists{pxchfon0.def}{\relax}{%
+    \pxcz@error{Option 'alphabet' not available in Lite edition}%
+    {You must install full edition of PXchfon bundle, or specify
+    'noalphabet'\MessageBreak as package option.}%
+  \pxcz@alphafalse}
+\fi
+
+%% set 'pxcz@rel'
+\if r\pxcz@alphabet \pxcz@reltrue
+\else \pxcz@relfalse
+\fi
+\ifpxcz@rel
+  \IfFileExists{pxchfon0.def}{\relax}{%
+    \pxcz@error{Option 'relfont' not available in Lite edition}%
+    {You must install full edition of PXchfon bundle.}%
+  \pxcz@relfalse}
+\fi
+
+%% \ifpxcz@alphafont
+% Whether or not alphabet fonts are used.
+\newif\ifpxcz@alphafont
+\ifpxcz@alpha \pxcz@alphafonttrue
+\else\ifpxcz@rel \pxcz@alphafonttrue
+\else \pxcz@alphafontfalse
+\fi\fi
+
+%% apply default for \pxcz@strict@csi
+\ifx\pxcz@strict@csi\relax
+  % 'dumpmap(tl)' changes the 'strictcsi' default to true.
+  \let\pxcz@strict@csi=f
+  \ifpxcz@dumpmap \let\pxcz@strict@csi=t \fi
+  \ifpxcz@dumpmap@tl \let\pxcz@strict@csi=t \fi
+\fi
+\if t\pxcz@strict@csi
+  % 'strictcsi' requires some pdfTeX feature.
+  \ifx\pdffiledump\@undefined
+    \PackageWarningNoLine\pxcz@pkgname
+     {The option 'strictcsi' cannot be used, because\MessageBreak
+      the engine does not support '\string\pdffiledump'}
+    \let\pxcz@strict@csi=f
+  \fi
+\fi
+
+%% apply 'switch@font'
+\ifpxcz@switch@font
+  \pxcz@switch@font@xjistrue
+\else
+  \let\pxcz@switch@font@xwidtrue\pxcz@switch@font@xwidfalse
+  \let\pxcz@switch@font@xjistrue\pxcz@switch@font@xjisfalse
+\fi
+
+%--------------------------------------- preset-dependent setup
+
+%% variables
+\newif\ifpxcz@warn@unless@all@defined
+
+%% \pxcz@apply@opt@unicode
+% Forces the 'unicode' setup (unless a directunicode option was given).
+\@onlypreamble\pxcz@apply@opt@unicode
+\def\pxcz@apply@opt@unicode{%
+  \ifpxcz@directunicode@default %  default -> unicode
+    \pxcz@warn@unicode
+    \let\pxcz@directunicode\pxcz@directunicode@full
+    \pxcz@uniquifyfalse
+  \else\ifnum\pxcz@directunicode=\pxcz@directunicode@full
+    \ifpxcz@uniquify % unicode* -> unicode+
+      \pxcz@switch@font@xwidtrue \pxcz@uniquifyfalse
+    \fi % unicode -> (unchanged)
+  \else \pxcz@uniquifyfalse % otherwise, enable switch-font
+  \fi\fi}
+%% \pxcz@apply@opt@unicodeP
+% Forces the 'unicode+' setup, which is a 'unicode' with switch-font
+% enabled on the width features.
+\@onlypreamble\pxcz@apply@opt@unicodeP
+\def\pxcz@apply@opt@unicodeP{%
+  \pxcz@uniquifyfalse
+  \pxcz@switch@font@xwidtrue % 'unicode+'
+  \ifnum\pxcz@directunicode=\pxcz@directunicode@full\else
+    \pxcz@warn@unicode
+    \let\pxcz@directunicode\pxcz@directunicode@full
+  \fi}
+%% \pxcz@warn@unicode
+\@onlypreamble\pxcz@warn@unicode
+\def\pxcz@warn@unicode{%
+  \PackageWarningNoLine\pxcz@pkgname
+   {The option 'unicode(*)' is enforced, because the\MessageBreak
+    preset '\pxcz@main@preset' is selected.}}
+
+%% the setup
+\def\pxcz@do#1{%
+  \edef\pxcz@tmpa{#1}%
+  \pxcz@cond\ifx\pxcz@main@preset\pxcz@tmpa\fi
+      {\@firstofone}{\@gobble}}
+% A 'XXXX+' preset forces 'unicode+' setting.
+% 'sourcehan(-otc)' and 'noto(-otc)' should force 'unicode', but currently
+% equivalent to the corresponding 'XXXX+' preset.
+\pxcz@do{sourcehan}{\pxcz@apply@opt@unicode}
+\pxcz@do{sourcehan-otc}{\pxcz@apply@opt@unicode}
+\pxcz@do{sourcehan-jp}{\pxcz@apply@opt@unicode}
+\pxcz@do{noto}{\pxcz@apply@opt@unicode}
+\pxcz@do{noto-otf}{\pxcz@apply@opt@unicode}
+\pxcz@do{noto-otc}{\pxcz@apply@opt@unicode}
+\pxcz@do{noto-jp}{\pxcz@apply@opt@unicode}
+\pxcz@do{sourcehan+}{\pxcz@apply@opt@unicodeP}
+\pxcz@do{sourcehan-otc+}{\pxcz@apply@opt@unicodeP}
+\pxcz@do{noto+}{\pxcz@apply@opt@unicodeP}
+\pxcz@do{noto-otc+}{\pxcz@apply@opt@unicodeP}
+\pxcz@do{yu-win10+}{\pxcz@apply@opt@unicodeP}
+
+%% apply default for \pxcz@legacycode
+\ifx\pxcz@legacycode\relax
+  \ifnum\pxcz@directunicode=\pxcz@directunicode@full
+    \let\pxcz@legacycode\pxcz@legacycode@replace
+  \else \let\pxcz@legacycode\pxcz@legacycode@apply
+  \fi
+\fi
+
+%% 'replace-lecacycode' requires the 'pxufont' package
+\ifnum\pxcz@legacycode=\pxcz@legacycode@replace
+  \ifnum\pxcz@pxufont@avail<1
+    \PackageError\pxcz@pkgname
+     {The option 'replace-lecacycode' requires the 'pxufont'\MessageBreak
+       package, but it is not installed}%
+     {The option 'suprress-lecacycode' is applied as fallback.\MessageBreak
+      \@ehc}
+    \let\pxcz@legacycode\pxcz@legacycode@suppress
+  \fi
+\fi
+
+%% check requirements for 'glyphid'
+\ifpxcz@glyphid
+  \pxcz@oktrue
+  \ifnum\pxcz@legacycode=\pxcz@legacycode@replace\else \pxcz@okfalse \fi
+  \ifpxcz@uptex\else \pxcz@okfalse \fi
+  \ifnum\pxcz@pxufont@avail<2 \pxcz@okfalse \fi
+  \ifpxcz@ok\else
+    \PackageError\pxcz@pkgname
+     {The option 'glyphid' cannot be used here. You must\MessageBreak
+      use upLaTeX and the 'unicode' option, and package\MessageBreak
+      'pxufont' of v0.5 or later must be installed}
+     {\@ehc}
+    \pxcz@glyphidfalse
+  \fi
+\fi
+
+%% check requirements for 'expert'
+\pxcz@oktrue
+\ifnum\pxcz@legacycode=\pxcz@legacycode@replace\else \pxcz@okfalse \fi
+\ifnum\pxcz@directunicode=\pxcz@directunicode@full\else \pxcz@okfalse \fi
+\ifpxcz@uniquify \pxcz@okfalse \fi % no 'unicode*'
+\ifpxcz@switch@font@xwid \pxcz@okfalse \fi % no 'unicode+'
+\ifnum\pxcz@pxufont@avail<2 \pxcz@okfalse \fi
+\ifpxcz@ok\else
+  \if t\pxcz@expert % explicitly given
+    \PackageError\pxcz@pkgname
+     {The option 'expert' cannot be used here. You must\MessageBreak
+      use upLaTeX and the 'unicode' option, and package\MessageBreak
+      'pxufont' of v0.5 or later must be installed}
+     {\@ehc}
+  \fi
+  \let\pxcz@expert=f
+\fi
+
+%% apply default for \pxcz@expert
+\ifpxcz@otf@expert
+  \ifx\pxcz@expert\relax
+    \let\pxcz@expert=t
+  \fi
+\else
+  \if t\pxcz@expert
+    \PackageWarningNoLine\pxcz@pkgname
+     {The 'expert' option will be ignored, since the\MessageBreak
+      expert mode of the 'otf' package is not enabled}
+  \fi
+  \let\pxcz@expert=f
+\fi
+\if t\pxcz@expert
+  \pxcz@warn@unless@all@definedtrue
+\fi
+
+%--------------------------------------- user interface
+
+%% \pxcz@sym@list
+\def\pxcz@sym@list{%
+  mnl,mnr,mnb,gtr,gtb,gtx,gtu,mgr,kom,kog,scm,scg,tcm,tcg}
+
+%%<*> \setminchofont/\setgothicfont/etc.
+\newcommand*\setminchofont{\pxcz@setfont{mnl,mnr,mnb}}
+\newcommand*\setgothicfont{\pxcz@setfont{gtr,gtb,gtx,gtu}}
+\newcommand*\setlightminchofont{\pxcz@setfont{mnl}}
+\newcommand*\setmediumminchofont{\pxcz@setfont{mnr}}
+\newcommand*\setboldminchofont{\pxcz@setfont{mnb}}
+\newcommand*\setmediumgothicfont{\pxcz@setfont{gtr}}
+\newcommand*\setboldgothicfont{\pxcz@setfont{gtb}}
+\newcommand*\setxboldgothicfont{\pxcz@setfont{gtx}}
+\newcommand*\setoneweightgothicfont{\pxcz@setfont{gtu}}
+\newcommand*\setmarugothicfont{\pxcz@setfont{mgr}}
+\newcommand*\setkoreanminchofont{\pxcz@setfont{kom}}
+\newcommand*\setkoreangothicfont{\pxcz@setfont{kog}}
+\newcommand*\setschineseminchofont{\pxcz@setfont{scm}}
+\newcommand*\setschinesegothicfont{\pxcz@setfont{scg}}
+\newcommand*\settchineseminchofont{\pxcz@setfont{tcm}}
+\newcommand*\settchinesegothicfont{\pxcz@setfont{tcg}}
+\@onlypreamble\pxcz@setfont
+\def\pxcz@setfont#1{\@ifnextchar[%]
+  {\pxcz@setfont@a{#1}}{\pxcz@setfont@a{#1}[0]}}
+\@onlypreamble\pxcz@setfont@a
+\def\pxcz@setfont@a#1[#2]#3{%
+  \edef\pxcz@tmpa{#3}\pxcz@lower\pxcz@tmpa
+  \pxcz@split{?:}{?\pxcz@tmpa}%
+  \ifx\pxcz@pre\relax
+    \pxcz@split{tc?}{\pxcz@tmpa?}%
+    \ifx\pxcz@pre\relax \pxcz@setfont@b{#1}{#3}%
+    \else \pxcz@setfont@b{#1}{:#2:#3}%
+    \fi
+  \else \pxcz@setfont@b{#1}{#3}%
+  \fi}
+\@onlypreamble\pxcz@setfont@b
+\def\pxcz@setfont@b#1#2{%
+  \@for\pxcz@tmpx:=#1\do{%
+    \@namedef{pxcz@FS/\pxcz@tmpx}{#2}}}
+\@for\pxcz@x:=\pxcz@sym@list\do{%
+  \@namedef{pxcz@FS/\pxcz@x}{}}
+
+%--------------------------------------- '\asUTF'
+% NB. This feature is superseded by the \diruni command.
+\ifpxcz@uptex
+
+%%<*> \asUTF{<jachar>}
+\AtBeginDocument{%
+  \@ifpackageloaded{otf}{%
+    \providecommand*\asUTF{\pxcz@asutf@a}%
+  }{}%
+}
+\def\pxcz@asutf@a#1{%
+  \kchardef\pxcz@tmpa=`#1\relax
+  \expandafter\pxcz@asutf@b\meaning\pxcz@tmpa\relax
+}
+\def\pxcz@asutf@b#1"#2\relax{%
+  \UTF{#2}%
+}
+
+\fi
+%--------------------------------------- fontmap internals
+
+%% \pxcz@noembed
+% The value given to \set...font to mean 'no-embed'.
+\def\pxcz@noembed{*}
+
+%% \pxcz@kill@mapping
+\def\pxcz@kill@mapping{!}
+
+%% \pxcz@cmap@directuni
+% CMap symbol for "direct unicode".
+\def\pxcz@cmap@directuni{unicode}
+
+%% \pxcz@cmap@hwuni
+% CMap name for halfwidth fonts.
+\def\pxcz@cmap@hwuni{UniJIS-UCS2-HW-H}
+
+%%<*> \usecmapforalphabet/\nousecmapforalphabet
+\newcommand*\usecmapforalphabet{%
+  \global\let\pxcz@cmap@uni\pxcz@cmap@hwuni}
+\newcommand*\nousecmapforalphabet{%
+  \global\let\pxcz@cmap@uni\pxcz@cmap@directuni}
+\ifpxcz@cmap@alpha \usecmapforalphabet
+\else \nousecmapforalphabet \fi
+
+%% \pxcz@NEF/<sym>
+\def\pxcz@do#1#2{%
+  \def\pxcz@tmpb{#2}%
+  \@for\pxcz@tmpa:=#1\do{%
+    \expandafter\let\csname pxcz@NEF/\pxcz@tmpa\endcsname\pxcz@tmpb
+  }}
+\pxcz@do{mnl,mnr,mnb}{Ryumin-Light}
+\pxcz@do{gtr,gtb,gtx,gtu,mgr}{GothicBBB-Medium}
+\pxcz@do{kom}{HYSMyeongJo-Medium}
+\pxcz@do{kog}{HYGoThic-Medium}
+\pxcz@do{scm}{STSong-Light}
+\pxcz@do{scg}{STHeiti-Regular}
+\pxcz@do{tcm}{MSung-Light}
+\pxcz@do{tcg}{MHei-Medium}
+
+%%<+> \JaFontReplacementFor{<sym>}
+\newcommand*\JaFontReplacementFor[1]{%
+  \csname pxcz@FS/#1\endcsname}
+
+%%<+> \JaFontReplacementHook{<code>}
+\@onlypreamble\JaFontReplacementHook
+\newcommand*\JaFontReplacementHook{%
+  \g@addto@macro\pxcz@user@hook}
+\let\pxcz@user@hook\@empty
+
+%%<+> \JaFontUserDefinedMap
+\@onlypreamble\JaFontUserDefinedMap
+\newcommand*\JaFontUserDefinedMap{%
+  \g@addto@macro\pxcz@user@map}
+\let\pxcz@user@map\@empty
+\@namedef{pxcz@FS/*}{\pxcz@empty}
+
+%%<+> \usefontmapline{<map-line>}
+\@onlypreamble\usefontmapline
+\newcommand*\usefontmapline[1]{%
+  \JaFontUserDefinedMap{\pxcz@addtospec@alt\pxcz@mapline{#1}}}
+
+%%<+> \usefontmapfile{<map-file>}
+\@onlypreamble\usefontmapfile
+\newcommand*\usefontmapfile[1]{%
+  \JaFontUserDefinedMap{\pxcz@addtospec@alt\pxcz@mapfile{#1}}}
+
+%% \pxcz@check@extra
+% Executed at the begin-document hook.
+\@onlypreamble\pxcz@check@extra
+\let\pxcz@check@extra\@empty
+
+%--------------------------------------- map entry handling
+
+%%<*> \setnewglyphcmapprefix{<str>}
+\def\pxcz@pfx@jis@dflt{2004-}
+\def\pxcz@pfx@jis@star{JISX0213-2004-}
+\@onlypreamble\setnewglyphcmapprefix
+\newcommand*\setnewglyphcmapprefix{%
+  \@ifstar{\pxcz@set@pfx@jis\pxcz@pfx@jis@star}%
+   {\pxcz@set@pfx@jis}}
+\def\pxcz@set@pfx@jis#1{%
+  \edef\pxcz@pfx@jis{#1}}
+\setnewglyphcmapprefix{\pxcz@pfx@jis@dflt}
+
+%% variables
+\let\pxcz@sym\relax
+\let\pxcz@cmap\relax
+\let\pxcz@font\relax
+\let\pxcz@csi\relax
+\newif\ifpxcz@vert
+\newif\ifpxcz@retain
+\newif\ifpxcz@retain@csi
+\let\pxcz@lopts\relax
+\let\pxcz@mopts\relax
+\let\pxcz@font@tribe\relax
+
+%% \pxcz@@jpXX
+\edef\pxcz@@jpXX{%
+  \ifpxcz@mmivjis jp04\else jp90\fi}
+%% \pxcz@add@lopt
+\@onlypreamble\pxcz@add@lopt
+\def\pxcz@add@lopt#1{%
+  \edef\pxcz@lopts{%
+    \ifx\pxcz@lopts\@empty\else \pxcz@lopts:\fi#1}}
+%% \pxcz@uniquify@lopts
+\@onlypreamble\pxcz@uniquify@lopts
+\def\pxcz@uniquify@lopts#1#2{%
+  \pxcz@oktrue
+  \def\pxcz@tmpb{jp90}\ifx\pxcz@tmpb\pxcz@lopts\pxcz@okfalse\fi
+  \def\pxcz@tmpb{jp04}\ifx\pxcz@tmpb\pxcz@lopts\pxcz@okfalse\fi
+  \ifx\@empty\pxcz@lopts\if t#1\pxcz@okfalse\fi\fi
+  \ifpxcz@ok
+    \edef\pxcz@lopts{#2}%
+  \fi}
+
+%% \pxcz@is@jis@cmap
+\@onlypreamble\pxcz@is@jis@cmap
+\def\pxcz@is@jis@cmap{%
+  \pxcz@okfalse
+  \expandafter\pxcz@is@jis@cmap@a\pxcz@cmap\pxcz@end}
+\@onlypreamble\pxcz@is@jis@cmap@a
+\def\pxcz@is@jis@cmap@a#1#2\pxcz@end{%
+  \ifx\pxcz@mt#2\pxcz@mt \pxcz@oktrue \fi}
+
+%% \pxcz@force@mmiv@cmap
+\@onlypreamble\pxcz@force@mmiv@cmap
+\def\pxcz@force@mmiv@cmap{%
+  \pxcz@is@jis@cmap \ifpxcz@ok
+    \edef\pxcz@cmap{\pxcz@pfx@jis\pxcz@cmap}%
+  \else
+    \pxcz@split{UniJIS-}\pxcz@cmap
+    \ifx\pxcz@pre\relax\else
+      \edef\pxcz@cmap{UniJIS2004-\pxcz@post}%
+    \fi
+  \fi}
+
+%% \pxcz@inspect@font@tribe
+\@onlypreamble\pxcz@inspect@font@tribe
+\def\pxcz@inspect@font@tribe{%
+  \let\pxcz@font@tribe\@empty
+  \ifx\pxcz@font\@empty
+  \else\ifx\pxcz@font\pxcz@noembed
+  \else
+    \pxcz@inspect@font@tribe@a{?SourceHanSerif-}{.otf?}{sourcehan}%
+    \pxcz@inspect@font@tribe@a{?SourceHanSans-}{.otf?}{sourcehan}%
+    \pxcz@inspect@font@tribe@a{?:0:SourceHanSerif-}{.ttc?}{sourcehanC}%
+    \pxcz@inspect@font@tribe@a{?:0:SourceHanSans-}{.ttc?}{sourcehanC}%
+    \pxcz@inspect@font@tribe@a{?NotoSerifCJKjp-}{.otf?}{noto}%
+    \pxcz@inspect@font@tribe@a{?NotoSansCJKjp-}{.otf?}{noto}%
+    \pxcz@inspect@font@tribe@a{?:0:NotoSerifCJK-}{.ttc?}{notoC}%
+    \pxcz@inspect@font@tribe@a{?:0:NotoSansCJK-}{.ttc?}{notoC}%
+    \pxcz@inspect@font@tribe@a{?yumin}{.ttf?}{yumin}%
+    \pxcz@inspect@font@tribe@a{?YUMIN}{.TTF?}{yuminU}%
+    \pxcz@inspect@font@tribe@a{:YuGoth}{.ttc?}{yugoth}%
+    \pxcz@inspect@font@tribe@a{:YUGOTH}{.TTC?}{yugoth}%
+    \pxcz@inspect@font@tribe@a{:moga}{.ttc?}{mogamobo}%
+    \pxcz@inspect@font@tribe@a{:mobo}{.ttc?}{mogamobo}%
+  \fi\fi
+  \ifx\pxcz@font@tribe\@empty\else
+    \PackageInfo\pxcz@pkgname
+     {Font tribe is '\pxcz@font@tribe':\MessageBreak
+      \@spaces\pxcz@font\@gobble}%
+  \fi}
+\@onlypreamble\pxcz@inspect@font@tribe@a
+\def\pxcz@inspect@font@tribe@a#1#2#3{%
+  \pxcz@split{#1}{?\pxcz@font}%
+  \ifx\pxcz@pre\relax\else
+    \pxcz@split{#2}{\pxcz@font?}%
+    \ifx\pxcz@pre\relax\else
+      \def\pxcz@font@tribe{#3}%
+    \fi
+  \fi}
+
+%% \pxcz@switch@font@for{<feature>}
+% Modifies \pxcz@font, assuming \pxcz@font@tribe is properly set.
+\@onlypreamble\pxcz@switch@font@for
+\def\pxcz@switch@font@for#1{%
+  \pxcz@csletcs{pxcz@tmpb}{pxcz@switch@font@@\pxcz@font@tribe @#1}%
+  \ifx\pxcz@tmpb\relax\else
+%\typeout{#1:\pxcz@font-->\expandafter\pxcz@tmpb\pxcz@font}%
+    \edef\pxcz@font{\expandafter\pxcz@tmpb\pxcz@font}%
+  \fi}
+% entries
+\ifpxcz@switch@font@xwid
+  \def\pxcz@switch@font@@sourcehanC@fwid#1:0:{:2:}
+  \def\pxcz@switch@font@@sourcehanC@hwid#1:0:{:1:}
+  \def\pxcz@switch@font@@sourcehan@fwid#1-{#1SC-}
+  \def\pxcz@switch@font@@sourcehan@hwid#1-{#1K-}
+  \def\pxcz@switch@font@@notoC@fwid#1:0:{:2:}
+  \def\pxcz@switch@font@@notoC@hwid#1:0:{:1:}
+  \def\pxcz@switch@font@@noto@fwid#1jp{#1sc}
+  \def\pxcz@switch@font@@noto@hwid#1jp{#1kr}
+  \def\pxcz@switch@font@@yugoth@fwid#1:0:{:1:}
+  \def\pxcz@switch@font@@yumin@fwid#1.ttf{%
+    \@nameuse{pxcz@SFYM/#1.ttf}}
+  \def\pxcz@switch@font@@yuminU@fwid#1.TTF{%
+    \@nameuse{pxcz@SFYM/#1.TTF}}
+  \def\pxcz@do#1{\@namedef{pxcz@SFYM/#1}}
+  \pxcz@do{yuminl.ttf}{:1:YuGothL.ttc}
+  \pxcz@do{yumin.ttf}{:1:YuGothR.ttc}
+  \pxcz@do{yumindb.ttf}{:1:YuGothM.ttc}
+  \pxcz@do{YUMINL.TTF}{:1:YUGOTHL.TTC}
+  \pxcz@do{YUMIN.TTF}{:1:YUGOTHR.TTC}
+  \pxcz@do{YUMINDB.TTF}{:1:YUGOTHM.TTC}
+\fi
+\ifpxcz@switch@font@xjis
+  \@namedef{pxcz@switch@font@@mogamobo@jp90}#1.ttc{%
+    \pxcz@csuse@or{pxcz@SFMG/#1.ttc}{#1.ttc}}
+  \def\pxcz@do#1#2#3{\@namedef{pxcz@SFMG/:#1:#3}{:#2:#3}}
+  \pxcz@do{0}{3}{mogam.ttc}
+  \pxcz@do{1}{4}{mogam.ttc}
+  \pxcz@do{0}{3}{mogamb.ttc}
+  \pxcz@do{1}{4}{mogamb.ttc}
+  \pxcz@do{0}{2}{mogag.ttc}
+  \pxcz@do{1}{3}{mogag.ttc}
+  \pxcz@do{0}{2}{mogagb.ttc}
+  \pxcz@do{1}{3}{mogagb.ttc}
+  \pxcz@do{0}{2}{mobog.ttc}
+  \pxcz@do{1}{3}{mobog.ttc}
+  \pxcz@do{0}{2}{mobogb.ttc}
+  \pxcz@do{1}{3}{mobogb.ttc}
+\fi
+
+%% \pxcz@declare@entry@modifier{<name>}
+\@onlypreamble\pxcz@declare@entry@modifier
+\def\pxcz@declare@entry@modifier#1{%
+  \pxcz@onlypreamble@csdef{pxcz@MEM/#1}}
+
+%% entry modifiers
+% Uni: Changes cmap to 'unicode' if directunicode.
+\pxcz@declare@entry@modifier{Uni}{%
+  \ifnum\pxcz@directunicode<\pxcz@directunicode@otf\else
+    \ifx\pxcz@font\pxcz@noembed\else
+      \let\pxcz@cmap\pxcz@cmap@directuni
+    \fi
+  \fi}
+% Uni*: Changes cmap to 'unicode' if directunicode*.
+\pxcz@declare@entry@modifier{Uni*}{%
+  \ifnum\pxcz@directunicode<\pxcz@directunicode@all\else
+    \ifx\pxcz@font\pxcz@noembed\else
+      \let\pxcz@cmap\pxcz@cmap@directuni
+    \fi
+  \fi}
+% Switch: Selects 90 or 04 (according to mmivjis)
+\pxcz@declare@entry@modifier{Switch}{%
+  \ifpxcz@mmivjis
+    \pxcz@force@mmiv@cmap
+  \else
+    \pxcz@switch@font@for{jp90}%
+  \fi
+  \pxcz@add@lopt{\pxcz@@jpXX}}
+% 04
+\pxcz@declare@entry@modifier{04}{%
+  \pxcz@add@lopt{jp04}}
+% 90
+\pxcz@declare@entry@modifier{90}{%
+  \pxcz@switch@font@for{jp90}%
+  \pxcz@add@lopt{jp90}}
+% HWid
+\pxcz@declare@entry@modifier{HWid}{%
+  \ifx\pxcz@font\pxcz@noembed
+    \let\pxcz@cmap\pxcz@cmap@hwuni
+  \else\ifnum\pxcz@directunicode=\pxcz@directunicode@full
+    \let\pxcz@cmap\pxcz@cmap@directuni
+  \else
+    \let\pxcz@cmap\pxcz@cmap@uni
+    \pxcz@switch@font@for{hwid}%
+  \fi\fi
+  \pxcz@add@lopt{hwid}}
+% FWid
+\pxcz@declare@entry@modifier{FWid}{%
+  \pxcz@switch@font@for{fwid}%
+  \pxcz@add@lopt{fwid}}
+% AJ16/AK12/AG14/AC14
+\pxcz@declare@entry@modifier{AJ16}{\def\pxcz@csi{AJ16}}
+\pxcz@declare@entry@modifier{AK12}{\def\pxcz@csi{AK12}\pxcz@retaintrue}
+\pxcz@declare@entry@modifier{AG14}{\def\pxcz@csi{AG14}\pxcz@retaintrue}
+\pxcz@declare@entry@modifier{AC14}{\def\pxcz@csi{AC14}\pxcz@retaintrue}
+% V: Adds '-w 1' if cmap is 'unicode'.
+\pxcz@declare@entry@modifier{V}{%
+  \pxcz@verttrue
+  \ifx\pxcz@cmap\pxcz@cmap@directuni
+    \edef\pxcz@mopts{ -w 1\pxcz@mopts}%
+  \fi}
+% Exp: Adds 'hkna/vkna' if cmap is 'unicode'.
+\pxcz@declare@entry@modifier{Exp}{%
+  \if t\pxcz@expert \ifx\pxcz@cmap\pxcz@cmap@directuni
+    \ifpxcz@vert \pxcz@add@lopt{vkna}%
+    \else \pxcz@add@lopt{hkna}%
+    \fi
+  \fi\fi}
+% Ruby
+\pxcz@declare@entry@modifier{Ruby}{%
+  \if t\pxcz@expert
+    \let\pxcz@cmap\pxcz@cmap@directuni
+    \pxcz@add@lopt{ruby}%
+  \fi}
+% I
+\pxcz@declare@entry@modifier{I}{%
+  \def\pxcz@csi{I}%
+  \pxcz@retaintrue \pxcz@retain@csitrue}
+% Fin: final step
+\pxcz@declare@entry@modifier{Fin}{%
+  \ifx\pxcz@csi\relax\else
+    \ifpxcz@retain@csi
+      \edef\pxcz@mopts{/\pxcz@csi}%
+    \else\expandafter\ifx\csname pxcz@OT/\pxcz@sym\endcsname\relax
+      \edef\pxcz@mopts{/\pxcz@csi}%
+    \else % omit CSI part for CFF fonts
+      \let\pxcz@mopts\@empty
+    \fi\fi
+  \fi}
+
+%% \pxcz@spec
+\let\pxcz@spec\@empty
+
+%% \pxcz@addtospec{<id>}
+\@onlypreamble\pxcz@addtospec
+\def\pxcz@addtospec#1{%
+  \begingroup
+    \let\Entry\pxcz@Entry
+    \@nameuse{pxcz@ME/#1}%
+  \endgroup}
+%% \Entry{<sym>}{<tfm>}{<cmap>}{<modify>,...}
+\@onlypreamble\pxcz@Entry
+\def\pxcz@Entry#1#2#3#4{%
+  \def\pxcz@sym{#1}\def\pxcz@cmap{#3}%
+  \let\pxcz@csi\relax \let\pxcz@mopts\@empty \let\pxcz@lopts\@empty
+  \pxcz@retainfalse \pxcz@retain@csifalse \pxcz@vertfalse
+  \edef\pxcz@font{\@nameuse{pxcz@FS/\pxcz@sym}}%
+  \pxcz@inspect@font@tribe
+  % apply modifiers
+  \@for\pxcz@tmpx:=#4,Fin\do{%
+    \ifx\pxcz@font\@empty\else
+      \@nameuse{pxcz@MEM/\pxcz@tmpx}%
+    \fi}%
+  % resolve no-embed font spec
+  \ifx\pxcz@font\pxcz@noembed
+    \edef\pxcz@font{!\@nameuse{pxcz@NEF/\pxcz@sym}}%
+  \fi
+  % apply layout options when using 'unicode'
+  \ifnum\pxcz@directunicode<\pxcz@directunicode@full\else
+    \ifx\pxcz@cmap\pxcz@cmap@directuni
+      \ifpxcz@uniquify
+        \pxcz@uniquify@lopts{t}{\pxcz@@jpXX}%
+        \ifpxcz@fullwidth
+          \pxcz@add@lopt{fwid}%
+        \fi
+      \else
+        \ifpxcz@fullwidth
+          \pxcz@split{wid}\pxcz@lopts\ifx\pxcz@pre\relax
+            \pxcz@add@lopt{fwid}%
+          \fi
+        \fi
+      \fi
+      \ifx\pxcz@lopts\@empty\else
+        \edef\pxcz@mopts{\pxcz@mopts\space -l \pxcz@lopts}%
+      \fi
+    \fi
+  \fi
+  % suppress legacy-code mappings unless 'apply-legacycode'
+  \ifx\pxcz@cmap\pxcz@cmap@directuni\else \ifpxcz@retain\else
+    \ifnum\pxcz@legacycode=\pxcz@legacycode@apply % no-op
+    \else\ifnum\pxcz@legacycode=\pxcz@legacycode@ignore
+      \let\pxcz@font\@empty % skip
+    \else\ifx\pxcz@font\@empty\else
+      \let\pxcz@font\pxcz@kill@mapping % kill
+    \fi\fi\fi
+  \fi\fi
+  % output it
+  \ifx\pxcz@font\pxcz@kill@mapping
+    \xdef\pxcz@spec{\pxcz@spec\noexpand\special{%
+      \pxcz@mapline{-#2}}}%
+  \else\ifx\pxcz@font\@empty\else
+    \xdef\pxcz@spec{\pxcz@spec\noexpand\special{%
+      \pxcz@mapline{#2 \pxcz@cmap\space\pxcz@font\pxcz@mopts}}}%
+  \fi\fi}
+
+%% \pxcz@do@file@preset
+\@onlypreamble\pxcz@do@file@preset
+\def\pxcz@do@file@preset{%
+  \ifpxcz@file@preset@tl
+    \pxcz@do@file@preset@a{ptex-}%
+    \ifpxcz@uptex \pxcz@do@file@preset@a{uptex-}\fi
+    \ifpxcz@otf
+      \pxcz@do@file@preset@a{otf-}%
+      \ifpxcz@uptex \pxcz@do@file@preset@a{otf-up-}\fi
+    \fi
+  \else
+    \pxcz@do@file@preset@a{}%
+  \fi}
+\@onlypreamble\pxcz@do@file@preset@a
+\def\pxcz@do@file@preset@a#1{%
+  \pxcz@addtospec@alt\pxcz@mapfile{#1\pxcz@file@preset.map}}
+
+%% \pxcz@addtospec@alt
+\def\pxcz@addtospec@alt#1#2{%
+  \xdef\pxcz@spec{\pxcz@spec\noexpand\special{#1{#2}}}}
+\def\pxcz@mapfile#1{pdf:mapfile #1}
+\def\pxcz@mapline#1{pdf:mapline #1}
+
+%--------------------------------------- map entry definitions
+
+%% \pxcz@mapentry{<id>}{<text>}
+\@onlypreamble\pxcz@mapentry
+\def\pxcz@mapentry#1{%
+  \pxcz@onlypreamble@csdef{pxcz@ME/#1}}
+
+%% map entries
+\pxcz@mapentry{STD}{%
+\Entry{mnr}{rml}           {H}                   {Switch}%
+\Entry{mnr}{rmlv}          {V}                   {Switch,V}%
+\Entry{gtu}{gbm}           {H}                   {Switch}%
+\Entry{gtu}{gbmv}          {V}                   {Switch,V}%
+}
+\pxcz@mapentry{ALPHA}{%
+\Entry{mnl}{r-cfjar-l-@PXcjk0@}{unicode}         {HWid}%
+\Entry{mnl}{r-cfjar-lz-@PXcjk0@}{UniJIS-UCS2-H}  {Uni*,FWid}%
+\Entry{mnr}{r-cfjar-r-@PXcjk0@}{unicode}         {HWid}%
+\Entry{mnr}{r-cfjar-rz-@PXcjk0@}{UniJIS-UCS2-H}  {Uni*,FWid}%
+\Entry{mnb}{r-cfjar-b-@PXcjk0@}{unicode}         {HWid}%
+\Entry{mnb}{r-cfjar-bz-@PXcjk0@}{UniJIS-UCS2-H}  {Uni*,FWid}%
+\Entry{gtr}{r-cfjas-r-@PXcjk0@}{unicode}         {HWid}%
+\Entry{gtr}{r-cfjas-rz-@PXcjk0@}{UniJIS-UCS2-H}  {Uni*,FWid}%
+\Entry{gtb}{r-cfjas-b-@PXcjk0@}{unicode}         {HWid}%
+\Entry{gtb}{r-cfjas-bz-@PXcjk0@}{UniJIS-UCS2-H}  {Uni*,FWid}%
+\Entry{gtx}{r-cfjas-x-@PXcjk0@}{unicode}         {HWid}%
+\Entry{gtx}{r-cfjas-xz-@PXcjk0@}{UniJIS-UCS2-H}  {Uni*,FWid}%
+\Entry{mgr}{r-cfjam-r-@PXcjk0@}{unicode}         {HWid}%
+\Entry{mgr}{r-cfjam-rz-@PXcjk0@}{UniJIS-UCS2-H}  {Uni*,FWid}%
+}
+\pxcz@mapentry{UTF}{%
+\Entry{mnr}{unijmin-h}     {UniJIS-UTF16-H}      {Uni*,Switch}%
+\Entry{mnr}{unijmin-v}     {UniJIS-UTF16-V}      {Uni*,Switch,V}%
+\Entry{mnr}{cidmin-h}      {Identity-H}          {AJ16}%
+\Entry{mnr}{cidmin-v}      {Identity-V}          {AJ16,V}%
+\Entry{mnr}{hmr}           {H}                   {Switch}%
+\Entry{mnr}{hmrv}          {V}                   {Switch,V}%
+\Entry{gtu}{unijgoth-h}    {UniJIS-UTF16-H}      {Uni*,Switch}%
+\Entry{gtu}{unijgoth-v}    {UniJIS-UTF16-V}      {Uni*,Switch,V}%
+\Entry{gtu}{cidgoth-h}     {Identity-H}          {AJ16}%
+\Entry{gtu}{cidgoth-v}     {Identity-V}          {AJ16,V}%
+\Entry{gtu}{hkb}           {H}                   {Switch}%
+\Entry{gtu}{hkbv}          {V}                   {Switch,V}%
+}
+\pxcz@mapentry{OTF}{%
+\Entry{mnl}{otf-ujml-h}    {UniJIS-UTF16-H}      {Uni,90,FWid}%
+\Entry{mnl}{otf-ujml-v}    {UniJIS-UTF16-V}      {Uni,90,FWid,V}%
+\Entry{mnl}{otf-cjml-h}    {Identity-H}          {AJ16}%
+\Entry{mnl}{otf-cjml-v}    {Identity-V}          {AJ16,V}%
+\Entry{mnl}{hminl-h}       {H}                   {90}%
+\Entry{mnl}{hminl-v}       {V}                   {90,V}%
+\Entry{mnl}{otf-ujmln-h}   {UniJIS2004-UTF16-H}  {Uni,04,FWid}%
+\Entry{mnl}{otf-ujmln-v}   {UniJIS2004-UTF16-V}  {Uni,04,FWid,V}%
+\Entry{mnl}{hminln-h}      {H}                   {}%
+\Entry{mnl}{hminln-v}      {V}                   {V}%
+\Entry{mnr}{otf-ujmr-h}    {UniJIS-UTF16-H}      {Uni,90,FWid}%
+\Entry{mnr}{otf-ujmr-v}    {UniJIS-UTF16-V}      {Uni,90,FWid,V}%
+\Entry{mnr}{otf-cjmr-h}    {Identity-H}          {AJ16}%
+\Entry{mnr}{otf-cjmr-v}    {Identity-V}          {AJ16,V}%
+\Entry{mnr}{hminr-h}       {H}                   {90}%
+\Entry{mnr}{hminr-v}       {V}                   {90,V}%
+\Entry{mnr}{otf-ujmrn-h}   {UniJIS2004-UTF16-H}  {Uni,04,FWid}%
+\Entry{mnr}{otf-ujmrn-v}   {UniJIS2004-UTF16-V}  {Uni,04,FWid,V}%
+\Entry{mnr}{hminrn-h}      {H}                   {}%
+\Entry{mnr}{hminrn-v}      {V}                   {V}%
+\Entry{mnb}{otf-ujmb-h}    {UniJIS-UTF16-H}      {Uni,90,FWid}%
+\Entry{mnb}{otf-ujmb-v}    {UniJIS-UTF16-V}      {Uni,90,FWid,V}%
+\Entry{mnb}{otf-cjmb-h}    {Identity-H}          {AJ16}%
+\Entry{mnb}{otf-cjmb-v}    {Identity-V}          {AJ16,V}%
+\Entry{mnb}{hminb-h}       {H}                   {90}%
+\Entry{mnb}{hminb-v}       {V}                   {90,V}%
+\Entry{mnb}{otf-ujmbn-h}   {UniJIS2004-UTF16-H}  {Uni,04,FWid}%
+\Entry{mnb}{otf-ujmbn-v}   {UniJIS2004-UTF16-V}  {Uni,04,FWid,V}%
+\Entry{mnb}{hminbn-h}      {H}                   {}%
+\Entry{mnb}{hminbn-v}      {V}                   {V}%
+\Entry{gtr}{otf-ujgr-h}    {UniJIS-UTF16-H}      {Uni,90,FWid}%
+\Entry{gtr}{otf-ujgr-v}    {UniJIS-UTF16-V}      {Uni,90,FWid,V}%
+\Entry{gtr}{otf-cjgr-h}    {Identity-H}          {AJ16}%
+\Entry{gtr}{otf-cjgr-v}    {Identity-V}          {AJ16,V}%
+\Entry{gtr}{hgothr-h}      {H}                   {90}%
+\Entry{gtr}{hgothr-v}      {V}                   {90,V}%
+\Entry{gtr}{otf-ujgrn-h}   {UniJIS2004-UTF16-H}  {Uni,04,FWid}%
+\Entry{gtr}{otf-ujgrn-v}   {UniJIS2004-UTF16-V}  {Uni,04,FWid,V}%
+\Entry{gtr}{hgothrn-h}     {H}                   {}%
+\Entry{gtr}{hgothrn-v}     {V}                   {V}%
+\Entry{gtb}{otf-ujgb-h}    {UniJIS-UTF16-H}      {Uni,90,FWid}%
+\Entry{gtb}{otf-ujgb-v}    {UniJIS-UTF16-V}      {Uni,90,FWid,V}%
+\Entry{gtb}{otf-cjgb-h}    {Identity-H}          {AJ16}%
+\Entry{gtb}{otf-cjgb-v}    {Identity-V}          {AJ16,V}%
+\Entry{gtb}{hgothb-h}      {H}                   {90}%
+\Entry{gtb}{hgothb-v}      {V}                   {90,V}%
+\Entry{gtb}{otf-ujgbn-h}   {UniJIS2004-UTF16-H}  {Uni,04,FWid}%
+\Entry{gtb}{otf-ujgbn-v}   {UniJIS2004-UTF16-V}  {Uni,04,FWid,V}%
+\Entry{gtb}{hgothbn-h}     {H}                   {}%
+\Entry{gtb}{hgothbn-v}     {V}                   {V}%
+\Entry{gtx}{otf-ujge-h}    {UniJIS-UTF16-H}      {Uni,90,FWid}%
+\Entry{gtx}{otf-ujge-v}    {UniJIS-UTF16-V}      {Uni,90,FWid,V}%
+\Entry{gtx}{otf-cjge-h}    {Identity-H}          {AJ16}%
+\Entry{gtx}{otf-cjge-v}    {Identity-V}          {AJ16,V}%
+\Entry{gtx}{hgotheb-h}     {H}                   {90}%
+\Entry{gtx}{hgotheb-v}     {V}                   {90,V}%
+\Entry{gtx}{otf-ujgen-h}   {UniJIS2004-UTF16-H}  {Uni,04,FWid}%
+\Entry{gtx}{otf-ujgen-v}   {UniJIS2004-UTF16-V}  {Uni,04,FWid,V}%
+\Entry{gtx}{hgothebn-h}    {H}                   {}%
+\Entry{gtx}{hgothebn-v}    {V}                   {V}%
+\Entry{mgr}{otf-ujmgr-h}   {UniJIS-UTF16-H}      {Uni,90,FWid}%
+\Entry{mgr}{otf-ujmgr-v}   {UniJIS-UTF16-V}      {Uni,90,FWid,V}%
+\Entry{mgr}{otf-cjmgr-h}   {Identity-H}          {AJ16}%
+\Entry{mgr}{otf-cjmgr-v}   {Identity-V}          {AJ16,V}%
+\Entry{mgr}{hmgothr-h}     {H}                   {90}%
+\Entry{mgr}{hmgothr-v}     {V}                   {90,V}%
+\Entry{mgr}{otf-ujmgrn-h}  {UniJIS2004-UTF16-H}  {Uni,04,FWid}%
+\Entry{mgr}{otf-ujmgrn-v}  {UniJIS2004-UTF16-V}  {Uni,04,FWid,V}%
+\Entry{mgr}{hmgothrn-h}    {H}                   {}%
+\Entry{mgr}{hmgothrn-v}    {V}                   {V}%
+%
+\ifpxcz@otf@multi
+\Entry{kom}{otf-ukmr-h}    {UniKS-UTF16-H}       {Uni,FWid}%
+\Entry{kom}{otf-ukmr-v}    {UniKS-UTF16-V}       {Uni,FWid,V}%
+\Entry{kom}{otf-ckmr-h}    {Identity-H}          {AK12}%
+\Entry{kom}{otf-ckmr-v}    {Identity-V}          {AK12,V}%
+\Entry{kog}{otf-ukgr-h}    {UniKS-UTF16-H}       {Uni,FWid}%
+\Entry{kog}{otf-ukgr-v}    {UniKS-UTF16-V}       {Uni,FWid,V}%
+\Entry{kog}{otf-ckgr-h}    {Identity-H}          {AK12}%
+\Entry{kog}{otf-ckgr-v}    {Identity-V}          {AK12,V}%
+\Entry{scm}{otf-ucmr-h}    {UniGB-UTF16-H}       {Uni,FWid}%
+\Entry{scm}{otf-ucmr-v}    {UniGB-UTF16-V}       {Uni,FWid,V}%
+\Entry{scm}{otf-ccmr-h}    {Identity-H}          {AG14}%
+\Entry{scm}{otf-ccmr-v}    {Identity-V}          {AG14,V}%
+\Entry{scg}{otf-ucgr-h}    {UniGB-UTF16-H}       {Uni,FWid}%
+\Entry{scg}{otf-ucgr-v}    {UniGB-UTF16-V}       {Uni,FWid,V}%
+\Entry{scg}{otf-ccgr-h}    {Identity-H}          {AG14}%
+\Entry{scg}{otf-ccgr-v}    {Identity-V}          {AG14,V}%
+\Entry{tcm}{otf-utmr-h}    {UniCNS-UTF16-H}      {Uni,FWid}%
+\Entry{tcm}{otf-utmr-v}    {UniCNS-UTF16-V}      {Uni,FWid,V}%
+\Entry{tcm}{otf-ctmr-h}    {Identity-H}          {AC14}%
+\Entry{tcm}{otf-ctmr-v}    {Identity-V}          {AC14,V}%
+\Entry{tcg}{otf-utgr-h}    {UniCNS-UTF16-H}      {Uni,FWid}%
+\Entry{tcg}{otf-utgr-v}    {UniCNS-UTF16-V}      {Uni,FWid,V}%
+\Entry{tcg}{otf-ctgr-h}    {Identity-H}          {AC14}%
+\Entry{tcg}{otf-ctgr-v}    {Identity-V}          {AC14,V}%
+\fi
+}
+\pxcz@mapentry{UPSTD}{%
+\Entry{mnr}{uprml-h}       {UniJIS-UTF16-H}      {Uni*,Switch}%
+\Entry{mnr}{uprml-v}       {UniJIS-UTF16-V}      {Uni*,Switch,V}%
+\Entry{mnr}{uprml-hq}      {UniJIS-UCS2-H}       {Uni*,FWid}%
+\Entry{gtu}{upgbm-h}       {UniJIS-UTF16-H}      {Uni*,Switch}%
+\Entry{gtu}{upgbm-v}       {UniJIS-UTF16-V}      {Uni*,Switch,V}%
+\Entry{gtu}{upgbm-hq}      {UniJIS-UCS2-H}       {Uni*,FWid}%
+\Entry{mnr}{urml}          {UniJIS-UTF16-H}      {Uni*,Switch}%
+\Entry{mnr}{urmlv}         {UniJIS-UTF16-V}      {Uni*,Switch,V}%
+\Entry{gtu}{ugbm}          {UniJIS-UTF16-H}      {Uni*,Switch}%
+\Entry{gtu}{ugbmv}         {UniJIS-UTF16-V}      {Uni*,Switch,V}%
+%
+\Entry{kom}{uphysmjm-h}    {UniKS-UTF16-H}       {Uni*}%
+\Entry{kom}{uphysmjm-v}    {UniKS-UTF16-V}       {Uni*,V}%
+\Entry{kog}{uphygt-h}      {UniKS-UTF16-H}       {Uni*}%
+\Entry{kog}{uphygt-v}      {UniKS-UTF16-V}       {Uni*,V}%
+\Entry{scm}{upstsl-h}      {UniGB-UTF16-H}       {Uni*}%
+\Entry{scm}{upstsl-v}      {UniGB-UTF16-V}       {Uni*,V}%
+\Entry{scg}{upstht-h}      {UniGB-UTF16-H}       {Uni*}%
+\Entry{scg}{upstht-v}      {UniGB-UTF16-V}       {Uni*,V}%
+\Entry{tcm}{upmsl-h}       {UniCNS-UTF16-H}      {Uni*}%
+\Entry{tcm}{upmsl-v}       {UniCNS-UTF16-V}      {Uni*,V}%
+\Entry{tcg}{upmhm-h}       {UniCNS-UTF16-H}      {Uni*}%
+\Entry{tcg}{upmhm-v}       {UniCNS-UTF16-V}      {Uni*,V}%
+}
+\pxcz@mapentry{UPOTF}{%
+\Entry{mnl}{uphminl-h}     {UniJIS-UTF16-H}      {Uni*,90,Exp}%
+\Entry{mnl}{uphminl-v}     {UniJIS-UTF16-V}      {Uni*,90,V,Exp}%
+\Entry{mnl}{uphminln-h}    {UniJIS2004-UTF16-H}  {Uni*,04,Exp}%
+\Entry{mnl}{uphminln-v}    {UniJIS2004-UTF16-V}  {Uni*,04,V,Exp}%
+\Entry{mnr}{uphminr-h}     {UniJIS-UTF16-H}      {Uni*,90,Exp}%
+\Entry{mnr}{uphminr-v}     {UniJIS-UTF16-V}      {Uni*,90,V,Exp}%
+\Entry{mnr}{uphminrn-h}    {UniJIS2004-UTF16-H}  {Uni*,04,Exp}%
+\Entry{mnr}{uphminrn-v}    {UniJIS2004-UTF16-V}  {Uni*,04,V,Exp}%
+\Entry{mnb}{uphminb-h}     {UniJIS-UTF16-H}      {Uni*,90,Exp}%
+\Entry{mnb}{uphminb-v}     {UniJIS-UTF16-V}      {Uni*,90,V,Exp}%
+\Entry{mnb}{uphminbn-h}    {UniJIS2004-UTF16-H}  {Uni*,04,Exp}%
+\Entry{mnb}{uphminbn-v}    {UniJIS2004-UTF16-V}  {Uni*,04,V,Exp}%
+\Entry{gtr}{uphgothr-h}    {UniJIS-UTF16-H}      {Uni*,90,Exp}%
+\Entry{gtr}{uphgothr-v}    {UniJIS-UTF16-V}      {Uni*,90,V,Exp}%
+\Entry{gtr}{uphgothrn-h}   {UniJIS2004-UTF16-H}  {Uni*,04,Exp}%
+\Entry{gtr}{uphgothrn-v}   {UniJIS2004-UTF16-V}  {Uni*,04,V,Exp}%
+\Entry{gtb}{uphgothb-h}    {UniJIS-UTF16-H}      {Uni*,90,Exp}%
+\Entry{gtb}{uphgothb-v}    {UniJIS-UTF16-V}      {Uni*,90,V,Exp}%
+\Entry{gtb}{uphgothbn-h}   {UniJIS2004-UTF16-H}  {Uni*,04,Exp}%
+\Entry{gtb}{uphgothbn-v}   {UniJIS2004-UTF16-V}  {Uni*,04,V,Exp}%
+\Entry{gtx}{uphgotheb-h}   {UniJIS-UTF16-H}      {Uni*,90,Exp}%
+\Entry{gtx}{uphgotheb-v}   {UniJIS-UTF16-V}      {Uni*,90,V,Exp}%
+\Entry{gtx}{uphgothebn-h}  {UniJIS2004-UTF16-H}  {Uni*,04,Exp}%
+\Entry{gtx}{uphgothebn-v}  {UniJIS2004-UTF16-V}  {Uni*,04,V,Exp}%
+\Entry{mgr}{uphmgothr-h}   {UniJIS-UTF16-H}      {Uni*,90,Exp}%
+\Entry{mgr}{uphmgothr-v}   {UniJIS-UTF16-V}      {Uni*,90,V,Exp}%
+\Entry{mgr}{uphmgothrn-h}  {UniJIS2004-UTF16-H}  {Uni*,04,Exp}%
+\Entry{mgr}{uphmgothrn-v}  {UniJIS2004-UTF16-V}  {Uni*,04,V,Exp}%
+}
+\pxcz@mapentry{GID}{%
+\Entry{mnl}{zur-gjml-h}    {Identity-H}          {I}%
+\Entry{mnl}{zur-gjml-v}    {Identity-V}          {I,V}%
+\Entry{mnr}{zur-gjmr-h}    {Identity-H}          {I}%
+\Entry{mnr}{zur-gjmr-v}    {Identity-V}          {I,V}%
+\Entry{mnb}{zur-gjmb-h}    {Identity-H}          {I}%
+\Entry{mnb}{zur-gjmb-v}    {Identity-V}          {I,V}%
+\Entry{gtr}{zur-gjgr-h}    {Identity-H}          {I}%
+\Entry{gtr}{zur-gjgr-v}    {Identity-V}          {I,V}%
+\Entry{gtb}{zur-gjgb-h}    {Identity-H}          {I}%
+\Entry{gtb}{zur-gjgb-v}    {Identity-V}          {I,V}%
+\Entry{gtx}{zur-gjge-h}    {Identity-H}          {I}%
+\Entry{gtx}{zur-gjge-v}    {Identity-V}          {I,V}%
+\Entry{mgr}{zur-gjmgr-h}   {Identity-H}          {I}%
+\Entry{mgr}{zur-gjmgr-v}   {Identity-V}          {I,V}%
+}
+\pxcz@mapentry{EXPERT}{%
+\Entry{mnl}{zur-rjml-h}    {unicode}             {Ruby}%
+\Entry{mnl}{zur-rjml-v}    {unicode}             {V,Ruby}%
+\Entry{mnr}{zur-rjmr-h}    {unicode}             {Ruby}%
+\Entry{mnr}{zur-rjmr-v}    {unicode}             {V,Ruby}%
+\Entry{mnb}{zur-rjmb-h}    {unicode}             {Ruby}%
+\Entry{mnb}{zur-rjmb-v}    {unicode}             {V,Ruby}%
+\Entry{gtr}{zur-rjgr-h}    {unicode}             {Ruby}%
+\Entry{gtr}{zur-rjgr-v}    {unicode}             {V,Ruby}%
+\Entry{gtb}{zur-rjgb-h}    {unicode}             {Ruby}%
+\Entry{gtb}{zur-rjgb-v}    {unicode}             {V,Ruby}%
+\Entry{gtx}{zur-rjge-h}    {unicode}             {Ruby}%
+\Entry{gtx}{zur-rjge-v}    {unicode}             {V,Ruby}%
+\Entry{mgr}{zur-rjmgr-h}   {unicode}             {Ruby}%
+\Entry{mgr}{zur-rjmgr-v}   {unicode}             {V,Ruby}%
+}
+\pxcz@mapentry{PXOTF}{%
+}
+
+% user-defined map
+\pxcz@mapentry{USR}{%
+  \pxcz@user@map
+}
+
+%--------------------------------------- '\diruni'
+
+%% variables
+\newif\ifpxcz@diruni@ok
+\let\pxcz@otf@weight\relax
+
+%% check if \diruni is available
+\ifpxcz@uptex
+  \@ifpackageloaded{otf}{% directunicode needs otf
+    \ifnum\pxcz@directunicode>\z@ \pxcz@diruni@oktrue \fi
+  }{%else
+    \ifnum\pxcz@directunicode<\pxcz@directunicode@all\else
+      \pxcz@diruni@oktrue % directunicode* does not need otf
+      \AtBeginDocument{% to laod otf later causes inconsistency
+        \@ifpackageloaded{otf}{\pxcz@diruni@okfalse}{}}%
+    \fi
+  }
+\fi
+
+%%<*> \diruni
+\DeclareRobustCommand*{\diruni}{%
+  \not@math@alphabet\diruni\relax
+  \fontshape{diruni}\selectfont
+}
+
+%%<*> \textdiruni{<text>}
+\newcommand*{\textdiruni}[1]{%
+  \relax\ifmmode\hbox\fi{\diruni#1}%
+}
+
+\ifpxcz@diruni@ok   %---- <*diruni-ok>
+
+%% \pxcz@otf@weight: otf weight mode
+% watch out for priority...
+\@ifpackagewith{otf}{deluxe}{%
+  \let\pxcz@otf@weight=d
+}{\@ifpackagewith{otf}{bold}{%
+  \let\pxcz@otf@weight=b
+}{\@ifpackagewith{otf}{expert}{%
+  \let\pxcz@otf@weight=r % 'expert' cancels 'noreplace'
+}{\@ifpackagewith{otf}{noreplace}{%
+  \let\pxcz@otf@weight=n
+}{\@ifpackageloaded{otf}{%
+  \let\pxcz@otf@weight=r
+}{%else
+  \let\pxcz@otf@weight=n
+}}}}}
+%% \pxcz@otf@mmivjis: otf jis2004
+\@ifpackagewith{otf}{jis2004}{%
+  \let\pxcz@otf@mmivjis=t%
+}{%else
+  \let\pxcz@otf@mmivjis=f%
+}
+%% \pxcz@du@scale
+\let\pxcz@du@scale\utf@sc@le
+\ifx\pxcz@du@scale\@undefined
+  \let\pxcz@du@scale\Cjascale
+\fi
+\ifx\pxcz@du@scale\@undefined
+  \edef\pxcz@du@scale{\ifx\jsc@JYn\@undefined 0.962216\else 0.924715\fi}%
+\fi
+
+%% \pxcz@du@decl@shape{<fam>}{<ser>}<sw>{<tfmname>}{<suffix>}
+\@onlypreamble\pxcz@du@decl@shape
+\def\pxcz@du@decl@shape#1#2#3#4#5{%
+\DeclareFontShape{JY2}{#1}{#2}{diruni}{<->%
+    \pxcz@du@shape@spec{#3}{#4}{#5}{h}}{}%
+\DeclareFontShape{JT2}{#1}{#2}{diruni}{<->%
+    \pxcz@du@shape@spec{#3}{#4}{#5}{v}}{}}
+\@onlypreamble\pxcz@du@shape@spec
+\def\pxcz@du@shape@spec#1#2#3#4{%
+  \if#1t%
+    s*[\pxcz@du@scale]#2\if t\pxcz@otf@mmivjis#3\fi-#4%
+  \else#2\fi}
+
+\if d\pxcz@otf@weight % deluxe
+\pxcz@du@decl@shape{hmc}{l}t{otf-ujml}{n}%
+\pxcz@du@decl@shape{hmc}{m}t{otf-ujmr}{n}%
+\pxcz@du@decl@shape{hmc}{bx}t{otf-ujmb}{n}%
+\pxcz@du@decl@shape{hgt}{m}t{otf-ujgr}{n}%
+\pxcz@du@decl@shape{hgt}{bx}t{otf-ujgb}{n}%
+\pxcz@du@decl@shape{hgt}{eb}t{otf-ujge}{n}%
+\pxcz@du@decl@shape{mg}{m}t{otf-ujmgr}{n}%
+\else\if b\pxcz@otf@weight % bold
+\pxcz@du@decl@shape{hmc}{m}t{otf-ujmr}{n}%
+\pxcz@du@decl@shape{hmc}{bx}f{ssub*hgt/m/diruni}{}%
+\pxcz@du@decl@shape{hgt}{m}t{otf-ujgb}{n}%
+\pxcz@du@decl@shape{hgt}{bx}f{ssub*hgt/m/diruni}{}%
+\else\if r\pxcz@otf@weight % default
+\pxcz@du@decl@shape{hmc}{m}t{otf-ujmr}{n}%
+\pxcz@du@decl@shape{hmc}{bx}f{ssub*hgt/m/diruni}{}%
+\pxcz@du@decl@shape{hgt}{m}t{otf-ujgr}{n}%
+\pxcz@du@decl@shape{hgt}{bx}f{ssub*hgt/m/diruni}{}%
+\else                 % noreplace
+\ifnum\pxcz@directunicode>\@ne % (directunicode*)
+\pxcz@du@decl@shape{mc}{m}t{uprml}{}%
+\pxcz@du@decl@shape{mc}{bx}f{ssub*gt/m/diruni}{}%
+\pxcz@du@decl@shape{gt}{m}t{upgbm}{}%
+\pxcz@du@decl@shape{gt}{bx}f{ssub*gt/m/diruni}{}%
+\else                          % (directunicode)
+\pxcz@du@decl@shape{mc}{m}t{otf-ujmr}{n}%
+\pxcz@du@decl@shape{mc}{bx}f{ssub*gt/m/diruni}{}%
+\pxcz@du@decl@shape{gt}{m}t{otf-ujgr}{n}%
+\pxcz@du@decl@shape{gt}{bx}f{ssub*gt/m/diruni}{}%
+\fi
+\fi\fi\fi
+
+\AtBeginDocument{%
+  \def\pxcz@do#1#2#3{%
+    \DeclareFontShape{#1}{#2}{#3}{diruni}{<->ssub*#2/#3/n}{}}%
+  \@for\pxcz@tmpa:={\rmdefault,\sfdefault,\ttdefault}\do{%
+    \pxcz@force@load@font@fam\pxcz@tmpa
+    \@for\pxcz@tmpb:={m,bx}\do{%
+      \edef\pxcz@tmpb{{\f@encoding}{\pxcz@tmpa}{\pxcz@tmpb}}%
+      \expandafter\pxcz@do\pxcz@tmpb}}%
+}
+\@onlypreamble\pxcz@force@load@font@fam
+\def\pxcz@force@load@font@fam#1{%
+  \begingroup
+    \edef\f@family{#1}\def\f@series{m}\def\f@shape{n}%
+    \xdef\font@name{\csname\curr@fontshape/\f@size\endcsname}%
+    \let\extract@font\relax
+    \pickup@font
+  \endgroup
+}
+
+\ifpxcz@glyphid     %---- <*glyphid>
+
+%%<*> \gid{<number>}
+\DeclareRobustCommand*{\gid}[1]{%
+  \begingroup
+    \kanjishape{dirgid}\selectfont
+    \kchar#1\relax
+  \endgroup}
+
+%% \pxcz@dg@decl@shape{<fam>}{<ser>}<sw>{<tfmname>}
+\@onlypreamble\pxcz@dg@decl@shape
+\def\pxcz@dg@decl@shape#1#2#3#4{%
+\DeclareFontShape{JY2}{#1}{#2}{dirgid}{<->%
+    \pxcz@dg@shape@spec{#3}{#4}{h}}{}%
+\DeclareFontShape{JT2}{#1}{#2}{dirgid}{<->%
+    \pxcz@dg@shape@spec{#3}{#4}{v}}{}}
+\@onlypreamble\pxcz@dg@shape@spec
+\def\pxcz@dg@shape@spec#1#2#3{%
+  \if#1t%
+    s*[\pxcz@du@scale]#2-#3%
+  \else#2\fi}
+
+\if d\pxcz@otf@weight % deluxe
+\pxcz@dg@decl@shape{hmc}{l}t{zur-gjml}%
+\pxcz@dg@decl@shape{hmc}{m}t{zur-gjmr}%
+\pxcz@dg@decl@shape{hmc}{bx}t{zur-gjmb}%
+\pxcz@dg@decl@shape{hgt}{m}t{zur-gjgr}%
+\pxcz@dg@decl@shape{hgt}{bx}t{zur-gjgb}%
+\pxcz@dg@decl@shape{hgt}{eb}t{zur-gjge}%
+\pxcz@dg@decl@shape{mg}{m}t{zur-gjmgr}%
+\else\if b\pxcz@otf@weight % bold
+\pxcz@dg@decl@shape{hmc}{m}t{zur-gjmr}%
+\pxcz@dg@decl@shape{hmc}{bx}f{ssub*hgt/m/dirgid}{}%
+\pxcz@dg@decl@shape{hgt}{m}t{zur-gjgb}%
+\pxcz@dg@decl@shape{hgt}{bx}f{ssub*hgt/m/dirgid}{}%
+\else\if r\pxcz@otf@weight % default
+\pxcz@dg@decl@shape{hmc}{m}t{zur-gjmr}%
+\pxcz@dg@decl@shape{hmc}{bx}f{ssub*hgt/m/dirgid}{}%
+\pxcz@dg@decl@shape{hgt}{m}t{zur-gjgr}%
+\pxcz@dg@decl@shape{hgt}{bx}f{ssub*hgt/m/dirgid}{}%
+\else                 % noreplace
+\pxcz@dg@decl@shape{mc}{m}t{zur-gjmr}%
+\pxcz@dg@decl@shape{mc}{bx}f{ssub*gt/m/dirgid}{}%
+\pxcz@dg@decl@shape{gt}{m}t{zur-gjgr}%
+\pxcz@dg@decl@shape{gt}{bx}f{ssub*gt/m/dirgid}{}%
+\fi\fi\fi
+
+\fi                 %---- </glyphid>
+
+\fi                 %---- </diruni-ok>
+
+%% \pxcz@err@diruni
+\ifcase\pxcz@directunicode
+  \def\pxcz@errhelp@diruni{%
+    You must use upLaTeX and load pxchfon with 'directunicode(*)' option.}
+\else
+  \def\pxcz@errhelp@diruni{%
+    You must use upLaTeX and load pxchfon after 'otf' package.}
+\fi
+\def\pxcz@err@diruni{%
+  \pxcz@error{Command '\string\diruni' not available}%
+   {\pxcz@errhelp@diruni\MessageBreak\@ehc}%
+  \global\let\pxcz@err@diruni\relax}
+\AtBeginDocument{%
+  \ifpxcz@diruni@ok
+    \let\pxcz@err@diruni\relax
+    \let\pxcz@errhelp@diruni\relax
+  \else
+    \let\diruni\pxcz@err@diruni
+  \fi}
+
+%--------------------------------------- 'alphabet' option
+
+%% \pxcz@afont@enc@list
+\def\pxcz@afont@enc@list{OT1,T1}
+%% \pxcz@decl@family{<fam>}
+\@onlypreamble\pxcz@decl@family
+\def\pxcz@decl@family#1{%
+  \@for\pxcz@x:=\pxcz@afont@enc@list\do{%
+    \DeclareFontFamily{\pxcz@x}{#1}{}}}
+%% \pxcz@decl@shape{<fam>}{<ser>}<sw>{<font>}
+\@onlypreamble\pxcz@decl@shape
+\def\pxcz@decl@shape#1#2#3#4{%
+  \if s#3%
+    \@for\pxcz@x:=\pxcz@afont@enc@list\do{%
+      \DeclareFontShape{\pxcz@x}{#1}{#2}{n}{<->ssub*#4}{}}%
+  \else
+    \DeclareFontShape{OT1}{#1}{#2}{n}{<->#4-l0j}{}%
+    \DeclareFontShape {T1}{#1}{#2}{n}{<->#4-l0j}{}% FIXME
+  \fi
+  \@for\pxcz@x:=\pxcz@afont@enc@list\do{%
+    \DeclareFontShape{\pxcz@x}{#1}{#2}{it}{<->ssub*#1/#2/n}{}%
+    \DeclareFontShape{\pxcz@x}{#1}{#2}{sl}{<->ssub*#1/#2/n}{}}}
+
+\ifpxcz@alphafont   %---- <*alphabet>
+\ifpxcz@otf@deluxe  %---- <*otfdx> : otf with deluxe option
+  % define families cfjar & cfjas
+\pxcz@decl@family{cfjar}%
+\pxcz@decl@shape{cfjar}{l}n{cfjar-l}%
+\pxcz@decl@shape{cfjar}{m}n{cfjar-r}%
+\pxcz@decl@shape{cfjar}{bx}n{cfjar-b}%
+\pxcz@decl@family{cfjas}%
+\pxcz@decl@shape{cfjas}{m}n{cfjas-r}%
+\pxcz@decl@shape{cfjas}{bx}n{cfjas-b}%
+\pxcz@decl@shape{cfjas}{eb}n{cfjas-x}%
+\pxcz@decl@family{cfjam}%
+\pxcz@decl@shape{cfjam}{m}n{cfjam-r}%
+  % redefine \ltseries & \ebseries so they affect roman font
+\let\ltseries\relax \let\ebseries\relax
+\DeclareRobustCommand\ltseries{%
+  \not@math@alphabet\ltseries\relax
+  \fontseries\ltdefault\selectfont}%
+\DeclareRobustCommand\ebseries{%
+  \not@math@alphabet\ebseries\relax
+  \fontseries\ebdefault\selectfont}%
+\else               %---- <*!otfdx>
+\pxcz@decl@family{cfjar}%
+\pxcz@decl@shape{cfjar}{m}n{cfjar-r}%
+\pxcz@decl@shape{cfjar}{bx}s{cfjas/m/n}%
+\pxcz@decl@family{cfjas}%
+\pxcz@decl@shape{cfjas}{m}n{cfjas-r}%
+\pxcz@decl@shape{cfjas}{bx}s{cfjas/m/n}%
+\@onlypreamble\pxcz@err@dxotf
+\def\pxcz@err@dxotf#1{%
+  \pxcz@error{Loaded before '#1' with 'deluxe'}%
+  {This package must be loaded after '#1' with 'deluxe' option
+  when using both.}}
+\g@addto@macro\pxcz@check@extra{%
+  \expandafter\let\expandafter\pxcz@x\csname pxcz@FS/mnr\endcsname
+  \ifx\pxcz@x\@empty\else
+    % if mnr is replaced but gtr is not then ...
+    \expandafter\ifx\csname pxcz@FS/gtr\endcsname\@empty
+      {\expandafter\let\csname pxcz@FS/gtr\endcsname\pxcz@x
+        \pxcz@Entry{gtr}{r-cfjas-r-@PXcjk0@}{unicode}{HWid}}%
+  \fi\fi
+  \@ifpackagewith{otf}{deluxe}{\pxcz@err@dxotf{otf}}{}%
+  \@ifpackagewith{pxotf}{deluxe}{\pxcz@err@dxotf{pxotf}}{}%
+}
+\fi                 %---- </otfdx>
+\fi                 %---- </alphabet>
+
+%--------------------------------------- begin-document hook
+
+%% variables
+\let\pxcz@afont@enc\relax
+
+%% \pxcz@mgfamily@hook
+\def\pxcz@mgfamily@hook{\romanfamily{cfjam}}
+
+%% \pxcz@set@page@hook{<text>}
+\@onlypreamble\pxcz@set@page@hook
+\ifpxcz@everypage
+\def\pxcz@set@page@hook#1{%
+  \AtBeginShipout{\setbox\AtBeginShipoutBox=\vbox{%
+     \baselineskip\z@skip\lineskip\z@skip\lineskiplimit\z@
+     #1\copy\AtBeginShipoutBox}}}
+\else
+\def\pxcz@set@page@hook#1{%
+  % this is \AtBeginDvi with forcing of yoko-dir added
+  \global\setbox\@begindvibox\vbox{\yoko\unvbox\@begindvibox#1}}
+\fi
+
+%% \pxcz@check@alldefined{<sym>,...}
+\@onlypreamble\pxcz@check@alldefined
+\def\pxcz@check@alldefined#1{%
+  \pxcz@oktrue
+  \@for\pxcz@x:={#1}\do{%
+    \expandafter\ifx\csname pxcz@FS/\pxcz@x\endcsname\@empty
+      \pxcz@okfalse \fi}}
+
+%% \pxcz@decl@relfont{<fam>}{<afam>}{<ser>,...}
+\@onlypreamble\pxcz@decl@relfont
+\def\pxcz@decl@relfont#1#2#3{%
+  \@for\pxcz@x:={#3}\do{%
+    \expandafter\ifx\csname\k@encoding/#1/\pxcz@x/n\endcsname\relax\else
+      \edef\pxcz@tmpa{\noexpand\DeclareRelationFont
+        {\k@encoding}{#1}{\pxcz@x}{}{\pxcz@afont@enc}{#2}{\pxcz@x}{}%
+      }\pxcz@tmpa
+    \fi}%
+  \pxcz@info{Relation font set for \k@encoding/#1}}
+
+%% \pxcz@check@afont@enc
+\@onlypreamble\pxcz@check@afont@enc
+\def\pxcz@check@afont@enc{%
+  \pxcz@oktrue % OT1 is always okay
+  \def\pxcz@tmpa{OT1}\ifx\pxcz@tmpa\pxcz@afont@enc\else
+    % otherwise, noembed must not be used
+    \@for\pxcz@x:=\pxcz@sym@list\do{%
+      \expandafter\ifx\csname pxcz@FS/\pxcz@x\endcsname\pxcz@noembed
+        \pxcz@okfalse \fi}%
+    \expandafter\ifx\csname\pxcz@afont@enc+cfjar\endcsname\relax
+      \pxcz@okfalse \fi
+  \fi
+  % if not okay, use OT1 instead
+  \ifpxcz@ok\else \def\pxcz@afont@enc{OT1}\fi}
+
+%% the begin-document hook
+\@onlypreamble\pxcz@doc@hook
+\def\pxcz@doc@hook{%
+  \pxcz@user@hook
+  \ifx\pxcz@file@preset\relax\else
+    \pxcz@do@file@preset
+  \fi
+  \ifx t\pxcz@strict@csi
+    \pxcz@inspect@flavor@all
+  \fi
+  \ifpxcz@alpha % 'alphabet'
+    \pxcz@check@alldefined{mnl,mnr,mnb}%
+    \ifpxcz@ok \renewcommand\rmdefault{cfjar}\fi
+    \pxcz@check@alldefined{gtr,gtb,gtx}%
+    \ifpxcz@ok \renewcommand\sfdefault{cfjas}\fi
+    % attach hook to \mgfamily if mgr font is defined
+    \pxcz@check@alldefined{mgr}
+    \ifpxcz@ok\ifpxcz@otf@deluxe
+      \begingroup
+        \def\pxcz@x##1{\toks@\expandafter{##1}%
+          \xdef##1{\noexpand\pxcz@mgfamily@hook\the\toks@}%
+        }\expandafter\pxcz@x\csname mgfamily \endcsname
+      \endgroup
+    \fi\fi
+    % decide alphabet font encoding
+    \edef\pxcz@afont@enc{\encodingdefault}%
+    \pxcz@check@afont@enc\ifpxcz@ok\else
+      \pxcz@warn{Default encoding is changed to 'OT1' because%
+        \MessageBreak'alphabet' option is in effect}%
+      \renewcommand\encodingdefault{OT1}%
+    \fi
+    \normalfont
+    \pxcz@addtospec{ALPHA}%
+  \fi
+  \ifpxcz@rel % 'relfont'
+    \edef\pxcz@afont@enc{\encodingdefault}%
+    \pxcz@check@afont@enc
+    \pxcz@check@alldefined{mnl,mnr,mnb}%
+    \ifpxcz@ok \pxcz@decl@relfont\mcdefault{cfjar}{m,bx,l}\fi
+    \pxcz@check@alldefined{gtr,gtb,gtx}%
+    \ifpxcz@ok \pxcz@decl@relfont\gtdefault{cfjas}{m,bx,eb}\fi
+    \pxcz@check@alldefined{mgr}%
+    \ifpxcz@ok\ifpxcz@otf@deluxe
+      \pxcz@decl@relfont\mgdefault{cfjam}{m}%
+    \fi\fi
+    \pxcz@addtospec{ALPHA}%
+  \fi
+  \ifpxcz@uptex\else
+    \pxcz@addtospec{STD}%
+  \fi
+  \ifnum0\ifnum\pxcz@legacycode=\pxcz@legacycode@replace 1\fi
+         \ifpxcz@uptex 1\fi >\z@
+    \pxcz@addtospec{UPSTD}%
+  \fi
+  \ifpxcz@otf
+    \@ifpackageloaded{otf}{\pxcz@otftrue}{\pxcz@otffalse}%
+    \@ifpackageloaded{utf}{\pxcz@utftrue}{\pxcz@utffalse}%
+  \fi
+  \ifpxcz@otf
+    \ifnum0\ifnum\pxcz@legacycode=\pxcz@legacycode@replace 1\fi
+           \ifpxcz@uptex 1\fi >\z@
+      \pxcz@addtospec{UPOTF}%
+    \fi
+    \pxcz@addtospec{OTF}%
+  \fi
+  \ifpxcz@glyphid \pxcz@addtospec{GID}%
+  \fi
+  \ifx t\pxcz@expert \pxcz@addtospec{EXPERT}%
+  \fi
+  \ifpxcz@utf \pxcz@addtospec{UTF}%
+  \fi
+  \@ifpackageloaded{pxotf}{\pxcz@oktrue}{\pxcz@okfalse}%
+  \@ifpackageloaded{pxfontenc}{\pxcz@oktrue}{}%
+  \ifpxcz@ok \pxcz@addtospec{PXOTF}%
+  \fi
+  % warn if some weights are not substituted, and if necessaty
+  \ifpxcz@warn@unless@all@defined
+    \ifpxcz@otf@deluxe
+      \pxcz@check@alldefined{mnl,mnr,mnb,gtr,gtb,gtx,mgr}%
+    \else \pxcz@check@alldefined{mnr,mnb,gtr,gtb}%
+    \fi
+    \ifpxcz@ok\else
+      \PackageWarningNoLine\pxcz@pkgname
+       {Some font weights are not substituted.\MessageBreak
+        Thus some features of pxchfon might not work\MessageBreak
+        properly when applied to such weights}%
+    \fi
+  \fi
+  %
+  \pxcz@check@extra
+  \pxcz@addtospec{USR}%
+  \ifpxcz@enabled
+    \pxcz@set@page@hook{\pxcz@spec}%
+  \else\ifx\pxcz@spec\@empty\else
+    \PackageWarningNoLine\pxcz@pkgname
+     {Font mapping is disabled, since the driver in use\MessageBreak
+      is not dvipdfmx}%
+  \fi\fi
+  \ifpxcz@dumpmap
+    \pxcz@do@dumpmap
+  \fi
+  \ifpxcz@dumpmap@tl
+    \pxcz@do@dumpmap@tl
+  \fi
+}
+\AtBeginDocument{\pxcz@doc@hook}
+
+%--------------------------------------- strict-CSI mode
+\ifx t\pxcz@strict@csi
+% In this section, the e-TeX extension plus \pdffiledump and
+% \pdffilesize is assumed to be available.
+
+%% variables
+\newcount\pxcz@cntr
+\let\pxcz@insf@file\relax
+\let\pxcz@insf@idx\relax
+\let\pxcz@insf@nfont\relax
+\let\pxcz@kpse@dir\relax
+
+%% constants
+\def\pxcz@insf@@OTTO{"4F54544F }
+\def\pxcz@insf@@IZ{"00010000 }
+\def\pxcz@insf@@ttcf{"74746366 }
+
+%% \pxcz@insf@read@word{<offset>}
+% Reads a 32-bit integer from \pxcz@insf@file at the given offset,
+% and sets the value (or -1 on error) to \pxcz@cntr.
+\@onlypreamble\pxcz@insf@read@word
+\def\pxcz@insf@read@word#1{%
+  \pxcz@cntr=#1\relax
+  \edef\pxcz@tmpa{\pdffiledump offset\pxcz@cntr length1{\pxcz@insf@file}}%
+  \ifnum"0\pxcz@tmpa<"80
+    \advance\pxcz@cntr\@ne
+    \edef\pxcz@tmpb{\pdffiledump offset\pxcz@cntr length3{\pxcz@insf@file}}%
+    \ifnum"1\pxcz@tmpb<"1000000 \pxcz@cntr\m@ne % truncated
+    \else \pxcz@cntr"\pxcz@tmpa\pxcz@tmpb\relax % the value
+    \fi
+  \else \pxcz@cntr\m@ne % overflow
+  \fi}
+
+%% \pxcz@inspect@flavor{<path>}{<index>}
+% Sets the result to \pxcz@cntr.
+% 1=CFF, 0=TTF, <0 if error.
+\@onlypreamble\pxcz@inspect@flavor
+\def\pxcz@inspect@flavor#1#2{%
+  \edef\pxcz@insf@file{#1}%
+  \mathchardef\pxcz@insf@idx=#2\relax
+  \pxcz@insf@read@word{0}% outer tag
+  \ifnum\pxcz@cntr=\pxcz@insf@@ttcf % TTC/OTC
+    \pxcz@insf@read@word{8}% font count
+    \ifnum\pxcz@cntr>"7FFF \pxcz@cntr\m@ne \fi
+    \ifnum\pxcz@cntr>\m@ne
+      \mathchardef\pxcz@insf@nfont\pxcz@cntr
+      \@tempcnta\pxcz@insf@idx \multiply\@tempcnta4
+      \advance\@tempcnta12 \pxcz@insf@read@word{\@tempcnta}% inner tag
+      \@tempcnta\pxcz@cntr
+    \fi
+  \else % not collection
+    \@tempcnta=0 \chardef\pxcz@insf@nfont=1
+  \fi
+  \ifnum\pxcz@cntr>\m@ne % no format error so far
+    \ifnum\pxcz@insf@idx<\pxcz@insf@nfont
+      \pxcz@insf@read@word{\@tempcnta}%
+      \ifnum\pxcz@cntr=\m@ne % ERROR: bad format
+      \else\ifnum\pxcz@cntr=\pxcz@insf@@OTTO \pxcz@cntr\@ne % CFF-flavor
+      \else\ifnum\pxcz@cntr=\pxcz@insf@@IZ \pxcz@cntr\z@ % TTF-flavor
+      \else \pxcz@cntr-\thr@@ % ERROR: unknown tag
+      \fi\fi\fi
+    \else \pxcz@cntr-\tw@ % ERROR: bad index
+    \fi
+  %else ERROR: bad format
+  \fi}
+
+%% \pxcz@kpse@dir@cache
+% to spped up \pxcz@kpsewhich
+\@onlypreamble\pxcz@kpse@dir@cache
+\let\pxcz@kpse@dir@cache\@empty
+
+%% \pxcz@kpsewhich{<filename>}
+% Sets to \pxcz@kpse@dir the directory where the file is found
+% (or \relax if not found).
+\@onlypreamble\pxcz@kpsewhich
+\def\pxcz@kpsewhich#1{%
+  \edef\pxcz@tmpa{#1}\let\pxcz@kpse@dir\relax
+  \let\do\pxcz@kpsewhich@do \pxcz@kpse@dir@cache\relax
+  \ifx\pxcz@kpse@dir\relax
+    \chardef\pxcz@tmpz=\endlinechar \endlinechar\m@ne
+    \openin\@inputcheck="|kpsewhich \pxcz@tmpa"\relax
+    \unless\ifeof\@inputcheck
+      \readline\@inputcheck to\pxcz@tmpb
+      \unless\ifx\pxcz@tmpb\@empty
+        \let\pxcz@kpse@dir\@empty \let\do\relax
+        \expandafter\pxcz@kpsewhich@a\pxcz@tmpb/\pxcz@end
+        \edef\pxcz@kpse@dir@cache{%
+          \pxcz@kpse@dir@cache\do{\pxcz@kpse@dir}}%
+      \fi
+    \fi
+    \endlinechar\pxcz@tmpz
+  \fi}
+\@onlypreamble\pxcz@kpsewhich@a
+\def\pxcz@kpsewhich@a#1/#2\pxcz@end{%
+  \ifx\pxcz@end#2\pxcz@end \expandafter\@gobble
+  \else \expandafter\@firstofone
+  \fi{%
+    \edef\pxcz@kpse@dir{\pxcz@kpse@dir#1/}%
+    \pxcz@kpsewhich@a#2\pxcz@end}}
+\@onlypreamble\pxcz@kpsewhich@do
+\def\pxcz@kpsewhich@do#1{%
+  \ifnum0\pdffilesize{#1\pxcz@tmpa}>\z@
+    \def\pxcz@kpse@dir{#1}%
+    \expandafter\pxcz@kpsewhich@do@a
+  \fi}
+\def\pxcz@kpsewhich@do@a#1\relax{}
+
+%% \pxcz@inspect@flavor@all
+% Sets \[pxcz@OT/<sym>].
+\@onlypreamble\pxcz@inspect@flavor@all
+\def\pxcz@inspect@flavor@all{%
+  \@for\pxcz@tmpa:=\pxcz@sym@list\do{%
+    \edef\pxcz@tmpa{{\pxcz@tmpa}{\@nameuse{pxcz@FS/\pxcz@tmpa}}}%
+    \expandafter\pxcz@inspect@flavor@all@a\pxcz@tmpa}}
+\@onlypreamble\pxcz@inspect@flavor@all@a
+\def\pxcz@inspect@flavor@all@a#1#2{%
+  \def\pxcz@tmpa{#2}%
+  \ifx\pxcz@tmpa\@empty
+  \else\ifx\pxcz@tmpa\pxcz@noembed
+    \@namedef{pxcz@OT/#1}{t}%
+  \else \pxcz@inspect@flavor@all@b#2\pxcz@end{#1}%
+  \fi\fi}
+\@onlypreamble\pxcz@inspect@flavor@all@b
+\def\pxcz@inspect@flavor@all@b#1#2\pxcz@end{%
+  \edef\pxcz@tmpa{\ifx:#1\else:0:\fi#1#2}%
+  \expandafter\pxcz@inspect@flavor@all@c\pxcz@tmpa\pxcz@end}
+\@onlypreamble\pxcz@inspect@flavor@all@c
+\def\pxcz@inspect@flavor@all@c:#1:#2\pxcz@end#3{%
+  \pxcz@kpsewhich{#2}%
+  \unless\ifx\pxcz@kpse@dir\relax
+    \pxcz@inspect@flavor{\pxcz@kpse@dir#2}{#1}%
+%\typeout{#3)\pxcz@kpse@dir#2;#1==>\the\pxcz@cntr}%
+    \ifnum\pxcz@cntr>\z@
+      \@namedef{pxcz@OT/#3}{t}%
+    \fi
+  \fi}
+
+\fi
+%--------------------------------------- dump font map
+% if some dumpmap is enabled...
+\ifnum 0\ifpxcz@dumpmap 1\fi
+        \ifpxcz@dumpmap@tl 1\fi >\z@
+
+%% variables
+\let\pxcz@dump@text\relax
+\let\pxcz@spec@save\relax
+\newwrite\pxcz@fout
+
+%% \pxcz@add@to@dump@text
+\def\pxcz@add@to@dump@text#1{%
+  \edef\pxcz@dump@text{\pxcz@dump@text#1}}
+
+%% \pxcz@dump@special{<string>}
+\@onlypreamble\pxcz@dump@special
+\def\pxcz@dump@special#1{%
+  \pxcz@dump@special@a#1\bxcz@end}
+\@onlypreamble\pxcz@dump@special@a
+\def\pxcz@dump@special@a#1 #2\bxcz@end{%
+  \@nameuse{pxcz@dump@special@#1}\@gobble{#2}}
+\@namedef{pxcz@dump@special@pdf:mapline}#1#2{%
+  \pxcz@add@to@dump@text{\pxcz@rmin#2^^J}}
+
+%% \pxcz@rmin
+\def\pxcz@rmin#1{%
+  \ifx-#1\@percentchar\else#1\fi}
+
+%% \pxcz@dump@spec@to{<file-name>}
+\@onlypreamble\pxcz@dump@spec@to
+\def\pxcz@dump@spec@to#1{%
+  \def\pxcz@dump@text{\@percentchar\space#1^^J}%
+  \let\special\pxcz@dump@special
+  \pxcz@spec \let\special\relax
+  \pxcz@add@to@dump@text{\@percentchar\space EOF}%
+  \immediate\openout\pxcz@fout=#1\relax
+  \immediate\write\pxcz@fout{\pxcz@dump@text}%
+  \immediate\closeout\pxcz@fout}
+
+%% \pxcz@do@dumpmap
+\@onlypreamble\pxcz@do@dumpmap
+\def\pxcz@do@dumpmap{%
+  \begingroup
+    \pxcz@dump@spec@to{\jobname.map}%
+  \endgroup}
+
+%% \pxcz@do@dumpmap@tl
+\@onlypreamble\pxcz@do@dumpmap@tl
+\def\pxcz@do@dumpmap@tl{%
+  \begingroup
+    \let\pxcz@spec@save\pxcz@spec
+    \pxcz@do@dumpmap@tl@a{STD}{ptex-\jobname}%
+    \pxcz@do@dumpmap@tl@a{UPSTD}{uptex-\jobname}%
+    \pxcz@do@dumpmap@tl@a{OTF}{otf-\jobname}%
+    \pxcz@do@dumpmap@tl@a{UPOTF}{otf-up-\jobname}%
+    \global\let\pxcz@spec\pxcz@spec@save
+  \endgroup}
+\@onlypreamble\pxcz@do@dumpmap@tl@a
+\def\pxcz@do@dumpmap@tl@a#1#2{%
+  \global\let\pxcz@spec\@empty
+  \pxcz@addtospec{#1}%
+  \pxcz@dump@spec@to{#2.map}}
+
+\fi
+%--------------------------------------- preset japanese font mappings
+
+%% \pxcz@declare@preset{<name>}{<text>}
+\@onlypreamble\pxcz@declare@preset
+\def\pxcz@declare@preset#1{%
+  \pxcz@onlypreamble@csdef{pxcz@the@preset@#1}}
+
+%% \pxcz@declare@preset@alias{<name1>}{<name2>}
+\@onlypreamble\pxcz@declare@preset@alias
+\def\pxcz@declare@preset@alias#1#2{%
+  \expandafter\pxcz@decl@preset@alias@a\csname pxcz@the@preset@#1%
+  \expandafter\endcsname\csname pxcz@the@preset@#2\endcsname}
+\def\pxcz@decl@preset@alias@a#1#2{\@onlypreamble#1\let#1#2}
+
+%% \pxcz@abolished@preset
+\pxcz@onlypreamble@def\pxcz@abolished@preset{%
+  \PackageError\pxcz@pkgname
+   {The old preset '\pxcz@main@preset' is *abolished*}{\@ehc}%
+  \pxcz@uniweight{ERROR.ttf}{ERROR.ttf}}
+\@for\pxcz@x:=\pxcz@all@abolished@preset\do{%
+  \pxcz@onlypreamble@csdef{pxcz@the@preset@\pxcz@x}{\pxcz@abolished@preset}}
+
+%% \pxcz@uniweight{<font-mn>}{<font-gt>}
+\@onlypreamble\pxcz@uniweight
+\def\pxcz@uniweight#1#2{%
+  \setminchofont{#1}\setgothicfont{#2}\setmarugothicfont{#2}}
+
+%% \pxcz@multiweight{<font-mnl>}{<font-mnr>}{<font-mnb>}
+%%   {<font-gtr>}{<font-gtb>}{<font-gtx>}{<font-gtu>}{<font-mgr>}
+\@onlypreamble\pxcz@multiweight
+\def\pxcz@multiweight#1#2#3#4#5#6#7#8{%
+  \setminchofont{#2}\setgothicfont{#7}\setmarugothicfont{#8}%
+  \ifpxcz@oneweight\else
+  \setlightminchofont{#1}\setboldminchofont{#3}%
+  \setmediumgothicfont{#4}\setboldgothicfont{#5}\setxboldgothicfont{#6}%
+  \fi}
+
+%% \pxcz@use@preset{<name>}
+\pxcz@onlypreamble@def\pxcz@use@preset#1{%
+  \csname pxcz@the@preset@#1\endcsname}
+
+%% definitions of main preset mappings
+\pxcz@declare@preset{noembed}{%
+  \pxcz@uniweight{*}{*}}
+%(uniweight)
+\pxcz@declare@preset{ms}{%
+  \pxcz@uniweight{:0:msmincho.ttc}{:0:msgothic.ttc}}
+\pxcz@declare@preset{ipa}{%
+  \pxcz@uniweight{ipam.ttf}{ipag.ttf}}
+\pxcz@declare@preset{ipaex}{%
+  \pxcz@uniweight{ipaexm.ttf}{ipaexg.ttf}}
+%(multiweight)
+\pxcz@declare@preset{ms-hg}{%
+  \pxcz@multiweight{:0:msmincho.ttc}{:0:msmincho.ttc}{:0:hgrme.ttc}%
+  {:0:hgrgm.ttc}{:0:hgrge.ttc}{:0:hgrsgu.ttc}{:0:msgothic.ttc}{hgrsmp.ttf}}
+\pxcz@declare@preset{ipa-hg}{%
+  \pxcz@multiweight{ipam.ttf}{ipam.ttf}{:0:hgrme.ttc}%
+  {:0:hgrgm.ttc}{:0:hgrge.ttc}{:0:hgrsgu.ttc}{ipag.ttf}{hgrsmp.ttf}}
+\pxcz@declare@preset{ipaex-hg}{%
+  \pxcz@multiweight{ipaexm.ttf}{ipaexm.ttf}{:0:hgrme.ttc}%
+  {:0:hgrgm.ttc}{:0:hgrge.ttc}{:0:hgrsgu.ttc}{ipaexg.ttf}{hgrsmp.ttf}}
+\pxcz@declare@preset{moga-mobo}{%
+  \pxcz@multiweight{:0:mogam.ttc}{:0:mogam.ttc}{:0:mogamb.ttc}%
+  {:0:mogag.ttc}{:0:mogagb.ttc}{:0:mogagb.ttc}{:0:mogag.ttc}{:0:mobog.ttc}}
+\pxcz@declare@preset{moga-mobo-ex}{%
+  \pxcz@multiweight{:1:mogam.ttc}{:1:mogam.ttc}{:1:mogamb.ttc}%
+  {:1:mogag.ttc}{:1:mogagb.ttc}{:1:mogagb.ttc}{:1:mogag.ttc}{:1:mobog.ttc}}
+\pxcz@declare@preset{moga-maruberi}{%
+  \pxcz@multiweight{:0:mogam.ttc}{:0:mogam.ttc}{:0:mogamb.ttc}%
+  {:0:mogag.ttc}{:0:mogagb.ttc}{:0:mogagb.ttc}{:0:mogag.ttc}{MTLmr3m.ttf}}
+\pxcz@declare@preset{ume}{%
+  \pxcz@multiweight{ume-tmo3.ttf}{ume-tmo3.ttf}{ume-tmo3.ttf}%
+  {ume-tgo4.ttf}{ume-tgo5.ttf}{ume-tgo5.ttf}{ume-tgo5.ttf}{ume-tgo4.ttf}}
+\pxcz@declare@preset{kozuka-pro}{%
+  \usecmapforalphabet
+  \pxcz@multiweight{KozMinPro-Light.otf}{KozMinPro-Regular.otf}%
+   {KozMinPro-Bold.otf}{KozGoPro-Regular.otf}{KozGoPro-Bold.otf}%
+   {KozGoPro-Heavy.otf}{KozGoPro-Medium.otf}{KozGoPro-Heavy.otf}}
+\pxcz@declare@preset{kozuka-pr6}{%
+  \usecmapforalphabet
+  \pxcz@multiweight{KozMinProVI-Light.otf}{KozMinProVI-Regular.otf}%
+   {KozMinProVI-Bold.otf}{KozGoProVI-Regular.otf}{KozGoProVI-Bold.otf}%
+   {KozGoProVI-Heavy.otf}{KozGoProVI-Medium.otf}{KozGoProVI-Heavy.otf}}
+\pxcz@declare@preset{kozuka-pr6n}{%
+  \usecmapforalphabet
+  \pxcz@multiweight{KozMinPr6N-Light.otf}{KozMinPr6N-Regular.otf}%
+   {KozMinPr6N-Bold.otf}{KozGoPr6N-Regular.otf}{KozGoPr6N-Bold.otf}%
+   {KozGoPr6N-Heavy.otf}{KozGoPr6N-Medium.otf}{KozGoPr6N-Heavy.otf}}
+\pxcz@declare@preset{hiragino-pro}{%
+  \usecmapforalphabet
+  \pxcz@multiweight{HiraMinPro-W2.otf}{HiraMinPro-W3.otf}%
+   {HiraMinPro-W6.otf}{HiraKakuPro-W3.otf}{HiraKakuPro-W6.otf}%
+   {HiraKakuStd-W8.otf}{HiraKakuPro-W6.otf}{HiraMaruPro-W4.otf}}
+\pxcz@declare@preset{hiragino-pron}{%
+  \usecmapforalphabet
+  \pxcz@multiweight{HiraMinProN-W2.otf}{HiraMinProN-W3.otf}%
+   {HiraMinProN-W6.otf}{HiraKakuProN-W3.otf}{HiraKakuProN-W6.otf}%
+   {HiraKakuStdN-W8.otf}{HiraKakuProN-W6.otf}{HiraMaruProN-W4.otf}}
+\pxcz@declare@preset{hiragino-elcapitan-pro}{%
+  \usecmapforalphabet
+  \pxcz@multiweight{HiraMinPro-W2.otf}{:1:HiraginoSerif-W3.ttc}%
+   {:1:HiraginoSerif-W6.ttc}{:3:HiraginoSans-W3.ttc}{:3:HiraginoSans-W6.ttc}%
+   {:2:HiraginoSans-W8.ttc}{:3:HiraginoSans-W6.ttc}{:0:HiraginoSansR-W4.ttc}}
+\pxcz@declare@preset{hiragino-elcapitan-pron}{%
+  \usecmapforalphabet
+  \pxcz@multiweight{HiraMinProN-W2.otf}{:0:HiraginoSerif-W3.ttc}%
+   {:0:HiraginoSerif-W6.ttc}{:2:HiraginoSans-W3.ttc}{:2:HiraginoSans-W6.ttc}%
+   {:3:HiraginoSans-W8.ttc}{:2:HiraginoSans-W6.ttc}{:1:HiraginoSansR-W4.ttc}}
+\pxcz@declare@preset{morisawa-pro}{%
+  \usecmapforalphabet
+  \pxcz@multiweight{A-OTF-RyuminPro-Light.otf}{A-OTF-RyuminPro-Light.otf}%
+   {A-OTF-FutoMinA101Pro-Bold.otf}{A-OTF-GothicBBBPro-Medium.otf}%
+   {A-OTF-FutoGoB101Pro-Bold}{A-OTF-MidashiGoPro-MB31.otf}%
+   {A-OTF-GothicBBBPro-Medium.otf}{A-OTF-Jun101Pro-Light.otf}}
+\pxcz@declare@preset{morisawa-pr6n}{%
+  \usecmapforalphabet
+  \pxcz@multiweight{A-OTF-RyuminPr6N-Light.otf}{A-OTF-RyuminPr6N-Light.otf}%
+   {A-OTF-FutoMinA101Pr6N-Bold.otf}{A-OTF-GothicBBBPr6N-Medium.otf}%
+   {A-OTF-FutoGoB101Pr6N-Bold}{A-OTF-MidashiGoPr6N-MB31.otf}%
+   {A-OTF-GothicBBBPr6N-Medium.otf}{A-OTF-Jun101Pro-Light.otf}}
+\pxcz@declare@preset{yu-win}{%
+  \pxcz@multiweight{yuminl.ttf}{yumin.ttf}%
+   {yumindb.ttf}{yugothic.ttf}{yugothib.ttf}%
+   {yugothib.ttf}{yugothic.ttf}{yugothic.ttf}}
+\pxcz@declare@preset{yu-win10}{%
+  \pxcz@multiweight{yuminl.ttf}{yumin.ttf}%
+   {yumindb.ttf}{:0:YuGothR.ttc}{:0:YuGothB.ttc}%
+   {:0:YuGothB.ttc}{:0:YuGothM.ttc}{:0:YuGothM.ttc}}
+\pxcz@declare@preset{yu-osx}{%
+  \usecmapforalphabet
+  \pxcz@multiweight{YuMin-Medium.otf}{YuMin-Medium.otf}%
+   {YuMin-Demibold.otf}{YuGo-Medium.otf}{YuGo-Bold.otf}%
+   {YuGo-Bold.otf}{YuGo-Medium.otf}{YuGo-Medium.otf}}
+% Source Han Sans/Serif, "OTC"
+\pxcz@declare@preset{sourcehan-otc}{%
+  \pxcz@multiweight{:0:SourceHanSerif-Light.ttc}%
+   {:0:SourceHanSerif-Regular.ttc}{:0:SourceHanSerif-Bold.ttc}%
+   {:0:SourceHanSans-Regular.ttc}{:0:SourceHanSans-Bold.ttc}%
+   {:0:SourceHanSans-Heavy.ttc}{:0:SourceHanSans-Medium.ttc}%
+   {:0:SourceHanSans-Medium.ttc}}
+% Source Han Sans/Serif, "Language-specific OTF"
+\pxcz@declare@preset{sourcehan}{%
+  \pxcz@multiweight{SourceHanSerif-Light.otf}%
+   {SourceHanSerif-Regular.otf}{SourceHanSerif-Bold.otf}%
+   {SourceHanSans-Regular.otf}{SourceHanSans-Bold.otf}%
+   {SourceHanSans-Heavy.otf}{SourceHanSans-Medium.otf}%
+   {SourceHanSans-Medium.otf}}
+% Source Han Sans/Serif, "Region-specific Subset OTF"
+\pxcz@declare@preset{sourcehan-jp}{%
+  \pxcz@multiweight{SourceHanSerifJP-Light.otf}%
+   {SourceHanSerifJP-Regular.otf}{SourceHanSerifJP-Bold.otf}%
+   {SourceHanSansJP-Regular.otf}{SourceHanSansJP-Bold.otf}%
+   {SourceHanSansJP-Heavy.otf}{SourceHanSansJP-Medium.otf}%
+   {SourceHanSansJP-Medium.otf}}
+% Noto Sans/Serif CJK, "OpenType/CFF Collection (OTC)"
+\pxcz@declare@preset{noto-otc}{%
+  \pxcz@multiweight{:0:NotoSerifCJK-Light.ttc}%
+   {:0:NotoSerifCJK-Regular.ttc}{:0:NotoSerifCJK-Bold.ttc}%
+   {:0:NotoSansCJK-Regular.ttc}{:0:NotoSansCJK-Bold.ttc}%
+   {:0:NotoSansCJK-Black.ttc}{:0:NotoSansCJK-Medium.ttc}%
+   {:0:NotoSansCJK-Medium.ttc}}
+% Noto Sans/Serif CJK, "Language-specific OpenType/CFF (OTF)"
+\pxcz@declare@preset{noto}{%
+  \pxcz@multiweight{NotoSerifCJKjp-Light.otf}%
+   {NotoSerifCJKjp-Regular.otf}{NotoSerifCJKjp-Bold.otf}%
+   {NotoSansCJKjp-Regular.otf}{NotoSansCJKjp-Bold.otf}%
+   {NotoSansCJKjp-Black.otf}{NotoSansCJKjp-Medium.otf}%
+   {NotoSansCJKjp-Medium.otf}}
+% Noto Sans/Serif CJK, "Region-specific Subset OpenType/CFF (Subset OTF)"
+\pxcz@declare@preset{noto-jp}{%
+  \pxcz@multiweight{NotoSerifJP-Light.otf}%
+   {NotoSerifJP-Regular.otf}{NotoSerifJP-Bold.otf}%
+   {NotoSansJP-Regular.otf}{NotoSansJP-Bold.otf}%
+   {NotoSansJP-Black.otf}{NotoSansJP-Medium.otf}%
+   {NotoSansJP-Medium.otf}}
+%(alias)
+\pxcz@declare@preset@alias{hiragino}{hiragino-pro}
+\pxcz@declare@preset@alias{noEmbed}{noembed}
+\pxcz@declare@preset@alias{kozuka}{kozuka-pro}
+\pxcz@declare@preset@alias{hiragino-elcapitan}{hiragino-elcapitan-pro}
+\pxcz@declare@preset@alias{morisawa}{morisawa-pro}
+\pxcz@declare@preset@alias{noto-otf}{noto}
+%(plus-variants)
+\pxcz@declare@preset@alias{sourcehan+}{sourcehan}
+\pxcz@declare@preset@alias{sourcehan-otc+}{sourcehan-otc}
+\pxcz@declare@preset@alias{noto+}{noto}
+\pxcz@declare@preset@alias{noto-otc+}{noto-otc}
+\pxcz@declare@preset@alias{yu-win10+}{yu-win10}
+
+%% ... and invokes the specified one!
+\if\pxcz@main@preset\relax\else
+\pxcz@use@preset{\pxcz@main@preset}
+\fi
+
+%% load pxufont
+\ifx t\pxcz@expert
+  \RequirePackage{pxufont-ruby}[]
+\else\ifnum\pxcz@legacycode=\pxcz@legacycode@replace
+  \RequirePackage{pxufont}[]
+\fi\fi
+
+%--------------------------------------- all done
+\endinput
+%% EOF

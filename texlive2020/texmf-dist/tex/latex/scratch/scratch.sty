@@ -1,0 +1,616 @@
+% !TeX encoding = ISO-8859-1
+% Ce fichier contient le code de l'extension "scratch"
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                    %
+\def\SCRname                   {scratch}                             %
+\def\SCRver                      {0.41}                              %
+%                                                                    %
+\def\SCRdate                  {2019/02/19}                           %
+%                                                                    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% --------------------------------------------------------------------
+% Author     : Christian Tellechea
+% Status     : Frozen
+% Email      : unbonpetit@netc.fr
+% Package URL: https://www.ctan.org/pkg/scratch
+% Bug tracker: https://framagit.org/unbonpetit/scratch/issues
+% Repository : https://framagit.org/unbonpetit/scratch/tree/master
+% Copyright  : Christian Tellechea 2017-2019
+% Licence    : Released under the LaTeX Project Public License v1.3c
+%              or later, see http://www.latex-project.org/lppl.txt
+% Files      : 1) scratch.sty
+%              2) scratch-fr.tex
+%              3) scratch-fr.pdf
+%              4) README
+% --------------------------------------------------------------------
+\csname @ifpackageloaded\endcsname{scratch3}
+	{\PackageError{scratch}{scratch cannot be used since scratch3 is already loaded}{}%
+	\endinput
+	}
+	{}
+\ProvidesPackage{scratch}[\SCRdate\space v\SCRver\space Draw scratch instructions (CT)]
+\NeedsTeXFormat{LaTeX2e}
+\RequirePackage{simplekv,tikz}
+\usepgflibrary{shapes.misc,arrows.meta}
+\usetikzlibrary{bending}
+
+\expandafter\edef\csname SCR\string_restorecatcode\endcsname{\catcode`\noexpand\_=\the\catcode`\_\relax}
+\catcode`\_11
+% Les réglages par défaut (modifiables avec \setdefaultscratch)
+\setKVdefault[\SCRname]{
+	else word          = sinon,% mot dans branche "else"
+	x sep              = 0.5em,% séparation entre côtés droits et gauche du bloc et le texte
+	y sepsup           = 1pt,% séparation entre côté sup (insert) et haut texte
+	y sepinf           = 3pt,% séparation entre côté inf et bas texte
+	line width         = 0.8pt,% épaisseur des lignes de relief
+	loop width         = 3ex,% épaisseur de la barre verticale à gauche d'un bloc de boucle
+	loop height        = 1.75ex,% hauteur de la barre du else et la barre finale
+	corner             = 0.66667ex,% valeur du chanfrein
+	notch              = 1em,% longueur des encoches
+	scale              = 1,% échelle du dessin
+	init arcangle      = 30,% angle début et fin de l'arc
+	init arclength     = 5em,% longueur de l'arc
+	moreblock arcangle = 15,% angle de départ et arrivée des "more blocks"
+	contrast           = 20,% contraste des lignes de relief (0=aucun contraste, 100=noir/blanc)
+	print              = false,% impression noir et blanc ?
+	fill blocks        = false,% remplissage des blocks lorsque l'option "print" est vraie
+	fill gray          = 0.85,% taux de gris pour le remplissage si fill blocks est vraie
+	text color         = black,% couleur du texte lorsque l'option "print" est vraie
+	flag gray          = 0.33,% taux de gris pour le drapeau lorsque l'option "print" est vraie
+	line gray          = 0.4,% taux de gris pour les lignes lorsque l'option "print" est vraie
+	bool sep           = 1.25pt,% séparation entre les blocs booléens imbriqués
+	num blocks         = false,% numérotation des blocs
+	num sep            = 3pt,% séparation entre bord gauche et numérotation
+	num start          = 1,% numéro de départ
+	baseline           = 1,% alignement sur le 1er bloc (en partant du haut)
+}
+\newcommand*\numblock[1]{\color{black}\footnotesize\bfseries#1}
+\newcommand*\resetscratch{\csname skv_[\SCRname]\endcsname\SCR_setcolors}
+\newcommand*\setscratch[1]{\setKV[\SCRname]{#1}\SCR_setcolors}
+\newcommand*\setdefaultscratch[1]{\setKVdefault[\SCRname]{#1}\SCR_setcolors}
+\def\SCR_setcolors{%
+	\SCR_normalizedec\SCR_fillgray fill gray[0,1]\skv_exparg{\definecolor{SCR_fillgray}{gray}}\SCR_fillgray
+	\SCR_normalizedec\SCR_linegray line gray[0,1]\skv_exparg{\definecolor{SCR_linegray}{gray}}\SCR_linegray
+	\SCR_normalizedec\SCR_flaggray flag gray[0,1]\skv_exparg{\definecolor{SCR_flaggray}{gray}}\SCR_flaggray
+}
+
+\def\SCR_thesentinelkern{17}% nombre de "sp" sentinelle pour les booleanbox. Personne n'utilise 17sp j'espère ?
+\def\SCR_blockstrut{\vrule height2.1ex depth.9ex width0pt\relax}
+\def\SCR_ovalstrut{\vphantom{\`Ag}}
+\def\SCR_cslet#1{\expandafter\let\csname#1\endcsname}
+\def\SCR_csdef#1{\expandafter\def\csname#1\endcsname}
+\def\SCR_csedef#1{\expandafter\edef\csname#1\endcsname}
+\def\SCR_maxdim(#1,#2){\the\dimexpr\ifdim\dimexpr#1-(#2)\relax<0pt #2\else#1\fi\relax}
+\def\SCR_normalizedec#1#2[#3,#4]{\edef#1{\useKV[\SCRname]{#2}}\ifdim#1pt<#3pt \def#1{#3}\else\ifdim#1pt>#4pt \def#1{#4}\fi\fi}
+\def\SCR_normalizedim#1#2[#3,#4]{\edef#1{\the\dimexpr\useKV[\SCRname]{#2}}\ifdim\dimexpr#1-(#3)\relax<0pt \edef#1{\the\dimexpr#3}\else\ifdim\dimexpr#1-(#4)\relax>0pt \edef#1{\the\dimexpr#4}\fi\fi}
+\def\SCR_firsttonil#1#2\_nil{#1}
+\newcount\SCR_loopnest
+\newcount\SCR_blocknum
+\newbox\SCR_box
+\newdimen\SCR_yoffset
+\newdimen\SCR_xoffset
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                        dessine un bloc normal                        %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\SCR_normalblock#1#2{% #1=couleur #2=texte
+	\def\SCR_current_blockcolor{#1}%
+	\edef\SCR_current_fillcolor{\ifboolKV[\SCRname]{print}{\ifboolKV[\SCRname]{fill blocks}{SCR_fillgray}{none}}{\SCR_current_blockcolor}}%
+	\edef\SCR_current_linelight{\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\SCR_contrast!white}%
+	\edef\SCR_current_linedark {\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\SCR_contrast!black}%
+	\edef\SCR_current_textcolor{\ifboolKV[\SCRname]{print}{\useKV[\SCRname]{text color}}{white}}%
+	\setbox\SCR_box\hbox{\pgfinterruptpicture\color{white}\sffamily\bfseries#2\SCR_blockstrut\endpgfinterruptpicture}%
+	\edef\SCR_boxwd{\SCR_maxdim(\wd\SCR_box,\SCR_minwd)}%
+	\edef\SCR_boxht{\the\ht\SCR_box}%
+	\edef\SCR_totht{\the\dimexpr\ht\SCR_box+\dp\SCR_box\relax}%
+	\draw[draw=none,fill=\SCR_current_fillcolor,yshift=\SCR_yoffset,xshift=\SCR_xoffset]
+		(\SCR_corner,0)--++(\SCR_notch,0)--++(\SCR_corner,-\SCR_corner)--++(\SCR_notch,0)--++(\SCR_corner,\SCR_corner)--++(\SCR_boxwd+2*\SCR_xsep-\SCR_corner*4-\SCR_notch*2,0)--++(\SCR_corner,-\SCR_corner)% ligne sup
+		--++(0,-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_boxwd-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2,0)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(0,\SCR_totht+\SCR_ysepsup+\SCR_ysepinf-\SCR_corner)--cycle;
+	\node[at=(origin),draw=none,anchor=base west,xshift=\SCR_xoffset+\SCR_xsep,yshift=\SCR_yoffset-\SCR_boxht-\SCR_corner-\SCR_ysepsup,text=\SCR_current_textcolor](txt\number\SCR_blocknum){\sffamily\bfseries#2\SCR_blockstrut};
+	\ifboolKV[\SCRname]{num blocks}
+		{\node[at=(origin),draw=none,anchor=base east,xshift=-\SCR_numsep,yshift=\SCR_yoffset-\SCR_boxht-\SCR_corner-\SCR_ysepsup](num){\skv_exparg\numblock{\number\SCR_blocknum}};}
+		{}%
+	\advance\SCR_blocknum1
+	\draw[draw=\SCR_current_linedark,yshift=\SCR_yoffset,xshift=\SCR_xoffset](\SCR_boxwd+\SCR_xsep*2,-\SCR_corner)--++(0,-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_boxwd-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2,0)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch,0);
+	\draw[draw=\SCR_current_linelight,yshift=\SCR_yoffset,xshift=\SCR_xoffset](\SCR_corner,-\SCR_corner-\SCR_ysepsup-\SCR_totht-\SCR_ysepinf)--++(-\SCR_corner,\SCR_corner)--++(0,\SCR_totht+\SCR_ysepsup+\SCR_ysepinf-\SCR_corner)--++(\SCR_corner,\SCR_corner)--++(\SCR_notch,0)--++(\SCR_corner,-\SCR_corner)--++(\SCR_notch,0)--++(\SCR_corner,\SCR_corner)--++(\SCR_boxwd+2*\SCR_xsep-\SCR_corner*4-\SCR_notch*2,0)--++(\SCR_corner,-\SCR_corner);
+	\advance\SCR_yoffset\dimexpr-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf-\SCR_corner-\SCR_linewidth+\SCR_extraoffset\relax
+	\gdef\SCR_blockstop{0}%
+}
+\newcommand*\blockspace[1][1]{%
+	\advance\SCR_yoffset#1\dimexpr-\SCR_blockstruttotht-\SCR_ysepsup-\SCR_ysepinf-\SCR_corner-\SCR_linewidth+\SCR_extraoffset\relax
+	\gdef\SCR_blockstop{1}%
+}
+\newcommand*\blockstop[1]{% #1=texte
+	\def\SCR_current_blockcolor{SCRcontrol}%
+	\edef\SCR_current_fillcolor{\ifboolKV[\SCRname]{print}{\ifboolKV[\SCRname]{fill blocks}{SCR_fillgray}{none}}{\SCR_current_blockcolor}}%
+	\edef\SCR_current_linelight{\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\SCR_contrast!white}%
+	\edef\SCR_current_linedark {\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\SCR_contrast!black}%
+	\edef\SCR_current_textcolor{\ifboolKV[\SCRname]{print}{\useKV[\SCRname]{text color}}{white}}%
+	\setbox\SCR_box\hbox{\pgfinterruptpicture\color{white}\sffamily\bfseries#1\SCR_blockstrut\endpgfinterruptpicture}%
+	\edef\SCR_boxwd{\SCR_maxdim(\wd\SCR_box,\SCR_minwd)}%
+	\edef\SCR_boxht{\the\ht\SCR_box}%
+	\edef\SCR_totht{\the\dimexpr\ht\SCR_box+\dp\SCR_box\relax}%
+	\draw[draw=none,fill=\SCR_current_fillcolor,yshift=\SCR_yoffset,xshift=\SCR_xoffset]
+		(\SCR_corner,0)--++(\SCR_notch,0)--++(\SCR_corner,-\SCR_corner)--++(\SCR_notch,0)--++(\SCR_corner,\SCR_corner)--++(\SCR_boxwd+2*\SCR_xsep-\SCR_corner*4-\SCR_notch*2,0)--++(\SCR_corner,-\SCR_corner)% ligne sup
+		--++(0,-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_boxwd-2*\SCR_xsep+\SCR_corner*2,0)--++(-\SCR_corner,\SCR_corner)--++(0,\SCR_totht+\SCR_ysepsup+\SCR_ysepinf-\SCR_corner)--cycle
+		node[at=(origin),draw=none,anchor=base west,xshift=\SCR_xoffset+\SCR_xsep,yshift=\SCR_yoffset-\SCR_boxht-\SCR_corner-\SCR_ysepsup,text=\SCR_current_textcolor](txt\number\SCR_blocknum){\sffamily\bfseries#1\SCR_blockstrut};
+	\ifboolKV[\SCRname]{num blocks}
+		{\node[at=(origin),draw=none,anchor=base east,xshift=-\SCR_numsep,yshift=\SCR_yoffset-\SCR_boxht-\SCR_corner-\SCR_ysepsup](num){\skv_exparg\numblock{\number\SCR_blocknum}};
+		}
+		{}%
+	\advance\SCR_blocknum1
+	\draw[draw=\SCR_current_linedark,yshift=\SCR_yoffset,xshift=\SCR_xoffset](\SCR_boxwd+\SCR_xsep*2,-\SCR_corner)--++(0,-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_boxwd-2*\SCR_xsep+\SCR_corner*2,0);
+	\draw[draw=\SCR_current_linelight,yshift=\SCR_yoffset,xshift=\SCR_xoffset](\SCR_corner,-\SCR_corner*2-\SCR_ysepsup-\SCR_totht-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,\SCR_corner)--++(0,\SCR_totht+\SCR_ysepsup+\SCR_ysepinf-\SCR_corner)--++(\SCR_corner,\SCR_corner)--++(\SCR_notch,0)--++(\SCR_corner,-\SCR_corner)--++(\SCR_notch,0)--++(\SCR_corner,\SCR_corner)--++(\SCR_boxwd+2*\SCR_xsep-\SCR_corner*4-\SCR_notch*2,0)--++(\SCR_corner,-\SCR_corner);
+	\advance\SCR_yoffset\dimexpr-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf-\SCR_corner-\SCR_linewidth+\SCR_extraoffset\relax
+	\gdef\SCR_blockstop{1}%
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                       dessine un bloc de départ                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\SCR_initblock#1#2{%
+	\def\SCR_current_blockcolor{#1}%
+	\edef\SCR_current_fillcolor{\ifboolKV[\SCRname]{print}{\ifboolKV[\SCRname]{fill blocks}{SCR_fillgray}{none}}{\SCR_current_blockcolor}}%
+	\edef\SCR_current_linelight{\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\SCR_contrast!white}%
+	\edef\SCR_current_linedark {\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\SCR_contrast!black}%
+	\edef\SCR_current_textcolor{\ifboolKV[\SCRname]{print}{\useKV[\SCRname]{text color}}{white}}%
+	\setbox\SCR_box\hbox{\pgfinterruptpicture\color{white}\sffamily\bfseries#2\SCR_blockstrut\endpgfinterruptpicture}%
+	\edef\SCR_boxwd{\SCR_maxdim(\wd\SCR_box,\SCR_xsep+\SCR_initarclength+\SCR_em)}%
+	\edef\SCR_boxht{\the\ht\SCR_box}%
+	\edef\SCR_totht{\the\dimexpr\ht\SCR_box+\dp\SCR_box\relax}%
+	\draw[draw=\SCR_current_fillcolor,fill=\SCR_current_fillcolor,yshift=\SCR_yoffset,xshift=\SCR_xoffset]
+		(0,0)to[out=\SCR_initarcangle,in=180-\SCR_initarcangle](\SCR_xsep+\SCR_initarclength,0)--(\SCR_boxwd+2*\SCR_xsep-\SCR_corner,0)--++(\SCR_corner,-\SCR_corner)% ligne sup
+		--++(0,-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_boxwd-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2,0)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(0,\SCR_totht+\SCR_ysepsup+\SCR_ysepinf)--cycle
+		node[at=(origin),draw=none,anchor=base west,xshift=\SCR_xoffset+\SCR_xsep,yshift=\SCR_yoffset-\SCR_boxht-\SCR_corner-\SCR_ysepsup,text=\SCR_current_textcolor](txt\number\SCR_blocknum){\sffamily\bfseries#2\SCR_blockstrut};
+	\ifboolKV[\SCRname]{num blocks}
+		{\node[at=(origin),draw=none,anchor=base east,xshift=-\SCR_numsep,yshift=\SCR_yoffset-\SCR_boxht-\SCR_corner-\SCR_ysepsup](num){\skv_exparg\numblock{\number\SCR_blocknum}};}
+		{}%
+	\advance\SCR_blocknum1
+	\draw[draw=\SCR_current_linedark,yshift=\SCR_yoffset,xshift=\SCR_xoffset](\SCR_boxwd+\SCR_xsep*2,-\SCR_corner)--++(0,-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_boxwd-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2,0)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch,0);
+	\draw[draw=\SCR_current_linelight,yshift=\SCR_yoffset,xshift=\SCR_xoffset](\SCR_corner,-\SCR_corner-\SCR_ysepsup-\SCR_totht-\SCR_ysepinf)--++(-\SCR_corner,\SCR_corner)--++(0,\SCR_totht+\SCR_ysepsup+\SCR_ysepinf)--(0,0)to[out=\SCR_initarcangle,in=180-\SCR_initarcangle](\SCR_xsep+\SCR_initarclength,0)--(\SCR_boxwd+2*\SCR_xsep-\SCR_corner,0)--++(\SCR_corner,-\SCR_corner);
+	\advance\SCR_yoffset\dimexpr-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf-\SCR_corner-\SCR_linewidth+\SCR_extraoffset\relax
+	\gdef\SCR_blockstop{0}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                    dessine un bloc de définition                     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*\initmoreblocks[1]{%
+	\setbox\SCR_box\hbox{\pgfinterruptpicture\color{white}\sffamily\bfseries#1\SCR_blockstrut\endpgfinterruptpicture}%
+	\edef\SCR_boxwd{\SCR_maxdim(\wd\SCR_box,\SCR_minwd+\SCR_em*2)}%
+	\edef\SCR_boxht{\the\ht\SCR_box}%
+	\edef\SCR_totht{\the\dimexpr\ht\SCR_box+\dp\SCR_box\relax}%
+	\def\SCR_current_blockcolor{SCRmoreblocks}%
+	\edef\SCR_current_fillcolor{\ifboolKV[\SCRname]{print}{\ifboolKV[\SCRname]{fill blocks}{SCR_fillgray}{none}}{\SCR_current_blockcolor}}%
+	\edef\SCR_current_linelight{\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\SCR_contrast!white}%
+	\edef\current_linesurround{\ifboolKV[\SCRname]{print}{SCR_linegray!\SCR_contrast!white}{SCRmoreblocksurround}}%
+	\edef\SCR_current_linedark {\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\SCR_contrast!black}%
+	\edef\SCR_current_textcolor{\ifboolKV[\SCRname]{print}{\useKV[\SCRname]{text color}}{white}}%
+	\draw[draw=\SCR_current_fillcolor,fill=\SCR_current_fillcolor,yshift=\SCR_yoffset,xshift=\SCR_xoffset]
+		(0,0)to[out=\SCR_moreblockarcangle,in=180-\SCR_moreblockarcangle](\SCR_boxwd+2*\SCR_xsep,0)% ligne sup
+		--++(0,-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_boxwd-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2,0)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(0,\SCR_totht+\SCR_ysepsup+\SCR_ysepinf)--cycle
+		node[at=(origin),draw=none,anchor=base west,xshift=\SCR_xoffset+\SCR_xsep,yshift=\SCR_yoffset-\SCR_boxht-\SCR_corner-\SCR_ysepsup,text=\SCR_current_textcolor](txt\number\SCR_blocknum){\sffamily\bfseries#1\SCR_blockstrut};
+	\ifboolKV[\SCRname]{num blocks}
+		{\node[at=(origin),draw=none,anchor=base east,xshift=-\SCR_numsep,yshift=\SCR_yoffset-\SCR_boxht-\SCR_corner-\SCR_ysepsup](num){\skv_exparg\numblock{\number\SCR_blocknum}};}
+		{}%
+	\advance\SCR_blocknum1
+	\draw[draw=\SCR_current_linedark,yshift=\SCR_yoffset,xshift=\SCR_xoffset](\SCR_boxwd+\SCR_xsep*2,0)--++(0,-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_boxwd-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2,0)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch,0);
+	\draw[draw=\SCR_current_linelight,yshift=\SCR_yoffset,xshift=\SCR_xoffset](\SCR_corner,-\SCR_corner-\SCR_ysepsup-\SCR_totht-\SCR_ysepinf)--++(-\SCR_corner,\SCR_corner)--++(0,\SCR_totht+\SCR_ysepsup+\SCR_ysepinf)--(0,0);
+	\draw[line width=1.5pt,draw=\current_linesurround,shorten <=-\SCR_linewidth,shorten >=-\SCR_linewidth](0,0)to[out=15,in=165](\SCR_boxwd+2*\SCR_xsep,0);
+	\advance\SCR_yoffset\dimexpr-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf-\SCR_corner-\SCR_linewidth+\SCR_extraoffset\relax
+	\gdef\SCR_blockstop{0}%
+}
+\newcommand*\namemoreblocks[1]{%
+	\begin{tikzpicture}[baseline=(moreblocksdef.base)]
+		\def\SCR_ysepinf{2pt}\def\SCR_ysepsup{2pt}%
+		\edef\SCR_xsep{\the\dimexpr\SCR_em/2\relax}\edef\SCR_minwd{\the\dimexpr\SCR_corner*4+\SCR_notch*3-\SCR_xsep*2}%
+		\setbox\SCR_box\hbox{\pgfinterruptpicture\color{white}\sffamily\bfseries\SCR_blockstrut#1\endpgfinterruptpicture}%
+		\edef\SCR_boxwd{\SCR_maxdim(\wd\SCR_box,\SCR_minwd)}%
+		\edef\SCR_boxht{\the\ht\SCR_box}%
+		\edef\SCR_totht{\the\dimexpr\ht\SCR_box+\dp\SCR_box\relax}
+		\edef\SCR_current_textcolor{\ifboolKV[\SCRname]{print}{\useKV[\SCRname]{text color}}{white}}%
+		\edef\current_contourcolor{\ifboolKV[\SCRname]{print}{SCR_linegray!\SCR_contrast!white}{SCRmoreblockcontour}}%
+		\draw[draw=\current_contourcolor,line width=\SCR_linewidth*2]
+			(0,-\SCR_corner)--(\SCR_corner,0)--++(\SCR_notch,0)--++(\SCR_corner,-\SCR_corner)--++(\SCR_notch,0)--++(\SCR_corner,\SCR_corner)--++(\SCR_boxwd+2*\SCR_xsep-\SCR_corner*4-\SCR_notch*2,0)--++(\SCR_corner,-\SCR_corner)% ligne sup
+			--++(0,-\SCR_totht-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_boxwd-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2,0)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--cycle
+			node[draw=none,anchor=base west,xshift=\SCR_xsep,yshift=\SCR_yoffset-\SCR_boxht-\SCR_ysepsup,text=\SCR_current_textcolor](moreblocksdef){\sffamily\bfseries\SCR_blockstrut#1};
+	\end{tikzpicture}%
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                dessine un bloc de répétition ou test                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\SCR_blockloop#1#2#3#4#5{% #1=texte  #2=instructions sup  #3=instructions inf #4=boucle infinie (1 ou 0)  #5=fleche de répétition (1 ou 0)
+	\edef\SCR_blocminheight{\dimexpr\SCR_loopblockheight+\SCR_ysepinf+\SCR_ysepsup+\SCR_corner\relax}% hauteur minimale d'un bloc normal
+	\setbox\SCR_box\hbox{\pgfinterruptpicture\color{white}\sffamily\bfseries#1\SCR_blockstrut\endpgfinterruptpicture}%
+	\SCR_csedef{SCR_txtloopwd\number\SCR_loopnest}{\SCR_maxdim(\wd\SCR_box,\SCR_minwd+\SCR_corner*4+\SCR_notch*2)}%
+	\SCR_csedef{SCR_txtloopht\number\SCR_loopnest}{\the\ht\SCR_box}%
+	\SCR_csedef{SCR_txtlooptotht\number\SCR_loopnest}{\the\dimexpr\ht\SCR_box+\dp\SCR_box\relax}%
+	\SCR_csedef{toploopx\number\SCR_loopnest}{\the\SCR_xoffset}% coordonnées du point nord-west
+	\SCR_csedef{toploopy\number\SCR_loopnest}{\the\SCR_yoffset}%
+	\SCR_csedef{blocnum\number\SCR_loopnest}{\number\SCR_blocknum}%
+	\advance\SCR_xoffset\SCR_loopblockwidth
+	\advance\SCR_yoffset\dimexpr-\SCR_corner-\SCR_ysepsup-\csname SCR_txtlooptotht\number\SCR_loopnest\endcsname-\SCR_ysepinf-\SCR_linewidth+\SCR_extraoffset\relax
+	\ifboolKV[\SCRname]{num blocks}
+		{\SCR_csdef{SCR_numblockif\number\SCR_loopnest}{\node[at=(origin),draw=none,anchor=base east,xshift=-\SCR_numsep,yshift=\csname toploopy\number\SCR_loopnest\endcsname-\csname SCR_txtloopht\number\SCR_loopnest\endcsname-\SCR_corner-\SCR_ysepsup](num){\skv_eearg\numblock{\csname blocnum\number\SCR_loopnest\endcsname}};}%
+		}
+		{\SCR_cslet{SCR_numblockif\number\SCR_loopnest}\empty}%
+	\advance\SCR_loopnest1
+	\advance\SCR_blocknum1
+	\advance\SCR_xoffset-\SCR_extraoffset
+	#2%
+	\advance\SCR_xoffset\SCR_extraoffset
+	\advance\SCR_loopnest-1
+	\expandafter\let\csname SCR_blockstopif_\number\SCR_loopnest\endcsname\SCR_blockstop
+	\SCR_csedef{bottomifx\number\SCR_loopnest}{\the\SCR_xoffset}%
+	\SCR_csedef{bottomify\number\SCR_loopnest}{\the\SCR_yoffset}%
+	\ifcat\relax\detokenize{#3}\relax\else% si instruction #3
+		\advance\SCR_yoffset\dimexpr-\SCR_blocminheight-\SCR_linewidth+\SCR_extraoffset\relax% épaisseur théorique de la branche "sinon"
+		\SCR_csedef{blocelsenum\number\SCR_loopnest}{\number\SCR_blocknum}%
+		\ifboolKV[\SCRname]{num blocks}
+			{\SCR_csdef{SCR_numblockelse\number\SCR_loopnest}{\node[at=(origin),draw=none,anchor=base east,xshift=-\SCR_numsep,yshift=\csname bottomify\number\SCR_loopnest\endcsname-\SCR_loopblockheight-\SCR_corner](num){\skv_eearg\numblock{\csname blocelsenum\number\SCR_loopnest\endcsname}};}
+			}
+			{\SCR_cslet{SCR_numblockelse\number\SCR_loopnest}\empty}%
+		\advance\SCR_loopnest1
+		\advance\SCR_blocknum1
+		\advance\SCR_xoffset-\SCR_extraoffset
+		#3%
+		\advance\SCR_xoffset\SCR_extraoffset
+		\advance\SCR_loopnest-1
+		\SCR_csedef{bottomelsex\number\SCR_loopnest}{\the\SCR_xoffset}%
+		\SCR_csedef{bottomelsey\number\SCR_loopnest}{\the\SCR_yoffset}%
+	\fi
+	\advance\SCR_yoffset by \dimexpr-\SCR_blocminheight-\SCR_linewidth+\SCR_extraoffset\relax% épaisseur de la branche du bas
+	\def\SCR_current_blockcolor{SCRcontrol}%
+	\edef\SCR_current_fillcolor{\ifboolKV[\SCRname]{print}{\ifboolKV[\SCRname]{fill blocks}{SCR_fillgray}{none}}{\SCR_current_blockcolor}}%
+	\edef\SCR_current_linelight{\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\SCR_contrast!white}%
+	\edef\SCR_current_linedark {\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\SCR_contrast!black}%
+	\edef\SCR_current_textcolor{\ifboolKV[\SCRname]{print}{\useKV[\SCRname]{text color}}{white}}%
+%	############## dessin du corps ##############
+	\draw[draw=none,fill=\SCR_current_fillcolor](\csname toploopx\number\SCR_loopnest\endcsname+\SCR_corner,\csname toploopy\number\SCR_loopnest\endcsname)--++(\SCR_notch,0)--++(\SCR_corner,-\SCR_corner)--++(\SCR_notch,0)--++(\SCR_corner,\SCR_corner)--++(\csname SCR_txtloopwd\number\SCR_loopnest\endcsname+2*\SCR_xsep-\SCR_corner*4-\SCR_notch*2,0)% ligne haut du titre boucle "--\__/---------"
+		--++(\SCR_corner,-\SCR_corner)--++(0,-\csname SCR_txtlooptotht\number\SCR_loopnest\endcsname-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)% ligne est "\ + | + /"
+		--++(-\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2+\SCR_loopblockwidth-\SCR_extraoffset_rtwo,0)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_notch+\SCR_extraoffset,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch-\SCR_linewidth+\SCR_extraoffset_rtwo_mone,0)--++(-\SCR_corner,-\SCR_corner)% ligne sud "/--\__/---------"
+		--(\csname bottomifx\number\SCR_loopnest\endcsname-\SCR_linewidth,\csname bottomify\number\SCR_loopnest\endcsname+\SCR_corner)% descente gauche bloc "if"
+		\ifcat\relax\detokenize{#3}\relax\else% tracé de la branche du bas du else
+			--++(\SCR_corner,-\SCR_corner)% chanfrein"\" pour raccord sur ligne haut
+			\ifnum\csname SCR_blockstopif_\number\SCR_loopnest\endcsname=1
+				--++(\csname SCR_txtloopwd\number\SCR_loopnest\endcsname+2*\SCR_xsep-\SCR_corner*2-\SCR_loopblockwidth+\SCR_linewidth,0)% ligne haut de la barre else "--\__/---------"
+			\else
+				--++(\SCR_notch+\SCR_linewidth-\SCR_extraoffset_rtwo,0)--++(\SCR_corner,-\SCR_corner)--++(\SCR_notch+\SCR_extraoffset,0)--++(\SCR_corner,\SCR_corner)--++(\csname SCR_txtloopwd\number\SCR_loopnest\endcsname+2*\SCR_xsep-\SCR_corner*4-\SCR_notch*2-\SCR_loopblockwidth+\SCR_extraoffset_rtwo_mone,0)% ligne haut de la barre else "--\__/---------"
+			\fi
+			--++(\SCR_corner,-\SCR_corner)--++(0,-\SCR_loopblockheight-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)--++(-\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2+\SCR_loopblockwidth-\SCR_extraoffset_rtwo,0)--++(-\SCR_corner,-\SCR_corner)% ligne Est "\ + | + /"
+			--++(-\SCR_notch+\SCR_extraoffset,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch-\SCR_linewidth+\SCR_extraoffset_rtwo_mone,0)--++(-\SCR_corner,-\SCR_corner)% ligne sud "/--\__/---------"
+			--(\csname bottomelsex\number\SCR_loopnest\endcsname-\SCR_linewidth,\csname bottomelsey\number\SCR_loopnest\endcsname+\SCR_corner)% descente gauche bloc "else"
+		\fi
+		--++(\SCR_corner,-\SCR_corner)% chanfrein "\" pour rejoindre haut de la ligne de fin
+		\ifnum\SCR_blockstop=1
+			--++(\csname SCR_txtloopwd\number\SCR_loopnest\endcsname+2*\SCR_xsep-\SCR_corner*2-\SCR_loopblockwidth+\SCR_linewidth,0)% ligne haut de la barre de fin "--\__/---------"
+		\else
+			--++(\SCR_notch+\SCR_linewidth-\SCR_extraoffset_rtwo,0)--++(\SCR_corner,-\SCR_corner)--++(\SCR_notch+\SCR_extraoffset,0)--++(\SCR_corner,\SCR_corner)--++(\csname SCR_txtloopwd\number\SCR_loopnest\endcsname+2*\SCR_xsep-\SCR_corner*4-\SCR_notch*2-\SCR_loopblockwidth+\SCR_extraoffset_rtwo_mone,0)% ligne haut de la barre de fin "--\__/---------"
+		\fi
+		--++(\SCR_corner,-\SCR_corner)--++(0,-\SCR_loopblockheight-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)% ligne Est "\ + | + /"
+		\ifnum#4=1 %infiniteloop
+			--++(-\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-2*\SCR_xsep+\SCR_corner*2,0)% ligne Sud "\---------------"
+		\else
+			--++(-\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2,0)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch,0)% ligne Sud "\--\__/---------"
+		\fi
+		--++(-\SCR_corner,\SCR_corner)
+		--(\csname toploopx\number\SCR_loopnest\endcsname,\csname toploopy\number\SCR_loopnest\endcsname-\SCR_corner)--cycle;% remontée tout en haut et cycle
+	\advance\SCR_xoffset\dimexpr-\SCR_loopblockwidth\relax
+	%	############## dessin des lignes de relief ##############
+	\draw[draw=\SCR_current_linelight](\SCR_xoffset+\SCR_corner-\SCR_extraoffset+\SCR_extraoffset,\SCR_yoffset+\SCR_linewidth-\SCR_extraoffset)--++(-\SCR_corner,\SCR_corner)
+		--(\csname toploopx\number\SCR_loopnest\endcsname,\csname toploopy\number\SCR_loopnest\endcsname-\SCR_corner)--++(\SCR_corner,\SCR_corner)--++(\SCR_notch,0)--++(\SCR_corner,-\SCR_corner)--++(\SCR_notch,0)--++(\SCR_corner,\SCR_corner)--++(\csname SCR_txtloopwd\number\SCR_loopnest\endcsname+2*\SCR_xsep-\SCR_corner*4-\SCR_notch*2,0)--++(\SCR_corner,-\SCR_corner);% remontée gauche + ligne haut bandeau
+	\draw[draw=\SCR_current_linedark](\csname toploopx\number\SCR_loopnest\endcsname+\SCR_xsep*2+\csname SCR_txtloopwd\number\SCR_loopnest\endcsname,\csname toploopy\number\SCR_loopnest\endcsname-\SCR_corner)--++(0,-\csname SCR_txtlooptotht\number\SCR_loopnest\endcsname-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)--++(-\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2+\SCR_loopblockwidth-\SCR_extraoffset_rtwo,0)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_notch+\SCR_extraoffset,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch-\SCR_linewidth+\SCR_extraoffset_rtwo_mone,0)--++(-\SCR_corner,-\SCR_corner)--(\csname bottomifx\number\SCR_loopnest\endcsname-\SCR_linewidth,\csname bottomify\number\SCR_loopnest\endcsname+\SCR_corner);
+	\draw[draw=\SCR_current_linelight](\csname bottomifx\number\SCR_loopnest\endcsname-\SCR_linewidth,\csname bottomify\number\SCR_loopnest\endcsname+\SCR_corner)--++(\SCR_corner,-\SCR_corner)
+		\ifnum\csname SCR_blockstopif_\number\SCR_loopnest\endcsname=1
+			--++(\csname SCR_txtloopwd\number\SCR_loopnest\endcsname+2*\SCR_xsep-\SCR_corner*2-\SCR_loopblockwidth+\SCR_linewidth,0)
+		\else
+			--++(\SCR_notch+\SCR_linewidth-\SCR_extraoffset_rtwo,0)--++(\SCR_corner,-\SCR_corner)--++(\SCR_notch+\SCR_extraoffset,0)--++(\SCR_corner,\SCR_corner)--++(\csname SCR_txtloopwd\number\SCR_loopnest\endcsname+2*\SCR_xsep-\SCR_corner*4-\SCR_notch*2-\SCR_loopblockwidth+\SCR_extraoffset_rtwo_mone,0)
+		\fi
+		--++(\SCR_corner,-\SCR_corner);
+	\edef\SCR_tempname{\ifcat\relax\detokenize{#3}\relax bottomif\else bottomelse\fi}%
+	\draw[draw=\SCR_current_linedark](\csname \SCR_tempname x\number\SCR_loopnest\endcsname+\SCR_xsep*2+\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-\SCR_loopblockwidth,\csname \SCR_tempname y\number\SCR_loopnest\endcsname-\SCR_corner)--++(0,-\SCR_loopblockheight-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)
+		\ifnum#4=1 %infiniteloop
+			--++(-\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-2*\SCR_xsep+\SCR_corner*2,0)
+		\else
+			--++(-\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2,0)--++(-\SCR_corner,-\SCR_corner)--++(-\SCR_notch,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch,0)
+		\fi;% ligne Sud de la barre du bas
+	\node[at=(origin),draw=none,anchor=base west,xshift=\csname toploopx\number\SCR_loopnest\endcsname+\SCR_xsep,yshift=\csname toploopy\number\SCR_loopnest\endcsname-\csname SCR_txtloopht\number\SCR_loopnest\endcsname-\SCR_corner-\SCR_ysepsup,text=\SCR_current_textcolor](txt\csname blocnum\number\SCR_loopnest\endcsname){\sffamily\bfseries#1\SCR_blockstrut};
+	\csname SCR_numblockif\number\SCR_loopnest\endcsname% numérote ou pas le texte dans le bandeau du haut
+	\ifcat\relax\detokenize{#3}\relax\else
+		\node[at=(origin),draw=none,anchor=base west,xshift=\csname toploopx\number\SCR_loopnest\endcsname+\SCR_xsep,yshift=\csname bottomify\number\SCR_loopnest\endcsname-\SCR_loopblockheight-\SCR_corner,text=\SCR_current_textcolor](txt\csname blocelsenum\number\SCR_loopnest\endcsname){\sffamily\bfseries\useKV[\SCRname]{else word}};
+		\csname SCR_numblockelse\number\SCR_loopnest\endcsname% numérotation bloc else ou pas
+		\draw[draw=\SCR_current_linedark](\csname bottomifx\number\SCR_loopnest\endcsname+\SCR_xsep*2+\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-\SCR_loopblockwidth,\csname bottomify\number\SCR_loopnest\endcsname-\SCR_corner)--++(0,-\SCR_loopblockheight-\SCR_ysepsup-\SCR_ysepinf+\SCR_corner)--++(-\SCR_corner,-\SCR_corner)--++(-\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-2*\SCR_xsep+\SCR_corner*4+\SCR_notch*2+\SCR_loopblockwidth-\SCR_extraoffset_rtwo,0)--++(-\SCR_corner,-\SCR_corner)% ligne Est "\ + | + /"
+			--++(-\SCR_notch+\SCR_extraoffset,0)--++(-\SCR_corner,\SCR_corner)--++(-\SCR_notch-\SCR_linewidth+\SCR_extraoffset_rtwo_mone,0)--++(-\SCR_corner,-\SCR_corner)% ligne sud "/--\__/---------"
+			--(\csname bottomelsex\number\SCR_loopnest\endcsname-\SCR_linewidth,\csname bottomelsey\number\SCR_loopnest\endcsname+\SCR_corner);
+		\draw[draw=\SCR_current_linelight](\csname bottomelsex\number\SCR_loopnest\endcsname-\SCR_linewidth,\csname bottomelsey\number\SCR_loopnest\endcsname+\SCR_corner)--++(\SCR_corner,-\SCR_corner)% chanfrein "\" pour rejoindre haut de la ligne de fin
+			\ifnum\SCR_blockstop=1
+				--++(\csname SCR_txtloopwd\number\SCR_loopnest\endcsname+2*\SCR_xsep-\SCR_corner*2-\SCR_loopblockwidth+\SCR_linewidth,0)--++(\SCR_corner,-\SCR_corner);
+			\else
+				--++(\SCR_notch+\SCR_linewidth-\SCR_extraoffset_rtwo,0)--++(\SCR_corner,-\SCR_corner)--++(\SCR_notch+\SCR_extraoffset,0)--++(\SCR_corner,\SCR_corner)--++(\csname SCR_txtloopwd\number\SCR_loopnest\endcsname+2*\SCR_xsep-\SCR_corner*4-\SCR_notch*2-\SCR_loopblockwidth+\SCR_extraoffset_rtwo_mone,0)--++(\SCR_corner,-\SCR_corner);
+			\fi
+	\fi
+	\ifnum#5=1 %fleche
+		\edef\SCR_arrowcolor{\ifboolKV[\SCRname]{print}{SCR_flaggray}{SCRcontrol}!80!black}%
+		\draw[\SCR_arrowcolor,line width=1.5pt,-{Triangle[length=\SCR_scale*1.25ex,width=\SCR_scale*1.5ex]},rounded corners=1pt](\SCR_xoffset+\SCR_xsep*2+\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-\SCR_ex*3.5+1pt,\SCR_yoffset+\SCR_linewidth+\SCR_ysepinf-1.25pt)--++(\SCR_loopblockheight,0)--++(0,\SCR_loopblockheight+\SCR_corner*0.5);
+		\edef\SCR_arrowcolor{\ifboolKV[\SCRname]{print}{SCR_flaggray}{white}}%
+		\draw[\SCR_arrowcolor,line width=\SCR_scale*1.5pt,-{Triangle[length=\SCR_scale*1.25ex,width=\SCR_scale*1.5ex]},rounded corners=1pt](\SCR_xoffset+\SCR_xsep*2+\csname SCR_txtloopwd\number\SCR_loopnest\endcsname-\SCR_ex*3.5,\SCR_yoffset+\SCR_linewidth+\SCR_ysepinf)--++(\SCR_loopblockheight,0)--++(0,\SCR_loopblockheight+\SCR_corner*0.5); 
+	\fi
+	\xdef\SCR_blockstop{\ifnum#4=1 1\else0\fi}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                           dessine un ovale                           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\SCR_ovalbox#1#2{% #1=couleur remplissage et contour  #2=texte
+	\begingroup
+		\edef\SCR_linewidth{\the\dimexpr\useKV[\SCRname]{line width}\relax}%
+		\def\SCR_current_blockcolor{#1}%
+		\edef\SCR_current_fillcolor{\ifboolKV[\SCRname]{print}{\ifboolKV[\SCRname]{fill blocks}{SCR_fillgray}{none}}{\SCR_current_blockcolor}}%
+		\edef\SCR_current_linelight{\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\the\numexpr100-\useKV[\SCRname]{contrast}\relax!white}%
+		\edef\SCR_current_linedark {\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\the\numexpr100-\useKV[\SCRname]{contrast}\relax!black}%
+		\edef\SCR_current_textcolor{\ifboolKV[\SCRname]{print}{\useKV[\SCRname]{text color}}{white}}%
+		\begin{tikzpicture}[baseline=(x.base),x=1ex,y=1ex,inner ysep=0.25ex,inner xsep=0.1ex,line width=\SCR_linewidth]
+			\node[rounded rectangle,draw=none,fill=\SCR_current_fillcolor,text=\SCR_current_textcolor](x){\sffamily\bfseries\relax#2\SCR_ovalstrut};%
+			\draw[draw=\SCR_current_linedark](x.west)to[out=270,in=180](x.south west)--(x.south east)to[out=0,in=270](x.east);
+			\draw[draw=\SCR_current_linelight](x.west)to[out=90,in=180](x.north west)--(x.north east)to[out=0,in=90](x.east);
+		\end{tikzpicture}%
+	\endgroup
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                   dessine un triangle de sélection                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\SCR_menuselectarrow{%
+	\tikz[baseline=-1ex,x=1ex,y=1ex,rounded corners=0pt]\draw[fill=\SCR_current_blockcolor!35!black,draw=none](0,0)--(1,0)--(0.5,-0.6)--cycle;%
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                           dessine un menu                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*\selectmenu[1]{% #1=texte du menu (sera composé et suivi du triangle de sélection)
+	\begin{tikzpicture}[anchor=base west,baseline=(textmenu.base west),outer sep=0pt,inner sep=0pt,minimum size=0pt]
+		\edef\SCR_current_fillcolor{\ifboolKV[\SCRname]{print}{\ifboolKV[\SCRname]{fill blocks}{SCR_fillgray!85!black}{none}}{\SCR_current_blockcolor!85!black}}%
+		\edef\SCR_current_linelight{\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\the\numexpr100-\useKV[\SCRname]{contrast}\relax!white}%
+		\edef\SCR_current_linedark {\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\the\numexpr100-\useKV[\SCRname]{contrast}\relax!black}%
+		\edef\SCR_current_textcolor{\ifboolKV[\SCRname]{print}{\useKV[\SCRname]{text color}}{white}}%
+		\node[rectangle,draw=none,inner xsep=0.2em,fill=\SCR_current_fillcolor,text=\SCR_current_textcolor](textmenu){\normalfont\sffamily#1\SCR_ovalstrut\hskip.6666em \SCR_menuselectarrow};
+		\draw[draw=\SCR_current_linedark,line width=\SCR_linewidth\ifdefined\SCR_scale/\SCR_scale\fi](textmenu.south west)--(textmenu.north west)--(textmenu.north east);
+		\draw[draw=\SCR_current_linelight,line width=\SCR_linewidth\ifdefined\SCR_scale/\SCR_scale\fi](textmenu.south west)--(textmenu.south east)--(textmenu.north east);
+	\end{tikzpicture}%
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                          dessine un losange                          %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\SCR_boolbox#1#2{% #1=couleur  #2=texte
+	\begingroup
+		\edef\SCR_previouskern{\number\lastkern}%
+		\edef\SCR_linewidth{\useKV[\SCRname]{line width}}%
+		\edef\_{\the \dimexpr .530330\dimexpr\SCR_linewidth\relax\relax}%
+		\def\SCR_current_blockcolor{#1}%
+		\edef\SCR_current_fillcolor{\ifboolKV[\SCRname]{print}{\ifboolKV[\SCRname]{fill blocks}{SCR_fillgray}{none}}{\SCR_current_blockcolor}}%
+		\edef\SCR_current_linelight{\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\the\numexpr100-\useKV[\SCRname]{contrast}\relax!white}%
+		\edef\SCR_current_linedark {\ifboolKV[\SCRname]{print}{SCR_linegray}{\SCR_current_blockcolor}!\the\numexpr100-\useKV[\SCRname]{contrast}\relax!black}%
+		\edef\SCR_current_textcolor{\ifboolKV[\SCRname]{print}{\useKV[\SCRname]{text color}}{white}}%
+		\edef\SCR_boolsep{\useKV[\SCRname]{bool sep}}%
+		\begin{tikzpicture}[inner sep=0pt,outer sep=0pt,minimum size=0pt,baseline=(x.base),line width=0.75*\SCR_linewidth]
+			\setbox\SCR_box\hbox{\pgfinterruptpicture\sffamily\bfseries\SCR_ovalstrut\kern\SCR_thesentinelkern sp #2\xdef\SCR_endkern{\number\lastkern}\endpgfinterruptpicture}%
+			\edef\SCR_totheight{\the\dimexpr\ht\SCR_box+\dp\SCR_box\relax}\edef\SCR_boxwd{\the\wd\SCR_box}%
+			\edef\SCR_retainedwd{\the\dimexpr\SCR_boxwd\ifnum\SCR_endkern=\SCR_thesentinelkern-\SCR_totheight/2+\SCR_boolsep*2\fi+\_*2\relax}%
+			\draw[draw=none,use as bounding box](\ifnum\SCR_previouskern=\SCR_thesentinelkern\space -\SCR_boolsep\else -\SCR_totheight/2\fi,-\SCR_boolsep)rectangle(\SCR_retainedwd+\SCR_totheight/2,\SCR_totheight+\SCR_boolsep);%
+			\draw[fill=\SCR_current_fillcolor,draw=none](\SCR_boolsep,-\SCR_boolsep)--++(\SCR_retainedwd-\SCR_boolsep*2,0)--++(\SCR_totheight/2+\SCR_boolsep,\SCR_totheight/2+\SCR_boolsep)--++(-\SCR_totheight/2-\SCR_boolsep,\SCR_totheight/2+\SCR_boolsep)--++(-\SCR_retainedwd+\SCR_boolsep*2,0)--++(-\SCR_totheight/2-\SCR_boolsep,-\SCR_totheight/2-\SCR_boolsep)--cycle;%
+			\draw[\SCR_current_linedark](\SCR_retainedwd+\SCR_totheight/2,\SCR_totheight/2)--(\SCR_retainedwd-\SCR_boolsep,-\SCR_boolsep)--(\SCR_boolsep,-\SCR_boolsep)
+				\ifboolKV[\SCRname]{print}{--(-\SCR_totheight/2,\SCR_totheight/2)}{};
+			\draw[\SCR_current_linelight](-\SCR_totheight/2,\SCR_totheight/2)--(\SCR_boolsep,\SCR_boolsep+\SCR_totheight)--(\SCR_retainedwd-\SCR_boolsep,\SCR_boolsep+\SCR_totheight)
+				\ifboolKV[\SCRname]{print}{--(\SCR_retainedwd+\SCR_totheight/2,\SCR_totheight/2)}{};
+			\node[inner sep=0pt,outer sep=0pt,minimum size=0pt,draw=none,anchor=south west,text=\SCR_current_textcolor](x){\sffamily\bfseries\SCR_ovalstrut\kern\_\kern\SCR_thesentinelkern sp #2\kern\_};%
+		\end{tikzpicture}%
+	\endgroup
+	\kern\SCR_thesentinelkern sp
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                        environnement scratch                         %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newenvironment{scratch}[1][]
+	{\skv_ifempty{#1}{}{\setscratch{#1}}%
+	\sffamily% pas de \normalsize ici, bugfix 1.4
+	\edef\SCR_ex{\the\dimexpr1ex\relax}% valeur d'1ex pour le tracé de la flèche
+	\edef\SCR_em{\the\dimexpr1em\relax}%
+	\SCR_normalizedim\SCR_corner corner[\SCR_ex/3,\SCR_ex]%
+	\SCR_normalizedim\SCR_notch notch[\SCR_em/3,\SCR_em*3]%
+	\SCR_normalizedec\SCR_scale scale[0.2,5]% échelle
+	\SCR_normalizedim\SCR_xsep x sep[0pt,\SCR_em]%
+	\SCR_normalizedim\SCR_ysepsup y sepsup[1pt,\SCR_ex*3]%
+	\SCR_normalizedim\SCR_ysepinf y sepinf[1pt,\SCR_ex*3]%
+	\SCR_normalizedim\SCR_linewidth line width[0pt,5pt]% épaisseur des lignes soumises à l'échelle
+	\SCR_normalizedim\SCR_loopblockwidth loop width[3pt,\SCR_em*3]%
+	\SCR_normalizedim\SCR_loopblockheight loop height[3pt,\SCR_ex*3]%
+	\SCR_normalizedec\SCR_initarcangle init arcangle[20,40]%
+	\SCR_normalizedim\SCR_initarclength init arclength[\SCR_em*3,\SCR_em*8]%
+	\edef\SCR_contrast{\number\numexpr100-\ifnum\useKV[\SCRname]{contrast}<0 0\else\ifnum\useKV[\SCRname]{contrast}>100 100\else\useKV[\SCRname]{contrast}\fi\fi\relax}%
+	\SCR_normalizedec\SCR_moreblockarcangle moreblock arcangle[10,20]%
+	\SCR_normalizedim\SCR_numsep num sep[0pt,\SCR_em*3/2]%
+	\edef\SCR_extraoffset{\the\dimexpr\SCR_linewidth-\useKV[\SCRname]{line width}\relax}% décalage supplémentaire pour tenir compte de l'échelle = (ech-1)*linewidth
+	\edef\SCR_extraoffset_rtwo{\the\dimexpr1.41421\dimexpr\SCR_extraoffset\relax\relax}% décalage * racine 2
+	\edef\SCR_extraoffset_rtwo_mone{\the\dimexpr.41421\dimexpr\SCR_extraoffset\relax\relax}% décalage * (racine 2 -1)
+	\edef\SCR_minwd{\the\dimexpr\SCR_corner*4+\SCR_notch*3-\SCR_xsep*2}%
+	\edef\SCR_valign{\useKV[\SCRname]{baseline}}%
+	\SCR_blocknum\number\numexpr\useKV[\SCRname]{num start}\relax\relax
+	\setbox\SCR_box\hbox{\SCR_blockstrut}\edef\SCR_blockstruttotht{\the\dimexpr\ht\SCR_box+\dp\SCR_box\relax}% haut totale du strut
+	\def\turnleft{\turn_arrow{}}\def\turnright{\turn_arrow{xscale=-1}}%
+	\let\blockmove     \SCR_blockmove        \let\blocklook      \SCR_blocklook
+	\let\blocksound    \SCR_blocksound       \let\blocklist      \SCR_blocklist
+	\let\blockpen      \SCR_blockpen         \let\blockvariable  \SCR_blockvariable
+	\let\blockevent    \SCR_blockevent       \let\blockinit      \SCR_blockinit
+	\let\blockrepeat   \SCR_blockrepeat      \let\blockinfloop   \SCR_blockinfloop
+	\let\blockifelse   \SCR_blockifelse      \let\blockif        \SCR_blockif
+	\let\blockinitclone\SCR_blockinitclone   \let\blockcontrol   \SCR_blockcontrol
+	\let\blocksensing  \SCR_blocksensing     \let\blockmoreblocks\SCR_blockmoreblocks
+	\SCR_xoffset0pt \SCR_yoffset0pt
+	\catcode`\:12 \catcode`\;12 \catcode`\!12 \catcode`\?12 \catcode`\_12
+	\csname skv_\if c\expandafter\SCR_firsttonil\SCR_valign c\_nil first\else second\fi\endcsname
+		{\def\SCR_scratchend{\egroup\egroup$}$\vcenter\bgroup\hbox\bgroup\begin{tikzpicture}[}
+		{\let\SCR_scratchend\relax\begin{tikzpicture}[baseline=(txt\SCR_valign.base),}
+		transform shape,line width=\SCR_linewidth,inner sep=0pt,outer sep=0pt,minimum size=0pt,line cap=round,scale=\SCR_scale]
+			\node[shape=coordinate](origin){};% origine
+	}
+	{\end{tikzpicture}\SCR_scratchend}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                            menu mouvement                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{SCRmove}{rgb}{0.2902,0.4235,0.8314}
+\def\SCR_blockmove{\SCR_normalblock{SCRmove}}
+\newcommand*\ovalmove{\SCR_ovalbox{SCRmove}}
+\newcommand*\ovalnum[1]{% ovale blanc qui doit contenir un _nombre_
+	\begin{tikzpicture}[baseline=(x.base),x=1ex,y=1ex,minimum size=2.5ex,inner ysep=1pt,inner xsep=0.15em,outer sep=0pt,line width={\useKV[\SCRname]{line width}}]
+		\node[rounded rectangle,draw={\ifboolKV[\SCRname]{print}{gray}{none}},fill=white,text=black](x){\vphantom{0}\let\select\selectarrownum\sffamily#1};%
+	\end{tikzpicture}%
+}
+\def\turn_arrow#1{\tikz[baseline=.25ex,x=6.5ex,y=6.5ex,#1]\draw[-{Triangle[angle=45:0.5ex 0.5ex,bend]},line width=.3333ex](0,0) arc[start angle=-80,end angle=190,radius=1ex];}
+\newcommand*\selectarrownum{% le petit triangle vers le bas à côté d'un _nombre_
+	\unskip\hskip0.125em \tikz[baseline=-1.25ex,x=1ex,y=1ex,rounded corners=0pt]\draw[fill=black!70,draw=none](0,0)--(1,0)--(0.5,-0.6)--cycle;
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                            menu apparence                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{SCRlook}{rgb}{0.5412,0.3333,0.8431}
+\def\SCR_blocklook{\SCR_normalblock{SCRlook}}
+\newcommand*\ovallook{\SCR_ovalbox{SCRlook}}
+\newcommand*\txtbox[1]{% #1=texte dans un rectangle blanc
+	\begin{tikzpicture}[inner xsep=0.2em,inner ysep=0pt,baseline=(text.base west)]
+		\node[rectangle,fill=white,text=black](text){\normalfont\sffamily\SCR_ovalstrut#1};
+		\draw[draw=white!80!black,line width=0.5pt](text.south west)--(text.north west)--(text.north east);
+		\ifboolKV[\SCRname]{print}
+			{\draw[draw=white!80!black,line width=0.5pt](text.south west)--(text.south east)--(text.north east); }
+			{}%
+	\end{tikzpicture}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                               menu son                               %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{SCRsound}{rgb}{0.7333,0.2588,0.7647}
+\def\SCR_blocksound{\SCR_normalblock{SCRsound}}
+\newcommand*\ovalsound{\SCR_ovalbox{SCRsound}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                              menu stylo                              %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{SCRpen}{rgb}{0.0549,0.6039,0.4235}
+\def\SCR_blockpen{\SCR_normalblock{SCRpen}}
+\newcommand*\ovalpen{\SCR_ovalbox{SCRpen}}
+\newcommand*\squarecolor[1]{% #1 est la couleur
+	\begin{tikzpicture}[x=1ex,y=1ex,baseline=.33333ex]
+		\colorlet{__tempcolor}{#1}%
+		\draw[fill=__tempcolor,draw=none](0,0) rectangle (2,2);
+		\draw[draw=__tempcolor!80!black](0,0)--(0,2)--(2,2);
+		\draw[draw=__tempcolor!80!white](0,0)--(2,0)--(2,2);
+	\end{tikzpicture}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                             menu données                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{SCRvariable}{rgb}{0.9333,0.4902,0.0863}
+\definecolor{SCRlist}{rgb}{0.8,0.3569,0.1333}
+\def\SCR_blockvariable{\SCR_normalblock{SCRvariable}}
+\def\SCR_blocklist{\SCR_normalblock{SCRlist}}
+\newcommand*\ovalvariable{\SCR_ovalbox{SCRvariable}}
+\newcommand*\ovallist{\SCR_ovalbox{SCRlist}}
+\newcommand*\boollist{\SCR_boolbox{SCRlist}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                            menu événement                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{SCRevent}{rgb}{0.7843,0.5137,0.1882}
+\def\SCR_blockevent{\SCR_normalblock{SCRevent}}
+\def\SCR_blockinit{\SCR_initblock{SCRevent}}
+\definecolor{greenflag}{rgb}{0.2471,0.5529,0.0824}
+\newcommand*\greenflag{%
+	\tikz[baseline=2pt]\draw[fill={\ifboolKV[\SCRname]{print}{SCR_flaggray}{greenflag}},draw=none,scale=.4,rotate=-12]
+		(-.1,0)--(-.1,1)--(0,1)--(0,0.95)..controls(.5,1.2) and (.7,.8)..(1,1)..controls(.95,.7)..
+		(1,.4)..controls(.7,.3)and(.45,.6)..(0,.4)--(0,0)--cycle; % espace ici
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                            menu contrôle                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{SCRcontrol}{rgb}{0.8824,0.6627,0.1020}
+\def\SCR_blockrepeat#1#2{\SCR_blockloop{#1}{#2}{}01}
+\def\SCR_blockinfloop#1#2{\SCR_blockloop{#1}{#2}{}11}% 1= texte   #2=instructions dans la boucle
+\def\SCR_blockifelse#1#2#3{\SCR_blockloop{#1}{#2}{#3}00}% 1= texte   #2=instructions dans la boucle
+\def\SCR_blockif#1#2{\SCR_blockifelse{#1}{#2}{}}
+\def\SCR_blockinitclone{\SCR_initblock{SCRcontrol}}
+\def\SCR_blockcontrol{\SCR_normalblock{SCRcontrol}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                             menu capteur                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{SCRsensing}{rgb}{0.1725,.6471,0.8863}
+\definecolor{SCRoperator}{rgb}{0.3608,0.7176,0.0706}
+\newcommand*\ovalsensing{\SCR_ovalbox{SCRsensing}}
+\def\SCR_blocksensing{\SCR_normalblock{SCRsensing}}
+\newcommand*\boolsensing{\SCR_boolbox{SCRsensing}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                            menu opérateur                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*\ovaloperator{\SCR_ovalbox{SCRoperator}}
+\newcommand*\booloperator{\SCR_boolbox{SCRoperator}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                           menu ajouter bloc                          %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{SCRmoreblocks}{rgb}{0.3882,0.1765,0.6}
+\definecolor{SCRmoreblocksurround}{rgb}{0.5569,0.1804,0.7608}
+\definecolor{SCRmoreblockcontour}{rgb}{0.5098,0.3412,0.6784}
+\definecolor{SCRmoreblocksaux}{rgb}{0.3504,0.2784,0.6941}
+\newcommand*\ovalmoreblocks{\SCR_ovalbox{SCRmoreblocksaux}}
+\def\SCR_blockmoreblocks{\SCR_normalblock{SCRmoreblocks}}
+\newcommand*\boolmoreblocks{\SCR_boolbox{SCRmoreblocksaux}}
+\SCR_restorecatcode
+\endinput
+
+Versions :
+ _____________________________________________________________________________
+| Version |    Date    | Changements                                          |
+|---------+------------+------------------------------------------------------|
+|   0.1   | 16/05/2017 | Première version                                     |
+|---------+------------+------------------------------------------------------|
+|   0.2   | 28/05/2017 | Ajout des options "constast", "print" ainsi que      |
+|         |            | les options relatives à "print"                      |
+|---------+------------+------------------------------------------------------|
+|   0.3   | 08/08/2017 | - Correction d'une erreur dans le tracé des lignes   |
+|         |            |   de contraste des "boolbox"                         |
+|         |            | - Correction d'un bug dans \resetscratch             |
+|         |            | - Correction d'un bug dans \txtbox                   |
+|         |            | - Appel à simplekv pour les clés/valeurs             |
+|         |            | - Ajout de la clé "scale"                            |
+|---------+------------+------------------------------------------------------|
+|   0.31  | 15/09/2017 | - Correction d'un bug dans \SCR_ovalbox qui          |
+|         |            |   s'exécute maintenant dans un groupe semi-simple    |
+|         |            |   pour rendre locale l'assignation à                 |
+|         |            |   \SCR_current_fillcolor                             |
+|         |            | - Correction d'un bug dans le tracé des lignes de    |
+|         |            |   relief dans \SCR_ovalbox                           |
+|---------+------------+------------------------------------------------------|
+|   0.32  | 20/09/2017 | - le node de \selectmenu est désormais "rectangle"   |
+|         |            | - la couleur de \ovallist est désormais correcte     |
+|---------+------------+------------------------------------------------------|
+|   0.33  | 30/12/2017 | - correction des bugs d'échelle avec l'option scale. |
+|---------+------------+------------------------------------------------------|
+|   0.4   | 08/04/2018 | - numérotation des blocs possible                    |
+|         |            | - choix de la ligne de base du dessin sur un bloc au |
+|         |            |   choix ou bien centré avec \vcenter                 |
+|         |            | - ajustement automatique si la largeur du texte d'un |
+|         |            |   bloc est trop courte pour faire un dessin de bloc  |
+|         |            |   correct                                            |
+|         |            | - correction du \normalsize en trop                  |
+|         |            | - nouvelle clé «notch» : largeur des encoches        |
+|         |            | - clé secrète pour correction dans les losanges      |
+|         |            | - nettoyage du code                                  |
+|---------+------------+------------------------------------------------------|
+|   0.41  | 19/02/2019 | - l'extension est obsolète et n'est plus maintenue   |
+|---------+------------+------------------------------------------------------|

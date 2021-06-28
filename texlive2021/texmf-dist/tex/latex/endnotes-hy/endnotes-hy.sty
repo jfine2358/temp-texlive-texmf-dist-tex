@@ -1,0 +1,68 @@
+%%
+%% This is file `endnotes-hy.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% endnotes-hy.dtx  (with options: `copyright,package')
+%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% endnotes-hy.sty package,                              %%
+%% Copyright (C) 2020                                    %%
+%%   dpstory@uakron.edu  dpstory@acrotex.net             %%
+%%                                                       %%
+%% This program can redistributed and/or modified under  %%
+%% the terms of the LaTeX Project Public License         %%
+%% Distributed from CTAN archives in directory           %%
+%% macros/latex/base/lppl.txt; either version 1.2 of the %%
+%% License, or (at your option) any later version.       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{endnotes-hy}
+ [2020/04/08 v0.1 Enables hypertext links for endnotes]
+\RequirePackage{endnotes}
+\RequirePackage{etoolbox}
+\newcommand\hyperref@nohy[2][]{#2}
+\AtBeginDocument{\@ifundefined{hyperref}{\let\hyperref@en\hyperref@nohy
+  \let\phantomendnote\relax}
+  {\let\hyperref@en\hyperref}}
+\def\phantomendnote{%
+  \Hy@MakeCurrentHrefAuto{endnote}%
+  \Hy@raisedlink
+    {\hyper@anchorstart{endnote.\@theenmark}\hyper@anchorend}}
+\def\endnoteautorefname{endnote}
+\patchcmd{\theendnotes}{\enoteformat}
+  {\phantomendnote\def\@currentHref{endnote.\@theenmark}%
+   \enoteformat}{}{}
+\newtoks\@entoks
+\def\endnote{\let\@encurrlabelname\@empty
+  \@ifstar{\let\@noMrk1\endnote@i}{\let\@noMrk0\endnote@i}}
+\def\endnote@i{\@ifnextchar[%]
+  {\@xendnote}
+  {\stepcounter{endnote}%
+   \protected@xdef\@theenmark{\theendnote}%
+   \afterassignment\endnote@ii\@entoks}}
+\def\endnote@ii{\@ifnextchar\label{\endnote@iii}{\endnote@iv}}
+\def\endnote@iii\label#1{\def\@encurrlabelname{#1}\endnote@iv}
+\def\endnote@iv{%
+  \if\@noMrk0\relax
+    \ifx\@encurrlabelname\@empty
+      \@endnotemark
+    \else
+      \hyperref@en[\@encurrlabelname]{\@endnotemark}%
+    \fi
+  \fi
+  \expandafter\@endnotetext\expandafter{\the\@entoks}}
+\patchcmd{\@endnotetext}
+  {\def\next{#1}}
+  {\ifx\@encurrlabelname\@empty
+    \def\next{#1}\else
+    \edef\x{\noexpand\label{\@encurrlabelname}}%
+    \expandafter\def\expandafter\next\expandafter{\x#1}\fi}{}{}
+\patchcmd{\@xendnote}
+  {\@endnotemark\@endnotetext}
+  {\afterassignment\endnote@ii\@entoks}
+  {}{}
+\endinput
+%%
+%% End of file `endnotes-hy.sty'.

@@ -1,0 +1,115 @@
+\ProvidesFile{ext-authortitle.cbx}
+  [2018/03/28 v0.2 extended biblatex authortitle citation style (MW)]
+
+\blx@inputonce{ext-biblatex-aux.def}{auxiliary code for ext-biblatex}{}{}{}{}
+
+\RequireCitationStyle{authortitle}
+
+\DeclareOuterCiteDelim{parencite}{\bibopenparen}{\bibcloseparen}
+
+\DeclareInnerCiteDelim{cite}{}{}
+\DeclareInnerCiteDelim{parencite}{}{}
+\DeclareInnerCiteDelim{textcite}{\bibopenparen}{\bibcloseparen}
+\DeclareInnerCiteDelim{footcite}{}{}
+
+\DeclareFieldFormat{extblx@innercitedelim}{%
+  \csuse{mkinner\blx@delimcontext delim}{#1}}
+\DeclareFieldFormat{extblx@innerparencitedelim}{%
+  \csuse{mkinner\blx@delimcontext delim}{#1}}
+\DeclareFieldFormat{extblx@innertextcitedelim}{#1}
+\DeclareFieldFormat{extblx@innerfootcitedelim}{%
+  \csuse{mkinner\blx@delimcontext delim}{#1}}
+
+\renewbibmacro*{textcite}{%
+  \printnames{labelname}%
+  \setunit*{%
+    \global\booltrue{cbx:parens}%
+    \printdelim{nametitledelim}%
+    \csuse{extblx@citedelim@textcite@inner@open}}%
+  \ifnumequal{\value{citecount}}{1}
+    {\usebibmacro{prenote}}
+    {}%
+  \iffieldundef{shorthand}
+    {\usebibmacro{cite:title}}%
+    {\usebibmacro{cite:shorthand}}}
+
+\renewbibmacro*{cite:title}{%
+  \printtext[extblx@inner\blx@delimcontext delim]{%
+    \printtext[bibhyperref]{%
+      \printfield[citetitle]{labeltitle}}}}
+
+\renewbibmacro*{textcite:postnote}{%
+  \iffieldundef{postnote}
+    {\ifbool{cbx:parens}
+       {\csuse{extblx@citedelim@textcite@inner@close}}
+       {}}
+    {\ifbool{cbx:parens}
+       {\postnotedelim}
+       {\extpostnotedelim
+        \csuse{extblx@citedelim@textcite@inner@open}}%
+     \printfield{postnote}%
+     \csuse{extblx@citedelim@textcite@inner@close}}}
+
+\DeclareCiteCommand{\cite}[\mkoutercitedelim]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand*{\cite}[\mkoutercitedelim]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{citetitle}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand{\parencite}[\mkouterparencitedelim]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand*{\parencite}[\mkouterparencitedelim]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{citetitle}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+
+% smartcite's delimcontext needs special attention (see ext-biblatex-aux.def)
+\DeclareCiteCommand{\smartcite}[\mksmartcite]
+  {\delimcontext{\extblx@thisdelimcontext}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand{\textcite}[\mkoutertextcitedelim]
+  {\boolfalse{cbx:parens}}
+  {\usebibmacro{citeindex}%
+   \iffirstcitekey
+     {\setcounter{textcitetotal}{1}}
+     {\stepcounter{textcitetotal}%
+      \textcitedelim}%
+   \usebibmacro{textcite}}
+  {\ifbool{cbx:parens}
+     {\csuse{extblx@citedelim@textcite@inner@close}%
+      \global\boolfalse{cbx:parens}}
+     {}}
+  {\usebibmacro{textcite:postnote}}
+
+\DeclareMultiCiteCommand{\cites}[\mkoutercitedelim]
+  {\cite}{\multicitedelim}
+\DeclareMultiCiteCommand{\parencites}[\mkouterparencitedelim]
+  {\parencite}{\multicitedelim}
+\DeclareMultiCiteCommand{\smartcites}[\mksmartcite]
+  {\smartcite}{\multicitedelim}
+\DeclareMultiCiteCommand{\textcites}[\mkoutertextcitedelim]{\textcite}{}
+
+\DeclareFieldFormat{extblx@innerbbx:introcitedelim}{%
+  \csuse{mkinner\blx@delimcontext delim}{#1}}
+
+\endinput

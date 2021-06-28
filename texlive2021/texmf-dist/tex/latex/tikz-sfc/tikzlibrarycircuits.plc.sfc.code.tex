@@ -1,0 +1,180 @@
+%% This is file `tikzlibrarycircuits.plc.sfc.code.tex'
+%% Version: 1.0.1
+%% Version date: 2018-12-15
+%% 
+%% Copyright (C) 2018 by Luis Paulo Laus, laus@utfpr.edu.br
+%%
+%% This package can be redistributed and/or modified under the terms
+%% of the LaTeX Project Public License distributed from CTAN
+%% archives in directory macros/latex/base/lppl.txt; either
+%% version 1 of the License, or (at your option) any later version,
+%% with `The Package' referring to the software
+%% `tikzlibrarycircuits.plc.sfc.code.tex'
+%% and its accompanying documentation and `The Copyright Holder'
+%% referring to the person Luis Paulo Laus.
+%% 
+%% 
+%% IMPORTANT NOTICE: 
+%% 
+%% For error reports, comments or suggestions in case of UNCHANGED 
+%% versions send mail to:
+%% laus@utfpr.edu.br
+%% 
+%%
+%% Change History:
+%% 1.0: 16 January 2018: Original Version
+%% 1.0.1: 15 December 2018: correction and extension of documentation
+%%             including a new full example.
+%% 
+\usetikzlibrary{circuits}
+\usepgflibrary{shapes.gates.ee}
+\makeatletter
+\newcount\sfc@act@pos
+\def\tikz@lib@sfc@lct@plain[#1]#2\pgf@stop{\tikzset{label={[label position=center,every info/.try,#1]#2}}}
+\def\tikz@lib@sfc@lrg@plain[#1]#2\pgf@stop{\tikzset{label={[label position=right,every info/.try,#1]#2}}}
+\def\tikz@lib@sfc@llf@plain[#1]#2\pgf@stop{\tikzset{label={[label position=left,every info'/.try,#1]#2}}}
+\def\tikz@lib@sfc@action@lrg@plain[#1]#2\pgf@stop{\tikzset{sfc@actcommentopt/.style={#1},sfc@actcomment=#2}}
+\def\tikz@lib@sfc@action@lct@plain[#1]#2\pgf@stop{\tikzset{sfc@actnameopt/.style={#1},sfc@actname=#2}}
+
+\pgfdeclareshape{sfcstepi}
+{
+  \inheritsavedanchors[from=rectangle] 
+  \inheritanchorborder[from=rectangle]
+  \inheritanchor[from=rectangle]{north}
+  \inheritanchor[from=rectangle]{north west}
+  \inheritanchor[from=rectangle]{north east}
+  \inheritanchor[from=rectangle]{center}
+  \inheritanchor[from=rectangle]{west}
+  \inheritanchor[from=rectangle]{east}
+  \inheritanchor[from=rectangle]{mid}
+  \inheritanchor[from=rectangle]{mid west}
+  \inheritanchor[from=rectangle]{mid east}
+  \inheritanchor[from=rectangle]{base}
+  \inheritanchor[from=rectangle]{base west}
+  \inheritanchor[from=rectangle]{base east}
+  \inheritanchor[from=rectangle]{south}
+  \inheritanchor[from=rectangle]{south west}
+  \inheritanchor[from=rectangle]{south east}
+  \inheritbackgroundpath[from=rectangle]
+  \behindbackgroundpath{
+    \pgfpathrectanglecorners
+      {\pgfpointadd{\southwest}{\pgfpoint{6*\pgfkeysvalueof{/pgf/inner xsep}}{6*\pgfkeysvalueof{/pgf/inner ysep}}}}
+      {\pgfpointadd{\northeast}{\pgfpointscale{-1}{\pgfpoint{6*\pgfkeysvalueof{/pgf/inner xsep}}{6*\pgfkeysvalueof{/pgf/inner ysep}}}}}
+  }
+}
+
+%% Really dirt trick to customize info and info' keys in an action.
+\def\sfc@copycode#1#2{
+  \pgfkeyssetvalue{/tikz/#1/.@cmd}{\expandafter\pgfkeysvalueof{/tikz/#2/.@cmd}}%
+  \pgfkeyssetvalue{/tikz/#1/.@body}{\expandafter\pgfkeysvalueof{/tikz/#2/.@body}}%
+}
+
+\tikzset{
+  circuit plc sfc/.style=
+  {
+    circuit,
+    circuit declare symbol=sfctransition,
+    sfc@actinfo/.code={\pgfutil@ifnextchar[\tikz@lib@sfc@action@lct@plain{\tikz@lib@sfc@action@lct@plain[]}##1\pgf@stop},
+    sfc@actinfo'/.code={\pgfutil@ifnextchar[\tikz@lib@sfc@action@lrg@plain{\tikz@lib@sfc@action@lrg@plain[]}##1\pgf@stop},
+    set sfctransition graphic={draw,fill,shape=rectangle,circuit symbol size=width 1 height 0,
+      info/.code={\pgfutil@ifnextchar[\tikz@lib@sfc@lrg@plain{\tikz@lib@sfc@lrg@plain[]}####1\pgf@stop},
+      info'/.code={\pgfutil@ifnextchar[\tikz@lib@sfc@llf@plain{\tikz@lib@sfc@llf@plain[]}####1\pgf@stop}},
+    sfcaqw/.initial=0\tikzcircuitssizeunit, % qualifier width
+    sfcanw/.initial=2.6\tikzcircuitssizeunit, % action name width
+    sfcah/.initial=2.6\tikzcircuitssizeunit, % action height
+    time/.initial=, % action duration to be used with qualifier D, L, DS, SD, LS
+    qualifier/.initial=, % action qualifier
+    sfc@actname/.initial=, % action name
+    sfc@actnameopt/.style=, % action name options
+    sfc@actcomment/.initial=, % action comment
+    sfc@actcommentopt/.style=, % action comment options
+    circuit declare symbol=sfcstep,
+    set sfcstep graphic={draw,shape=rectangle,minimum size=2.6\tikzcircuitssizeunit,
+      /utils/exec={\global\sfc@act@pos=0},
+      info/.code={\pgfutil@ifnextchar[\tikz@lib@sfc@lct@plain{\tikz@lib@sfc@lct@plain[]}####1\pgf@stop},
+      info'/.code={\pgfutil@ifnextchar[\tikz@lib@sfc@llf@plain{\tikz@lib@sfc@llf@plain[]}####1\pgf@stop}},
+    circuit declare symbol=sfcstepi,
+    set sfcstepi graphic={draw,shape=sfcstepi,minimum size=2.6\tikzcircuitssizeunit,
+      /utils/exec={\global\sfc@act@pos=0},
+      info/.code={\pgfutil@ifnextchar[\tikz@lib@sfc@lct@plain{\tikz@lib@sfc@lct@plain[]}####1\pgf@stop},
+      info'/.code={\pgfutil@ifnextchar[\tikz@lib@sfc@llf@plain{\tikz@lib@sfc@llf@plain[]}####1\pgf@stop}},
+    circuit declare symbol=sfcstar,
+    set sfcstar graphic={shape=circle,label={center:$*$},minimum size=1.2ex},
+    sfcaction/.style={
+      append after command={%
+        \bgroup
+          [current point is local=true]
+          [every circuit annotation/.try]
+          [annotation arrow,-]
+          [label distance=2\tikzcircuitssizeunit]
+          [/utils/exec={\sfc@copycode{info}{sfc@actinfo}\sfc@copycode{info'}{sfc@actinfo'}}]
+          [/utils/exec={\pgftransformresetnontranslations}]
+          edge[every sfcaction/.try, ##1, to path={%
+          \ifnum\sfc@act@pos=0%
+            (\tikzlastnode.east) -- ++(\tikz@label@distance,0)
+          \else%
+            ($(\tikzlastnode.east) + (\tikz@label@distance,-\the\sfc@act@pos*\pgfkeysvalueof{/tikz/sfcah})$)
+          \fi%
+          \pgfextra{\edef\pgf@testq{\pgfkeysvalueof{/tikz/qualifier}} \edef\pgf@testt{\pgfkeysvalueof{/tikz/time}} \edef\pgf@testc{\pgfkeysvalueof{/tikz/sfc@actcomment}}}%
+          \ifx\pgf@testq\pgfutil@empty
+            node[/utils/exec={\global\advance\sfc@act@pos by1\relax},##1,every sfcactionname/.try,sfc@actnameopt/.try,draw,right,minimum height=\pgfkeysvalueof{/tikz/sfcah},
+              minimum width=\pgfkeysvalueof{/tikz/sfcaqw}+\pgfkeysvalueof{/tikz/sfcanw}]{\pgfkeysvalueof{/tikz/sfc@actname}}
+            \ifx\pgf@testc\pgfutil@empty \else
+              node[every info'/.try,sfc@actcommentopt/.try,right,xshift=\pgfkeysvalueof{/tikz/sfcaqw}+\pgfkeysvalueof{/tikz/sfcanw}]{\pgfkeysvalueof{/tikz/sfc@actcomment}}
+            \fi
+          \else
+            \ifx\pgf@testt\pgfutil@empty
+              node[/utils/exec={\global\advance\sfc@act@pos by1\relax},every sfcactionname/.try,##1,sfc@actnameopt/.try,draw,right,xshift=\pgfkeysvalueof{/tikz/sfcaqw},
+                minimum height=\pgfkeysvalueof{/tikz/sfcah},minimum width=\pgfkeysvalueof{/tikz/sfcanw}]{\pgfkeysvalueof{/tikz/sfc@actname}}
+              node[every sfcqualifier/.try,##1,draw,right,minimum height=\pgfkeysvalueof{/tikz/sfcah},
+                minimum width=\pgfkeysvalueof{/tikz/sfcaqw}]{\pgfkeysvalueof{/tikz/qualifier}}
+              \ifx\pgf@testc\pgfutil@empty \else
+                node[every info'/.try,sfc@actcommentopt/.try,right,xshift=\pgfkeysvalueof{/tikz/sfcaqw}+\pgfkeysvalueof{/tikz/sfcanw}]{\pgfkeysvalueof{/tikz/sfc@actcomment}}
+              \fi
+            \else
+              node[/utils/exec={\global\advance\sfc@act@pos by2\relax},##1,draw,right,yshift=-0.5*\pgfkeysvalueof{/tikz/sfcah}),
+                minimum height=2*\pgfkeysvalueof{/tikz/sfcah},minimum width=\pgfkeysvalueof{/tikz/sfcaqw}]{}
+              node[every sfcactionname/.try,##1,sfc@actnameopt/.try,draw,right,xshift=\pgfkeysvalueof{/tikz/sfcaqw},yshift=-0.5*\pgfkeysvalueof{/tikz/sfcah},
+                minimum height=2*\pgfkeysvalueof{/tikz/sfcah},minimum width=\pgfkeysvalueof{/tikz/sfcanw}]{\pgfkeysvalueof{/tikz/sfc@actname}}
+              node[every sfcqualifier/.try,right,minimum height=\pgfkeysvalueof{/tikz/sfcah},
+                minimum width=\pgfkeysvalueof{/tikz/sfcaqw}]{\pgfkeysvalueof{/tikz/qualifier}}
+              node[every sfctime/.try,right,yshift=-\pgfkeysvalueof{/tikz/sfcah},minimum height=\pgfkeysvalueof{/tikz/sfcah},
+                minimum width=\pgfkeysvalueof{/tikz/sfcaqw}]{\pgfkeysvalueof{/tikz/time}}
+              \ifx\pgf@testc\pgfutil@empty \else
+                node[every info'/.try,sfc@actcommentopt/.try,right,xshift=\pgfkeysvalueof{/tikz/sfcaqw}+\pgfkeysvalueof{/tikz/sfcanw},
+                  yshift=-0.5*\pgfkeysvalueof{/tikz/sfcah}]{\pgfkeysvalueof{/tikz/sfc@actcomment}}
+              \fi
+            \fi
+          \fi
+          }] ()
+          \tikz@after@path%
+        \egroup%
+      }
+    },
+    circuit declare symbol=flow direction,
+    circuit declare symbol=flow direction',
+    set flow direction graphic  = flow direction sfc graphic,
+    set flow direction' graphic = flow direction' sfc graphic,
+    flow direction sfc graphic/.style = {
+      shape=direction ee,
+      circuit symbol filled,
+      flow direction arrow,
+      minimum width  = .5*\the\tikzcircuitssizeunit+.3*\the\pgflinewidth,
+      minimum height = .5*\the\tikzcircuitssizeunit+.3*\the\pgflinewidth,
+      transform shape
+    },
+    flow direction' sfc graphic/.style = {
+      flow direction sfc graphic,
+      rotate=180
+    },
+    flow direction arrow/.style = {
+      /utils/exec={\pgfsetarrowoptions{direction ee}{1.3065*.5*\the\tikzcircuitssizeunit+1.3065*.3*\the\pgflinewidth}},
+      >=direction ee,
+      direction ee arrow = direction ee,
+    },
+    every circuit plc sfc/.try
+  }
+}
+\makeatother
+
+\endinput

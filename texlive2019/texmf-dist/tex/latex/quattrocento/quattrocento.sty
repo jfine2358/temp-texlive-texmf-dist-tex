@@ -1,0 +1,119 @@
+\ProvidesPackage{quattrocento}[%
+   2019/04/03 (Bob Tennent)  Supports Quattrocento(Sans) fonts for all LaTeX engines. ] 
+
+\RequirePackage{ifxetex,ifluatex,textcomp}
+
+\newif\ifquattrocento@otf
+\ifxetex
+  \quattrocento@otftrue
+\else\ifluatex
+  \quattrocento@otftrue
+\else  % [pdf]LaTeX
+  \quattrocento@otffalse
+\fi\fi
+
+
+\newcommand*{\Quattrocento@scale}{1}  % not adjustable
+\newcommand*{\QuattrocentoSans@scale}{1}
+\RequirePackage{xkeyval}
+\DeclareOptionX{scaled}{\renewcommand*{\QuattrocentoSans@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\QuattrocentoSans@scale}{#1}}
+
+\newif\ifquattrocento@rm \quattrocento@rmfalse
+\newif\ifquattrocento@sf \quattrocento@sffalse
+\newif\ifquattrocento@sfdefault \quattrocento@sfdefaultfalse
+
+\DeclareOptionX{sf}{\quattrocento@sftrue}
+\DeclareOptionX{rm}{\quattrocento@rmtrue}
+\DeclareOptionX{sfdefault}{\quattrocento@sftrue\quattrocento@sfdefaulttrue}
+\DeclareOptionX{type1}{\quattrocento@otffalse}
+
+\ProcessOptionsX\relax
+
+\ifquattrocento@otf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes}
+\fi
+
+\ifquattrocento@rm\else\ifquattrocento@sf\else
+  \quattrocento@rmtrue\quattrocento@sftrue  % both false -> both true
+\fi\fi
+
+
+% Set main and/or sans fonts:
+\ifquattrocento@otf
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+     Ligatures = TeX ,
+     Extension = .otf ,
+  }
+  \ifquattrocento@rm
+    \setmainfont
+        [ UprightFont    = * ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-Bold , 
+          BoldItalicFont = *-BoldItalic ]
+        {Quattrocento}
+  \fi
+  \ifquattrocento@sf
+    \setsansfont
+        [ Scale     = \QuattrocentoSans@scale ,
+          UprightFont    = * ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-Bold , 
+          BoldItalicFont = *-BoldItalic ]  
+        {QuattrocentoSans}
+  \fi
+  % grab the \sfdefault in case it changes subsequently:
+  \let\quattrocentosffamily\sfdefault
+  \ifquattrocento@sfdefault
+     \renewcommand*\familydefault{\quattrocentosffamily}
+  \fi
+
+  \newfontfamily\quattrocento
+      [ UprightFont    = * ,
+        ItalicFont     = *-Italic ,
+        BoldFont       = *-Bold , 
+        BoldItalicFont = *-BoldItalic ]
+      {Quattrocento}
+  \newfontfamily\quattrocentosans
+        [ Scale     = \QuattrocentoSans@scale ,
+          UprightFont    = * ,
+          ItalicFont     = *-Italic ,
+          BoldFont       = *-Bold , 
+          BoldItalicFont = *-BoldItalic ]  
+        {QuattrocentoSans}
+
+\else % type1
+  \def\quattrocentofamily{Quattrocento-TLF}
+  \def\quattrocentosffamily{QuattrocentoSans-TLF}
+
+  \ifquattrocento@rm
+    \edef\bfseries@rm{bold}
+    \edef\mdseries@rm{regular}
+    \renewcommand*\rmdefault{\quattrocentofamily}
+  \fi
+
+  \ifquattrocento@sf
+    \edef\bfseries@sf{bold}
+    \edef\mdseries@sf{regular}
+    \renewcommand*\sfdefault{\quattrocentosffamily}
+  \fi
+
+  \ifquattrocento@sfdefault
+    \renewcommand*\familydefault{\quattrocentosffamily}
+  \fi
+  
+  \newcommand*\quattrocento{\fontfamily{\quattrocentofamily}\selectfont}
+  \newcommand*\quattrocentosans{\fontfamily{\quattrocentosffamily}\selectfont}
+
+\fi
+
+% turn off defaults in case other fonts are selected:
+\ifquattrocento@otf
+  \defaultfontfeatures{}
+\fi
+
+\endinput
+

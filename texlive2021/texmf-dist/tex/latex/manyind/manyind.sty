@@ -1,0 +1,221 @@
+% Package manyind.sty, Wilberd van der Kallen 2019.
+%
+% Variation on \usepackage[multind]{robustindex}, now without pagerefs in indexes.
+% https://www.staff.science.uu.nl/~kalle101/mind.html
+%
+% Copyright 2019 Wilberd van der Kallen
+%
+% This file may be distributed under the conditions of the LaTeX Project Public
+% License, either version 1.2 of this license or (at your option) any
+% later version.  The latest version of this license is in
+%    http://www.latex-project.org/lppl.txt
+% and version 1.2 or later is part of all distributions of LaTeX
+% version 1999/12/01 or later.
+
+
+\ProvidesPackage{manyind}
+  [2019/01/28
+  many indexes]
+
+\RequirePackage{makeidx}
+
+
+\AtBeginDocument{\def\ind@nr#1{\string\indnr\mindchoice d\gr@bltr#1-\relax b{} #1}%
+\ifx\@@wrindex\undefined
+\def\@wrindex#1{\@bsphack 
+\protected@write
+    \@indexfile {}{\string \indexentry
+    {\ind@nr #1}{\thepage}}%
+  \endgroup
+\@esphack}%
+\else
+\def\@wrindex#1{\@@wrindex\ind@nr#1||\\}%
+\fi
+\setindex{main}}%
+
+\AtEndDocument{%
+\PackageWarning{manyind}{There are \the\c@mindexctr\space indexes. Did you run makeindex
+recently?}%
+}%
+
+\newcommand{\ind@nr}{\relax}% We prepend the argument of \index with a string used by
+% makeindex for its lexicographic sorting. Thus it ends up in the ind file in a place 
+% based on which index is active and what the first letter of the index entry is.
+
+\newcommand{\@sindex}{\relax}
+
+\newcommand{\@@sindex}{\relax}
+
+\newcommand\sindex{\@ifnextchar[{\@sindex}{\@@sindex}}%
+
+\def\@sindex[#1]{\setindex{#1}\index}
+
+\def\@@sindex{\setindex{main}\index}
+
+\newcommand{\mind@prnt}{\relax}
+
+\newcommand{\mind@@prnt}{\relax}
+
+\newcommand{\mind@@@prnt}{\relax}
+
+\newcommand{\mind@@@@prnt}{\relax}
+
+\def\mind@@prnt[#1]{\setindex{#1}\mind@@@prnt}
+
+\let\mind@prnt\printindex
+
+\renewcommand{\printindex}{\@ifnextchar[{\mind@@prnt}{\mind@prnt}}%
+
+\renewcommand{\mind@@@prnt}{\@ifnextchar[{\mind@@@@prnt}{\mind@prnt}}
+
+\def\mind@@@@prnt[#1]{\renewcommand{\indexname}{#1}\mind@prnt}
+
+\newcommand{\indexpreamble}{\relax}% compare the preamble of makeindex
+
+\newcommand{\indexincontents}{%
+  \def\indexpreamble{%
+     \refstepcounter{subsection}%
+   % This creates a hyperlink destination.
+   % Compare phantomsection in hyperref.
+   % An index is not to be followed immediately by a subsection.
+     \addcontentsline{toc}%
+        {\ifx\c@chapter\undefined section\else chapter\fi}{\indexname}%
+  }%
+}%
+
+\newcommand{\old@theindex}{}%
+
+\let\old@theindex\theindex
+
+
+\def\theindex{%
+   \old@theindex
+   \indexpreamble
+}%
+
+\newcommand{\mgobblepgeref}{\relax}
+
+\def\mgobblepgeref, #1 {}
+
+\newcommand{\gobblepageref}{\protect\mgobblepgeref}
+
+\newcommand{\gr@bltr}{\relax}%
+
+\def\gr@bltr#1#2\relax{\ifcat A#10\the\uccode`#1\else 060\fi}%
+% to keep "a" and "A" together.
+
+\newcommand{\altsort}% to place some entries after the alphabet
+{\def\gr@bltr##1##2\relax{\ifcat A##10\the\uccode`##1\else##1\fi}}
+
+% But first some code for embellishing an index. Our hacking brakes the insertion of 
+% \indexspace at appropriate places. We have to work hard to restore that. While we
+% are at it, we may as well add the possibility to insert a letter T after the
+% \indexspace that precedes the entries that start with t or T.
+% First we describe the default style, that does not insert the T.
+\newcommand{\indexcapstyle}[1]{\indexspace}
+% To get the T one changes the style like this
+% \renewcommand{\indexcapstyle}[1]{\indexspace\textbf{#1}\par}%
+
+\newcommand{\nxtletre}{\def\item{\letr@test}}% about next letter in alphabet
+
+\newcommand{\mindc@pitalhead}[1]{% Preparing for a heading; not printed.
+  \protected@write
+    \@indexfile {}{\string \indexentry
+    {\string\indnr \mindchoice d\gr@bltr#1\relax a @\protect\nxtletre
+    \protect\def\protect\nwletre{#1}\string\jmptonine}{9}}%          
+}%
+
+\newcommand{\extraheaders}{\relax}
+
+\newcommand{\capitals@inindex}[1]{% Will be called by \mnew@index with full alphabet.
+\extraheaders
+\mfind@capitals#1\relax}%
+
+\newcommand{\mfind@capitals}{\relax}%
+
+\def\mfind@capitals#1#2\relax{% To deal with 26 letters.
+\mindc@pitalhead #1%
+\ifx\relax#2\relax
+\else\mfind@capitals#2\relax
+\fi}%
+
+\newcommand{\letr@test}{\relax}% To test if entry starts with new letter.
+
+\long\def\letr@test#1{\ifx#1\nxtletre\else\proc@letter{#1}\fi}%
+
+\newcommand{\proc@letter}{\relax}% 
+
+\def\proc@letter#1#2{\long\def\item{\m@olditem}%
+\ifx#1\relax\else\indexcapstyle{\nwletre}\fi\fi#1}%
+
+\newcommand{\m@olditem}{\relax}%
+
+
+% All this just to embellish an index. Now more support for multiple indexes.
+
+\newcommand{\setindex}[1]{%
+\@bsphack
+\expandafter\ifx\csname#1@rbstind\endcsname\relax 
+  \mnew@index{#1}%
+\else
+  \edef\mindchoice{\csname#1@rbstind\endcsname}%
+\fi
+\@esphack}%
+
+\newcounter{multindctr}%
+\newcounter{mindexctr}
+\newcommand{\mindcutpoint}{\relax}%
+\newcommand{\untilmindcutpoint}{\relax}%
+\newcommand{\mnew@index}{\relax}%
+\newcommand{\mindchoice}{\relax}%
+\newcommand{\indnr}{\relax}%
+
+\setcounter{multindctr}{999}% Fewer than 899 indexes expected.
+
+\long\def\untilmindcutpoint#1\mindcutpoint{\fi}% 
+% This tels the mouth of TeX not to send too much to the stomach.
+% It should only forward the part that belongs to the active index.
+
+\def\indnr#1 {}% The \indnr part is used for sorting by makeindex and needs to be ignored
+               % by TeX thereafter.  
+
+\newcommand\multindpreamble{\let\m@olditem\item}% 
+% \multindpreamble may serve as hook for further code.
+
+\newcommand{\jmptonine}{\relax}%
+
+\def\jmptonine#1 9{\relax}
+
+\def\mnew@index#1{\@bsphack
+\ifx\@indexfile\undefined\PackageWarning{manyind}{%
+Package needs \string\make index in preamble. Detected}\fi
+\ifnum\c@multindctr=999%
+  \protected@write
+    \@indexfile {}{\string \indexentry
+    {\string\indnr 999b @\string\mindcutpoint\string\jmptonine}{9}}%                              
+  \@esphack
+\fi
+\addtocounter{multindctr}{-1}%
+\expandafter\edef\csname#1@rbstind\endcsname{\the\c@multindctr}%
+\edef\mindchoice{\csname#1@rbstind\endcsname}%
+\stepcounter{mindexctr}
+\PackageInfo{manyind}{index #1 has number \mindchoice.}%
+\@esphack 
+\protected@write
+    \@indexfile {}{\string \indexentry
+    {\string\indnr\the\c@multindctr d091 @\string
+    \relax\string\jmptonine% restores \item
+}{9}}% 
+\protected@write
+    \@indexfile {}{\string \indexentry
+    {\string\indnr\the\c@multindctr a @%
+    \string\mindcutpoint 
+\string\ifnum\string\mindchoice=\the\c@multindctr\string\multindpreamble
+\string\else\string\untilmindcutpoint
+\string\fi\string\jmptonine
+}{9}}% 
+\capitals@inindex{ABCDEFGHIJKLMNOPQRSTUVWXYZ}%  
+\@esphack
+}%
+
+\endinput

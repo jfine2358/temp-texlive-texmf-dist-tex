@@ -1,0 +1,80 @@
+%
+% vcell.sty  V1.0.1 version (16-May-2020)
+%
+% Author:  Xavier Dionne <info@latex-tables.com>
+%
+% Licence :
+%
+% The contents of this package are distributed under the LaTeX Project
+% Public License, version 1.3c or later.
+% https://www.latex-project.org/lppl/lppl-1-3c/
+%
+% Changelog :
+%    [v 1.0.1] - Fixed an issue where the height was calculated
+%                twice if the cell had a depth
+
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+\ProvidesPackage{vcell}[2020/05/16 v1.0.1]
+\newdimen\rowheight
+\newdimen\rowht
+\newdimen\rowdp
+\newcount\@cellcount
+\newcount\@cellusecount
+\newbox\@celltemp
+
+\def\resetcellcount{%
+	\global\@cellusecount 1\relax\global\@cellcount 1\relax%
+	\global\setlength\rowht{\arraystretch\ht\strutbox}%
+	\global\setlength\rowdp{\arraystretch\dp\strutbox}%
+	\global\setlength\rowheight{\dimexpr\rowht+\rowdp}%
+}
+
+\resetcellcount
+
+\def\savecellheight{%
+	\ifdim\ht\@celltemp>\rowht\global\setlength{\rowht}{\ht\@celltemp}\fi%
+	\ifdim\dp\@celltemp>\rowdp\global\setlength{\rowdp}{\dp\@celltemp}\fi%
+	\ifdim\dimexpr\dp\@celltemp+\ht\@celltemp>\rowheight{\global\setlength{\rowheight}{\dimexpr\dp\@celltemp+\ht\@celltemp}}\fi
+}
+\long\def\savecellbox#1{%
+	\global\sbox\@celltemp{\hbox{\ifdim\hsize=\textwidth #1\else \vbox{#1}\fi}}%
+	\savecellheight%
+	\parbox{0pt}{\vrule height \ht\@celltemp depth \dp\@celltemp width 0pt}%
+	\global\expandafter\newbox\csname @cellbox\the\@cellcount\endcsname%
+	\global\expandafter\sbox\csname @cellbox\the\@cellcount\endcsname{\hbox{\usebox\@celltemp}}%
+	\global\advance\@cellcount 1\relax%
+}
+\let\vcell\savecellbox
+\def\printcelltop{%
+	\leavevmode\vbox to \dimexpr\rowht{%
+	  \hbox to \expandafter\wd\csname @cellbox\the\@cellusecount\endcsname{%
+	     \vrule height \arraystretch\ht\strutbox depth \arraystretch\dp\strutbox width 0pt%
+	     \expandafter\usebox\csname @cellbox\the\@cellusecount\endcsname%
+	  }%
+	  \vss%
+	}%
+	\global\advance\@cellusecount 1\relax%
+	\ifnum\@cellusecount=\@cellcount\resetcellcount\fi%
+}
+\def\printcellmiddle{%
+	\leavevmode\vbox to \dimexpr\rowht{%
+	  \vfill\hbox to \expandafter\wd\csname @cellbox\the\@cellusecount\endcsname{%
+	    \vrule height \arraystretch\ht\strutbox depth 0pt width 0pt%
+	    \expandafter\usebox\csname @cellbox\the\@cellusecount\endcsname%
+	  }%
+	  \vfill%
+	}%
+	\global\advance\@cellusecount 1\relax%
+	\ifnum\@cellusecount=\@cellcount\resetcellcount\fi
+}
+\def\printcellbottom{%
+	\leavevmode\vbox to \dimexpr\rowht{%
+	  \vss\hbox to \expandafter\wd\csname @cellbox\the\@cellusecount\endcsname{%
+	    \vrule height \rowht depth \rowdp width 0pt%
+	    \expandafter\usebox\csname @cellbox\the\@cellusecount\endcsname
+	  }%
+	}%
+	\global\advance\@cellusecount 1\relax%
+	\ifnum\@cellusecount=\@cellcount\resetcellcount\fi
+}
+\endinput

@@ -1,0 +1,270 @@
+\RequirePackage{expl3}[2018/06/14]
+%\RequirePackage[enable-debug]{expl3}[2018/06/14]
+\RequirePackage{xpatch}
+\ProvidesExplPackage {tagpdfdocu-patches} {2019/03/20} {0.60}
+ {patches/commands for the tagpdf documentation}
+
+% to do : marginnote, perhaps the description macros ...
+% to do: footnotes!
+% printbibliography?
+
+\newbibmacro*{begentry}{\tagstructbegin{tag=BibEntry}\tagmcbegin{tag=BibEntry}}
+\newbibmacro*{finentry}{\finentry\tagmcend\tagstructend}
+
+% hyperref
+\@ifpackageloaded{hyperref}{%
+\pdfstringdefDisableCommands{
+ \let\tagstructbegin\@gobble
+ \let\tagmcbegin\@gobble
+ \let\tagmcend\relax
+ \let\tagstructend\relax
+}}{}
+
+%%%%%
+% Paragraphs
+%%%%%
+
+% we need a command which simply starts a paragraph \TagP^,
+% a "continuation" variant which closes the previous paragraph (\TagP),
+% and a final end.
+
+\NewDocumentCommand\TagP{t{^}}
+ {
+  \uftag_mc_if_in:T { \uftag_mc_end: }
+  \IfBooleanF{#1}
+  {
+    \uftag_struct_end:
+  }
+  \uftag_struct_begin:n{tag=P}
+  \uftag_mc_begin:n{tag=P}
+ }
+% close a mc and one structure
+
+\NewDocumentCommand\TagPend{}
+ {
+  \uftag_mc_if_in:T { \uftag_mc_end: }
+  \uftag_struct_end:
+ }
+
+
+%%%%%
+% maketitle
+%%%%%
+\tagpdfsetup{ add-new-tag=Title/H1 }
+
+%%%%%
+% tableofcontents
+%%%%%
+
+%Marking the toc entries
+%around the whole entry so only structure:
+\newcommand\tagscrtocentry[1]{\uftag_struct_begin:n{tag=TOCI}#1\uftag_struct_end:}
+
+%leaf so structure and mc:
+\newcommand\tagscrtocpagenumber[1]{%
+ \uftag_struct_begin:n{tag=Reference}%
+ \uftag_mc_begin:n{tag=Reference}%
+ #1%
+ \uftag_mc_end:
+ \uftag_struct_end:}
+
+
+\DeclareTOCStyleEntry[
+   entryformat=\tagscrtocentry,
+   pagenumberformat=\tagscrtocpagenumber]{tocline}{section}
+\DeclareTOCStyleEntry[
+   entryformat=\tagscrtocentry,
+   pagenumberformat=\tagscrtocpagenumber]{tocline}{subsection}
+\DeclareTOCStyleEntry[
+   entryformat=\tagscrtocentry,
+   pagenumberformat=\tagscrtocpagenumber]{tocline}{subsubsection}
+\DeclareTOCStyleEntry[
+   entryformat=\tagscrtocentry,
+   pagenumberformat=\tagscrtocpagenumber]{tocline}{paragraph}
+
+
+
+\renewcommand{\addtocentrydefault}[3]{%
+ \ifstr{#3}{}{}
+   {%\
+   \ifstr{#2}{}
+    {%
+     \addcontentsline{toc}{#1}
+      {%
+       \protect\nonumberline
+       \tagstructbegin{tag=P}%
+       \tagmcbegin{tag=P}%
+        #3%
+       \tagmcend
+       \tagstructend
+      }%
+    }%
+    {%
+    \addcontentsline{toc}{#1}{%
+     \tagstructbegin{tag=Lbl}%
+     \tagmcbegin{tag=Lbl}%
+     \protect\numberline{#2}%
+     \tagmcend\tagstructend
+     \tagstructbegin{tag=P}%
+     \tagmcbegin{tag=P}%
+      #3%
+     \tagmcend
+     \tagstructend
+     }%
+    }%
+   }}%
+
+% the dots must be marked too
+
+\renewcommand*{\TOCLineLeaderFill}[1][.]{
+  \leaders\hbox{$\m@th
+    \mkern \@dotsep mu\hbox{\uftag_mc_begin:n{artifact}#1\uftag_mc_end:}\mkern \@dotsep
+    mu$}\hfill
+}
+
+%%%%%%%%%
+% Sectioning commands
+%%%%%%%%
+
+\prop_new:N    \g_tag_section_level_prop
+\prop_gput:Nnn \g_tag_section_level_prop {section}{H1}
+\prop_gput:Nnn \g_tag_section_level_prop {subsection}{H2}
+\prop_gput:Nnn \g_tag_section_level_prop {subsubsection}{H3}
+\prop_gput:Nnn \g_tag_section_level_prop {paragraph}{H4}
+
+
+
+%unnumbered sections level give an empty mc, need to think about it.
+\renewcommand{\sectionlinesformat}[4]
+ {
+  \@hangfrom
+   {\hskip #2
+    \tagstructbegin{tag=\prop_item:Nn\g_tag_section_level_prop{#1}}
+    \tl_if_empty:nF{#3}
+    {
+     \uftag_mc_begin:n    {tag=\prop_item:Nn\g_tag_section_level_prop{#1}}
+     #3
+     \uftag_mc_end:
+    }
+   }
+   {\uftag_mc_begin:n    {tag=\prop_item:Nn\g_tag_section_level_prop{#1}}
+    #4
+    \uftag_mc_end:\tagstructend}%
+ }
+
+%minisec is simply P, H6 doesn't work ....
+\cs_new:Nn \__uftag_docu_tag_minisec:n
+{
+  \uftag_struct_begin:n {tag=P}
+  \uftag_mc_begin:n{tag=P}
+  #1
+  \uftag_mc_end:
+  \uftag_struct_end:
+}
+
+\addtokomafont{minisec}{\__uftag_docu_tag_minisec:n}
+
+\AfterTOCHead{\uftag_struct_begin:n{tag=TOC}}
+\AfterStartingTOC{\uftag_struct_end:} %end TOC
+
+%% list
+
+\newcommand\uftag@enit@format@preset[1]{%
+  \tagstructbegin{tag=LI}%
+  \tagstructbegin{tag=Lbl}%
+  \tagmcbegin{tag=Lbl}%
+  #1%
+  \tagmcend
+  \tagstructend %end Lbl
+  \tagstructbegin{tag=LBody}}
+
+\newcommand\meti{% end of \item
+ \tagstructend %end of LBody
+ \tagstructend %end of LI
+}
+
+\newcommand\Pmeti{% end of \item
+ \TagPend      %end of P
+ \tagstructend %end of LBody
+ \tagstructend %end of LI
+}
+
+\ExplSyntaxOff
+\xpatchcmd\enit@preset{\@firstofone}{\uftag@enit@format@preset}{}{\fail}
+\ExplSyntaxOn
+\setlist{
+    before*=\tagstructbegin{tag=L},
+    after*={\tagstructend}}
+
+% keys that overwrite \enit@format must be patched, eg like the follow
+% the font key should be patched in a similar way
+\enitkv@key{enumitem}{format}{%
+  \def\enit@format{%
+   \tagstructbegin{tag=LI}%
+   \tagstructbegin{tag=Lbl}%
+   \tagmcbegin{tag=Lbl}%
+   #1\tagmcend}}
+
+ %%% hooks for links
+ %%% attention, to get the order right, it is necessary currently to start a new
+ %%% mc after a link! I'm not sure if this can/group be included in the hooks
+ %%% grouping is a bit tricky ...
+\cs_if_exist:NT\hook_put_left:nnn
+{
+ \hook_put_left:nnn
+ { pdf }
+ { startlink_url }
+ {
+   \uftag_struct_begin:n{tag=Link}
+   \uftag_mc_begin:n{tag=Link}\def\blub{abc}
+ }
+\hook_put:nnnn
+ { pdf }
+ { startlink_url_attr }
+ { /StructParent }
+ { \int_use:N\c@g__uftag_parenttree_obj_int }
+
+\hook_put_right:nnn
+ { pdf }
+ { endlink_url }
+ {
+  \__uftag_struct_finish_link:
+   \uftag_mc_end:
+   \uftag_struct_end:
+ }
+
+\hook_put_left:nnn
+ { pdf }
+ { startlink_link }
+ {
+   \uftag_struct_begin:n{tag=Link}
+   \uftag_mc_begin:n{tag=Link}
+ }
+\hook_put:nnnn
+ { pdf }
+ { startlink_link_attr }
+ { /StructParent }
+ { \int_use:N\c@g__uftag_parenttree_obj_int }
+\hook_put_right:nnn
+ { pdf }
+ { endlink_link }
+ {
+  \__uftag_struct_finish_link:
+  \uftag_mc_end:
+  \uftag_struct_end:
+ }
+
+% "alternative descriptions " for PAX3. How to get better text here??
+\hook_put:nnnn
+ { pdf }
+ { startlink_url_attr }
+ { /Contents }
+ { (url) }
+
+\hook_put:nnnn
+ { pdf }
+ { startlink_link_attr }
+ { /Contents }
+ { (ref) }
+ }
+\endinput

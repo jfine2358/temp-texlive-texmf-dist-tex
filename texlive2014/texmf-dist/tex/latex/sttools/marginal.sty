@@ -1,0 +1,154 @@
+%%
+%% This is file `marginal.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% marginal.dtx  (with options: `package')
+%% 
+%% Copyright (C) 1997-2012 by Sigitas Tolu\v{s}is <sigitas@vtex.lt>
+%% VTeX Ltd., Akademijos 4, Vilnius, Lithuania
+%% http://www.vtex.lt/tex/download/macros/
+%% --------------------------------------------------------------------------
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% PURPOSE:   Enlarge free and show lost marginal inserts.
+%%
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{marginal}
+    [2012/05/29 v1.1 Enlarge free and show lost marginal inserts]
+\newif\if@mparlost      \@mparlostfalse
+\newbox\@mparlostbox
+\setbox\@mparlostbox\vbox{}
+\gdef\@fltovfpar{\global\@mparlosttrue
+  \@latex@warning{Too many unprocessed (marginal)floats}\relax
+  }
+\gdef\@fltovfmess{%
+  \@latex@error{Too many unprocessed floats}\@ehb
+  }
+\def\marginpar{%
+  \ifhmode
+    \@bsphack\@floatpenalty -\@Mii
+  \else
+    \@floatpenalty-\@Miii
+  \fi
+  \ifinner
+    \@parmoderr\@floatpenalty\z@
+  \else
+    \@next\@currbox\@freelist{}{}%
+    \@next\@marbox\@freelist{\global\count\@marbox\m@ne}{\@floatpenalty\z@
+            \@fltovfmess \def\@currbox{\@tempboxa}\def\@marbox{\@tempboxa}}%
+  \fi
+  \@ifnextchar[\@xmpar\@ympar
+  }
+\long\def\@savemarbox#1#2{%
+  \global\setbox#1%
+    \color@vbox
+      \vtop{%
+        \hsize\marginparwidth
+        \@parboxrestore
+        \@marginparreset
+        #2%
+        \global\@minipagefalse
+        \outer@nobreak
+        }%
+    \color@endbox
+  \if@mparlost
+    \global\setbox\@mparlostbox\vbox{\unvbox\@mparlostbox\copy#1}%
+    \global\@mparlostfalse
+  \fi
+  }
+\def\showlostmarginals{%
+  \global\let\old@textbottom\@textbottom
+  \gdef\@textbottom{%
+    \vtop to\z@{%
+      \hbox to\z@{\kern-\wd\@mparlostbox
+        \vbox to\z@{\kern-\ht\@mparlostbox
+          \box\@mparlostbox
+          \vfill
+          }%
+        }%
+      }%
+    \old@textbottom
+    }%
+  \global\let\@fltovfmess\@fltovfpar
+  }
+\def\enlargefreelist{%
+  \@for\curr@option:={S,T,U,W,X,Y,Z,a,b,c,d,e,f,g,h,i,%
+                      j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z}%
+    \do{\expandafter\newinsert\csname bx@\curr@option\endcsname}%
+  \gdef\@freelist{%
+    \@elt\bx@A \@elt\bx@B \@elt\bx@C \@elt\bx@D \@elt\bx@E \@elt\bx@F
+    \@elt\bx@G \@elt\bx@H \@elt\bx@I \@elt\bx@J \@elt\bx@K \@elt\bx@L
+    \@elt\bx@M \@elt\bx@N \@elt\bx@O \@elt\bx@P \@elt\bx@Q \@elt\bx@R
+    \@elt\bx@S \@elt\bx@T \@elt\bx@U \@elt\bx@V \@elt\bx@W \@elt\bx@X
+    \@elt\bx@Y \@elt\bx@Z
+    \@elt\bx@a \@elt\bx@b \@elt\bx@c \@elt\bx@d \@elt\bx@e \@elt\bx@f
+    \@elt\bx@g \@elt\bx@h \@elt\bx@i \@elt\bx@j \@elt\bx@k \@elt\bx@l
+    \@elt\bx@m \@elt\bx@n \@elt\bx@o \@elt\bx@p \@elt\bx@q \@elt\bx@r
+    \@elt\bx@s \@elt\bx@t \@elt\bx@u \@elt\bx@v \@elt\bx@w \@elt\bx@x
+    \@elt\bx@y \@elt\bx@z
+    }%
+  }%
+%%   \onesidemarginals - outputs marginals only on one side
+\def\onesidemarginals{%
+  \newbox\@marbox
+  \gdef\@addmarginpar{\@cons\@freelist\@currbox
+    \@tempdima\@mparbottom
+    \advance\@tempdima -\@pageht
+    \advance\@tempdima\ht\@currbox
+    \ifdim\@tempdima >\z@
+      \@latex@warning@no@line {Marginpar on page \thepage\space moved}%
+    \else
+      \@tempdima\z@
+    \fi
+    \global\@mparbottom\@pageht
+    \global\advance\@mparbottom\@tempdima
+    \global\advance\@mparbottom\dp\@currbox
+    \global\advance\@mparbottom\marginparpush
+    \advance\@tempdima -\ht\@currbox
+    \global\setbox\@currbox
+      \vbox {\vskip\@tempdima \box\@currbox}%
+    \global \ht\@currbox \z@
+    \global \dp\@currbox \z@
+    \kern -\@pagedp
+    \nointerlineskip
+    \hb@xt@\columnwidth
+      {\hskip\columnwidth \hskip\marginparsep \box\@currbox \hss}%
+    \nointerlineskip
+    \hbox{\vrule \@height\z@ \@width\z@ \@depth\@pagedp}%
+    }%
+  \gdef\marginpar{%
+    \ifhmode
+      \@bsphack\@floatpenalty -\@Mii
+    \else
+      \@floatpenalty-\@Miii
+    \fi
+    \ifinner
+      \@parmoderr\@floatpenalty\z@
+    \else
+      \@next\@currbox\@freelist{\global\count\@currbox\m@ne}{\@floatpenalty\z@
+                                        \@fltovfmess \def\@currbox{\@tempboxa}}%
+    \fi
+    \@ifnextchar[\@xmpar\@ympar
+    }%
+  \long\gdef\@xmpar[##1]##2{\@savemarbox\@currbox{##2}\@xympar}%
+  \long\gdef\@ympar##1{\@savemarbox\@currbox{##1}\@xympar}%
+  \def\@xympar{%
+    \ifnum\@floatpenalty<\z@ \@cons\@currlist\@marbox \fi
+    \setbox\@tempboxa
+      \color@vbox
+        \vbox\bgroup
+          \end@float
+          \global\@ignorefalse \@esphack
+    }%
+  }
+\endinput
+%%
+%% End of file `marginal.sty'.

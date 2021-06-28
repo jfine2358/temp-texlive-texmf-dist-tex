@@ -1,0 +1,857 @@
+% -*- coding: utf-8; -*-
+
+% Adrian Salamon
+% Bergische Universitaet Wuppertal
+% since 2017-09-23
+% to    2018-04-03
+% LaTeX project public license, version 1.3c
+
+% % notes for further development:
+%
+% TODO: Versionnummerierung fixen (evtl besseres) Konzept finden
+% TODO: maybe remove LED-Background?
+%
+% % %
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{tikzcodeblocks}[2018/04/03 v.0.12 - TikZ Styles and macros for typesetting blockwise graphic programming languages like scratch, nepo or pxt]
+
+\RequirePackage{adjustbox}
+\RequirePackage{xcolor}
+\RequirePackage{colortbl}
+\RequirePackage{fontawesome}
+\RequirePackage{tikz}
+\RequirePackage{longtable}
+\usetikzlibrary{matrix, positioning, fit,calc,shapes,backgrounds,math,trees,decorations.markings,shapes,arrows.meta,arrows}
+\usetikzlibrary{decorations,decorations.pathmorphing}
+
+\RequirePackage{translations}
+
+\RequirePackage{xspace}
+\RequirePackage{ifthen}
+
+
+\newboolean{no-colors}
+\setboolean{no-colors}{false}
+
+\DeclareOption{print}{
+	\setboolean{no-colors}{true}
+}
+
+\ProcessOptions\relax
+
+% % %
+% Translations
+% % %
+
+\DeclareTranslationFallback {if}{if}
+\DeclareTranslation{English}{if}{if}
+\DeclareTranslation{German} {if}{wenn}
+
+\DeclareTranslationFallback {then}{then}
+\DeclareTranslation{English}{then}{then}
+\DeclareTranslation{German} {then}{dann}
+
+\DeclareTranslationFallback {else}{else}
+\DeclareTranslation{English}{else}{else}
+\DeclareTranslation{German} {else}{sonst}
+
+\DeclareTranslationFallback {do}{do}
+\DeclareTranslation{English}{do}{do}
+\DeclareTranslation{German} {do}{mache}
+
+
+
+
+% % %
+% Variables for intents and positioning
+% % %
+
+% xshift=  \blockhspace
+% xshift= -\blockhspace
+\newlength{\blockhspace}
+\setlength{\blockhspace}{1em}
+\newlength{\blockvspace}
+\setlength{\blockvspace}{2pt}
+
+
+\newboolean{noIndentForPin}
+\setboolean{noIndentForPin}{true}
+\newcommand{\einruecken}[1]{\setboolean{noIndentForPin}{false}#1\setboolean{noIndentForPin}{true}}
+
+	% % %
+	% Colordefinitions like  pxt.calliope.cc
+	% % %
+	%
+	\definecolor{grundlagen-color}{HTML}{54C9C9}
+	\definecolor{eingaben-color}{HTML}{C90072}
+	\definecolor{musik-color}{HTML}{DF4600}
+	\definecolor{led-color}{HTML}{8169E6}
+	\definecolor{schleifen-color}{HTML}{107C10}
+	\definecolor{logik-color}{HTML}{006970}
+	\definecolor{platzhalter-color}{HTML}{A80000}
+	\definecolor{mathematik-color}{HTML}{712672}
+	\definecolor{funk-color}{HTML}{E3008C}
+	\definecolor{motoren-color}{HTML}{008272}
+	\definecolor{text-color}{HTML}{996600}
+	\definecolor{spiel-color}{HTML}{008272}
+	\definecolor{bilder-color}{HTML}{5C2D91}
+	\definecolor{pins-color}{HTML}{A80000}
+	\definecolor{konsole-color}{HTML}{002050}
+	\definecolor{steuerung-color}{HTML}{42495F}
+	\definecolor{bluetooth-color}{HTML}{0082FB}
+	%
+	\definecolor{int-color}{HTML}{C6A8C7}
+	\definecolor{string-color}{HTML}{D6C299}
+	\definecolor{boolean-color}{HTML}{99C3C6}
+	\definecolor{color-color}{HTML}{BBE9E9}
+  % Fallback LED-BG
+  \definecolor{led-bg-color}{HTML}{54C9C9}
+  \definecolor{led-on-color}{HTML}{F6F0A6} %das hier ist NEPO color
+
+
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+
+% allow local colordefinitions 
+\newcommand{\setcolor}[2]{\definecolor{#1}{HTML}{#2}}
+
+
+% % %
+% Code-Block Objects
+% % %
+
+% global styles
+\tikzset{
+	codeblocks/.style = {
+		font =  \ttfamily,rounded corners=2pt, rectangle,thick,
+		align=left,
+		node distance=6pt,
+		transform shape, % for scaling
+		anchor=base, baseline,
+		robertashape,
+	},
+	eckig/.style ={rounded corners = 0pt},
+	nocolor/.style={fill=white, text = black, draw = black!60},
+}
+
+% % PXT-Nodes % %
+% 
+%
+% Colordefinitions like lab.open-roberta.org
+%
+\tikzset{
+%
+	grundlage/.style 		= {fill=grundlagen-color,   text = white, draw = grundlagen-color!60!black,},
+	eingabe/.style 			= {fill=eingaben-color,  		text = white, draw = eingaben-color!60!black,	},
+	schleife/.style 		= {fill=schleifen-color, 		text = white, draw = schleifen-color!60!black,	},
+	logik/.style 				= {fill=logik-color, 				text = white, draw = logik-color!60!black,	},
+	musik/.style 				= {fill=musik-color,  			text = white, draw = musik-color!60!black,	},
+	led/.style 					= {fill=led-color,  				text = white, draw = led-color!60!black,	},
+	platzhalter/.style 	= {fill=platzhalter-color,  text = white, draw = platzhalter-color!60!black,	},
+	mathe/.style 				= {fill=mathematik-color,  	text = white, draw = mathematik-color!60!black,	},
+	funk/.style 				= {fill=funk-color,  				text = white, draw = funk-color!60!black,	},
+	motor/.style	 			= {fill=motoren-color,  		text = white, draw = motoren-color!60!black,	},
+	zeichenkette/.style	= {fill=text-color,  				text = white, draw = text-color!60!black,	},
+	spiel/.style				= {fill=spiel-color,  			text = white, draw = spiel-color!60!black,	},
+	bild/.style				  = {fill=bilder-color,  			text = white, draw = bilder-color!60!black,align=left,	},
+	pins/.style					= {fill=pins-color, 				text = white, draw = pins-color!60!black,	},
+	konsole/.style			= {fill=konsole-color,  		text = white, draw = konsole-color!60!black,	},
+	steuerung/.style		= {fill=steuerung-color,  	text = white, draw = steuerung-color!60!black,	},
+	bluetooth/.style		= {fill=bluetooth-color,  	text = white, draw = bluetooth-color!60!black,	},
+	%
+	% Fallback styles / for NEPO commandos
+	aktion/.style = {grundlage},
+	farbe/.style={grundlage},
+	%
+	kontrolle/.style = {schleife},
+	sensor/.style={pins},
+	start/.style={grundlage},
+	sensor/.style={eingabe},
+	liste/.style={konsole},
+	variablen/.style={platzhalter},
+	nachricht/.style={bluetooth},
+	funktion/.style={steuerung},
+}
+%
+% END PXT colors % % % %
+
+% % START OpenRoberta-Nodes colors %
+%
+% OpenRoberta Colors als package option:
+
+\tikzset{
+ define color/.code 2 args={
+	\definecolor{#1}{HTML}{#2}
+},
+openroberta/.style={
+	square,	%keine Rundungen
+	define color={start-color}{E2001A},
+	define color={aktion-color}{F29400},
+	define color={sensoren-color}{8FA402},
+	define color={kontrolle-color}{EB6A0A},
+	define color={logik-color}{33B8CA},
+	define color={mathematik-color}{005A94},
+	define color={text-color}{BACC1E},
+	define color={listen-color}{39378B},
+	define color={farben-color}{EBC300},
+	define color={bilder-color}{DF01D7},
+	define color={led-bg-color}{DF01D7},
+	define color={led-on-color}{EDFEA0}, 
+	define color={led-off-color}{F299EF},
+	define color={variablen-color}{9085BA},
+	define color={funktionen-color}{179C7D},
+	define color={nachrichten-color}{FF69B4},
+	%
+	define color={int-color}{005A94},
+	define color={string-color}{BACC1E},
+	define color={boolean-color}{33B8CA},
+	define color={color-color}{EBC300},
+	%
+	start/.style 				= {fill=start-color,   text = white, draw = start-color!60!black,},
+	aktion/.style 			= {fill=aktion-color,   text = white, draw = aktion-color!60!black,},
+	sensor/.style 			= {fill=sensoren-color,   text = white, draw = sensoren-color!60!black,},
+	kontrolle/.style 		= {fill=kontrolle-color,   text = white, draw = kontrolle-color!60!black,},
+	logik/.style 				= {fill=logik-color,   text = white, draw = logik-color!60!black,},
+	mathe/.style 				= {fill=mathematik-color,   text = white, draw = mathematik-color!60!black,},
+	zeichenkette/.style = {fill=text-color,   text = white, draw = text-color!60!black,},
+	liste/.style			 	= {fill=listen-color,   text = white, draw = listen-color!60!black,},
+	farbe/.style 				= {fill=farben-color,   text = white, draw = farben-color!60!black,},
+	bild/.style			  	= {fill=bilder-color,   text = white, draw = bilder-color!60!black,},
+	variablen/.style	  = {fill=variablen-color,   text = white, draw = variablen-color!60!black,},
+	funktion/.style 		= {fill=funktionen-color,   text = white, draw = funktionen-color!60!black,},
+	nachricht/.style 		= {fill=nachrichten-color,   text = white, draw = nachrichten-color!60!black,},
+	%
+	% Fallback styles / for PXT commandos
+	schleife/.style	 	= {kontrolle},
+	pins/.style				= {sensor},
+	grundlage/.style	= {start},
+	eingabe/.style		= {sensor},
+	konsole/.style		= {liste},
+	platzhalter/.style= {variablen},
+	bluetooth/.style	= {nachricht},
+	steuerung/.style	= {funktion},
+  ledOn/.style 			= {node distance = 1mm, circle,radius=2mm,fill=led-on-color, draw=black,opacity=1,draw}, %TODO Color fixen
+  ledOff/.style 		= {node distance = 1mm, circle,radius=2mm,fill=led-off-color, draw=black,opacity=1,draw}, %TODO Color fixen
+	}%robertafarben
+}%tikzset
+%
+% 
+% % % ENDE Open Roberta % % % % %
+
+
+
+% % global style definitions
+%
+\tikzset{
+	umgebung/.style = {draw,line width=2pt,transform shape=false}, % yshift ausgleich for each element
+% Pictures/LED-Matrix
+	ledOn/.style  = {node distance = 1mm, circle, radius=2mm, fill=red,   draw=black,opacity=1,   draw},
+  ledOff/.style = {node distance = 1mm, circle, radius=2mm, fill=white, draw=black,opacity=0.7, draw},
+% 
+% Boxes and smaller elements
+%
+	dropdown/.style = {
+		fill=white,
+		draw=none,
+		opacity=0.7, 	% Leider auch Schriftsichtbarkeit
+		rectangle,
+		rounded corners=2pt,
+		inner sep=2pt,
+		anchor = base,
+		text = black,
+	  text depth=0.50ex,
+	},
+	intbox/.style = {
+		fill=int-color,
+		draw=none,
+		opacity=0.7, 	% Leider auch Schriftsichtbarkeit
+		rectangle,
+		rounded corners=2pt,
+		inner sep=3pt,
+		text = black,
+		anchor=west,
+	},
+	stringbox/.style = {
+		fill=string-color,
+		draw=none,
+		opacity=0.7, 	% Leider auch Schriftsichtbarkeit
+		rectangle,
+		rounded corners=2pt,
+		inner sep=3pt,
+		text = black,
+		anchor=west,
+	},
+	boolbox/.style = {
+		fill=color-color,
+		draw=none,
+		opacity=0.7, 	% Leider auch Schriftsichtbarkeit
+		rectangle,
+		rounded corners=2pt,
+		inner sep=3pt,
+		text = black,
+		anchor=west,
+	},
+%
+	ledanzeige/.style = {% LEDs Help
+		matrix of nodes, 
+		row sep=4pt, 
+		column sep=4pt, 
+		ampersand replacement=\&, 
+		anchor=base, fill=led-bg-color, 
+		nopins
+	},
+%
+	boden/.style = {% Für Baseline anordnung der Dropdown
+		baseline,
+		anchor=base, 
+		text height=1.7ex,
+		text depth=0.3ex, 
+		minimum width=1em
+	},
+%	
+	base/.style = {% Für Baseline anordnung der Dropdown
+		anchor=base, baseline},
+	keinezacken/.style = {% Für Deaktivierung der OpenRobertaZacken
+		rectangle},
+%
+% unter={NODENAME}{X-distance}{Y-distance}
+ 	unter/.style n args={3}{below right = #3\blockvspace and #2\blockhspace of #1.south west},
+%
+% https://tex.stackexchange.com/questions/223910/reference-a-nodes-color-by-using-node-name
+% get color of 'this' element
+every text node part/.add code={}{
+	\globalcolorstrue
+	\ifx\tikz@fillcolor\pgfutil@empty
+	\pgfutil@colorlet{\tikz@fig@name.fill}{.}
+	\else
+	\pgfutil@colorlet{\tikz@fig@name.fill}{\tikz@fillcolor}
+	\fi
+	\ifx\tikz@strokecolor\pgfutil@empty
+	\pgfutil@colorlet{\tikz@fig@name.draw}{.}
+	\else
+	\pgfutil@colorlet{\tikz@fig@name.draw}{\tikz@strokecolor}
+	\fi
+	\ifx\tikz@textcolor\pgfutil@empty
+	\pgfutil@colorlet{\tikz@fig@name.text}{.}
+	\else
+	\pgfutil@colorlet{\tikz@fig@name.text}{\tikz@textcolor}
+	\fi
+},
+} %end tikzset
+
+% % %
+% macros for boxes, LEDs, etc.
+% % %
+\newcommand{\dropdown}[1]{\hspace*{-0.5em}
+	\tikz[boden]\node[dropdown]{
+		#1\,\tikz[scale=0.3,baseline=-0.3em] 
+		\draw [fill,rounded corners=0mm,]
+		(0,0)--(0.5,0)--(0.25,-0.5)--cycle;% Dreieck
+	};\hspace*{-0.5em}
+}
+
+\newcommand{\intbox}[2][]{
+	\tikz[anchor=center,baseline=-4.0pt,]\strut\node[intbox,#1,text width = {width("{#2}")+0.5em}]{ %this is tikz-magic... 1
+		\tikz[boden]\strut\node[fill=white,rounded corners=6pt,opacity=1,keinezacken,text width = {width("{#2}")-0.0em} %this is tikz-magic... 2
+		]{
+			#2};
+	};\xspace
+}
+
+% Fix for print option at stringboxes
+\ifthenelse
+{\boolean{no-colors}}% if
+{\newcommand{\setupquotes}{\normalfont \bfseries \huge \vspace*{1em}\color{black}}}% then
+{\newcommand{\setupquotes}{\normalfont \bfseries \huge \vspace*{1em}\color{white}}}% else
+
+% box containing strings
+\newcommand{\stringbox}[2][]{
+  \begin{tikzpicture}[anchor=center,baseline=-4.0pt,]
+  \strut\node[stringbox,#1](string1){
+	  {\setupquotes ``}\,\tikz[boden]\strut\node[yshift=0.5em,fill=white,rounded corners=2pt,opacity=1,keinezacken]{#2}
+		;\setupquotes\,''\vspace*{-0.9em}};
+	\end{tikzpicture}
+}
+
+% box containing boolean
+\newcommand{\boolbox}[2][]{
+	\tikz[anchor=center,baseline=-4.0pt,]\strut\node[boolbox,#1]{
+		\tikz[boden]\strut\node[fill=white,rounded corners=2pt,opacity=1,keinezacken]{#2};
+	};
+}
+
+
+% % % % % % % % 
+% Images / LEDs
+% Bilder / LEDs
+
+% container for pictures
+\newcommand{\bild}[2][1]{
+	\hspace*{-16pt} %macht es etwas kompakter
+	\scalebox{#1}[#1]{
+	\tikz\matrix[ledanzeige] %TODO: outer sep einfuegen/entfernen
+		{#2};
+	\hspace*{-16pt} % Ausgleich des zuvielen &
+	}
+}
+
+\newcommand{\0}{|[ledOff]|\&}
+\newcommand{\X}{|[ledOn]|\&}
+
+% template for all LEDs off
+\newcommand{\emptyled}
+{
+	\0 \0 \0 \0 \0 \\
+	\0 \0 \0 \0 \0 \\
+	\0 \0 \0 \0 \0 \\
+	\0 \0 \0 \0 \0 \\
+	\0 \0 \0 \0 \0 \\
+}
+
+% template for all LEDs on
+\newcommand{\fullled}
+{
+	\X \X \X \X \X \\
+	\X \X \X \X \X \\
+	\X \X \X \X \X \\
+	\X \X \X \X \X \\
+	\X \X \X \X \X \\
+}
+
+%
+% % % % % END images
+
+
+% % % % % % % % 
+% Structures: Branches and Loops
+% Strukturen: Wenn-Dann/ Wenn-Dann-Sonst / Schleife
+
+\def\myspace{\vspace{5pt}}
+\def\myshift{0.95em}
+
+\newcommand{\wenndann}[4][]{
+	\node[logik,#1](#4){%
+		%
+		\renewcommand{\arraystretch}{1}
+		\hspace*{-1em}\setboolean{noIndentForPin}{true}
+		\begin{tabular}{@{}ll}
+			\GetTranslation{if} 	&#2\myspace\\%\hline
+			\GetTranslation{then} &\begin{tikzpicture}[anchor=north,yshift=\myshift ]#3\end{tikzpicture}\myspace\\[0.5em]
+	\end{tabular}};
+}
+
+
+\newcommand{\wenndannsonst}[5][]{
+	\node[logik,#1](#5){%
+		%
+		\renewcommand{\arraystretch}{1}
+		\hspace*{-1em}\setboolean{noIndentForPin}{true}
+		\begin{tabular}{@{}ll}
+			\GetTranslation{if} &#2\myspace\\ %\hline
+			\GetTranslation{then} &\begin{tikzpicture}[anchor=north, yshift=\myshift ]#3\end{tikzpicture}\myspace\\
+			\GetTranslation{else}&\begin{tikzpicture}[anchor=north, yshift=\myshift ]#4\end{tikzpicture}\myspace\\
+	\end{tabular}};
+}
+
+
+\newcommand{\schleife}[5][]{
+	\node[kontrolle,#1](#5){\\
+		\renewcommand{\arraystretch}{1}
+		\hspace*{-1em}\setboolean{noIndentForPin}{true}
+		\begin{tabular}{@{}ll}
+			#2 & #3\\[0,5em]
+			\GetTranslation{do} & \begin{tikzpicture}[anchor=north, yshift=\myshift]#4\end{tikzpicture}\\
+		\end{tabular}
+	};
+}
+
+%
+% % % % % END structures
+
+
+
+% % % % % % % % 
+% Shapes
+% Formen
+
+% Open Roberta Shapes with pins top and bottom
+%
+\pgfdeclareshape{robertashape}
+{
+	% This piece is from \pgflibarayshapes.code.tex
+	\inheritsavedanchors[from=rectangle]
+	\inheritanchorborder[from=rectangle]
+	\inheritanchor[from=rectangle]{north}
+	\inheritanchor[from=rectangle]{north west}
+	\inheritanchor[from=rectangle]{north east}
+	\inheritanchor[from=rectangle]{center}
+	\inheritanchor[from=rectangle]{west}
+	\inheritanchor[from=rectangle]{east}
+	\inheritanchor[from=rectangle]{mid}
+	\inheritanchor[from=rectangle]{mid west}
+	\inheritanchor[from=rectangle]{mid east}
+	\inheritanchor[from=rectangle]{base}
+	\inheritanchor[from=rectangle]{base west}
+	\inheritanchor[from=rectangle]{base east}
+	\inheritanchor[from=rectangle]{south}
+	\inheritanchor[from=rectangle]{south west}
+	\inheritanchor[from=rectangle]{south east}
+
+	\inheritbackgroundpath[from=rectangle]
+	\inheritbeforebackgroundpath[from=rectangle]
+	\inheritbehindforegroundpath[from=rectangle]
+	\inheritforegroundpath[from=rectangle]
+	\inheritbeforeforegroundpath[from=rectangle]
+
+	\backgroundpath{
+		%
+		\southwest \pgf@xa=\pgf@x \pgf@ya=\pgf@y
+		\northeast \pgf@xb=\pgf@x \pgf@yb=\pgf@y
+
+		\xdef\blockhspaceoben{1\blockhspace}
+
+		\ifthenelse{\boolean{noIndentForPin}}{			% TODO Bedingungen verschönern? Aktuell globales boolean
+			\xdef\blockhspaceunten{\blockhspaceoben}}{
+			\xdef\blockhspaceunten{2*\blockhspaceoben}}
+
+		\def\dreieckseite{4}
+
+		\pgfpathmoveto{\pgfpoint{\pgf@xa}{\pgf@ya}} %<-- south west
+		%
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceunten}{\pgf@ya}}
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceunten+\dreieckseite}{\pgf@ya-\dreieckseite}}	%Spitze unten
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceunten+2*\dreieckseite}{\pgf@ya}}
+		%
+		\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@ya}} % south east
+		\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@yb}} % north east
+		%
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceoben+2*\dreieckseite}{\pgf@yb}}
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceoben+\dreieckseite}{\pgf@yb-\dreieckseite}} 	%Spitze oben
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceoben}{\pgf@yb}}
+		%
+		\pgfpathlineto{\pgfpoint{\pgf@xa}{\pgf@yb}} %<-- north west
+		\pgfpathclose
+	}
+}
+
+% % Open Roberta Shapes with pins ONLY bottom 
+% 
+\pgfdeclareshape{pinlow}
+{
+	% This piece is from \pgflibarayshapes.code.tex
+	\inheritsavedanchors[from=rectangle]
+	\inheritanchorborder[from=rectangle]
+	\inheritanchor[from=rectangle]{north}
+	\inheritanchor[from=rectangle]{north west}
+	\inheritanchor[from=rectangle]{north east}
+	\inheritanchor[from=rectangle]{center}
+	\inheritanchor[from=rectangle]{west}
+	\inheritanchor[from=rectangle]{east}
+	\inheritanchor[from=rectangle]{mid}
+	\inheritanchor[from=rectangle]{mid west}
+	\inheritanchor[from=rectangle]{mid east}
+	\inheritanchor[from=rectangle]{base}
+	\inheritanchor[from=rectangle]{base west}
+	\inheritanchor[from=rectangle]{base east}
+	\inheritanchor[from=rectangle]{south}
+	\inheritanchor[from=rectangle]{south west}
+	\inheritanchor[from=rectangle]{south east}
+
+	\inheritbackgroundpath[from=rectangle]
+	\inheritbeforebackgroundpath[from=rectangle]
+	\inheritbehindforegroundpath[from=rectangle]
+	\inheritforegroundpath[from=rectangle]
+	\inheritbeforeforegroundpath[from=rectangle]
+
+	\backgroundpath{
+		%
+		\southwest \pgf@xa=\pgf@x \pgf@ya=\pgf@y
+		\northeast \pgf@xb=\pgf@x \pgf@yb=\pgf@y
+
+		\xdef\blockhspaceoben{1\blockhspace}
+
+		\ifthenelse{\boolean{noIndentForPin}}{				% TODO Bedingungen verschönern? Aktuell globales boolean
+			\xdef\blockhspaceunten{\blockhspaceoben}}{
+			\xdef\blockhspaceunten{2*\blockhspaceoben}}
+
+		\def\dreieckseite{4}
+
+		\pgfpathmoveto{\pgfpoint{\pgf@xa}{\pgf@ya}} %<-- south west
+		%
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceunten}{\pgf@ya}}
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceunten+\dreieckseite}{\pgf@ya-\dreieckseite}}	%Spitze unten
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceunten+2*\dreieckseite}{\pgf@ya}}
+		%
+		\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@ya}} % south east
+		\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@yb}} % north east
+		%
+		\pgfpathlineto{\pgfpoint{\pgf@xa}{\pgf@yb}} %<-- north west
+		\pgfpathclose
+	}
+}
+
+
+% %  Open Roberta Shapes with pins ONLY top
+%
+\pgfdeclareshape{pinhigh}
+{
+	% This piece from \pgflibarayshapes.code.tex
+	\inheritsavedanchors[from=rectangle]
+	\inheritanchorborder[from=rectangle]
+	\inheritanchor[from=rectangle]{north}
+	\inheritanchor[from=rectangle]{north west}
+	\inheritanchor[from=rectangle]{north east}
+	\inheritanchor[from=rectangle]{center}
+	\inheritanchor[from=rectangle]{west}
+	\inheritanchor[from=rectangle]{east}
+	\inheritanchor[from=rectangle]{mid}
+	\inheritanchor[from=rectangle]{mid west}
+	\inheritanchor[from=rectangle]{mid east}
+	\inheritanchor[from=rectangle]{base}
+	\inheritanchor[from=rectangle]{base west}
+	\inheritanchor[from=rectangle]{base east}
+	\inheritanchor[from=rectangle]{south}
+	\inheritanchor[from=rectangle]{south west}
+	\inheritanchor[from=rectangle]{south east}
+
+	\inheritbackgroundpath[from=rectangle]
+	\inheritbeforebackgroundpath[from=rectangle]
+	\inheritbehindforegroundpath[from=rectangle]
+	\inheritforegroundpath[from=rectangle]
+	\inheritbeforeforegroundpath[from=rectangle]
+
+	\backgroundpath{
+		%
+		\southwest \pgf@xa=\pgf@x \pgf@ya=\pgf@y
+		\northeast \pgf@xb=\pgf@x \pgf@yb=\pgf@y
+
+		\xdef\blockhspaceoben{1\blockhspace}
+
+		\ifthenelse{\boolean{noIndentForPin}}{				% TODO Bedingungen verschönern? Aktuell globales boolean
+			\xdef\blockhspaceunten{\blockhspaceoben}}{
+			\xdef\blockhspaceunten{2*\blockhspaceoben}}
+
+		\def\dreieckseite{4}
+
+		\pgfpathmoveto{\pgfpoint{\pgf@xa}{\pgf@ya}} %<-- south west
+		%
+		\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@ya}} % south east
+		\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@yb}} % north east
+		%
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceoben+2*\dreieckseite}{\pgf@yb}}
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceoben+\dreieckseite}{\pgf@yb-\dreieckseite}} 	%Spitze oben
+		\pgfpathlineto{\pgfpoint{\pgf@xa+\blockhspaceoben}{\pgf@yb}}
+		%
+		\pgfpathlineto{\pgfpoint{\pgf@xa}{\pgf@yb}} %<-- north west
+		\pgfpathclose
+	}
+}
+
+
+
+% % puzzlepiece Shapes mit hole at left side 
+%
+\pgfdeclareshape{puzzleteil}
+{
+	% This piece is from \pgflibarayshapes.code.tex
+	\inheritsavedanchors[from=rectangle]
+	\inheritanchorborder[from=rectangle]
+	\inheritanchor[from=rectangle]{north}
+	\inheritanchor[from=rectangle]{north west}
+	\inheritanchor[from=rectangle]{north east}
+	\inheritanchor[from=rectangle]{center}
+	\inheritanchor[from=rectangle]{west}
+	\inheritanchor[from=rectangle]{east}
+	\inheritanchor[from=rectangle]{mid}
+	\inheritanchor[from=rectangle]{mid west}
+	\inheritanchor[from=rectangle]{mid east}
+	\inheritanchor[from=rectangle]{base}
+	\inheritanchor[from=rectangle]{base west}
+	\inheritanchor[from=rectangle]{base east}
+	\inheritanchor[from=rectangle]{south}
+	\inheritanchor[from=rectangle]{south west}
+	\inheritanchor[from=rectangle]{south east}
+
+	\inheritbackgroundpath[from=rectangle]
+	\inheritbeforebackgroundpath[from=rectangle]
+	\inheritbehindforegroundpath[from=rectangle]
+	\inheritforegroundpath[from=rectangle]
+	\inheritbeforeforegroundpath[from=rectangle]
+
+	\backgroundpath{
+		%
+		\southwest \pgf@xa=\pgf@x \pgf@ya=\pgf@y
+		\northeast \pgf@xb=\pgf@x \pgf@yb=\pgf@y
+
+
+		\pgfpathmoveto{\pgfpoint{\pgf@xa}{\pgf@ya}} %<-- south west
+		\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@ya}} % south east
+		\pgfpathlineto{\pgfpoint{\pgf@xb}{\pgf@yb}} % north east
+		\pgfpathlineto{\pgfpoint{\pgf@xa}{\pgf@yb}} %<-- north west
+		% Anpassung
+		\pgfpathlineto{\pgfpoint{\pgf@xa}{\pgf@yb-4pt}}
+		%
+		\pgfpathlineto{\pgfpoint{\pgf@xa-5pt}{\pgf@yb-2pt}}
+		\pgfpathlineto{\pgfpoint{\pgf@xa-5pt}{\pgf@yb-5pt}}
+		\pgfpathlineto{\pgfpoint{\pgf@xa-5pt}{\pgf@yb-13pt}}
+		\pgfpathlineto{\pgfpoint{\pgf@xa}{\pgf@yb-11pt}}
+		\pgfpathclose
+	}
+}
+
+% % % % % END shapes
+
+
+% % colors
+% 
+% print a small box with a certain color in it
+\newcommand{\farbe}[1]{\tikz\node[rectangle,minimum width=1em,minimum height = 1em,fill=#1]{};}
+
+% % symbols
+%  
+\newcommand{\usb}{\faUsb} %USB-symbol
+
+% % Option: print (no-colors) % %
+% 
+% TODO: Geht das mir einer Schleife?
+\ifthenelse{\boolean{no-colors}}{
+\tikzset
+  {
+  %
+  % pxt
+  %
+    grundlage/.append style={nocolor},
+    eingabe/.append style={nocolor},
+    schleife/.append style={nocolor},
+    logik/.append style={nocolor},
+    musik/.append style={nocolor},
+    led/.append style={nocolor},
+    platzhalter/.append style={nocolor},
+    mathe/.append style={nocolor},
+    funk/.append style={nocolor},
+    motor/.append style={nocolor},
+    zeichenkette/.append style={nocolor},
+    spiel/.append style={nocolor},
+    bild/.append style={nocolor},
+    pins/.append style={nocolor},
+    konsole/.append style={nocolor},
+    steuerung/.append style={nocolor},
+    bluetooth/.append style={nocolor},
+  %
+  % openroberta 
+  %
+    start/.append style={nocolor},
+    aktion/.append style={nocolor},
+    sensor/.append style={nocolor},
+    kontrolle/.append style={nocolor},
+    logik/.append style={nocolor},
+    mathe/.append style={nocolor},
+    zeichenkette/.append style={nocolor},
+    liste/.append style={nocolor},
+    farbe/.append style={nocolor},
+    bild/.append style={nocolor},
+    variablen/.append style={nocolor},
+    funktion/.append style={nocolor},
+    nachricht/.append style={nocolor},
+  %
+  % Fallback styles / Für PXT Kommandos
+    schleife/.append style={nocolor},
+    pins/.append style={nocolor},
+    grundlage/.append style={nocolor},
+    eingabe/.append style={nocolor},
+    konsole/.append style={nocolor},
+    platzhalte/.append style={nocolor},
+    bluetooth/.append style={nocolor},
+    steuerung/.append style={nocolor},
+  %
+  % etc.
+    dropdown/.append style={fill=white, draw=black!60, opacity=1},
+    ledOn/.append style={nocolor},
+    ledOff/.append style={nocolor},
+    intbox/.append style={nocolor},
+    stringbox/.append style={nocolor},
+    boolbox/.append style={nocolor},
+    %TODO: Farben bei Openroberta LEDS entfernen
+  }
+}{}
+
+% (local) Style print
+\tikzset{
+		print/.style={
+		%
+		% pxt
+		%
+		grundlage/.append style={nocolor},
+		eingabe/.append style={nocolor},
+		schleife/.append style={nocolor},
+		logik/.append style={nocolor},
+		musik/.append style={nocolor},
+		led/.append style={nocolor},
+		platzhalter/.append style={nocolor},
+		mathe/.append style={nocolor},
+		funk/.append style={nocolor},
+		motor/.append style={nocolor},
+		zeichenkette/.append style={nocolor},
+		spiel/.append style={nocolor},
+		bild/.append style={nocolor},
+		pins/.append style={nocolor},
+		konsole/.append style={nocolor},
+		steuerung/.append style={nocolor},
+		bluetooth/.append style={nocolor},
+		%
+		% openroberta 
+		%
+		start/.append style={nocolor},
+		aktion/.append style={nocolor},
+		sensor/.append style={nocolor},
+		kontrolle/.append style={nocolor},
+		logik/.append style={nocolor},
+		mathe/.append style={nocolor},
+		zeichenkette/.append style={nocolor},
+		liste/.append style={nocolor},
+		farbe/.append style={nocolor},
+		bild/.append style={nocolor},
+		variablen/.append style={nocolor},
+		funktion/.append style={nocolor},
+		nachricht/.append style={nocolor},
+		%
+		% Fallback styles / Für PXT Kommandos
+		schleife/.append style={nocolor},
+		pins/.append style={nocolor},
+		grundlage/.append style={nocolor},
+		eingabe/.append style={nocolor},
+		konsole/.append style={nocolor},
+		platzhalte/.append style={nocolor},
+		bluetooth/.append style={nocolor},
+		steuerung/.append style={nocolor},
+		%
+		% etc.
+		dropdown/.append style={fill=white, draw=black!60, opacity=1},
+		ledOn/.append style={nocolor},
+		intbox/.append style={nocolor},
+		stringbox/.append style={text-color=black, nocolor,}, % TODO: quotationmarks are still white...
+		boolbox/.append style={nocolor},
+		%TODO: Farben bei Openroberta LEDS entfernen
+	}
+}% print
+
+
+% % Redefine Commands for international usage ínto english language
+% 
+
+% Controlstructures
+\newcommand{\ifthenblocks}{\wenndann}
+\newcommand{\ifthenelseblocks}{\wenndannsonst}
+\newcommand{\loopblocks}{\schleife}
+
+\newcommand{\moveindent}{\einruecken}
+
+%styles:
+\tikzset{
+ floor/.style={boden},
+ under/.style n args={3}{below right = #3\blockvspace and #2\blockhspace of #1.south west},
+ square/.style={eckig},
+ nopins/.style={keinezacken},
+ puzzlepiece/.style={puzzleteil},
+}

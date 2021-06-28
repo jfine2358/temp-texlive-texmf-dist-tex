@@ -1,0 +1,199 @@
+%D \module
+%D   [       file=moderncv,
+%D        version=2009.09.20,
+%D          title=\CONTEXT\ Resume Interface,
+%D       subtitle=moderncv Interface,
+%D         author=Wolfgang Schuster,
+%D           date=\currentdate,
+%D      copyright=Wolfgang Schuster,
+%D          email=schuster.wolfgang@googlemail.com,
+%D        license=Public Domain]
+
+\unprotect
+
+%D The moderncv interface enables color by default
+
+\setupcolors[\c!state=\v!start]
+
+%D Resume environment, taken from the default interface
+
+\def\startresume
+  {\bgroup\dosingleempty\dostartresume}
+
+\long\def\dostartresume[#1]#2\stopresume
+  {\iffirstargument
+     \getparameters[\????rd][#1]%
+   \fi
+   \setbuffer[resumecontent]#2\endbuffer
+   \directsetup{\v!resume:\v!place}\egroup}
+
+\def\startresumecontent
+  {\dostartbuffer[resumecontent][startresumecontent][stopresumecontent]}
+
+\setupresume
+  [\c!content={\getbuffer[resumecontent]}]
+
+\startsetups[\v!resume:\v!content]
+\resumevalue\c!content
+\stopsetups
+
+\startsetups[\v!resume:\v!head]
+\executeifdefined{\v!resume:\v!head:\@@@@rsheadalternative}\donothing
+\stopsetups
+
+\startsetups[\v!resume:\v!foot]
+\executeifdefined{\v!resume:\v!foot:\@@@@rsfootalternative}\donothing
+\stopsetups
+
+\startsetups[\v!resume:\v!nexthead]
+\executeifdefined{\v!resume:\v!nexthead:\@@@@rsnextheadalternative}\donothing
+\stopsetups
+
+\startsetups[\v!resume:\v!nextfoot]
+\executeifdefined{\v!resume:\v!nextfoot:\@@@@rsnextfootalternative}\donothing
+\stopsetups
+
+%D Rewrite of the LaTeX package
+
+\definemeasure[quotewidth]                   [.65\textwidth]
+\definemeasure[separatorcolumnwidth]         [.025\textwidth]
+\definemeasure[hintscolumnwidth]             [.15\textwidth]
+\definemeasure[maincolumnwidth]              [\dimexpr\textwidth-\measure{separatorcolumnwidth}-\measure{hintscolumnwidth}\relax]
+\definemeasure[doubleitemmaincolumnwidth]    [\dimexpr(\measure{maincolumnwidth}-\measure{hintscolumnwidth}-\measure{separatorcolumnwidth})/2\relax]
+\definemeasure[listitemsymbolwidth]          [2em] % LaTeX assingnment is not possible in ConTeXt
+\definemeasure[listitemmaincolumnwidth]      [\dimexpr\measure{maincolumnwidth}-\measure{listitemsymbolwidth}\relax]
+\definemeasure[listdoubleitemmaincolumnwidth][\dimexpr.475\measure{listitemmaincolumnwidth}\relax]
+
+\def\ModerncvSectionCommand#1#2%
+  {\hbox to \hsize
+     {\blackrule[\c!width=\measure{hintscolumnwidth},\c!height=1ex,\c!depth=-.5ex,\c!color=resume:6]%
+      \hskip\measure{separatorcolumnwidth}%
+      \vtop{\hsize\measure{maincolumnwidth}#2}}}
+
+\setuphead
+  [\v!section]
+  [\c!color=resume:7,
+   \c!incrementnumber=\v!no,
+   \c!before={\blank[2*\v!medium]},
+   \c!after={\blank[\v!medium]},
+   \c!command=\ModerncvSectionCommand]
+
+\def\ModerncvSubsectionCommand#1#2%
+  {\hbox to \hsize
+     {\hskip\dimexpr\measure{hintscolumnwidth}+\measure{separatorcolumnwidth}\relax
+      \vtop{\hsize\measure{maincolumnwidth}#2}}}
+
+\setuphead
+  [\v!subsection]
+  [\c!color=resume:8,
+   \c!incrementnumber=\v!no,
+   \c!before={\blank[2*\v!medium]},
+   \c!after={\blank[\v!medium]},
+   \c!command=\ModerncvSubsectionCommand]
+
+%D Moderncv compatible commands for the user data.
+
+\def\cvline
+  {\dosingleempty\docvline}
+
+\def\docvline[#1]#2#3%
+  {\bgroup\dontcomplain
+   \starttable[s0|s0rp(\measure{hintscolumnwidth})|s0w(\measure{separatorcolumnwidth})|s0p(\measure{maincolumnwidth})|]
+   \NC\doifelsenothing{#2}{~}{\setupinterlinespace\relax#2}\NC\NC\setupinterlinespace\relax#3\NC\NR
+   \stoptable
+   \egroup
+   \doifelsenothing{#1}{\blank[.25em]}{\blank[#1]}}
+
+\def\cvdoubleitem#1#2#3#4%
+  {\cvline{#1}
+     {\hbox\bgroup
+        \vtop{\hsize\measure{doubleitemmaincolumnwidth}#2}%
+        \hfill
+        \vtop{\hsize\measure{hintscolumnwidth}\raggedleft#3}%
+        \hskip\measure{separatorcolumnwidth}%
+        \vtop{\hsize\measure{doubleitemmaincolumnwidth}#4}%
+      \egroup}}
+
+\def\cvlistitem
+  {\dosingleempty\docvlistitem}
+
+\def\docvlistitem[#1]#2% default symbol is \textbullet and not \endash
+  {\cvline[\v!nowhite]{}{\doifelsenothing{#1}{--}{#1}~\vtop{\hsize\measure{listitemmaincolumnwidth}#2}}}
+
+\def\cvlistdoubleitem
+  {\dosingleempty\docvlistdoubleitem}
+
+\def\docvlistdoubleitem[#1]#2#3%
+  {\cvline[\v!nowhite]{}%
+     {\hbox\bgroup
+        \doifelsenothing{#1}{--}{#1}~\vtop{\hsize\measure{listdoubleitemmaincolumnwidth}#2}%
+        \hfill
+        \doifsomething{#3}{\doifelsenothing{#1}{--}{#1}~\vtop{\hsize\measure{listdoubleitemmaincolumnwidth}#3}}%
+      \egroup}}
+
+\def\cventry#1#2#3#4#5#6%
+  {\cvline{#1}
+     {{\bf#2}%
+      \doifsomething{#3}{, {\it#3}}%
+      \doifsomething{#4}{, {#4}}%
+      \doifsomething{#5}{, {#5}}%
+      .%
+      \doifsomething{#6}{\crlf\tx#6}}}
+
+\def\cvlanguage#1#2#3%
+  {\cvline{#1}
+     {\hbox\bgroup
+        \vtop{\hsize\dimexpr.225\measure{maincolumnwidth}\relax\bf#2}%
+        \hfill
+        \vtop{\hsize\dimexpr.725\measure{maincolumnwidth}\relax\raggedleft\itx#3}%
+      \egroup}}
+
+\def\cvcomputer#1#2#3#4%
+  {\cvdoubleitem{#1}{\tx#2}{#3}{\tx#4}}
+
+%D Page optimation, change the topspace to produce a distance of 2.5em
+%D between the bottom of the header and the first line of text.
+
+\newdimen\resume!height!head
+
+\startsetups[\v!resume:\v!optimize]
+
+  \setbox\scratchbox\vbox{\dontcomplain\getvalue{\v!resume:\v!head:\@@@@rsheadalternative}}
+
+  \ifdim\htdp\scratchbox>\zeropoint
+
+    \global\resume!height!head\htdp\scratchbox
+
+    \setupresumestyle
+      [\v!firstpage]
+      [\c!topspace=\dimexpr\resume!height!head+\resumestylevalue{\v!head\v!layer}\c!voffset+2.5em\relax]
+
+  \fi
+
+\stopsetups
+
+\setupresumestyle
+  [\v!firstpage,\v!secondpage]
+  [\c!backspace=20mm,
+   \c!width=168mm,
+   \c!header=0pt,
+   \c!footer=0pt,
+   \c!topspace=30mm,
+   \c!bottomspace=40mm,
+   \c!height=\v!fit]
+
+\setupresumestyle
+  [\v!head,\v!foot]
+  [\c!state=\v!start]
+
+\setupresumestyle
+  [\v!nexthead,\v!nextfoot]
+  [\c!state=\v!next]
+
+\setupresumestyle
+  [\v!option]
+  [\c!color=blue]
+
+\useresumestyle[classic]
+
+\protect \endinput

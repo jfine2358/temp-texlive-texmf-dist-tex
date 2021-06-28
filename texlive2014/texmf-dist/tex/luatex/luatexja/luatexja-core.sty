@@ -1,0 +1,520 @@
+%
+% luatexja-core.sty
+%
+
+%! 外から読まれるので仰々しくなってます
+%% Avoid multiple loading.
+\csname\if11luatexjacoreLoaded\fi\endcsname
+\edef\x{%
+\catcode32=\the\catcode32%
+\catcode33=\the\catcode33%
+\catcode35=\the\catcode35%
+\catcode40=\the\catcode40%
+\catcode41=\the\catcode41%
+\catcode42=\the\catcode42%
+\catcode43=\the\catcode43%
+\catcode44=\the\catcode44%
+\catcode45=\the\catcode45%
+\catcode46=\the\catcode46%
+\catcode58=\the\catcode58%
+\catcode59=\the\catcode59%
+\catcode60=\the\catcode60%
+\catcode61=\the\catcode61%
+\catcode62=\the\catcode62%
+\catcode64=\the\catcode64%
+\catcode91=\the\catcode91%
+\catcode93=\the\catcode93%
+\catcode94=\the\catcode94%
+\catcode95=\the\catcode95%
+\catcode126=\the\catcode126%
+\endlinechar=\the\endlinechar
+\relax}
+\catcode32=10 %< >
+\catcode33=12 %<">
+\catcode35=6  %<#>
+\catcode40=12 %<(>
+\catcode41=12 %<)>
+\catcode42=12 %<*>
+\catcode43=12 %<+>
+\catcode44=12 %<,>
+\catcode45=12 %<->
+\catcode46=12 %<.>
+\catcode58=12 %<:>
+\catcode59=12 %<;>
+\catcode60=12 %<<>
+\catcode61=12 %<=>
+\catcode62=12 %<>>
+\catcode64=11 %<@>
+\catcode91=12 %<[>
+\catcode93=12 %<]>
+\catcode94=7  %<^>
+\catcode95=8  %<_>
+\catcode126=13 %<~>
+\endlinechar=-1 %
+%! なお, 上のcatcode設定はcoreとcompatで同一にしておく.
+\edef\ltj@core@AtEnd{\x
+  \noexpand\let\noexpand\ltj@core@AtEnd\relax}
+\def\luatexjacoreLoaded{\endinput}
+
+%% Check if LaTeX is used.
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname RequirePackage\endcsname\relax %<*!LaTeX>
+  \expandafter\let\csname ifltj@in@latex\expandafter\endcsname
+    \csname iffalse\endcsname
+\else                           %<*LaTeX>
+  \expandafter\let\csname ifltj@in@latex\expandafter\endcsname
+    \csname iftrue\endcsname
+  \NeedsTeXFormat{LaTeX2e}
+  \ProvidesPackage{luatexja-core}[2014/02/01 Core of LuaTeX-ja]
+\fi                             %</LaTeX>
+
+%% Load prerequisite packages.
+\endlinechar=13 %
+%! 外部パッケージは普通の \endlinechar で読まないと危険.
+\ifltj@in@latex                 %<*LaTeX>
+  \RequirePackage{luaotfload} [2013/05/10] % v2.2
+  \RequirePackage{infwarerr}  [2010/04/08] % v1.3
+  \RequirePackage{ltxcmds}    [2011/11/09] % v1.22
+  \RequirePackage{pdftexcmds} [2011/11/29] % v0.20
+  \RequirePackage{xkeyval}    [2012/10/14] % v2.6b
+\else                           %<*!LaTeX>
+  \input luaotfload.sty
+  \input infwarerr.sty
+  \input ltxcmds.sty
+  \input pdftexcmds.sty
+  \input xkeyval
+\fi                             %</LaTeX>
+\endlinechar=-1 %
+
+%% Check if LuaTeX is used
+\ltx@LocalExpandAfter\ifx\csname directlua\endcsname\relax
+  % Loading is silently aborted, since the notice of the wrong
+  % engine is aldready shown in otfluaload.
+  \ltj@core@AtEnd
+\expandafter\endinput\fi\relax
+
+%% Check LuaTeX version.
+\ifnum\luatexversion<74
+  \@PackageError{luatexja-core}
+    {This LuaTeX engine is too old for this package;\MessageBreak
+     at least beta-0.74.0 is needed}
+    {Package loading is aborted now.\MessageBreak}
+\expandafter\endinput\fi\relax
+
+ \@PackageInfoNoLine{luatexja-core}
+    {using\space%
+  \directlua{if node.direct==node then tex.write('traditional node')
+  else tex.write('DIRECT') end} node access model}
+
+%! なお、luatexbase-compat の説明に従うと、LuaTeX 拡張プリミティブは
+%! plain/LaTeX の両方で \luatex 付の名前（\directlua はそのまま)
+%! で使えると考えてよい。
+
+%% \LuaTeXjaAvailable
+%! 環境検査にパスした時に定義される.
+\let\LuaTeXjaAvailable=t %
+
+%%------------------
+\endlinechar=13
+%! この中に master の luatexja-core.sty の内容を挿入する
+%! ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+% LuaTeX-ja core TeX source
+
+\catcode"FFFFF=14 %"
+
+\def\ltj@loaded{hoge}
+
+\newdimen\ltj@zw
+\newdimen\ltj@zh
+\newdimen\jQ \jQ=0.25mm
+\let\jH=\jQ
+
+%%%%%%%% error message
+\def\ltj@defnum{0}
+\def\ltj@defdimen{0}
+
+%%%%%%%% Attributes for Japanese typesetting.
+\newluatexattribute\ltj@icflag    % attribute for italic correction
+\newluatexattribute\ltj@curjfnt   % index for ``current Japanese font''
+\newluatexattribute\ltj@origchar %
+\newluatexattribute\ltj@charclass %
+\newluatexattribute\ltj@autospc   % attribute for autospacing
+\newluatexattribute\ltj@autoxspc  % attribute for autoxspacing
+\newluatexattribute\ltj@yablshift % attribute for \yabaselineshift
+\newluatexattribute\ltj@ykblshift % attribute for \ykbaselineshift
+\newluatexattribute\jfam          % index for current jfam
+\ltj@icflag=0
+\ltj@origchar=0
+\ltj@charclass=0
+\ltj@curjfnt=-1
+
+%%%%%%%% Attributes for character ranges
+\newcount\ltj@tempcnta
+\ltj@tempcnta=0
+\loop\ifnum\ltj@tempcnta<7
+  \expandafter\newluatexattribute%
+    \csname ltj@kcat\the\ltj@tempcnta\endcsname
+  \csname ltj@kcat\the\ltj@tempcnta\endcsname=0
+  \advance\ltj@tempcnta by1
+\repeat
+
+
+%%%%%%%% Loading luatexja.lua
+%% Quark tokens needed in ltj-base
+\protected\def\ltj@@q@escape{\ltj@@q@escape@}
+\protected\def\ltj@@q@escapenum{\ltj@@q@escapenum@}
+
+\directlua{%
+  luatexja = {}
+  dofile(assert(kpse.find_file('luatexja.lua', 'tex'),
+      "File `luatexja.lua' not found"))
+}
+
+%% \RequireLuaTeXjaSubmodule{name}[date]
+% A TeX version of luatexja.load_module(name)
+% The second optional argument [date] is simply ignored.
+\def\RequireLuaTeXjaSubmodule#1{%
+  \@ifnextchar[{\ltj@requirelua@submod{#1}}{\ltj@requirelua@submod{#1}[]}}
+\def\ltj@requirelua@submod#1[#2]{%
+  \directlua{luatexja.load_module(
+    "\luatexluaescapestring{#1}")}}
+
+
+%%%%%%%% Load all sub-packages.
+\ifltj@in@latex                 %<*LaTeX>
+  \RequirePackage{ltj-base}   [2013/05/14]
+\else                           %<*!LaTeX>
+  \input ltj-base.sty %
+\fi                             %</LaTeX>
+
+%%%%%%%% \asluastring
+\def\asluastring#1{'\luaescapestring{\detokenize{#1}}'}
+
+%%%%%%%% Redefine \/
+\protected\def\/{\relax\directlua{luatexja.jfont.append_italic()}}
+
+%%%%%%%% \jfont\CS={...:...;jfm=metric;...}, \globaljfont
+\protected\def\jfont{\afterassignment\ltj@@jfont\directlua{luatexja.jfont.jfontdefX(false)}}
+\protected\def\globaljfont{%
+  \afterassignment\ltj@@jfont\directlua{luatexja.jfont.jfontdefX(true)}}
+\def\ltj@@jfont{\directlua{luatexja.jfont.jfontdefY()}}
+
+%%%%%%%% \zw, \zh
+\protected\def\zw{\directlua{tex.setdimen('ltj@zw', luatexja.jfont.get_zw())}\ltj@zw}
+\protected\def\zh{\directlua{tex.setdimen('ltj@zh', luatexja.jfont.get_zh())}\ltj@zh}
+
+%%%%%%%% \inhibitglue
+\protected\def\ltj@reset@globaldefs{%
+  \directlua{luatexja.global_temp = tex.globaldefs; tex.globaldefs = 0}}
+\protected\def\ltj@restore@globaldefs{\directlua{tex.globaldefs = luatexja.global_temp}}
+\protected\def\inhibitglue{\ifhmode\ltj@@ihb\fi}
+\def\ltj@@ihb{\relax\directlua{luatexja.jfmglue.create_inhibitglue_node()}}
+
+%%%%%%%% \yoko, \tate, \ifydir, \iftdir
+%% At this moment, tategaki mode is not implemented;
+%% there is only yokogaki mode now.
+\let\yoko\relax
+\let\tate\relax
+\newif\ifydir\ydirtrue
+\newif\iftdir\tdirfalse
+
+%%%%%%%% \ltjdefcharrange<name>{100-200,3000-,5000,...}
+\protected\def\ltjdefcharrange#1#2{%
+  {\ltj@tempcntc=#1 \expandafter\ltj@@dcrange#2,,}\ignorespaces}
+\def\ltj@@dcrange#1,{\def\ltj@temp{#1}%
+  \ifx\ltj@temp\empty\let\@next=\relax\else
+  \ltj@@dcrangeA{#1}\let\@next=\ltj@@dcrange\fi\@next}
+\def\ltj@@dcrangeA#1{\ltj@@dcrangeB#1--\@nil}
+\def\ltj@@dcrangeB#1-#2-#3\@nil{\def\ltj@temp{#3}%
+  \ifx\ltj@temp\empty
+    \ltj@tempcnta=#1 \ltj@tempcntb=\ltj@tempcnta
+  \else
+    \def\ltj@temp{#1}%
+    \ifx\ltj@temp\empty\ltj@tempcnta='200\else\ltj@tempcnta=#1\fi\relax
+    \def\ltj@temp{#2}%
+    \ifx\ltj@temp\empty\ltj@tempcntb="10FFFF\else\ltj@tempcntb=#2\fi\relax%"
+  \fi
+  \directlua{luatexja.charrange.add_char_range(\the\ltj@tempcnta,\the\ltj@tempcntb,
+    \the\ltj@tempcntc)}%
+  }
+
+%%%%%%%% \ltjsetparameter
+\newcount\ltj@@stack \newcount\ltj@@group@level
+\ltj@@group@level=0 \ltj@@stack=0
+
+\setbox0\hbox{%
+  \directlua{% This value depends on the version of LuaTeX.
+    luatexja.stack.hmode = -tex.nest[tex.nest.ptr].mode
+  }%
+}
+
+% prebreakpenalty = {<char_code>, <penalty>}
+\define@key[ltj]{japaram}{kcatcode}{%
+  \expandafter\ltj@@set@stack#1:{KCAT}{0}{0x7FFFFFFF}}
+\define@key[ltj]{japaram}{prebreakpenalty}{%
+  \expandafter\ltj@@set@stack#1:{PRE}{-10000}{10000}}
+\define@key[ltj]{japaram}{postbreakpenalty}{%
+  \expandafter\ltj@@set@stack#1:{POST}{-10000}{10000}}
+\def\ltj@@set@stack#1,#2:#3#4#5{%
+  \directlua{luatexja.stack.set_stack_perchar(luatexja.stack_table_index.#3,
+    \ltj@safe@num@or{nil}{#1},\ltj@safe@num@or{nil}{#2},#4,#5)}}
+
+% jatextfont = {<char_code>, <font_cs>}
+\define@key[ltj]{japaram}{jatextfont}{%
+  \expandafter\ltj@@set@stackfont#1:{MJT}}
+\define@key[ltj]{japaram}{jascriptfont}{%
+  \expandafter\ltj@@set@stackfont#1:{MJS}}
+\define@key[ltj]{japaram}{jascriptscriptfont}{%
+  \expandafter\ltj@@set@stackfont#1:{MJSS}}
+\protected\def\ltj@@set@stackfont#1,#2:#3{%
+  \ltj@reset@globaldefs
+  \ltj@tempcnta=\ltj@curjfnt\ltj@curjfnt=-1 #2%
+  \ifnum\ltj@curjfnt=-1
+    \@PackageError{luatexja-core}%
+    {\string#2 is not a control sequence that represents \MessageBreak
+     a Japanese font}{}%
+  \else
+    \directlua{luatexja.stack.set_stack_font(luatexja.stack_table_index.#3,
+    \ltj@safe@num@or{nil}{#1}, \the\ltj@curjfnt)}%
+  \fi
+  \ltj@curjfnt=\ltj@tempcnta
+  \ltj@restore@globaldefs
+  }
+
+% yalbaselineshift = <dimen>
+% yjabaselineshift = <dimen>
+\define@key[ltj]{japaram}{yalbaselineshift}{%
+  \directlua{tex.setattribute(luatexja.isglobal,
+    luatexbase.attributes['ltj@yablshift'],
+    \ltj@safe@dimen@or\ltj@defdimen{#1})}}
+\define@key[ltj]{japaram}{yjabaselineshift}{%
+  \directlua{tex.setattribute(luatexja.isglobal,
+    luatexbase.attributes['ltj@ykblshift'],
+    \ltj@safe@dimen@or\ltj@defdimen{#1})}}
+
+% jaxspmode = {<char_code>, <mode>}
+% mode: inhibit, preonly, postonly, allow
+%    or       0        1         2      3
+\define@key[ltj]{japaram}{jaxspmode}{%        \inhibitxspcode
+  \expandafter\ltj@set@jaxspmode#1:\relax}
+\def\ltj@set@jaxspmode#1,#2:{%
+  \lowercase{\edef\ltj@temp{#2}}%
+  \def\ltj@tempa{inhibit}\ifx\ltj@temp\ltj@tempa\def\ltj@temp{0}\fi
+  \def\ltj@tempa{preonly}\ifx\ltj@temp\ltj@tempa\def\ltj@temp{1}\fi
+  \def\ltj@tempa{postonly}\ifx\ltj@temp\ltj@tempa\def\ltj@temp{2}\fi
+  \def\ltj@tempa{allow}\ifx\ltj@temp\ltj@tempa\def\ltj@temp{3}\fi
+  \directlua{luatexja.stack.set_stack_perchar(luatexja.stack_table_index.XSP,
+    \ltj@safe@num@or{nil}{#1},
+    \ltj@safe@num@or{nil}{\ltj@temp},0,3)}}
+
+% alxspmode = {<char_code>, <mode>}
+% mode: inhibit, preonly, postonly, allow
+%    or       0        1         2      3
+\define@key[ltj]{japaram}{alxspmode}{%        \inhibitxspcode
+  \expandafter\ltj@set@alxspmode#1:\relax}
+\def\ltj@set@alxspmode#1,#2:{%
+  \lowercase{\edef\ltj@temp{#2}}%
+  \def\ltj@tempa{inhibit}\ifx\ltj@temp\ltj@tempa\def\ltj@temp{0}\fi
+  \def\ltj@tempa{preonly}\ifx\ltj@temp\ltj@tempa\def\ltj@temp{1}\fi
+  \def\ltj@tempa{postonly}\ifx\ltj@temp\ltj@tempa\def\ltj@temp{2}\fi
+  \def\ltj@tempa{allow}\ifx\ltj@temp\ltj@tempa\def\ltj@temp{3}\fi
+  \directlua{luatexja.stack.set_stack_perchar(luatexja.stack_table_index.XSP,
+    \ltj@safe@num@or{nil}{#1},
+    \ltj@safe@num@or{nil}{\ltj@temp},0,3)}}
+
+% autospacing = <bool> (default: true)
+\define@boolkey[ltj]{japaram}{autospacing}[true]{%
+  \ifltj@japaram@autospacing
+    \directlua{luatexja.ext_print_global()}\ltj@autospc=1
+  \else
+    \directlua{luatexja.ext_print_global()}\ltj@autospc=0
+  \fi}
+
+% autoxspacing = <bool> (default: true)
+\define@boolkey[ltj]{japaram}{autoxspacing}[true]{%
+  \ifltj@japaram@autoxspacing
+    \directlua{luatexja.ext_print_global()}\ltj@autoxspc=1
+  \else
+    \directlua{luatexja.ext_print_global()}\ltj@autoxspc=0
+  \fi}
+
+% [x]]kanjiskip = <dimen>
+\define@key[ltj]{japaram}{kanjiskip}{%              % SKIP
+  \directlua{%
+    local d = \ltj@safe@glue{#1}
+    luatexja.stack.set_stack_skip(luatexja.stack_table_index.KSK, d); node.free(d)
+}}
+\define@key[ltj]{japaram}{xkanjiskip}{%             % SKIP
+  \directlua{%
+    local d = \ltj@safe@glue{#1}
+    luatexja.stack.set_stack_skip(luatexja.stack_table_index.XSK, d); node.free(d)
+}}
+
+% jcharwidowpenalty = <count>
+\define@key[ltj]{japaram}{jcharwidowpenalty}{%      %COUNT
+  \ltj@@set@stack0,#1:{JWP}{-10000}{10000}}
+
+% differentjfm = { large | small | average | pleft | pright | paverage | both}
+\define@choicekey*+[ltj]{japaram}{differentjfm}[\ltj@temp\ltj@tempr]%
+  {large,small,average,pleft,pright,paverage,both}{%
+  \ifcase\ltj@tempr
+    \directlua{luatexja.jfmglue.diffmet_rule = math.max}\or
+    \directlua{luatexja.jfmglue.diffmet_rule = math.min}\or
+    \directlua{luatexja.jfmglue.diffmet_rule = math.two_average}\or
+    \directlua{luatexja.jfmglue.diffmet_rule = math.two_pleft}\or
+    \directlua{luatexja.jfmglue.diffmet_rule = math.two_pright}\or
+    \directlua{luatexja.jfmglue.diffmet_rule = math.two_paverage}\or
+    \directlua{luatexja.jfmglue.diffmet_rule = math.two_add}
+  \fi
+}{\ltj@PackageError{luatexja}{invalid argument `#1' for `differentjfm'}{%
+  Argument for `differentjfm' must be one of `large', `small', `average',^^J%
+  `pleft', `pright', 'paverage' or `both'. }}
+  % large, small, average, pleft, pright, paverage, both
+
+
+% jacharrange = { +-<range_number> }
+\define@key[ltj]{japaram}{jacharrange}{\expandafter\ltj@@scrange#1,,}
+\def\ltj@@scrange#1,{%
+  \edef\ltj@temp{#1}%
+  \ifx\ltj@temp\empty\let\next=\relax\else\let\next=\ltj@@scrange
+    \directlua{luatexja.charrange.toggle_char_range(%
+      luatexja.is_global,\ltj@safe@num@or{nil}{#1})}%
+  \fi\next
+}
+
+\protected\def\ltj@setpar@global{%
+  \relax\ifnum\globaldefs>0\directlua{luatexja.isglobal='global'}%
+    \else\directlua{luatexja.isglobal=''}\fi
+}
+\protected\def\ltjsetparameter#1{%
+  \ltj@setpar@global\setkeys[ltj]{japaram}{#1}\ignorespaces}
+\protected\def\ltjglobalsetparameter#1{%
+  \relax\ifnum\globaldefs<0\directlua{luatexja.isglobal=''}%
+    \else\directlua{luatexja.isglobal='global'}\fi%
+  \setkeys[ltj]{japaram}{#1}\ignorespaces}
+
+%%%%%%%% \ltjgetparameter
+\def\ltj@@decl@array@param#1{%
+  \expandafter\let\csname ltj@@array@param/#1\endcsname=t%
+}
+\ltj@@decl@array@param{prebreakpenalty}
+\ltj@@decl@array@param{postbreakpenalty}
+\ltj@@decl@array@param{jaxspmode}
+\ltj@@decl@array@param{alxspmode}
+\ltj@@decl@array@param{kcatcode}
+\ltj@@decl@array@param{jacharrange}
+\ltj@@decl@array@param{chartorange}
+\def\ltjgetparameter#1{%
+  \ifcsname ltj@@array@param/#1\endcsname
+    \expandafter\ltx@firstoftwo
+  \else
+    \expandafter\ltx@secondoftwo
+  \fi
+  {\ltj@@getparam@two{#1}}%
+  {\ltj@@getparam@one{#1}}%
+}
+\def\ltj@@getparam@one#1{%
+  \directlua{luatexja.ext_get_parameter_unary('#1')}}%
+\def\ltj@@getparam@two#1#2{%
+  \directlua{luatexja.ext_get_parameter_binary('#1', \ltj@safe@num@or{nil}{#2})}%
+}
+
+%%%%%%%% \ltjalchar<number>, \ltjjachar<number>
+\let\ltj@@origchar=\char
+\protected\def\ltj@alljachar{\relax
+    \csname ltj@kcat0\endcsname=0
+    \csname ltj@kcat1\endcsname=0
+    \csname ltj@kcat2\endcsname=0
+    \csname ltj@kcat3\endcsname=0
+    \csname ltj@kcat4\endcsname=0
+    \csname ltj@kcat5\endcsname=0
+    \csname ltj@kcat6\endcsname=0 }
+\protected\def\ltj@allalchar{\relax
+    \csname ltj@kcat0\endcsname="7FFFFFFF %"
+    \csname ltj@kcat1\endcsname="7FFFFFFF %"
+    \csname ltj@kcat2\endcsname="7FFFFFFF %"
+    \csname ltj@kcat3\endcsname="7FFFFFFF %"
+    \csname ltj@kcat4\endcsname="7FFFFFFF %"
+    \csname ltj@kcat5\endcsname="7FFFFFFF %"
+    \csname ltj@kcat6\endcsname="7FFFFFFF }%"
+
+\protected\def\ltjjachar{\afterassignment\ltj@@jachar\ltj@tempcnta}
+\def\ltj@@jachar{{\directlua{tex.globaldefs = 0}\ltj@alljachar\ltj@@origchar\ltj@tempcnta}}
+\protected\def\ltjalchar{\afterassignment\ltj@@alchar\ltj@tempcnta}
+\def\ltj@@alchar{{\directlua{tex.globaldefs = 0}\ltj@allalchar\ltj@@origchar\ltj@tempcnta}}
+
+%%%%%%%% \ltjsetmathletter<number>, \ltjunsetmathletter<number>
+\protected\def\ltjsetmathletter#1{%
+  \ltj@tempcnta=#1
+  \directlua{luatexja.math.is_math_letters[\the\ltj@tempcnta]=true}%
+}
+\protected\def\ltjunsetmathletter#1{%
+  \ltj@tempcnta=#1
+  \directlua{luatexja.math.is_math_letters[\the\ltj@tempcnta]=false}%
+}
+
+%%%%%%%% \ltjdeclarealtfont<base_font_cs><alt_font_cs>{100-200,3000-,5000,...}
+% <base_font_cs> の 第 3 引数の文字達は <alt_font_cs> で組む
+% いつも global
+\def\ltj@@getjfontnumber#1{% result in \ltj@tempcntc 
+  \ltj@reset@globaldefs
+  \begingroup\ltj@curjfnt=-1\relax
+  #1\directlua{luatexja.__temp = \the\ltj@curjfnt}\endgroup
+  \ltj@tempcntc=\directlua{tex.sprint(luatexja.__temp)}\relax
+  \ifnum\ltj@tempcntc=-1
+    \@PackageError{luatexja-core}%
+    {\string#1 is not a control sequence that represents \MessageBreak
+     a Japanese font}{I'll use the current Japanese font instead.^^J}%
+    \ltj@tempcntc=\ltj@curjfnt
+  \fi\ltj@restore@globaldefs}
+  
+\protected\def\ltjdeclarealtfont#1#2#3{%
+  {\ltj@@getjfontnumber#1\@tempcnta=\ltj@tempcntc% \@tempcnta: 基底フォント
+   \ltj@@getjfontnumber#2%
+   \expandafter\ltj@@altfont#3,,}\ignorespaces}
+\def\ltj@@altfont#1,{\def\ltj@temp{#1}%
+  \ifx\ltj@temp\empty\let\@next=\relax\else
+  \ltj@@altfontA{#1}\let\@next=\ltj@@altfont\fi\@next}
+\def\ltj@@altfontA#1{\ltj@@altfontB#1--\@nil}
+\def\ltj@@altfontB#1-#2-#3\@nil{\def\ltj@temp{#3}%
+  \ifx\ltj@temp\empty
+    \ltj@tempcnta=#1 \ltj@tempcntb=\ltj@tempcnta
+  \else
+    \def\ltj@temp{#1}%
+    \ifx\ltj@temp\empty\ltj@tempcnta='200\else\ltj@tempcnta=#1\fi\relax
+    \def\ltj@temp{#2}%
+    \ifx\ltj@temp\empty\ltj@tempcntb="10FFFF\else\ltj@tempcntb=#2\fi\relax%"
+  \fi
+  \directlua{luatexja.jfont.set_alt_font(
+    \the\ltj@tempcnta,\the\ltj@tempcntb,
+    \the\ltj@tempcntc, \the\@tempcnta)}%
+  }
+
+%%%%%%%% \ltjclearaltfont<font_cs>
+% <font_cs> の文字は全部 <font_cs> 本来の文字で組む
+\protected\def\ltjclearaltfont#1{%
+  {\ltj@@getjfontnumber#1%
+   \directlua{luatexja.jfont.clear_alt_font(\the\ltj@tempcntc)}}\ignorespaces}
+
+
+%%------------------ Load module for the format
+
+\ifltj@in@latex                 %<*LaTeX>
+  \RequirePackage{ltj-latex}[2013/05/14]
+\else\ifltj@in@plain            %<*plain>
+  \input ltj-plain.sty %
+\fi\fi                          %</LaTeX|plain>
+
+\newluatexcatcodetable\ltj@temp@cctb
+\def\ltj@overwrite@catcodetable#1{%
+  \setluatexcatcodetable\ltj@temp@cctb{\luatexcatcodetable#1}%
+  \setluatexcatcodetable#1{\luatexcatcodetable\ltj@temp@cctb\catcode"FFFFF=14}%
+}
+\ltj@overwrite@catcodetable\CatcodeTableLaTeX
+\ltj@overwrite@catcodetable\CatcodeTableLaTeXAtLetter
+\ltj@overwrite@catcodetable\CatcodeTableExpl
+
+%%------------------ all done
+\ltj@core@AtEnd
+\endinput
+%% EOF

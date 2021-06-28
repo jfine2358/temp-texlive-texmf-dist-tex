@@ -1,0 +1,699 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%       ****************************************
+%       *              myNOTES  x1  
+%       ****************************************
+%
+%  Date of this version: Sun Sep  6 00:25:59 2009
+
+%  Matthias Borck-Elsner
+%
+%% Based on endnotes.sty Copyright 2002 John Lavagnino
+%%
+%% This file may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.2
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%% and version 1.2 or later is part of all distributions of LaTeX
+%% version 1999/12/01 or later.
+%
+%  Uses an extra external file, with .mnt extension, to hold the
+%  text of the mynotes.  This may be deleted after the run; a new
+%  version is generated each time--it doesn't require information
+%  collected from the previous run.
+%
+%  This code does not obey \nofiles.  Perhaps it should.
+%
+%
+%  To turn all the footnotes in your documents into mynotes, say
+%
+%     \let\footnote=\mynote
+%
+%  in your preamble, and then add something like
+%
+%     \newpage
+%     \begingroup
+%     \parindent 0pt
+%     \parskip 2ex
+%     \def\mntnotesize{\normalsize}
+%     \themynotes
+%     \endgroup
+%
+% as the last thing in your document.  (But \themynotes all
+% by itself will work.)
+%
+
+%
+%
+%       ****************************************
+%       *        myNOTE COMMANDS              *
+%       ****************************************
+%
+%
+%   \mynote{NOTE}       : User command to insert a mynote.
+%
+%   \mynote[NUM]{NOTE}  : User command to insert a mynote numbered
+%                           NUM, where NUM is a number -- 1, 2,
+%                           etc.  For example, if mynotes are numbered
+%                           *, **, etc. within pages, then  \mynote[2]{...}
+%                           produces mynote '**'.  This command does  not
+%                           step the mynote counter.
+%
+%   \mynotemark[NUM]    : Command to produce just the mynote mark in
+%                           the text, but no mynote.  With no argument,
+%                           it steps the mynote counter before  generating
+%                           the mark.
+%
+%   \mynotetext[NUM]{TEXT} : Command to produce the mynote but no 
+%                              mark.  \mynote is equivalent to
+%                              \mynotemark \mynotetext .
+%
+%   \addtomynotes{TEXT} : Command to add text or commands to current
+%                              mynotes file: for inserting headings,
+%                              pagebreaks, and the like into mynotes
+%                              sections.  TEXT a moving argument:
+%                              \protect required for fragile commands.
+%
+%       ****************************************
+%       *        myNOTE USER COMMANDS         *
+%       ****************************************
+%
+%   mynotes use the following parameters, similar to those relating
+%   to footnotes:
+%
+%   \mntnotesize   : Size-changing command for mynotes.
+%
+%   \themynote : In usual LaTeX style, produces the mynote number.
+%
+%   \themntmark : Holds the current mynote's mark--e.g., \dag or '1' or 'a'.
+%                 (You don't want to set this yourself, as it comes
+%                 either from the autonumbering of notes or from
+%                 the optional argument to \mynote. But you'll need
+%                 to use it if you define your own \makemntmark.)
+%
+%   \makemntmark : A macro to generate the mynote marker from  \themntmark
+%                  The default definition is \hbox{$^\themntmark$}.
+%
+%   \@makemnttext{NOTE} :
+%        Must produce the actual mynote, using \themntmark as the mark
+%        of the mynote and NOTE as the text.  It is called when effectively
+%        inside a \parbox, with \hsize = \columnwidth.  For example, it might
+%        be as simple as
+%               $^{\themntmark}$ NOTE
+%
+%
+%       ****************************************
+%       *        myNOTE PSEUDOCODE            *
+%       ****************************************
+%
+% \mynote{NOTE}  ==
+%  BEGIN
+%    \stepcounter{mynote}
+%    \@themntmark :=G eval (\themynote)
+%    \@mynotemark
+%    \@mynotetext{NOTE}
+%  END
+%
+% \mynote[NUM]{NOTE} ==
+%  BEGIN
+%    begingroup
+%       counter mynote :=L NUM
+%       \@themntmark :=G eval (\themynote)
+%    endgroup
+%    \@mynotemark
+%    \@mynotetext{NOTE}
+%  END
+%
+% \@mynotetext{NOTE} ==
+%  BEGIN
+%    write to \@mntnotes file: "\@doanmntnote{myNOTE MARK}"
+%    begingroup
+%       \next := NOTE
+%       set \newlinechar for \write to \space
+%       write to \@mntnotes file: \meaning\next
+%               (that is, "macro:->NOTE) 
+%    endgroup
+%  END
+%
+% \addtomynotes{TEXT} ==
+%  BEGIN
+%    open mynotes file if not already open
+%    begingroup
+%       let \protect to \string
+%       set \newlinechar for \write to \space
+%       write TEXT to \@mntnotes file
+%    endgroup
+%  END
+%
+% \mynotemark      ==
+%  BEGIN \stepcounter{mynote}
+%        \@themntmark :=G eval(\themynote)
+%        \@mynotemark
+%  END
+%
+% \mynotemark[NUM] ==
+%   BEGIN
+%       begingroup
+%         mynote counter :=L NUM
+%        \@themntmark :=G eval(\themynote)
+%       endgroup
+%       \@mynotemark
+%   END
+%
+% \@mynotemark ==
+%   BEGIN
+%    \leavevmode
+%    IF hmode THEN \@x@sf := \the\spacefactor FI
+%    \makemntmark          % put number in main text
+%    IF hmode THEN \spacefactor := \@x@sf FI
+%   END
+%
+% \mynotetext      ==
+%    BEGIN \@themntmark :=G eval (\themynote)
+%          \@mynotetext
+%    END
+%
+% \mynotetext[NUM] ==
+%    BEGIN begingroup  counter mynote :=L NUM
+%                      \@themntmark :=G eval (\themynote)
+%          endgroup
+%          \@mynotetext
+%    END
+%
+%       ****************************************
+%       *       myNOTE MACROS             *
+%       ****************************************
+%
+
+\@definecounter{mynote}
+\def\themynote{\@arabic\c@mynote}
+
+\def\@makemntmark{\hbox{\@textsuperscript{\begin{tiny}\@themntmark\end{tiny}}}}
+\def\makemntmark{\@makemntmark}
+
+\def\themntmark{\@themntmark}
+
+\newdimen\mynotesep
+
+\def\mynote{\@ifnextchar[\@xmynote{\stepcounter{mynote}%
+     \protected@xdef\@themntmark{\themynote}%
+     \@mynotemark\@mynotetext}}
+
+\def\@xmynote[#1]{
+   \begingroup
+     \c@mynote=#1\relax
+     \unrestored@protected@xdef\@themntmark{\themynote}%
+   \endgroup
+   \@mynotemark\@mynotetext }
+
+%  Here begins a section of mynote code that's really different from
+% the footnote code of LaTeX.
+
+\let\@doanmntnote=0
+\let\@endanmntnote=0
+
+\newwrite\@mntnotes
+\newif\if@mntnotesopen \global\@mntnotesopenfalse
+
+\def\@openmntnotes{\immediate\openout\@mntnotes=\jobname.mnt\relax
+      \global\@mntnotesopentrue}
+
+%  The stuff with \next and \meaning is a trick from the TeXbook, 382,
+% there intended for setting verbatim text, but here used to avoid
+% macro expansion when the footnote text is written.  \next will have
+% the entire text of the footnote as one long line, which might well
+% overflow limits on output line length; the business with \newlinechar
+% makes every space become a newline in the \@mntnotes file, so that all
+% of the lines wind up being quite short.
+
+\long\def\@mynotetext#1{%
+     \if@mntnotesopen \else \@openmntnotes \fi
+     \immediate\write\@mntnotes{\@doanmntnote{\@themntmark}}%
+     \begingroup
+        \def\next{#1}%
+        \newlinechar='40
+        \immediate\write\@mntnotes{\meaning\next}%
+     \endgroup
+     \immediate\write\@mntnotes{\@endanmntnote}}
+
+% \addtomynotes works the way the other mynote macros probably should
+% have, requiring the use of \protect for fragile commands.
+
+\long\def\addtomynotes#1{%
+     \if@mntnotesopen \else \@openmntnotes \fi
+     \begingroup
+        \newlinechar='40
+        \let\protect\string
+        \immediate\write\@mntnotes{#1}%
+     \endgroup}
+
+%  End of unique mynote code
+
+\def\mynotemark{%
+   \@ifnextchar[\@xmynotemark
+     {\stepcounter{mynote}%
+      \protected@xdef\@themntmark{\themynote}%
+      \@mynotemark}}
+
+\def\@xmynotemark[#1]{%
+   \begingroup
+      \c@mynote #1\relax
+      \unrestored@protected@xdef\@themntmark{\themynote}%
+   \endgroup
+   \@mynotemark}
+
+\def\@mynotemark{%
+  \leavevmode
+  \ifhmode\edef\@x@sf{\the\spacefactor}\nobreak\fi
+  \makemntmark
+  \ifhmode\spacefactor\@x@sf\fi
+  \relax}
+
+\def\mynotetext{
+     \@ifnextchar [\@xmynotenext
+       {\protected@xdef\@themntmark{\themynote}%
+    \@mynotetext}}
+
+\def\@xmynotenext[#1]{\begingroup \c@mynote=#1\relax
+   \xdef\@themntmark{\themynote}\endgroup \@mynotetext}
+
+\def\@xmynotenext[#1]{%
+  \begingroup
+     \c@mynote=#1\relax
+     \unrestored@protected@xdef\@themntmark{\themynote}%
+  \endgroup
+  \@mynotetext}
+
+
+%  \themynotes actually prints out the mynotes.
+
+%  The user may want separate mynotes for each chapter, or a big
+% block of them at the end of the whole document.  As it stands,
+% either will work; you just say \themynotes wherever you want the
+% mynotes so far to be inserted.  However, you must add
+% \setcounter{mynote}{0} after that if you want subsequent mynotes
+% to start numbering at 1 again.
+
+%  \mntnoteformat is provided so user can specify some special formatting
+% for the mynotes.  It needs to set up the paragraph parameters, start
+% the paragraph, and print the label.  The \mbox stuff in \mntnoteheading
+% is to make and undo a dummy paragraph, to get around the games \section*
+% plays with paragraph indenting and instead give us uniform
+% indenting for all notes.
+
+\def\mntnotesname{ mynotes } 
+\def\mntnoteheading{ \subsubsection*{\mntnotesname 
+ \@mkboth{\MakeUppercase{\mntnotesname}}{\MakeUppercase{\mntnotesname}}}
+  \mbox{ }\par\vskip-\baselineskip}
+
+\def\mntnoteformat{\rightskip\z@ \leftskip\z@ \parindent=1.8em
+  \leavevmode\llap{\makemntmark}}
+
+\def\mntnotesize{\footnotesize}
+
+\def\themynotes{\immediate\closeout\@mntnotes \global\@mntnotesopenfalse
+  \begingroup
+    \makeatletter
+    %
+    % The machinery with \@ResetGT and > here ensures that
+    % \@doanmntnote works properly even if > is an active character
+    % at the point where \themynotes is invoked. > needs to have
+    % catcode 12 when the arguments of \@doanmntnote are scanned, so
+    % that the > in the string "macro:->" is matched.  The actual
+    % footnote text is not an argument to \@doanmntnote, but just
+    % follows it in the .mnt file; so \@ResetGT can reset the
+    % category code for > that should be used when processing
+    % that text.  That resetting takes place within a
+    % \begingroup-\endgroup block set up by \@doanmntnote and
+    % \@endanmntnote, so the catcode for > is back to 12 for the
+    % next note.
+    %
+    \edef\@tempa{`\string >}%
+    \ifnum\catcode\@tempa=12%
+      \let\@ResetGT\relax
+    \else
+      \edef\@ResetGT{\noexpand\catcode\@tempa=\the\catcode\@tempa}%
+      \@makeother\>%
+    \fi
+    \def\@doanmntnote##1##2>{\def\@themntmark{##1}\par\begingroup
+        \@ResetGT
+        \edef\@currentlabel{\csname p@mynote\endcsname\@themntmark}%
+        \mntnoteformat}
+    \def\@endanmntnote{\par\endgroup}%
+    \mntnoteheading
+    \mntnotesize
+    \input{\jobname.mnt}%
+  \endgroup}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%       ****************************************
+%       *              noNOTES  x2  
+%       ****************************************
+%
+%  Date of this version: 28 August 2009.
+%  Matthias Borck-Elsner
+%
+%% Based on endnotes.sty Copyright 2002 John Lavagnino
+%%
+%% This file may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.2
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%% and version 1.2 or later is part of all distributions of LaTeX
+%% version 1999/12/01 or later.
+%
+%  Uses an extra external file, with .not extension, to hold the
+%  text of the nonotes.  This may be deleted after the run; a new
+%  version is generated each time--it doesn't require information
+%  collected from the previous run.
+%
+%  This code does not obey \nofiles.  Perhaps it should.
+%
+%
+%  To turn all the footnotes in your documents into nonotes, say
+%
+%     \let\footnote=\nonote
+%
+%  in your preamble, and then add something like
+%
+%     \newpage
+%     \begingroup
+%     \parindent 0pt
+%     \parskip 2ex
+%     \def\notnotesize{\normalsize}
+%     \thenonotes
+%     \endgroup
+%
+% as the last thing in your document.  (But \thenonotes all
+% by itself will work.)
+%
+
+%
+%
+%       ****************************************
+%       *        noNOTE COMMANDS              *
+%       ****************************************
+%
+%
+%   \nonote{NOTE}       : User command to insert a nonote.
+%
+%   \nonote[NUM]{NOTE}  : User command to insert a nonote numbered
+%                           NUM, where NUM is a number -- 1, 2,
+%                           etc.  For example, if nonotes are numbered
+%                           *, **, etc. within pages, then  \nonote[2]{...}
+%                           produces nonote '**'.  This command does  not
+%                           step the nonote counter.
+%
+%   \nonotemark[NUM]    : Command to produce just the nonote mark in
+%                           the text, but no nonote.  With no argument,
+%                           it steps the nonote counter before  generating
+%                           the mark.
+%
+%   \nonotetext[NUM]{TEXT} : Command to produce the nonote but no 
+%                              mark.  \nonote is equivalent to
+%                              \nonotemark \nonotetext .
+%
+%   \addtononotes{TEXT} : Command to add text or commands to current
+%                              nonotes file: for inserting headings,
+%                              pagebreaks, and the like into nonotes
+%                              sections.  TEXT a moving argument:
+%                              \protect required for fragile commands.
+%
+%       ****************************************
+%       *        noNOTE USER COMMANDS         *
+%       ****************************************
+%
+%   nonotes use the following parameters, similar to those relating
+%   to footnotes:
+%
+%   \notnotesize   : Size-changing command for nonotes.
+%
+%   \thenonote : In usual LaTeX style, produces the nonote number.
+%
+%   \thenotmark : Holds the current nonote's mark--e.g., \dag or '1' or 'a'.
+%                 (You don't want to set this yourself, as it comes
+%                 either from the autonumbering of notes or from
+%                 the optional argument to \nonote. But you'll need
+%                 to use it if you define your own \makenotmark.)
+%
+%   \makenotmark : A macro to generate the nonote marker from  \thenotmark
+%                  The default definition is \hbox{$^\thenotmark$}.
+%
+%   \@makenottext{NOTE} :
+%        Must produce the actual nonote, using \thenotmark as the mark
+%        of the nonote and NOTE as the text.  It is called when effectively
+%        inside a \parbox, with \hsize = \columnwidth.  For example, it might
+%        be as simple as
+%               $^{\thenotmark}$ NOTE
+%
+%
+%       ****************************************
+%       *        noNOTE PSEUDOCODE            *
+%       ****************************************
+%
+% \nonote{NOTE}  ==
+%  BEGIN
+%    \stepcounter{nonote}
+%    \@thenotmark :=G eval (\thenonote)
+%    \@nonotemark
+%    \@nonotetext{NOTE}
+%  END
+%
+% \nonote[NUM]{NOTE} ==
+%  BEGIN
+%    begingroup
+%       counter nonote :=L NUM
+%       \@thenotmark :=G eval (\thenonote)
+%    endgroup
+%    \@nonotemark
+%    \@nonotetext{NOTE}
+%  END
+%
+% \@nonotetext{NOTE} ==
+%  BEGIN
+%    write to \@notnotes file: "\@doannotnote{noNOTE MARK}"
+%    begingroup
+%       \next := NOTE
+%       set \newlinechar for \write to \space
+%       write to \@notnotes file: \meaning\next
+%               (that is, "macro:->NOTE) 
+%    endgroup
+%  END
+%
+% \addtononotes{TEXT} ==
+%  BEGIN
+%    open nonotes file if not already open
+%    begingroup
+%       let \protect to \string
+%       set \newlinechar for \write to \space
+%       write TEXT to \@notnotes file
+%    endgroup
+%  END
+%
+% \nonotemark      ==
+%  BEGIN \stepcounter{nonote}
+%        \@thenotmark :=G eval(\thenonote)
+%        \@nonotemark
+%  END
+%
+% \nonotemark[NUM] ==
+%   BEGIN
+%       begingroup
+%         nonote counter :=L NUM
+%        \@thenotmark :=G eval(\thenonote)
+%       endgroup
+%       \@nonotemark
+%   END
+%
+% \@nonotemark ==
+%   BEGIN
+%    \leavevmode
+%    IF hmode THEN \@x@sf := \the\spacefactor FI
+%    \makenotmark          % put number in main text
+%    IF hmode THEN \spacefactor := \@x@sf FI
+%   END
+%
+% \nonotetext      ==
+%    BEGIN \@thenotmark :=G eval (\thenonote)
+%          \@nonotetext
+%    END
+%
+% \nonotetext[NUM] ==
+%    BEGIN begingroup  counter nonote :=L NUM
+%                      \@thenotmark :=G eval (\thenonote)
+%          endgroup
+%          \@nonotetext
+%    END
+%
+%       ****************************************
+%       *       noNOTE MACROS             *
+%       ****************************************
+%
+
+\@definecounter{nonote}
+\def\thenonote{\@arabic\c@nonote}
+
+\def\@makenotmark{\hbox{\@textsuperscript{\begin{tiny}\@thenotmark\end{tiny}}}}
+\def\makenotmark{\@makenotmark}
+
+\def\thenotmark{\@thenotmark}
+
+\newdimen\nonotesep
+
+\def\nonote{\@ifnextchar[\@xnonote{\stepcounter{nonote}%
+     \protected@xdef\@thenotmark{\thenonote}%
+     \@nonotemark\@nonotetext}}
+
+\def\@xnonote[#1]{
+   \begingroup
+     \c@nonote=#1\relax
+     \unrestored@protected@xdef\@thenotmark{\thenonote}%
+   \endgroup
+   \@nonotemark\@nonotetext }
+
+%  Here begins a section of nonote code that's really different from
+% the footnote code of LaTeX.
+
+\let\@doannotnote=0
+\let\@endannotnote=0
+
+\newwrite\@notnotes
+\newif\if@notnotesopen \global\@notnotesopenfalse
+
+\def\@opennotnotes{\immediate\openout\@notnotes=\jobname.not\relax
+      \global\@notnotesopentrue}
+
+%  The stuff with \next and \meaning is a trick from the TeXbook, 382,
+% there intended for setting verbatim text, but here used to avoid
+% macro expansion when the footnote text is written.  \next will have
+% the entire text of the footnote as one long line, which might well
+% overflow limits on output line length; the business with \newlinechar
+% makes every space become a newline in the \@notnotes file, so that all
+% of the lines wind up being quite short.
+
+\long\def\@nonotetext#1{
+     \if@notnotesopen \else \@opennotnotes \fi
+     \immediate\write\@notnotes{\@doannotnote{\@thenotmark}}%
+     \begingroup
+        \def\next{#1}%
+        \newlinechar='40
+        \immediate\write\@notnotes{\meaning\next}%
+     \endgroup
+     \immediate\write\@notnotes{\@endannotnote}}
+
+% \addtononotes works the way the other nonote macros probably should
+% have, requiring the use of \protect for fragile commands.
+
+\long\def\addtononotes#1{%
+     \if@notnotesopen \else \@opennotnotes \fi
+     \begingroup
+        \newlinechar='40
+        \let\protect\string
+        \immediate\write\@notnotes{#1}%
+     \endgroup}
+
+%  End of unique nonote code
+
+\def\nonotemark{%
+   \@ifnextchar[\@xnonotemark
+     {\stepcounter{nonote}%
+      \protected@xdef\@thenotmark{\thenonote}%
+      \@nonotemark}}
+
+\def\@xnonotemark[#1]{%
+   \begingroup
+      \c@nonote #1\relax
+      \unrestored@protected@xdef\@thenotmark{\thenonote}%
+   \endgroup
+   \@nonotemark}
+
+\def\@nonotemark{%
+  \leavevmode
+  \ifhmode\edef\@x@sf{\the\spacefactor}\nobreak\fi
+  \makenotmark
+  \ifhmode\spacefactor\@x@sf\fi
+  \relax}
+
+\def\nonotetext{%
+     \@ifnextchar [\@xnonotenext
+       {\protected@xdef\@thenotmark{\thenonote}%
+    \@nonotetext}}
+
+\def\@xnonotenext[#1]{\begingroup \c@nonote=#1\relax
+   \xdef\@thenotmark{\thenonote}\endgroup \@nonotetext}
+
+\def\@xnonotenext[#1]{%
+  \begingroup
+     \c@nonote=#1\relax
+     \unrestored@protected@xdef\@thenotmark{\thenonote}%
+  \endgroup
+  \@nonotetext}
+
+
+%  \thenonotes actually prints out the nonotes.
+
+%  The user may want separate nonotes for each chapter, or a big
+% block of them at the end of the whole document.  As it stands,
+% either will work; you just say \thenonotes wherever you want the
+% nonotes so far to be inserted.  However, you must add
+% \setcounter{nonote}{0} after that if you want subsequent nonotes
+% to start numbering at 1 again.
+
+%  \notnoteformat is provided so user can specify some special formatting
+% for the nonotes.  It needs to set up the paragraph parameters, start
+% the paragraph, and print the label.  The \mbox stuff in \notnoteheading
+% is to make and undo a dummy paragraph, to get around the games \section*
+% plays with paragraph indenting and instead give us uniform
+% indenting for all notes.
+
+\def\notnotesname{ nonotes } 
+\def\notnoteheading{\subsubsection*{\notnotesname
+  \@mkboth{\MakeUppercase{\notnotesname}}{\MakeUppercase{\notnotesname}}}
+  \mbox{}\par\vskip-\baselineskip}
+
+\def\notnoteformat{\rightskip\z@ \leftskip\z@ \parindent=1.8em
+  \leavevmode\llap{\makenotmark}}
+
+\def\notnotesize{\footnotesize}
+
+\def\thenonotes{\immediate\closeout\@notnotes \global\@notnotesopenfalse
+  \begingroup
+    \makeatletter
+    %
+    % The machinery with \@ResetGT and > here ensures that
+    % \@doannotnote works properly even if > is an active character
+    % at the point where \thenonotes is invoked. > needs to have
+    % catcode 12 when the arguments of \@doannotnote are scanned, so
+    % that the > in the string "macro:->" is matched.  The actual
+    % footnote text is not an argument to \@doannotnote, but just
+    % follows it in the .not file; so \@ResetGT can reset the
+    % category code for > that should be used when processing
+    % that text.  That resetting takes place within a
+    % \begingroup-\endgroup block set up by \@doannotnote and
+    % \@endannotnote, so the catcode for > is back to 12 for the
+    % next note.
+    %
+    \edef\@tempa{`\string >}%
+    \ifnum\catcode\@tempa=12%
+      \let\@ResetGT\relax
+    \else
+      \edef\@ResetGT{\noexpand\catcode\@tempa=\the\catcode\@tempa}%
+      \@makeother\>%
+    \fi
+    \def\@doannotnote##1##2>{\def\@thenotmark{##1}\par\begingroup
+        \@ResetGT
+    \edef\@currentlabel{\csname p@nonote\endcsname\@thenotmark}%
+        \notnoteformat}
+    \def\@endannotnote{\par\endgroup}%
+    \notnoteheading
+    \notnotesize
+    \input{\jobname.not}
+  \endgroup}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+

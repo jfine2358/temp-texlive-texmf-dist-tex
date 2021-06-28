@@ -1,0 +1,184 @@
+%D \module
+%D   [       file=strc-mar,
+%D        version=2008.10.20,
+%D          title=\CONTEXT\ Structure Macros,
+%D       subtitle=Markings,
+%D         author=Hans Hagen,
+%D           date=\currentdate,
+%D      copyright=PRAGMA-ADE / Hans Hagen]
+%C
+%C This module is part of the \CONTEXT\ macro||package and is
+%C therefore copyrighted by \PRAGMA. See mreadme.pdf for
+%C details.
+
+\writestatus{loading}{ConTeXt Structure Macros / Markings}
+
+\registerctxluafile{strc-mar}{1.001}
+
+\unprotect
+
+%D Synchronizing marks is a rather tricky and messy business. When
+%D setting a mark, a node is added to the list in order for to \TEX\
+%D be able to figure out the 3 current marks when a page is made
+%D (last mark on previous page, first on current page, last on
+%D current page; in \LUATEX\ we might at one point have the first on
+%D the next page as well).
+%D
+%D Resetting a mark is not easy. An empty one will not erase the last
+%D one on the previous page for instance. In \LUATEX\ we can clear a
+%D marks state register with \type {\clearmarks} but since this is an
+%D immediate operation it might have unwanted side effects when \TEX\
+%D has collected several pages of text and finishing off these pages
+%D uses marks.
+%D
+%D In \MKIV\ we provide an alternative model that permits some more
+%D control over the way marks are used. It is not entirely compatible
+%D with \MKII\ or previous \MKIV\ implementations but in practice this
+%D is not a real problem. It's also easier now to extend this mechanism.
+
+% if global has side effects we will need to nil it selectively
+% and optionally enable it in for instance postponed content
+
+\definesystemattribute [marks] [global]
+
+\let\currentmarking\empty
+
+\def\markingparameter          #1{\csname\domarkingparameter{\??mk\currentmarking}#1\endcsname}
+\def\namedmarkingparameter   #1#2{\csname\domarkingparameter{\??mk#1}#2\endcsname}
+\def\domarkingparameter      #1#2{\ifcsname#1#2\endcsname#1#2\else\expandafter\domarkingparentparameter\csname#1\s!parent\endcsname#2\fi}
+\def\domarkingparentparameter#1#2{\ifx#1\relax\s!empty\else\domarkingparameter#1#2\fi}
+
+% \def\markingparameterhash          #1{\domarkingparameterhash{\??mk\currentmarking}#1}
+% \def\domarkingparameterhash      #1#2{\ifcsname#1#2\endcsname#1\else\expandafter\domarkingparentparameterhash\csname#1\s!parent\endcsname#2\fi}
+% \def\domarkingparentparameterhash#1#2{\ifx#1\relax\else\domarkingparameterhash#1#2\fi}
+%
+% \def\detokenizedmarkingparameter#1{\detokenize\expandafter\expandafter\expandafter{\csname\??mk\currentmarking#1\endcsname}}
+%
+% \def\dosetmarkingattributes#1#2% style color
+%   {\edef\fontattributehash {\markingparameterhash#1}%
+%    \edef\colorattributehash{\markingparameterhash#2}%
+%    \ifx\fontattributehash \empty\else\dosetfontattribute \fontattributehash #1\fi
+%    \ifx\colorattributehash\empty\else\dosetcolorattribute\colorattributehash#2\fi}
+
+\newconditional\inhibitgetmarking
+\newconditional\inhibitsetmarking
+\newtoks       \everymarking
+
+\unexpanded\def\setupmarking
+  {\dodoubleargument\dosetupmarking}
+
+\def\dosetupmarking[#1][#2]%
+  {\ifsecondargument
+     \def\docommand##1{\getparameters[\??mk##1][#2]}%
+     \processcommalist[#1]\docommand
+   \else
+     \getparameters[\??mk][#1]%
+   \fi}
+
+% management
+
+\unexpanded\def\definemarking     {\dodoubleempty   \dodefinemarking}
+\unexpanded\def\relatemarking     {\dodoubleempty   \dorelatemarking}
+\unexpanded\def\setmarking        {\dosingleargument\dosetmarking   } \let\marking\setmarking
+\unexpanded\def\resetmarking      {\dosingleargument\doresetmarking }
+\unexpanded\def\synchronizemarking{\dodoubleargument\dosynchronizemarking }
+
+\def\dodefinemarking[#1][#2]% marking parent
+  {\doifelsenothing{#2}
+     {\ctxcommand{definemarking("#1")}%
+      \getparameters[\??mk#1][\s!parent=\??mk]}
+     {\ctxcommand{definemarking("#1",{ parent = "#2" })}%
+      \getparameters[\??mk#1][\s!parent=\??mk#2]}}
+
+\def\dorelatemarking[#1][#2]%
+  {\ctxcommand{relatemarking("#1","#2")}}
+
+\def\dosetmarking[#1]#2%
+  {\ifconditional\inhibitsetmarking
+     % nothing
+   \else
+     \doifelse{\namedmarkingparameter{#1}\c!expansion}\v!yes
+       {\ctxcommand{setmarking("#1",\!!bs#2\!!es)}}
+       {\ctxcommand{setmarking("#1",\!!bs\detokenize{#2}\!!es)}}%
+   \fi}
+
+\def\doresetmarking[#1]%
+  {\ctxcommand{resetmarking("#1")}}
+
+\def\doifelsemarking#1%
+  {\ctxcommand{doifelsemarking("#1")}}
+
+\def\dosynchronizemarking[#1][#2]% class boxnumber (some day also name), maybe second argument table
+  {\ifvoid#2\else\ctxcommand{synchronizemarking("#1",\number#2)}\fi}
+
+% \appendtoks
+%     \dosynchronizemarking[\v!page][\normalpagebox]%
+% \to \everybeforepagebody
+
+% defaults
+
+\setupmarking
+  [\c!expansion=\v!no,
+   \c!separator=\space\emdash\space,
+   \c!filtercommand=\firstofoneargument,
+   \c!state=\v!start]
+
+% fetching, regular interface
+
+\unexpanded\def\getmarking
+  {\ifconditional\inhibitgetmarking
+     \expandafter\dotripleargument\expandafter\nogetmarking
+   \else
+     \expandafter\dotripleargument\expandafter\dogetmarking
+   \fi}
+
+\def\nogetmarking[#1][#2][#3]%
+  {}
+
+\def\dogetmarking[#1][#2][#3]%
+  {\doif{\namedmarkingparameter{#1}\c!state}\v!start
+     {\begingroup
+      \setsystemmode\v!marking
+      \the\everymarking
+      \ifthirdargument
+        \ctxcommand{getmarking("#1","#2","#3")}%
+      \else
+        \ctxcommand{getmarking("#1","\v!page","#2")}%
+      \fi
+      \endgroup}}
+
+% the fetchers are fully expandable: [name][method]
+
+\def\fetchonemark[#1]#2[#3]{\ifconditional\inhibitgetmarking\else\ctxcommand{fetchonemark ("#1","\v!page","#2")}\fi}
+\def\fetchtwomarks     [#1]{\ifconditional\inhibitgetmarking\else\ctxcommand{fetchtwomarks("#1","\v!page")}\fi}
+\def\fetchallmarks     [#1]{\ifconditional\inhibitgetmarking\else\ctxcommand{fetchallmarks("#1","\v!page")}\fi}
+
+\let\fetchmark\fetchonemark
+
+% also fully expandable but here we have: [name][range][method]
+
+\def\fetchonemarking[#1]#2[#3]#4[#5]{\ifconditional\inhibitgetmarking\else\ctxcommand{fetchonemark ("#1","#3","#5")}\fi}
+\def\fetchtwomarkings     [#1]#2[#3]{\ifconditional\inhibitgetmarking\else\ctxcommand{fetchtwomarks("#1","#3")}\fi}
+\def\fetchallmarkings     [#1]#2[#3]{\ifconditional\inhibitgetmarking\else\ctxcommand{fetchallmarks("#1","#3")}\fi}
+
+\let\fetchmarking\fetchonemarking
+
+\def\markingseparator#1{\namedmarkingparameter{#1}\c!separator}
+\def\markingcommand  #1{\namedmarkingparameter{#1}\c!filtercommand}
+
+%D Experimental:
+%D
+%D \starttyping
+%D \definemarking[boxmark]
+%D
+%D \setbox0\ruledvbox{
+%D     \marking[boxmark]{tufte} \input tufte \par
+%D     \marking[boxmark]{ward}  \input ward  \par
+%D }
+%D
+%D \synchronizemarking[zerobox][0] \box0
+%D
+%D marks: (\getmarking[boxmark][zerobox][first],\getmarking[boxmark][zerobox][last])
+%D \stoptyping
+
+\protect \endinput

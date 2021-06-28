@@ -1,0 +1,765 @@
+%%
+%% This is file `colorist/colorist.sty',
+%% generated with the docstrip utility.
+
+%% Copyright (C) 2021 by Jinwen XU
+%% 
+%% This is part of the colorist class series.
+%% 
+%% This work may be distributed and/or modified under the conditions of the
+%% LaTeX Project Public License, either version 1.3c of this license or (at
+%% your option) any later version. The latest version of this license is in
+%% 
+%%     http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3c or later is part of all distributions of LaTeX version
+%% 2005/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[2020-10-01]
+\ProvidesPackage{colorist}
+    [2021/03/15 A colorful style for articles and books]
+\RequirePackage{etoolbox}
+\RequirePackage{kvoptions}
+\SetupKeyvalOptions{%
+    family = @colorist,
+    prefix = @colorist@
+}
+\DeclareBoolOption[false]{draft}
+\DeclareBoolOption[false]{fast}
+\DeclareBoolOption[false]{polyglossia}
+\ProcessKeyvalOptions*\relax
+
+\if@colorist@draft
+  \@colorist@fasttrue
+\fi
+
+\newif\ifIsBook
+\ifdefined\chapter\IsBooktrue\else\IsBookfalse\fi
+
+%%================================
+%% Title fonts
+%%================================
+\RequirePackage{anyfontsize}
+\newcommand{\partfont}{\sffamily}
+\newcommand{\chapfont}{\sffamily}
+\newcommand{\secfont}{\sffamily}
+\newcommand{\subsecfont}{}
+\newcommand{\subsubsecfont}{}
+
+%%================================
+%% Color
+%%================================
+\RequirePackage{xcolor}
+\definecolor{paper}{RGB}{255,255,255}
+\definecolor{skyblue}{RGB}{60,120,234}
+\definecolor{steelblue}{RGB}{70,130,180}
+\definecolor{forestgreen}{RGB}{21,122,81}
+\definecolor{lightorange}{RGB}{255,185,88}
+\definecolor{lightskyblue}{RGB}{35,198,255}
+
+%%================================
+%% Footer
+%%================================
+\RequirePackage{geometry}
+\RequirePackage{fancyhdr}
+\RequirePackage{extramarks}
+\fancypagestyle{fancy}{
+    \fancyhf{}
+    \if@twoside
+        \fancyfoot[RO]{\small\textcolor{black!30!paper}{\lastrightmark}%
+            ~~\rlap{\textcolor{gray!55!paper}{$|$}~~\thepage}}
+        \fancyfoot[LE]{\small\leavevmode\llap{\thepage%
+            ~~\textcolor{gray!55!paper}{$|$}}%
+            ~~\textcolor{black!30!paper}{\lastleftmark}}
+    \else
+        \fancyfoot[R]{\small\textcolor{black!30!paper}{\lastrightmark}%
+            ~~\rlap{\textcolor{gray!55!paper}{$|$}~~\thepage}}
+    \fi
+    \renewcommand{\headrulewidth}{0pt}
+}
+\pagestyle{fancy}
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \if@twoside
+        \fancyfoot[RO]{\small%
+            ~\rlap{\textcolor{gray!55!paper}{$|$}~~\thepage}}
+        \fancyfoot[LE]{\small\leavevmode\llap{\thepage%
+            ~~\textcolor{gray!55!paper}{$|$}}}
+    \else
+        \fancyfoot[R]{\small%
+            ~\rlap{\textcolor{gray!55!paper}{$|$}~~\thepage}}
+    \fi
+    \renewcommand{\headrulewidth}{0pt}
+}
+\ifbool{IsBook}{
+    \if@twoside
+        \renewcommand{\chaptermark}[1]{\markboth{\textsc{#1}}{}}
+    \else
+        \renewcommand{\chaptermark}[1]{\markboth{\textsc{#1}}{\textsc{#1}}}
+    \fi
+    \renewcommand*{\sectionmark}[1]{%
+        \markright{\thesection~~#1}}
+}{
+    \if@twoside
+        \renewcommand*{\sectionmark}[1]{\markboth{\textsc{#1}}{}}
+    \else
+        \renewcommand*{\sectionmark}[1]{\markboth{\textsc{#1}}{\textsc{#1}}}
+    \fi
+}
+%%================================
+%% Line spacing
+%%================================
+\RequirePackage{setspace}
+\setstretch{1.07}
+\raggedbottom
+
+%%================================
+%% Title format
+%%================================
+\RequirePackage[explicit,newparttoc]{titlesec}
+\PassOptionsToPackage{normalem}{ulem}
+\RequirePackage{ulem}
+
+\ifbool{IsBook}{
+    %% Part
+    \titleclass{\part}{top} % make part like a chapter
+    \titleformat{\part}[display]
+        {\partfont\filleft}
+        {\MakeUppercase{\partname~\protect\thepart}}
+        {1em}
+        {\fontsize{20}{0}\selectfont\MakeUppercase{#1}}
+    \titleformat{name=\part,numberless}[display]
+        {% \phantomsection\addcontentsline{toc}{part}{#1}%
+        \partfont\filleft}
+        {\phantom{\MakeUppercase{\partname}}}
+        {1em}
+        {\fontsize{20}{0}\selectfont\MakeUppercase{#1}}
+    \titlespacing*{\part}{0pt}{5em}{6em}
+    %% Text after part
+    \newcommand{\parttext}[1]{%
+        \vfill%
+        \begin{flushright}%
+            \begin{minipage}{0.833\textwidth}%
+                \color{black!80!paper}\raggedleft#1%
+            \end{minipage}%
+        \end{flushright}%
+        \vfill\vfill%
+        \cleardoublepage%
+    }
+
+    %% Chapter
+    \titleformat{\chapter}
+        {\thispagestyle{fancy}%
+        \color{black!80!paper}\chapfont\fontsize{16}{0}\selectfont}{}{0em}
+        {\rlap{\hspace*{-.5em}{\color{gray!25!paper}%
+            \fontsize{80}{0}\selectfont\raisebox{-7pt}{\thechapter}}}#1}
+    \titleformat{name=\chapter,numberless}
+        {\thispagestyle{fancy}% \phantomsection\addcontentsline{toc}{chapter}{#1}%
+        \color{black!80!paper}\chapfont\fontsize{16}{0}\selectfont}{}{0em}
+        {\rlap{\hspace*{-.5em}{\color{gray!25!paper}%
+            \fontsize{80}{0}\selectfont\normalfont\raisebox{-7pt}{*}}}#1}
+
+    %% Section
+    \titleformat{\section}
+    {\secfont\large\color{steelblue}}
+    {\thesection}{.75em}{#1}
+    [{\titlerule[.75pt]}]
+}{
+    %% Part
+    \titleformat{\part}[display]
+        {%
+        \partfont\filleft}
+        {\MakeUppercase{\partname~\protect\thepart}}
+        {.3em}
+        {\fontsize{16}{0}\selectfont\MakeUppercase{#1}}
+    \titleformat{name=\part,numberless}[display]
+        {% \phantomsection\addcontentsline{toc}{part}{#1}%
+        \partfont\filleft}
+        {\phantom{\MakeUppercase{\partname}}}
+        {.3em}
+        {\fontsize{16}{0}\selectfont\MakeUppercase{#1}}
+    %% Text after part
+    \newcommand{\parttext}[1]{%
+        \begin{flushright}%
+            \begin{minipage}{0.833\textwidth}%
+                \color{black!80!paper}\raggedleft#1%
+            \end{minipage}%
+        \end{flushright}%
+    }
+
+    %% Section
+    \titleformat{\section}
+    {\secfont\large\color{steelblue}}
+    {\thesection}{.75em}{\scshape #1}
+    [{\titlerule[.75pt]}]
+}
+
+%% Subsection
+\titleformat{\subsection}
+    {\subsecfont}{}{0em}
+    {\textsf{\thesubsection}~~\textcolor{gray!55!paper}{$|$}~~#1}
+\titleformat{name=\subsection,numberless}
+    {\subsecfont}{}{0em}
+    {#1}
+
+%% Subsubsection
+\titleformat{\subsubsection}
+    {\subsubsecfont}{\sffamily\thesubsubsection}{.5em}
+    {#1}
+\titlespacing{\subsubsection}{0pt}{.8\baselineskip}{.5\baselineskip}
+
+%%================================
+%% TOC format
+%%================================
+\RequirePackage{titletoc}
+\titlecontents{part}
+    [0em]
+    {\addvspace{1.5pc}\filcenter\partfont}
+    {\thecontentslabel\\\uppercase}
+    {}
+    {} % without page number
+    [\addvspace{.5pc}]
+\ifbool{IsBook}{
+    \titlecontents{chapter}
+        [2em] % i.e., 0em (part) + 2em
+        {\addvspace{.5pc}\chapfont}
+        {\contentslabel{2em}}
+        {\hspace*{-2em}}
+        {\normalfont\titlerule*[1em]{\textcolor{gray!30!paper}{.}}\contentspage}
+    \titlecontents{section}
+        [4em] % i.e., 2em (chapter) + 2em
+        {\secfont}
+        {\contentslabel{1.75em}}
+        {\hspace*{-1.75em}}
+        {\titlerule*[1em]{\textcolor{gray!30!paper}{.}}\contentspage}
+    \titlecontents{subsection}
+        [7em] % i.e., 4em (section) + 3em
+        {\subsecfont}
+        {\contentslabel{2.75em}}
+        {\hspace*{-2.75em}}
+        {\titlerule*[1em]{\textcolor{gray!30!paper}{.}}\contentspage}
+}{
+    \titlecontents{section}
+        [2em] % i.e., 0em (part) + 2em
+        {\secfont}
+        {\contentslabel{1.75em}}
+        {\hspace*{-1.75em}}
+        {\titlerule*[1em]{\textcolor{gray!30!paper}{.}}\contentspage}
+    \titlecontents{subsection}
+        [5em] % i.e., 2em (section) + 3em
+        {\subsecfont}
+        {\contentslabel{2.75em}}
+        {\hspace*{-2.75em}}
+        {\titlerule*[1em]{\textcolor{gray!30!paper}{.}}\contentspage}
+}
+
+%%================================
+%% Lists
+%%================================
+\RequirePackage{enumitem}
+\setlist{noitemsep,leftmargin=2em}
+\renewcommand\labelitemi{\color{gray!50}$\bullet$}
+
+%%================================
+%% Blank page
+%%================================
+\newcommand{\blinkpagetext}{This page is intentionally left blank}
+\renewcommand{\cleardoublepage}{\relax
+    \clearpage
+    \if@twoside\ifodd\c@page\relax\else
+    \thispagestyle{empty}
+    \AddToHookNext{shipout/background}
+      {%
+       \put(0.5\paperwidth,-0.5\paperheight){%
+       \makebox[0pt]{\large\color{gray!20!paper}\blinkpagetext}}}
+    \null\newpage\fi\fi}
+
+%%================================
+%% Icons
+%%================================
+\RequirePackage{tikz}
+\newcommand{\ideabulb}[2][0.15]{%
+    \scalebox{#1}{%
+    \begin{tikzpicture}
+        \filldraw[draw=#2,fill=#2] (0,0) circle [radius=1cm];
+        \filldraw[draw=paper,fill=paper,rounded corners=0.8pt]
+            [rotate=20] (-0.26,-0.66) rectangle (-0.06,-0.6)
+            [xshift=-0.4mm,yshift=1mm] (-0.26,-0.66) rectangle (0.02,-0.6)
+            [xshift=0.4mm,yshift=1mm] (-0.26,-0.66) rectangle (-0.06,-0.6);
+        \draw[draw=paper,line width=0.7mm] (-0.18,-0.46)
+            .. controls (-0.18,-0.28) and (-0.28,-0.12) ..(-0.4,0.1)
+            .. controls (-0.55,0.4) and (-0.3,0.64) ..(0,0.64)
+            .. controls (0.3,0.64) and (0.55,0.4) ..(0.4,0.1)
+            .. controls (0.28,-0.12) and (0.18,-0.28) ..(0.18,-0.46);
+    \end{tikzpicture}}}
+
+\newcommand{\questionmark}[2][0.15]{%
+    \scalebox{#1}{%
+    \begin{tikzpicture}
+        \filldraw[draw=#2,fill=#2] (0,0) circle [radius=1cm];
+        \filldraw[paper,yshift=0.5mm,scale=0.9] (-0.4,0.1) circle [radius=0.77mm];
+        \draw[draw=paper,line width=1.5mm,yshift=0.5mm,scale=0.9] (-0.4,0.1)
+            .. controls (-0.55,0.4) and (-0.3,0.64) ..(0,0.64)
+            .. controls (0.3,0.64) and (0.55,0.4) ..(0.4,0.1)
+            .. controls (0.28,-0.12) and (0.05,-0.28) ..(0.05,-0.3)
+            .. controls (0,-0.36) and (0.0,-0.45) ..(0.0,-0.5);
+        \fill[fill=paper,rounded corners=0.6mm]
+            (-0.09,-0.75) rectangle (0.09,-0.53);
+    \end{tikzpicture}}}
+
+%%================================
+%% Theorems
+%%================================
+\RequirePackage{mathtools}
+\RequirePackage{amsthm}
+\newtheoremstyle{simple}%
+    {}{}%
+    {\normalfont}{}%
+    {\normalfont}{}%
+    {0pt}%
+    {\thmname{\textsc{#1}}\thmnumber{ #2}\hspace{.4em}%
+        \textcolor{gray!55!paper}{$|$}\hspace{.4em}%
+        \color{gray}\thmnote{\ensuremath{(\text{#3})}~~}\pushQED{\qed}}
+\def\@endtheorem{\popQED\endtrivlist\@endpefalse }
+
+\renewcommand{\qedsymbol}{%
+    \makebox[1em]{\color{gray!55!paper}\rule[-0.1em]{.95em}{.95em}}}
+
+\newtheoremstyle{basic}
+    {0pt}{0pt}{\normalfont}{0pt}
+    {}{\;}{0.25em}
+    {\thmname{#1}~\thmnumber{\textup{#2}}
+    \thmnote{\normalfont\sffamily\color{black}~(#3)}}
+
+\newtheoremstyle{emphasis}
+    {0pt}{0pt}{\itshape}{0pt}{}{}{0pt}
+    {\thmnote{\normalfont\sffamily\color{black}#3\hspace*{0.25em}}}
+
+\if@colorist@fast\else
+    \PassOptionsToPackage{hidelinks,linktoc=all}{hyperref}
+    \RequirePackage{bookmark}
+    \RequirePackage{hyperref}
+\fi
+\RequirePackage{aliascnt}
+\PassOptionsToPackage{nameinlink}{cleveref}
+\RequirePackage{cleveref}
+
+\newcommand\englishABBR{EN}
+\newcommand\frenchABBR{FR}
+\newcommand\chineseABBR{CN}
+
+\RequirePackage{xstring}
+\newcommand\PassFirstToSecond[2]{#2{#1}}%
+\NewDocumentCommand{\CreateTheorem}{sm}{%
+    \begingroup
+    \protected@edef\temp{#2}%
+    \expandafter\IfEndWith\expandafter{\temp}{*}{%
+        \expandafter\StrGobbleRight\expandafter{\temp}{1}[\temp]%
+        \PassFirstToSecond{*}%
+    }{%
+        \PassFirstToSecond{}%
+    }%
+    {\expandafter\PassFirstToSecond%
+        \expandafter{\temp}{\endgroup\InnerCreateTheorem{#1}}}%
+}%
+\NewDocumentCommand{\InnerCreateTheorem}{mmmod<>}{%
+    \IfBooleanTF{#1}{%
+        \IfValueTF{#4}
+            {\@firstoftwo}
+            {\IfValueTF{#5}{\@firstoftwo}{\@secondoftwo}}%
+    }{%
+        \IfValueTF{#4}
+            {\IfValueTF{#5}{\@firstoftwo}{\@secondoftwo}}{
+            \@secondoftwo}
+    }%
+    {%
+        \GenericError{}%
+        {\string\CreateTheorem\space syntax error\on@line}{%
+        You cannot call the starred variant with optional argument,\MessageBreak
+        nor call the unstarred variant with several optional arguments.}%
+        {}%
+    }{%
+        \IfBooleanTF{#1}{%
+            \newtheorem*{#2EN#3}{\csname#2nameEN\endcsname}
+            \newtheorem*{#2FR#3}{\csname#2nameFR\endcsname}
+            \newtheorem*{#2CN#3}{\csname#2nameCN\endcsname}
+        }{%
+            \IfValueTF{#5}{%
+                \newcounter{#2#3}[{#5}]%
+                \expandafter\renewcommand\expandafter*%
+                    \csname the#2#3\expandafter\endcsname%
+                    \expandafter{\csname the#5\endcsname.\arabic{#2#3}}%
+            }{%
+                \IfValueTF{#4}
+                    {\newaliascnt{#2#3}{#4}}
+                    {\newcounter{#2#3}}%
+            }%
+            %-------------------------------------------------------------------
+            \CreateTheoremNumberedLikeAliasCounter{#2}{EN}{#3}%
+            \CreateTheoremNumberedLikeAliasCounter{#2}{FR}{#3}%
+            \CreateTheoremNumberedLikeAliasCounter{#2}{CN}{#3}%
+            %-------------------------------------------------------------------
+        }%
+        \NewDocumentEnvironment{#2#3}{}
+            {\csname#2\csname\languagename ABBR\endcsname#3\endcsname}%
+            {\csname end#2\csname\languagename ABBR\endcsname#3\endcsname}%
+    }%
+}%
+\NewDocumentCommand{\CreateTheoremNumberedLikeAliasCounter}{mmm}{%
+    \newaliascnt{#1#2#3}{#1#3}%
+    \newtheorem{#1#2#3}[{#1#2#3}]{\csname#1name#2\endcsname}%
+    \aliascntresetthe{#1#2#3}%
+    \crefname{#1#2#3}%
+        {\csname#1name#2\endcsname}%
+        {\csname#1name#2\endcsname}%
+}%
+
+%% English theorems names
+\def\theoremnameEN{\sffamily\color{orange}\textsc{Theorem}}
+\def\lemmanameEN{\sffamily\color{orange}\textsc{Lemma}}
+\def\propositionnameEN{\sffamily\color{orange}\textsc{Proposition}}
+\def\corollarynameEN{\sffamily\color{orange}\textsc{Corollary}}
+\def\factnameEN{\sffamily\color{black}\textsc{Fact}}
+\def\conjecturenameEN{\sffamily\color{purple}\textsc{Conjecture}}
+\def\definitionnameEN{\sffamily\color{forestgreen}\textsc{Definition}}
+\def\examplenameEN{\sffamily\color{black}\textsc{Example}}
+\def\problemnameEN{\sffamily\color{black}\textsc{Problem}}
+\def\remarknameEN{\sffamily\color{black}\textsc{Remark}}
+
+%% French theorems names
+\def\theoremnameFR{\sffamily\color{orange}\textsc{Théorème}}
+\def\lemmanameFR{\sffamily\color{orange}\textsc{Lemme}}
+\def\propositionnameFR{\sffamily\color{orange}\textsc{Proposition}}
+\def\corollarynameFR{\sffamily\color{orange}\textsc{Corollaire}}
+\def\factnameFR{\sffamily\color{black}\textsc{Fait}}
+\def\conjecturenameFR{\sffamily\color{purple}\textsc{Conjecture}}
+\def\definitionnameFR{\sffamily\color{forestgreen}\textsc{Définition}}
+\def\examplenameFR{\sffamily\color{black}\textsc{Exemple}}
+\def\problemnameFR{\sffamily\color{black}\textsc{Problème}}
+\def\remarknameFR{\sffamily\color{black}\textsc{Remarque}}
+
+%% Chinese theorems names
+\def\theoremnameCN{\sffamily\color{orange}定理}
+\def\lemmanameCN{\sffamily\color{orange}引理}
+\def\propositionnameCN{\sffamily\color{orange}命题}
+\def\corollarynameCN{\sffamily\color{orange}推论}
+\def\factnameCN{\sffamily\color{black}事实}
+\def\conjecturenameCN{\sffamily\color{purple}猜想}
+\def\definitionnameCN{\sffamily\color{forestgreen}定义}
+\def\examplenameCN{\sffamily\color{black}例}
+\def\problemnameCN{\sffamily\color{black}问题}
+\def\remarknameCN{\sffamily\color{black}备注}
+
+%% Theorem environments
+\theoremstyle{basic}
+\ifbool{IsBook}{
+    \newaliascnt{highest}{chapter}
+}{
+    \newaliascnt{highest}{section}
+}
+\CreateTheorem{theorem}<highest>
+\CreateTheorem{lemma}[theorem]
+\CreateTheorem{proposition}[theorem]
+\CreateTheorem{corollary}[theorem]
+\CreateTheorem{fact}[theorem]
+\CreateTheorem{conjecture}<highest>
+\CreateTheorem*{theorem*}
+\CreateTheorem*{lemma*}
+\CreateTheorem*{proposition*}
+\CreateTheorem*{corollary*}
+\CreateTheorem*{fact*}
+\CreateTheorem*{conjecture*}
+\CreateTheorem{definition}[theorem]
+\CreateTheorem{example}<highest>
+\CreateTheorem{problem}<highest>
+\CreateTheorem*{definition*}
+\CreateTheorem*{example*}
+\CreateTheorem*{problem*}
+
+\theoremstyle{emphasis}
+\CreateTheorem{remark}<highest>
+\CreateTheorem*{remark*}
+
+\RequirePackage{marginnote}
+\newcommand{\mparadjust}[1]{\renewcommand*{\marginnotevadjust}{#1}}
+\apptocmd{\remark}{\reversemarginpar\mparadjust{-.25em}\marginnote{\ideabulb[0.3]{orange}\hspace*{-.5em}}\normalmarginpar}{}{\FAIL}
+\apptocmd{\conjecture}{\reversemarginpar\mparadjust{-.25em}\marginnote{\questionmark[0.3]{purple}\hspace*{-.5em}}\normalmarginpar}{}{\FAIL}
+
+\RequirePackage{iftex}
+\ifXeTeX
+\def\pgfsys@hboxsynced#1{%
+{%
+    \pgfsys@beginscope%
+    \setbox\pgf@hbox=\hbox{%
+    \hskip\pgf@pt@x%
+    \raise\pgf@pt@y\hbox{%
+        \pgf@pt@x=0pt%
+        \pgf@pt@y=0pt%
+        \special{pdf: content q}%
+        \pgflowlevelsynccm%
+        \pgfsys@invoke{q -1 0 0 -1 0 0 cm}%
+        \special{pdf: content -1 0 0 -1 0 0 cm q}
+        % translate to original coordinate system
+        \pgfsys@invoke{0 J [] 0 d}% reset line cap and dash
+        \wd#1=0pt%
+        \ht#1=0pt%
+        \dp#1=0pt%
+        \box#1%
+        \pgfsys@invoke{n Q Q Q}%
+    }%
+    \hss%
+    }%
+    \wd\pgf@hbox=0pt%
+    \ht\pgf@hbox=0pt%
+    \dp\pgf@hbox=0pt%
+    \pgfsys@hbox\pgf@hbox%
+    \pgfsys@endscope%
+}}
+\fi
+
+\theoremstyle{simple}% as the default style for user-defined environments
+
+\let\proof\relax
+\let\endproof\relax
+\def\proofnameCN{\proofname}
+\def\proofnameEN{\proofname}
+\def\proofnameFR{\proofname}
+\CreateTheorem*{proof}
+
+\RequirePackage[many]{tcolorbox}
+\if@colorclass@fast
+    \tcbstartdraftmode
+\fi
+\tcolorboxenvironment{theorem}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=black!3!paper,
+    left=3.5mm,right=3.5mm,
+    opacityframe=0.9,colframe=orange,arc=.7mm}
+\tcolorboxenvironment{theorem*}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=black!3!paper,
+    left=3.5mm,right=3.5mm,
+    opacityframe=0.9,colframe=orange,arc=.7mm}
+\tcolorboxenvironment{lemma}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=black!3!paper,
+    left=3.5mm,right=3.5mm,
+    opacityframe=0.9,colframe=orange,arc=.7mm}
+\tcolorboxenvironment{lemma*}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=black!3!paper,
+    left=3.5mm,right=3.5mm,
+    opacityframe=0.9,colframe=orange,arc=.7mm}
+\tcolorboxenvironment{proposition}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=black!3!paper,
+    left=3.5mm,right=3.5mm,
+    opacityframe=0.9,colframe=orange,arc=.7mm}
+\tcolorboxenvironment{proposition*}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=black!3!paper,
+    left=3.5mm,right=3.5mm,
+    opacityframe=0.9,colframe=orange,arc=.7mm}
+\tcolorboxenvironment{corollary}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=black!3!paper,
+    left=3.5mm,right=3.5mm,
+    opacityframe=0.9,colframe=orange,arc=.7mm}
+\tcolorboxenvironment{corollary*}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=black!3!paper,
+    left=3.5mm,right=3.5mm,
+    opacityframe=0.9,colframe=orange,arc=.7mm}
+
+\tcolorboxenvironment{fact}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=gray!10!paper,
+    boxrule=0pt,frame hidden,arc=.7mm}
+\tcolorboxenvironment{fact*}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=gray!10!paper,
+    boxrule=0pt,frame hidden,arc=.7mm}
+
+\tcolorboxenvironment{conjecture}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=black!3!paper,
+    left=3.5mm,right=3.5mm,
+    opacityframe=0.7,colframe=purple,arc=.7mm}
+\tcolorboxenvironment{conjecture*}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=black!3!paper,
+    left=3.5mm,right=3.5mm,
+    opacityframe=0.7,colframe=purple,arc=.7mm}
+
+\tcolorboxenvironment{definition}
+    {enhanced jigsaw,pad at break*=1mm,breakable,
+    left=4mm,right=4mm,top=1mm,bottom=1mm,
+    colback=lightorange!10!paper,boxrule=0pt,frame hidden,
+    borderline west={1.5mm}{-1mm}{forestgreen},arc=.7mm}
+\tcolorboxenvironment{definition*}
+    {enhanced jigsaw,pad at break*=1mm,breakable,
+    left=4mm,right=4mm,top=1mm,bottom=1mm,
+    colback=lightorange!10!paper,boxrule=0pt,frame hidden,
+    borderline west={1.5mm}{-1mm}{forestgreen},arc=.7mm}
+
+\tcolorboxenvironment{example}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=gray!10!paper,
+    boxrule=0pt,frame hidden,arc=.7mm}
+\tcolorboxenvironment{example*}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=gray!10!paper,
+    boxrule=0pt,frame hidden,arc=.7mm}
+
+\tcolorboxenvironment{problem}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=yellow!25!paper,
+    boxrule=0pt,frame hidden,arc=.7mm}
+\tcolorboxenvironment{problem*}
+    {enhanced jigsaw,pad at break*=1mm,breakable,colback=yellow!25!paper,
+    boxrule=0pt,frame hidden,arc=.7mm}
+
+\ExplSyntaxOn
+\NewDocumentCommand \AfterEnvEnd { +m }
+  { \colorist_after_env_end:nw {#1} }
+\cs_new_protected:Npn \colorist_after_env_end:nw #1 #2
+       \if@ignore\@ignorefalse\ignorespaces\fi
+  { #2 \if@ignore\@ignorefalse\ignorespaces\fi #1 }
+  \NewDocumentCommand \ScanEnv { s m +m+m }
+  {
+    \IfBooleanTF {#1}
+      { \jinwen_scan_env_ignore_par:nTF }
+      { \jinwen_scan_env:nTF }
+          {#2} {#3} {#4}
+  }
+\cs_new_protected:Npn \jinwen_scan_env:nTF
+  { \__jinwen_scan_env:NnTF \c_false_bool }
+\cs_new_protected:Npn \jinwen_scan_env_ignore_par:nTF
+  { \__jinwen_scan_env:NnTF \c_true_bool }
+\tl_new:N \l__jinwen_collected_tl
+\cs_new_protected:Npn \__jinwen_scan_env:NnTF #1 #2 #3 #4
+  {
+    \tl_clear:N \l__jinwen_collected_tl
+    \peek_analysis_map_inline:n
+      {
+        \tl_put_right:Nn \l__jinwen_collected_tl {##1}
+        \int_compare:nNnTF { "##3 } = { 0 }
+          {
+            \exp_args:No \token_if_eq_meaning:NNTF {##1} \begin
+              { \peek_analysis_map_break:n { \__jinwen_chk_env:nTFn {#2} {#3} {#4} } }
+              {
+                \bool_lazy_and:nnF {#1}
+                    { \exp_args:No \token_if_eq_meaning_p:NN {##1} \par }
+                  { \__jinwen_scan_env_end:n {#4} }
+              }
+          }
+          { \int_compare:nNnF { "##3 } = { 10 } { \__jinwen_scan_env_end:n {#4} } }
+      }
+  }
+\cs_new_protected:Npn \__jinwen_scan_env_end:n #1
+  { \peek_analysis_map_break:n { \__jinwen_reinsert_tokens:nn {#1} { } } }
+\cs_new_protected:Npn \__jinwen_reinsert_tokens:nn #1 #2
+  {
+    \use:x
+      {
+        \tl_clear:N \exp_not:N \l__jinwen_collected_tl
+        \exp_not:n {#1} \l__jinwen_collected_tl #2
+      }
+  }
+\cs_new_protected:Npn \__jinwen_chk_env:nTFn #1 #2 #3 #4
+  {
+    \exp_args:Nx \__jinwen_reinsert_tokens:nn
+      { \str_if_eq:nnTF {#1} {#4} { \exp_not:n {#2} } { \exp_not:n {#3} } } { {#4} }
+  }
+\ExplSyntaxOff
+
+\def\scandefinitionenv{%
+  \AfterEnvEnd{%
+    \ScanEnv*{definition}%
+      {\vspace{-1.05\baselineskip}}%
+      {\ScanEnv*{definition*}%
+        {\vspace{-1.05\baselineskip}}%
+        {}}}}
+
+\AddToHook{env/definition/end}{\scandefinitionenv}%
+\AddToHook{env/definition*/end}{\scandefinitionenv}%
+
+%%================================
+%% Language configuration
+%%================================
+\if@colorist@polyglossia
+    \RequirePackage{polyglossia}
+    \setdefaultlanguage{english}
+    \setotherlanguage[frenchpart=false]{french}
+\else
+    \PassOptionsToPackage{french,english}{babel}
+    \RequirePackage{babel}
+    \frenchsetup{PartNameFull=false}
+\fi
+\newcommand{\colorist@langconfig@chinese}{%
+    \def\abstractname{摘要}%
+    \def\proofname{证明}%
+    \def\contentsname{目录}%
+    \def\listfigurename{插图}%
+    \def\listtablename{表格}%
+    \def\figurename{图}%
+    \def\tablename{表}%
+    \def\indexname{索引}%
+    \def\appendixname{附录}%
+    \def\bibname{参考文献}%
+    \renewcommand{\languagename}{chinese}%
+}
+\newcommand{\colorist@langconfig@english}{%
+    \selectlanguage{english}%
+}
+\newcommand{\colorist@langconfig@french}{%
+    \selectlanguage{french}%
+    \def\frenchpartname{Partie}%
+}
+\newcommand{\UseLanguageCORE}[1]{%
+    \ifstrequal{#1}{chinese}{\onehalfspacing\colorist@langconfig@chinese}{}%
+    \ifstrequal{#1}{Chinese}{\onehalfspacing\colorist@langconfig@chinese}{}%
+    \ifstrequal{#1}{english}{\setstretch{1.07}\colorist@langconfig@english}{}%
+    \ifstrequal{#1}{English}{\setstretch{1.07}\colorist@langconfig@english}{}%
+    \ifstrequal{#1}{french}{\setstretch{1.07}\colorist@langconfig@french}{}%
+    \ifstrequal{#1}{French}{\setstretch{1.07}\colorist@langconfig@french}{}%
+}
+\newcommand{\UseLanguage}[1]{%
+    \ifx\@onlypreamble\@notprerr%
+        \UseLanguageCORE{#1}%
+    \else%
+        \AfterEndPreamble{\UseLanguageCORE{#1}}%
+    \fi%
+}
+\newcommand{\UseOtherLanguage}[2]{%
+\begingroup%
+    \ifstrequal{#1}{chinese}{\colorist@langconfig@chinese}{}%
+    \ifstrequal{#1}{Chinese}{\colorist@langconfig@chinese}{}%
+    \ifstrequal{#1}{english}{\colorist@langconfig@english}{}%
+    \ifstrequal{#1}{English}{\colorist@langconfig@english}{}%
+    \ifstrequal{#1}{french}{\colorist@langconfig@french}{}%
+    \ifstrequal{#1}{French}{\colorist@langconfig@french}{}%
+    #2%
+\endgroup%
+}
+
+\ifbool{IsBook}{}{
+
+%%================================
+%% Title block style
+%%================================
+\renewcommand{\@maketitle}{%
+    \noindent%
+    {\textcolor{gray!55!paper}{\rule{\textwidth}{0.75pt}}}%
+    \vspace{-\parskip}%
+    \begin{center}%
+        {\large\@title}\\\medskip%
+        \color{black!80!paper}%
+        {\scshape\@author}\\\smallskip%
+        {\@date}%
+    \end{center}%
+    \vspace{-\parskip}%
+    \vspace{-.5\baselineskip}%
+    {\textcolor{gray!55!paper}{\rule{\textwidth}{0.75pt}}\par}%
+    \medskip%
+}
+\apptocmd{\maketitle}{\thispagestyle{fancy}}{}{\FAIL}
+
+%%================================
+%% Abstract style
+%%================================
+\renewenvironment{abstract}
+{\small\centerline{\textsc{\abstractname}\vspace{-0.3\baselineskip}}
+    \color{black!80!paper}\begin{quotation}}
+{\end{quotation}\medskip}
+
+}
+
+\endinput
+%%
+%% End of file `colorist/colorist.sty'.

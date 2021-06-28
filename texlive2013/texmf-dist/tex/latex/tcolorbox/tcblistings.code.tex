@@ -1,0 +1,176 @@
+%% The LaTeX package tcolorbox - version 2.22 (2013/05/15)
+%% tcblistings.code.tex: Code for colorboxes with listings
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2006-2013 by Prof. Dr. Dr. Thomas F. Sturm <thomas dot sturm at unibw dot de>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This work consists of all files listed in README
+%%
+\makeatletter
+\def\tcblibrary@listings@loaded{}
+
+\RequirePackage{listings}[2007/02/22]
+
+\lstdefinestyle{tcblatex}{language={[LaTeX]TeX},
+     aboveskip={0\p@ \@plus 6\p@}, belowskip={0\p@ \@plus 6\p@},
+     columns=fullflexible, keepspaces=true,
+     breaklines=true, breakatwhitespace=true,
+     basicstyle=\ttfamily\small, extendedchars=true, nolol,
+     inputencoding=\kvtcb@listingencoding}
+
+\def\tcbuselistingtext{\input{\kvtcb@listingfile}}%
+
+\def\tcbuselistinglisting{%
+  \toks@=\expandafter{\kvtcb@listingoptions}%
+  \edef\tcb@temp{\noexpand\lstinputlisting[\the\toks@]}%
+  \tcb@temp{\kvtcb@listingfile}%
+}%
+
+\def\tcb@listing@listingAndText{%
+   \tcbuselistinglisting%
+   \tcblower%
+   \tcbuselistingtext%
+}
+
+\def\tcb@listing@listingAndComment{%
+   \tcbuselistinglisting%
+   \tcblower%
+   \kvtcb@listingcomment%
+}
+
+\def\tcb@listing@textAndListing{%
+   \tcbuselistingtext%
+   \tcblower%
+   \tcbuselistinglisting%
+}
+
+\def\tcb@listing@commentAndListing{%
+   \kvtcb@listingcomment%
+   \tcblower%
+   \tcbuselistinglisting%
+}
+
+\def\tcb@inputlisting@out@prepare{%
+  \tcbdimto\tcb@width{\kvtcb@width}%
+  \tcbdimto\tcb@innerwidth{\tcb@width-\kvtcb@left@rule-\kvtcb@right@rule}%
+  \tcbdimto\tcb@temp{\tcb@innerwidth-\kvtcb@boxsep*2}%
+  \tcbdimto\tcb@w@upper{\tcb@temp-\kvtcb@leftupper-\kvtcb@rightupper}%
+  \tcbset{breakable@false}%
+  \def\tcb@minipage{\csname tcb@minipage@\kvtcb@sbs@align\endcsname}%
+  \tcbdimto\tcb@w@upper@real{\tcb@w@upper}%
+  \tcbdimto\tcb@w@sbs{\tcb@w@upper@real-\kvtcb@sbs@gap}%
+  \tcb@sbs@quota%
+    \ifx\kvtcb@float\@empty%
+  \newenvironment{tcb@sbsfloat}{\kvtcb@beforebox}{\kvtcb@afterbox}%
+  \else%
+    \edef\float@start{\noexpand\@float{tcbfloat}[\kvtcb@float]}%
+    \newenvironment{tcb@sbsfloat}{\float@start}{\end@float}%
+  \fi%
+}
+
+\def\tcb@inputlisting@out@listingAndText{%
+  \tcb@inputlisting@out@prepare%
+  \tcbdimto\tcb@w@outside{\tcb@w@lower}%
+  \tcbdimto\tcb@w@inside{\tcb@width-\tcb@w@lower-\kvtcb@sbs@gap}%
+  \begin{tcb@sbsfloat}\begin{minipage}{\tcb@width}%
+  \tcb@minipage{\tcb@w@inside}%
+  \begin{tcolorbox}[width=\tcb@w@inside,nobeforeafter,nofloat,sidebyside=false]\tcbuselistinglisting\end{tcolorbox}%
+  \endminipage\hfill%
+  \iftcb@lowervisible\tcb@minipage{\tcb@w@outside}\color{\kvtcb@collower}\kvtcb@fontlower\kvtcb@before@lower\ignorespaces%
+    \tcbuselistingtext\unskip\kvtcb@after@lower\endminipage\fi%
+  \end{minipage}\end{tcb@sbsfloat}%
+}
+
+\def\tcb@inputlisting@out@textAndListing{%
+  \tcb@inputlisting@out@prepare%
+  \tcbdimto\tcb@w@outside{\tcb@w@upper}%
+  \tcbdimto\tcb@w@inside{\tcb@width-\tcb@w@upper-\kvtcb@sbs@gap}%
+  \begin{tcb@sbsfloat}\begin{minipage}{\tcb@width}%
+  \iftcb@lowervisible\tcb@minipage{\tcb@w@outside}\color{\kvtcb@collower}\kvtcb@fontlower\kvtcb@before@lower\ignorespaces%
+    \tcbuselistingtext\unskip\kvtcb@after@lower\endminipage\fi\hfill%
+  \tcb@minipage{\tcb@w@inside}%
+  \begin{tcolorbox}[width=\tcb@w@inside,nobeforeafter,nofloat,sidebyside=false]\tcbuselistinglisting\end{tcolorbox}%
+  \endminipage%
+  \end{minipage}\end{tcb@sbsfloat}%
+}
+
+\def\tcb@inputlisting@inside{%
+  \begin{tcolorbox}[]\tcb@listing@process\end{tcolorbox}%
+}
+
+\let\tcb@inputlisting\tcb@inputlisting@inside
+
+\def\tcb@set@listing@process#1{%
+  \let\tcb@inputlisting\tcb@inputlisting@inside%
+  \let\tcb@listing@process=#1%
+}
+
+\tcbset{%
+  listing file/.store in=\kvtcb@listingfile,%
+  listing options/.store in=\kvtcb@listingoptions,%
+  comment/.store in=\kvtcb@listingcomment,%
+  listing style/.style={listing options={style=#1}},%
+  listing and text/.code={\tcb@set@listing@process{\tcb@listing@listingAndText}},%
+  text and listing/.code={\tcb@set@listing@process{\tcb@listing@textAndListing}},%
+  listing and comment/.code={\tcb@set@listing@process{\tcb@listing@listingAndComment}},%
+  comment and listing/.code={\tcb@set@listing@process{\tcb@listing@commentAndListing}},%
+  listing only/.code={\tcb@set@listing@process{\tcbuselistinglisting}},%
+  text only/.code={\tcb@set@listing@process{\tcbuselistingtext}},%
+  listing inputencoding/.store in=\kvtcb@listingencoding,%
+  text side listing/.style={sidebyside,text and listing},%
+  listing side text/.style={sidebyside,listing and text},%
+  text outside listing/.code={\let\tcb@inputlisting\tcb@inputlisting@out@textAndListing},%
+  listing outside text/.code={\let\tcb@inputlisting\tcb@inputlisting@out@listingAndText},%
+}
+
+\tcbset{
+  listing file=\jobname.listing,
+  listing style=tcblatex,
+  comment=,
+  listing and text,
+  listing inputencoding=\inputencodingname,
+}
+
+\newenvironment{tcblisting}[1]{%
+  \def\tcblisting@box{\tcbinputlisting{#1}}%
+  \begingroup\tcbverbatimwrite{\kvtcb@listingfile}%
+}{\endtcbverbatimwrite\endgroup%
+  \tcblisting@box%
+}
+
+\long\def\tcbinputlisting#1{%
+  \begingroup\tcbset{#1}\tcb@inputlisting\endgroup%
+}
+
+\newenvironment{tcboutputlisting}{%
+  \begingroup\tcbverbatimwrite{\kvtcb@listingfile}%
+}{\endtcbverbatimwrite\endgroup}
+
+\def\tcbusetemplisting{%
+  \toks@=\expandafter{\kvtcb@listingoptions}%
+  \edef\tcb@temp{\noexpand\lstinputlisting[\the\toks@]}%
+  \tcb@temp{\kvtcb@tempfile}%
+}%
+
+\long\def\tcb@newtcblisting#1#2{\newenvironment{#1}{\tcblisting{savedelimiter=#1,#2}}{\endtcblisting}}
+
+\long\def\tcb@new@tcblisting#1[#2]#3{\newenvironment{#1}[#2]{\tcblisting{savedelimiter=#1,#3}}{\endtcblisting}}
+
+\long\def\tcb@new@@tcblisting#1[#2][#3]#4{\newenvironment{#1}[#2][#3]{\tcblisting{savedelimiter=#1,#4}}{\endtcblisting}}
+
+\long\def\new@tcblisting#1[#2]{%
+  \@ifnextchar[{\tcb@new@@tcblisting{#1}[#2]}{\tcb@new@tcblisting{#1}[#2]}}
+
+\long\def\newtcblisting#1{%
+  \@ifnextchar[{\new@tcblisting{#1}}{\tcb@newtcblisting{#1}}}

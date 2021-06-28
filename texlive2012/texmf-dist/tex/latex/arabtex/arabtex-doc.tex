@@ -1,0 +1,568 @@
+\documentclass[pagesize=auto]{scrartcl}
+
+\usepackage{fixltx2e}
+\usepackage{xspace}
+\usepackage{lmodern}
+\usepackage{mflogo}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{hyperref}
+
+\newcommand*{\ArabTeX}{Arab\kern-0.12em\TeX\@\xspace}
+\newcommand*{\meta}[1]{\textlangle\textsl{#1}\textrangle}
+\newcommand*{\symb}[1]{\textsf{\textlangle#1\textrangle}}
+
+\pdfstringdefDisableCommands{%
+  \def\ArabTeX{ArabTeX\xspace}%
+  \def\meta#1{<#1>}%
+  \def\symb#1{<#1>}%
+}
+
+\newenvironment{codetable}[1]{%
+  \catcode`\"=12
+  \catcode`\'=12
+  \catcode`\`=12
+  \catcode`\_=12
+  \catcode`\^=12
+  \catcode`\~=12
+  \par
+  \nopagebreak
+  \medskip
+  \noindent
+  \quitvmode
+  \tabular{@{}*{\numexpr#1-1\relax}{I@{\qquad}}I@{}}%
+}{%
+  \endtabular
+  \par
+  \medskip
+}
+
+\newcolumntype{I}{>{\ttfamily}r@{\hspace{0.6em}}l}
+
+\title{The \ArabTeX package}
+\author{Klaus Lagally}
+\date{20.11.1993}
+
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{\ArabTeX Version~3 (20.11.1993)}
+
+The introduction below is slightly out of date 
+but may be used as a first start.
+
+
+\section{\ArabTeX Version~2 (05.11.1992)}
+
+\subsection{What is \ArabTeX?}
+
+\ArabTeX is a package extending the capabilities of \TeX/\LaTeX\ to generate 
+the arabic writing from an ASCII transliteration for texts in several 
+languages using the arabic script. 
+
+It consists of a \TeX\ macro package and an arabic font in several sizes,         
+presently only available in the Naskhi style. \ArabTeX will run with Plain 
+\TeX\ and also with \LaTeX; other additions to \TeX\ have not been tried. 
+
+\ArabTeX is primarily intended for generating the arabic writing, but the 
+scientific transcription can be also easily generated. For other languages 
+using the arabic script limited support is available. 
+
+
+\subsection{Installing \ArabTeX:}
+
+The installation procedure is system dependent. You have to install the 
+``\textsf{nash14}'' font with its ``\texttt{*.pk}'' and ``\texttt{*.tfm}'' files on the font search path of 
+your \TeX\ system, and the ``\texttt{*.sty}'' files and ``\texttt{arabtex.tex}'' on the source 
+search path of your system. Possibly you will have to rename the ``\texttt{*.pk}'' 
+files according to local conventions, and as a last resort you can try to 
+recreate the font from the ``\texttt{*.mf}'' \MF\ sources. Additional fonts if 
+available are installed analogously.
+
+
+\subsection{Activating ArabTeX:}
+
+With Plain \TeX, load the ArabTeX macros by ``\verb+\input arabtex+''.\@ With \LaTeX, 
+include the option ``\texttt{arabtex}'' in the document header. In both cases several 
+additional files will be loaded automatically. 
+
+\ArabTeX defines several additional commands as indicated below, and also a
+large number of internal commands which could lead to storage overflow in
+a small TeX implementation. All internal commands contain an ``at'' sign \texttt{<@>}
+in their names and thus should not interfere with any user defined 
+commands (but possibly with \TeX\ extensions we do not know about). 
+
+With Plain \TeX, the arabic font is only available at the normal 14~point 
+size which ought to cooperate well with the ``\textsf{cm}'' fonts at 10~points. For 
+other sizes, change the ``\verb+\magnification+'' or define additional font 
+identifiers yourself. To change the default, inspect ``\texttt{arabtex.tex}'' and 
+redefine the ``\verb+\pnash+'' command accordingly. With \LaTeX, the size changing 
+commands will also operate on the arabic font.
+
+
+\subsection{Input to ArabTeX:}
+
+After activating \ArabTeX, your modified \TeX/\LaTeX\ system will recognize 
+the following items:
+%
+\begin{itemize}
+\item normal \TeX/\LaTeX\ text and commands,
+\item short arabic quotations bracketed by \verb+<+ and \verb+>+; these must fit on one 
+  line of output, and you have to select one of the Arabic writing styles,
+  e.g \verb+\setarab+, before using this feature. A quotation may also be started
+  with \verb+\<+.
+\item longer arabic texts bracketed by \verb+\begin{arabtext}+ and \verb+\end{arabtext}+,
+  called ``Arabic Environments'' in the sequel.
+\end{itemize}
+
+An Arabic Environment consists of one or several paragraphs separated by 
+blank lines or \verb+\par+ commands. Every paragraph and every arabic quotation 
+is a sequence of the following kinds of items, separated by blank spaces 
+or newlines: 
+%
+\begin{itemize}
+\item isolated (legal) special characters, interpreted as the corresponding 
+  arabic special character; 
+\item ``numbers'', character sequences starting with a digit. A ``number'' will be 
+  translated in the normal writing sequence from left to right even if it 
+  contains letters and/or special characters;
+\item ``arabic quotes'', coded as two left quotes or two right quotes each;
+\item ``words'', character sequences starting with a letter or special character 
+  followed by a letter. The (coded) characters of a word will in the 
+  output be arranged from right to left. 
+\item \TeX/\LaTeX\ control sequences WITHOUT parameters. These will be executed 
+  immediately. 
+\item \ArabTeX control sequences with or without parameters. These will be
+  executed immediately.
+\item a sequence of items enclosed in curly braces \verb+{+ and \verb+}+. The output from 
+  the constituents will be arranged from right to left and must fit on one 
+  output line. As far as \TeX\ is concerned, this is NO group. This feature 
+  may not be nested. 
+\end{itemize}
+
+Output from all items will be arranged from right to left, lines will be 
+broken as necessary. 
+
+Inside an Arabic Environment, but NOT in an arabic quotation, you may also 
+have: 
+
+\begin{itemize}
+\item short mathematical insertions, bracketed by SINGLE \verb+$+ signs. They must 
+  fit on one output line and are processed as usual; 
+\item short non-arabic text quotations, bracketed by \verb+<+ and \verb+>+. These must fit 
+  on one output line and introduce a new level of grouping, so if they 
+  contain any \TeX/\LaTeX\ assignments the effects of these will be local.
+\end{itemize}
+
+Control sequences in an Arabic Environment may be of the following kinds:
+
+\begin{itemize}
+\item \ArabTeX option changing commands. These may also be used outside an 
+  Arabic Environment and generally have a global effect; 
+\item \verb+\\+ for a new line;
+\item \verb+\par+ (or a blank line) for a new paragraph, \verb+\noindent+ for a new paragraph 
+  without indentation (NOT in arabic quotations);
+\item \verb+\emphasize+ \meta{item} will put a bar over the next \meta{item};
+\item \verb+\setnash+, \verb+\setnashbf+, \verb+\setnastaliq+ font selection commands, see below;
+\item size changing \LaTeX\ commands like \verb+\large+ etc., only if you use \LaTeX;
+\item most other \TeX/\LaTeX\ commands make no sense in an Arabic Environment.
+\item you MUST NOT nest another \LaTeX\ environment inside an Arabic Environment
+  (except possibly display math which we did not test, and might work);
+\item if you really need to use a control sequence with parameters, define a 
+  new \TeX\ macro or enclose the whole construct in curly braces \verb+{+ and \verb+}+. 
+\end{itemize}
+
+
+\subsection{Font selection:}
+
+For space economy, only the \textsf{Naskh} font is available by default. With \LaTeX, 
+additional fonts can be loaded by the document style options ``\texttt{nashbf}'' 
+and/or ``\texttt{nastaliq}'' (when available). Users of Plain \TeX\ can load and define 
+suitable fonts themselves.
+
+The following font selection commands are available:
+
+\begin{itemize}
+\item \verb+\setnash+ (default) selects the \textsf{Naskh} font.
+\item \verb+\setnashbf+ selects a bold-face version of \textsf{Naskh}.
+\item \verb+\setnastaliq+ selects the \textsf{Nastaliq} font.
+\end{itemize}
+
+If a font is not available or has not been loaded, the corresponding 
+command will select the default font.
+
+With \LaTeX, the size changing commands will also operate on the additional 
+fonts.
+
+
+\subsection{Input coding:}
+
+The ASCII input notation for arabic text is modelled closely after the 
+transliteration standards ISO/R\,233 and DIN\,31\,635. As these standards do 
+not guarantee unique re-transliteration and are also not ASCII compatible, 
+some modifications were necessary. These follow the general rules: 
+%
+\begin{itemize}
+\item if the transliteration uses a single letter, code that letter;
+\item if the transliteration uses a letter with a diacritical mark, put a 
+  special character similar to the diacritical mark BEFORE the letter. 
+\end{itemize}
+
+
+\subsubsection{Additional characters generally available:}
+
+\begin{codetable}{6}
+  b  & bah  & d  & dal   & .s & ssad  & f & fah  & h & hah & '  & hamza           \\
+  t  & tah  & _d & dhal  & .d & ddad  & q & qaf  & w & waw & N  & tanween         \\
+  _t & thah & r  & rah   & .t & ttah  & k & kaf  & y & yah & Y  & alif maqsoura   \\
+  ^g & geem & z  & zay   & .z & tthah & l & lam  & g & gaf & _A & alif maqsoura   \\
+  .h & hhah & s  & seen  & `  & `ain  & m & meem & p & pah & T  & tah marbouta    \\
+  _h & khah & ^s & sheen & .g & ghain & n & noon & v & vah & W  & waw (see below)
+\end{codetable}
+
+
+\subsubsection{Standard arabic and persian characters:}
+
+\begin{codetable}{1}
+  c  & hhah with hamza                 \\
+  ^c & gim with three dots (below)     \\
+  ,c & khah with three dots (above)    \\
+  ^z & zay with three dots (above)     \\
+  ~n & kaf with three dots (Ottoman)   \\
+  ~l & law with a bow accent (Kurdish) \\
+  ~r & rah with two bows (Kurdish)
+\end{codetable}
+
+See also ``Urdu'' and ``Pashto'' below.
+
+
+\subsubsection{Additional coding rules:}
+
+\begin{itemize}
+\item For long vowels, use capital letters \verb+A+, \verb+I+, \verb+U+, or \verb+_a+, \verb+_i+, \verb+_u+.
+\item As the transliteration is ambiguous, use \verb+T+ for \symb{tah marbouta}, 
+  \verb+N+ for \symb{tanween}, \verb+Y+ or \verb+_A+ for \symb{alif maqsoura}.
+\item Short vowels \verb+a+, \verb+i+, \verb+u+ need not generally be written except in the 
+  following cases:
+  \begin{itemize}
+  \item at the beginning of a word where they generate \symb{alif}, 
+  \item adjacent to \symb{hamza} where they will influence the carrier, 
+  \item when the transcription is wanted, 
+  \item in \verb+\fullvocalize+ mode. 
+  \end{itemize}
+\item \symb{hamza} is denoted by a single RIGHT quote; its carrier will be 
+  determined from the context according to the rules for writing arabic 
+  words. If that is not wanted, ``quote'' it (see below). 
+\item \symb{`ain} is a single LEFT quote, don't confuse it with \symb{hamza}!
+\item \symb{madda} is generated by a right quote (\symb{hamza}) before \verb+A+: \verb+'A+.
+\item The ``invisible letter'' \verb+|+ may be inserted in order to break unwanted 
+  ligatures and to influence the \symb{hamza} writing. It will not show in the 
+  arabic output or in the transcription. 
+\item \symb{tashdid} is indicated by doubling the appropriate letter.
+\item The article is always written \verb+al-+ (with hyphen!).
+\item Hyphens \verb+-+ may be used freely, and generally do not change the writing, 
+  but will show up in the transcription. At the beginning and the end of a 
+  word they enforce the use of the connection form of the adjacent letter 
+  (if it exists), like e.g. in the date \verb+1400 h-+. 
+\item A double hyphen \verb+--+ between two otherwise joining letters will break 
+  any ligature and will insert a horizontal stroke (\symb{tatweel}, \symb{kashida}) 
+  without appearing in the transcription. It may be used repeatedly. 
+\end{itemize}
+
+
+\subsection{Quoting:}
+
+A double quote \verb+"+ will modify the meaning of the following character as 
+follows: 
+%
+\begin{itemize}
+\item if a short vowel follows, the appropriate diacritical mark \symb{fatha}, 
+  \symb{kasra}, \symb{damma} will be put on the preceding character even if the
+  vocalization is off otherwise. If \verb+N+ follows the short vowel, the 
+  appropriate form of \symb{tanween} will be generated instead. At the 
+  beginning of a word, \symb{alif} is assumed as the first character. If the 
+  previous word ended with a vowel, \symb{wasla} is generated instead of the 
+  vowel indicator. 
+\item if the following character is a single right quote, a \symb{hamza} mark will 
+  be put on the preceding character even if in conflict with the \symb{hamza} 
+  rules. 
+\item if the following character is the ``invisible letter'' \verb+|+, the connection 
+  between the adjacent letters will be broken and a small space inserted.
+\item otherwise: a \symb{sukun} will be put on the preceding character. The 
+  following character will be processed again.
+\end{itemize}
+%
+The double quote will not show up in the transcription.
+
+
+\subsection{Ligatures:}
+
+There is no way to explicitly indicate ligatures as a large number of them 
+are generated automatically. Any unwanted ligature can be suppressed by 
+interposing the invisible letter \verb+|+ between the two letters otherwise 
+combined into a ligature. After ``\verb+\ligsfalse+'' ligatures in the middle of a 
+word will not normally be produced; for some texts this looks better. You 
+can return to the normal strategy by ``\verb+\ligstrue+''. 
+
+
+\subsection{Vocalization:}
+
+There are three modes of rendering short vowels:
+%
+\begin{labeling}{\texttt{\string\fullvocalize}:}
+\item[\texttt{\string\fullvocalize}:]
+  \begin{itemize}
+  \item every short vowel will generate the corresponding diacritic mark 
+    \symb{fatha}, \symb{kasra}, \symb{damma}. 
+  \item If \verb+N+ follows a short vowel, the corresponding form of \symb{tanween} is 
+    generated instead.
+  \item \verb+_a+ will produce a \symb{qur'an alif} accent instead of an explicit 
+    \symb{alif} character which is coded \verb+A+. 
+  \item if a long vowel follows a consonant, the corresponding short vowel is 
+    implied. The long vowel itself carries no diacritical mark.
+  \item if no vowel is given after a consonant, \symb{sukun} will be generated 
+    except if a double ``sun letter'' follows \symb{lam}. 
+  \item \symb{alif} at the beginning of a word carries \symb{wasla} instead of the vowel 
+    indicator if the preceding word ended with a vowel.
+  \end{itemize}
+\item[\texttt{\string\vocalize}:] as above, but \symb{sukun} and \symb{wasla} will not be generated except 
+  if explicitly indicated by ``quoting''.
+\item[\texttt{\string\novocalize}:] no diacritics will be generated except if explicitly asked for 
+  by ``quoting''.
+\end{labeling}
+%
+In all modes, a double consonant will generate \symb{tashdid}, and \verb+'A+ always 
+generates \symb{madda} on \symb{alif}. After \verb+aN+ the silent \symb{alif} character is 
+generated if necessary. The silent \symb{alif} may also be explicitly indicated 
+by \verb+aNa+ or \verb+aNA+, or coded literally as \verb+A+ in \verb+\novocalize+ mode. If a 
+silent \symb{alif maqsoura} is wanted instead, write \verb+aNY+, \verb+aN_A+, \verb+Y+ or \verb+_A+. 
+A silent \symb{alif} after \symb{waw} is indicated by \verb+Ua+, \verb+UA+ or \verb+Wa+, \verb+WA+ (with 
+a capital \verb+W+!).
+
+
+\subsection{Transcription:}
+
+In addition to the arabic writing, the standard scientific transcription 
+may also be obtained from a fully vocalized input text. This is indicated 
+by ``\verb+\transtrue+'' and may be switched off again by ``\verb+\transfalse+''. If ONLY 
+the transcription is wanted, you can deactivate the arabic writing by 
+``\verb+\arabfalse+''; it can be reactivated by ``\verb+\arabtrue+''. If both modes are 
+active their output will be interleaved line by line. 
+
+The transcription mode assumes that the input text is in the Arabic 
+language and has been coded according to the rules given above. For words 
+from other languages the transcription might be in error. For Arabic text, 
+the following special cases are handled:
+%
+\begin{itemize}
+\item after the article, a double consonant will be assimilated; 
+\item an initial vowel will be omitted if the preceding word ended with a 
+  vowel. If that is not wanted start with \symb{hamza}. 
+\item a silent \symb{alif} or \symb{alif maqsoura} after \verb+N+ (\symb{tanwin}) and \verb+U+ is 
+  omitted in the transcription. The same happens after \symb{waw} if it is 
+  written \verb+W+. 
+\end{itemize}
+
+For space economy, the transcription module is NOT loaded by default. If 
+you want to use it, add the style option ``\texttt{atrans}'' with \LaTeX; and with 
+Plain \TeX, say ``\verb+\input atrans.sty+''.
+
+
+\subsection{Support for other languages:}
+
+\ArabTeX is primarily intended for writing texts in classical and modern 
+Arabic, but it also provides limited support for several other languages 
+that are customarily written in the arabic alphabet. The vocalization and 
+the transcription cannot generally be expected to be correct, but might 
+work by accident. 
+
+In order to switch to the conventions for one of these languages, say 
+``\verb+\setfarsi+'', ``\verb+\seturdu+'', ``\verb+\setpashto+'', ``\verb+\setmaghribi+''; ``\verb+\setarab+'' is the 
+default and can also be used to switch back to the arabic conventions. 
+
+
+\subsubsection{Farsi, Dari:}
+
+All characters needed for writing Farsi are available by default. The 
+short vowels \verb+e+ and \verb+o+ are mapped to \symb{i} and \symb{u}, the long vowels \verb+E+ 
+and \verb+O+ to \symb{I} and \symb{U}. 
+
+The \symb{izafet} connection may be written literally, which may look awkward 
+in the case of \verb+h"'+, or always as \verb+-i+ (with hyphen); then the correct 
+spelling will be determined from the context. Likewise the \symb{yah-i-wahdat} 
+can always be written \verb+-I+. 
+
+The final \symb{yah} carries no dots.
+
+Farsi uses the Nasta`liq font if available.
+
+
+\subsubsection{Ottoman:}
+
+see Farsi. 
+
+
+\subsubsection{Kurdish:}
+
+see Farsi.
+
+
+\subsubsection{Urdu:}
+
+The additional characters in Urdu are coded as follows:
+%
+\begin{codetable}{1}
+  h  & always denotes the ``two-eyed \symb{hah}''                            \\
+  ,h & the ``wavy'' \symb{hah} letter                                        \\
+  ,t & \symb{tah} with a small \symb{ttah} accent                            \\
+  ,d & \symb{dal} with a small \symb{ttah} accent                            \\
+  ,r & \symb{rah} with a small \symb{ttah} accent                            \\
+  .n & \symb{noon} without a dot (modifies a preceding vowel)                \\
+  E  & \symb{yah bari} in the final position, otherwise mapped to \symb{yah} \\
+  O  & mapped to \symb{U}
+\end{codetable}
+
+The short vowels \verb+e+ and \verb+o+ are mapped to \symb{a} and \symb{u}.
+
+\emph{Note:} Some of the given codings also occur in Pashto but with a different 
+meaning, see below. 
+
+Urdu uses the Nasta`liq font if available.
+
+
+\subsubsection{Pashto:}
+
+The additional characters for Pashto are coded as follows:
+%
+\begin{codetable}{1}
+  ,t  & \symb{tah} with a small loop                             \\
+  ,d  & \symb{dal} with a small loop                             \\
+  ,r  & \symb{rah} with a small loop                             \\
+  .n  & \symb{noon} with a small loop                            \\
+  g   & \symb{gaf} is written with a small loop instead of a bar \\
+  ,z  & \symb{rah} with one dot above and one below              \\
+  ,s  & \symb{sin} with one dot above and one below              \\
+  e   & like \symb{a}, with a \symb{zwarakay} mark if vocalized  \\
+  e'i & \symb{yah} with \symb{hamza}                             \\
+  E   & \symb{yah} with two dots below aligned vertically        \\
+  Ey  & \symb{yah} written with a final stroke                   \\
+  o   & mapped to \symb{u}                                       \\
+  O   & mapped to \symb{U}                                       \\
+  w"' & \symb{hamza} on \symb{waw}                               \\
+  h"' & \symb{hamza} on \symb{hah}
+\end{codetable}
+
+The \symb{qur'an alif} accent is not available for Pashto.
+
+The rules for \symb{izafet} and \symb{yah-i-wahdat} apply. 
+
+Note: Some of the given codings also occur in Urdu but with a different 
+meaning, see above. For writing some words in the Urdu style, write the
+command \verb+\seturdu+ and afterwards switch back to the Pashto conventions by 
+\verb+\setpashto+.
+
+
+\subsubsection{Maghribi:}
+
+This is just a different writing convention. \symb{fah} is written with one dot 
+below the letter, \symb{qaf} with one dot above the normal letter form of 
+\symb{fah}. The three dots of \symb{vah} are put below the letter. Otherwise like 
+Arabic.
+
+
+\subsection{Miscellaneous features:}
+
+As \ArabTeX is slow, it will produce some terminal output while running 
+to indicate it is still alive. If that is not wanted, say ``\verb+\quiet+'' or 
+``\verb*+\tracingarab = 0 +'' (outside an Arabic Environment). ``\verb*+\tracingarab = 1 +'' 
+will report arabic paragraphs, a value of 2: arabic lines and insertions,   
+a value of 3 or more: individual items. 
+
+Whether \symb{yah} in the final position carries dots or not depends on the 
+chosen language convention. You can override this by ``\verb+\yahdots+'' and 
+``\verb+\yahnodots+''. 
+
+To reproduce erroneous or archaic texts exactly as they are, the 
+following additional codings are available:
+%
+\begin{codetable}{1}
+  .k & \symb{kaf} in final position without a diacritical mark         \\
+  .f & \symb{fah} without a dot                                        \\
+  .b & \symb{bah} without a dot                                        \\
+  .n & \symb{noon} without a dot (not available for Pashto)            \\
+  Y  & \symb{alif maqsoura}, \symb{yah} without dots in all positions. \\
+\end{codetable}
+
+
+\subsection{How to move from Version 1 to Version 2}
+
+Version 2 is not fully compatible with Version 1; however, moving to the 
+new version should cause little problems, and is recommended as version 1 
+is no longer supported. Apart from some extensions, most changes were 
+introduced in order to better conform to the transliteration standards, 
+and to have less compatibility problems with \TeX\ and \LaTeX. Further 
+versions are expected to be upward compatible if no grave bugs turn up. 
+
+The main differences between versions 1 and 2 are:
+%
+\begin{itemize}
+\item The font size has increased, so the document layout may change. The old 
+  font can no more be used.
+\item Some arabic characters are now coded differently: \symb{`ain} is denoted by a 
+  left quote, and \verb+c+, \verb+^z+, \verb+^t+, and \verb+.n+ denote different characters 
+  from what they did before. This was changed in order to better conform 
+  to the standard transliteration. 
+\item There are a lot more ligatures than before. This normally need not 
+  concern the user.
+\item \verb+\vocalize+ will no more generate \symb{sukun} and \symb{wasla} except if explicitly 
+  indicated by quoting. See \verb+\fullvocalize+.
+\item Arabic Environments are always bracketed by the new control sequences\\ 
+  \verb+\begin{arabtext}+ and \verb+\end{arabtext}+ even if only the transcription is 
+  wanted. 
+\item Short arabic quotations are now bracketed by \verb+\<+ and \verb+>+ so \verb+<+ has its 
+  standard \TeX\ meaning. 
+\end{itemize}
+
+We recommend converting existent input files to the new notation. If that 
+is impractical in special cases, the \LaTeX\ option ``\texttt{oldarabtex}'' and/or the 
+command ``\verb+\oldarabtex+'' will switch back to most of the old conventions (and 
+problems). This shortcut will probably go away in some future version. 
+
+
+\subsection{Acknowledgments:}
+
+The development of \ArabTeX would not have been possible without the 
+assistance of many people. Apart from my local team, helpful advice came 
+among others from Wolfdietrich Fischer, Ahmed El-Hadi, Abdelsalam Heddaya, 
+Iqbal Khan, Tom Koornwinder, Eberhard Krueger, Asif Lakehsar, Jan Lodder, 
+Richard Lorch, Eberhard Mattes, and Bernd Raichle. I also have to thank 
+the many people who sent bug reports and comments.
+
+
+\subsection{Please send bug reports, suggestions and inquiries to the author:}
+
+\noindent
+Prof. Klaus Lagally\\
+Institut fuer Informatik\\
+Universitaet Stuttgart\\
+Breitwiesenstrasse 20--22\\
+D-70565 Stuttgart \\
+GERMANY
+
+\medskip
+\noindent
+\texttt{lagally@informatik.uni-stuttgart.de}
+
+\bigskip
+\noindent
+\textbf{Copyright \textcopyright\ 1990--1993, Klaus Lagally}
+
+
+\end{document}

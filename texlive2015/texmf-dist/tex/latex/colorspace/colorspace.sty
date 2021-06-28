@@ -1,0 +1,253 @@
+% +--------------------------------------------------+
+% | Typeset colorspace.tex to get the documentation.   |
+% +--------------------------------------------------+
+%
+%% Copyright (C) 2015 Javier Bezos
+%% All Rights Reserved
+%% http://www.tex-tipografia.com
+%%
+%% This work may be distributed and/or modified under the conditions
+%% of the LaTeX Project Public License, either version 1.3 of this
+%% license or (at your option) any later version.  The latest version
+%% of this license is in
+%%     http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2003/12/01 or later.
+%%
+%% This work has the LPPL maintenance status "maintained".
+%%
+%% This Current Maintainer of this work is Javier Bezos.
+%%
+%% This work consists of the files colorspace.tex and colorspace.sty.
+
+\ProvidesPackage{colorspace}
+          [2015/05/11 v1.0.0 PDF color spaces (spot colors...) for pdfTeX]
+
+\edef\spc@savedcatcodes{%
+  \catcode`\noexpand\/=\the\catcode`\/
+  \catcode`\noexpand\&=\the\catcode`\& % & is 'other' here!
+  \catcode`\noexpand\<=\the\catcode`\<
+  \catcode`\noexpand\>=\the\catcode`\>}
+\catcode`\/=12
+\catcode`\>=12
+\catcode`\<=12
+\catcode`\&=12
+
+\def\spc@unknown#1#2{%
+  \@ifundefined{#1}%
+    {\PackageError{colorspace}{Unknown #2}%
+     {You haven't defined it or perhaps you misspelled it.}}%
+    {}}
+
+\@ifundefined{XC@sdef}{\RequirePackage{xcolor}}{}
+
+\long\def\spc@afterfi#1\fi{\fi#1}
+
+% Define the color model spot. We need define the following 3 macros:
+
+\XC@sdef\XC@mod@spot{spot}
+\def\color@spot#1#2{%
+  \c@lor@arg{#2}%
+  \edef#1{\spc@ir\space cs \spc@ir\space CS #2 sc #2 SC}}
+\def\XC@clr@spot@white{0}
+
+% A somewhat dirty hack for converting cmyk to spot. The internal
+% format is {}{/&Color cs /&Color CS n sc n SC}{spot}{n}, where n=1
+% is a tint of 100%.
+
+\def\spc@cmyktospot#1#2{%
+  \begingroup
+    \def\spc@tempc##1 ##2 ##3 ##4 k##5\@@{##1 ##2 ##3 ##4}%
+    \def\xcolor@##1##2##3##4{%
+      \protected@xdef#1{%
+        \noexpand\xcolor@{##1}{/&#2 cs /&#2 CS 1 sc 1 SC}{spot}{1}}%
+      \xdef\spc@tempa{\spc@tempc##2\@@}}%
+    #1%
+  \endgroup}
+
+% The internal PDF name (which is like the public one with a &
+% prepended) is available in the first argument of \xcolor@. The
+% following macros extract it. The original CMYK values are
+% discarded once written to the PDF, but perhaps they should be
+% stored, just in case.
+
+\def\spc@getir#1{%
+  \begingroup
+    \def\xcolor@##1##2##3##4{\spc@getref##2\@@}%
+    \@nameuse{#1}%
+  \endgroup}
+\def\spc@getref#1 #2\@@{\gdef\spc@ir{#1}}
+
+% We need to redefine an xcolor macro for the tint operator ! to be
+% recognized. It's done in a more modular way than xcolor:
+
+\def\spc@infl@cmyk#1{#1}       % 4 values = 4 - 4 commas
+\def\spc@infl@spot#1{,,,#1,,,} % 1 value  = 4 - 1 commas
+\def\spc@infl@gray#1{,,,#1,,,} % 1 value
+
+\def\XC@inflate#1#2#3#4{%
+  \spc@getir{\expandafter\string\csname color@\@@nam\endcsname}%
+  \edef#4{#2,%
+    \@ifundefined{spc@infl@\@@mod}%
+      {,#3,}%            Assume 3 values = 4 - 3 commas
+      {\@nameuse{spc@infl@\@@mod}{#3}}}}
+
+% The following macro stores all spot colors, with the LaTeX name
+
+\let\spc@csall\@empty
+
+% Now the main command for defining colors:
+
+\newcommand\definespotcolor[2]{\def\spc@tempa{{#1}{#2}}\spc@defsc}
+\newcommand\spc@defsc[2][cmyk]{\expandafter\spc@defsc@i\spc@tempa{#1}{#2}}
+\def\spc@defsc@i#1#2#3#4{%
+  \def\spc@tempc##1 ##2{% Converts spaces to #20
+    ##1%
+    \ifx\@empty##2\else
+      \ifx\\##1\\\string####20\else\string####20\fi
+      \spc@afterfi\spc@tempc##2%
+    \fi}%
+  \edef\spc@tempb{\spc@tempc#2 \@empty}% Apply to convert
+  \@for\spc@tempa:=\spc@csall\do{%
+    \@expandtwoargs\in@{/&\spc@tempb\space}{\@nameuse{spc@ir@\spc@tempa}}%
+    \ifin@
+      \PackageError{colorspace}{Duplicated spot name `#2'}%
+        {This spot name was taken by `\spc@tempa'.}%
+    \fi}%
+  \definecolor{#1}{cmyk:#3}{#4}% internally always cmyk
+  \expandafter\spc@cmyktospot % Convert from cmyk to spot
+    \csname\string\color@#1\endcsname
+    \spc@tempb
+  \immediate\pdfobj{[ /Separation /\spc@tempb\space
+    /DeviceCMYK << /FunctionType 2 /Domain [0 1]
+    /C0 [0 0 0 0] /C1 [\spc@tempa] /N 1 >> ]}% pdf separation
+  \expandafter\xdef\csname spc@ir@#1\endcsname{%
+    /&\spc@tempb\space\the\pdflastobj\space 0 R}% save ref to obj
+  \xdef\spc@csall{\ifx\spc@csall\@empty\else\spc@csall,\fi#1}}
+
+\AtBeginDocument{%
+  \ifx\spc@csall\@empty\else % ie, if spot colors
+    \pagecolorspace{\spc@csall}%
+  \fi}
+
+% Page color spaces. The arrays mapping the spot colors to the obj
+% refs are saved into the pdf as objects, and then we also save its
+% reference for later recovery. Well, \pdfpageresources is not
+% exactly "programmer"-friendy. We add the /ColorSpace, but if we
+% switch from a previoss one, the latter must be removed, too. This
+% is what \spc@remcs does. We also make sure a color space is
+% defined once: first we rebuild the argument without spaces and
+% then form the macro name using the order in csall, which is
+% fixed. The macro name is built with the PDF names.
+
+\let\spc@currcs\@empty
+\let\spc@cs@\@empty
+
+\newcommand\pagecolorspace[1]{%
+  \ifx\spc@currcs\@empty\else
+    \edef\tempa{%
+      \noexpand\spc@remcs\the\pdfpageresources
+      \noexpand\spc@remcs{\spc@currcs}}%
+    \tempa
+  \fi
+  \let\spc@tempd\@empty
+  \@for\spc@tempa:=#1\do{%
+    \spc@unknown{spc@ir@\spc@tempa}{spot color `\spc@tempa'}%
+    \edef\spc@tempd{,\spc@tempd,\spc@tempa,}}%
+  \let\spc@tempb\@empty
+  \let\spc@tempc\@empty
+  \@for\spc@tempa:=\spc@csall\do{%
+    \@expandtwoargs\in@{,\spc@tempa,}{\spc@tempd}%
+    \ifin@
+      \protected@edef\spc@tempb{%
+        \spc@tempb\@nameuse{spc@ir@\spc@tempa}\space}%
+      \protected@edef\spc@tempc{%
+        \spc@tempc\@nameuse{spc@ir@\spc@tempa}&}%
+    \fi}%
+  \@ifundefined{spc@cs@\spc@tempc}%
+    {\immediate\pdfobj{<< \spc@tempb>>}%
+     \expandafter\xdef\csname spc@cs@\spc@tempc\endcsname{\the\pdflastobj}}%
+    {}%
+  \expandafter\let\expandafter\spc@currcs\csname spc@cs@\spc@tempc\endcsname
+  \ifx\spc@currcs\@empty\else
+    \edef\spc@tempa{\pdfpageresources{%
+      \the\pdfpageresources\space/ColorSpace \@nameuse{spc@cs@\spc@tempc} 0 R}}%
+    \spc@tempa
+  \fi}
+
+\newcommand\resetpagecolorspace{\pagecolorspace{\spc@csall}}
+
+\def\spc@remcs#1\spc@remcs#2{%
+  \def\spc@tempc##1 /ColorSpace #2 ##2 R##3\spc@tempc{%
+    \pdfpageresources{##1##3}}%
+  \spc@tempc#1\spc@tempc}
+
+% Support for pgf (I hope--)
+
+\def\pgfsys@color@spot@stroke#1{%
+  \spc@getir{\string\color@pgfstrokecolor}%
+  \pgfsysprotocol@literal{\spc@ir\space CS}%
+  \pgfsysprotocol@literal{#1 SC}}
+\def\pgfsys@color@spot@fill#1{%
+  \spc@getir{\string\color@pgffillcolor}%
+  \pgfsysprotocol@literal{\spc@ir\space cs}%
+  \pgfsysprotocol@literal{#1 sc}}
+\def\pgfsys@color@spot#1{%
+  \pgfsys@color@spot@stroke{#1}%
+  \pgfsys@color@spot@fill{#1}}
+
+% ==== Overprint/Knokout ====
+
+\DeclareOption{overprint}{\def\spc@op{1}}
+\DeclareOption{opm=0}{\def\spc@op{0}\def\spc@opm{0}}
+\DeclareOption{opm=1}{}
+\DeclareOption{knockout}{\def\spc@op{2}} % After opm!
+\def\spc@opm{1}
+\ProcessOptions\relax
+
+\ifx\spc@op\@undefined
+  \spc@savedcatcodes
+\endinput\fi % One line!
+
+\def\spc@op@no{2}
+\@namedef{spc@op@1}{1}
+\@namedef{spc@op@0}{0}
+
+\newcommand\overprintstate[1]{%
+  \spc@unknown{spc@op@#1}{overprint state `#1'}%
+  \ifnum\csname spc@op@#1\endcsname=\spc@op\else
+    \expandafter\let\expandafter\spc@op\csname spc@op@#1\endcsname
+    \spc@setop
+  \fi}
+
+\newcommand\textoverprint[2][\spc@opm]{{\overprintstate{#1}#2}}
+
+\immediate\pdfobj{<< /Type /ExtGState /op false /OP false >>}%
+\edef\spc@tempa{/SPCko \the\pdflastobj\space 0 R }%
+\immediate\pdfobj{<< /Type /ExtGState /op true /OP true /OPM 0 >>}%
+\edef\spc@tempa{\spc@tempa/SPCmz \the\pdflastobj\space 0 R }%
+\immediate\pdfobj{<< /Type /ExtGState /op true /OP true /OPM 1 >>}%
+\edef\spc@tempa{\spc@tempa/SPCop \the\pdflastobj\space 0 R }%
+\immediate\pdfobj{<< \spc@tempa>>}%
+\edef\spc@tempa{\global\pdfpageresources{\the\pdfpageresources
+  \space /ExtGState \the\pdflastobj\space 0 R }}
+\spc@tempa
+
+\def\spc@setop{%
+  \pdfcolorstack\spc@opstack push{\spc@getop}%
+  \aftergroup\spc@resetop}
+\def\spc@resetop{\pdfcolorstack\spc@opstack pop\relax}
+\def\spc@getop{%
+  \ifcase\spc@op
+    /SPCmz gs
+  \or
+    /SPCop gs
+  \or
+    /SPCko gs
+  \fi}
+
+\chardef\spc@opstack\pdfcolorstackinit page direct{\spc@getop}
+
+\spc@savedcatcodes
+
+\endinput

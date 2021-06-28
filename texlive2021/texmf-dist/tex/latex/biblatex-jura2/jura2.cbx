@@ -1,0 +1,255 @@
+\ProvidesFile{biblatex-jura2.cbx}[2020/08/19 v0.4]
+% biblatex-jura2 is released under the LaTeX Project Public License v1.3c or later.
+
+\RequireCitationStyle{ext-authortitle-ibid}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Globale Änderungen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Namen kursiv (außer bei commentary mit Option citedbytitle)
+\renewcommand*{\mkbibnamefamily}[1]{%
+  \ifboolexpr{%
+    test {\ifentrytype{commentary}}%
+    and
+    test {\iftoggle{tnbcbx@citedbytitle}}%
+    }%
+  {#1}%
+  {\mkbibemph{#1}}%
+}
+
+\renewcommand*{\mkbibnamegiven}[1]{%
+  \ifboolexpr{%
+    test {\ifentrytype{commentary}}%
+    and
+    test {\iftoggle{tnbcbx@citedbytitle}}%
+    }%
+  {#1}%
+  {\mkbibemph{#1}}%
+}
+
+\renewcommand*{\mkbibnameprefix}[1]{%
+  \ifboolexpr{%
+    test {\ifentrytype{commentary}}%
+    and
+    test {\iftoggle{tnbcbx@citedbytitle}}%
+    }%
+  {#1}%
+  {\mkbibemph{#1}}%
+}
+
+\renewcommand*{\mkbibnamesuffix}[1]{%
+  \ifboolexpr{%
+    test {\ifentrytype{commentary}}%
+    and
+    test {\iftoggle{tnbcbx@citedbytitle}}%
+    }%
+  {#1}%
+  {\mkbibemph{#1}}%
+}
+
+%%%  Schrägstriche zwischen den Autoren außer bei commentary mit citedbytitle und dem Hrsg. bei incollection
+% DeclareFieldFormat funktioniert nicht
+\renewcommand*{\multinamedelim}{%
+  \ifboolexpr{
+    ( test {\ifentrytype{commentary}} and  test {\iftoggle{tnbcbx@citedbytitle}} )
+    or
+    ( test {\ifentrytype{incollection}} and test {\ifcurrentname{editor}} )
+    }
+    {\addcomma\space}%
+    {\addslash}%
+}
+
+% \DeclareDelimAlias* funktioniert nicht
+\renewcommand*{\finalnamedelim}{%
+  \ifboolexpr{
+    ( test {\ifentrytype{commentary}} and  test {\iftoggle{tnbcbx@citedbytitle}} )
+    or
+    ( test {\ifentrytype{incollection}} and test {\ifcurrentname{editor}} )
+    }
+    {\ifnumgreater{\value{liststop}}{2}{\finalandcomma}{}%
+    \addspace%
+    \ifboolexpr{ test {\ifentrytype{incollection}} and test {\ifcurrentname{editor}}} 
+      {\mkbibemph{\bibstring{and}}}%
+      {\bibstring{and}}%
+    \space}%
+    {\addslash}%
+}
+
+%%% ebd. kursiv
+\renewcommand*{\mkibid}{\ifentrytype{jurisdiction}{}{\mkbibemph}}
+
+%%% Keine Ausgabe des Verlags
+\AtEveryCitekey{\clearlist{publisher}}
+
+%%% Keine Ausgabe des Ortes
+%\AtEveryCitekey{\clearlist{location}}
+
+%%% Namen sortiert als Nachname, Vorname
+\DeclareNameAlias{sortname}{family-given}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Änderungen betr. 'book'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% 'title' nicht kursiv
+\DeclareFieldFormat[book]{title}{\normalfont{#1}}
+\DeclareFieldFormat[book]{citetitle}{\normalfont{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Änderungen betr. 'article'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Weiche für verschiedene Zitate, siehe https://tex.stackexchange.com/q/466985/35864
+\renewbibmacro*{cite:title}{%
+  \ifbibmacroundef{cite:title:\strfield{entrytype}}
+    {\printtext[extblx@inner\blx@delimcontext delims]{%
+    \printtext[bibhyperref]{%
+      \printfield[citetitle]{labeltitle}}}}%
+    {\usebibmacro*{cite:title:\strfield{entrytype}}}}
+
+
+\newbibmacro*{cite:title:article}{%
+  \printtext[extblx@inner\blx@delimcontext delims]{%
+    \printtext[bibhyperref]{%
+      %NEU Option für Ausgabe des Titels des Artikels in der Fußnote
+      %\printfield{title}%
+      %\addcomma\addspace%
+      %ENDE NEU
+      \printfield{journaltitle}% 
+      \addspace%
+      \iffieldundef{volume}%
+        {\printfield{year}}%
+        {\printfield{volume}%
+         \addspace%
+         \mkbibparens{\printfield{year}}}%
+      \addcomma\addspace%
+      \printfield{pages}%
+      %\nopunct%
+    }}}%
+  
+%%% Bei Article kein "S. " für die konkrete Fundstelle, dafür in Klammern: 
+\DeclareFieldFormat[article]{postnote}{\mkbibparens{#1}}   
+% Option für < > 
+%\DeclareFieldFormat[article]{postnote}{\textless#1\textgreater}   
+% Option für einfache französische guillemets
+%\DeclareFieldFormat[article]{postnote}{\mkfrenchopenquote{\guilsinglleft}#1\mkfrenchclosequote{\guilsinglright}}   
+
+
+%%% Kein Komma vor postnote (auch bei jurisdiction)
+\renewcommand*{\postnotedelim}{%
+  \ifboolexpr{
+    test {\ifentrytype{article}}%
+    or
+    test {\ifentrytype{jurisdiction}}
+    }
+  {\addspace}%
+  {\addcomma\space}%
+  }%
+
+%%% Bei Article wird nur die erste Seite angegeben
+% Besser: ein eigenes Feldformat für pages in Zitaten definieren und das dann nutzen. Z.B. 
+% \DeclareFieldFormat[article]{pages:cite}{\mkfirstpage{#1}}
+% das man dann mit \printfield[pages:cite]{pages} statt einem einfachen \printfield{pages} in den Definitionen für die Zitate nutzt.
+\AtEveryCite{% 
+  \DeclareFieldFormat[article]{pages}{\mkfirstpage{#1}}% 
+}% 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Änderungen betr. 'commentary'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% aus https://tex.stackexchange.com/a/95205/202233 und https://tex.stackexchange.com/a/430758/202233
+\let\oldpostnotedelim\postnotedelim
+\renewcommand*{\postnotedelim}{%  
+  \ifentrytype{commentary}%
+    {}%
+    {\oldpostnotedelim}}% 
+
+%\makeatletter
+\newrobustcmd*{\mkpostnote}[1]{\mkpostnote@i#1&}
+
+\def\mkpostnote@i{%
+  \@ifnextchar(%)
+    {\mkpostnote@ii}
+    {\mkpostnote@ii()}}
+
+\def\mkpostnote@ii(#1)#2&{%
+  \ifblank{#1}{}{%
+    \blx@getformat\cbx@postnote@prefix@fmt{ffd}{}{postnote:prefix}%
+    \cbx@postnote@prefix@fmt{#1}}%
+  \ifblank{#2}{}{%
+    \blx@getformat\cbx@postnote@stem@fmt{ffd}{}{postnote:stem}%
+    \cbx@postnote@stem@fmt{#2}}%
+  }
+\def\cbx@postnote@stem@fmt{}
+\def\cbx@postnote@prefix@fmt{}
+%\makeatother
+
+\DeclareFieldFormat{postnote:stem}{\oldpostnotedelim\mkpageprefix[pagination][\mknormrange]{#1}}
+\DeclareFieldFormat{postnote:prefix}{\addslash\mkbibemph{#1}}
+\DeclareFieldFormat{postnote}{\mkpostnote{#1}}
+
+%%% Punkt nach 'postnote'
+%\DeclareFieldFormat[commentary]{postnote}{\mknormrange{#1}\adddot}
+%\DeclareFieldFormat[commentary]{multipostnote}{\mknormrange{#1}\adddot}
+
+%%% Kursive Schrift für Bearbeiter von Kommentaren und "in: "
+\DeclareFieldFormat[commentary]{prenote}{\mkbibemph{#1}\space\bibstring{kommentarin}}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Änderungen betr. 'incollection'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Titel ohne Anführungszeichen 
+\DeclareFieldFormat[incollection]{citetitle}{\normalfont{#1}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Änderungen betr. 'online' und andere
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\DeclareFieldFormat[online]{citetitle}{\normalfont{#1}}
+
+\DeclareFieldFormat[misc]{citetitle}{\normalfont{#1}}
+
+\DeclareFieldFormat[report]{citetitle}{\normalfont{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Änderungen betr. 'jurisdiction'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newtoggle{tnbcbx@citedbypage}
+\DeclareEntryOption[boolean]{citedbypage}[true]{\settoggle{tnbcbx@citedbypage}{#1}}
+\DeclareBibliographyOption[boolean]{citedbypage}[true]{\settoggle{tnbcbx@citedbypage}{#1}}
+\DeclareTypeOption[boolean]{citedbypage}[true]{\settoggle{tnbcbx@citedbypage}{#1}}
+
+\newbibmacro*{cite:title:jurisdiction}{%
+  \printtext[extblx@inner\blx@delimcontext delims]{%
+    \printtext[bibhyperref]{%
+      {\printlist{institution}\addcomma\addspace%
+       \printfield{usera}\addspace%
+       \printtext{vom}\addspace%
+       \usebibmacro{date}%
+       \addspace\textendash\addspace%
+       \printfield{userb}%
+       % Entfernen für Verwendung der ECLI
+       %\iffieldundef{usere}{}{\addspace\mkbibbrackets{\printfield{usere}}}%
+       \iffieldundef{userf}{}{\addcomma\addspace\printfield{userf}}%
+       \addspace\textendash%
+       \iffieldundef{userc}{}{\addspace\printfield{userc}}%
+       \iffieldundef{userd}{}{\addspace\printfield{userd}}%
+    }}}}%
+
+\DeclareFieldFormat[jurisdiction]{author}{#1}
+\DeclareFieldFormat[jurisdiction]{citetitle}{\normalfont{#1}}
+
+\DeclareFieldFormat[jurisdiction]{postnote}{\iftoggle{tnbcbx@citedbypage}{\mkbibparens{#1}}{#1}}
+% Option für < >
+%\DeclareFieldFormat[jurisdiction]{postnote}{\iftoggle{tnbcbx@citedbypage}{\textless#1\textgreater}{#1}}
+% Option für französische guillemets
+%\DeclareFieldFormat[jurisdiction]{postnote}{\iftoggle{tnbcbx@citedbypage}{\mkfrenchopenquote{\guilsinglleft}#1\mkfrenchclosequote{\guilsinglright}}{#1}}
+
+
+
+\endinput

@@ -1,0 +1,303 @@
+%%
+%% This is file `uri.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% uri.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Project: uri
+%% Version: 2018/09/06 v2.0b
+%% 
+%% Copyright (C) 2011 - 2018 by
+%%     H.-Martin M"unch <Martin dot Muench at Uni-Bonn dot de>
+%% Portions of code copyrighted by other people as marked.
+%% 
+%% IMPORTANT NOTICE: The package takes options.
+%% 
+%% The usual disclaimer applies:
+%% If it doesn't work right that's your problem.
+%% (Nevertheless, send an e-mail to the maintainer
+%%  when you find an error in this package.)
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either
+%% version 1.3c of this license or (at your option) any later
+%% version. This version of this license is in
+%%    http://www.latex-project.org/lppl/lppl-1-3c.txt
+%% and the latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of
+%% LaTeX version 2005/12/01 or later.
+%% 
+%% This work has the LPPL maintenance status "maintained".
+%% 
+%% The Current Maintainer of this work is H.-Martin Muench.
+%% 
+%% This work consists of the main source file uri.dtx,
+%% the README, and the derived files
+%%    uri.sty, uri.pdf, uri.ins, uri.drv,
+%%    uri-example.tex, uri-example.pdf.
+%% 
+%% In memoriam
+%%  Claudia Simone Barth + 1996/01/30
+%%  Tommy Muench + 2014/01/02
+%%  Hans-Klaus Muench + 2014/08/24
+%% 
+\NeedsTeXFormat{LaTeX2e}[2015/01/01]
+\ProvidesPackage{uri}[2018/09/06 v2.0b
+   Hyperlinks URIs like DOI,HDL,NBN,PubMed (HMM)]
+
+%% Allows to automatically hyperlink uris of types
+%% arXiv, ASIN, DOI, HDL, NBN, OCLC, OID, PubMed, TINY, TINY with preview,
+%% and WebCite
+%% in such a way that they are resolved to an address understood by browsers
+%% independent of native support or add-ons for such types of uri
+%% and provides commands \citeurl, \mailto, \ukoeln, and \uref.
+\RequirePackage{kvoptions}[2011/06/30]% v3.11
+\RequirePackage{url}[2013/09/16]% v3.4
+
+\SetupKeyvalOptions{family = uri, prefix = uri@}
+
+\DeclareStringOption[arXiv:]{arxivpre}[arXiv:]
+\DeclareStringOption[]{arxivpost}[]
+
+\DeclareStringOption[ASIN:]{asinpre}[ASIN:]
+\DeclareStringOption[]{asinpost}[]
+
+\DeclareStringOption[DOI:]{doipre}[DOI:]
+\DeclareStringOption[]{doipost}[]
+
+\DeclareStringOption[HDL:]{hdlpre}[HDL:]
+\DeclareStringOption[]{hdlpost}[]
+
+\DeclareStringOption[]{nbnpre}[]
+\DeclareStringOption[]{nbnpost}[]
+
+\DeclareStringOption[OCLC:]{oclcpre}[OCLC:]
+\DeclareStringOption[]{oclcpost}[]
+
+\DeclareStringOption[URN:OID:]{oidpre}[URN:OID:]
+\DeclareStringOption[]{oidpost}[]
+
+\DeclareStringOption[PubMed:]{pubmedpre}[PubMed:]
+\DeclareStringOption[]{pubmedpost}[]
+
+\def\uri@tiny@pre@default{TINY:}
+\def\uri@tiny@post@default{}
+
+\def\uri@tinyp@pre@default{TINY:P:}
+\def\uri@tinyp@post@default{}
+
+\DeclareStringOption[\uri@tiny@pre@default]{tinypre}[\uri@tiny@pre@default]
+\DeclareStringOption[\uri@tiny@post@default]{tinypost}[\uri@tiny@post@default]
+
+\DeclareStringOption[\uri@tinyp@pre@default]{tinyppre}[\uri@tinyp@pre@default]
+\DeclareStringOption[\uri@tinyp@post@default]{tinyppost}[\uri@tinyp@post@default]
+
+\DeclareStringOption[\uri@tiny@pre@default]{tinyuripre}[\uri@tiny@pre@default]
+\DeclareStringOption[\uri@tiny@post@default]{tinyuripost}[\uri@tiny@post@default]
+
+\DeclareStringOption[\uri@tinyp@pre@default]{tinypuripre}[\uri@tinyp@pre@default]
+\DeclareStringOption[\uri@tinyp@post@default]{tinypuripost}[\uri@tinyp@post@default]
+
+\DeclareStringOption[WC:]{wcpre}[WC:]
+\DeclareStringOption[]{wcpost}[]
+
+\DeclareStringOption[URN:XMPP:]{xmpppre}[]
+\DeclareStringOption[]{xmpppost}[]
+
+\DeclareStringOption[<]{citeurlpre}[<]
+\DeclareStringOption[>]{citeurlpost}[>]
+
+\DeclareStringOption[mailto:]{mailtopre}[mailto:]
+\DeclareStringOption[]{mailtopost}[]
+
+\DeclareStringOption[http://UKoeln.de/]{ukoelnpre}[http://UKoeln.de/]
+\DeclareStringOption[]{ukoelnpost}[]
+
+\ProcessKeyvalOptions*
+
+\gdef\urisetup{\kvsetkeys{uri}}
+
+\def\uri@wrapper{\uri@tiny@pre@default}
+\ifx\uri@tinypre\uri@wrapper%
+\else%
+  \ifx\uri@tinyuripre\uri@wrapper%
+    \PackageWarning{uri}{Option tinypre deprecated.\MessageBreak%
+      Please use tinyuripre instead!\MessageBreak%
+      Transfering content of option tinypre to tinyuripre now;\MessageBreak%
+      }%
+    \let\uri@tinyuripre\uri@tinypre%
+  \else%
+    \PackageError{uri}{Conflicting options tinypre and tinyuripre used}{%
+      Option tinypre deprecated.\MessageBreak%
+      Please use ONLY option tinyuripre instead!\MessageBreak%
+      Ignoring option tinypre now.\MessageBreak%
+      }%
+  \fi%
+\fi%
+
+\def\uri@wrapper{\uri@tiny@post@default}
+\ifx\uri@tinypost\uri@wrapper%
+\else%
+  \ifx\uri@tinyuripost\uri@wrapper%
+    \PackageWarning{uri}{Option tinypost deprecated.\MessageBreak%
+      Please use tinyuripost instead!\MessageBreak%
+      Transfering content of option tinypost to tinyuripost now;\MessageBreak%
+      }%
+    \let\uri@tinyuripost\uri@tinypost%
+  \else%
+    \PackageError{uri}{Conflicting options tinypost and tinyuripost used}{%
+      Option tinypost deprecated.\MessageBreak%
+      Please use ONLY option tinyuripost instead!\MessageBreak%
+      Ignoring option tinypost now.\MessageBreak%
+      }%
+  \fi%
+\fi%
+
+\def\uri@wrapper{\uri@tinyp@pre@default}
+\ifx\uri@tinyppre\uri@wrapper%
+\else%
+  \ifx\uri@tinypuripre\uri@wrapper%
+    \PackageWarning{uri}{Option tinyppre deprecated.\MessageBreak%
+      Please use tinypuripre instead!\MessageBreak%
+      Transfering content of option tinyppre to tinypuripre now;\MessageBreak%
+      }%
+    \let\uri@tinypuripre\uri@tinyppre%
+  \else%
+    \PackageError{uri}{Conflicting options tinyppre and tinypuripre used}{%
+      Option tinyppre deprecated.\MessageBreak%
+      Please use ONLY option tinypuripre instead!\MessageBreak%
+      Ignoring option tinyppre now.\MessageBreak%
+      }%
+  \fi%
+\fi%
+
+\def\uri@wrapper{\uri@tinyp@post@default}
+\ifx\uri@tinyppost\uri@wrapper%
+\else%
+  \ifx\uri@tinypuripost\uri@wrapper%
+    \PackageWarning{uri}{Option tinyppost deprecated.\MessageBreak%
+      Please use tinypuripost instead!\MessageBreak%
+      Transfering content of option tinyppost to tinypuripost now;\MessageBreak%
+      }%
+    \let\uri@tinypuripost\uri@tinyppost%
+  \else%
+    \PackageError{uri}{Conflicting options tinyppost and tinypuripost used}{%
+      Option tinyppost deprecated.\MessageBreak%
+      Please use ONLY option tinypuripost instead!\MessageBreak%
+      Ignoring option tinyppost now.\MessageBreak%
+      }%
+  \fi%
+\fi%
+
+\DisableKeyvalOption[action={error},package=uri]{uri}{tinypre}
+\DisableKeyvalOption[action={error},package=uri]{uri}{tinypost}
+\DisableKeyvalOption[action={error},package=uri]{uri}{tinyppre}
+\DisableKeyvalOption[action={error},package=uri]{uri}{tinyppost}
+
+\@ifpackageloaded{hyperref}{%
+\DeclareRobustCommand{\uref}[2]{\protect\href{#1}{\protect\nolinkurl{#2}}}%
+%% arXiv
+\DeclareUrlCommand\arxiv{\def\UrlLeft##1\UrlRight{\href{https://arxiv.org/abs/##1}{\uri@arxivpre##1\uri@arxivpost}}}%
+%% ASIN
+\DeclareUrlCommand\asin{\def\UrlLeft##1\UrlRight{\href{https://amzn.com/##1}{\uri@asinpre##1\uri@asinpost}}}%
+%% DOI
+\DeclareUrlCommand\doi{\def\UrlLeft##1\UrlRight{\href{https://dx.doi.org/##1}{\uri@doipre##1\uri@doipost}}}%
+%% HDL
+\DeclareUrlCommand\hdl{\def\UrlLeft##1\UrlRight{\href{https://hdl.handle.net/##1}{\uri@hdlpre##1\uri@hdlpost}}}%
+%% NBN
+\DeclareUrlCommand\nbn{\def\UrlLeft##1\UrlRight{\href{https://nbn-resolving.org/urn/resolver.pl?urn=##1}{\uri@nbnpre##1\uri@nbnpost}}}%
+%% OCLC
+\DeclareUrlCommand\oclc{\def\UrlLeft##1\UrlRight{\href{https://www.worldcat.org/oclc/##1}{\uri@oclcpre##1\uri@oclcpost}}}%
+%% OID
+\DeclareUrlCommand\oid{\def\UrlLeft##1\UrlRight{\href{http://www.oid-info.com/cgi-bin/display?oid=##1&submit=Display&action=display}{%
+\uri@oidpre##1\uri@oidpost}}}%
+%% PubMed
+\DeclareUrlCommand\pubmed{\def\UrlLeft##1\UrlRight{%
+\href{https://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&list_uids=##1&dopt=Abstract}{\uri@pubmedpre##1\uri@pubmedpost}}}%
+%% TINY
+\DeclareUrlCommand\tinyuri{\def\UrlLeft##1\UrlRight{\href{https://tinyurl.com/##1}{\uri@tinyuripre##1\uri@tinyuripost}}}%
+%% TINYP (tiny with preview)
+\DeclareUrlCommand\tinypuri{\def\UrlLeft##1\UrlRight{\href{https://preview.tinyurl.com/##1}{\uri@tinypuripre##1\uri@tinypuripost}}}%
+%% WebCite
+\DeclareUrlCommand\wc{\def\UrlLeft##1\UrlRight{\href{https://www.webcitation.org/##1}{\uri@wcpre##1\uri@wcpost}}}%
+%% XMPP
+\DeclareUrlCommand\xmpp{%
+  \PackageError{uri}{Command \string\xmpp\space deprecated}{%
+    XMPP (https://xmpp.org/about/) changed, for example URN:XMPP:time\MessageBreak%
+    was moved from https://xmpp.org/protocols/urn:xmpp:time/\MessageBreak%
+    to https://xmpp.org/extensions/xep-0202.html. Therefore\MessageBreak%
+    \string\xmpp\space is no longer provided by this package.\MessageBreak%
+    For backward compatibility \string\xmpp\space links to\MessageBreak%
+    https://xmpp.org/extensions/.\MessageBreak%
+    Please replace \string\xmpp\space in your document by the appropriate url.\MessageBreak%
+  }%
+  \def\UrlLeft##1\UrlRight{\href{https://xmpp.org/extensions/}{\uri@xmpppre##1\uri@xmpppost}}%
+  }%
+%% citeurl
+\DeclareUrlCommand\citeurl{\def\UrlLeft##1\UrlRight{\href{##1}{\uri@citeurlpre##1\uri@citeurlpost}}}%
+%% mailto
+\DeclareUrlCommand\mailto@{\def\UrlLeft##1\UrlRight{\href{mailto:##1\mailto@subject}{\uri@mailtopre##1\uri@mailtopost}}}%
+\DeclareRobustCommand\mailto[1][]{\def\mailto@subject{?subject=#1}\mailto@}%
+%% ukoeln
+\DeclareUrlCommand\ukoeln{\def\UrlLeft##1\UrlRight{\href{https://UKoeln.de/##1}{\uri@ukoelnpre##1\uri@ukoelnpost}}}%
+}{% otherwise, i.e. if hyperref has not been loaded:
+\DeclareRobustCommand{\uref}[1]{\url}%
+%% arXiv
+\DeclareUrlCommand\arxiv{\def\UrlLeft##1\UrlRight{\uri@arxivpre##1\uri@arxivpost}}%
+%% ASIN
+\DeclareUrlCommand\asin{\def\UrlLeft##1\UrlRight{\uri@asinpre##1\uri@asinpost}}%
+%% DOI
+\DeclareUrlCommand\doi{\def\UrlLeft##1\UrlRight{\uri@doipre##1\uri@doipost}}%
+%% HDL
+\DeclareUrlCommand\hdl{\def\UrlLeft##1\UrlRight{\uri@hdlpre##1\uri@hdlpost}}%
+%% NBN
+\DeclareUrlCommand\nbn{\def\UrlLeft##1\UrlRight{\uri@nbnpre##1\uri@nbnpost}}%
+%% OCLC
+\DeclareUrlCommand\oclc{\def\UrlLeft##1\UrlRight{\uri@oclcpre##1\uri@oclcpost}}%
+%% OID
+\DeclareUrlCommand\oid{\def\UrlLeft##1\UrlRight{\uri@oidpre##1\uri@oidpost}}%
+%% PubMed
+\DeclareUrlCommand\pubmed{\def\UrlLeft##1\UrlRight{\uri@pubmedpre##1\uri@pubmedpost}}%
+%% TINY
+\DeclareUrlCommand\tinyuri{\def\UrlLeft##1\UrlRight{\uri@tinyuripre##1\uri@tinyuripost}}%
+%% TINYP (tiny with preview)
+\DeclareUrlCommand\tinypuri{\def\UrlLeft##1\UrlRight{\uri@tinypuripre##1\uri@tinypuripost}}%
+%% WebCite
+\DeclareUrlCommand\wc{\def\UrlLeft##1\UrlRight{\uri@wcpre##1\uri@wcpost}}%
+%% XMPP
+\DeclareUrlCommand\xmpp{\def\UrlLeft##1\UrlRight{\uri@xmpppre##1\uri@xmpppost}}%
+%% citeurl
+\DeclareUrlCommand\citeurl{\def\UrlLeft##1\UrlRight{\uri@citeurlpre##1\uri@citeurlpost}}%
+%% mailto
+\DeclareUrlCommand\mailto@{\def\UrlLeft##1\UrlRight{\uri@mailtopre##1\uri@mailtopost}}%
+\DeclareRobustCommand\mailto[1][]{\mailto@}%
+%% ukoeln
+\DeclareUrlCommand\ukoeln{\def\UrlLeft##1\UrlRight{\uri@ukoelnpre##1\uri@ukoelnpost}}%
+}
+
+\AtBeginDocument{%
+  \@ifpackageloaded{aurl}%
+    {\PackageWarning{uri}{Packages uri AND aurl detected.\MessageBreak%
+       Results might depend on order of loading;\MessageBreak}%
+    }{\relax}%
+  \@ifpackageloaded{doi}%
+    {\PackageWarning{uri}{Packages uri AND doi detected.\MessageBreak%
+       Results will depend on order of loading!\MessageBreak%
+       Consider using only one package.\MessageBreak%
+       The uri package alone should be sufficient;\MessageBreak}%
+    }{\relax}%
+  \@ifpackageloaded{doipubmed}%
+    {\PackageWarning{uri}{Packages uri AND doipubmed detected.\MessageBreak%
+       Results will depend on order of loading!\MessageBreak%
+       Consider using only one package.\MessageBreak%
+       The uri package alone should be sufficient;\MessageBreak}%
+    }{\relax}%
+  }%
+\endinput
+%%
+%% End of file `uri.sty'.

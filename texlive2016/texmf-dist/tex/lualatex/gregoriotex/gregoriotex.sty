@@ -1,0 +1,218 @@
+%GregorioTeX LaTeX style.
+%
+% Copyright (C) 2007-2015 The Gregorio Project (see CONTRIBUTORS.md)
+%
+% This file is part of Gregorio.
+%
+% Gregorio is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% Gregorio is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with Gregorio.  If not, see <http://www.gnu.org/licenses/>.
+
+\NeedsTeXFormat{LaTeX2e}%
+\ProvidesPackage{gregoriotex}%
+		[2016/05/08 v4.1.2 GregorioTeX system.]% PARSE_VERSION_DATE_LTX
+
+% If gregoriosyms has been loaded then there are going to be some conflicts in the definitions made in that package and this one.  In order to provide for a more informative error message, we check for that conflict right away
+\ifcsname gregoriotex@symbols@loaded\endcsname\gre@error{Loading gregoriotex after\MessageBreak gregoriosyms is not supported.  Please remove the\MessageBreak loading of gregoriosyms (its contents are loaded\MessageBreak by gregoriotex)}\fi%
+
+\RequirePackage{xcolor}%
+\RequirePackage{kvoptions}%
+\RequirePackage{ifluatex}%
+\RequirePackage{graphicx}% for \resizebox
+\RequirePackage{luatexbase}%
+\RequirePackage{luaotfload}%
+\RequirePackage{luamplib}%
+\RequirePackage{xstring}%
+
+\def\gre@error#1{\PackageError{GregorioTeX}{#1}{}}%
+\def\gre@warning#1{\PackageWarning{GregorioTeX}{#1}}%
+\def\gre@bug#1{\PackageError{GregorioTeX}{#1 !! This is a bug in Gregorio.  Please report it at https://github.com/gregorio-project/gregorio/issues}{}}%
+\def\gre@typeout{\typeout}
+\long\def\gre@metapost#1{{%
+	\gre@localleftbox{}%
+	\gre@localrightbox{}%
+	\begin{mplibcode}
+	#1
+	\end{mplibcode}%
+}}%
+
+\SetupKeyvalOptions{prefix=gre@}
+\DeclareStringOption{debug}[all]
+
+\let\gre@strip@pt\strip@pt
+
+\long\def\gre@iflatex#1{#1}
+\input gregoriotex-main.tex
+
+%% We declare and process some additional options after loading the package (instead of at the beginning) because the options manipulate flags which are declared in the package.
+
+% These options control the global behavior of \includescore.  The default, forceinclude, is the old behavior (no attempt to compile the score with gregorio is made, it is simply included as is).  forcecompile is at the opposite end of the spectrum: all scores are compiled through gregorio at time of inclusion.  autocompile strikes a balance by checking to see if the score needs to be recompiled and only doing so if it needs it (see the definition of \includescore in gregoriotex.tex for more details).
+\DeclareVoidOption{nevercompile}{\gresetcompilegabc{never}}
+\DeclareVoidOption{forcecompile}{\gresetcompilegabc{force}}
+\DeclareVoidOption{autocompile}{\gresetcompilegabc{auto}}
+
+\ExecuteOptions{nevercompile}
+
+% This option allows the user to transform all deprecation messages
+% into errors.  Allowing one to determine if the TeX file is compliant
+% with future versions of gregoriotex. To enable, use gregoriotex with
+% this option: allowdeprecated=false
+\DeclareBoolOption[true]{allowdeprecated}
+
+\ProcessKeyvalOptions*
+
+% we hide lines only under LaTeX
+\gresetlinesbehindalteration{invisible}
+\gresetlinesbehindpunctumcavum{invisible}
+
+%% We now redefine some things in a more LaTeX friendly way.
+
+\definecolor{grebackgroundcolor}{RGB}{255,255,255}%
+\definecolor{gregoriocolor}{RGB}{229,53,44}
+
+%%%%%%%%%
+%% LaTeX specific definitions for fonts
+%%%%%%%%%
+
+\def\GreItalic#1{%
+	\textit{#1}%
+	\relax %
+}
+
+\def\GreSmallCaps#1{%
+	\textsc{#1}%
+	\relax %
+}
+
+\def\GreBold#1{%
+	\textbf{#1}%
+	\relax %
+}
+
+\def\GreTypewriter#1{%
+	\texttt{#1}%
+	\relax %
+}
+
+\def\GreUnderline#1{%
+	\underline{#1}%
+	\relax %
+}
+
+\def\GreColored#1{%
+	{%
+		\color{gregoriocolor}#1%
+	}%
+}
+
+
+\def\gresetlinecolor#1{%
+	\gre@changestyle{normalstafflines}{\color[named]{#1}}[\relax]%
+}
+
+\def\grecoloredlines#1#2#3{%OBSOLETE
+	\gre@obsolete{\protect\grecoloredlines}{\protect\gresetlinecolor}%
+}
+
+\def\greredlines{%OBSOLETE
+	\gre@obsolete{\protect\greredlines}{\protect\gresetlinecolor{gregoriocolor}}%
+	\relax %
+}
+
+\let\redlines\greredlines%OBSOLETE
+
+\def\grenormallines{%OBSOLETE
+	\gre@obsolete{\protect\grenormallines}{\protect\gresetlinecolor{black}}%
+	\relax %
+}
+
+\let\normallines\grenormallines%OBSOLETE
+
+%%%%%%%%%%%%%%%%%%%%
+%% Formatting environments
+%%%%%%%%%%%%%%%%%%%%
+
+\newenvironment{gre@style@initial}%
+	{\begingroup\fontsize{40}{40}\selectfont}%
+	{\endgroup}%
+
+\newenvironment{gre@style@biginitial}%%% DEPRECATED for removal in 5.0
+	{\begingroup\fontsize{80}{80}\selectfont}%%% DEPRECATED for removal in 5.0
+	{\endgroup}%%% DEPRECATED for removal in 5.0
+
+\newenvironment{gre@style@translation}%
+	{\begingroup\itshape}%
+	{\endgroup}%
+
+\newenvironment{gre@style@abovelinestext}%
+	{\begingroup\small\itshape}%
+	{\endgroup}%
+
+\newenvironment{gre@style@normalstafflines}%
+	{\begingroup}%
+	{\endgroup}%
+
+\newenvironment{gre@style@additionalstafflines}%
+	{\begingroup\begin{gre@style@normalstafflines}}%
+	{\end{gre@style@normalstafflines}\endgroup}%
+
+\newenvironment{gre@style@lowchoralsign}%
+	{\begingroup}%
+	{\endgroup}%
+
+\newenvironment{gre@style@highchoralsign}%
+	{\begingroup}%
+	{\endgroup}%
+
+\newenvironment{gre@style@firstsyllableinitial}%
+	{\begingroup}%
+	{\endgroup}%
+
+\newenvironment{gre@style@firstsyllable}%
+	{\begingroup}%
+	{\endgroup}%
+
+\newenvironment{gre@style@firstword}%
+	{\begingroup}%
+	{\endgroup}%
+
+\newenvironment{gre@style@modeline}%
+	{\begingroup\begin{scshape}\begin{bfseries}}%
+	{\end{bfseries}\end{scshape}\endgroup}%
+
+\newenvironment{gre@style@modemodifier}%
+	{\begingroup\begin{bfseries}\itshape\@@italiccorr}%
+	{\@@italiccorr\end{bfseries}\endgroup}%
+
+\newenvironment{gre@style@modedifferentia}%
+	{\begingroup\begin{bfseries}}%
+	{\end{bfseries}\endgroup}%
+
+\newenvironment{gre@style@annotation}%
+	{\begingroup}%
+	{\endgroup}%
+
+\newenvironment{gre@style@commentary}%
+	{\begingroup\footnotesize\itshape}%
+	{\endgroup}%
+
+\newenvironment{gre@style@elision}%
+	{\begingroup\small\itshape\@@italiccorr}%
+	{\@@italiccorr\endgroup}%
+
+\newenvironment{gre@style@nabc}%
+	{\begingroup\color{red}}%
+	{\endgroup}%
+
+\def\gre@changestyle#1#2[#3]{%
+	\renewenvironment{gre@style@#1}{\begingroup#2}{#3\endgroup}%
+}%

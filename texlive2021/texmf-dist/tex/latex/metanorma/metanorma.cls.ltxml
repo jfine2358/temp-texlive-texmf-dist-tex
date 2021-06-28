@@ -1,0 +1,149 @@
+#
+# tex2mn 0.5.0 - converts Metanorma documents from LaTeX to AsciiDoc
+#
+# Copyright (C) 2019-2020 Ribose Inc. <open.source@ribose.com>
+# This project is available under the terms of the MIT License.
+#
+
+package LaTeXML::Package::Pool;
+
+use LaTeXML::Package;
+use strict;
+use warnings;
+
+LoadClass('article');
+
+RequirePackage('lxRDFa');
+RequirePackage('graphicx');
+RequirePackage('hyperref');
+RequirePackage('amsmath');
+RequirePackage('subcaption');
+
+RequirePackage('verbatim');
+
+# NOTE: switching to ASCII encoding (inside the enveloping group) preserves quotes.
+# Otherwise, they would be mapped to curly ones by Tex.pool.ltxml fontmaps and ligatures.
+DefMacro('\mn Semiverbatim',
+  '{\fontencoding{ASCII}\lxRDF[#1]{property=mn:attributes}}');
+
+# NOTE: let's avoid \mna until possible
+
+# NOTE: this fixes and specializes \lxRDFa
+# \mna{xpath}{keywordpairs}
+#   Add RDF attributes to nodes specified by the xpath expression.
+# DefConstructor('\mna Semiverbatim RequiredKeyVals:RDFa', sub {
+#   my ($document, $xpath, $kv) = @_;
+#   my ($save, @nodes);
+#   $xpath = ToString($xpath);
+#   $save = $document->getNode;
+#   @nodes = $document->findnodes($xpath, $save);
+#   Warn('expected', 'node', $document,
+#        "Expected to find a node for RDFa attributes at the xpath: " . $xpath) unless scalar(@nodes);
+#   my $attr = RDFAttributes($kv);
+#   foreach my $node (@nodes) {
+#     foreach my $k (sort keys %$attr) {
+#       # use direct method ($doc method doesn't skips about="", which we need!)
+#       $node->setAttribute($k => ToString($$attr{$k})); }}
+#   $document->setNode($save); });
+
+## Document attributes #########################################################
+
+DefMacro('\set Semiverbatim {}',
+  '{\fontencoding{ASCII}\lxRDF{property=#1,content=#2}}');
+
+DefConstructor('\get Semiverbatim',
+  "<ltx:text content='#1'/>");
+
+DefConstructor('\att OptionalUndigested {}',
+  "<ltx:text class='with-mn-attributes'><ltx:rdf about=\".\" property=\"mn:attributes\">#1</ltx:rdf>#2</ltx:text>");
+
+## Strikethrough ###############################################################
+
+DefConstructor('\textst{}',
+  "<ltx:text class='strikethrough'>#1</ltx:text>");
+
+## Blocks ######################################################################
+
+# NOTE: this is modeled after quote's treatment in LaTeX.pool.ltxml
+# NOTE: source are meant to be a single paragraph
+DefEnvironment("{source}",
+  "<ltx:para class=\"source\">#body</ltx:para>",
+  # NOTE: this beforeDigest gives us a single <p> inside <para> broken by <break>,
+  #       instead of multiple <p> splitted on multiple <para>s (with no classes after the first one).
+  beforeDigest => sub { Let('\\\\', '\@block@cr'); Let('\par', '\@block@cr') },
+  mode => 'text');
+
+sub define_block {
+  my ($environment, $class) = @_;
+  DefEnvironment(
+    "{$environment}",
+    sub {
+      my ($document, %props) = @_;
+      $_[0]->maybeCloseElement('ltx:p'); # this starts a new vertical block
+      insertBlock(
+        $document,
+        $props{body},
+        class => $class,
+      );
+    },
+    beforeDigest => sub {
+      Let('\par', '\inner@par');
+      # Let('\\\\', '\inner@par');
+    },
+    # mode => 'text'
+  );
+}
+
+sub define_blocks {
+  my ($block, @modifiers) = @_;
+  foreach my $modifier (@modifiers) {
+    define_block("{$modifier}", "$block--$modifier");
+  }
+}
+
+define_block('quote', 'block-quote');
+define_block('example', 'block-example');
+define_block('reviewernote', 'block-sidebar');
+define_block('todo', 'block-admonition--todo');
+define_blocks('block-example', qw(requirement recommendation permission));
+define_blocks('block-open', qw(specification measurement-target verification import));
+define_blocks('block-admonition', qw(note tip important caution warning));
+
+## Terms and Definitions #######################################################
+
+DefMacro('\alt{}', '\lxRDF[#1]{property=alt}');
+DefMacro('\deprecated{}', '\lxRDF[#1]{property=deprecated}');
+DefMacro('\domain{}', '\lxRDF[#1]{property=domain}');
+
+## Citation macros #############################################################
+
+# NOTE: this is intended as a smarter version of 
+#   DefMacro('\mncite[]{}[]','\cite[#1]{#2}\mn{#3,#1}');
+DefMacro('\mncite[]{}[]', sub {
+  my (@mn_attributes, @tokens);
+  push(@mn_attributes, ToString($_[3])) if $_[3];
+  push(@mn_attributes, ToString($_[1])) if $_[1];
+  push(@tokens, Invocation(T_CS('\cite'), $_[1], $_[2]));
+  # NOTE: we should be putting the ltx:rdf *inside* the ltx:cite
+  push(@tokens, Invocation(T_CS('\mn'), join(',', @mn_attributes))) if scalar(@mn_attributes);
+  return @tokens;
+});
+
+## Figures keys ################################################################
+
+# NOTE: this is straight from LaTeXML/lib/LaTeXML/Package/enumitem.sty.ltxml
+DefEnvironment('{key} OptionalUndigested',
+  "<ltx:description  xml:id='#id'>#body</ltx:description>",
+  beforeDigest => sub { Let('\makelabel', '\descriptionlabel'); },
+  properties => sub { beginItemize('description', '@desc'); },
+  beforeDigestEnd => sub { Digest('\par'); },
+  locked => 1, mode => 'text');
+
+## LaTeX.pool.ltxml overrides ##################################################
+
+# NOTE: the original is '\normalfont\bfseries #1' but that's annoying since
+# we want to just do <xsl:apply-templates select="ltx:tags/ltx:tag[not(@role)]"/>
+# to match description list labels and that would get us an undesired bold.
+DefMacro('\descriptionlabel{}', '\normalfont #1');
+
+1;

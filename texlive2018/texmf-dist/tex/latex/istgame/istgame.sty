@@ -1,0 +1,790 @@
+%% file: istgame.sty
+%%
+%% Drawing Game Trees with TikZ
+%%
+%% (C) Copyright 2015-2017 In-Sung Cho <ischo at ktug.org>
+%%
+%% This work may be distributed and/or modified 
+%% under the conditions of the LaTeX Project Public License, 
+%% either version 1.3c of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%  http://www.latex-project.org/lppl.txt.
+%%
+%% -------------------------------------------------
+\ProvidesPackage{istgame-ktug}[2017/09/04 v1.0]
+
+% expl3,xparse: LPPL
+% tikz: LPPL and/or GNU GPL
+\RequirePackage{expl3,xparse,tikz}
+\usetikzlibrary{calc,arrows,shapes,positioning,patterns,trees,fit,backgrounds,quotes}
+
+
+%% prefixes for macros and defaults
+% \ist<...> stands for "an insung's simple tree" (or "it's a simple tree")
+% \xt<...> stands for "extensive tree"
+% \istdefault@<...>
+% \xtdefault@<...>
+
+
+%% node styles
+
+% basics (in node styles)
+\def\istdefault@nodeinnersep{1pt} %% default node inner sep
+\def\istdefault@nodeoutersep{0pt} %% default node outer sep
+\def\istdefault@nodedrawcolor{black} %% default node color
+\def\istdefault@nodebgcolor{white} %% default node background color
+\newcommand*\setistdefaultnodeinnersep[1]{\renewcommand*\istdefault@nodeinnersep{#1}}
+\newcommand*\setistdefaultnodeoutersep[1]{\renewcommand*\istdefault@nodeoutersep{#1}}
+\newcommand*\setistdefaultnodebgcolor[1]{\renewcommand*\istdefault@nodebgcolor{#1}}
+\newcommand*\setistdefaultnodedrawcolor[1]{\renewcommand*\istdefault@nodedrawcolor{#1}}
+
+% plain node: definition
+\def\istplainnodeinnersep{\istdefault@nodeinnersep} % 1pt by default
+\def\istplainnodeoutersep{\istdefault@nodeoutersep} % 0pt by default
+
+\NewDocumentCommand\setistPlainNodeStyle
+    {G{\istdefault@nodeinnersep}G{\istdefault@nodeinnersep}}
+    {
+     \renewcommand*\istplainnodeinnersep{#1} % 0pt (mandatory)
+     \renewcommand*\istplainnodeoutersep{#2}
+    }
+\tikzstyle{plain node}=[%
+    inner sep=\istplainnodeinnersep,outer sep=\istplainnodeoutersep,
+    draw=none]
+
+% null node: definition
+\def\istnullnodedrawcolor{\istdefault@nodedrawcolor} % (#1) black
+\def\istnullnodebgcolor{\istdefault@nodedrawcolor} % (#2)  <= black
+\def\istdefault@nullnodesize{.2pt} % null node defaultsize
+\def\istnullnodesize{\istdefault@nullnodesize} % (#3)
+\def\istnullnodebgopacity{1} % (#4)
+
+\NewDocumentCommand\setistNullNodeStyle
+    {O{\istdefault@nodedrawcolor}mO{\istdefault@nodedrawcolor}O{1}}
+    {
+      \renewcommand*\istnullnodedrawcolor{#1}
+      \renewcommand*\istnullnodesize{#2} % mandatory
+      \renewcommand*\istnullnodebgcolor{#3} % same as {#1}
+      \renewcommand*\istnullnodebgopacity{#4}
+    }
+\tikzstyle{null node}=[circle,draw,minimum size=\istnullnodesize,%
+    draw=\istnullnodedrawcolor,fill=\istnullnodedrawcolor,fill opacity=\istnullnodebgopacity,%
+    inner sep=0pt,outer sep=\istdefault@nodeoutersep] 
+
+% solid node: definition
+\def\istsolidnodedrawcolor{\istdefault@nodedrawcolor} % (#1) black
+\def\istsolidnodebgcolor{\istdefault@nodedrawcolor} % (#2)  <= black
+\def\istdefault@solidnodesize{2.4pt} % (#3)
+\def\istsolidnodesize{\istdefault@solidnodesize} % (#3)
+\def\istsolidnodebgopacity{1} % (#4)
+
+\NewDocumentCommand\setistSolidNodeStyle
+    {O{\istdefault@nodedrawcolor}G{\istdefault@solidnodesize}O{\istdefault@nodedrawcolor}O{1}}
+    {
+      \renewcommand*\istsolidnodedrawcolor{#1}
+      \renewcommand*\istsolidnodesize{#2} % mandatory
+      \renewcommand*\istsolidnodebgcolor{#3} % same as {#1}
+      \renewcommand*\istsolidnodebgopacity{#4}
+    }
+\tikzstyle{solid node}=[circle,draw,minimum size=\istsolidnodesize,%
+    draw=\istsolidnodedrawcolor,fill=\istsolidnodedrawcolor,fill opacity=\istsolidnodebgopacity,%
+    inner sep=0pt,outer sep=\istdefault@nodeoutersep] 
+
+% decision node & terminal node
+\let\setistDecisionNodeStyle\setistSolidNodeStyle
+\let\setistTerminalNodeStyle\setistSolidNodeStyle
+
+% hollow node: definition
+\def\isthollownodedrawcolor{\istdefault@nodedrawcolor} % (#1) black
+\def\isthollownodebgcolor{\istdefault@nodebgcolor} % (#2) white
+\def\istdefault@hollownodesize{2.8pt} % (#3)
+\def\isthollownodesize{\istdefault@hollownodesize} % (#3)
+\def\isthollownodebgopacity{1} % (#4)
+
+\NewDocumentCommand\setistHollowNodeStyle
+    {O{\istdefault@nodedrawcolor}G{\istdefault@hollownodesize}O{\istdefault@nodebgcolor}O{1}}
+    {
+      \renewcommand*\isthollownodedrawcolor{#1}
+      \renewcommand*\isthollownodesize{#2} % mandatory
+      \renewcommand*\isthollownodebgcolor{#3}
+      \renewcommand*\isthollownodebgopacity{#4}
+    }
+\tikzstyle{hollow node}=[circle,draw,minimum size=\isthollownodesize,%
+    draw=\isthollownodedrawcolor,fill=\isthollownodebgcolor,fill opacity=\isthollownodebgopacity,%
+    inner sep=0pt,outer sep=\istdefault@nodeoutersep] 
+
+% initial node & chance node
+\let\setistInitialNodeStyle\setistHollowNodeStyle
+\let\setistChanceNodeStyle\setistHollowNodeStyle
+
+% rectangle node: definition
+\def\istrectanglenodedrawcolor{\istdefault@nodedrawcolor} %(#1) black
+\def\istdefault@rectanglenodesize{4pt} % (#2)
+\def\istrectanglenodesize{\istdefault@rectanglenodesize} % (#2)
+\def\istrectanglenodebgcolor{\istdefault@nodebgcolor} % (#3) white
+\def\istrectanglenodebgopacity{1} % (#4)
+
+\NewDocumentCommand\setistRectangleNodeStyle
+    {O{\istdefault@nodedrawcolor}G{\istdefault@rectanglenodesize}O{\istdefault@nodebgcolor}O{1}}
+    {
+    \renewcommand*\istrectanglenodedrawcolor{#1}
+    \renewcommand*\istrectanglenodesize{#2} % mandatory
+    \renewcommand*\istrectanglenodebgcolor{#3}
+    \renewcommand*\istrectanglenodebgopacity{#4}
+    }
+\tikzstyle{rectangle node}=[rectangle,draw,minimum size=\istrectanglenodesize,%
+    draw=\istrectanglenodedrawcolor,fill=\istrectanglenodebgcolor,fill opacity=\istrectanglenodebgopacity,%
+    inner sep=2pt,outer sep=\istdefault@nodeoutersep] 
+
+% box node & square node
+\let\setistBoxNodeStyle\setistRectangleNodeStyle
+\let\setistSquareNodeStyle\setistRectangleNodeStyle
+
+% ellipse node: definition
+\def\istellipsenodedrawcolor{\istdefault@nodedrawcolor} % (#1) black
+\def\istdefault@ellipsenodesize{5pt} % (#2)
+\def\istellipsenodesize{\istdefault@ellipsenodesize} % (#2)
+\def\istellipsenodebgcolor{\istdefault@nodebgcolor} % (#3) white
+\def\istellipsenodebgopacity{1} % (#4)
+
+\NewDocumentCommand\setistEllipseNodeStyle
+    {O{\istdefault@nodedrawcolor}G{\istdefault@ellipsenodesize}O{\istdefault@nodebgcolor}O{1}}
+    {
+    \renewcommand*\istellipsenodedrawcolor{#1}
+    \renewcommand*\istellipsenodesize{#2} % mandatory
+    \renewcommand*\istellipsenodebgcolor{#3}
+    \renewcommand*\istellipsenodebgopacity{#4}
+    }
+\tikzstyle{ellipse node}=[ellipse,draw,minimum size=\istellipsenodesize,%
+    draw=\istellipsenodedrawcolor,fill=\istellipsenodebgcolor,fill opacity=\istellipsenodebgopacity,%
+    inner sep=1.5pt,outer sep=\istdefault@nodeoutersep] 
+
+% oval node
+\let\setistOvalNodeStyle\setistEllipseNodeStyle
+
+
+%% aliases: node styles
+\tikzstyle{initial node}=[hollow node]
+\tikzstyle{chance node}=[hollow node]
+\tikzstyle{decision node}=[solid node]  % decision nodes
+\tikzstyle{terminal node}=[solid node]  % terminal nodes
+\tikzstyle{box node}=[rectangle node]
+\tikzstyle{square node}=[rectangle node]
+\tikzstyle{oval node}=[ellipse node]
+
+
+% node anchors
+\let\istparentanchor\tikzparentanchor % empty by default
+\let\istchildanchor\tikzchildanchor % empty by default
+\newcommand*\setistparentanchor[1]{\renewcommand*\istparentanchor{.#1}}
+\newcommand*\setistchildanchor[1]{\renewcommand*\istchildanchor{.#1}}
+
+\NewDocumentCommand\setistbranchanchors{mG{center}}
+    {\def\istparentanchor{.#1}  \def\istchildanchor{.#2}
+    }
+
+
+% istgame environment
+\def\istgamefontsize{\normalsize}
+\NewDocumentCommand\setistgamefontsize {m} 
+    {\renewcommand*{\istgamefontsize}{#1}
+    }
+
+\NewDocumentEnvironment{istgame}{O{}}   % accepts tikzpicture options
+    {\begin{tikzpicture}[font=\istgamefontsize,>=stealth,#1]
+    }
+    {\end{tikzpicture}
+    }
+
+%% to resolve a conflict with tikz-qtree
+
+%\RenewDocumentEnvironment{istgame}{O{}}   % accepts tikzpicture options
+%    {\begin{tikzpicture}[%
+%        edge from parent path={(\tikzparentnode\istparentanchor) -- 
+%        (\tikzchildnode\istchildanchor)}, % tikz-qtree conflict resolved
+%        font=\istgamefontsize,>=stealth,#1
+%        ]
+%    }
+%    {\end{tikzpicture}
+%    }
+
+
+%% istgame macros
+
+
+%% basics (in child)
+% -- used in the definition of \istb
+\def\xtndot{node[solid node]{}} %% within child (node dot)
+\def\xttndot{node[terminal node]{}} %% within child (terminal node dot)
+\def\xtshowtndot{} %% (default: no terminal nodes printed)
+\def\xtshowendpoint{} %% (default: no endpoints printed)
+
+% show and hide endpoints
+\NewDocumentCommand\xtShowEndPoints{O{solid node}}
+    {
+    \def\xtshowendpoint{node[#1]{}}
+    \def\xtshowtndot{node[#1]{}}
+    }
+\NewDocumentCommand\xtHideEndPoints{}
+    {
+    \renewcommand*\xtshowendpoint{}
+    \renewcommand*\xtshowtndot{}
+    }
+
+% show and hide terminal nodes
+\NewDocumentCommand\xtShowTerminalNodes{O{terminal node}}
+    {
+    \def\xtshowtndot{node[#1]{}}
+    }
+\NewDocumentCommand\xtHideTerminalNodes{}
+    {
+    \renewcommand*\xtshowtndot{}
+    }
+
+% moves and payoffs
+\def\xtpayoffstyle#1{$#1$}
+\newcommand*\xtpayoff[2]{node [inner sep=0pt, outer sep=0pt, label={#1:{\xtpayoffstyle{#2}}}] {}}
+
+\def\xtactionstyle#1{$#1$}
+\newcommand*\xtmove[3]{edge from parent [#1] node [#2] {\xtactionstyle{#3}}}
+
+
+%% main macros: \xtdistance, \istRoot, \istCntmRoot
+% \xtdistance
+\def\xtdefault@levdist{15mm}  %% (default) level distance
+\def\xtdefault@sibdist{15mm}  %% (default) sibling distance
+\newcommand*\xtlevdist{\xtdefault@levdist}
+\newcommand*\xtsibdist{\xtdefault@sibdist}
+
+%\NewDocumentCommand\xtdistance{O{1}mG{\setdefaultsibdist}}
+\NewDocumentCommand\xtdistance{O{1}mG{\xtdefault@sibdist}}
+    {
+    \renewcommand*\xtlevdist{#2}
+    \renewcommand*\xtsibdist{#3}
+    \tikzstyle{level #1}= [level distance=\xtlevdist,sibling distance=\xtsibdist]
+    }
+
+%% counterclockwise (grow=) or clockwise (grow'=)
+
+% default: growing south counterclockwise
+\def\xtgrow{grow}
+\def\xtgrowprime{grow'}
+\def\istdefault@grow{south} % tree growing direction
+
+% \setistgrowkey
+\NewDocumentCommand\setistgrowkey{m}
+{ \renewcommand*\xtgrow{#1}
+}
+
+% \setistgrowdirection
+\NewDocumentCommand\setistgrowdirection{t'm}
+{\IfBooleanTF {#1}
+  { \renewcommand*\xtgrow{grow'}
+    \renewcommand*\istdefault@grow{#2}
+  }
+  { \renewcommand*\xtgrow{grow}
+    \renewcommand*\istdefault@grow{#2}
+  }
+}
+
+
+% \istRoot
+\NewDocumentCommand\istRoot{t'O{south}r()D(){0,0}O{}D<>{}G{}D+.{\xtlevdist}D.+{\xtsibdist}} 
+{ 
+    \IfBooleanTF {#1}
+    {
+    \tikzstyle{level 1}=[level distance=#8,sibling distance=#9]
+    \node (#3) at (#4) [decision node,#5,{label={#6:{#7}}}] {} [\xtgrowprime=#2]
+    }
+    {
+    \tikzstyle{level 1}=[level distance=#8,sibling distance=#9]
+    \node (#3) at (#4) [decision node,#5,{label={#6:{#7}}}] {} [\xtgrow=#2]
+    }
+}
+
+% \istRootO (oval version)
+\NewDocumentCommand\istRootO{t'O{south}r()D(){0,0}O{}D<>{}G{}D+.{\xtlevdist}D.+{\xtsibdist}} 
+{ 
+    \IfBooleanTF {#1}
+    {
+    \tikzstyle{level 1}=[level distance=#8,sibling distance=#9]
+    \node (#3) at (#4) [oval node,#5] {#7} [\xtgrowprime=#2]
+    }
+    {
+    \tikzstyle{level 1}=[level distance=#8,sibling distance=#9]
+    \node (#3) at (#4) [oval node,#5] {#7} [\xtgrow=#2]
+    }
+}
+
+
+%% continuum of branches
+
+\def\cntmdefault@levdist{8mm}
+\def\cntmdefault@sibdist{3*\cntmdefault@levdist}
+\newcommand*\cntmlevdist{\cntmdefault@levdist}
+\newcommand*\cntmsibdist{\cntmdefault@sibdist}
+
+% \cntmdistance (internal use only)
+\NewDocumentCommand\cntmdistance{mG{\cntmdefault@sibdist}}
+{
+\renewcommand*\cntmlevdist{#1}
+\renewcommand*\cntmsibdist{#2}
+}
+
+
+% \istCntmRoot
+\NewDocumentCommand\istCntmRoot{t'O{south}r()D(){0,0}O{black!25}G{.5}D+.{\cntmdefault@levdist}D.+{\cntmdefault@sibdist}}
+{
+    \IfBooleanTF {#1}
+    {
+    \cntmdistance{#7}{#8}
+    \tikzstyle{level 1}=[level distance=\cntmlevdist,sibling distance=\cntmsibdist]
+    \setistNullNodeStyle[#5]{\istdefault@nullnodesize}[#5]
+    \node (#3) at (#4) [null node] {} [\xtgrowprime=#2] child child;
+    \draw [#5,fill=#5] (#3) -- (#3-1) -- (#3-2) -- (#3);
+    \setistNullNodeStyle{\istdefault@nullnodesize}
+    }
+    {
+    \cntmdistance{#7}{#8}
+    \tikzstyle{level 1}=[level distance=\cntmlevdist,sibling distance=\cntmsibdist]
+    \setistNullNodeStyle[#5]{\istdefault@nullnodesize}[#5]
+    \node (#3) at (#4) [null node] {} [\xtgrow=#2] child child;
+    \draw [#5,fill=#5] (#3) -- (#3-1) -- (#3-2) -- (#3);
+    \setistNullNodeStyle{\istdefault@nullnodesize}
+    }
+}
+
+
+% \istCntmRootArc (arc version)
+\NewDocumentCommand\istCntmRootArc{t'O{south}r()D(){0,0}O{}G{.5}D+.{\cntmdefault@levdist}D.+{\cntmdefault@sibdist}}
+{
+    \IfBooleanTF {#1}
+    { 
+    \cntmdistance{#7}{#8}
+    \tikzstyle{level 1}=[level distance=\cntmlevdist,sibling distance=\cntmsibdist]
+    \node (#3) at (#4) [null node] {} [\xtgrowprime=#2] child child;
+    \draw [bend right,#5] ($(#3)!#6!(#3-1)$) to ($(#3)!#6!(#3-2)$);
+    }
+    { 
+    \cntmdistance{#7}{#8}
+    \tikzstyle{level 1}=[level distance=\cntmlevdist,sibling distance=\cntmsibdist]
+    \node (#3) at (#4) [null node] {} [\xtgrow=#2] child child;
+    \draw [bend right,#5] ($(#3)!#6!(#3-1)$) to ($(#3)!#6!(#3-2)$);
+    }
+}
+
+
+%% subgames
+
+% \xtSubgameBox
+\def\xtdefaultsubrootshiftbox{0,-.3}
+\NewDocumentCommand\xtSubgameBox{ s r() m O{} }
+{ \IfBooleanTF #1
+  {
+  \coordinate (xtsubroot) at ($(#2)+(\xtdefaultsubrootshiftbox)$);
+  \begin{scope}[on background layer]
+    \node [rectangle,fill,red!20,inner sep=20pt,rounded corners=15pt,#4] 
+              [fit=(xtsubroot) #3] {};
+  \end{scope}
+  }
+  {
+  \coordinate (xtsubroot) at ($(#2)+(0,-.3)$);
+  \begin{scope}[on background layer]
+  \node [rectangle,draw,dashed,inner sep=20pt,rounded corners=15pt,black!50,#4] 
+            [fit=(xtsubroot) #3] {};
+  \end{scope}
+  }
+}
+
+% \xtSubgameOval
+\def\xtdefaultsubrootshiftoval{0,-.7}
+\NewDocumentCommand\xtSubgameOval{ s r() m O{}}
+{ \IfBooleanTF #1
+  {
+  \coordinate (xtsubroot) at ($(#2)+(\xtdefaultsubrootshiftoval)$);
+  \begin{scope}[on background layer]
+    \node [ellipse,fill,red!20,inner sep=15pt,#4] 
+              [fit=(xtsubroot) #3] {};
+  \end{scope}
+  }
+  {
+  \coordinate (xtsubroot) at ($(#2)+(0,-.7)$);
+  \begin{scope}[on background layer]
+  \node [ellipse,draw,dashed,inner sep=15pt,black!50,#4] 
+            [fit=(xtsubroot) #3] {};
+  \end{scope}
+  }
+}
+
+%% fine tuning: labels
+\newcommand*\xtALxShift{0pt}  % default xshift
+\newcommand*\xtALyShift{0pt}  % default yshift
+
+\NewDocumentCommand\xtALPush{mm}
+    {
+    \renewcommand*\xtALxShift{#1}
+    \renewcommand*\xtALyShift{#2}
+    }
+
+\newcommand*\istactionlabelxshift{1pt}  % default horizontal push (alternatively, .67pt)
+\newcommand*\istactionlabelyshift{2pt}  % default vertical push (alternatively, 2.5pt)
+
+\NewDocumentCommand\xtALShift{G{\istactionlabelxshift}G{\istactionlabelyshift}}
+    {
+    \renewcommand*\istactionlabelxshift{#1}
+    \renewcommand*\istactionlabelyshift{#2}
+    }
+
+
+%% xparse so far
+%%
+%% expl3 from here
+
+
+\ExplSyntaxOn 
+
+\tl_new:N \ischo_game_tl
+
+% action
+\cs_new:Npn \ist_move:nnn #1 #2 #3
+{
+    \str_case:nnF { #2 }
+    {
+        { al } { edge~from~parent [#1] node 
+                 [above~left,xshift=\istactionlabelxshift,yshift=-\istactionlabelyshift,text~depth=.25ex] { $#3$ } 
+                 }
+        { ar } { edge~from~parent [#1] node 
+                 [above~right,xshift=-\istactionlabelxshift,yshift=-\istactionlabelyshift,text~depth=.25ex] { $#3$ } 
+                 }
+        { bl } { edge~from~parent [#1] node 
+                 [below~left,xshift=\istactionlabelxshift,yshift=\istactionlabelyshift,text~depth=.25ex] { $#3$ } 
+                 }
+        { br } { edge~from~parent [#1] node 
+                 [below~right,xshift=-\istactionlabelxshift,yshift=\istactionlabelyshift,text~depth=.25ex] { $#3$ } 
+                 }
+        { l } { edge~from~parent [#1] node [left,xshift=-\xtALxShift,text~depth=.25ex] { $#3$ } }
+        { r } { edge~from~parent [#1] node [right,xshift=\xtALxShift,text~depth=.25ex] { $#3$ } }
+        { a } { edge~from~parent [#1] node [above,yshift=\xtALyShift,text~depth=.25ex] { $#3$ } }
+        { b } { edge~from~parent [#1] node [below,yshift=-\xtALyShift,text~depth=.25ex] { $#3$ } }
+    }
+    {
+        edge~from~parent [#1] node [text~depth=.25ex,#2] {$#3$}  % \xtmove{#1}{#2}{#3}
+    }
+}
+
+% payoff
+\cs_new:Npn \ist_payoff:nn #1 #2
+{
+    \str_case_x:nnF { #1 }
+    {
+        { al } { \xtpayoff { above~left } { #2 } }
+        { ar } { \xtpayoff { above~right } { #2 } }
+        { bl } { \xtpayoff { below~left } { #2 } }
+        { br } { \xtpayoff { below~right } { #2 } }
+        { l } { \xtpayoff { left } { #2 } }
+        { r } { \xtpayoff { right } { #2 } }
+        { a } { \xtpayoff { above} { #2 } }
+        { b } { \xtpayoff { below } { #2 } }
+    }
+    {
+        \xtpayoff {#1}{#2}
+    }
+}
+
+
+%% core macros: \istroot, \istb, \endist
+
+% \istroot(') -- standard version
+\NewDocumentCommand \istroot 
+{ t' O{\istdefault@grow} r() D(){0,0} O{} D<>{above} G{} D+.{\xtlevdist} D.+{\xtsibdist} }
+{
+    \tl_clear:N \ischo_game_tl
+    \xdef\istgrowdirection{#2}  % used in \istb to specify [payoff direction]
+
+    \IfBooleanTF {#1}
+    { 
+        \tl_put_right:Nx \ischo_game_tl
+            {                                                               % { } needed for #8 and #9 with decimal dim
+                \istRoot' [ \istgrowdirection ] ( #3 ) ( #4 ) [ #5 ] { #7 } + {#8} .. {#9} +  
+            }
+    }
+    { 
+        \tl_put_right:Nx \ischo_game_tl
+            {                                                              % { } needed for #8 and #9 with decimal dim
+                \istRoot [ \istgrowdirection ] ( #3 ) ( #4 ) [ #5 ] < #6 > { #7 } + {#8} .. {#9} + 
+            }
+    }
+}
+
+% \istrooto(') -- oval version
+\NewDocumentCommand \istrooto
+{ t' O{\istdefault@grow} r() D(){0,0} O{} D<>{above} G{} D+.{\xtlevdist} D.+{\xtsibdist} }
+{
+    \tl_clear:N \ischo_game_tl
+    \xdef\istgrowdirection{#2}  % used in \istb to specify [payoff direction]
+
+    \IfBooleanTF {#1}
+    { 
+        \tl_put_right:Nx \ischo_game_tl
+            {                                                               % { } needed for #8 and #9 with decimal dim
+                \istRootO' [ \istgrowdirection ] ( #3 ) ( #4 ) [ #5 ] { #7 } + {#8} .. {#9} +  
+            }
+    }
+    { 
+        \tl_put_right:Nx \ischo_game_tl
+            {                                                               % { } needed for #8 and #9 with decimal dim
+                \istRootO [ \istgrowdirection ] ( #3 ) ( #4 ) [ #5 ] { #7 } + {#8} .. {#9} +  
+            }
+    }
+}
+
+% \istb(*)(.)
+\NewDocumentCommand \istb 
+{ s t. D<>{} O{} G{} O{} g O{\istgrowdirection} }  
+{     % \istb* (starred version)
+    \IfBooleanTF {#1} % (starred version T/F)
+    { 
+        \IfValueTF { #7 } % if payoff exists
+        {%*
+            \tl_put_right:Nn \ischo_game_tl
+                { child [ #3 ] { \xtndot 
+                                      \ist_payoff:nn { #8 } { #7 } 
+                                      \ist_move:nnn { #4 } { #6 } { #5 } } 
+                }
+        }
+        {%*
+            \tl_put_right:Nn \ischo_game_tl
+                { child [ #3 ] { \xtndot 
+                                      \ist_move:nnn { #4 } { #6 } { #5 } } 
+                }
+        }
+    } % end of Boolean True {#1}
+    {
+        \IfBooleanTF {#2} % (dot version T/F)
+        { % \istb. (period version)
+            \IfValueTF { #7 } % if payoff exists
+            {%.
+                \tl_put_right:Nn \ischo_game_tl
+                    { child [ #3 ] { \xtshowtndot 
+                                          \ist_payoff:nn { #8 } {  #7  } 
+                                          \ist_move:nnn { #4 } { #6 } { #5 } } 
+                    }
+            }
+            {%.
+                \tl_put_right:Nn \ischo_game_tl
+                    { child [ #3 ] { \xtshowtndot 
+                                          \ist_move:nnn { #4 } { #6 } { #5 } } 
+                    }
+            }
+        } % end of Boolean True {#2}
+        { % \istb
+            \IfValueTF { #7 } % if payoff exists
+            {
+                \tl_put_right:Nn \ischo_game_tl
+                    { child [ #3 ] { \xtshowendpoint 
+                                          \ist_payoff:nn { #8 } {  #7  } 
+                                          \ist_move:nnn { #4 } { #6 } { #5 } } 
+                    }
+            }
+            {
+                \tl_put_right:Nn \ischo_game_tl
+                    { child [ #3 ] { \xtshowendpoint 
+                                          \ist_move:nnn { #4 } { #6 } { #5 } } 
+                    }
+            }
+        } % end of Boolean False {#2}
+    } % end of Boolean False {#1}
+}
+
+% \endist 
+\NewDocumentCommand \endist { }
+    {
+        \tl_put_right:Nn \ischo_game_tl { ; }
+        \tl_use:N \ischo_game_tl
+    }
+
+
+%% continuum of branches
+
+% \istcntm(')
+\NewDocumentCommand \istcntm 
+{ t' O{\istdefault@grow} r() D(){0,0} O{black!25} G{} D+.{\cntmdefault@levdist}D.+{\cntmdefault@sibdist} }
+{ 
+    \IfBooleanTF {#1}
+    {
+        \istCntmRoot' [ #2 ] ( #3 ) ( #4 ) [ #5 ] + #7 .. #8 +
+    }
+    {
+        \istCntmRoot [ #2 ] ( #3 ) ( #4 ) [ #5 ] + #7 .. #8 +
+    }
+}
+
+% \istcntmarc(') -- arc version
+\NewDocumentCommand \istcntmarc
+{ t' O{\istdefault@grow} r() D(){0,0} O{} G{.5} D+.{\cntmdefault@levdist}D.+{\cntmdefault@sibdist} }
+{ 
+    \IfBooleanTF {#1}
+    {
+        \istCntmRootArc' [ #2 ] ( #3 ) ( #4 ) [ #5 ] { #6 } + #7 .. #8 +
+    }
+    {
+        \istCntmRootArc [ #2 ] ( #3 ) ( #4 ) [ #5 ] { #6 }+ #7 .. #8 +
+    }
+}
+
+
+%% supplement macros
+
+% \xtInfoset
+\def\xtdefault@infosep{4pt}
+\newcommand*\setxtdefaultinfosep[1]{\renewcommand*\xtdefault@infosep{#1}}
+
+\NewDocumentCommand\xtInfoset{t'O{}r()r()G{}O{}D(){\xtdefault@infosep}}
+{
+    \IfBooleanTF {#1}
+    {%'
+    \draw [semithick, dotted,#2] 
+        (#4) to (#3) 
+        node at ($(#4)!.5!(#3)$) [above,#6] {#5};
+    }
+    {
+    \draw [semithick, dotted,#2] 
+        (#3) to (#4) 
+        node~at ($(#3)!.5!(#4)$) [above,#6] {#5};
+    }
+}
+
+
+% \xtInfosetO -- oval version
+\NewDocumentCommand\xtInfosetO{t'O{}r()r()G{}O{}D(){\xtdefault@infosep}}
+{ 
+    \IfBooleanTF {#1}
+    {%'
+    \begin{scope}[on~background~layer]
+    \draw [-,semithick,densely~dotted,rounded~corners=#7,#2] 
+        ($(#4)+(-#7,#7)$) rectangle ($(#3)+(#7,-#7)$)
+        node at ($(#4)!.5!(#3)$) [#6] {#5};
+    \end{scope}
+    }
+    {%
+    \begin{scope}[on~background~layer]
+    \draw [-,semithick,densely~dotted,rounded~corners=#7,#2] 
+        ($(#3)+(-#7,#7)$) rectangle ($(#4)+(#7,-#7)$) 
+        node at ($(#3)!.5!(#4)$) [#6] {#5};
+    \end{scope}
+    }
+}
+
+
+
+% \xInfosetOwner (with abbreviations)
+\NewDocumentCommand\xtInfosetOwner{t'r()r()mO{}}
+{\IfBooleanTF{#1}
+  {   \str_case_x:nnF { #5 }
+    {
+        { al } { \draw [draw=none] (#3) to (#2) node at ($(#3)!.5!(#2)$) [above~left] {#4}; }
+        { ar } { \draw [draw=none] (#3) to (#2) node at ($(#3)!.5!(#2)$) [above~right] {#4}; }
+        { bl } { \draw [draw=none] (#3) to (#2) node at ($(#3)!.5!(#2)$) [below~left] {#4}; }
+        { br } { \draw [draw=none] (#3) to (#2) node at ($(#3)!.5!(#2)$) [below~right] {#4}; }
+        { l } { \draw [draw=none] (#3) to (#2) node at ($(#3)!.5!(#2)$) [left] {#4}; }
+        { r } { \draw [draw=none] (#3) to (#2) node at ($(#3)!.5!(#2)$) [right] {#4}; }
+        { a } { \draw [draw=none] (#3) to (#2) node at ($(#3)!.5!(#2)$) [above] {#4}; }
+        { b } { \draw [draw=none] (#3) to (#2) node at ($(#3)!.5!(#2)$) [below] {#4}; }
+    }
+    {
+        \draw [draw=none] (#3) to (#2) node at ($(#3)!.5!(#2)$) [#5] {#4};
+    }
+  }
+  {   \str_case_x:nnF { #5 }
+    {
+        { al } { \draw [draw=none] (#2) to (#3) node at ($(#2)!.5!(#3)$) [above~left] {#4}; }
+        { ar } { \draw [draw=none] (#2) to (#3) node at ($(#2)!.5!(#3)$) [above~right] {#4}; }
+        { bl } { \draw [draw=none] (#2) to (#3) node at ($(#2)!.5!(#3)$) [below~left] {#4}; }
+        { br } { \draw [draw=none] (#2) to (#3) node at ($(#2)!.5!(#3)$) [below~right] {#4}; }
+        { l } { \draw [draw=none] (#2) to (#3) node at ($(#2)!.5!(#3)$) [left] {#4}; }
+        { r } { \draw [draw=none] (#2) to (#3) node at ($(#2)!.5!(#3)$) [right] {#4}; }
+        { a } { \draw [draw=none] (#2) to (#3) node at ($(#2)!.5!(#3)$) [above] {#4}; }
+        { b } { \draw [draw=none] (#2) to (#3) node at ($(#2)!.5!(#3)$) [below] {#4}; }
+    }
+    {
+        \draw [draw=none] (#2) to (#3) node at ($(#2)!.5!(#3)$) [#5] {#4};
+    }
+  }
+}
+
+% \xtOwner (with abbreviations)
+\NewDocumentCommand\xtOwner{ r() m O{above} }
+{
+    \str_case_x:nnF { #3 }
+    {
+        { al } { \node [ above~left ] at (#1) {#2}; }
+        { ar } { \node [ above~right ] at (#1) {#2}; }
+        { bl } { \node [ below~left ] at (#1) {#2}; }
+        { br } { \node [ below~right ] at (#1) {#2}; }
+        { l } { \node [ left ] at (#1) {#2}; }
+        { r } { \node [ right ] at (#1) {#2}; }
+        { a } { \node [ above ] at (#1) {#2}; }
+        { b } { \node [ below ] at (#1) {#2}; }
+    }
+    {
+        \node [#3] at (#1) {#2};
+    }
+}
+
+% \xtActionLabel (with abbreviations)
+\NewDocumentCommand\xtActionLabel{ r() r() m O{} }
+{
+    \str_case_x:nnF { #4 }
+    {
+        { al } { \draw [draw=none] (#1) to (#2) node at ($(#1)!.5!(#2)$) 
+                [above~left,xshift=\istactionlabelxshift,yshift=-\istactionlabelyshift,black] { $#3$ }; }
+        { ar } { \draw [draw=none] (#1) to (#2) node at ($(#1)!.5!(#2)$) 
+                [above~right,xshift=-\istactionlabelxshift,yshift=-\istactionlabelyshift,black] { $#3$} ; }
+        { bl } { \draw [draw=none] (#1) to (#2) node at ($(#1)!.5!(#2)$) 
+                [below~left,xshift=\istactionlabelxshift,yshift=\istactionlabelyshift,black] { $#3$ }; }
+        { br } { \draw [draw=none] (#1) to (#2) node at ($(#1)!.5!(#2)$) 
+                [below~right,xshift=-\istactionlabelxshift,yshift=\istactionlabelyshift,black] { $#3$ }; }
+        { l } { \draw [draw=none] (#1) to (#2) node at ($(#1)!.5!(#2)$) [left,xshift=-\xtALxShift,black] { $#3$ }; }
+        { r } { \draw [draw=none] (#1) to (#2) node at ($(#1)!.5!(#2)$) [right,xshift=\xtALxShift,black] { $#3$ }; }
+        { a } { \draw [draw=none] (#1) to (#2) node at ($(#1)!.5!(#2)$) [above,yshift=\xtALyShift,black] { $#3$ }; }
+        { b } { \draw [draw=none] (#1) to (#2) node at ($(#1)!.5!(#2)$) [below,yshift=-\xtALyShift,black] { $#3$ }; }
+    }
+    {
+        \draw [draw=none] (#1) to (#2) node at ($(#1)!.5!(#2)$) [#4] ~{ $#3$ };
+    }
+}
+
+% \xtPayoff (with abbreviations)
+\NewDocumentCommand\xtPayoff{ r() m O{below} }
+{
+    \str_case_x:nnF { #3 }
+    {
+        { al } { \node [ above~left ] at (#1) {$#2$}; }
+        { ar } { \node [ above~right ] at (#1) {$#2$}; }
+        { bl } { \node [ below~left ] at (#1) {$#2$}; }
+        { br } { \node [ below~right ] at (#1) {$#2$}; }
+        { l } { \node [ left ] at (#1) {$#2$}; }
+        { r } { \node [ right ] at (#1) {$#2$}; }
+        { a } { \node [ above ] at (#1) {$#2$}; }
+        { b } { \node [ below ] at (#1) {$#2$}; }
+    }
+    {
+        \node [#3] at (#1) {$#2$};
+    }
+}
+
+
+%% \xtNode(*)
+\NewDocumentCommand\xtNode{ s O{} r() O{} G{} }
+{\IfBooleanTF #1
+    {
+    \istrooto (#3) (#3) [plain~node] {#5} \endist
+    }
+    {
+    \node [-,#2] at (#3)  [solid~node,#4] {#5};
+    }
+}
+
+\ExplSyntaxOff 
+
+\endinput

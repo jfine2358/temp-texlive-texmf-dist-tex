@@ -1,0 +1,513 @@
+%%
+%% This is file 'bxwareki.sty'.
+%%
+%% Copyright (c) 2018,2019 Takayuki YATO (aka. "ZR")
+%%   GitHub:   https://github.com/zr-tex8r
+%%   Twitter:  @zr_tex8r
+%%
+%% This package is distributed under the MIT License.
+%%
+
+% Note: This file is encoded entirely in us-ascii.
+
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bxwareki}[2019/06/01 v0.6]
+
+%% preparation
+\def\bxwy@pkgname{bxwareki}
+\providecommand\bxDebug[1]{}
+
+%--------------------------------------- general
+
+%% unique tokens
+\def\bxwy@end{\noexpand\bxwy@end@}
+\def\bxwy@mt{\noexpand\bxwy@mt@}
+\let\bxwy@mk\indent
+
+%% \bxwy@engine : engine type
+%% \ifbxwy@eTeX@ok : have e-TeX extension?
+%% \ifbxwy@epTeXinputencoding@ok : have \epTeXinputencoding?
+\def\bxwy@next#1#2{%
+  \edef\bxwy@tmpa{\string#1}\edef\bxwy@tmpb{\meaning#1}%
+  \ifx\bxwy@tmpa\bxwy@tmpb #2\fi}
+\chardef\bxwy@engine=0 % 8-bit TeX
+\bxwy@next\kanjiskip     {\chardef\bxwy@engine=1 }% pTeX (or upTeX)
+\bxwy@next\jintercharskip{\chardef\bxwy@engine=2 }% NTT-jTeX
+\bxwy@next\Omegaversion  {\chardef\bxwy@engine=3 }% Aleph
+\bxwy@next\XeTeXversion  {\chardef\bxwy@engine=4 }% XeTeX
+\bxwy@next\luatexversion {\chardef\bxwy@engine=5 }% LuaTeX
+\newif\ifbxwy@eTeX@ok
+\bxwy@next\eTeXversion{\bxwy@eTeX@oktrue}
+\newif\ifbxwy@upTeX@ok
+\bxwy@next\forcecjktoken{\bxwy@upTeX@oktrue}
+\newif\ifbxwy@epTeXinputencoding@ok
+\bxwy@next\epTeXinputencoding{\bxwy@epTeXinputencoding@oktrue}
+
+%% switch 'bxwy@customdate@ok'
+% NB. It is "whether or not UTF-8 files can be safely loaded".
+\newif\ifbxwy@customdate@ok
+\ifcase\bxwy@engine \bxwy@customdate@oktrue % 8-bit
+\or % pTeX
+  \ifbxwy@epTeXinputencoding@ok \bxwy@customdate@oktrue
+  \else\ifbxwy@upTeX@ok \bxwy@customdate@oktrue
+  \fi\fi
+\or % jTeX
+\else \bxwy@customdate@oktrue
+\fi
+
+%% \bxwy@oncex{...}
+% The once-expander, used in \edef.
+%% \bxwy@twicex{...}
+% The twice-expander, used in \edef.
+\ifbxwy@eTeX@ok
+  \def\bxwy@oncex#1{\unexpanded\expandafter{#1}}
+  \def\bxwy@twicex#1{\unexpanded\expandafter\expandafter\expandafter{#1}}
+\else
+  % Here it is assumed that the engine is (u)pTeX or JTeX.
+  \def\bxwy@oncex#1{#1}
+  \def\bxwy@twicex#1{#1}
+\fi
+
+%% \bxwy@newcounter{<name>}
+%% \bxwy@setcounter{<name>}{<value>}
+% Declares a pseudo-counter (if not on e-TeX).
+\@onlypreamble\bxwy@newcounter
+\ifbxwy@eTeX@ok
+  \let\bxwy@newcounter\newcounter
+  \def\bxwy@setcounter#1#2{% assign locally
+    \csname c@#1\endcsname#2\relax}
+\else
+  \def\bxwy@newcounter#1{%
+    \expandafter\@ifdefinable\csname c@#1\endcsname{%
+      \expandafter\mathchardef\csname c@#1\endcsname\z@
+      \expandafter\gdef\csname the#1\expandafter\endcsname\expandafter{%
+        \expandafter\@arabic\csname c@#1\endcsname}}}
+  \def\bxwy@setcounter#1#2{% assign locally
+    \expandafter\mathchardef\csname c@#1\endcsname#2\relax}
+\fi
+
+%--------------------------------------- options
+
+%% 'download'
+\DeclareOption{download2019}{}% now no-op
+% dispatch
+\ProcessOptions\relax
+
+%--------------------------------------- Japanese string maker
+
+% The "combo-code" represents a single Japanese character and has
+% the form such like:
+%   E698AD:662D:3E3C:f3F
+% where
+% - E698AD is hex dump of UTF-8 bytes;
+% - 662D is hex of Unicode point;
+% - 3E3C is hex dump of JIS-encoding bytes;
+% - f3F is something for jTeX.
+
+%% \bxwy@S : inter-ascii-kanji skip
+\let\bxwy@S\@empty
+%% \bxwy@normal@S : the normal definition of \bxwy@S
+\let\bxwy@normal@S\relax
+%% \bxwy@C : Japanese character printer for JTeX
+\let\bxwy@C\relax
+
+%% \bxwy@freeze@fragile : make fragile cs unexpandable
+\let\bxwy@freeze@fragile\relax
+%% \bxwy@restore@fragile : revoke \bxwy@freeze@fragile
+\let\bxwy@restore@fragile\relax
+
+%% \bxwy@add@jchar\CS{<combo-code>}
+% Adds a character with given combo-code to the macro \CS.
+\@onlypreamble\bxwy@add@jchar
+\def\bxwy@add@jchar#1#2{%
+  \begingroup
+    \bxwy@freeze@fragile
+    \def\bxwy@next##1{\xdef#1{\bxwy@oncex#1\bxwy@oncex{##1}}}%
+    \edef\bxwy@tmpa{#2}%
+    \expandafter\bxwy@add@jchar@dec\bxwy@tmpa::::\bxwy@end
+  \endgroup}
+\@onlypreamble\bxwy@add@jchar@dec
+\@onlypreamble\bxwy@add@jchar@dec@a
+\@onlypreamble\bxwy@add@jchar@dec@b
+% engine-dependent parts
+\ifcase\bxwy@engine %8-bit
+  \def\bxwy@add@jchar@dec#1:#2:#3:#4:#5\bxwy@end{%
+    \bxwy@add@jchar@dec@a#1000000\bxwy@end}
+  \def\bxwy@add@jchar@dec@a#1#2#3#4#5#6#7\bxwy@end{%
+    \let\do\bxwy@add@jchar@dec@b
+    \do{#1#2}\do{#3#4}\do{#5#6}}
+  \def\bxwy@add@jchar@dec@b#1{%
+    \lccode`\~="#1\relax\lowercase{\bxwy@next{\noexpand~}}}
+  \def\bxwy@S{~}% \bxwy@S expands to ~, and ~ is protected.
+  \let\bxwy@org@tie\relax
+  \def\bxwy@freeze@fragile{\let\bxwy@org@tie=~\let~=\relax}
+  \def\bxwy@restore@fragile{\let~=\bxwy@org@tie}
+\or %pTeX
+  \def\bxwy@add@jchar@dec#1:#2:#3:#4:#5\bxwy@end{%
+    \kansujichar\@ne=\jis"#3\relax \bxwy@next{\kansuji\@ne}}
+\or %jTeX
+  \def\bxwy@add@jchar@dec#1:#2:#3:#4:#5\bxwy@end{%
+    \bxwy@next{\bxwy@C#4}}
+  \def\bxwy@C#1#2#3{%
+    \mbox{\csname j#1\endcsname\char"#2#3}}
+  \def\bxwy@@S{% standard inter-ascii-kanji skip
+    \hskip \ifdim\jasciikanjiskip=\z@ \fontdimen7\ja\@minus\fontdimen9\ja
+           \else \jasciikanjiskip \fi
+    \relax}
+  \def\bxwy@S{\bxwy@@S}% \bxwy@S expands to \bxwy@@S, which is protected.
+  \let\bxwy@org@@S\relax \let\bxwy@org@C\relax
+  \def\bxwy@freeze@fragile{%
+    \let\bxwy@org@@S\bxwy@@S \let\bxwy@@S\relax
+    \let\bxwy@org@C\bxwy@C \let\bxwy@C\relax}
+  \def\bxwy@restore@fragile{%
+    \let\bxwy@@S\bxwy@org@@S \let\bxwy@C\bxwy@org@C}
+\else %Aleph/XeTeX/LuaTeX
+  \def\bxwy@add@jchar@dec#1:#2:#3:#4:#5\bxwy@end{%
+    \lccode`\Z="#2\relax \lowercase{\bxwy@next{\noexpand Z}}}
+\fi
+% set \bxwy@normal@S
+\let\bxwy@normal@S\bxwy@S
+
+\ifbxwy@eTeX@ok       %<*eTeX>
+%%<+> \WarekiUseNormalInterGlue
+% Uses the normal definition of inter-ascii-kanji skip.
+\newcommand*\WarekiUseNormalInterGlue{%
+  \let\bxwy@S\bxwy@normal@S
+  \bxwy@render@all}
+%%<+> \WarekiUseCustomInterGlue{<text>}
+% Uses the custom definition of inter-ascii-kanji skip.
+\@ifdefinable\WarekiUseCustomInterGlue{%
+  \def\WarekiUseCustomInterGlue#{%
+    \afterassignment\bxwy@render@all
+    \protected\def\bxwy@S}}
+\fi                 %</eTeX>
+
+%--------------------------------------- Japanese words
+
+%% \bxwy@@meiji : kanji string 'Meiji'
+\let\bxwy@@meiji\@empty
+\bxwy@add@jchar\bxwy@@meiji{E6988E:660E:4C40:k67}
+\bxwy@add@jchar\bxwy@@meiji{E6B2BB:6CBB:3C23:e6A}
+%% \bxwy@@taisho : kanji string 'Taisho'
+\let\bxwy@@taisho\@empty
+\bxwy@add@jchar\bxwy@@taisho{E5A4A7:5927:4267:gE2}
+\bxwy@add@jchar\bxwy@@taisho{E6ADA3:6B63:4035:fF4}
+%% \bxwy@@showa : kanji string 'Showa'
+\let\bxwy@@showa\@empty
+\bxwy@add@jchar\bxwy@@showa{E698AD:662D:3E3C:f3F}
+\bxwy@add@jchar\bxwy@@showa{E5928C:548C:4F42:l83}
+%% \bxwy@@heisei : kanji string 'Heisei'
+\let\bxwy@@heisei\@empty
+\bxwy@add@jchar\bxwy@@heisei{E5B9B3:5E73:4A3F:jAA}
+\bxwy@add@jchar\bxwy@@heisei{E68890:6210:402E:fED}
+%% \bxwy@@reiwa : kanji string 'Reiwa'
+\let\bxwy@@reiwa\@empty
+\bxwy@add@jchar\bxwy@@reiwa{E4BBA4:4EE4:4E61:l44}
+\bxwy@add@jchar\bxwy@@reiwa{E5928C:548C:4F42:l83}
+%% \bxwy@@nen : kanji for 'year'
+\let\bxwy@@nen\@empty
+\bxwy@add@jchar\bxwy@@nen{E5B9B4:5E74:472F:i80}
+%% \bxwy@@gatsu : kanji for 'month'
+\let\bxwy@@gatsu\@empty
+\bxwy@add@jchar\bxwy@@gatsu{E69C88:6708:376E:cDF}
+%% \bxwy@@nichi : kanji for 'day'
+\let\bxwy@@nichi\@empty
+\bxwy@add@jchar\bxwy@@nichi{E697A5:65E5:467C:i6F}
+%% \bxwy@@gan : kanji for 'origin'
+\let\bxwy@@gan\@empty
+\bxwy@add@jchar\bxwy@@gan{E58583:5143:3835:d04}
+
+%--------------------------------------- kanji numerals
+
+%% \bxwy@set@jchar@digit{<n>}{<combo-code>}
+\@onlypreamble\bxwy@set@jchar@digit
+\def\bxwy@set@jchar@digit#1{%
+  \expandafter\bxwy@set@jchar@digit@a\csname bxwy@jcd/#1\endcsname}
+\@onlypreamble\bxwy@set@jchar@digit@a
+\def\bxwy@set@jchar@digit@a#1#2{%
+  \let#1\@empty \bxwy@add@jchar#1{#2}}
+
+%% \[bxwr@jcd/<n>] : kanji digit for n
+\bxwy@set@jchar@digit{0}{E38087:3007:213B:{sy}1B}
+\bxwy@set@jchar@digit{1}{E4B880:4E00:306C:a4B}
+\bxwy@set@jchar@digit{2}{E4BA8C:4E8C:4673:i66}
+\bxwy@set@jchar@digit{3}{E4B889:4E09:3B30:e19}
+\bxwy@set@jchar@digit{4}{E59B9B:56DB:3B4D:e36}
+\bxwy@set@jchar@digit{5}{E4BA94:4E94:385E:d2D}
+\bxwy@set@jchar@digit{6}{E585AD:516D:4F3B:l7C}
+\bxwy@set@jchar@digit{7}{E4B883:4E03:3C37:e7E}
+\bxwy@set@jchar@digit{8}{E585AB:516B:482C:iDB}
+\bxwy@set@jchar@digit{9}{E4B99D:4E5D:3665:c78}
+\bxwy@set@jchar@digit{X}{E58D81:5341:3D3D:eE2}% ten
+\bxwy@set@jchar@digit{C}{E799BE:767E:4934:j41}% hundred
+
+%%<+> \WarekiKansuji{<counter>}
+%% \bxwy@kansuji{<number>}
+% The kansuji representation of the number.
+\newcommand*\WarekiKansuji[1]{%
+  \expandafter\bxwy@kansuji\csname c@#1\endcsname}
+\def\bxwy@kansuji#1{%
+  \ifnum#1<\z@\else
+    \expandafter\bxwy@kansuji@a\number#1\bxwy@mk
+  \fi}
+\def\bxwy@kansuji@a#1{%
+  \ifx#1\bxwy@mk\else
+    \bxwy@twicex{\csname bxwy@jcd/#1\endcsname}%
+    \expandafter\bxwy@kansuji@a
+  \fi}
+
+%% \bxwy@jkansuji{<number>}
+% The kansuji-by-reading representation of the number.
+% NB. Only valid in range 0..999; otherwise fallback to \bxwy@kansuji.
+\def\bxwy@jkansuji#1{%
+  \expandafter\bxwy@jkansuji@a\number#1\bxwy@mk}
+\chardef\bxwy@jk@x=10
+\chardef\bxwy@jk@c=100
+\def\bxwy@jkansuji@a#1\bxwy@mk{%
+  \ifnum#1<\z@
+    \bxwy@kansuji{#1}%
+  \else\ifnum#1<\bxwy@jk@x
+    \bxwy@twicex{\csname bxwy@jcd/#1\endcsname}%
+  \else\ifnum#1<\bxwy@jk@c
+    \bxwy@jkansuji@b0#1%
+  \else\ifnum#1<\@m
+    \bxwy@jkansuji@b#1%
+  \else
+    \bxwy@kansuji@a#1\bxwy@mk
+  \fi\fi\fi\fi}
+\def\bxwy@jkansuji@b#1#2#3{%
+  \ifnum#1>\@ne \bxwy@twicex{\csname bxwy@jcd/#1\endcsname}\fi
+  \ifnum#1>\z@  \bxwy@twicex{\csname bxwy@jcd/C\endcsname}\fi
+  \ifnum#2>\@ne \bxwy@twicex{\csname bxwy@jcd/#2\endcsname}\fi
+  \ifnum#2>\z@  \bxwy@twicex{\csname bxwy@jcd/X\endcsname}\fi
+  \ifnum#3>\z@  \bxwy@twicex{\csname bxwy@jcd/#3\endcsname}\fi}
+
+%--------------------------------------- calculate wareki year
+
+%% errors
+\def\bxwy@err@ivnum#1{%
+  \PackageError\bxwy@pkgname
+   {Bad number form: #1}{\@ehc}}
+\def\bxwy@err@ivrng#1#2#3#4{%
+  \PackageError\bxwy@pkgname
+   {The #4 value #1 is out of range (#2..#3)}{\@ehc}}
+
+%% variables
+\let\bxwy@g@gengo\relax
+\let\bxwy@g@year\relax
+\let\bxwy@g@date\relax
+
+%% \bxwy@assign@date{<year>}{<month>}{<day>}
+\def\bxwy@assign@date#1#2#3{%
+  \bxwy@assign@date@a\year {#1}{0}{9999}{year}%
+  \bxwy@assign@date@a\month{#2}{1}{99}{}%
+  \bxwy@assign@date@a\day  {#3}{1}{99}{}}
+\def\bxwy@assign@date@a#1#2#3#4#5{%
+  \afterassignment\bxwy@assign@date@b\@tempcnta=#2\bxwy@mk{#2}%
+  \@tempswatrue
+  \edef\bxwy@tmpb{\the\@tempcnta}%
+  \ifnum#3>\@tempcnta \@tempswafalse \@tempcnta#3\relax \fi
+  \ifnum#4<\@tempcnta \@tempswafalse \@tempcnta#4\relax \fi
+  \if@tempswa\else \ifx\bxwy@mt#5\bxwy@mt\else
+    \bxwy@err@ivrng\bxwy@tmpb{#3}{#4}{#5}%
+  \fi\fi
+  #1=\ifnum\@tempcnta=\z@ \@ne \else \@tempcnta \fi}
+\def\bxwy@assign@date@b#1\bxwy@mk#2{%
+  \ifx\bxwy@mk#1\bxwy@mk\else
+    \@tempcnta\z@
+    \bxwy@err@ivnum{#2}%
+  \fi}
+
+%% \bxwy@calc@wareki@year
+% Sets \bxwy@g@gengo and \bxwy@g@year.
+\def\bxwy@calc@wareki@year{%
+  \@tempcnta=\the\year\two@digits\month\two@digits\day\relax
+  \let\bxwy@tmpa\@empty \let\bxwy@tmpb\@empty \@tempcntb\year
+  \ifnum\@tempcnta<18730101 % ancient times (non-Gregorian)
+  \else\ifnum\@tempcnta<19120730 % meiji era
+    \let\bxwy@tmpb\bxwy@@meiji
+    \advance\@tempcntb-1867\relax
+  \else\ifnum\@tempcnta<19261225 % taisho era
+    \let\bxwy@tmpb\bxwy@@taisho
+    \advance\@tempcntb-1911\relax
+  \else\ifnum\@tempcnta<19890108 % showa era
+    \let\bxwy@tmpb\bxwy@@showa
+    \advance\@tempcntb-1925\relax
+  \else\ifnum\@tempcnta<20190501 % heisei era
+    \let\bxwy@tmpb\bxwy@@heisei
+    \advance\@tempcntb-1988\relax
+  \else % the new era
+    \let\bxwy@tmpb\bxwy@@reiwa
+    \advance\@tempcntb-2018\relax
+  \fi\fi\fi\fi\fi
+  %
+  \global\let\bxwy@g@gengo\bxwy@tmpb
+  \xdef\bxwy@g@year{\the\@tempcntb}%
+  \xdef\bxwy@g@date{{\the\year}{\the\month}{\the\day}}}
+
+%% \bxwy@gengo@initial@of\CS
+\def\bxwy@gengo@initial@of#1{%
+  \ifx#1\@empty \@empty
+  \else\ifx#1\bxwy@@meiji  M%
+  \else\ifx#1\bxwy@@taisho T%
+  \else\ifx#1\bxwy@@showa  S%
+  \else\ifx#1\bxwy@@heisei H%
+  \else\ifx#1\bxwy@@reiwa  R%
+  \fi\fi\fi\fi\fi\fi}
+
+%--------------------------------------- render wareki date
+
+%% \bxwy@render@for\CSIdate\CSIgengo\CSIyear
+%      \CSOyear\CSOdate\CSOkanjidate\CSOjkanjidate
+\def\bxwy@render@for{%
+  \expandafter\bxwy@render@for@a}
+\def\bxwy@render@for@a#1#2#3#4#5#6#7#8#9{%
+  %y,m,d,Igengo,Iyear,Oyaer,Odate,Okanjidate,Ojkanjidate
+  \bxwy@freeze@fragile
+  % \CSOyear
+  \edef#6{%
+    \ifx#4\@empty \number#1%(y)
+    \else
+      \bxwy@oncex{#4}%(\CSIgengo)
+      \ifnum#5=\@ne \bxwy@oncex{\bxwy@@gan}%
+      \else \bxwy@S\number#5%(\CSIyear)
+      \fi
+    \fi}%
+  % \CSOdate
+  \edef#7{%
+    \bxwy@oncex{#6}%(\CSOyear)
+    \ifx#4\@empty \bxwy@S
+    \else\ifnum#5=\@ne %nix
+    \else \bxwy@S
+    \fi\fi
+    \bxwy@oncex{\bxwy@@nen}%
+    \bxwy@S#2\bxwy@S \bxwy@oncex{\bxwy@@gatsu}%(m)
+    \bxwy@S#3\bxwy@S \bxwy@oncex{\bxwy@@nichi}}%(d)
+  % \CSOkanjidate
+  \edef#8{%
+    \ifx#4\@empty \bxwy@kansuji{#1}%(y)
+    \else
+      \bxwy@oncex{#4}%(\CSIgengo)
+      \ifnum#5=\@ne \bxwy@oncex{\bxwy@@gan}%
+      \else \bxwy@kansuji{#5}%
+      \fi
+    \fi
+    \bxwy@oncex{\bxwy@@nen}%
+    \bxwy@kansuji{#2}\bxwy@oncex{\bxwy@@gatsu}%(m)
+    \bxwy@kansuji{#3}\bxwy@oncex{\bxwy@@nichi}}%(d)
+  % \CSOjkanjidate
+  \edef#9{%
+    \ifx#4\@empty \bxwy@jkansuji{#1}%(y)
+    \else
+      \bxwy@oncex{#4}%(\CSIgengo)
+      \ifnum#5=\@ne \bxwy@oncex{\bxwy@@gan}%
+      \else \bxwy@jkansuji{#5}%
+      \fi
+    \fi
+    \bxwy@oncex{\bxwy@@nen}%
+    \bxwy@jkansuji{#2}\bxwy@oncex{\bxwy@@gatsu}%(m)
+    \bxwy@jkansuji{#3}\bxwy@oncex{\bxwy@@nichi}}%(d)
+  % done
+  \bxwy@restore@fragile}
+
+%% \bxwy@render@date
+\def\bxwy@render@date{%
+  \bxwy@render@for\bxwy@date\warekigengo\c@warekiyear
+      \warekiyear\warekidate\warekikanjidate\warekijkanjidate
+  \edef\warekigengoinitial{\bxwy@gengo@initial@of\warekigengo}}
+%% \bxwy@render@today
+\def\bxwy@render@today{%
+  \bxwy@render@for\bxwy@today@date\bxwy@today@gengo\bxwy@today@year
+      \bxwy@today@yearstr\warekitoday\warekikanjitoday\warekijkanjitoday}
+%% \bxwy@render@all
+\def\bxwy@render@all{%
+  \bxwy@render@date
+  \bxwy@render@today}
+
+%--------------------------------------- user interface
+
+%% variables
+\let\bxwy@date\relax
+\let\bxwy@today@date\relax
+\let\bxwy@today@gengo\relax
+\let\bxwy@today@year\relax
+\let\bxwy@today@yearstr\relax
+
+%%<*> counter 'warekiyear' : number of wareki year
+\bxwy@newcounter{warekiyear}
+%%<*> \warekigengo : kanji string of the current gengo
+\newcommand*\warekigengo{}
+%%<*> \warekigengoinitial : initial Latin letter of the current gengo
+\newcommand*\warekigengoinitial{}
+%%<*> \warekiyear : string of the wareki year
+\newcommand*\warekiyear{}
+%%<*> \warekidate : string of the wareki date
+\newcommand*\warekidate{}
+%%<*> \warekikanjidate : string of the wareki date (kansuji)
+\newcommand*\warekikanjidate{}
+%%<*> \warekijkanjidate : string of the wareki date (kansuji-by-reading)
+\newcommand*\warekijkanjidate{}
+%%<*> \warekitoday : \warekidate string of today
+\newcommand*\warekitoday{}
+%%<*> \warekikanjitoday : \warekikanjidate string of today
+\newcommand*\warekikanjitoday{}
+%%<*> \warekijkanjitoday : \warekijkanjidate string of today
+\newcommand*\warekijkanjitoday{}
+
+%%<*> \warekisetdate{<year>}{<month>}{<day>}
+\newcommand*\warekisetdate[3]{%
+  \begingroup
+    \bxwy@assign@date{#1}{#2}{#3}%
+    \bxwy@calc@wareki@year
+  \endgroup
+  \let\warekigengo\bxwy@g@gengo
+  \bxwy@setcounter{warekiyear}{\bxwy@g@year}%
+  \let\bxwy@date\bxwy@g@date
+  \bxwy@render@date}
+
+%%<*> \warekisettoday
+\newcommand*\warekisettoday{%
+  \warekisetdate\year\month\day}
+
+%%<+> \WarekiSetToday
+\newcommand*\WarekiSetToday{%
+  \begingroup
+    \bxwy@assign@date\year\month\day
+    \bxwy@calc@wareki@year
+  \endgroup
+  \let\bxwy@today@gengo\bxwy@g@gengo
+  \let\bxwy@today@year\bxwy@g@year
+  \let\bxwy@today@date\bxwy@g@date
+  \bxwy@render@today}
+
+%%<+> WarekiIfCustomDateAvailable{<true>}{<false>}
+\newcommand*\WarekiIfCustomDateAvailable{%
+  \ifbxwy@customdate@ok \expandafter\@firstoftwo
+  \else \expandafter\@secondoftwo
+  \fi}
+
+%%<*> \warekicustomdate
+\newcommand*\warekicustomdate[1]{%
+  \warekidate}% fallback
+
+%--------------------------------------- start up
+
+%% load submodules
+\ifbxwy@customdate@ok
+  \input{bxwareki-cd.def}
+\fi
+
+%% set 'date' to today
+\warekisettoday
+% copy 'date' to 'today'
+\let\bxwy@today@gengo\warekigengo
+\edef\bxwy@today@year{\the\c@warekiyear}
+\let\bxwy@today@date\bxwy@date
+\let\warekitoday\warekidate
+\let\warekikanjitoday\warekikanjidate
+\let\warekijkanjitoday\warekijkanjidate
+
+%--------------------------------------- all done
+\endinput
+%% EOF

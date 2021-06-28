@@ -1,0 +1,673 @@
+%%
+%% This is file 'bxbase.def'.
+%%
+
+%% file declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesFile{bxbase.def}[2020/10/04 v1.2 BX base library]
+\def\bx@pkgname{BXbase} % bundle name
+
+%% check intergrity
+\edef\bxbz@tmpa{\@currname.\@currext}\def\bxbz@tmpb{bxbase.def}
+\ifx\bxbz@tmpa\bxbz@tmpb\else
+  \PackageError\bx@pkgname{Illegal load sequence}\@eha
+\expandafter\endinput\fi\relax
+
+%% code guards
+\edef\bxbz@restore@codes{%
+  \catcode33=\the\catcode33%
+  \catcode34=\the\catcode34%
+  \catcode39=\the\catcode39%
+  \catcode43=\the\catcode43%
+  \catcode45=\the\catcode45%
+  \catcode46=\the\catcode46%
+  \catcode47=\the\catcode47%
+  \catcode58=\the\catcode58%
+  \catcode60=\the\catcode60%
+  \catcode62=\the\catcode62%
+  \catcode94=\the\catcode94%
+  \catcode96=\the\catcode96%
+\relax}
+\catcode33=12 % <!>
+\catcode34=12 % <">
+\catcode39=12 % <'>
+\catcode43=12 % <+>
+\catcode45=12 % <->
+\catcode46=12 % <.>
+\catcode47=12 % </>
+\catcode58=12 % <:>
+\catcode60=12 % <<>
+\catcode62=12 % <>>
+\catcode94=7 % <^>
+\catcode96=12 % <`>
+\AtEndOfPackage{%
+  \bxbz@restore@codes
+  \let\bxbz@restore@codes\@undefined}
+
+%--------------------------------------- general
+
+%% packages
+\RequirePackage{bxtoolbox}[2017/05/29]
+
+%% variables
+\let\bxHex\relax      % result of \bxToHex...
+\let\bxRes\relax      % result of \bxToLower
+\ifundef\bxUcv{\newcount\bxUcv}{}   % argument of \bx@Ux
+
+%% unique tokens
+\def\bxbz@uniq{\bxbz@uniq@}
+
+%% error messages
+\def\bx@error{\PackageError\bx@pkgname}
+\def\bx@warn{\PackageWarningNoLine\bx@pkgname}
+\def\bx@err@nobbl{\bx@error{babel not yet loaded}\@eha}
+\def\bx@err@nanbc{\bx@error{Non-BMP characters not supported}\@eha}
+\def\bx@err@ilnfm{\bx@error{Illegal number format}\@eha}
+\def\bx@err@uddrv#1{\bx@error{\string#1 is undefined}\@eha}
+\def\bxbz@warn@depre#1#2{%
+  \PackageWarning\bx@pkgname
+   {The command '\string#1' is obsolete and\MessageBreak
+    its use is deprecated%
+    \ifx\relax#2\relax, \else
+      \MessageBreak (use #2 instead),\MessageBreak
+    \fi detected}}
+
+%--------------------------------------- programming tools
+
+%%<+> \bxCheckMA\CS <text> \bxEndCheckMA
+% If this construct appears in moving arguments, it expands to
+% an error message command.
+\def\bxCheckMA{\let\bx@chkma@a\bx@chkma@a\noexpand}
+\let\bxEndCheckMA\@empty \let\bx@chkma@z\relax
+\def\bx@chkma@a#1{\bx@chkma@z\relax\bx@chkma@b}
+\def\bx@chkma@b#1#2#3\bxEncCheckMA{\noexpand\bx@err@ivfrg#1#2}
+\def\bx@err@ivfrg#1{\bx@error{Cannot use \string#1 here}\@eha}
+
+%%<+D> \bxCheckCounterpart{<base_name>}
+% Compares the version between the current file and <base_name>
+% with the extension of current file, and if the latter file is
+% already loaded and moreover turns out to be newer than the
+% system aborts loading the current file.
+\bxPreamble\newcommand*\bxCheckCounterpart[1]{%
+  \PackageWarning\bx@pkgname
+   {'\string\bxCheckCounterpart' is no more supported,%
+    \MessageBreak detected}}
+
+%--------------------------------------- TeX engine distinction
+
+%%<+> \bxEngineTypeX / \bxEngineTypeY
+% Numbers that signify what I am.
+  % \bxEngineTypeX values
+\chardef\bxETTeX=0     % none of those
+\chardef\bxETpTeX=1    % pTeX-extended
+\chardef\bxETXeTeX=2   % XeTeX-extended
+\chardef\bxETOmega=3   % Omega-extended
+  % \bxEngineTypeY values (plus \bxETTeX)
+\chardef\bxETeTeX=1    % e-TeX-extended
+\chardef\bxETpdfTeX=3  % pdfTeX-extended
+\chardef\bxETLuaTeX=5  % LuaTeX-extended
+  % (here old pdfTeX without e-TeX is ignored)
+  %
+  % Note:
+  % Originally LuaTeX was supposed to be 'both pdfTeX- and Omega-
+  % extended' (\bxEngineTypeX/Y = 3/3); however, It seems that
+  % in today's LaTeX world LuaTeX is no longer seen as Omega-
+  % extended (indeed, current LuaTeX drops many of the Omega-
+  % specific features). So LuaTeX got relocated at \bxEngineTypeX/Y
+  % = 0/5.
+\ifbxinpTeX        \let\bxEngineTypeX\bxETpTeX
+\else\ifbxinXeTeX  \let\bxEngineTypeX\bxETXeTeX
+\else\ifbxinOmega  \let\bxEngineTypeX\bxETOmega
+\else              \let\bxEngineTypeX\bxETTeX
+\fi\fi\fi
+\ifbxineTeX        \let\bxEngineTypeY\bxETeTeX
+\else\ifbxinpdfTeX \let\bxEngineTypeY\bxETpdfTeX
+\else\ifbxinLuaTeX \let\bxEngineTypeY\bxETLuaTeX
+\else              \let\bxEngineTypeY\bxETTeX
+\fi\fi\fi
+\bxDebug{engine type = \the\bxEngineTypeX/\the\bxEngineTypeY}
+
+%--------------------------------------- Babel something
+
+%%<+> \bxBDHookBabel
+% A begindocument-hook about Babel.
+\newbool{bx@bbl@inuse}
+\bxPreamble\def\bx@bbl@bdhook{}
+\bxPreamble\newcommand*\bxBDHookBabel{%
+  \AtBeginDocument{%
+    \@ifpackageloaded{babel}{%
+      \bx@bbl@inusetrue
+      \ifx\bx@bbl@captlang\@undefined\else \bx@bbl@do@captlang \fi
+      \bx@bbl@bdhook
+    }{}}%
+  \bxNullify\bxBDHookBabel}
+
+%%<+> \bxAtBeginDocumentBabel{<text>}
+% Register a begin-document hook that will be invoked only when babel
+% is loaded.
+\bxPreamble\newcommand\bxAtBeginDocumentBabel{%
+  \g@addto@macro\bx@bbl@bdhook}
+
+%% \bx@bbl@patch@sel@lang
+% A patch to \select@language that disables automatic switching of
+% caption language.
+\bxPreamble\def\bx@bbl@patch@sel@lang{%
+  \global\let\bx@bbl@patch@sel@lang\relax
+  \global\let\bx@bbl@org@select@language\select@language
+  \gdef\select@language##1{%
+    \bx@bbl@copy{**C}{##1}\bx@bbl@copy{##1}{**Z}%
+    \bx@bbl@org@select@language{##1}\bx@bbl@copy{##1}{**C}}}
+
+%% \bx@bbl@do@captlang
+% Sets the caption language of Babel according to the value of
+% \bx@bbl@captlang.
+\bxPreamble\def\bx@bbl@do@captlang{%
+  \bxIfExpToEqual{\bx@bbl@captlang}{main}%
+   {\let\bx@bbl@captlang\bbl@main@language}{}%
+  \bxIfExpToEqual{\bx@bbl@captlang}{default}{}%else
+   {\bxIfcsundef{l@\bx@bbl@captlang}{\@nolanerr\bx@bbl@captlang}%
+     {\@nameuse{date\bx@bbl@captlang}%
+      \@nameuse{captions\bx@bbl@captlang}}}}
+
+%% \bx@bbl@copy{<lang1>}{<lang2>}
+% Copies \captions... and \date... for save.
+\def\bx@bbl@copy#1#2{%
+  \csletcs{captions#1}{captions#2}%
+  \csletcs{date#1}{date#2}}
+\csdef{captions**Z}{\@empty}
+\csdef{date**Z}{\@empty}
+
+%%<*D> \fixcaptionlanguage{<lang>}
+%%<+> \bxFixCaptionLanguage{<lang>}
+% Change the caption language manually, with disabling automatic
+% switching on it.
+\bxPreamble\newcommand*\fixcaptionlanguage[1]{%
+  \bxbz@warn@depre\fixcaptionlanguage{}%
+  \bxFixCaptionLanguage{#1}}
+\bxPreamble\newcommand*\bxFixCaptionLanguage[1]{%
+  \@ifpackageloaded{babel}%
+   {\bx@bbl@patch@sel@lang
+    \xdef\bx@bbl@captlang{#1}}%
+   {\bx@err@nobbl}}
+
+%%<+> \bxProvideCaptionLanguage{<lang>}
+\bxPreamble\newcommand*\bxProvideCaptionLanguage[1]{%
+  \ifundef\bx@bbl@captlang
+   {\bxFixCaptionLanguage{#1}}{}}
+
+%%<*> \setmainlanguage{<lang>}
+% Changes the 'main' language (one that is effective at beginning).
+\bxPreamble\newcommand*\setmainlanguage[1]{%
+  \bxIfcsundef{date#1}{\@nolanerr{#1}}{}%
+  \xdef\bbl@main@language{#1}}
+
+%%<+> \bxTrivLangDef{<lang>}
+% Makes a fake language option.
+\bxPreamble\newcommand*\bxTrivLangDef[1]{%
+  \bxIfcsundefX{date#1}{%
+    \bxIfcsundefX{l@#1}%
+      {\expandafter\chardef\csname l@#1\endcsname\z@}{}%
+    \csdef{date#1}{\relax}%
+    \csdef{captions#1}{\relax}%
+    \csdef{extras#1}{\relax}%
+    \csdef{noextras#1}{\relax}%
+    \csdef{date#1}{\relax}%
+  }{}}
+
+%--------------------------------------- input through code values
+
+%%<+> \bxBDHookUnicode
+% A begindocument-hook about Unicode (& CID) input.
+\bxPreamble\newcommand*\bxBDHookUnicode{%
+  \AtBeginDocument{\bx@assign@Ux}%
+  \bxNullify\bxBDHookUnicode}
+
+%%<+> \bxBDHookJisInput
+% A begindocument-hook about JIS-code input.
+\bxPreamble\newcommand*\bxBDHookJisInput{%
+  \AtBeginDocument{\bx@assign@JI}%
+  \bxNullify\bxBDHookJisInput}
+
+%%<+> \bxFallbackSym{<code>}
+\newcommand*\bxFallbackSym[1]{%
+  \leavevmode\bx@fbs@fnt{\dimen@=\bx@junit\relax
+  \hb@xt@\dimen@{\hss\vrule\@width\z@\@height.88\dimen@\@depth.12\dimen@
+  \frame{\lower.04\dimen@\hb@xt@.84\dimen@{\hss\vbox to.84\dimen@{\vss
+  \hsize=.84\dimen@\baselineskip\z@\lineskip.01\dimen@\parskip\z@skip
+  \leftskip\@flushglue\rightskip\@flushglue\parfillskip\z@skip
+  \parindent\z@\let\\\bx@fbs@c\leavevmode\let\sml=\bx@fbs@fs\bx@fbs@f
+  #1\unskip\par\vss}\hss}}\hss}}}
+\edef\bx@junit{\ifnum\bxEngineTypeX=\@ne 1zw\else 1em\fi}
+\def\bx@fbs@c{\unskip\par\ignorespaces}
+\def\bx@fbs@fnt{\global\let\bx@fbs@fnt\relax
+  \global\font\bx@fbs@fs=phvr at 2.4pt
+  \global\font\bx@fbs@f=phvr at 3.6pt}
+
+%%<+> \bxCodeValueSeq\CS{<text>}
+% Dispatcher for code value sequences.
+\newcommand*\bxCodeValueSeq{%
+  \let\bx@cvseq@branch\bx@cvseq@branch@hex
+  \bx@cvseq@a}
+\def\bx@cvseq@a#1#2{%
+  {\catcode33=12%
+   \xdef\bx@gtmpa{\uppercase{\def\noexpand\bx@tmpa{#2}}}}%
+  \let\bx@cvseq@do=#1\bx@gtmpa\relax
+  \expandafter\bx@cvseq@b\bx@tmpa,!\@nil}
+\def\bx@cvseq@b{\futurelet\bx@toka\bx@cvseq@branch}
+\def\bx@cvseq@branch@hex{%
+  \if      !\bx@toka \let\bx@nxt\bx@cvseq@fin
+  \else\if "\bx@toka \let\bx@nxt\bx@cvseq@pfx
+  \else\if '\bx@toka \let\bx@nxt\bx@cvseq@pfx
+  \else\if +\bx@toka \let\bx@nxt\bx@cvseq@pfx
+  \else \let\bx@nxt\bx@cvseq@hex \fi\fi\fi\fi
+  \bx@nxt}
+\def\bx@cvseq@pfx{%
+  \afterassignment\bx@cvseq@post \bxUcv=}
+\def\bx@cvseq@hex{%
+  \afterassignment\bx@cvseq@post \bxUcv="0}
+\def\bx@cvseq@post#1{%
+  \if ,#1\expandafter\bx@cvseq@post@a
+  \else \bx@err@ilnfm \expandafter\bx@cvseq@fin \fi}
+\def\bx@cvseq@post@a{%
+  \bx@cvseq@do \bx@cvseq@b}
+\def\bx@cvseq@fin#1\@nil{}
+
+%%<+> \bxCodeValueSeqD\CS{<text>}
+% Same as \bxCodeValueSeq, except that it defaults to decimal.
+\newcommand*\bxCodeValueSeqD{%
+  \let\bx@cvseq@branch\bx@cvseq@branch@dec \bx@cvseq@a}
+\def\bx@cvseq@branch@dec{%
+  \if      !\bx@toka \let\bx@nxt\bx@cvseq@fin
+  \else    \let\bx@nxt\bx@cvseq@pfx \fi
+  \bx@nxt}
+
+%%<*> \bxUx, \bxUI, \bxAJ, \bxJI, \bxKI
+% The prefixed names for \Ux, etc. They are (more likely to be)
+% collision-safe.
+\bxNewrobustcmd*\bxUx{\bxCodeValueSeq\bx@Ux}
+\bxNewrobustcmd*\bxUI{\bxCodeValueSeq\bx@UI}
+\bxNewrobustcmd*\bxAJ{\bxCodeValueSeqD\bx@AJ}
+\bxNewrobustcmd*\bxJI{\bxCodeValueSeq\bx@JI}
+\bxNewrobustcmd*\bxKI{\bxCodeValueSeqD\bx@KI}
+
+%%<+> \bxUHex{<value>}, \bxUInt{<value>}
+% Alternative entry points for \Ux. The code value is specified in
+% hexadecimal (\bxUHex) / decimal (\bxUInt) numerals.
+\def\bxbz@tmpa{\bxUIntDummyBxutfx}
+\bxIfx{\bxUInt\bxbz@tmpa}{\undef\bxUInt}{}
+\def\bxbz@tmpa{\bxUHexDummyBxutf}
+\bxIfx{\bxUHex\bxbz@tmpa}{\undef\bxUHex}{}
+\newcommand*\bxUHex{\protect\bx@Uxh}
+\newcommand*\bxUInt{\protect\bx@UInt}
+\def\bx@UInt#1{\bxUcv=#1\relax\bx@Ux}
+
+%% \bx@UIh@fb, \bx@AJ@fb
+\def\bx@UIh@fb#1{\bxUcv="#1\relax\bxToHexFive\bxUcv
+  \expandafter\bx@b@fb@five\bxHex[Ux]}
+\def\bx@AJ@fb{\bxToDecFive\bxUcv
+  \expandafter\bx@b@fb@five\bxHex[AJ]}
+\def\bx@JI@fb{\bxToHexFour\bxUcv
+  \expandafter\bx@b@fb@four\bxHex[JI]}
+\def\bx@KI@fb{\bxToDecFive\bxUcv
+  \expandafter\bx@b@fb@five\bxHex[KI]}
+\def\bx@b@fb@five#1#2#3#4#5#6[#7]{%
+  \bxFallbackSym{{\sml#7}\\\bx@hx@supzero#1#2#3\\#4#5}}
+\def\bx@b@fb@four#1#2#3#4#5[#6]{%
+  \bxFallbackSym{{\sml#6}\\#1#2\\#3#4}}
+\def\bx@hx@supzero#1{\ifx0#1\else\expandafter#1\fi}
+
+%% \bx@assign@Ux
+% Picks up appropriate drivers \bx@Ux etc. according to current
+% load-states of packages.
+% [driver]  [purpose]      [argument]    [default]
+% \bx@Ux    Unicode        \bxUcv        go to \bx@UI
+% \bx@Uxh   Unicode        #1(hex)       go to \bx@UIh
+% \bx@UI    Unicode-ideo.  \bxUcv        go to \bx@UIh
+% \bx@UIh   Unicode-ideo.  #1(hex)       fallback
+% \bx@AJ    Adobe-Japan1   \bxUcv        fallback
+% From the default value it can be said:
+%  - Implemetations for \bx@Ux(h) must fallback on \bx@UI(h) when
+%    they cannot be handle the given character, unless such fallback
+%    is known to be useless.
+%  - When you implement one of \bx@Ux or \bx@Uxh, then you must also
+%    implement the other.
+%  - When you implement \bx@UI, then you must also implement \bx@UIh.
+%    (But you can implement only \bx@UIh.)
+  % Initial values
+\def\bx@Ux{\bx@UI}          % pass to \bx@UI
+\def\bx@Uxh{\bx@UIh}        % pass to \bx@UIh
+\def\bx@UI{\bxToHexUC\bxUcv\bx@UIh\bxHex} % pass to \bx@UIh
+\let\bx@UIh\bx@UIh@fb       % 'fallback' driver
+\let\bx@AJ\bx@AJ@fb         % 'fallback' driver
+  % some helpers
+  % one more step put so that \UTF could be redefined
+\def\bx@UIh@otf{\UTF}
+  % \UMS with the argument expanded
+\def\bx@UIh@ums#1{\expandafter\UMS\expandafter{#1}}
+  % \CID with \bxUcv
+\def\bx@AJ@otf{\CID\bxUcv}
+\bxPreamble\def\bx@assign@Ux{%
+  % If I have bxucs, then set \bx@Ux to \bx@Ux@ucs
+  % (which fallbacks on \bx@UI in failure).
+  \@ifpackageloaded{bxucs}{%
+    \let\bx@Ux\bx@Ux@ucs\let\bx@Uxh\bx@Uxh@ucs}{}%
+  % If I have ums or bxsuika then I use \UMS as \bx@UIh driver.
+  \@ifpackageloaded{ums}{\bxOktrue}{\bxOkfalse}
+  \@ifpackageloaded{bxsuika}{\bxOktrue}{}
+  \ifbxOk \let\bx@UIh\bx@UIh@UMS \fi
+  % If I have utf or otf then I use \UTF as \bx@UIh driver.
+  \@ifpackageloaded{utf}{\bxOktrue}{\bxOkfalse}
+  \@ifpackageloaded{otf}{\bxOktrue}{}
+  \ifbxOk \let\bx@UIh\bx@UIh@otf \let\bx@AJ\bx@AJ@otf \fi
+  % pxotf is same as otf, except that it also provides a direct
+  % way to \bx@UI and \bx@AJ.
+  \@ifpackageloaded{pxotf}{%
+    \let\bx@UIh\bxUIh@otf \let\bx@UI\pxUcvUTF \let\bx@AJ\pxUcvCID}{}%
+  % If I am upTeX I use \kchar.
+  \ifbxinupTeX
+    \def\bx@UI{\kchar\bxUcv}\def\bx@UIh##1{\kchar"##1\relax}%
+  % If I am a Unicode-aware engine, then...
+  \else\ifnum\bxEngineTypeX>\@ne % 
+    \def\bx@UI{\char\bxUcv}\def\bx@UIh##1{\char"##1\relax}%
+    \let\bx@Ux\bx@UI \let\bx@Uxh\bx@UIh
+    % zxjatype provides better handling of \UI & \Ux.
+    \@ifpackageloaded{zxjatype}{%
+      \let\bx@UI\zxjt@UI \let\bx@UIh\zxjt@UIh
+      \let\bx@Ux\zxjt@Ux \let\bx@Uxh\zxjt@Uxh}{}%
+    % zxotf provides \CID comamnd.
+    \@ifpackageloaded{zxotf}{%
+      \def\bx@AJ{\CID\bxUcv}}{}%
+  \fi\fi
+  % If \bx@UIh@usr is known I use it.
+  \ifx\bx@UIh@usr\@undefined\else \let\bx@UIh\bx@UIh@usr \fi
+  \let\bx@setuidriver@a\bx@setuidriver@b
+  \ifx\bx@AJ@usr\@undefined\else \let\bx@AJ\bx@AJ@usr \fi
+  \let\bx@setajdriver@a\bx@setajdriver@b
+}
+
+%%<*> \setUIdriver\CS
+\newcommand*\setUIdriver[1]{%
+  \ifx#1\@undefined \bx@err@uddrv#1%
+  \else \bx@setuidriver@a#1\fi}
+\def\bx@setuidriver@a#1{\let\bx@UIh@usr#1}
+\def\bx@setuidriver@b#1{\let\bx@UIh#1}
+
+%%<*> \setAJdriver\CS
+\newcommand*\setAJdriver[1]{%
+  \ifx#1\@undefined \bx@err@uddrv#1%
+  \else \bx@setajdriver@a#1\fi}
+\def\bx@setajdriver@a#1{\let\bx@AJ@usr#1}
+\def\bx@setajdriver@b#1{\let\bx@AJ#1}
+
+%%%% \bx@assign@JI
+% Picks up appropriate drivers \bx@JI etc.
+% [driver]  [purpose]      [argument]    [default]
+% \bx@JI    JIS-code       \bxUcv        fallback
+% \bx@KI    Kuten-code     \bxUcv        fallback
+\def\bx@JI{\bx@JI@fb}
+\def\bx@KI{\bx@KI@fb}
+\bxPreamble\def\bx@assign@JI{%
+  % \JI & \KI are available only in (u)pTeX
+  \ifnum\bxEngineTypeX=\@ne
+    \def\bx@JI{\char\jis\bxUcv\relax}\let\bx@KI\bx@KI@pTeX
+  \fi
+}
+\ifnum\bxEngineTypeX=\@ne     %----<*pTeX>
+%% \bx@KI@pTeX
+  % \KI{2????} (0213 plane 2) works only when kanji-internal=sjis
+\mathchardef\bx@ki@max=\ifnum\jis"2121="8140 30000\else 20000\fi\relax
+\mathchardef\bx@ki@myr=10000
+\mathchardef\bx@ki@bas="2020
+\let\bx@ki@char=\char
+\ifx\kchar\@undefined\else \let\bx@ki@char=\kchar \fi
+\def\bx@KI@pTeX{%
+  \ifnum\bxUcv<\bx@ki@max\else \bxUcv=\z@ \fi
+  \ifnum\bxUcv<\bx@ki@myr \advance\bxUcv\bx@ki@myr \fi
+  \expandafter\bx@ki@ptex@a\the\bxUcv\@nil
+  \bx@ki@char\jis\bxUcv\relax}
+\begingroup \@tempcnta=94
+  \@for\bx@tmpa:=01,08,03,04,05,12,13,14,15\do{\advance\@tempcnta\@ne
+    \expandafter\xdef\csname bx@JSH/\bx@tmpa\endcsname{\the\@tempcnta}}
+  \@tempcntb=77 \loop
+    \advance\@tempcnta\@ne \advance\@tempcntb\@ne
+    \expandafter\xdef\csname bx@JSH/\the\@tempcntb\endcsname
+     {\the\@tempcnta}%
+  \ifnum\@tempcntb<94 \repeat
+\endgroup
+\def\bx@ki@ptex@a#1#2#3#4#5#6\@nil{%
+  \ifnum#1=\@ne \bxUcv=#2#3\relax
+  \else \bxUcv=0\csname bx@JSH/#2#3\endcsname\relax \fi
+  \multiply\bxUcv\@cclvi \advance\bxUcv#4#5\relax
+  \advance\bxUcv\bx@ki@bas}
+\fi                           %----</pTeX>
+
+%--------------------------------------- "safe-caret" module
+
+%% variables
+\newbool{bx@acr@ok}
+\newbool{bx@acr@needed}
+\newbool{bx@safecaret}
+
+\catcode`\^=13                %---- make caret active
+
+%%<*> \safecaret
+\bxPreamble\newcommand*\safecaret{%
+  \bx@safecarettrue}
+
+%%<+> \bxEnableSafeCaret
+\bxPreamble\newcommand*\bxEnableSafeCaret{%
+  \bx@acr@neededtrue}
+
+%% \bx@acr@defbytes
+\bxPreamble\def\bx@acr@defbytes{%
+  \bgroup\@tempcnta128\lccode`\Z=`\B\catcode`\^\active
+    \@whilenum\@tempcnta<256 \do{%
+      \lccode`\^\@tempcnta \chardef\bx@acr@tok\@tempcnta
+      \expandafter\bx@acr@defbytes@do@a\meaning\bx@acr@tok\@nil
+      \advance\@tempcnta\@ne}\egroup}
+\bxPreamble\def\bx@acr@defbytes@do@a#1"#2\@nil{% name is bx@acr@B/ab etc.
+  \lowercase{\expandafter\gdef\csname bx@acr@Z/#2\endcsname{^}}}
+\@onlypreamble\bx@acr@defbytes
+\@onlypreamble\bx@acr@defbytes@do@a
+
+%% \bx@acr@caret
+% This command should be \let'd to active <^>.
+\def\bx@acr@caret{%
+  \let\bx@acr@out\@empty \bx@acr@caret@a}
+\def\bx@acr@caret@a{%
+  \bx@acr@nextcaret{\bx@acr@caret@b}{\bx@acr@finish{\bx@acr@nxc}}}
+\def\bx@acr@caret@b#1{%
+  \let\bx@acr@hex\@empty
+  \bx@acr@nexthexdgt{\bx@acr@caret@c}{\bx@acr@finish{\bx@acr@nxdc}}}
+\def\bx@acr@caret@c#1{%
+  \edef\bx@acr@hex{#1}%
+  \bx@acr@nexthexdgt{\bx@acr@caret@d}{\bx@acr@finish{\bx@acr@nxdc\bx@acr@hex}}}
+\def\bx@acr@caret@d#1{%
+  \edef\bx@acr@hex{\bx@acr@hex#1}%
+  \expandafter\bx@acr@caret@e\csname bx@acr@B/\bx@acr@hex\endcsname
+  \bx@acr@ifok{\bx@acr@nextcaret{\bx@acr@caret@g}{\bx@acr@finish{}}}%
+    {\bx@acr@finish{\bx@acr@nxdc\bx@acr@hex}}}
+\def\bx@acr@caret@e#1{%
+  \ifx#1\relax \bx@acr@okfalse
+  \else \bx@acr@oktrue \expandafter\bx@acr@caret@f#1\fi}
+\def\bx@acr@caret@f#1{%
+  \expandafter\def\expandafter\bx@acr@out\expandafter{\bx@acr@out#1}}
+\def\bx@acr@caret@g#1{\bx@acr@caret@a}
+\def\bx@acr@nxc{\noexpand^}
+\def\bx@acr@nxdc{\noexpand^\noexpand^}
+\def\bx@acr@nextcaret#1#2{%
+  \def\bx@acr@tmpa{#1}\def\bx@acr@tmpb{#2}%
+  \futurelet\bx@acr@tok\bx@acr@nextcaret@a}
+\def\bx@acr@nextcaret@a{%
+  \let\bx@acr@nxt\bx@acr@tmpb
+  \ifx^\bx@acr@tok \let\bx@acr@nxt\bx@acr@tmpa
+  \fi \bx@acr@nxt}
+\def\bx@acr@nexthexdgt#1#2{%
+  \def\bx@acr@tmpa{#1}\def\bx@acr@tmpb{#2}%
+  \futurelet\bx@acr@tok\bx@acr@nexthexdgt@a}
+\def\bx@acr@nexthexdgt@a{%
+  \let\bx@acr@nxt\bx@acr@tmpb
+  \ifcat @\noexpand\bx@acr@tok \let\bx@acr@nxt\bx@acr@tmpa \fi
+  \ifcat "\noexpand\bx@acr@tok \let\bx@acr@nxt\bx@acr@tmpa \fi
+  \bx@acr@nxt}
+\def\bx@acr@ifok{%
+  \ifbx@acr@ok \expandafter\@firstoftwo \else \expandafter \@secondoftwo \fi}
+\def\bx@acr@finish#1{%
+  \edef\bx@acr@nxt{#1}%
+  \ifx\bx@acr@out\@empty \bx@acr@oktrue \else \bx@acr@okfalse \fi
+  \bx@acr@ifok{\expandafter\bx@acr@finish@a\bx@acr@nxt\@nil}%
+    {\expandafter\bx@acr@out\bx@acr@nxt}}
+\def\bx@acr@finish@a#1#2\@nil{%
+    % replace first ^ with normal one to avoid loop
+  \bx@acr@normcaret #2}
+\let\bx@acr@normcaret\sp % this does not mean much
+
+%% \bx@acr@initialize
+\bxPreamble\def\bx@acr@initialize{%
+  \bx@acr@defbytes}
+
+%% \bx@acr@annihilate
+\bxPreamble\def\bx@acr@annihilate{%
+  \let\bx@acr@caret\relax\let\bx@acr@caret@a\relax
+  \let\bx@acr@caret@b\relax\let\bx@acr@caret@c\relax
+  \let\bx@acr@caret@d\relax\let\bx@acr@caret@e\relax
+  \let\bx@acr@caret@f\relax\let\bx@acr@caret@g\relax
+  \let\bx@acr@nextcaret\relax\let\bx@acr@nextcaret@a\relax
+  \let\bx@acr@nexthexdgt\relax\let\bx@acr@nexthexdgt@a\relax
+  \let\bx@acr@finish\relax\let\bx@acr@finish@a\relax}
+
+%% \bx@acr@babel@hookcaret
+\bxPreamble\def\bx@acr@babel@hookcaret{%
+  \expandafter\ifx\csname active@char\string^\endcsname\relax\else
+    \declare@shorthand\system@group{^}{\bx@acr@caret}%
+    \let\bx@acr@normcaret\bx@acr@babel@normcaret
+    \bxEnableSafeCaret \fi}
+\edef\bx@acr@babel@normcaret{%
+  \expandafter\noexpand\csname normal@char\string^\endcsname}
+
+%% \bx@acr@verbatim@hookcaret
+\bxPreamble\def\bx@acr@verbatim@hookcaret{%
+  \g@addto@macro\@noligs{\catcode`\^\active\let^\bx@acr@caret
+    \let\bx@acr@normcaret\bx@acr@verb@normcaret}%
+  \bxEnableSafeCaret}
+\begingroup \catcode`\^=12
+\global\let\bx@acr@verb@normcaret=^%
+\endgroup
+
+%%<+> \bxBDHookSafeCaret
+% Begin-document hook.
+\bxPreamble\newcommand*\bxBDHookSafeCaret{%
+  \AtBeginDocument{%
+  %% function activated by '\safecaret'
+  \ifbx@safecaret
+    \@ifpackageloaded{babel}{\bx@acr@babel@hookcaret}{}%
+    \bx@acr@verbatim@hookcaret
+  \fi
+  %% initialize or annihilate...
+  \ifbx@acr@needed \bx@acr@initialize
+  \else \bx@acr@annihilate \fi
+  \let\bxEnableSafeCaret\@undefined}%
+  \bxNullify\bxBDHookSafeCaret}
+
+\catcode`\^=7                 %---- make caret normal
+
+%--------------------------------------- hyphenation something
+
+%%<*> 'withnohyph' environment
+\expandafter\ifx\csname l@nohyphenation\endcsname\relax
+  \newlanguage\l@nohyphenation \fi
+\def\withnohyph{\language\l@nohyphenation}
+\let\endwithnohyph\relax
+
+%--------------------------------------- patch for 'ucs' package
+
+%% \bxBDHookUcsFastErrors
+% The begin-document hook, which forces the 'fasterrors' option
+% of 'ucs' package when running on pTeX.
+\bxPreamble\newcommand*\bxBDHookUcsFastErrors{%
+  \ifbxinpTeX
+    \AtBeginDocument{%
+      \@ifpackageloaded{ucs}{%
+        \let\UnicodeOptionfasterrorsfalse\UnicodeOptionfasterrorstrue
+        \UnicodeOptionfasterrorstrue}{}}%
+  \fi
+  \bxNullify\bxBDHookUcsFastErrors}
+
+%--------------------------------------- DVI-specials
+
+%%<*D> \usejapanesepdfstring
+\bxPreamble\newcommand*\usejapanesepdfstring{}
+\if s\bxInternalJaEncoding
+  \def\usejapanesepdfstring{%  why use CP932??
+    \bx@docspec@urgent{pdf:tounicode 90ms-RKSJ-UCS2}%
+    \bxNullify\usejapanesepdfstring}
+\else\if e\bxInternalJaEncoding
+  \def\usejapanesepdfstring{%
+    \bx@docspec@urgent{pdf:tounicode EUC-UCS2}%
+    \bxNullify\usejapanesepdfstring}
+\else\if u\bxInternalJaEncoding
+  \def\usejapanesepdfstring{%
+    \bx@docspec@urgent{pdf:tounicode UTF8-UCS2}%
+    \bxNullify\usejapanesepdfstring}
+\else
+  \def\usejapanesepdfstring{%
+    \bx@warn{\string\usejapanesepdfstring\space ignored,\MessageBreak
+      since internal encoding is unknown}%
+    \bxNullify\usejapanesepdfstring}
+\fi\fi\fi
+\preto\usejapanesepdfstring{%
+  \bxbz@warn@depre\usejapanesepdfstring{'pxjahyper' package}}
+
+%%<*D> \recordpapersize
+\bxPreamble\newcommand*\recordpapersize{%
+  \bxbz@warn@depre\recordpapersize{'bxpapersize' package}%
+  \bxDocumentSpecial{papersize=\the\paperwidth,\the\paperheight}%
+  \bxNullify\recordpapersize}
+
+%%<*D> \dvipdfmxmapline{<text>}
+%%<*D> \dvipdfmxmapfile{<text>}
+\bxPreamble\newcommand*\dvipdfmxmapline[1]{%
+  \bxbz@warn@depre@dpxmap
+  \bxDocumentSpecial{pdf:mapline #1}}
+\bxPreamble\newcommand*\dvipdfmxmapfile[1]{%
+  \bxbz@warn@depre@dpxmap
+  \bxDocumentSpecial{pdf:mapfile #1}}
+\def\bxbz@warn@depre@dpxmap{%
+  \bxbz@warn@depre\dvipdfmxmapfile{'pxchfon' package}%
+  \global\let\bxbz@warn@depre@dpxmap\relax}
+
+%--------------------------------------- CJK font scaling
+
+%% \bxbz@doc@class@type
+%%<+D> \pxDocClassType
+% 1 = pLaTeX standard class
+% 2 = New standard classes by Okumura
+% 0 = otherwise
+\bxUcv=\z@
+\@ifclassloaded{jarticle}{\bxUcv=\@ne}{}
+\@ifclassloaded{jreport}{\bxUcv=\@ne}{}
+\@ifclassloaded{jbook}{\bxUcv=\@ne}{}
+\@ifclassloaded{tarticle}{\bxUcv=\@ne}{}
+\@ifclassloaded{treport}{\bxUcv=\@ne}{}
+\@ifclassloaded{tbook}{\bxUcv=\@ne}{}
+\@ifclassloaded{ujarticle}{\bxUcv=\@ne}{}
+\@ifclassloaded{ujreport}{\bxUcv=\@ne}{}
+\@ifclassloaded{ujbook}{\bxUcv=\@ne}{}
+\@ifclassloaded{utarticle}{\bxUcv=\@ne}{}
+\@ifclassloaded{utreport}{\bxUcv=\@ne}{}
+\@ifclassloaded{utbook}{\bxUcv=\@ne}{}
+\@ifclassloaded{jsarticle}{\bxUcv=\tw@}{}
+\@ifclassloaded{jsreport}{\bxUcv=\tw@}{}
+\@ifclassloaded{jsbook}{\bxUcv=\tw@}{}
+\chardef\bxbz@doc@class@type=\bxUcv
+\chardef\pxDocClassType=\bxUcv
+
+%%<+> \pxUpScale
+\edef\pxUpScale{%
+  \ifx\Cjascale\@undefined
+    \ifcase\bxbz@doc@class@type 1\or 0.962216\or 0.924690\else 1\fi
+  \else \Cjascale \fi}
+
+%--------------------------------------- all done
+\endinput
+%% EOF

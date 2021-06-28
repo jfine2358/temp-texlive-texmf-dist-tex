@@ -1,0 +1,135 @@
+% Modify pre_linebreak_filter callback so the spaces can be inserted
+\directlua{%         
+luavlna = require "luavlna" 
+langno  = require "luavlna-langno"
+
+require "ltluatex"
+luatexbase.add_to_callback("pre_linebreak_filter", luavlna.preventsingle,"LuaVlna")
+luatexbase.add_to_callback("hyphenate", luavlna.split_hyphens, "allow hyphen breaks")
+% -- define the attribute number
+luavlna.preventsingleid = math.random(2^16)
+
+local languages = langno.load_languages()
+local get_lang_id = function(lang)
+  local langid = tonumber(lang)
+  if not tonumber(lang) then
+    langid = languages:get_number(lang)
+  end
+  return langid
+end
+
+% Process string and make table of enabled single letters
+% By default, spaces for all single letters are inserted
+% This can be modified with \singlechars macro
+set_singlechars = function(lang,chars)
+  local utf_gmatch = unicode.utf8.gmatch
+  % local langnumbers = languages.names
+  local langid = get_lang_id(lang) 
+  if not langid then return nil, "Cannot find language number for: "..lang end
+  local chars = chars  or ""
+  local singlechars = {}
+  local percent = string.char(37)
+  local alpha = percent .. "a"
+  for char in utf_gmatch(chars,"("..alpha..")") do
+    singlechars[char] = true
+  end
+  luavlna.singlechars(langid,singlechars)
+end
+
+% set compound characters for initials handling
+% useful for Czech "Ch" etc.
+% comma separated list of compounds
+set_compounds = function(lang, compounds)
+  local langid = get_lang_id(lang)
+  if not langid then return nil, "Cannot find language number for: "..lang end
+  local c = compounds:explode(",+") % match multiple colons as one
+  local  compoundstable = {}
+  for _, compound in pairs(c) do
+    compoundstable[compound] = true
+  end
+  luavlna.initials(langid, compoundstable)
+end
+
+set_main_language = function(lang)
+  local langid = get_lang_id(lang)
+  if not langid then return nil, "Cannot find language number for: "..lang end
+  luavlna.set_main_language(langid)
+end	
+
+enable_split_hyphens = function(lang)
+  local langid = get_lang_id(lang)
+  if not langid then return nil, "Cannot find language number for: "..lang end
+  luavlna.split_hyphen_langs[langid] = true
+end
+
+disable_split_hyphens = function(lang)
+  local langid = get_lang_id(lang)
+  if not langid then return nil, "Cannot find language number for: "..lang end
+  luavlna.split_hyphen_langs[langid] = nil
+end
+}     
+
+% the langno library supports both numeric and literal names
+% we can try to find the language ID from macros first, if it fails
+% we pass the language name to Lua. it will try to find ID in luanguage.dat and other sources
+\def\singlecharsgetlang#1{%
+  \ifcsname lang@#1\endcsname% 
+    \the\csname lang@#1\endcsname%
+  \else% unknown language macro, let langno library to find it 
+    #1%
+  \fi%
+}
+
+% Set letters which are prevented from breaking
+\def\singlechars#1#2{%
+  \directlua{set_singlechars("\singlecharsgetlang{#1}","#2")}%
+}
+
+% Define compound initials
+\def\compoundinitials#1#2{%
+  \directlua{set_compounds("\singlecharsgetlang{#1}","#2")}%
+}
+% Enable inserting of visual marks for debugging
+\def\preventsingledebugon{%
+\directlua{luavlna.debug(true)}%
+}
+
+\def\preventsinglelang#1{%
+  \directlua{set_main_language("\singlecharsgetlang{#1}")}%
+} 
+
+%\newluatexattribute\preventsinglestatus
+\attributedef\preventsinglestatus=\directlua{tex.print(luavlna.preventsingleid)} % just a random number
+
+\def\preventsingleon{%
+	\preventsinglestatus=2
+}
+
+\def\preventsingleoff{%
+	\preventsinglestatus=1
+}
+% Disable inserting of visual marks for dewbugging
+\def\preventsingledebugoff{%
+\directlua{luavlna.debug(false)}%
+}
+
+% enable/disable split hyphens for a language
+
+\def\enablesplithyphens#1{\directlua{enable_split_hyphens("\singlecharsgetlang{#1}")}}
+\def\disablesplithyphens#1{\directlua{disable_split_hyphens("\singlecharsgetlang{#1}")}}
+
+% disable processing of units or degrees
+
+\def\nopredegrees{\directlua{luavlna.no_predegrees = true}}
+\def\nosufdegrees{\directlua{luavlna.no_sufdegrees = true}}
+\def\nounits{\directlua{luavlna.no_unit = true}}
+\def\noinitials{\directlua{luavlna.no_initials = true}}
+
+\ifdefined\nosingledefaults\else
+  \singlechars{czech}{AIiVvOoUuSsZzKk}
+  \singlechars{slovak}{AIiVvOoUuSsZzKk}
+  \compoundinitials{czech}{Ch,CH}
+  \enablesplithyphens{czech}
+  \enablesplithyphens{slovak}
+\fi
+

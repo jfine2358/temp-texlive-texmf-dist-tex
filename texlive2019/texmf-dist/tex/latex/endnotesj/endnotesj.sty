@@ -1,0 +1,664 @@
+%
+% Package ``endnotesj.sty'' for endnotes in Japanese articles,
+% written by Hirokazu OGAWA and Hironobu YAMASHITA
+%
+% This package is part of the endnotesj bundle.
+% https://github.com/aminophen/endnotesj
+%
+% Authors:
+%  * Hirokazu OGAWA (Kumamoto Gakuen University)
+%      Mail: herogw at kumagaku.ac.jp
+%       Web: http://www2.kumagaku.ac.jp/teacher/herogw/index.html
+%  * Hironobu YAMASHITA
+%      Mail: h.y.acetaminophen at gmail.com
+%      Github: @aminophen
+%
+% This work is based on ``endnotes.sty'' (15 January 2003)
+% written by John Lavagnino.
+%
+% ****************************************
+% *           ENDNOTE MACROS             *
+% ****************************************
+%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{endnotesj}
+  [2018/05/13 v3.0 endnotesj (H. Ogawa and H. Yamashita)]
+%
+%% Requirements: engine & format
+%
+%  This package supports pTeX/upTeX and LuaTeX-ja only;
+%  otherwise, throw an error
+%  When the error is ignored, fall back to endnotes.sty and exit
+%  (--> unsupported feature, of course)
+\ifx\pfmtname\@undefined
+  \expandafter\ifx\csname ver@luatexja.sty\endcsname\relax
+    \PackageError{endnotesj}{%
+      Unsupported engine detected!\MessageBreak
+      Please use pLaTeX, upLaTeX or LuaTeX-ja instead}{%
+      I will load `endnotes.sty' instead, but
+      the result will be undesired.}
+    \RequirePackage{endnotes}
+  \expandafter\expandafter\expandafter\endinput\expandafter\fi
+\fi
+%
+%  Ensure compatibility in units between pTeX/upTeX and LuaTeX-ja
+%   * \endnj@zw = width of the current full-width Japanese font
+%                 (zen-kaku width)
+%   * \endnj@zh = height of the current full-width Japanese font
+%                 (zen-kaku height)
+\ifx\directlua\@undefined
+  % pTeX/upTeX should have `zw' and `zh'
+  \def\endnj@zw{zw}
+  \def\endnj@zh{zh}
+\else
+  % LuaTeX-ja should have `\zw` and `\zh'
+  \def\endnj@zw{\zw}
+  \def\endnj@zh{\zh}
+\fi
+%
+%% Ensure that endnotes.sty is NOT loaded after this package
+%
+\@ifpackageloaded{endnotes}{}{%
+  \IfFileExists{endnotes.sty}{%
+    \expandafter\def\csname ver@endnotes.sty\endcsname{}}{}}
+%
+%% Initialize \notesname
+%
+\def\notesname{} % should be empty by default (endnotesj.sty original)
+%
+%% Package options (endnotesj original)
+%%  * Note that the order of declarations is also important, especially
+%%    for options which compete with each other (e.g. tate/yoko)
+%%    cf. ltclass.dtx
+%%      "In the case of \ProcessOptions, they are processed in the
+%%       order that they were declared in the class or package."
+%
+%  Directions - force yoko (horizontal) or tate (vertical)?
+\newif\if@endnj@tate \@endnj@tatefalse
+\newif\if@endnj@yoko \@endnj@yokofalse
+\newif\if@endnj@autotateyoko \@endnj@autotateyokofalse
+\DeclareOption{tate}{\@endnj@autotateyokofalse\@endnj@tatetrue\@endnj@yokofalse}
+\DeclareOption{yoko}{\@endnj@autotateyokofalse\@endnj@yokotrue\@endnj@tatefalse}
+%
+%  Use conditional definitions for switching marks depending on
+%  vertical/horizontal Japanese writing direction
+\DeclareOption{auto-tateyoko}{\@endnj@autotateyokotrue\@endnj@tatefalse\@endnj@yokofalse}
+%
+%  Brackets - single or twin?
+\newif\if@endnj@single \@endnj@singlefalse
+\DeclareOption{twin}{\@endnj@singlefalse} % => default
+\DeclareOption{single}{\@endnj@singletrue}
+%
+%  Use utf/otf package?
+\newif\if@endnj@utf \@endnj@utffalse
+\DeclareOption{utf}{\@endnj@utftrue}
+\DeclareOption{otf}{\@endnj@utftrue}
+%
+%  `ver3' mode - Use improved styles of \@makeenmark (endnote marks) and
+%                \enoteformat (the endnote format)
+\def\endnj@vermode{3}
+\DeclareOption{ver3}{\def\endnj@vermode{3}} % => future default
+%
+%  `ver2' mode - For backward compatibility: use styles of \@makeenmark
+%                and \enoteformat which are inherited from previous
+%                versions of endnotesj.sty
+\DeclareOption{ver2}{\typeout{*** endnotesj version 2 compatibility mode ***}%
+                     \def\endnj@vermode{2}}
+%
+%  Other options are unknown, however endnotesj.sty accepts only one
+%  unknown option, which is then regarded as \notesname (= endnote section title)
+%  If more than one unknown options are requested, the last one is chosen;
+%  the others are simply ignored, so throw an error (for fear of misspelling)
+\def\endnj@temp@ptions{}
+\DeclareOption*{\ifx\endnj@temp@ptions\@empty
+                  \edef\endnj@temp@ptions{\CurrentOption}%
+                \else
+                  \edef\endnj@temp@ptions{\endnj@temp@ptions,\CurrentOption}%
+                \fi
+                \edef\notesname{\CurrentOption}}
+\ExecuteOptions{auto-tateyoko,twin,ver3}
+\ProcessOptions
+%
+%% Option handlings
+%
+%  Throw an error for more than one unknown options
+%  Also, show info about what will be used as `\notesname'
+\@for\reserved@a:=\endnj@temp@ptions\do{%
+  \ifx\reserved@a\notesname
+    \typeout{*** Package endnotesj will use `\notesname' as \string\notesname. ***}%
+  \else
+    \ifx\reserved@a\@empty\else
+      \PackageError{endnotesj}{%
+        Unknown option `\reserved@a' ignored!\MessageBreak
+        It seems that more than one unknown options\MessageBreak
+        were requested, and `\notesname' was taken as\MessageBreak
+        \string\notesname. Perhaps you misspelled some options}{%
+        The options `\endnj@temp@ptions' were not declared in package endnotesj.\MessageBreak
+        Package endnotesj accepts ONLY ONE unknown option (the last one;\MessageBreak
+        in this case `\notesname'), which is regarded as \string\notesname.\MessageBreak
+        The others will be simply ignored.}
+    \fi
+  \fi}
+%
+%  If `single' is specified, `tate' should be false
+\if@endnj@single
+  \if@endnj@tate
+    \PackageWarning{endnotesj}{%
+      Option `single' cannot be used with `tate'.\MessageBreak
+      Please use `auto-tateyoko' or `yoko'.\MessageBreak
+      Entering `auto-tateyoko' mode}
+    \@endnj@autotateyokotrue\@endnj@tatefalse\@endnj@yokofalse
+  \fi
+\fi
+%
+%  If `otf'/`utf' options are specified, load either of otf.sty/utf.sty
+\if@endnj@utf
+\ifx\directlua\@undefined
+  \@ifpackageloaded{utf}{}{\@ifpackageloaded{otf}{}{%
+    \IfFileExists{otf.sty}{\RequirePackage{otf}}{%
+    \IfFileExists{utf.sty}{\RequirePackage{utf}}{%
+    \PackageError{endnotesj}{Neither otf.sty nor utf.sty found}\@ehc
+    \@endnj@utffalse}% fall back
+  }}}
+\else
+  \@ifpackageloaded{luatexja-otf}{}{%
+    \IfFileExists{luatexja-otf.sty}{\RequirePackage{luatexja-otf}}{%
+    \PackageError{endnotesj}{luatexja-otf.sty not found}\@ehc
+    \@endnj@utffalse}% fall back
+  }
+\fi
+\fi
+%
+%% Misc helpers
+%
+%  fallback from #1 to #2 (tate-single -> tate-twin)
+%  once #1 is executed, throw a warning and replace its definition with
+%  the definition of #2, and execute it
+\def\endnj@tate@single@unavailable#1#2{%
+  \def#1{%
+    \PackageWarning{endnotesj}{%
+      `single' style is unavailable in `tate' direction.\MessageBreak
+      I'll use `twin' style instead.}%
+    \global\let#1#2%
+    #1}%
+}
+%
+%
+%%%%% Import from endnotes.sty
+%
+\@definecounter{endnote}
+\def\theendnote{\arabic{endnote}}
+%
+%%%%% End
+%
+%
+%% Customized endnote marks inside the main text for Japanese documents
+%
+% [1] `tate' & `twin'
+%   Common style for vertical writing with twin full-width round brackets
+%   like "Journal of Japanese history" (Nihonshi kenkyu)
+%
+% *** ver 2 ***
+\def\endnj@ii@tate@makeenmark{%
+    \kern -1.2\endnj@zw%
+    \raisebox{.8\endnj@zh}{\tiny \char\jis"214A\relax\hspace{0.2\endnj@zw}%
+      \hbox{\yoko\@theenmark}%
+      \hspace{0.2\endnj@zw}\char\jis"214B\relax
+    }%
+}
+% *** ver 3 ***
+\def\endnj@iii@tate@makeenmark{%
+  \hb@xt@\z@{%
+    \kern -1.2\endnj@zw\hss
+    \raisebox{.8\endnj@zh}{\tiny \char\jis"214A\relax\hspace{0.1\endnj@zw}%
+      \hbox{\yoko\@theenmark}%
+      \hspace{0.1\endnj@zw}\char\jis"214B\relax
+    }%
+  }%
+}
+%
+% [1'] `tate' & `twin' & `utf'
+%   More beautiful output using "tsume-suji" requires otf/utf package
+%
+% *** ver 2 ***
+\def\endnj@ii@tate@utf@makeenmark{%
+    \kern -1.2\endnj@zw%
+    \raisebox{.8\endnj@zh}{\tiny \char\jis"214A\relax
+      \hbox{\yoko\expandafter\ajTumesuji\expandafter*\expandafter{\number\@theenmark}}%
+      \char\jis"214B\relax
+    }%
+}
+% *** ver 3 ***
+\def\endnj@iii@tate@utf@makeenmark{%
+  \hb@xt@\z@{%
+    \kern -1.2\endnj@zw\hss
+    \raisebox{.8\endnj@zh}{\tiny \char\jis"214A\relax
+      \hbox{\yoko\expandafter\ajTumesuji\expandafter*\expandafter{\number\@theenmark}}%
+      \char\jis"214B\relax
+    }%
+  }%
+}
+%
+% [2] `yoko' & `twin'
+%   Common style for horizontal writing with twin round brackets
+%
+% *** ver 2 ***
+\def\endnj@ii@yoko@makeenmark{%
+  \raisebox{.5\endnj@zh}{\tiny (\hspace{0.2\endnj@zw}%
+    \hbox{\@theenmark}%
+    )%
+  }%
+}
+% *** ver 3 *** (using twin full-width round brackets)
+\def\endnj@iii@yoko@makeenmark{%
+  \raisebox{.5\endnj@zh}{\tiny \char\jis"214A\relax\hspace{0.1\endnj@zw}%
+    \hbox{\@theenmark}%
+    \hspace{0.1\endnj@zw}\char\jis"214B\relax
+  }%
+}
+%
+% [2'] `yoko' & `twin' & `utf'
+%   More beautiful output using "tsume-suji" requires otf/utf package
+%
+% *** ver 2 ***
+\def\endnj@ii@yoko@utf@makeenmark{%
+  \raisebox{.5\endnj@zh}{\tiny \char\jis"214A\relax
+    \hbox{\expandafter\ajTumesuji\expandafter*\expandafter{\number\@theenmark}}%
+    \char\jis"214B\relax
+  }%
+}
+% *** ver 3 ***
+\let\endnj@iii@yoko@utf@makeenmark\endnj@ii@yoko@utf@makeenmark
+%
+% [3] `yoko' & `single'
+%   Style for horizontal writing with single round bracket
+%   like "Journal of historical studies" (Rekishigaku kenkyu)
+%
+% *** ver 2 ***
+\def\endnj@ii@yoko@single@makeenmark{%
+  \raisebox{.5\endnj@zh}{\tiny
+    \hbox{\@theenmark}%
+    )%
+  }%
+}
+% *** ver 3 ***
+\let\endnj@iii@yoko@single@makeenmark\endnj@ii@yoko@single@makeenmark
+%
+% [3'] `yoko' & `single' & `utf'
+%   More beautiful output using "tsume-suji" requires otf/utf package
+%
+% *** ver 2 ***
+\def\endnj@ii@yoko@single@utf@makeenmark{%
+  \raisebox{.5\endnj@zh}{\tiny
+    \hbox{\expandafter\ajTumesuji\expandafter*\expandafter{\number\@theenmark}}%
+    \char\jis"214B\relax
+  }%
+}
+% *** ver 3 ***
+\let\endnj@iii@yoko@single@utf@makeenmark\endnj@ii@yoko@single@utf@makeenmark
+%
+% [4] `tate' & `single' (& `utf')
+%   Not available! - fallback definitions
+%
+\endnj@tate@single@unavailable\endnj@ii@tate@single@makeenmark\endnj@ii@tate@makeenmark
+\endnj@tate@single@unavailable\endnj@iii@tate@single@makeenmark\endnj@iii@tate@makeenmark
+\endnj@tate@single@unavailable\endnj@ii@tate@single@utf@makeenmark\endnj@ii@tate@utf@makeenmark
+\endnj@tate@single@unavailable\endnj@iii@tate@single@utf@makeenmark\endnj@iii@tate@utf@makeenmark
+%
+%  Current names of the commands for `tate' and `yoko'
+%
+\expandafter\def\expandafter\endnj@tate@makeenmark\expandafter{%
+  \csname endnj@%
+    \romannumeral\endnj@vermode @%
+    tate@%
+    \if@endnj@single single@\fi%
+    \if@endnj@utf utf@\fi%
+    makeenmark\endcsname}
+\expandafter\def\expandafter\endnj@yoko@makeenmark\expandafter{%
+  \csname endnj@%
+    \romannumeral\endnj@vermode @%
+    yoko@%
+    \if@endnj@single single@\fi%
+    \if@endnj@utf utf@\fi%
+    makeenmark\endcsname}
+%
+%  Now, redefine \@makeenmark using above definitions
+%
+\if@endnj@tate
+  \let\@makeenmark\endnj@tate@makeenmark
+\fi
+\if@endnj@yoko
+  \let\@makeenmark\endnj@tate@makeenmark
+\fi
+%
+%% End
+%
+%
+%%%%% Import from endnotes.sty
+%
+\def\makeenmark{\@makeenmark} % Added in endnotes.sty (JL 12 January 2003)
+\def\theenmark{\@theenmark} % Added in endnotes.sty (JL 12 January 2003)
+%
+\newdimen\endnotesep
+%
+\def\endnote{\@ifnextchar[\@xendnote{\stepcounter{endnote}%
+     \protected@xdef\@theenmark{\theendnote}%
+     \@endnotemark\@endnotetext}}
+%
+\def\@xendnote[#1]{%
+   \begingroup
+     \c@endnote=#1\relax
+     \unrestored@protected@xdef\@theenmark{\theendnote}%
+   \endgroup
+   \@endnotemark\@endnotetext}
+%
+\let\@doanenote=0
+\let\@endanenote=0
+%
+\newwrite\@enotes
+\newif\if@enotesopen \global\@enotesopenfalse
+%
+\def\@openenotes{\immediate\openout\@enotes=\jobname.ent\relax
+      \global\@enotesopentrue}
+%
+\long\def\@endnotetext#1{%
+     \if@enotesopen \else \@openenotes \fi
+     \immediate\write\@enotes{\@doanenote{\@theenmark}}%
+     \begingroup
+        \def\next{#1}%
+        \newlinechar='40
+        \immediate\write\@enotes{\meaning\next}%
+     \endgroup
+     \immediate\write\@enotes{\@endanenote}}
+%
+\long\def\addtoendnotes#1{%
+     \if@enotesopen \else \@openenotes \fi
+     \begingroup
+        \newlinechar='40
+        \let\protect\string
+        \immediate\write\@enotes{#1}%
+     \endgroup}
+%
+\def\endnotemark{%
+   \@ifnextchar[\@xendnotemark
+     {\stepcounter{endnote}%
+      \protected@xdef\@theenmark{\theendnote}%
+      \@endnotemark}}
+%
+\def\@xendnotemark[#1]{%
+   \begingroup
+      \c@endnote #1\relax
+      \unrestored@protected@xdef\@theenmark{\theendnote}%
+   \endgroup
+   \@endnotemark}
+%
+\def\@endnotemark{%
+  \leavevmode
+  \ifhmode\edef\@x@sf{\the\spacefactor}\nobreak\fi
+  \makeenmark
+  \ifhmode\spacefactor\@x@sf\fi
+  \relax}
+%
+\def\endnotetext{%
+     \@ifnextchar [\@xendnotenext
+       {\protected@xdef\@theenmark{\theendnote}%
+    \@endnotetext}}
+%
+\def\@xendnotenext[#1]{%
+  \begingroup
+     \c@endnote=#1\relax
+     \unrestored@protected@xdef\@theenmark{\theendnote}%
+  \endgroup
+  \@endnotetext}
+%
+\def\enoteheading{\section*{\notesname
+  \@mkboth{\MakeUppercase{\notesname}}{\MakeUppercase{\notesname}}}%
+  \mbox{}\par\vskip-\baselineskip}
+%
+%%%%% End
+%
+%
+%% Settings of endnote formatting at the end of Japanese documents
+%% (The numbering styles and indentation are considered.)
+%
+% [1] `tate' & `twin'
+%   Common style for vertical writing with twin full-width round brackets
+%   like "Journal of Japanese history" (Nihonshi kenkyu)
+%
+% *** ver 2 ***
+\def\endnj@ii@tate@enoteformat#1{%
+  \parindent 1em\noindent
+  \@hangfrom{\raisebox{.07\endnj@zh}{(}\hspace{0.2\endnj@zw}%
+    \hbox{\yoko\@theenmark}%
+    \hspace{0.2\endnj@zw}\raisebox{.07\endnj@zh}{)}%
+  }#1%
+}
+% *** ver 3 ***
+\def\endnj@iii@tate@enoteformat#1{%
+  \parindent 1em\noindent
+  \@hangfrom{\mbox{}\char\jis"214A\relax\hspace{0.1\endnj@zw}%
+    \hbox{\yoko\@theenmark}%
+    \hspace{0.1\endnj@zw}\char\jis"214B\relax\mbox{}%
+  }#1%
+}
+%
+% [1'] `tate' & `twin' & `utf'
+%   More beautiful output using "tsume-suji" requires otf/utf package
+%
+% *** ver 2 ***
+\def\endnj@ii@tate@utf@enoteformat#1{%
+  \parindent 1em\noindent
+  \@hangfrom{\UTF{FE35}%
+    \hbox{\yoko\expandafter\ajTumesuji\expandafter*\expandafter{\number\@theenmark}}%
+    \UTF{FE36}%
+  }#1%
+}
+% *** ver 3 ***
+\def\endnj@iii@tate@utf@enoteformat#1{%
+  \parindent 1em\noindent
+  \@hangfrom{\mbox{}\char\jis"214A\relax
+    \hbox{\yoko\expandafter\ajTumesuji\expandafter*\expandafter{\number\@theenmark}}%
+    \char\jis"214B\relax\mbox{}%
+  }#1%
+}
+%
+% [2] `yoko' & `twin'
+%   Common style for horizontal writing with twin round brackets
+%
+% *** ver 2 ***
+\def\endnj@ii@yoko@enoteformat#1{%
+  \parindent 1em\noindent
+  \@hangfrom{(\hspace{0.2\endnj@zw}%
+    \hbox{\@theenmark}%
+    \hspace{0.2\endnj@zw})%
+  }#1%
+}
+% *** ver 3 *** (using twin full-width round brackets)
+\def\endnj@iii@yoko@enoteformat#1{%
+  \parindent 1em\noindent
+  \@hangfrom{\mbox{}\char\jis"214A\relax\hspace{0.1\endnj@zw}%
+    \hbox{\@theenmark}%
+    \hspace{0.1\endnj@zw}\char\jis"214B\relax\mbox{}%
+  }#1%
+}
+%
+% [2'] `yoko' & `twin' & `utf'
+%   More beautiful output using "tsume-suji" requires otf/utf package
+%
+% *** ver 2 ***
+\def\endnj@ii@yoko@utf@enoteformat#1{%
+  \parindent 1em\noindent
+  \@hangfrom{\char\jis"214A\relax%
+    \hbox{\expandafter\ajTumesuji\expandafter*\expandafter{\number\@theenmark}}%
+    \char\jis"214B\relax
+  }#1%
+}
+% *** ver 3 ***
+\def\endnj@iii@yoko@utf@enoteformat#1{%
+  \parindent 1em\noindent
+  \@hangfrom{\mbox{}\char\jis"214A\relax%
+    \hbox{\expandafter\ajTumesuji\expandafter*\expandafter{\number\@theenmark}}%
+    \char\jis"214B\relax\mbox{}%
+  }#1%
+}
+%
+% [3] `yoko' & `single'
+%   Style for horizontal writing with single round bracket
+%   like "Journal of historical studies" (Rekishigaku kenkyu)
+%
+% *** ver 2 ***
+\def\endnj@ii@yoko@single@enoteformat#1{%
+  \parindent 1em\noindent
+  \@hangfrom{%
+    \hbox{\@theenmark}%
+    )%
+  }#1%
+}
+% *** ver 3 ***
+\let\endnj@iii@yoko@single@enoteformat\endnj@ii@yoko@single@enoteformat
+%
+% [3'] `yoko' & `single' & `utf'
+%   More beautiful output using "tsume-suji" requires otf/utf package
+%
+% *** ver 2 ***
+\def\endnj@ii@yoko@single@utf@enoteformat#1{%
+  \parindent 1em\noindent
+  \@hangfrom{%
+    \hbox{\expandafter\ajTumesuji\expandafter*\expandafter{\number\@theenmark}}%
+    \char\jis"214B\relax
+  }#1%
+}
+% *** ver 3 ***
+\let\endnj@iii@yoko@single@utf@enoteformat\endnj@ii@yoko@single@utf@enoteformat
+%
+% [4] `tate' & `single' (& `utf')
+%   Not available! - fallback definitions
+%
+\endnj@tate@single@unavailable\endnj@ii@tate@single@enoteformat\endnj@ii@tate@enoteformat
+\endnj@tate@single@unavailable\endnj@iii@tate@single@enoteformat\endnj@iii@tate@enoteformat
+\endnj@tate@single@unavailable\endnj@ii@tate@single@utf@enoteformat\endnj@ii@tate@utf@enoteformat
+\endnj@tate@single@unavailable\endnj@iii@tate@single@utf@enoteformat\endnj@iii@tate@utf@enoteformat
+%
+%  Current names of the commands for `tate' and `yoko'
+%
+\expandafter\def\expandafter\endnj@tate@enoteformat\expandafter{%
+  \csname endnj@%
+    \romannumeral\endnj@vermode @%
+    tate@%
+    \if@endnj@single single@\fi%
+    \if@endnj@utf utf@\fi%
+    enoteformat\endcsname}
+\expandafter\def\expandafter\endnj@yoko@enoteformat\expandafter{%
+  \csname endnj@%
+    \romannumeral\endnj@vermode @%
+    yoko@%
+    \if@endnj@single single@\fi%
+    \if@endnj@utf utf@\fi%
+    enoteformat\endcsname}
+%
+%  Now, redefine \enoteformat using above definitions
+%
+\if@endnj@tate
+  \let\enoteformat\endnj@tate@enoteformat
+\fi
+\if@endnj@yoko
+  \let\enoteformat\endnj@yoko@enoteformat
+\fi
+%
+%% End
+%
+%
+\def\enotesize{\small} % endnotesj.sty original
+%
+%%%%% Import from endnotes.sty
+%
+\def\theendnotes{\immediate\closeout\@enotes \global\@enotesopenfalse
+  \begingroup
+    \makeatletter
+    %
+    % The machinery with \@ResetGT and > here ensures that
+    % \@doanenote works properly even if > is an active character
+    % at the point where \theendnotes is invoked. > needs to have
+    % catcode 12 when the arguments of \@doanenote are scanned, so
+    % that the > in the string "macro:->" is matched.  The actual
+    % footnote text is not an argument to \@doanenote, but just
+    % follows it in the .ent file; so \@ResetGT can reset the
+    % category code for > that should be used when processing
+    % that text.  That resetting takes place within a
+    % \begingroup-\endgroup block set up by \@doanenote and
+    % \@endanenote, so the catcode for > is back to 12 for the
+    % next note.
+    %
+    \edef\@tempa{`\string >}%
+    \ifnum\catcode\@tempa=12%
+      \let\@ResetGT\relax
+    \else
+      \edef\@ResetGT{\noexpand\catcode\@tempa=\the\catcode\@tempa}%
+      \@makeother\>%
+    \fi
+    \def\@doanenote##1##2>{\def\@theenmark{##1}\par\begingroup
+        \@ResetGT
+        \edef\@currentlabel{\csname p@endnote\endcsname\@theenmark}%
+        \enoteformat}
+    \def\@endanenote{\par\endgroup}%
+    \enoteheading
+    \enotesize
+    \input{\jobname.ent}%
+  \endgroup}
+%
+%%%%% End
+%
+%
+%% Definitions for auto-tateyoko option
+%
+\ifx\directlua\@undefined
+  \catcode`\L=14\relax
+  \catcode`\P=9\relax
+\else
+  \catcode`\L=9\relax
+  \catcode`\P=14\relax
+\fi
+\if@endnj@autotateyoko
+  \def\@makeenmark{%
+P   \iftdir
+L   \ifnum\numexpr
+L     \ltjgetparameter{direction}-(\ltjgetparameter{direction}/8)*8=3\relax
+      \endnj@tate@makeenmark
+    \else
+      \endnj@yoko@makeenmark
+    \fi}
+  \def\enoteformat{%
+P   \iftdir
+L   \ifnum\numexpr
+L     \ltjgetparameter{direction}-(\ltjgetparameter{direction}/8)*8=3\relax
+      \endnj@tate@enoteformat
+    \else
+      \endnj@yoko@enoteformat
+    \fi}
+\fi
+\catcode`\L=11\relax
+\catcode`\P=11\relax
+%
+%
+% ****************************************
+% * Lines per page & Characters per line *
+% ****************************************
+%
+%  Changes in v3.0:
+%    * \linesparpage: the number of interline skip is fewer
+%      than the number of lines
+%    * \linesparpage: subtract \topskip from \textheight
+%    * \kcharparline: add \relax at the end of definition
+%
+\def\linesparpage#1{%
+  \@tempcnta=#1\relax
+  \advance\@tempcnta by \m@ne
+  \baselineskip=\textheight
+  \advance\baselineskip by -\topskip
+  \divide\baselineskip by \@tempcnta\relax}
+\def\kcharparline#1{%
+  \xkanjiskip 0mm plus 0.2mm minus 0.2mm
+  \settowidth{\textwidth}{\char\jis"2422}%
+  \multiply\textwidth by #1\relax}
+%
+\endinput

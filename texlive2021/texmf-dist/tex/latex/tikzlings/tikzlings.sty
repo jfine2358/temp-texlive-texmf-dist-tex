@@ -1,0 +1,95 @@
+% !TeX root = ./examples/tikzlings.tex
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This is the main part of the TikZlings package
+% A package to bring cute little animals and other beings into tikz
+% Maintained by samcarter
+%
+% Project repository and bug tracker:
+% https://github.com/samcarter/tikzlings
+%
+% Released under the LaTeX Project Public License v1.3c or later
+% See http://www.latex-project.org/lppl.txt
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ProvidesPackage{tikzlings}[2021/03/17 version v0.5 Collection of packages to draw animals and other beings in TikZ]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% List of all TikZlings
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{tikzlings-list}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% load sub-packages
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{tikz}
+
+% from https://chat.stackexchange.com/transcript/message/56515698#56515698
+\ExplSyntaxOn
+\cs_new_protected:Npn \tikzlings_load_packages:N #1 {
+  \clist_map_inline:Nn #1 {
+    \exp_args:Nx \RequirePackage { 
+      tikzlings- \__tikzlings_after_slash:w ##1 / / \s_stop 
+    }
+  }
+}
+\cs_new:Npn \__tikzlings_after_slash:w #1 / #2 / #3 \s_stop { \tl_trim_spaces:n {#2} }
+\cs_new_eq:NN \tikzling@loadpackages \tikzlings_load_packages:N
+\ExplSyntaxOff
+\tikzling@loadpackages\tikzling@list
+
+\RequirePackage{tikzlings-addons}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Drawing a random tikzling
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{expl3}
+\ExplSyntaxOn
+\ifdefined\sys_rand_seed:
+  \pgfmathsetseed {\sys_rand_seed:}
+\else
+  \ifdefined\pdfrandomseed % pdflatex
+  \else
+      \ifdefined\randomseed 
+        \let\pdfrandomseed\randomseed % post TL19 xelatex and lualatex
+      \else
+          \let\pdfrandomseed\time % pre TL19 xelatex
+      \fi
+  \fi
+  \pgfmathsetseed{\number\pdfrandomseed} 
+\fi
+
+% from https://chat.stackexchange.com/transcript/message/56516469#56516469
+% To be able to x-expand \iterateTikzlings, it has to be expandable, so no 'protected'.  Also \clist_map_inline:Nn is not expandable, so we have to use \clist_map_function:NN instead.
+\cs_new:Npn \tikzlings_iterate:N #1 { 
+  \clist_map_function:NN #1 \__tikzlings_braced_items:n 
+}
+% \__tikzlings_braced_items:n will receive each clist item, then:
+\cs_new:Npn \__tikzlings_braced_items:n #1 {
+  { % leave an open brace
+  % we don't want the x-expansion to expand the tikzling command, so we prevent expansion with \exp_not:c.  The 'c' variant is used so it builds a csname from its argument, before preventing the expansion: and the argument is what's before the '/'
+  \exp_not:c { 
+    \__tikzlings_before_slash:w #1 / \s_stop 
+  }
+  } % leave a close brace
+}
+\cs_new:Npn \__tikzlings_before_slash:w #1 / #2 \s_stop {
+  \tl_trim_spaces:n {#1} % make sure there are no spaces around the string
+}
+\cs_new_eq:NN \tikzling@iteraterandom \tikzlings_iterate:N
+\cs_new_eq:NN \ExpArgsNnx \exp_args:Nnx
+
+\ExplSyntaxOff
+
+\ExpArgsNnx\pgfmathdeclarerandomlist{tikzlings}{\tikzling@iteraterandom\tikzling@list}
+
+\newcommand{\tikzling}[1][]{%
+  \pgfmathrandomitem{\tikzling@random}{tikzlings}%
+  \tikzling@random[#1]
+}

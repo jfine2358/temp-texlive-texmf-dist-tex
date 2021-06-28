@@ -1,0 +1,456 @@
+%D \module
+%D   [       file=spac-par,
+%D        version=2009.10.16, % 1997.03.31, was core-spa.tex
+%D          title=\CONTEXT\ Spacing Macros,
+%D       subtitle=Paragraphs,
+%D         author=Hans Hagen,
+%D           date=\currentdate,
+%D      copyright={PRAGMA ADE \& \CONTEXT\ Development Team}]
+%C
+%C This module is part of the \CONTEXT\ macro||package and is
+%C therefore copyrighted by \PRAGMA. See mreadme.pdf for
+%C details.
+
+\writestatus{loading}{ConTeXt Spacing Macros / Paragraphs}
+
+\registerctxluafile{spac-par}{autosuffix}
+
+\unprotect
+
+% TODO: \appendtoks \strut \wrapuppar{\strut}\to \everypar
+
+%D New experimental stuff:
+
+% this might move to syst-ini.mkxl
+
+\setnewconstant\paragraphupdatecodes\numexpr
+    \frozentolerancecode
+  + \frozenloosenesscode
+  + \frozenlinepenaltycode
+  + \frozenwidowpenaltycode
+  + \frozenclubpenaltycode
+  + \frozenbrokenpenaltycode
+  + \frozendemeritscode
+\relax
+
+\setnewconstant\paragraphpenaltycodes\numexpr
+    \frozenlinepenaltycode
+  + \frozenwidowpenaltycode
+  + \frozenclubpenaltycode
+  + \frozenbrokenpenaltycode
+\relax
+
+\setnewconstant\paragraphdemeritcodes\numexpr
+    \frozendemeritscode
+\relax
+
+\setnewconstant\paragraphshapecodes\numexpr
+   \frozenhangcode
+ + \frozenskipcode
+ + \frozenparfillcode
+ + \frozenshapecode
+\relax
+
+\setnewconstant\paragraphlinecodes\numexpr
+    \frozenlinecode
+\relax
+
+\setnewconstant\paragraphhyphenationcodes\numexpr
+    \frozenhyphenationcode
+\relax
+
+\setnewconstant\frozenparagraphdefault\numexpr
+   \frozenhsizecode          % \hsize
+ + \frozenskipcode           % \leftskip \rightskip
+ + \frozenhangcode           % \hangindent \hangafter
+ + \frozenindentcode         % \parindent
+ + \frozenparfillcode        % \parfillskip \parfillleftskip
+ + \frozenadjustcode         % \adjustspacing
+ + \frozenprotrudecode       % \protrudechars
+ + \frozentolerancecode      % \tolerance \pretolerance
+ + \frozenstretchcode        % \emergcystretch
+ + \frozenloosenesscode      % \looseness
+ + \frozenlastlinecode       % \lastlinefit
+ + \frozenlinepenaltycode    % \linepenalty \interlinepenalty \interlinepenalties
+ + \frozenclubpenaltycode    % \clubpenalty \clubpenalties
+ + \frozenwidowpenaltycode   % \widowpenalty \widowpenalties
+ + \frozendisplaypenaltycode % \displaypenalty \displaypenalties
+ + \frozenbrokenpenaltycode  % \brokenpenalty
+ + \frozendemeritscode       % \doublehyphendemerits \finalhyphendemerits \adjdemerits
+ + \frozenshapecode          % \parshape
+ % \frozenlinecode           % \baselineskip \lineskip \lineskiplimit
+ + \frozenhyphenationcode    % \hyphenationmode
+\relax
+
+\permanent\protected\def\freezeparagraphproperties {\snapshotpar\frozenparagraphdefault}
+\permanent\protected\def\defrostparagraphproperties{\snapshotpar\zerocount}
+
+\permanent\protected\def\updateparagraphproperties{\ifhmode\snapshotpar\paragraphupdatecodes \fi}
+\permanent\protected\def\updateparagraphpenalties {\ifhmode\snapshotpar\paragraphpenaltycodes\fi}
+\permanent\protected\def\updateparagraphdemerits  {\ifhmode\snapshotpar\paragraphdemeritcodes\fi}
+\permanent\protected\def\updateparagraphshapes    {\ifhmode\snapshotpar\paragraphshapecodes  \fi}
+\permanent\protected\def\updateparagraphlines     {\ifhmode\snapshotpar\paragraphlinecodes   \fi}
+
+% so far
+
+\let\spac_paragraph_freeze\relax
+
+\permanent\protected\def\setparagraphfreezing   {\enforced\let\spac_paragraph_freeze\freezeparagraphproperties}
+\permanent\protected\def\forgetparagraphfreezing{\enforced\let\spac_paragraph_freeze\relax}
+
+\installcorenamespace {bparwrap}
+\installcorenamespace {eparwrap}
+\installcorenamespace {parwrapbefore}
+\installcorenamespace {parwrapafter}
+\installcorenamespace {parwrapcount}
+
+\let\spac_paragraph_wrap\relax
+
+\newcount\c_spac_paragraph_group_level
+
+\protected\def\spac_paragraph_update
+  {\c_spac_paragraph_group_level\currentgrouplevel\relax
+   \ifcsname\??bparwrap\the\c_spac_paragraph_group_level\endcsname
+     \the\lastnamedcs
+     \relax
+     \dontleavehmode % just in case
+     \wrapuppar{\the\csname\??eparwrap\the\c_spac_paragraph_group_level\endcsname\relax}%
+   \fi}
+
+\permanent\protected\def\registerparwrapper       {\spac_register_par_wrapper\toksapp\tokspre}
+\permanent\protected\def\registerparwrapperreverse{\spac_register_par_wrapper\tokspre\toksapp}
+
+\protected\def\spac_paragraph_install
+  {\expandafter\newtoks\csname\??bparwrap\the\currentgrouplevel\endcsname
+   \expandafter\newtoks\csname\??eparwrap\the\currentgrouplevel\endcsname}
+
+\def\spac_paragraph_install_count#1%
+  {\expandafter\newcount\csname\??parwrapcount#1\endcsname}
+
+\def\spac_paragraph_install_pair#1#2#3%
+  {\expandafter\newtoks\csname\??parwrapbefore#3\endcsname
+   \expandafter\newtoks\csname\??parwrapafter #3\endcsname
+   #1\csname\??bparwrap\the\currentgrouplevel\endcsname{\the\csname\??parwrapbefore#3\endcsname}%
+   #2\csname\??eparwrap\the\currentgrouplevel\endcsname{\the\csname\??parwrapafter #3\endcsname}}
+
+\def\spac_register_par_wrapper_yes#1#2#3#4#5%
+  {\ifcsname\??bparwrap\the\currentgrouplevel\endcsname \else
+     \spac_paragraph_install
+   \fi
+   \ifcsname\??parwrapcount#3\endcsname \else
+     \spac_paragraph_install_count{#3}%
+   \fi
+   \ifcsname\??parwrapbefore#3\endcsname \else
+     \spac_paragraph_install_pair#1#2{#3}%
+   \fi
+   #1\csname\??parwrapbefore#3\endcsname{\advance\csname\??parwrapcount#3\endcsname\plusone\relax
+                                         \clf_setparwrapper{#3}#4}%
+   #2\csname\??parwrapafter #3\endcsname{#5}%
+   \clf_newparwrapper{#3}%
+   \enforced\let\spac_paragraph_wrap\spac_paragraph_update}
+
+\def\spac_register_par_wrapper_nop#1#2#3#4#5%
+  {\ifcsname\??parwrapcount#3\endcsname \else
+     \spac_paragraph_install_count{#3}%
+   \fi
+   \csname\??parwrapcount#3\endcsname\plusone
+   #4\wrapuppar{#5}}
+
+\protected\def\spac_register_par_wrapper
+  {\ifhmode
+     \expandafter\spac_register_par_wrapper_nop
+   \else
+     \expandafter\spac_register_par_wrapper_yes
+   \fi}
+
+\permanent\protected\def\forgetparwrapper
+  {\csname\??bparwrap\the\currentgrouplevel\endcsname\emptytoks
+   \csname\??eparwrap\the\currentgrouplevel\endcsname\emptytoks}
+
+\permanent\protected\def\unregisterparwrapper#1%
+  {\csname\??parwrapcount#1\endcsname\zerocount
+   \ifcsname\??parwrapbefore#1\endcsname
+     \lastnamedcs\emptytoks
+     \csname\??parwrapafter#1\endcsname\emptytoks
+   \fi}
+
+\permanent\def\directparwrapper#1#2%
+  {#1\wrapuppar{#2}}
+
+\permanent\protected\def\doifelseparwrapper#1%
+  {\unless\ifcsname\??parwrapcount#1\endcsname
+     \expandafter\secondoftwoarguments
+   \orelse\ifcase\lastnamedcs
+     \expandafter\secondoftwoarguments
+   \else
+     \expandafter\firstoftwoarguments
+   \fi}
+
+% \getparwrapper  % defined in lua
+% \lastparwrapper % defined in lua
+
+\permanent\protected\def\showparwrapperstate#1%
+  {\begingroup
+   \infofont ¶#1\hilo
+     {\smallinfofont\getparwrapper {#1}}%
+     {\smallinfofont\lastparwrapper{#1}}%
+   \endgroup}
+
+%appendtoks\updateparwrapperindeed\to\everypar
+%appendtoks\spac_paragraph_wrap   \to\everypar
+%appendtoks\spac_paragraph_freeze \to\everypar
+
+\setparagraphfreezing
+
+\appendtoks\enforced\let\spac_paragraph_wrap\relax\to\everyforgetall
+
+%D In due time, the code below will be upgraded using the above mechanisms.
+
+%D The dreadful sequence \type {\bgroup} \unknown\ \type {\carryoverpar} \unknown\
+%D \type {\egroup} is needed when for instance sidefloats are used in combination
+%D with something that starts with a group. This is because otherwise the
+%D indentation as set (by the output routine) inside the group are forgotten
+%D afterwards. (I must not forget its existence).
+
+\mutable\let\currentparagraphproperties\empty % visible for tracing
+
+\permanent\def\carryoverpar#1% #1 can be \endgroup or \egroup or ... expandable !
+  {\normalexpanded
+     {\noexpand#1%
+      \hangindent\the\hangindent
+      \hangafter \the\hangafter
+      \parskip   \the\parskip
+      \leftskip  \the\leftskip
+      \rightskip \the\rightskip
+      \relax}}
+
+\permanent\protected\def\pushparagraphproperties
+  {\edef\currentparagraphproperties{\carryoverpar\relax}%
+   \pushmacro\currentparagraphproperties}
+
+\permanent\protected\def\popparagraphproperties
+  {\popmacro\currentparagraphproperties
+   \currentparagraphproperties}
+
+\permanent\protected\def\flushparagraphproperties
+  {\popmacro\currentparagraphproperties}
+
+%D Beware, changing this will break some code (like pos/backgrounds) but it has been
+%D changed anyway so let's see where things go wrong.
+
+\installcorenamespace{paragraphintro}
+
+\let\spac_paragraphs_flush_intro\relax % hook into everypar
+
+\newtoks\t_spac_paragraphs_intro_first
+\newtoks\t_spac_paragraphs_intro_next
+\newtoks\t_spac_paragraphs_intro_each
+
+\newconditional\c_spac_paragraphs_intro_first
+\newconditional\c_spac_paragraphs_intro_next
+\newconditional\c_spac_paragraphs_intro_each
+
+\let\spac_paragraphs_flush_intro\relax
+\let\spac_paragraphs_intro_step \relax
+
+\permanent\protected\tolerant\def\setupparagraphintro[#1]#*[#2]%
+  {\def\spac_paragraphs_intro_step##1%
+     {\csname\??paragraphintro\ifcsname\??paragraphintro##1\endcsname##1\fi\endcsname{#2}}%
+   \processcommacommand[#1]\spac_paragraphs_intro_step}
+
+\letcsname\??paragraphintro\empty\endcsname\gobbleoneargument
+
+\defcsname\??paragraphintro\v!reset\endcsname#1%
+  {\global\setfalse\c_spac_paragraphs_intro_first
+   \global\setfalse\c_spac_paragraphs_intro_next
+   \global\setfalse\c_spac_paragraphs_intro_each
+   \global\t_spac_paragraphs_intro_first\emptytoks
+   \global\t_spac_paragraphs_intro_next \emptytoks
+   \global\t_spac_paragraphs_intro_each \emptytoks
+   \glet\spac_paragraphs_flush_intro\relax}
+
+\defcsname\??paragraphintro\v!first\endcsname#1%
+  {\global\settrue\c_spac_paragraphs_intro_first
+   \gtoksapp\t_spac_paragraphs_intro_first{#1}%
+   \glet\spac_paragraphs_flush_intro\spac_paragraphs_flush_intro_indeed}
+
+\defcsname\??paragraphintro\v!next\endcsname#1%
+  {\global\settrue\c_spac_paragraphs_intro_next
+   \gtoksapp\t_spac_paragraphs_intro_next{#1}%
+   \glet\spac_paragraphs_flush_intro\spac_paragraphs_flush_intro_indeed}
+
+\defcsname\??paragraphintro\v!each\endcsname#1%
+  {\global\settrue\c_spac_paragraphs_intro_each
+   \gtoksapp\t_spac_paragraphs_intro_each{#1}%
+   \glet\spac_paragraphs_flush_intro\spac_paragraphs_flush_intro_indeed}
+
+%D We can say:
+%D
+%D \starttyping
+%D \setupparagraphintro[first][\index{Knuth}]
+%D \stoptyping
+%D
+%D Maybe more convenient is:
+%D
+%D \starttyping
+%D \flushatparagraph{\index{Zapf}}
+%D \stoptyping
+%D
+%D \starttyping
+%D \setupparagraphintro[first][\hbox to 3.5em{\tt FIRST \hss}]
+%D \setupparagraphintro[first][\hbox to 3.5em{\tt TSRIF \hss}]
+%D \setupparagraphintro[next] [\hbox to 3.5em{\tt NEXT  \hss}]
+%D \setupparagraphintro[next] [\hbox to 3.5em{\tt TXEN  \hss}]
+%D \setupparagraphintro[each] [\hbox to 3.0em{\tt EACH  \hss}]
+%D \setupparagraphintro[each] [\hbox to 3.0em{\tt HCEA  \hss}]
+%D
+%D some paragraph \par
+%D some paragraph \par
+%D some paragraph \par
+%D some paragraph \par
+%D
+%D \setupparagraphintro[first][\hbox to 3.5em{\tt FIRST \hss}]
+%D \setupparagraphintro[first][\hbox to 3.5em{\tt TSRIF \hss}]
+%D
+%D some paragraph \par
+%D some paragraph \par
+%D
+%D \setupparagraphintro[reset]
+%D
+%D some paragraph \par
+%D \stoptyping
+
+\permanent\protected\def\flushatparagraph#1%
+  {\global\c_spac_paragraphs_intro_first\plusone
+   \gtoksapp\t_spac_paragraphs_intro_first{#1}%
+   \glet\spac_paragraphs_flush_intro\spac_paragraphs_flush_intro_indeed}
+
+%D Here comes the flusher (we misuse the one level expansion of token registers to
+%D feed a nice stream into the paragraph.)
+
+\protected\def\spac_paragraphs_flush_intro_indeed % we make sure that the token lists expand directly
+  {\normalexpanded{%                              % after another so the first code is there twice
+     \ifconditional\c_spac_paragraphs_intro_each
+       \ifconditional\c_spac_paragraphs_intro_next
+         \glet\spac_paragraphs_flush_intro\spac_paragraphs_flush_intro_next
+       \else
+         \glet\spac_paragraphs_flush_intro\spac_paragraphs_flush_intro_each
+       \fi
+       \ifconditional\c_spac_paragraphs_intro_first
+         \global\setfalse\c_spac_paragraphs_intro_first
+         \global\t_spac_paragraphs_intro_first\emptytoks
+         \the\t_spac_paragraphs_intro_first
+       \fi
+       \the\t_spac_paragraphs_intro_each
+     \else
+       \ifconditional\c_spac_paragraphs_intro_next
+         \glet\spac_paragraphs_flush_intro\spac_paragraphs_flush_intro_next
+       \fi
+       \ifconditional\c_spac_paragraphs_intro_first
+         \global\setfalse\c_spac_paragraphs_intro_first
+         \global\t_spac_paragraphs_intro_first\emptytoks
+         \the\t_spac_paragraphs_intro_first
+       \fi
+     \fi}}
+
+\protected\def\spac_paragraphs_flush_intro_next
+  {\normalexpanded{%
+     \global\setfalse\c_spac_paragraphs_intro_next
+     \global\t_spac_paragraphs_intro_next\emptytoks
+     \ifconditional\c_spac_paragraphs_intro_each
+       \glet\spac_paragraphs_flush_intro\spac_paragraphs_flush_intro_each
+       \the\t_spac_paragraphs_intro_next
+       \the\t_spac_paragraphs_intro_each
+     \else
+       \glet\spac_paragraphs_flush_intro\relax
+       \the\t_spac_paragraphs_intro_next
+     \fi}}
+
+\protected\def\spac_paragraphs_flush_intro_each
+  {\the\t_spac_paragraphs_intro_each}
+
+%D \macros
+%D   {flushatnextpar}
+%D
+%D This macro collects data that will be flushed at the next paragraph. By using
+%D this macro you can avoid interfering nodes (writes, etc).
+
+\aliased\let\flushpostponednodedata\relax % hook into everypar
+
+\newbox  \b_spac_postponed_data
+%newcount\c_spac_postponed_data
+
+% \installcorenamespace {postponednodesstack}
+%
+% \initializeboxstack\??postponednodesstack
+%
+% \protected\def\pushpostponednodedata
+%   {\global\advance\c_spac_postponed_data\plusone
+%    \savebox\??postponednodesstack{\the\c_spac_postponed_data}{\box\b_spac_postponed_data}}
+%
+% \protected\def\poppostponednodedata
+%   {\global\setbox\b_spac_postponed_data\hbox{\foundbox\??postponednodesstack{\the\c_spac_postponed_data}}%
+%    \global\advance\c_spac_postponed_data\minusone
+%    \ifvoid\b_spac_postponed_data\else
+%      \enforced\glet\flushpostponednodedata\spac_postponed_data_flush
+%    \fi}
+
+\newtoks\everyflushatnextpar
+
+\permanent\protected\def\pushpostponednodedata
+  {\globalpushbox\b_spac_postponed_data}
+
+\permanent\protected\def\poppostponednodedata
+  {\globalpopbox\b_spac_postponed_data
+   \ifvoid\b_spac_postponed_data\else
+     \enforced\glet\flushpostponednodedata\spac_postponed_data_flush
+   \fi}
+
+\permanent\protected\def\flushatnextpar
+  {\begingroup
+   \the\everyflushatnextpar
+   \enforced\glet\flushpostponednodedata\spac_postponed_data_flush
+   \dowithnextboxcs\spac_postponed_data_finish\hpack}
+
+% \def\spac_postponed_data_finish
+%   {\global\setbox\b_spac_postponed_data\hpack % to\zeropoint
+%      {\box\b_spac_postponed_data\box\nextbox}%
+%    \endgroup}
+%
+% This is better when used with protrusion which does not like too deeply nested
+% boxes:
+%
+% \def\spac_postponed_data_finish
+%   {\dontcomplain
+%    \global\setbox\b_spac_postponed_data\hpack to \zeropoint
+%      {\unhbox\b_spac_postponed_data\unhbox\nextbox}%
+%    \endgroup}
+%
+% We could do this if there is content with widths ... not that is should be used
+% that way, but this way we don't overflow:
+
+\def\spac_postponed_data_finish
+  {\dontcomplain
+   \global\setbox\b_spac_postponed_data\hpack % to \zeropoint
+     {\unhbox\b_spac_postponed_data
+      \scratchdimen\wd\nextbox
+      \unhbox\nextbox
+      \ifcase\scratchdimen\else\kern-\b_spac_postponed_data\fi}%
+   \endgroup}
+
+\def\spac_postponed_data_flush
+  {%\iftrialtypesetting \else
+     \ifvoid\b_spac_postponed_data\else
+       \hpack{\smashedbox\b_spac_postponed_data}% \box\b_spac_postponed_data
+     \fi
+     \enforced\glet\flushpostponednodedata\relax
+   }%\fi}
+
+\permanent\protected\def\doflushatpar % might be renamed
+  {\ifvmode
+     \expandafter\flushatnextpar
+   \else
+     \expandafter\firstofoneargument
+   \fi}
+
+\protect \endinput

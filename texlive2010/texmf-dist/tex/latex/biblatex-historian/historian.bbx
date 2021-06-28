@@ -1,0 +1,2928 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% historian.bbx, v0.3a, 2010/05/20
+% A bibliography style for use with biblatex v 0.9a
+% Developed and maintained by Sander Gliboff, 
+% based on guidelines from the Turabian Manual for Writers, 7th ed.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ProvidesFile{historian.bbx}[2010/05/20 v0.3a historian bibliography style]
+
+   \@ifpackagelater{biblatex}{2010/03/19}
+     {}
+     {\PackageError{biblatex}
+	{Outdated 'biblatex' package
+	The 'historian' style requires biblatex v0.9 or later.\MessageBreak
+	 You are using: '\csuse{ver@biblatex.sty}'.\MessageBreak
+	 This is a fatal error.}%
+      \endinput}
+
+%%%%% BIBLIOGRAPHY ENVIRONMENTS AND PARAMETERS %%%%%
+
+%This style is based on verbose-inote.bbx and authortitle.bbx, from which the following macros are taken (with small modifications):
+
+\RequireBibliographyStyle{standard}
+\ExecuteBibliographyOptions{pagetracker}
+
+\DeclareBibliographyOption{dashed}[true]{%
+  \ifstrequal{#1}{true}
+    {\ExecuteBibliographyOptions{pagetracker}%
+     \renewbibmacro*{bbx:savehash}{\savefield{fullhash}{\bbx@lasthash}}}
+    {\ExecuteBibliographyOptions{pagetracker=false}%
+     \renewbibmacro*{bbx:savehash}{}}}
+
+\DeclareFieldFormat{shorthandwidth}{#1}
+\setlength{\bibitemsep}{0pt}
+
+\DeclareNameAlias{author}{sortname}
+\DeclareNameAlias{editor}{sortname}
+\DeclareNameAlias{translator}{sortname}
+
+\defbibenvironment{bibliography}
+  {\list
+     {}
+     {\setlength{\leftmargin}{\bibhang}%
+      \setlength{\itemindent}{-\leftmargin}%
+      \setlength{\itemsep}{\bibitemsep}%
+      \setlength{\parsep}{\bibparsep}}}
+  {\endlist}
+  {\item}
+
+\defbibenvironment{shorthands}
+  {\list
+     {\printfield[shorthandwidth]{shorthand}}
+     {\setlength{\labelwidth}{\shorthandwidth}%
+      \setlength{\leftmargin}{\labelwidth}%
+      \setlength{\labelsep}{\biblabelsep}%
+      \addtolength{\leftmargin}{\labelsep}%
+      \setlength{\itemsep}{\bibitemsep}%
+      \setlength{\parsep}{\bibparsep}%
+      \renewcommand*{\makelabel}[1]{##1\hss}}}
+  {\endlist}
+  {\item}
+
+\InitializeBibliographyStyle{%
+  \global\undef\bbx@lasthash}
+
+\newbibmacro*{bbx:savehash}{%
+  \savefield{fullhash}{\bbx@lasthash}}
+
+\newbool{bbx@inset}
+\DeclareBibliographyDriver{set}{%
+  \booltrue{bbx@inset}%
+  \entryset{}{}%
+  \finentry}
+
+\renewbibmacro*{author}{%
+  \ifthenelse{\ifuseauthor\AND\NOT\ifnameundef{author}}
+    {\ifthenelse{\iffieldequals{fullhash}{\bbx@lasthash}\AND
+                 \NOT\iffirstonpage\AND
+		 \(\NOT\boolean{bbx@inset}\OR
+		   \iffieldequalstr{entrysetcount}{1}\)}
+       {\bibnamedash\setunit{\addcomma\addspace}}%Changed from authortitle to insert comma after namedash
+       {\printnames{author}%
+	\setunit{\addcomma\space}%
+        \usebibmacro{bbx:savehash}}%
+     \usebibmacro{authorstrg}}
+    {\global\undef\bbx@lasthash}}
+
+\renewbibmacro*{editor}{%
+  \usebibmacro{bbx:editor}{editorstrg}}
+\renewbibmacro*{editor+others}{%
+  \usebibmacro{bbx:editor}{editor+othersstrg}}
+\newbibmacro*{bbx:editor}[1]{%
+  \ifthenelse{\ifuseeditor\AND\NOT\ifnameundef{editor}}
+    {\ifthenelse{\iffieldequals{fullhash}{\bbx@lasthash}\AND
+                 \NOT\iffirstonpage\AND
+		 \(\NOT\boolean{bbx@inset}\OR
+		   \iffieldequalstr{entrysetcount}{1}\)}
+       {\bibnamedash\setunit{\addcomma\addspace}}%Changed from authortitle to insert comma after namedash
+       {\printnames{editor}%
+	\setunit{\addcomma\space}%
+        \usebibmacro{bbx:savehash}}%
+     \usebibmacro{#1}%
+     \clearname{editor}}
+    {\global\undef\bbx@lasthash}}
+
+\renewbibmacro*{translator}{%
+  \usebibmacro{bbx:translator}{translatorstrg}}
+\renewbibmacro*{translator+others}{%
+  \usebibmacro{bbx:translator}{translator+othersstrg}}
+\newbibmacro*{bbx:translator}[1]{%
+  \ifthenelse{\ifusetranslator\AND\NOT\ifnameundef{translator}}
+    {\ifthenelse{\iffieldequals{fullhash}{\bbx@lasthash}\AND
+                 \NOT\iffirstonpage\AND
+		 \(\NOT\boolean{bbx@inset}\OR
+		   \iffieldequalstr{entrysetcount}{1}\)}
+       {\bibnamedash\setunit{\addcomma\addspace}}%Changed from authortitle to insert comma after namedash
+       {\printnames{translator}%
+	\setunit{\addcomma\space}%
+        \usebibmacro{bbx:savehash}}%
+     \usebibmacro{#1}%
+     \clearname{translator}}
+    {\global\undef\bbx@lasthash}}
+    
+
+%%%%% TOGGLES %%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Flag set in .cbx file when there's a postnote
+%(used for suppressing page ranges in articles)
+\newtoggle{printpagerange}
+\toggletrue{printpagerange}
+
+%used when crossreferencing from customd:
+\newtoggle{printpages}
+\newtoggle{printvolume}
+
+%used for flagging repeating author names in bibliography
+\newtoggle{namedashflag}
+\togglefalse{namedashflag}
+
+%Used for flagging when volume numbers or maintitles have alread been printed
+\newtoggle{volumeprinted}
+\togglefalse{volumeprinted}
+\newtoggle{maintitleprinted}
+\togglefalse{maintitleprinted}
+
+%Used for flagging books that are reprint editions or translations, with original publication data
+\newtoggle{origdataflag}
+
+%Used for flagging crossreferences from customd or letter
+\newtoggle{xrefflag}\togglefalse{xrefflag}
+
+
+%Flags set by package and entry options
+\newtoggle{printurlsflag}
+\newtoggle{printseriesflag}
+\newtoggle{addorigflag}\togglefalse{addorigflag}
+\newtoggle{addtransfromflag}\togglefalse{addtransfromflag}
+\newtoggle{useshorttitles}
+\newtoggle{useshortauthors}
+
+%Flags used for annotated bibliographies---copied from reading.bbx (new in v. 0.2)
+%\newbool{bbx:entrykey}
+\newbool{bbx:annotation}
+%\newbool{bbx:abstract}
+%\newbool{bbx:library}
+%\newbool{bbx:file}
+
+
+%%%%%% PACKAGE AND ENTRY OPTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Define url/doi/eprint options from standard.bbx as EntryOptions as well as BibliographyOptions (New in v.0.3.)
+
+\DeclareEntryOption{url}[true]{%
+  \settoggle{bbx:url}{#1}}
+\DeclareEntryOption{doi}[true]{%
+  \settoggle{bbx:doi}{#1}}
+\DeclareEntryOption{eprint}[true]{%
+  \settoggle{bbx:eprint}{#1}}
+
+\DeclareBibliographyOption{printseries}[true]
+	{\ifstrequal{#1}{true}
+		{\toggletrue{printseriesflag}}%
+		{\togglefalse{printseriesflag}}}%
+		
+\DeclareEntryOption{printseries}[true]
+	{\ifstrequal{#1}{true}
+		{\toggletrue{printseriesflag}}%
+		{\togglefalse{printseriesflag}}}%
+
+\DeclareBibliographyOption{reprint}[origfirst]
+	{\ifstrequal{#1}{addorig}
+		{\toggletrue{addorigflag}}%
+		{\relax}}%
+	
+\DeclareEntryOption{reprint}[origfirst]
+	{\ifstrequal{#1}{addorig}
+		{\toggletrue{addorigflag}%
+		\togglefalse{addtransfromflag}}%
+		{\ifstrequal{#1}{addtransfrom}
+			{\toggletrue{addtransfromflag}%
+			\togglefalse{addorigflag}}%
+			{\togglefalse{addorigflag}%
+			\togglefalse{addtransfromflag}}}}%
+			
+\DeclareEntryOption{shorttitle}[true]
+	{\ifstrequal{#1}{true}
+		{\toggletrue{useshorttitles}}%
+		{\togglefalse{useshorttitles}}}%
+			
+\DeclareEntryOption{shortauthor}[true]
+	{\ifstrequal{#1}{true}
+		{\toggletrue{useshortauthors}}%
+		{\togglefalse{useshortauthors}}}%
+		
+%Option declarations for annotated bibliographies (new in v. 0.2)
+
+\DeclareBibliographyOption{annotation}[true]{%
+  \csuse{bool#1}{bbx:annotation}}
+\DeclareEntryOption{annotation}[true]{%
+  \csuse{bool#1}{bbx:annotation}}
+  
+
+			
+%%%%% CITE COMMANDS FOR CROSS-REFERENCING %%%%%%%%%%%
+
+%For cross-referencing to collection in bibliography
+\DeclareCiteCommand{\bbx@crosstocoll}[]{}{%
+	\toggletrue{xrefflag}%
+	\printtext
+		{\bibhypertarget{\thefield{entrykey}:\the\value{instcount}}%
+		{\usebibmacro{getbookinfo}}}%
+}{}{}%  
+
+%For cross-referencing to periodical in bibliography
+\DeclareCiteCommand{\bbx@crosstoper}[]{}{%
+	\toggletrue{xrefflag}%
+	\printtext
+		{\bibhypertarget{\thefield{entrykey}:\the\value{instcount}}%
+		{\usebibmacro{journal+issuetitle}}}%
+}{}{}%  
+
+
+%For cross-referencing to reference in bibliography.
+%Normally, reference works won't be included in the bibliography, but just in case…
+\DeclareCiteCommand{\bbx@crosstoref}[]{}{%
+	\toggletrue{xrefflag}%
+	\printtext
+		{\bibhypertarget{\thefield{entrykey}:\the\value{instcount}}%
+		{\usebibmacro{getbookinfo}}}%Prints title first
+}{}{}%  
+
+%For cross-referencing to customa in bibliography
+\DeclareCiteCommand{\bbx@crosstoarch}[]{}{%
+	\toggletrue{xrefflag}%
+	\printtext
+		{\bibhypertarget{\thefield{entrykey}:\the\value{instcount}}%
+		{\usebibmacro{in:}\usebibmacro{getarchiveinfo}}}%
+}{}{}%  
+
+
+%%%%% BIBLIOGRAPHY CATEGORIES %%%%%%%%%%%
+%Certain entrytypes and subtypes need to be omitted or listed separately from the main bibliography. Set up categories for them
+\DeclareBibliographyCategory{footnoteonly} 
+\DeclareBibliographyCategory{newspaper}
+\DeclareBibliographyCategory{magazine}
+\DeclareBibliographyCategory{innewspaper}
+\DeclareBibliographyCategory{inmagazine}
+\DeclareBibliographyCategory{classic}
+\DeclareBibliographyCategory{canonical}
+\DeclareBibliographyCategory{biblical}
+\DeclareBibliographyCategory{blog}
+\DeclareBibliographyCategory{listserv}
+
+%%%%%% PUNCTUATION AND FIELD FORMATS
+% Unit punctuation is period (unchanged from biblatex standard)
+\renewcommand\newunitpunct{\addperiod\space}%
+% (But in footnote environment; cbx file switches to comma)
+
+%Colons before page numbers and between titles and subtitles
+\renewcommand{\bibpagespunct}{\addcolon\addspace}%
+\renewcommand*{\subtitlepunct}{\addcolon\addspace}%
+
+%...But no colon if title ends in a question mark or exclamation point
+%\DefineBibliographyExtras{english}{\DeclarePunctuationPairs{colon}{*}}
+\DefineBibliographyExtras{american}{\DeclarePunctuationPairs{colon}{*}}%Should allow colon only after abbreviation dot---doesn't seem to work
+
+%%Put commas, etc. inside quotes
+\uspunctuation %This makes sure American-style quote punctuation is enabled
+
+%Title formatting adjustments
+\DeclareFieldFormat{issuetitle}{\mkbibquote{#1}}
+\DeclareFieldFormat[customd]{title}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}}%
+		{\mkbibemph{#1}}%
+		{\mkbibquote{#1}}}%
+\DeclareFieldFormat[article]{title}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypepublicdocument}}%
+		{\mkbibemph{#1}}%
+		{\mkbibquote{#1}}}%
+\DeclareFieldFormat[incollection]{title}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}%
+		\or\equal{\thefield{entrysubtype}}{\subtypepublicdocument}}%
+		{\mkbibemph{#1}}%
+		{\mkbibquote{#1}}}%
+\DeclareFieldFormat[inreference]{title}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}%
+		\or\equal{\thefield{entrysubtype}}{\subtypepublicdocument}}%
+		{\mkbibemph{#1}}%
+		{\mkbibquote{#1}}}%
+\DeclareFieldFormat[jurisdiction]{title}{#1}%
+\DeclareFieldFormat[legal]{title}{\mkbibemph{#1}}%
+\DeclareFieldFormat[legislation]{title}{\mkbibemph{#1}}%
+\DeclareFieldFormat[performance]{title}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}}%
+		{\mkbibemph{#1}}%
+		{\mkbibquote{#1}}}%
+\DeclareFieldFormat[audio]{title}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}}%
+		{\mkbibemph{#1}}%
+		{\mkbibquote{#1}}}%
+\DeclareFieldFormat[music]{title}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}}%
+		{\mkbibemph{#1}}%
+		{\mkbibquote{#1}}}%
+\DeclareFieldFormat[movie]{title}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}}%
+		{\mkbibemph{#1}}%
+		{\mkbibquote{#1}}}%
+\DeclareFieldFormat[artwork]{title}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}}%
+		{\mkbibemph{#1}}%
+		{\mkbibquote{#1}}}%
+\DeclareFieldFormat[image]{title}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}}%
+		{\mkbibemph{#1}}%
+		{\mkbibquote{#1}}}%
+\DeclareFieldFormat[customa]{title}{#1}%
+\DeclareFieldFormat{volumetitle}{\mkbibemph{#1}}%
+\DeclareFieldFormat{journalasauthor}{\mkbibemph{#1}}%
+\DeclareFieldFormat[online]{title}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypedatabase}}%
+		{{#1}}%
+		{\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}}%
+			{\mkbibemph{#1}}%
+			{\mkbibquote{#1}}}}%
+
+%Improvised use of booktitle in non-book media
+\DeclareFieldFormat[online]{booktitle}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypedatabase}}%
+		{{#1}}%
+		{\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}}%
+			{{#1}}%
+			{\mkbibemph{#1}}}}%
+\DeclareFieldFormat[audio]{booktitle}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}}%
+		{{#1}}%
+		{\mkbibemph{#1}}}%
+\DeclareFieldFormat[customd]{booktitle}{%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebooklike}}%
+		{{#1}}%
+		{\mkbibemph{#1}}}%
+		
+\DeclareFieldFormat{shorthand}{\normalcolor #1\isdot}
+				
+%Automatic formatting of fields that need to be capitalized in bibliography, when newunitpunct is period, but not in footnotes
+
+\DeclareFieldFormat{usera}{\ifcapital{\MakeCapital{#1}}{#1}}%
+\DeclareFieldFormat{userd}{\ifcapital{\MakeCapital{#1}}{#1}}%
+\DeclareFieldFormat{note}{\ifcapital{\MakeCapital{#1}}{#1}}%
+\DeclareFieldFormat{eventtitle}{\mkbibquote{\ifcapital{\MakeCapital{#1}}{#1}}}%
+\DeclareFieldFormat{addendum}{\ifcapital{\MakeCapital{#1}}{#1}}%
+\DeclareFieldFormat{type}{\ifcapital{\MakeCapital{#1}}{#1}}%
+\DeclareFieldFormat{library}{\ifcapital{\MakeCapital{#1}}{#1}}%
+\DeclareFieldFormat{titleaddon}{\ifcapital{\MakeCapital{#1}}{#1}\isdot}%
+\DeclareFieldFormat{booktitleaddon}{\ifcapital{\MakeCapital{#1}}{#1}}%
+\DeclareFieldFormat{maintitleaddon}{\ifcapital{\MakeCapital{#1}}{#1}}%
+\DeclareFieldFormat{edition}{%
+  \ifinteger{#1}
+    {\mkbibordinal{#1}~\bibstring{edition}}%
+    {\ifcapital{\MakeCapital{#1}}{#1}}\isdot}%
+\DeclareFieldFormat{howpublished}{\ifcapital{\MakeCapital{#1}}{#1}}%
+
+% Get rid of default page prefix strings ``p.'' or ``pp.'' in both postnote and pages fields
+\DeclareFieldFormat{postnote}{\iffieldundef{pagination}{#1\isdot}{\mkpageprefix[pagination]{#1\isdot}}}%
+\DeclareFieldFormat{pages}{\iffieldundef{bookpagination}{#1\isdot}{\mkpageprefix[bookpagination{#1\isdot}}}%
+
+%Change prefix for parts of book volumes
+\DeclareFieldFormat{part}{%
+\ifnumeral{#1}
+	{\addcomma\addspace bk\adddot\addspace #1}%
+	{\ifnumerals{#1}
+		{\addcomma\addspace bks\adddot\addspace #1}%
+		{\addcomma\addspace #1}}}%
+
+%Field formats for annotated bibliographies (new in v. 0.2)
+%(Annotations are printed by a redefined finentry macro)
+
+%First need an indented environment and field formats for the texts (new in v. 0.2)
+\newenvironment{indentannote}{%
+ \begin{list}{}{%
+  \setlength{\topsep}{0pt}%
+  \setlength{\leftmargin}{1em}%
+  \setlength{\rightmargin}{1em}%
+  \setlength{\listparindent}{0pt}%
+  \setlength{\itemindent}{0pt}%
+  \setlength{\parsep}{0pt}%
+ }%
+ \item[]}%
+{\end{list}}%
+
+%\DeclareFieldFormat{annotation}{%
+%	\begin{indentannote}
+%		%\bibstring[]{annotation}\textbf{:}%
+%		#1
+%	\end{indentannote}}%
+
+\DeclareNameFormat{author}{%
+	\ifcitation%
+		{%then in footnotes, firstname first
+			\usebibmacro{name:first-last}{#1}{#3}{#5}{#7}%
+			\usebibmacro{name:andothers}}%
+		{%else bibliography
+			\ifnumequal{\value{listcount}}{1}%
+				{%then lastname first for first author/editor
+					\usebibmacro{name:last-first}{#1}{#3}{#5}{#7}%
+					\usebibmacro{name:andothers}}%
+				{%else firstname first for remaining authors/editors
+					\usebibmacro{name:first-last}{#1}{#3}{#5}{#7}%
+					\usebibmacro{name:andothers}}}}%
+
+
+%%%%%% BIB-STRINGS %%%%%%%%%%%%%%%%
+
+% Redefine bibstrings in conformity with Turabian/Chicago conventions
+
+\NewBibliographyString{namedash}
+\NewBibliographyString{letterto}
+\NewBibliographyString{nodate}
+\NewBibliographyString{noplace}
+\NewBibliographyString{nopub}
+\NewBibliographyString{online}
+\NewBibliographyString{postedonline}
+\NewBibliographyString{pseudonym}
+\NewBibliographyString{incapitalized}
+\NewBibliographyString{introto}
+\NewBibliographyString{excerptfrom}
+\NewBibliographyString{volumeof}
+\NewBibliographyString{byline}
+\NewBibliographyString{origeditionbib}
+\NewBibliographyString{origeditiontitledbib}
+\NewBibliographyString{origedition}
+\NewBibliographyString{origeditiontitled}
+\NewBibliographyString{translatedfromtitle}
+\NewBibliographyString{translatedfromtitlebib}
+\NewBibliographyString{numbers}
+\NewBibliographyString{bycorporate}
+
+\DefineBibliographyStrings{american}{%
+	bycorporate		        = {by the},
+	bytranslator     		= {trans.\isdot},
+	incapitalized			= {In},
+  	introto     				= {to},
+	letterto     			= {to},
+	excerptfrom     			= {from},
+	volumeof    				= {of},
+	byline      				= {by},
+	online       			= {},%{available online from},
+	postedonline         		= {posted},
+	nodate					= {n.\isdot ~d.\isdot},
+	noplace					= {n.\isdot ~p.\isdot},
+	nopub					= {n.\isdot ~p.\isdot},
+	origedition				= {orig. ed.\isdot}, 
+	origeditiontitled		= {orig. ed.\isdot},
+	origeditionbib			= {original edition},
+	origeditiontitledbib		= {original edition},
+	translatedfromtitle		= {translation of},
+	translatedfromtitlebib	= {translation of},
+	pseudonym				= {pseud.\isdot},
+	numbers					= {nos\adddot},
+	namedash					= {---------}
+}%
+
+%Turabian calls for mostly abbreviated bibstrings in the footnotes, but mostly long forms in the bibliography, whereas biblatex loads either one or the other from the lbx file. Here the entire list of bibstrings from the english.lbx file is redefined to make the choices. (Exceptions for `references' and `shorthands,' which are only used in the bibliography.)
+
+\DefineBibliographyStrings{american}{%
+  bibliography     = {\ifbibliography{Bibliography}{Bibliography}},
+%  references       = {\ifbibliography{References}{References}},
+%  shorthands       = {\ifbibliography{List of Abbreviations}{Abbreviations}},
+  editor           = {\ifbibliography{editor}{ed\adddot}},
+  editors          = {\ifbibliography{editors}{eds\adddot}},
+  compiler         = {\ifbibliography{compiler}{comp\adddot}},
+  compilers        = {\ifbibliography{compilers}{comp\adddot}},
+  redactor         = {\ifbibliography{redactor}{red\adddot}},
+  redactors        = {\ifbibliography{redactors}{red\adddot}},
+  founder          = {\ifbibliography{founder}{found\adddot}},
+  founders         = {\ifbibliography{founders}{found\adddot}},
+  continuator      = {\ifbibliography{continued}{cont\adddot}}, % FIXME: unsure
+  continuators     = {\ifbibliography{continued}{cont\adddot}}, % FIXME: unsure
+  collaborator     = {\ifbibliography{collaborator}{collab\adddot}},  % FIXME: unsure
+  collaborators    = {\ifbibliography{collaborators}{collab\adddot}}, % FIXME: unsure
+  translator       = {\ifbibliography{translator}{trans\adddot}},
+  translators      = {\ifbibliography{translators}{trans\adddot}},
+  commentator      = {\ifbibliography{commentator}{comm\adddot}},
+  commentators     = {\ifbibliography{commentators}{comm\adddot}},
+  annotator        = {\ifbibliography{annotator}{annot\adddot}},
+  annotators       = {\ifbibliography{annotators}{annot\adddot}},
+  commentary       = {\ifbibliography{commentary}{comm\adddot}},
+  annotations      = {\ifbibliography{annotations}{annot\adddot}},
+  introduction     = {\ifbibliography{introduction}{intro\adddot}},
+  foreword         = {\ifbibliography{foreword}{forew\adddot}},
+  afterword        = {\ifbibliography{afterword}{afterw\adddot}},
+  editortr         = {\ifbibliography{editor and translator}%
+                      {ed\adddotspace and trans\adddot}},
+  editorstr        = {\ifbibliography{editors and translators}%
+                      {eds\adddotspace and trans\adddot}},
+  editorco         = {\ifbibliography{editor and commentator}%
+                      {ed\adddotspace and comm\adddot}},
+  editorsco        = {\ifbibliography{editors and commentators}%
+                      {eds\adddotspace and comm\adddot}},
+  editoran         = {\ifbibliography{editor and annotator}%
+                      {ed\adddotspace and annot\adddot}},
+  editorsan        = {\ifbibliography{editors and annotators}%
+                      {eds\adddotspace and annot\adddot}},
+  editorin         = {\ifbibliography{editor and introduction}%
+                      {ed\adddotspace and introd\adddot}},
+  editorsin        = {\ifbibliography{editors and introduction}%
+                      {eds\adddotspace and introd\adddot}},
+  editorfo         = {\ifbibliography{editor and foreword}%
+                      {ed\adddotspace and forew\adddot}},
+  editorsfo        = {\ifbibliography{editors and foreword}%
+                      {eds\adddotspace and forew\adddot}},
+  editoraf         = {\ifbibliography{editor and afterword}%
+                      {ed\adddotspace and afterw\adddot}},
+  editorsaf        = {\ifbibliography{editors and afterword}%
+                      {eds\adddotspace and afterw\adddot}},
+  editortrco       = {\ifbibliography{editor, translator\finalandcomma\ and commentator}%
+                      {ed.,\addabbrvspace trans\adddot\finalandcomma\ and comm\adddot}},
+  editorstrco      = {\ifbibliography{editors, translators\finalandcomma\ and commentators}%
+                      {eds.,\addabbrvspace trans\adddot\finalandcomma\ and comm\adddot}},
+  editortran       = {\ifbibliography{editor, translator\finalandcomma\ and annotator}%
+                      {ed.,\addabbrvspace trans\adddot\finalandcomma\ and annot\adddot}},
+  editorstran      = {\ifbibliography{editors, translators\finalandcomma\ and annotators}%
+                      {eds.,\addabbrvspace trans\adddot\finalandcomma\ and annot\adddot}},
+  editortrin       = {\ifbibliography{editor, translator\finalandcomma\ and introduction}%
+                      {ed.,\addabbrvspace trans\adddot\finalandcomma\ and introd\adddot}},
+  editorstrin      = {\ifbibliography{editors, translators\finalandcomma\ and introduction}%
+                      {eds.,\addabbrvspace trans\adddot\finalandcomma\ and introd\adddot}},
+  editortrfo       = {\ifbibliography{editor, translator\finalandcomma\ and foreword}%
+                      {ed.,\addabbrvspace trans\adddot\finalandcomma\ and forew\adddot}},
+  editorstrfo      = {\ifbibliography{editors, translators\finalandcomma\ and foreword}%
+                      {eds.,\addabbrvspace trans\adddot\finalandcomma\ and forew\adddot}},
+  editortraf       = {\ifbibliography{editor, translator\finalandcomma\ and afterword}%
+                      {ed.,\addabbrvspace trans\adddot\finalandcomma\ and afterw\adddot}},
+  editorstraf      = {\ifbibliography{editors, translators\finalandcomma\ and afterword}%
+                      {eds.,\addabbrvspace trans\adddot\finalandcomma\ and afterw\adddot}},
+  editorcoin       = {\ifbibliography{editor, commentator\finalandcomma\ and introduction}%
+                      {ed.,\addabbrvspace comm\adddot\finalandcomma\ and introd\adddot}},
+  editorscoin      = {\ifbibliography{editors, commentators\finalandcomma\ and introduction}%
+                      {eds.,\addabbrvspace comm\adddot\finalandcomma\ and introd\adddot}},
+  editorcofo       = {\ifbibliography{editor, commentator\finalandcomma\ and foreword}%
+                      {ed.,\addabbrvspace comm\adddot\finalandcomma\ and forew\adddot}},
+  editorscofo      = {\ifbibliography{editors, commentators\finalandcomma\ and foreword}%
+                      {eds.,\addabbrvspace comm\adddot\finalandcomma\ and forew\adddot}},
+  editorcoaf       = {\ifbibliography{editor, commentator\finalandcomma\ and afterword}%
+                      {ed.,\addabbrvspace comm\adddot\finalandcomma\ and afterw\adddot}},
+  editorscoaf      = {\ifbibliography{editors, commentators\finalandcomma\ and afterword}%
+                      {eds.,\addabbrvspace comm\adddot\finalandcomma\ and afterw\adddot}},
+  editoranin       = {\ifbibliography{editor, annotator\finalandcomma\ and introduction}%
+                      {ed.,\addabbrvspace annot\adddot\finalandcomma\ and introd\adddot}},
+  editorsanin      = {\ifbibliography{editors, annotators\finalandcomma\ and introduction}%
+                      {eds.,\addabbrvspace annot\adddot\finalandcomma\ and introd\adddot}},
+  editoranfo       = {\ifbibliography{editor, annotator\finalandcomma\ and foreword}%
+                      {ed.,\addabbrvspace annot\adddot\finalandcomma\ and forew\adddot}},
+  editorsanfo      = {\ifbibliography{editors, annotators\finalandcomma\ and foreword}%
+                      {eds.,\addabbrvspace annot\adddot\finalandcomma\ and forew\adddot}},
+  editoranaf       = {\ifbibliography{editor, annotator\finalandcomma\ and afterword}%
+                      {ed.,\addabbrvspace annot\adddot\finalandcomma\ and afterw\adddot}},
+  editorsanaf      = {\ifbibliography{editors, annotators\finalandcomma\ and afterword}%
+                      {eds.,\addabbrvspace annot\adddot\finalandcomma\ and afterw\adddot}},
+  editortrcoin     = {\ifbibliography{editor, translator, commentator\finalandcomma\ and introduction}%
+                      {ed.,\addabbrvspace trans., comm\adddot\finalandcomma\ and introd\adddot}},
+  editorstrcoin    = {\ifbibliography{editors, translators, commentators\finalandcomma\ and introduction}%
+                      {eds.,\addabbrvspace trans., comm\adddot\finalandcomma\ and introd\adddot}},
+  editortrcofo     = {\ifbibliography{editor, translator, commentator\finalandcomma\ and foreword}%
+                      {ed.,\addabbrvspace trans., comm\adddot\finalandcomma\ and forew\adddot}},
+  editorstrcofo    = {\ifbibliography{editors, translators, commentators\finalandcomma\ and foreword}%
+                      {eds.,\addabbrvspace trans., comm\adddot\finalandcomma\ and forew\adddot}},
+  editortrcoaf     = {\ifbibliography{editor, translator, commentator\finalandcomma\ and afterword}%
+                      {ed.,\addabbrvspace trans., comm\adddot\finalandcomma\ and afterw\adddot}},
+  editorstrcoaf    = {\ifbibliography{editors, translators, commentators\finalandcomma\ and afterword}%
+                      {eds.,\addabbrvspace trans., comm\adddot\finalandcomma\ and afterw\adddot}},
+  editortranin     = {\ifbibliography{editor, translator, annotator\finalandcomma\ and introduction}%
+                      {ed.,\addabbrvspace trans., annot\adddot\finalandcomma\ and introd\adddot}},
+  editorstranin    = {\ifbibliography{editors, translators, annotators\finalandcomma\ and introduction}%
+                      {eds.,\addabbrvspace trans., annot\adddot\finalandcomma\ and introd\adddot}},
+  editortranfo     = {\ifbibliography{editor, translator, annotator\finalandcomma\ and foreword}%
+                      {ed.,\addabbrvspace trans., annot\adddot\finalandcomma\ and forew\adddot}},
+  editorstranfo    = {\ifbibliography{editors, translators, annotators\finalandcomma\ and foreword}%
+                      {eds.,\addabbrvspace trans., annot\adddot\finalandcomma\ and forew\adddot}},
+  editortranaf     = {\ifbibliography{editor, translator, annotator\finalandcomma\ and afterword}%
+                      {ed.,\addabbrvspace trans., annot\adddot\finalandcomma\ and afterw\adddot}},
+  editorstranaf    = {\ifbibliography{editors, translators, annotators\finalandcomma\ and afterword}%
+                      {eds.,\addabbrvspace trans., annot\adddot\finalandcomma\ and afterw\adddot}},
+  translatorco     = {\ifbibliography{translator and commentator}%
+                      {trans\adddot\ and comm\adddot}},
+  translatorsco    = {\ifbibliography{translators and commentators}%
+                      {trans\adddot\ and comm\adddot}},
+  translatoran     = {\ifbibliography{translator and annotator}%
+                      {trans\adddot\ and annot\adddot}},
+  translatorsan    = {\ifbibliography{translators and annotators}%
+                      {trans\adddot\ and annot\adddot}},
+  translatorin     = {\ifbibliography{translation and introduction}%
+                      {trans\adddot\ and introd\adddot}},
+  translatorsin    = {\ifbibliography{translation and introduction}%
+                      {trans\adddot\ and introd\adddot}},
+  translatorfo     = {\ifbibliography{translation and foreword}%
+                      {trans\adddot\ and forew\adddot}},
+  translatorsfo    = {\ifbibliography{translation and foreword}%
+                      {trans\adddot\ and forew\adddot}},
+  translatoraf     = {\ifbibliography{translation and afterword}%
+                      {trans\adddot\ and afterw\adddot}},
+  translatorsaf    = {\ifbibliography{translation and afterword}%
+                      {trans\adddot\ and afterw\adddot}},
+  translatorcoin   = {\ifbibliography{translation, commentary\finalandcomma\ and introduction}%
+                      {trans., comm\adddot\finalandcomma\ and introd\adddot}},
+  translatorscoin  = {\ifbibliography{translation, commentary\finalandcomma\ and introduction}%
+                      {trans., comm\adddot\finalandcomma\ and introd\adddot}},
+  translatorcofo   = {\ifbibliography{translation, commentary\finalandcomma\ and foreword}%
+                      {trans., comm\adddot\finalandcomma\ and forew\adddot}},
+  translatorscofo  = {\ifbibliography{translation, commentary\finalandcomma\ and foreword}%
+                      {trans., comm\adddot\finalandcomma\ and forew\adddot}},
+  translatorcoaf   = {\ifbibliography{translation, commentary\finalandcomma\ and afterword}%
+                      {trans., comm\adddot\finalandcomma\ and afterw\adddot}},
+  translatorscoaf  = {\ifbibliography{translation, commentary\finalandcomma\ and afterword}%
+                      {trans., comm\adddot\finalandcomma\ and afterw\adddot}},
+  translatoranin   = {\ifbibliography{translation, annotations\finalandcomma\ and introduction}%
+                      {trans., annot\adddot\finalandcomma\ and introd\adddot}},
+  translatorsanin  = {\ifbibliography{translation, annotations\finalandcomma\ and introduction}%
+                      {trans., annot\adddot\finalandcomma\ and introd\adddot}},
+  translatoranfo   = {\ifbibliography{translation, annotations\finalandcomma\ and foreword}%
+                      {trans., annot\adddot\finalandcomma\ and forew\adddot}},
+  translatorsanfo  = {\ifbibliography{translation, annotations\finalandcomma\ and foreword}%
+                      {trans., annot\adddot\finalandcomma\ and forew\adddot}},
+  translatoranaf   = {\ifbibliography{translation, annotations\finalandcomma\ and afterword}%
+                      {trans., annot\adddot\finalandcomma\ and afterw\adddot}},
+  translatorsanaf  = {\ifbibliography{translation, annotations\finalandcomma\ and afterword}%
+                      {trans., annot\adddot\finalandcomma\ and afterw\adddot}},
+  byauthor         = {\ifbibliography{by}{by}},
+  byeditor         = {\ifbibliography{edited by}{ed\adddotspace by}},
+  bycompiler       = {\ifbibliography{compiled by}{comp\adddotspace by}},
+  byredactor       = {\ifbibliography{redacted by}{red\adddotspace by}},
+  byfounder        = {\ifbibliography{founded by}{found\adddotspace by}},
+  bycontinuator    = {\ifbibliography{continued by}{cont\adddotspace by}},
+  bycollaborator   = {\ifbibliography{in collaboration with}{in collab\adddotspace with}}, % FIXME: unsure
+  bytranslator     = {\ifbibliography{translated \lbx@fromlang\ by}{trans\adddot\ \lbx@fromlang\ by}},
+  bycommentator    = {\ifbibliography{commented by}{comm\adddot\ by}},
+  byannotator      = {\ifbibliography{annotated by}{annot\adddot\ by}},
+  withcommentator  = {\ifbibliography{with a commentary by}{with a comment\adddot\ by}},
+  withannotator    = {\ifbibliography{with annotations by}{with annots\adddot\ by}},
+  withintroduction = {\ifbibliography{with an introduction by}{with an intro\adddot\ by}},
+  withforeword     = {\ifbibliography{with a foreword by}{with a forew\adddot\ by}},
+  withafterword    = {\ifbibliography{with an afterword by}{with an afterw\adddot\ by}},
+  byeditortr       = {\ifbibliography{edited and translated \lbx@fromlang\ by}%
+                      {ed\adddotspace and trans\adddot\ \lbx@fromlang\ by}},
+  byeditorco       = {\ifbibliography{edited and commented by}%
+                      {ed\adddotspace and comm\adddot\ by}},
+  byeditoran       = {\ifbibliography{edited and annotated by}%
+                      {ed\adddotspace and annot\adddot\ by}},
+  byeditorin       = {\ifbibliography{edited, with an introduction, by}%
+                      {ed.,\addabbrvspace with an introd., by}},
+  byeditorfo       = {\ifbibliography{edited, with a foreword, by}%
+                      {ed.,\addabbrvspace with a forew., by}},
+  byeditoraf       = {\ifbibliography{edited, with an afterword, by}%
+                      {ed.,\addabbrvspace with an afterw., by}},
+  byeditortrco     = {\ifbibliography{edited, translated \lbx@fromlang\finalandcomma\ and commented by}%
+                      {ed.,\addabbrvspace trans\adddot\ \lbx@fromlang\finalandcomma\ and comm\adddot\ by}},
+  byeditortran     = {\ifbibliography{edited, translated \lbx@fromlang\finalandcomma\ and annotated by}%
+                      {ed.,\addabbrvspace trans\adddot\ \lbx@fromlang\finalandcomma\ and annot\adddot\ by}},
+  byeditortrin     = {\ifbibliography{edited and translated \lbx@fromlang, with an introduction, by}%
+                      {ed\adddotspace and trans\adddot\ \lbx@fromlang, with an introd., by}},
+  byeditortrfo     = {\ifbibliography{edited and translated \lbx@fromlang, with a foreword, by}%
+                      {ed\adddotspace and trans\adddot\ \lbx@fromlang, with a forew., by}},
+  byeditortraf     = {\ifbibliography{edited and translated \lbx@fromlang, with an afterword, by}%
+                      {ed\adddotspace and trans\adddot\ \lbx@fromlang, with an afterw., by}},
+  byeditorcoin     = {\ifbibliography{edited and commented, with an introduction, by}%
+                      {ed\adddotspace and comm., with an introd., by}},
+  byeditorcofo     = {\ifbibliography{edited and commented, with a foreword, by}%
+                      {ed\adddotspace and comm., with a forew., by}},
+  byeditorcoaf     = {\ifbibliography{edited and commented, with an afterword, by}%
+                      {ed\adddotspace and comm., with an afterw., by}},
+  byeditoranin     = {\ifbibliography{edited and annotated, with an introduction, by}%
+                      {ed\adddotspace and annot., with an introd., by}},
+  byeditoranfo     = {\ifbibliography{edited and annotated, with a foreword, by}%
+                      {ed\adddotspace and annot., with a forew., by}},
+  byeditoranaf     = {\ifbibliography{edited and annotated, with an afterword, by}%
+                      {ed\adddotspace and annot., with an afterw., by}},
+  byeditortrcoin   = {\ifbibliography{edited, translated \lbx@fromlang\finalandcomma\ and commented, with an introduction, by}%
+                      {ed.,\addabbrvspace trans\adddot\ \lbx@fromlang\finalandcomma\ and comm., with an introd., by}},
+  byeditortrcofo   = {\ifbibliography{edited, translated \lbx@fromlang\finalandcomma\ and commented, with a foreword, by}%
+                      {ed.,\addabbrvspace trans\adddot\ \lbx@fromlang\finalandcomma\ and comm., with a forew., by}},
+  byeditortrcoaf   = {\ifbibliography{edited, translated \lbx@fromlang\finalandcomma\ and commented, with an afterword, by}%
+                      {ed.,\addabbrvspace trans\adddot\ \lbx@fromlang\finalandcomma\ and comm., with an afterw., by}},
+  byeditortranin   = {\ifbibliography{edited, translated \lbx@fromlang\finalandcomma\ and annotated, with an introduction, by}%
+                      {ed.,\addabbrvspace trans\adddot\ \lbx@fromlang\finalandcomma\ and annot, with an introd., by}},
+  byeditortranfo   = {\ifbibliography{edited, translated \lbx@fromlang\finalandcomma\ and annotated, with a foreword, by}%
+                      {ed.,\addabbrvspace trans\adddot\ \lbx@fromlang\finalandcomma\ and annot, with a forew., by}},
+  byeditortranaf   = {\ifbibliography{edited, translated \lbx@fromlang\finalandcomma\ and annotated, with an afterword, by}%
+                      {ed.,\addabbrvspace trans\adddot\ \lbx@fromlang\finalandcomma\ and annot, with an afterw., by}},
+  bytranslatorco   = {\ifbibliography{translated \lbx@fromlang\ and commented by}%
+                      {trans\adddot\ \lbx@fromlang\ and comm\adddot\ by}},
+  bytranslatoran   = {\ifbibliography{translated \lbx@fromlang\ and annotated by}%
+                      {trans\adddot\ \lbx@fromlang\ and annot\adddot\ by}},
+  bytranslatorin   = {\ifbibliography{translated \lbx@fromlang, with an introduction, by}%
+                      {trans\adddot\ \lbx@fromlang, with an introd., by}},
+  bytranslatorfo   = {\ifbibliography{translated \lbx@fromlang, with a foreword, by}%
+                      {trans\adddot\ \lbx@fromlang, with a forew., by}},
+  bytranslatoraf   = {\ifbibliography{translated \lbx@fromlang, with an afterword, by}%
+                      {trans\adddot\ \lbx@fromlang, with an afterw., by}},
+  bytranslatorcoin = {\ifbibliography{translated \lbx@fromlang\ and commented, with an introduction, by}%
+                      {trans\adddot\ \lbx@fromlang\ and comm., with an introd., by}},
+  bytranslatorcofo = {\ifbibliography{translated \lbx@fromlang\ and commented, with a foreword, by}%
+                      {trans\adddot\ \lbx@fromlang\ and comm., with a forew., by}},
+  bytranslatorcoaf = {\ifbibliography{translated \lbx@fromlang\ and commented, with an afterword, by}%
+                      {trans\adddot\ \lbx@fromlang\ and comm., with an afterw., by}},
+  bytranslatoranin = {\ifbibliography{translated \lbx@fromlang\ and annotated, with an introduction, by}%
+                      {trans\adddot\ \lbx@fromlang\ and annot., with an introd., by}},
+  bytranslatoranfo = {\ifbibliography{translated \lbx@fromlang\ and annotated, with a foreword, by}%
+                      {trans\adddot\ \lbx@fromlang\ and annot., with a forew., by}},
+  bytranslatoranaf = {\ifbibliography{translated \lbx@fromlang\ and annotated, with an afterword, by}%
+                      {trans\adddot\ \lbx@fromlang\ and annot., with an afterw., by}},
+  and              = {\ifbibliography{and}{and}},
+  andothers        = {\ifbibliography{et\addabbrvspace al\adddot}{et\addabbrvspace al\adddot}},
+  andmore          = {\ifbibliography{et\addabbrvspace al\adddot}{et\addabbrvspace al\adddot}},
+  volume           = {\ifbibliography{volume}{vol\adddot}},
+  volumes          = {\ifbibliography{volumes}{vols\adddot}},
+  jourvol          = {\ifbibliography{volume}{vol\adddot}},
+  jourser          = {\ifbibliography{series}{ser\adddot}},
+  newseries        = {\ifbibliography{new series}{new ser\adddot}},
+  oldseries        = {\ifbibliography{old series}{old ser\adddot}},
+  edition          = {\ifbibliography{ed\adddot}{ed\adddot}},% Changed
+  reprint          = {\ifbibliography{reprint}{reprint}},% Changed
+  reprintof        = {\ifbibliography{reprint of}{repr\adddotspace of}},
+  reprintas        = {\ifbibliography{reprinted as}{repr\adddotspace as}},% Changed
+  page             = {\ifbibliography{page}{p\adddot}},
+  pages            = {\ifbibliography{pages}{pp\adddot}},
+  column           = {\ifbibliography{column}{col\adddot}},
+  columns          = {\ifbibliography{columns}{cols\adddot}},
+  line             = {\ifbibliography{line}{l\adddot}},
+  lines            = {\ifbibliography{lines}{ll\adddot}},
+  verse            = {\ifbibliography{verse}{v\adddot}},
+  verses           = {\ifbibliography{verses}{vv\adddot}},
+  section          = {\ifbibliography{section}{\S}},
+  sections         = {\ifbibliography{sections}{\S\S}},
+  paragraph        = {\ifbibliography{paragraph}{par\adddot}},
+  paragraphs       = {\ifbibliography{paragraphs}{par\adddot}},
+  in               = {\ifbibliography{in}{in}},
+  inseries         = {\ifbibliography{in}{in}},
+  ofseries         = {\ifbibliography{of}{of}},
+  number           = {\ifbibliography{number}{no\adddot}},
+  chapter          = {\ifbibliography{chapter}{chap\adddot}},
+  mathesis         = {\ifbibliography{Master's thesis}{MA\addabbrvspace thesis}},
+  phdthesis        = {\ifbibliography{PhD\addabbrvspace thesis}{PhD\addabbrvspace thesis}},
+  resreport        = {\ifbibliography{research report}{research rep\adddot}},
+  techreport       = {\ifbibliography{technical report}{tech\adddotspace rep\adddot}},
+  software         = {\ifbibliography{computer software}{comp\adddotspace software}},
+  datacd           = {\ifbibliography{CD-ROM}{CD-ROM}},
+  audiocd          = {\ifbibliography{audio CD}{audio CD}},
+  version          = {\ifbibliography{version}{version}},
+  url              = {\ifbibliography{address}{address}},
+  urlseen          = {\ifbibliography{accessed}{accessed}},% Changed
+  inpress          = {\ifbibliography{in press}{in press}},
+  submitted        = {\ifbibliography{submitted}{submitted}},
+  citedas          = {\ifbibliography{henceforth cited as}{henceforth cited as}},
+  thiscite         = {\ifbibliography{especially}{esp\adddot}},
+  seenote          = {\ifbibliography{see note}{see n\adddot}},
+  quotedin         = {\ifbibliography{quoted in}{qtd\adddotspace in}},
+  idem             = {\ifbibliography{idem}{idem}},
+  idemsm           = {\ifbibliography{idem}{idem}},
+  idemsf           = {\ifbibliography{eadem}{eadem}},
+  idemsn           = {\ifbibliography{idem}{idem}},
+  idempm           = {\ifbibliography{eidem}{eidem}},
+  idempf           = {\ifbibliography{eaedem}{eaedem}},
+  idempn           = {\ifbibliography{eadem}{eadem}},
+  idempp           = {\ifbibliography{eidem}{eidem}},
+  ibidem           = {\ifbibliography{ibidem}{ibid\adddot}},
+  opcit            = {\ifbibliography{op\adddotspace cit\adddot}{op\adddotspace cit\adddot}},
+  loccit           = {\ifbibliography{loc\adddotspace cit\adddot}{loc\adddotspace cit\adddot}},
+  confer           = {\ifbibliography{cf\adddot}{cf\adddot}},
+  sequens          = {\ifbibliography{sq\adddot}{sq\adddot}},
+  sequentes        = {\ifbibliography{sqq\adddot}{sqq\adddot}},
+  passim           = {\ifbibliography{passim}{pass\adddot}},
+  see              = {\ifbibliography{see}{see}},
+  seealso          = {\ifbibliography{see also}{see also}},
+  backrefpage      = {\ifbibliography{cited on page}{cit\adddotspace on p\adddot}},
+  backrefpages     = {\ifbibliography{cited on pages}{cit\adddotspace on pp\adddot}},
+  january          = {\ifbibliography{January}{Jan\adddot}},
+  february         = {\ifbibliography{February}{Feb\adddot}},
+  march            = {\ifbibliography{March}{Mar\adddot}},
+  april            = {\ifbibliography{April}{Apr\adddot}},
+  may              = {\ifbibliography{May}{May}},
+  june             = {\ifbibliography{June}{June}},
+  july             = {\ifbibliography{July}{July}},
+  august           = {\ifbibliography{August}{Aug\adddot}},
+  september        = {\ifbibliography{September}{Sept\adddot}},
+  october          = {\ifbibliography{October}{Oct\adddot}},
+  november         = {\ifbibliography{November}{Nov\adddot}},
+  december         = {\ifbibliography{December}{Dec\adddot}},
+  langamerican     = {\ifbibliography{American}{American}},
+  langbrazilian    = {\ifbibliography{Brazilian}{Brazilian}},
+  langdanish       = {\ifbibliography{Danish}{Danish}},
+  langdutch        = {\ifbibliography{Dutch}{Dutch}},
+  langenglish      = {\ifbibliography{English}{English}},
+  langfrench       = {\ifbibliography{French}{French}},
+  langgerman       = {\ifbibliography{German}{German}},
+  langgreek        = {\ifbibliography{Greek}{Greek}},
+  langitalian      = {\ifbibliography{Italian}{Italian}},
+  langlatin        = {\ifbibliography{Latin}{Latin}},
+  langnorwegian    = {\ifbibliography{Norwegian}{Norwegian}},
+  langportuguese   = {\ifbibliography{Portuguese}{Portuguese}},
+  langspanish      = {\ifbibliography{Spanish}{Spanish}},
+  langswedish      = {\ifbibliography{Swedish}{Swedish}},
+  fromamerican     = {\ifbibliography{from the American}{from the American}},
+  frombrazilian    = {\ifbibliography{from the Brazilian}{from the Brazilian}},
+  fromdanish       = {\ifbibliography{from the Danish}{from the Danish}},
+  fromdutch        = {\ifbibliography{from the Dutch}{from the Dutch}},
+  fromenglish      = {\ifbibliography{from the English}{from the English}},
+  fromfrench       = {\ifbibliography{from the French}{from the French}},
+  fromgerman       = {\ifbibliography{from the German}{from the German}},
+  fromgreek        = {\ifbibliography{from the Greek}{from the Greek}},
+  fromitalian      = {\ifbibliography{from the Italian}{from the Italian}},
+  fromlatin        = {\ifbibliography{from the Latin}{from the Latin}},
+  fromnorwegian    = {\ifbibliography{from the Norwegian}{from the Norwegian}},
+  fromportuguese   = {\ifbibliography{from the Portuguese}{from the Portuguese}},
+  fromspanish      = {\ifbibliography{from the Spanish}{from the Spanish}},
+  fromswedish      = {\ifbibliography{from the Swedish}{from the Swedish}},
+  countryde        = {\ifbibliography{Germany}{DE}},
+  countryeu        = {\ifbibliography{European Union}{EU}},
+  countryep        = {\ifbibliography{European Union}{EP}},
+  countryfr        = {\ifbibliography{France}{FR}},
+  countryuk        = {\ifbibliography{United Kingdom}{GB}},
+  countryus        = {\ifbibliography{United States of America}{US}},
+  patent           = {\ifbibliography{patent}{pat\adddot}},
+  patentde         = {\ifbibliography{German patent}{German pat\adddot}},
+  patenteu         = {\ifbibliography{European patent}{European pat\adddot}},
+  patentfr         = {\ifbibliography{French patent}{French pat\adddot}},
+  patentuk         = {\ifbibliography{British patent}{British pat\adddot}},
+  patentus         = {\ifbibliography{U.S\adddotspace patent}{U.S\adddotspace pat\adddot}},
+  patreq           = {\ifbibliography{patent request}{pat\adddot\ req\adddot}},
+  patreqde         = {\ifbibliography{German patent request}{German pat\adddot\ req\adddot}},
+  patreqeu         = {\ifbibliography{European patent request}{European pat\adddot\ req\adddot}},
+  patreqfr         = {\ifbibliography{French patent request}{French pat\adddot\ req\adddot}},
+  patrequk         = {\ifbibliography{British patent request}{British pat\adddot\ req\adddot}},
+  patrequs         = {\ifbibliography{U.S\adddotspace patent request}{U.S\adddotspace pat\adddot\ req\adddot}},
+  file             = {\ifbibliography{file}{file}},
+  library          = {\ifbibliography{library}{library}},
+  abstract         = {\ifbibliography{abstract}{abstract}},
+  annotation       = {\ifbibliography{annotations}{annotations}}
+}
+
+
+
+%%%% CONSTANTS %%%%%%%%%%%%%%%%%
+
+%Define comparison strings for entrysubtypes, authortypes, etc.
+
+\newcommand\subtypemag{magazine}
+\newcommand\subtypenewsp{newspaper}
+\newcommand\subtypeclassic{classic}
+\newcommand\subtypebiblical{biblical}
+\newcommand\subtypeearlybook{canon}
+\newcommand\subtypevideo{video}
+\newcommand\entrytypearchive{customa}
+\newcommand\subtypevolume{volume}
+\newcommand\subtypeonline{online}
+\newcommand\subtypedatabase{database}
+\newcommand\subtypeblog{blog}
+\newcommand\subtypelistmessage{listmessage}
+\newcommand\subtypebooklike{book}
+\newcommand\subtypepublicdocument{gov}
+\newcommand\authortypeanon{anonymous}
+\newcommand\authortypeunsure{anonymous?}
+\newcommand\authortyperedundant{redundant}
+\newcommand\authortypejournal{journal}
+\newcommand\subtypeintro{to}
+\newcommand\subtypeexcerpt{from}
+\newcommand\subtypenone{none}
+\newcommand\edtypecorp{corporate}
+\newcommand\entrytypeper{periodical}
+\newcommand\entrytypemanual{manual}
+\newcommand\entrytypecoll{collection}
+\newcommand\entrytypeproc{proceedings}
+\newcommand\entrytypereport{report}
+\newcommand\entrytypebooklet{booklet}
+\newcommand\entrytypemisc{misc}
+\newcommand\entrytypeonline{online}
+\newcommand\entrytypevideo{video}
+\newcommand\entrytypeaudio{audio}
+\newcommand\entrytypebookinbook{bookinbook}
+\newcommand\nameaddonpseud{pseudonym}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                          %
+%           BIBLIOGRAPHY DRIVERS           %
+%                                          %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%      ARTICLE      %%%%%%%%%%%%%%%%%%
+
+\DeclareBibliographyDriver{article}{%
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypenewsp}}%
+	{\addtocategory{footnoteonly}{\thefield{entrykey}}%
+	\addtocategory{innewspaper}{\thefield{entrykey}}}%
+	{\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypemag}}%
+		{\addtocategory{inmagazine}{\thefield{entrykey}}}%
+		{\relax}%
+	}%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\ifthenelse{\equal{\thefield{authortype}}{\authortypejournal}}%
+	{%Special case of journal as author: italicize author and suppress journal title
+		\printtext[journalasauthor]{\printnames[lastname]{author}}%
+		\setunit{\labelnamepunct}\newblock
+		\clearfield{journaltitle}\clearfield{journalsubtitle}}%
+	{\ifnameundef{author}
+		{\setunit{\addspace}}%
+		{\usebibmacro{author}%
+		\setunit{\labelnamepunct}\newblock}}%
+\iffieldundef{type}
+	{}%
+	{\printfield{type}%Needed here for certain government documents
+	\newunit}%
+\iffieldundef{title}
+	{\iffieldundef{titleaddon}
+		{\relax}%
+		{\usebibmacro{title}%
+		\newunit\newblock}}%
+	{\usebibmacro{title}%
+	\newunit\newblock}%
+%\printfield{version}%Is this of any use?
+%\newunit\newblock
+%\usebibmacro{byauthor}%
+%\newunit\newblock
+\iffieldundef{issuetitle}
+	{%Assume any editors go with the article, not the issue
+		\iffieldundef{title}
+			{\iffieldundef{titleaddon}
+				{\relax}% No article title--don't print the editors here after all
+				{\usebibmacro{bytranslator+others}%
+				\newunit\newblock
+				\usebibmacro{byeditor+others}%
+				\newunit\newblock}}%
+			{\usebibmacro{bytranslator+others}%
+			\newunit\newblock
+			\usebibmacro{byeditor+others}%
+			\newunit\newblock}}%
+	{%Else editors come after the ``in,'' and go with issue title
+		\usebibmacro{in:}}%
+	%Save all the location and subtype info for after the x-ref
+	\savefield{entrysubtype}{\childsubtype}%
+	\savefield{issuetitle}{\childissuetitle}\savefield{issuesubtitle}{\childsissueubtitle}%
+	\savefield{note}{\childnote}\savefield{series}{\childseries}%
+	\savefield{volume}{\childvolume}\savefield{number}{\childnumber}%
+	\savefield{issue}{\childissue}
+	\savefield{year}{\childyear}\savefield{date}{\childdate}%
+%Check for x-ref to periodical record
+\iffieldundef{xref}%
+	{%then no xref
+		\usebibmacro{journal+issuetitle}}%
+	{%else x-ref to the parent entry; the citecommands will pass parent data to the journal+issuetitle macro
+		\printtext{\unspace}%Just to force the unit punctutation before the xref
+		\iffootnote
+			{%then footnote routine in cbx file
+				\cbx@crosstoper{\thefield{xref}}}%
+			{%else bibliography routine here in bbx
+				\bbx@crosstoper{\thefield{xref}}}%
+	}%endifundef xref
+\newunit\newblock
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypemag}%
+	\OR\equal{\thefield{entrysubtype}}{\subtypenewsp}}%
+	{\setunit{\addcomma\addspace}}%
+	{\setunit{\bibpagespunct}}%
+\iftoggle{printpagerange}
+	{\printfield{pages}}%
+	{\relax}%Postnote will be printed instead of full page range
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%End of article driver
+
+
+%%%%%%      ARTWORK	     %%%%%%%%%%%%%%%%%%
+\DeclareBibliographyAlias{artwork}{customd}
+
+%%%%%%      AUDIO      %%%%%%
+%
+\DeclareBibliographyDriver{audio}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{author}%
+\setunit{\labelnamepunct}\newblock
+\usebibmacro{title}%
+\newunit
+\printfield{volume}%
+\newunit
+\iffieldundef{booktitle}
+	{}%
+	{\usebibmacro{in:}%
+	\printfield{booktitle}%
+	\newunit}%
+\printfield{eventtitle}%
+\setunit{\addcomma\addspace}%
+\printfield{venue}%
+\setunit{\addcomma\addspace}%
+\printeventdate%
+\newunit
+\printfield{note}%
+\newunit
+\printlist{organization}%
+\newunit
+\printlist{institution}%
+\newunit
+\printlist{publisher}%
+\newunit
+\printfield{howpublished}%
+\newunit
+\printfield{type}%
+\newunit
+\printfield{usera}%
+\newunit
+\printfield{userd}%
+\newunit
+\usebibmacro{date}%
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%end of audio driver
+
+%%%%%%      BOOK      %%%%%%
+
+\DeclareBibliographyDriver{book}{%
+%Sort out entrysubtypes
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeclassic}
+			\OR\equal{\thefield{entrysubtype}}{\subtypebiblical}}
+	{\usebibmacro{classic}}%
+	{\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeearlybook}}%
+		{\usebibmacro{earlybook}}%
+		{%else default book routine
+			\usebibmacro{bibindex}%
+			\usebibmacro{begentry}%
+			\printtext{}%Something wrong here. Seem to need this dummy print statement to prevent the setunit*, below, from printing its punctuation whenever there is no author/editor/translator
+			\usebibmacro{author/editor/translator}%
+			\setunit*{\labelnamepunct\addspace}\newblock
+			\usebibmacro{maintitle+title}%
+			\newunit
+			\usebibmacro{byauthor}%
+			\newunit
+			\usebibmacro{byeditor+others}%
+			\newunit\newblock
+			\printfield{edition}%
+			\newunit
+			\ifthenelse{\equal{\thefield{entrytype}}{\entrytypevideo}}%
+				{%then
+					\printfield{type}%
+					\newunit\newblock}%
+				{%else not a video
+					\relax}%
+			\iftoggle{printseriesflag}%Print series info only when appropriate option is set
+				{\usebibmacro{series+number}\newunit\newblock}%
+				{\relax}%
+			\printfield{note}%
+			\newunit\newblock
+			%Certain book-like entrytypes are also handled by this driver. Print their extra fields here
+			\ifthenelse
+				{\equal{\thefield{entrytype}}{\entrytypemanual}%
+				\OR
+				\equal{\thefield{entrytype}}{\entrytypebooklet}%
+				\OR
+				\equal{\thefield{entrytype}}{\entrytypemisc}%
+				\OR
+				\equal{\thefield{entrytype}}{\entrytypereport}}%
+				{%then
+					\printfield{type}%
+					\newunit
+					\printfield{version}%
+					\newunit
+					\printlist{organization}%
+					\newunit\newblock}%
+				{%else ordinary book
+					\relax}%
+			\iffootnote%
+				{\setunit{\addspace}%
+				\printtext{\bibleftparen}%
+				\usebibmacro{publisher+location+year}%
+				\printtext{\bibrightparen}}%
+				{\usebibmacro{publisher+location+year}%
+				\newunit\newblock
+				\printfield{userc}}%Special addendum for exhibit catalogs, in the bibliography only
+			\newunit\newblock
+			%Check for original publication data that may have to be added, depending on option
+			\iftoggle{addorigflag}%
+				{\usebibmacro{addoriginaledition}}%
+				{\iftoggle{addtransfromflag}%
+					{\usebibmacro{addtransfrom}}%
+					{\relax}}%
+			\newunit\newblock
+	%		\usebibmacro{chapter+pages}%
+	%		\newunit\newblock
+	% 	 \printfield{pagetotal}%
+	%	  \newunit\newblock
+	%	  \printfield{isbn}%
+	%	  \newunit\newblock
+			\newunit\newblock
+			\usebibmacro{onlinelocation}%
+			\newunit\newblock
+			\printfield{addendum}%
+			\usebibmacro{pageref}%
+			\usebibmacro{finentry}%
+		}%End else; end default book routine
+	}%
+}%End oF book driver
+
+%Subtype of Book for classics and other standard texts for which publication information is unimportant: footnotes only, no punctuation after author, and minimal publication information.
+\newbibmacro{classic}{%
+%Add key to footnoteonly category
+\addtocategory{footnoteonly}{\thefield{entrykey}}%
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebiblical}}
+	{\addtocategory{biblical}{\thefield{etnrykey}}}%
+	{\addtocategory{classic}{\thefield{entrykey}}}%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\iffootnote
+	{\ifnameundef{shortauthor}
+		{\usebibmacro{author/editor/translator}}%
+		{\printnames{shortauthor}}}%
+	{\usebibmacro{author/editor/translator}}%
+\setunit{\addspace}\newblock
+\iffootnote
+	{\iffieldundef{shorttitle}
+		{\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebiblical}}
+			{\printfield[noformat]{title}}%
+			{\usebibmacro{title}}}%
+		{\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebiblical}}
+			{\printfield[noformat]{shortitle}\isdot}%
+			{\printfield[title]{shorttitle}\isdot}}}%
+	{\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypebiblical}}
+		{\printfield[noformat]{title}}%
+		{\usebibmacro{title}}}%
+\setunit{\addspace}%
+\iffieldundef{edition}
+	{\relax}%
+	{\printtext[parens]{\printfield{edition}}%
+	\newunit}%
+\printfield{note}%Use note or series to identify edition, if necessary
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+%\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%end of macro; end of classic subtype of book
+
+%Special routine for entrysubtyp ``canon'' of book, for early English literature
+\newbibmacro{earlybook}{%
+%Add key to footnoteonly category
+\addtocategory{footnoteonly}{\thefield{entrykey}}%
+\addtocategory{canonical}{\thefield{entrykey}}%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\iffootnote
+	{\ifnameundef{shortauthor}
+		{\usebibmacro{author/editor/translator}}%
+		{\printnames{shortauthor}}}%
+	{\usebibmacro{author/editor/translator}}%
+\newunit\newblock
+\iffootnote
+	{\iffieldundef{shorttitle}
+		{\usebibmacro{title}}%
+		{\printfield[title]{shorttitle}\isdot}}%
+	{\usebibmacro{title}}%
+\setunit{\addspace}%
+\iffieldundef{edition}
+	{\relax}%
+	{\printtext[parens]{\printfield{edition}}}%
+\newunit\newblock
+\printfield{note}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+%\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%End earlybook macro
+
+
+%%%%%%      BOOKINBOOK      %%%%%%
+
+\DeclareBibliographyAlias{bookinbook}{inbook}
+
+
+%%%%%%      BOOKLET      %%%%%%
+
+\DeclareBibliographyAlias{booklet}{book}%
+
+%%%%%%      COLLECTION     %%%%%%%%%%%
+
+\DeclareBibliographyDriver{collection}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\ifthenelse{\equal{\thefield{editortype}}{\edtypecorp}}
+	{%then corporate editor of a proceedings: print without the editor string
+  		\printnames{editor}%
+		\clearname{editor}}%
+  	{%else personal editor: use usual editor routine
+		\usebibmacro{editor}}%
+\setunit{\labelnamepunct}\newblock
+\usebibmacro{maintitle+title}%
+\newunit\newblock
+\usebibmacro{getproceedingsfields}%
+\newunit
+\usebibmacro{byeditor+others}%
+\newunit\newblock
+\printfield{edition}%
+\newunit\newblock
+\iftoggle{printseriesflag}%Print series info only when appropriate option is set
+	{\usebibmacro{series+number}\newunit\newblock}%
+	{\relax}%
+\printfield{note}%
+\newunit\newblock
+\printfield{type}%
+\newunit
+\printfield{version}%
+\newunit\newblock
+\iffootnote%
+	{\setunit{\addspace}%
+	\printtext[parens]{\usebibmacro{publisher+location+year}}}%
+	{\usebibmacro{publisher+location+year}
+	\newunit\newblock
+	\printfield{userc}}%Special addendum for exhibit catalogs, in the bibliography only}%
+\newunit\newblock
+%Check for original publication data that may have to be added, depending on option
+\iftoggle{addorigflag}%
+	{\usebibmacro{addoriginaledition}}%
+	{\iftoggle{addtransfromflag}%
+		{\usebibmacro{addtransfrom}}%
+		{\relax}}%
+\newunit\newblock
+%\usebibmacro{chapter+pages}%
+% \newunit
+%  \printfield{pagetotal}
+%  \newunit\newblock
+%  \printfield{isbn}%
+%Print urls, etc., if appropriate option\subtype is set
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}% End of collection driver
+  
+
+%%%%%%      IMAGE	     %%%%%%%%%%%%%%%%%%
+
+\DeclareBibliographyAlias{image}{customd}
+
+%%%%%%      INBOOK      %%%%%%
+
+%Inbook. Similar to incollection, only with author instead of editor.
+\DeclareBibliographyDriver{inbook}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeearlybook}}
+	{\iffootnote
+		{\ifnameundef{shortauthor}
+			{\usebibmacro{author}}%
+			{\printnames{shortauthor}}}%
+		{\usebibmacro{author}}}%
+	{\usebibmacro{author}}%
+\savename{author}{\childauthor}%Need later, to compare with book author
+\setunit{\labelnamepunct}\newblock
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeearlybook}}
+	{\iffootnote
+		{\iffieldundef{shorttitle}
+		{\usebibmacro{title}}%
+		{\printfield[title]{shorttitle}\isdot}}%
+		{\usebibmacro{title}}}%
+	{\usebibmacro{title}}%
+\newunit\newblock
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypevolume}%
+	\OR\equal{\thefield{entrytype}}{\entrytypebookinbook}}%
+	{%then1 reference is to a volume of a larger work. Print volume number here and not at the end
+		\printfield{volume}\printfield{part}%
+		\clearfield{volume}\clearfield{part}\toggletrue{volumeprinted}
+		\clearfield{title}}%Clear title, too, to prevent repetition in maintitle+title macro
+	{%else1 
+		\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypevideo}}%
+			{%then2 Special case of a video that gets bookvolume-like formatting
+				\iffootnote
+					{\printfield[noformat]{volume}}%
+					{\printtext[noformat]{\MakeCapital{\thefield{volume}}}}%
+				\clearfield{volume}\toggletrue{volumeprinted}%
+			}%end then2
+			{%else2 default case: print chapter instead of volume (Turabian doesn't use chapter numbers; just throwing them in for compatibility)
+				\printfield{chapter}%
+			}%end else2, end subtypevideo test
+	}%end else1, end subtypevolume test 
+\newunit\newblock
+\usebibmacro{in:}%Macro modifed below for subtypes that need different prepositions
+%Now come the collection data, but where are they? Must distinguish four combinations of cases: in the current entry or in a crossreferenced book X in the footnotes or the bibliography
+%But first, save info to pass to parent record in case of x-reffing
+\savename{author}{\childauthor}%
+\savefield{pages}{\childpages}%
+\savefield{volume}{\childvolume}%
+\savefield{part}{\childpart}%
+\iffieldundef{xref}%
+	{%then no xref; get book info from current entry
+		\usebibmacro{getbookinfo}}%
+	{%else x-ref to the parent entry; the crosstocoll citecommands will then pass parent data to the bibmacro getbookinfo, below
+		\printtext{\unspace}%Just to force the unit punctutation before the xref
+		\iffootnote
+			{\cbx@crosstocoll{\thefield{xref}}}%
+			{\bbx@crosstocoll{\thefield{xref}}}%
+	}%endiffieldundef
+%Print rest of inbook data
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%End of inbook driver
+  
+
+    
+%%%%%%      INCOLLECTION     %%%%%%%
+
+%Incollection needs to be rearranged extensively to conform to Turabian/Chicago. Page numbers are also placed differently in notes and bibliographies.
+\DeclareBibliographyDriver{incollection}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypepublicdocument}}%
+	{\usebibmacro{author}}%
+	{\usebibmacro{author/editor/translator}}%
+\savename{author}{\childauthor}%Need later, to compare with book author
+\setunit{\labelnamepunct}\newblock
+\usebibmacro{title}%
+\newunit\newblock
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypevolume}}%
+	{\printfield{volume}\printfield{part}\toggletrue{volumeprinted}%
+	\clearfield{volume}\clearfield{part}%
+	\clearfield{title}}%So that booktitle+maintitle routine doesn't repeat it
+	{\printfield{chapter}}%Turabian doesn't give examples with chapter numbers; not sure it goes here
+%Save data for after the xref
+\savename{author}{\childauthor}%
+\savefield{pages}{\childpages}%
+\savefield{volume}{\childvolume}%
+\savefield{part}{\childpart}%
+\newunit\newblock
+\usebibmacro{in:}%
+%Now where are the collection data? Must distinguish four cases:
+%In the current entry or in a crossreferenced collection X in the footnotes or the bibliography
+%First check whether there is an x-ref to the collection
+\iffieldundef{xref}%
+	{%then no xref
+		\usebibmacro{getbookinfo}}%
+	{%else x-ref to the parent entry; the citecommands will pass parent data to the bibmacros getbookinfo, below
+		\printtext{\unspace}%Just to force the unit punctutation before the xref
+		\iffootnote
+			{\cbx@crosstocoll{\thefield{xref}}}%footnote routine in cbx file
+			{\bbx@crosstocoll{\thefield{xref}}}%bibliography routine here in bbx
+	}%endifundef
+%Print rest of incollection data
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%End incollection driver
+
+%%%%%%      INPROCEEDINGS      %%%%%%
+
+%Inproceedings are treated like incollections, even though they have some extra fields
+\DeclareBibliographyAlias{inproceedings}{incollection}%
+    
+%%%%%%      INREFERENCE     %%%%%%%
+
+\DeclareBibliographyDriver{inreference}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypepublicdocument}}%
+	{\usebibmacro{author}}%
+	{\usebibmacro{author/editor/translator}}%
+\setunit{\labelnamepunct}\newblock
+\usebibmacro{title}%
+\newunit\newblock
+%\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypevolume}}%
+%	{\printfield{volume}\printfield{part}\toggletrue{volumeprinted}%
+%	\clearfield{volume}\clearfield{part}%
+%	\clearfield{title}}%So that booktitle+maintitle routine doesn't repeat it
+%	{\printfield{chapter}}%Turabian doesn't give examples with chapter numbers; not sure it goes here
+%Save data for after the xref
+\savename{author}{\childauthor}%
+\savefield{pages}{\childpages}%
+\savefield{volume}{\childvolume}%
+\savefield{part}{\childpart}%
+\usebibmacro{in:}%
+%Now where are the collection data? Must distinguish four cases:
+%In the current entry or in a crossreferenced collection X footnotes or bibliography
+%First check whether there is an x-ref to the collection
+\iffieldundef{xref}%
+	{%then no xref
+		\usebibmacro{getbookinfo}}%
+	{%else x-ref to the parent entry; the citecommands will pass parent data to the bibmacros getbookinfo, below
+		\printtext{\unspace}%Just to force the unit punctutation before the xref
+		\iffootnote
+			{\cbx@crosstoref{\thefield{xref}}}%footnote routine in cbx file
+			{\bbx@crosstoref{\thefield{xref}}}%bibliography routine here in bbx
+	}%endiffieldundef
+%Print rest of inreference data
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%end inreference driver
+
+%%%%%%      JURISDICTION      %%%%%%%%%%%%%%%%%%
+
+\DeclareBibliographyDriver{jurisdiction}{%
+\addtocategory{footnoteonly}{\thefield{entrykey}}%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\printfield{type}%
+\newunit
+\usebibmacro{title}%
+\newunit\newblock
+\printfield{note}\isdot%
+\setunit{\addspace}%
+\printfield{pages}%
+\setunit{\addspace}%
+\printtext[parens]{%
+	\printlist{institution}\isdot%
+	\setunit{\addspace}%
+	\usebibmacro{date}}%
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%End jurisdiction driver
+
+%%%%%%      LEGAL      %%%%%%%%%%%%%%%%%%
+
+\DeclareBibliographyDriver{legal}{%
+\addtocategory{footnoteonly}{\thefield{entrykey}}%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\printfield{type}%
+\newunit
+\usebibmacro{title}%
+\newunit\newblock
+\printfield{note}\isdot%
+\usebibmacro{journal+issuetitle}%
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%End legal driver
+
+%%%%%%      LEGISLATION      %%%%%%
+
+\DeclareBibliographyDriver{legislation}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{author}%
+\setunit*{\labelnamepunct\addspace}\newblock
+\printfield{type}%
+\newunit
+\usebibmacro{title}%
+%\newunit
+%\usebibmacro{byauthor}%
+%\newunit
+%\usebibmacro{byeditor+others}%
+\newunit\newblock
+\printfield{edition}%
+\newunit
+%\iftoggle{printseriesflag}%Print series info only when appropriate option is set
+	{\usebibmacro{series+number}\newunit\newblock}%
+%	{\relax}%
+\iffootnote
+	{\iffieldundef{shortjournal}
+		{\printfield{journaltitle}
+		\setunit*{\addcolon\addspace}%
+		\printfield{journalsubtitle}}%
+		{\printfield{shortjournal}}%
+	}%
+	{\printfield{journaltitle}%
+	\setunit*{\addcolon\addspace}%
+	\printfield{journalsubtitle}}%
+\newunit\newblock
+\printfield{note}\isdot%
+\newunit\newblock
+%\iffieldundef{location}
+	{%Give facts of publication freeform
+		\printlist{institution}%
+		\setunit{\addcomma\addspace}%
+		\printlist{publisher}%
+		\setunit{\addcomma\addspace}%
+		\printfield{howpublished}
+		\setunit{\addcomma\addspace}%
+		\usebibmacro{date}}%
+%	{%Use lacation:publisher,year form
+%		\iffootnote%
+%			{\setunit{\addspace}%
+%			\printtext{\bibleftparen}%
+%			\usebibmacro{publisher+location+year}%
+%			\printtext{\bibrightparen}}%
+%			{\usebibmacro{publisher+location+year}%
+%			\newunit\newblock
+%			\printfield{userc}}}%
+\printfield{usera}%
+\newunit\newblock
+\printfield{userd}%
+\newunit\newblock
+\iffootnote
+	{\printfield[noformat]{volume}%
+	\printfield{part}}%
+	{\printfield{volume}%
+	\printfield{part}}%
+\iffieldundef{volume}
+	{\setunit{\addcomma\addspace}}%
+  	{\setunit{\bibpagespunct}}%
+\printfield{pages}%
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%End of legislation driver
+
+%%%%%%      LETTER      %%%%%%
+
+%For correspondence (archival or published) 
+\DeclareBibliographyDriver{letter}{%
+%Add key to footnoteonly category
+\addtocategory{footnoteonly}{\thefield{entrykey}}%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{author}%
+%Just in case, format for bibliography, too
+\iffootnote
+	{\relax}%
+	{\ifcitation
+		{\relax}%
+		{\setunit{\labelnamepunct}\newblock
+		\printnames[byauthor]{author}}}%Repeat name in bibliography
+%If there's a recipient in namec, print ``to namec''
+\setunit{\addspace\bibstring{letterto}\addspace}%
+\printnames{namec}%
+\setunit{\addcomma\addspace}%
+%\usebibmacro{title}%Shouldn't be needed for letters, except maybe if names are missing or uncertain
+%\setunit{\addcomma\addspace}%
+\printfield{type}%
+\setunit{\addcomma\addspace}%
+\printfield{venue}%
+\setunit{\addcomma\addspace}%
+\printfield{note}%
+\setunit{\addcomma\addspace}%
+\usebibmacro{date}%
+\newunit\newblock
+\iffieldundef{xref}%
+	{%then no xref; just print `in' and whatever is likely to be available customd
+		\iffieldundef{booktitle}
+			{\relax}%
+			{\usebibmacro{in:}%
+			\printfield[booktitle]{booktitle}
+			\setunit*{\addcomma\addspace}}%
+		\printfield{howpublished}%
+		\setunit*{\addcomma\addspace}%
+		\printlist{organization}%
+		\setunit*{\addcomma\addspace}%
+		\printlist{institution}%
+		\setunit*{\addcomma\addspace}}%
+	{%else x-ref to collection or customa and the getbookinfo macro
+	%(but only print `in' if the xref turns out to be to a collection)
+		%Save data for after the xref
+		\printtext{\unspace}%Just to force the unit punctutation before the xref
+		\savename{author}{\childauthor}%
+		\savefield{pages}{\childpages}%
+		\savefield{volume}{\childvolume}%
+		\savefield{part}{\childpart}%
+		\iffootnote%
+			{\cbx@crosstoarch{\thefield{xref}}}%
+			{\bbx@crosstoarch{\thefield{xref}}}%
+%		\restorefield{volume}{\childvolume}%
+%		\restorefield{part}{\childpart}%
+%		\restorefield{pages}{\childpages}%
+	}%endif
+\newunit\newblock
+\printfield{library}%
+\setunit{\addcomma\addspace}%
+\printfield{userd}%
+\newunit\newblock
+\iffootnote
+	{\usebibmacro{volume+pages}%
+	\newunit\newblock}%
+	{\relax}%
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%end letter driver
+
+%%%%%%      MANUAL      %%%%%%
+
+%Manuals are treated like books, even though they have some extra fields
+\DeclareBibliographyAlias{manual}{book}%
+
+%%%%%%      MISC      %%%%%%
+
+\DeclareBibliographyAlias{misc}{booklet}%
+  
+%%%%%%      MOVIE      %%%%%%
+
+% Currently not distinguished from performance
+
+\DeclareBibliographyAlias{movie}{performance}%
+
+%%%%%%      MUSIC      %%%%%%
+
+% Currently not distinguished from audio
+
+\DeclareBibliographyAlias{music}{audio}
+
+%%%%%%      ONLINE      %%%%%%
+
+\DeclareBibliographyDriver{online}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{author/editor/translator}%
+\setunit{\labelnamepunct}\newblock
+%Case of entrysubtypes
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeblog}}%
+	{%then blog entry by main author
+		\usebibmacro{blog}}%
+	{%else
+		\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypelistmessage}}
+			{%then e-mail to listserve
+				\usebibmacro{listmessage}}%
+			{%else default web site routine
+				\usebibmacro{title}%
+				\newunit\newblock
+				\usebibmacro{byeditor}%
+				\newunit\newblock
+				\printfield{version}%
+				\newunit
+				\usebibmacro{date}%
+				\newunit
+				\printfield{note}%
+				\newunit\newblock
+				\iffieldundef{booktitle}
+					{\relax}%
+					{\usebibmacro{in:}%
+					\printfield{booktitle}%
+					\newunit}%
+				\printlist{organization}%
+				\newunit
+				\printlist{institution}%
+				\newunit
+				\printlist{publisher}%
+				\newunit
+				\printfield{howpublished}%
+				\newunit
+				\printfield{type}%
+				\newunit
+				\printfield{usera}%
+				\newunit
+				\printfield{userd}%
+				\newunit\newblock
+			}%end else; end default web site routine
+	}%end case of entrysubtype
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%end online driver
+
+%Subroutine of online driver
+\newbibmacro{blog}{%
+\usebibmacro{title}%
+\newunit\newblock
+\printfield{type}%
+\setunit*{\addspace}%
+\bibstring{postedonline}\addspace
+\usebibmacro{date}%
+\newunit
+\printfield{note}%
+\newunit\newblock
+\printlist{organization}%
+\setunit{\addcomma\space}
+\printlist{institution}%
+\newunit
+\printfield{howpublished}%
+\newunit
+\printfield{usera}%
+\newunit\newblock
+%Add key to footnoteonly and blog categories
+\addtocategory{footnoteonly}{\thefield{entrykey}}%
+\addtocategory{blog}{\thefield{entrykey}}%
+}%end blog macro
+
+\newbibmacro{listmessage}{%
+%No special treatment for listserv messages, at least for the present
+}%end listmessage macro
+
+%%%%%%      PERFORMANCE     %%%%%%%%%%%%%%%%%%
+
+\DeclareBibliographyDriver{performance}{%
+%Add key to footnoteonly category
+\addtocategory{footnoteonly}{\thefield{entrykey}}%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{title}%
+\setunit{\addcomma\addspace\bibstring{byauthor}\addspace}%
+\printnames[byauthor]{author}%
+\setunit{\addcomma\addspace}%
+\printfield{type}%
+\setunit{\addcomma\addspace}%
+\printfield{note}%
+\setunit{\addcomma\addspace}%
+\printfield{venue}%
+\newunit
+\printlist{publisher}%
+\newunit
+\printfield{howpublished}%
+\setunit{\addcomma\addspace}%
+\usebibmacro{date}%
+\iffieldundef{origtitle}%
+	{\relax}%
+	{\setunit{\addspace\bibleftparen}%
+	\printfield{origtitle}%
+	\setunit*{\addspace}%
+	\printorigdate
+	\bibrightparen}%
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%end performance driver
+  
+%%%%%%      PERIODICAL      %%%%%%
+
+\DeclareBibliographyDriver{periodical}{%
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypenewsp}}%
+	{\addtocategory{newspaper}{\thefield{entrykey}}}%
+	{\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypemag}}%
+		{\addtocategory{magazine}{\thefield{entrykey}}}%
+		{\relax}}%
+\usebibmacro{bibindex}%
+\iffieldundef{editor}
+	{\setunit{\addspace}}%
+	{\usebibmacro{editor}%
+	\setunit{\labelnamepunct}\newblock}%
+\usebibmacro{title+issuetitle}%
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+%\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%end periodical driver
+
+%%%%%%      PROCEEDINGS      %%%%%%
+
+%Proceedings are treated like collections, even though they have some extra fields
+\DeclareBibliographyAlias{proceedings}{collection}%
+
+%%%%%%      REFERENCE     %%%%%%%%%%%
+
+\DeclareBibliographyDriver{reference}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\iffootnote
+	{%Footnote routine: just title and edition
+		\usebibmacro{getreferenceinfo}%
+	}%End of footnote routine
+	{%Bibliography--not normally used, but implemented just in case
+	%Use same routine as for incollection after the ``in''--prints title first
+		\savefield{pages}{\childpages}%Overwrite variables to avoid interference between entries
+		\savefield{volume}{\childvolume}%
+		\savefield{part}{\childpart}%
+		\usebibmacro{getbookinfo}%
+		\newunit\newblock
+		\usebibmacro{onlinelocation}%
+	}%Endif, end of bibliography routine
+\newunit\newblock
+\printfield{addendum}%
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}% End of refernece driver
+  
+\newbibmacro{getreferenceinfo}{%
+\usebibmacro{maintitle+title}%
+\newunit\newblock
+\printfield{edition}%
+\newunit\newblock
+\printfield{note}%
+}%End getreferenceinfo
+
+%%%%%%      REPORT      %%%%%%
+
+%Reports are treated like books, even though they have some extra fields
+\DeclareBibliographyAlias{report}{book}%
+  
+%%%%%%      THESIS      %%%%%%
+
+\DeclareBibliographyDriver{thesis}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{author}%
+\setunit{\labelnamepunct}\newblock
+\iffieldundef{title}
+	{\iffieldundef{titleaddon}
+		{\relax}%
+		{\usebibmacro{title}}}%
+	{\usebibmacro{title}}%
+\iffieldundef{note}
+	{\relax}
+	{\newunit\newblock
+	\printfield{note}}%
+\iffootnote
+	{%then footnote environment: open parentheses
+		\setunit{\addspace\bibleftparen}}%
+    {%else bibliography environmemt: just start a new unit
+    		\newunit}%
+\printfield{type}\isdot%
+\setunit{\addcomma\space}%Yes, comma here, even in bibliography
+\printlist{institution}%
+\setunit*{\addcomma\addspace}%
+\usebibmacro{year}%
+%\iffieldundef{year}
+%	{\bibstring{nodate}}%
+%	{\printfield{year}}%
+\iffootnote
+	{%then footnote environment: close parentheses
+		\printtext{\bibrightparen}\setunit{\addspace}}%
+    {%else bibliography environmemt: just start a new block
+    		\newunit\newblock}%
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%End thesis driver
+
+%%%%%%      UNPUBLISHED      %%%%%%
+
+%For unpublished sources, such as conference presentations or drafts: a little more structure and extra fields than in biblatex standard; note field before howpublished; in footnotes for conference papers, location, sponsorship and date go in parentheses
+\DeclareBibliographyDriver{unpublished}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{author/editor/translator}%
+\setunit{\labelnamepunct}\newblock
+\iffieldundef{title}
+	{\iffieldundef{titleaddon}
+		{\relax}%
+		{\usebibmacro{title}}}%
+	{\usebibmacro{title}}%
+\iffieldundef{note}
+	{\relax}
+	{\newunit\newblock
+	\printfield{note}}%
+\iffootnote
+	{%then footnote environment: open parentheses
+		\setunit{\addspace\bibleftparen}}%
+    {%else bibliography environmemt: just start a new unit
+    		\newunit}%
+\printfield{type}%
+\setunit*{\addcomma\space}%Yes, comma here, even in bibliography
+\printfield{howpublished}%
+\setunit*{\addcomma\addspace}%
+\printfield[title]{eventtitle}%
+\setunit*{\addcomma\addspace}%
+\printlist{organization}%
+\setunit*{\addcomma\addspace}
+\printfield{venue}%
+\setunit*{\addcomma\addspace}%
+%Just one date; no separate eventdate
+\usebibmacro{date}%
+\iffootnote
+	{%then footnote environment: close parentheses
+		\setunit{\unspace}\printtext{\bibrightparen}}%
+    {%else bibliography environmemt: just start a new block
+    		\newunit\newblock
+    }%endif
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%End unpublished driver
+
+%%%%%%      VIDEO	     %%%%%%%%%%%%%%%%%%
+
+\DeclareBibliographyDriver{video}{%
+%Sort out entrysubtypes
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{author}%
+\setunit*{\labelnamepunct\addspace}\newblock
+\usebibmacro{maintitle+title}%
+\newunit
+\printfield{edition}%
+\printfield{type}%
+\newunit\newblock
+\printfield{note}%
+\newunit\newblock
+\printfield[noformat]{volume}%In case of multiple discs or cassettes in a set
+\iffieldundef{booktitle}%
+	{%then
+		\relax}%
+	{%else print title of the set
+		\usebibmacro{in:}%
+		\printfield{booktitle}%
+		\newunit\newblock}%
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeonline}}%
+	{%Unstructured formatting of publishing info for online multimedia
+		\printlist{organization}%
+		\newunit
+		\printlist{institution}%
+		\newunit
+		\printlist{publisher}%
+		\newunit
+		\printfield{howpublished}%	
+		\newunit
+		\printfield{usera}%
+		\newunit
+		\printfield{userd}}%End online routine
+	{%Else use booklike location:publisher format
+		\iffootnote%
+			{%then in parentheses
+				\setunit{\addspace}%
+				\printtext{\bibleftparen}%
+				\usebibmacro{publisher+location+year}%
+				\printtext{\bibrightparen}}%
+			{%else without parentheses
+				\usebibmacro{publisher+location+year}}%
+	}%End if; end publisher/location info
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%end video driver    
+  
+%%%%%%      CUSTOMA       %%%%%%
+
+%Custom entry type for archival collections
+\DeclareBibliographyDriver{customa}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{author}%Prints nameaddon and labelnamepunct, too
+\usebibmacro{getcustomainfo}%
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%End customa driver
+
+%Common formatting routine for customa and crossreferences to customa
+\newbibmacro{getcustomainfo}{%
+\printfield{title}%
+\newunit\newblock
+\printfield{note}%
+\newunit\newblock
+\printlist{organization}%
+\setunit{\addcomma\space}
+\printlist{institution}%
+\setunit{\addcomma\space}
+\printfield{library}%
+\setunit{\addcomma\space}%
+\printlist{location}%
+\newunit
+\printfield{type}%
+\newunit
+\printfield{usera}%
+\newunit\newblock
+\usebibmacro{onlinelocation}%
+\newunit\newblock
+\printfield{addendum}%
+}%end getcustomainfo
+
+%%%%%%      CUSTOMD      %%%%%%
+
+%Custom entrytype D for archival documents (quasi `inarchive' or `incustoma') 
+\DeclareBibliographyDriver{customd}{%
+%Add key to footnoteonly category
+\addtocategory{footnoteonly}{\thefield{entrykey}}%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{author}%
+\setunit{\labelnamepunct}\newblock
+\usebibmacro{title}%
+\clearfield{title}\clearfield{subtitle}\clearfield{titleaddon}%
+\setunit{\addspace}%
+\printnames{namec}% Needed for the occasional letter, interview
+\setunit{\addcomma\addspace}%
+\printfield{type}%
+\setunit{\addcomma\addspace}%
+\printfield{venue}%
+\setunit{\addcomma\addspace}%
+\printfield{note}%
+\setunit{\addcomma\addspace}%
+\usebibmacro{date}%
+\newunit\newblock
+\iffieldundef{xref}%
+	{%then no xref; just print what's likely to be available in the customd
+		\iffieldundef{booktitle}
+			{\relax}%
+			{\usebibmacro{in:}%
+			\printfield[booktitle]{booktitle}%
+			\setunit*{\addcomma\addspace}}% 
+		\printfield{howpublished}%
+%		\setunit*{\addcomma\addspace}%
+%		\printfield[title]{eventtitle}% Is this of any use?
+		\setunit*{\addcomma\addspace}%
+		\printlist{organization}%
+		\setunit*{\addcomma\addspace}%
+		\printlist{institution}%
+		\setunit*{\addcomma\addspace}
+		\printfield{library}%
+		\setunit*{\addcomma\addspace}%
+		\printfield{userd}%
+		\newunit\newblock
+		\usebibmacro{volume+pages}
+		\unspace}%
+	{%else x-ref to collection or customa or online
+		\printtext{\unspace}%Just to force the unit punctutation before the xref
+		%Save page range for bibliography
+			\savefield{pages}{\childpages}%
+			\savefield{volume}{\childvolume}%
+			\savefield{part}{\childpart}%
+		\iffootnote
+			{\cbx@crosstoarch{\thefield{xref}}}%
+			{\bbx@crosstoarch{\thefield{xref}}}%
+		\newunit\newblock
+		\printfield{library}%
+		\setunit*{\addcomma\addspace}%
+		\printfield{userd}%
+		\newunit\newblock
+		\iffootnote
+			{\usebibmacro{volume+pages}}%
+			{\relax}%Volume and pages already printed in getbookinfo routine
+	}%endif
+\newunit\newblock
+\iffootnote
+	{\usebibmacro{onlinelocation}}%
+	{\relax}%Urls from parent record already printed
+\newunit\newblock
+\printfield{addendum}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\usebibmacro{finentry}%
+}%end customd driver
+
+%%%%%	CUSTOMD AS FALLBACK TYPE		%%%%%
+
+\DeclareBibliographyAlias{*}{customd}
+  
+%%%%%      OTHER TYPES, NOT EXPLICITLY SUPPORTED      %%%%%%
+
+\DeclareBibliographyAlias{review}{article}
+\DeclareBibliographyAlias{suppbook}{inbook}
+\DeclareBibliographyAlias{suppcollection}{incollection}
+\DeclareBibliographyAlias{suppperiodical}{article}
+
+% Patent
+
+%%%%%	SUBROUTINES	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Generalized routine for publishing data from all the book-like entrytypes.
+\newbibmacro*{publisher+location+year}{%
+%Check whether the entry is a reprint (i.e., whether it has ``orig'' data)
+\usebibmacro{reprinttest}%
+%(New unit has been set in the subroutine)
+%Print location, publisher, and year
+\usebibmacro{printlocation}%
+\ifpunctmark{?}
+	{\setunit{:\addspace}}%
+	{\setunit{\addcolon\addspace}}%
+\iflistundef{publisher}
+	{%then use institution instead of publisher
+		\iflistundef{institution}
+			{%then no institution either; try howpublished
+				\iffieldundef{howpublished}
+					{%then no publishing data available
+						\iflistundef{location}
+							{\relax}%``np'' already printed
+							{\bibstring{nopub}}}%
+					{%else use howpublished field
+						\printfield{howpublished}}}%
+			{%else institution instead of publisher
+				\printlist{institution}}}%
+	{%else use publisher field and ignore howpublished and institution
+		\printlist{publisher}}%
+\setunit*{\addcomma\addspace}%
+%\iffieldundef{year}
+%	{\printtext{\bibstring{nodate}}}%
+%	{\printfield{year}}%
+\usebibmacro{year}%
+}%end publisher+location+year
+
+\newbibmacro{reprinttest}{%
+\toggletrue{origdataflag}%
+\iffieldundef{origyear}%
+	{%then no origyear
+		\iflistundef{origlocation}%
+			{%then no origyear or origlocation
+				\iflistundef{origpublisher}
+					{%then not enough orig data for default reprint routine
+						\iffieldundef{origtitle}%
+							{%then not enough orig data for the other options, either
+								\togglefalse{origdataflag}}%
+							{%else
+								\relax}}%
+					{%else origpublisher, but no location; entry can still be a reprint
+						\usebibmacro{reprintorigfirst}}}%
+			{%else origlocation but no origyear; entry can still be a reprint
+				\usebibmacro{reprintorigfirst}}}%
+	{%else At least origyear available; entry is a reprint
+			\usebibmacro{reprintorigfirst}}%
+}%
+
+\newbibmacro{reprintorigfirst}{%
+\iftoggle{addorigflag}
+	{%then original data will be added later
+		\relax}%
+	{%else
+		\iftoggle{addtransfromflag}
+			{%then original data of a translation will be added later
+				\relax}%
+			{%else default reprint routine: print original data first
+				\printlist{origlocation}%
+					\iflistundef{origpublisher}
+						{\setunit*{\addcomma\addspace}}%
+						{\setunit*{\addcolon\addspace}%
+						\printlist{origpublisher}%
+						\setunit*{\addcomma\addspace}}%
+				\iffieldundef{origyear}
+					{\bibstring{nodate}}%
+					{\printorigdate}%
+				\iffootnote
+					{%then Footnote environment: use semicolon and abbreviation
+						\addsemicolon\addspace\bibstring{reprint}}%
+					{%else bibliography: use newunitpunct and long bibstring
+						\newunit\bibstring{reprint}}%
+				\setunit{\addcomma\addspace}
+			}%End else
+	}%End else
+}%End macro
+
+\newbibmacro{addoriginaledition}{%
+%Check whether original data were entered
+\iftoggle{origdataflag}
+	{%Then1 introduce orig data with appropriate string
+		\iffieldundef{origtitle}
+			{%then2 without origtitle
+				\iffootnote
+					{\bibstring{origedition}}%
+					{\bibstring{origeditionbib}}%
+				\setunit*{\addcomma\addspace}%
+				\printlist{origlocation}%
+				\setunit*{\addcomma\addspace}%
+				\printorigdate}%
+			{%else2 with origtitle
+				\iffootnote
+					{\bibstring{origeditiontitled}}%
+					{\bibstring{origeditiontitledbib}}%
+				\setunit{\addcomma\addspace}
+				\printfield[title]{origtitle}\addspace%
+				\iflistundef{origlocation}
+					{\mkbibparens{\printorigdate}}%
+					{\printtext[parens]%
+						{\printlist{origlocation}%
+						\setunit*{\addcomma\addspace}%
+						\printorigdate}}%
+			}%end else2
+	}%End then1
+	{%Else1 nothing to print
+		\relax}%
+}%End macro
+
+\newbibmacro{addtransfrom}{%
+%Check whether original data were entered
+\iftoggle{origdataflag}
+	{%Then1 introduce orig data with appropriate string
+		\iffieldundef{origtitle}
+			{%then2 without origtitle
+				\iffootnote
+					{\bibstring{origedition}}%
+					{\bibstring{origeditionbib}}%
+				\setunit{\addcomma\addspace}%
+				\printlist{origlocation}%
+				\setunit*{\addcomma\addspace}%
+				\printorigdate}%
+			{%else2 with origtitle
+				\iffootnote
+					{\bibstring{translatedfromtitle}}%
+					{\bibstring{translatedfromtitlebib}}%
+				\setunit{\addspace}%
+				\printfield[title]{origtitle}\addspace%
+				\iflistundef{origlocation}
+					{\mkbibparens{\printorigdate}}%
+					{\printtext[parens]%
+						{\printlist{origlocation}%
+						\setunit*{\addcomma\addspace}%
+						\printorigdate}}%
+			}%end else2
+	}%End then1
+	{%Else1 nothing to print
+		\relax}%
+}%End macro
+
+\newbibmacro{printlocation}{%
+\iflistundef{location}
+	{\bibstring{noplace}}%
+	{\printlist{location}\isdot}%
+}%
+
+\newbibmacro{onlinelocation}{%
+\ifthenelse
+	{\equal{\thefield{entrysubtype}}{\subtypeonline}%
+	\OR 
+	\equal{\thefield{entrytype}}{\entrytypeonline}}%
+	{%then override the option settings
+		\printfield{doi}%
+		\newunit\newblock%
+		\usebibmacro{eprint}%
+		\newunit\newblock%
+		\iffieldundef{url}%
+			{\relax}%
+			{\usebibmacro{url+urldate}}}%
+	{%else standard routine for online locators
+		\usebibmacro{doi+eprint+url}%
+	}%end ifthenelse
+}%end of macro
+
+
+
+%For adding book data to an inbook, incollection, or other subordinate record. (One central routine, for any combination of entrytypes.)
+\newbibmacro{getbookinfo}{%
+	\usebibmacro{bibindex}%
+	%Find the right book-level title format
+	\usebibmacro{getbooktitle}%
+	%Special fields from entrytypes proceedings or inproceedings
+	\usebibmacro{getproceedingsfields}%
+	\newunit\newblock
+	%Now find all the book-level authors and editors
+	\usebibmacro{getbookauthoreditor}%
+	\newunit
+	%Check whether the book is part of a multivolume set
+	\iffieldundef{maintitle}
+		{\relax}%
+		{\usebibmacro{getmultivolumeinfo}}%
+	\setunit{\addcomma\addspace}%
+	\iffootnote
+		{\relax}%Pages will come from the postnote field
+		{%restore child's volume and page range and print in bibliography
+			\restorefield{pages}{\childpages}%
+			\restorefield{volume}{\childvolume}%
+			\restorefield{part}{\childpart}%
+			\usebibmacro{volume+pages}}%
+	\newunit\newblock
+	\printfield{edition}%
+	\newunit\newblock
+	\iftoggle{printseriesflag}
+		{\usebibmacro{series+number}\newunit\newblock}%
+		{\relax}%
+	\printfield{note}%
+	\newunit\newblock
+	\printfield{type}%
+	\newunit
+	\printfield{version}%
+	\newunit\newblock
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeearlybook}}
+		{\relax}%No publishing data for early English literature
+		{\iffootnote%
+			{\setunit{\addspace}%
+			\printtext{\bibleftparen}%
+			\usebibmacro{publisher+location+year}%
+			\printtext{\bibrightparen}}%
+			{\usebibmacro{publisher+location+year}}%
+		}%
+	%Get rid of blanks in subtype ``canon''
+	\unspace
+}%end macro
+
+%Choose appropriate book-title routine for incollection-like entries
+\newbibmacro{getbooktitle}{%
+\iffieldundef{booktitle}
+	{%No booktitle, so current entry must be collection or book-like, crossreferenced by an incollection or other child (or, possibly, a bookinbook or incollection of subtype volume, using maintitle instead of booktitle)
+		\usebibmacro{maintitle+title}%
+		\toggletrue{maintitleprinted}}%Prevents repetition later, in case of multivolume sets
+	{%There's a booktitle. Check whether it is different from the title
+		\iffieldsequal{booktitle}{title}
+			{%No distinct booktitle after all; again, current entry must be a collection or other parent entrytype
+				\usebibmacro{maintitle+title}}%
+			{%Distinct title and booktitle, so must be an incollection or other child entrytype
+				\usebibmacro{maintitle+booktitle}}%
+	}%endif
+}%end macro
+
+\newbibmacro{getbookauthoreditor}{%
+	\iffieldundef{bookauthor}
+		{%then1 No bookauthor in current record; either it's not an inbook or there's no distinct part author. Check whether current author is different from saved author from the inbook record
+			\ifnameequals{author}{\childauthor}%
+				{%then2 no need to print the same name again
+					\relax}%
+				{%else2 current record is the book and has a different overall author from the inbook
+					\setunit{\addcomma\addspace\bibstring{byline}\addspace}%
+					\printnames[byauthor]{author}%
+				}%end else2, end ifnameequals
+		}%end then1
+		{%else1 current record has a book author; must be an inbook. Print the bookauthor if distinct from the part author (the bybookauthor macro will compare)
+			\setunit{\addspace\bibstring{byline}\addspace}%
+			\usebibmacro{bybookauthor}%
+		}%end else1, end iffieldundef
+	\setunit{\addcomma\addspace}%
+	\usebibmacro{byeditor+others}%
+}%end macro
+
+\newbibmacro{getarchiveinfo}{%
+\usebibmacro{bibindex}%
+%\usebibmacro{in:}%
+\ifthenelse{\equal{\thefield{entrytype}}{\entrytypearchive}}%
+	{%Then archive: print name of collection, first name first, then use main archive routine
+		\printnames[byeditor]{author}%
+		\setunit{\addspace}%
+		\printfield{nameaddon}%
+		\usebibmacro{getcustomainfo}}%End main archive routine
+	{%Else not an archive
+		\ifthenelse{\equal{\thefield{entrytype}}{\entrytypeonline}}%
+			{%Then it's an online database
+				\usebibmacro{title}%
+				\newunit\newblock
+				\usebibmacro{byeditor}%
+				\newunit\newblock
+				\printfield{note}%
+				\newunit\newblock
+				\printlist{organization}%
+				\newunit\newblock
+				\iftoggle{xrefflag}
+					{\relax}%
+					{\usebibmacro{onlinelocation}
+					\newunit\newblock}%
+				\printfield{addendum}%
+			}%
+			{%Else use collection routine
+				\usebibmacro{getbookinfo}}%
+	}%Endif
+}%End macro getarchiveinfo
+
+%For multivolume works, give total no. of volumes only when work as a whole is cited.
+\renewbibmacro*{maintitle+title}{%
+\iffieldsequal{maintitle}{title}
+	{%Then maintitle superfluous
+		\clearfield{maintitle}\clearfield{mainsubtitle}\clearfield{maintitleaddon}}%
+	{\relax}%
+\iffieldundef{maintitle}
+	{%Then there's only one title--but is it a volume or an entire work?
+		\usebibmacro{title}%
+		\newunit
+		\iffieldundef{volume}
+			{%Then: no volume number, so must be an entire work. Give no. of volumes
+				\iftoggle{volumeprinted}
+					{%exception for subtype volume after x-ref
+						\relax}%
+					{\printfield{volumes}}}%
+  			{%Else: a volume no. is specified, so give the volume- and part numbers
+				\printfield{volume}\printfield{part}}%
+	}%end then
+	{%Else: Distinct maintitle and volume title, so give both, with volume- and part no. in between
+	\usebibmacro{maintitle}%
+	\newunit\newblock
+	\iffieldundef{volume}
+		{\relax}%
+	  	{\printfield{volume}\printfield{part}%
+		\setunit{\addcolon\space}}%
+	\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeearlybook}}
+		{\iffootnote
+			{\iffieldundef{shorttitle}
+			{\usebibmacro{title}}%
+			{\printfield[title]{shorttitle}\isdot}}%
+			{\usebibmacro{title}}}%
+		{\usebibmacro{title}}%
+	}%Endif
+}%end macro
+
+%Same as above, but for inbook and incollection, when the item is in a multivolume work.
+\renewbibmacro*{maintitle+booktitle}{%
+\iffieldsequal{maintitle}{booktitle}
+	{\clearfield{maintitle}%
+     \clearfield{mainsubtitle}%
+     \clearfield{maintitleaddon}}%
+    {\iffieldundef{maintitle}
+    		{%Then: only one title--but is reference to a volume or the whole work?	
+			\usebibmacro{booktitle}%
+			\iffootnote
+				{\setunit{\addspace}%
+				\printfield[parens]{userb}}%
+				{\newunit
+				\printfield{userb}}%
+			\newunit
+			\iffieldundef{volume}
+				{%Then: no volume number, so must be an independent work
+					\printfield{volumes}}%
+				{%Else: volume specified, so give the volume- and part numbers
+					\ifthenelse
+					{\equal{\thefield{entrytype}}{\entrytypecoll}%
+					\OR
+					\equal{\thefield{entrytype}}{\entrytypeproc}%
+					}%
+						{\printfield{volume}\printfield{part}%
+						\clearfield{volume}\clearfield{part}}%
+						{\relax}%
+				}%
+		}%endthen
+     {%Else: Separate maintitle and volume title, so give  volume title here. Maintitle will come after the editor
+		\usebibmacro{booktitle}%
+			\iffootnote
+				{\setunit{\addspace}%
+				\printfield[parens]{userb}}%
+				{\newunit
+				\printfield{userb}}%
+	 }%Endif
+ }%Endif
+}%end macro
+
+\newbibmacro{getproceedingsfields}{%
+%For now, they will be printed whenever they are present--no test for entrytype
+\ifthenelse{\equal{\thefield{editortype}}{\edtypecorp}}
+	{%then corporate editor already printed and organization redundant
+  		\relax}%
+  	{%else print the name of the organization
+		\printlist{organization}}%
+\setunit{\addcomma\addspace}%
+\printfield{eventtitle}%
+\setunit{\addcomma\addspace}%
+\printfield{venue}%
+\setunit{\addcomma\addspace}%
+\printeventdate%
+}%end macro
+
+\newbibmacro{getmultivolumeinfo}{%
+\iffieldundef{volume}
+	{\setunit{\newunitpunct\addspace\bibstring{in}\addspace}}%
+	{\printfield{volume}%
+	\printfield{part}%
+	\setunit{\addspace\bibstring{volumeof}\addspace}%
+	\toggletrue{volumeprinted}}%
+\iftoggle{maintitleprinted}
+	{\relax}%
+	{\usebibmacro{maintitle}}%
+\usebibmacro{collectioneditor}%CHANGE Switch to new editor/editortypes
+}%end nmacro
+
+%Put in city for newspapers, but print it in Roman
+\renewbibmacro*{journal}{%
+\iffieldundef{journaltitle}
+	{%then
+		\relax}%
+	{%else
+		\printtext[noformat]
+			{\printfield[journaltitle]{journaltitle}%
+			\setunit{\subtitlepunct}%
+			\printfield[journaltitle]{journalsubtitle}
+			\iflistundef{location}
+				{\relax}%
+				{\setunit{\addspace}
+				\printtext{\bibleftparen}
+				\unspace
+      		 	\printlist[location]{location}
+				\unspace\printtext{\bibrightparen}
+				}%end iflistundef
+			\unspace
+			}%end printtext
+	}% end iffieldundef
+}%end renewbibmacro
+	
+%For entrytype periodical: adjust punctuation
+\renewbibmacro*{title+issuetitle}{%
+\iffieldundef{issuetitle}
+	{}%
+	{\usebibmacro{issue}%
+	\setunit{\addcomma\addspace}%
+	\usebibmacro{byeditor+others}%
+	\newunit}%
+\iffieldundef{note}
+	{}%
+	{\printfield{note}%
+	\setunit{\addcomma\addspace}}%
+\usebibmacro{periodical}%
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypemag}%
+			\OR
+			\equal{\thefield{entrysubtype}}{\subtypenewsp}}%
+	{\newunit
+	\usebibmacro{issue+date-mag}}%
+	{\iffieldundef{series}
+		{\setunit*{\addspace}}%
+		{\setunit{\addcomma\addspace}
+		\printfield{series}%
+		\setunit{\addcomma\addspace}}%
+	\setunit{\addcomma\addspace}%
+	\printfield{volume}%
+	\iffieldnum{number}
+		{\setunit{\addcomma\addspace\bibstring{number}\addspace}}%
+		{\iffieldnums{number}
+			{\setunit{\addcomma\addspace\bibstring{numbers}\addspace}}
+			{\relax}}%
+	\printfield{number}%
+	\setunit{\addspace}%
+	\usebibmacro{issue+date}%
+	}%
+}%
+
+% Get rid of period between journal volume and issue number and use bibstring for ``no.'' instead. Also insert commas before and after series
+\renewbibmacro*{journal+issuetitle}{%
+%Restore any location data from the child (aritcle) record that is undefined in the parent (periodical). 
+\iffieldundef{issuetitle}
+	{\restorefield{issuetitle}{\childissuetitle}%
+	\restorefield{issuesubtitle}{\childissuesubtitle}}%
+	{\relax}%
+\iffieldundef{issuetitle}
+	{\relax}%
+	{\usebibmacro{issue}%Prints issuetitle
+	\setunit{\addcomma\addspace}%
+	\usebibmacro{bytranslator+others}%Use translator and editors from parent record in any case
+    \setunit{\addcomma\addspace}%
+	\usebibmacro{byeditor+others}
+	\newunit}%
+\iffieldundef{note}
+	{\restorefield{note}{\childnote}}%
+	{\relax}%
+\iffieldundef{note}
+	{\relax}%
+	{\printfield{note}%
+	\setunit{\addcomma\addspace}}%
+\ifthenelse{\equal{\thefield{entrytype}}{\entrytypeper}}%
+	{\usebibmacro{periodical}}%
+	{\usebibmacro{journal}}%
+\setunit{\addcomma\addspace}%
+\iffieldundef{entrysubtype}%
+	{\restorefield{entrysubtype}{\childsubtype}}%
+	{\relax}%
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypemag}%
+	\OR \equal{\thefield{entrysubtype}}{\subtypenewsp}}%
+	{%Then cite magazines and newspapers by date, without parens
+		\usebibmacro{issue+date-mag}}%
+	{%Else default routine, with parens
+		\iffieldundef{series}
+			{\restorefield{series}{\childseries}}%
+			{\relax}%
+		\iffieldundef{series}
+			{\setunit*{\addspace}}%
+			{\setunit{\addcomma\addspace}%
+			\printfield{series}%
+			\setunit{\addcomma\addspace}}%
+		\iffieldundef{volume}
+			{\restorefield{volume}{\childvolume}}%
+			{\relax}%
+		\printfield{volume}%
+		\iffieldundef{number}
+			{\restorefield{number}{\childnumber}}%
+			{\relax}%
+		\iffieldnum{number}
+			{\setunit{\addcomma\addspace\bibstring{number}\addspace}}%
+			{\iffieldnums{number}
+				{\setunit{\addcomma\addspace\bibstring{numbers}\addspace}}%
+				{\relax}}%
+		\printfield{number}%
+		\setunit{\addspace}%
+		\iffieldundef{issue}
+			{\restorefield{issue}{\childissue}}%
+			{\relax}%
+		\iffieldundef{year}
+			{\restorefield{year}{\childyear}}%
+			{\relax}%
+		\iffieldundef{date}
+			{\restorefield{date}{\childdate}}%
+			{\relax}%
+		\usebibmacro{issue+date}%
+	}%
+}%
+
+\newbibmacro*{issue+date-mag}{%
+	\printtext[noformat]{%Get rid of parens
+		\iffieldundef{issue}
+			{\usebibmacro{date}}%
+			{\printfield{issue}%
+			\setunit{\addspace}%
+			\usebibmacro{year}}%
+		\newunit}%
+}%end macro
+
+%Insert ``no.'' before number of a book in a series
+\renewbibmacro*{series+number}{%
+	\printfield{series}%
+	\iffieldundef{number}
+  		{\relax}%
+		{\addcomma\addspace\bibstring{number}\addspace\printfield{number}}%
+}%end macro
+
+%Get rid of colon before booktitle in incollection and allow other prepositions, depending on subtype
+\renewbibmacro*{in:}{%
+\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeintro}}%
+	{%Then1:`to' instead of `in'
+		\setunit{\addspace\bibstring{introto}\addspace}}%
+	{%Else1
+		\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeexcerpt}}%
+			{%Then2 ``from''
+				\setunit{\addspace\bibstring{excerptfrom}\addspace}}%
+			{%Else2
+				\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypevolume}%
+					\OR\equal{\thefield{entrytype}}{\entrytypebookinbook}}%
+					{%Then3 ``volume...of''
+						\setunit{\addspace\bibstring{volumeof}\addspace}}%
+					{%Else3
+						\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypenone}%
+							\or {\equal{\thefield{entrysubtype}}{\subtypemag}}%
+							\or {\equal{\thefield{entrytype}}{\entrytypearchive}}%
+							\or {\equal{\thefield{entrysubtype}}{\subtypenewsp}}%
+							\or {\equal{\thefield{entrysubtype}}{\subtypevideo}}%
+							\or {\equal{\thefield{entrytype}}{\entrytypeonline}}%
+							\or {\equal{\thefield{entrytype}}{\entrytypeaudio}}%
+							\or {\equal{\thefield{entrysubtype}}{\subtypeearlybook}}}%
+							{%Then4 no linking preposition at all
+								\relax}%
+							{%Else4 check for special case after an xref
+								\iftoggle{xrefflag}
+									{%Then5 have to capitalize manually in bibliography
+										\ifbibliography
+											{\bibcpstring{in}\addspace}%
+											{\bibstring{in}\addspace}}%
+									{%else5 default ``in''
+										\bibstring{in}\addspace%
+									}%end else5
+							}%end else4
+					}%end else3
+			}%end else2
+	}%end else1
+}%end macro in:
+  
+%Standard routine for titles. 
+\renewbibmacro*{title}{%
+%Substitute shorttitle where required
+\iffootnote
+	{\iffieldundef{shorttitle}
+		{\relax}%
+		{\iftoggle{useshorttitles}
+			{%then shorttitle option is set: replace title with shorttitle
+				\clearfield{title}\clearfield{subtitle}%
+				\savefield{shorttitle}{\temptitle}%
+				\restorefield{title}{\temptitle}}%
+			{%else check entrysubtype
+				\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypeearlybook}}
+					{%Use shorttitles here, too
+						\clearfield{title}\clearfield{subtitle}%
+						\savefield{shorttitle}{\temptitle}%
+						\restorefield{title}{\temptitle}}%
+					{\relax}%
+			}%end iftoggle
+		}%end iffeldundef
+	}%end then, end footnote routine		
+	{\relax}% No shorttitles in bibliography
+\iffieldundef{title}%
+	{%then print titleaddon even without title (e.g. for describing untitled works), without preceding punctuation
+		\printfield{titleaddon}%
+		\setunit{\addspace}%
+		\printfield{usera}}%Special use of usera for year of anthologized article
+  	{%else both title and titleaddon
+		\ifthenelse{\equal{\thefield{entrysubtype}}{\subtypevolume}
+			\OR\equal{\thefield{entrysubtype}}{\subtypepublicdocument}
+			\OR\equal{\thefield{entrytype}}{\entrytypebookinbook}}%
+			{%then special case, when incollection/inbook is a whole volume or a government document whose title needs to be italicized
+				\printtext[volumetitle]{%
+				\printfield[noformat]{title}\isdot%
+				\setunit*{\subtitlepunct}%
+				\printfield[noformat]{subtitle}}%
+			}%end then, end subtype volume
+			{%else Other subtypes without italics
+				\printtext[title]{%
+					\printfield[noformat]{title}\isdot%
+					\setunit*{\subtitlepunct}%
+					\printfield[noformat]{subtitle}}%
+			}%end ifthenelse
+		\setunit*{\addspace}%
+		\printfield[brackets]{usere}%
+		\newunit
+		\printfield{titleaddon}\isdot%
+		\iffootnote
+			{\setunit{\addspace}%
+			\printfield[parens]{usera}}%
+			{\newunit
+			\printfield{usera}}%
+	}%end else, end iffieldundef
+}%end macro
+
+%Also print maintitleaddon even without title, and capitalize in bib
+\renewbibmacro*{maintitle}{%
+\iffieldundef{maintitle}%
+	{%then
+		\iffootnote%
+			{%then
+				\printfield{maintitleaddon}}%
+			{%else
+				\printfield[capitalize]{maintitleaddon}%
+			}%endif
+	}%end then
+	{%else
+		\printtext[maintitle]{%
+			\printfield[noformat]{maintitle}%
+			\setunit{\subtitlepunct}%
+			\printfield[noformat]{mainsubtitle}}%
+	}%end if
+	\newunit
+	\iffootnote%
+		{%then
+			\printfield{maintitleaddon}}%
+		{%else
+			\printfield[capitalize]{maintitleaddon}%
+		}%endif
+}%end macro
+ 
+ %Handling anonymous/uncertain authorship
+ %And a preliminary implementation of Nameaddon
+\renewbibmacro*{author}{%
+\ifthenelse{\ifuseauthor\AND\NOT\ifnameundef{author}}
+	{\ifthenelse{\iffieldequals{namehash}{\bbx@lasthash}\AND\NOT\iffirstonpage}
+		{\toggletrue{namedashflag}}%
+		{\togglefalse{namedashflag}%
+		\savefield{namehash}{\bbx@lasthash}}%
+	\iftoggle{useshortauthors}
+		{\iffootnote%
+			{\savename{shortauthor}{\tempauthor}
+			\restorename{author}{\tempauthor}}%
+			{\relax}}%
+		{\relax}%
+	\usebibmacro{authortype+nameaddon}}%
+{\global\undef\bbx@lasthash}}%
+
+\newbibmacro{authortype+nameaddon}{%
+\ifuseauthor
+	{%then check for anonymous, but known, authorship
+		\ifthenelse{\equal{\thefield{authortype}}{\authortypeanon}}
+			{%then anonymous author goes in brackets; usual punctuation outside brackets
+				\iftoggle{namedashflag}
+					{%then dash in place of name in bibliography
+						\mkbibbrackets{\bibnamedash}}%
+					{%else use name as usual
+						\mkbibbrackets{\printnames{author}}}%
+			}%
+			{%else check for uncertain authorship
+				\ifthenelse{\equal{\thefield{authortype}}{\authortypeunsure}}
+					{%then question mark in brackets; usual punctuation outside brackets
+						\iftoggle{namedashflag}
+							{\mkbibbrackets{\bibnamedash\addquestion}}%
+							{\mkbibbrackets{\printnames{author}\addquestion}}%
+					}%
+					{%else no brackets; check for redundant author and suppress in footnotes
+						\ifthenelse {\equal{\thefield{authortype}}{\authortyperedundant}}
+							{%then
+								\iffootnote
+									{%then don't print redundant author in footnote
+										\relax}%
+									{%else print author or dashes in bibliography, even if redundant
+										\iftoggle{namedashflag}
+											{\bibnamedash}%
+											{\printnames{author}}%
+									}%
+							}%end then
+							{%else authortype not redundant, just print as usual
+								\iftoggle{namedashflag}
+									{\bibnamedash}%
+									{\unspace%Why is this necessary?
+									\printnames{author}}%
+						}%
+				}%endif
+		}%endif
+	\iffieldundef{nameaddon}
+		{\relax}%
+		{\setunit*{\addspace}%
+		\printfield{nameaddon}
+		\iffootnote
+			{\ifpunctmark{.}{\isdot}{\relax}}%
+			{\relax}%
+		\setunit*{\labelnamepunct\addspace}%
+		}%
+	}%
+    {%else Author not in use
+    	\relax}%
+}%end of macro
+    
+\newbibmacro*{volume+pages}{%
+\iftoggle{volumeprinted}
+	{\setunit{\addcomma\addspace}}%
+	{\printfield[noformat]{volume}%
+	\printfield{part}%
+	\iffieldundef{volume}
+		{\setunit{\addcomma\addspace}}%
+  		{\setunit{\bibpagespunct}}}%
+\printfield{pages}%
+}%
+
+%Custom field for general editor of a collection containing an edited collection
+%Needed when there is both a booktitle and a maintitle. The editora/b/c fields all go with the booktitle. Here nameb goes with the maintitle.
+\newbibmacro{collectioneditor}{%
+\iffieldundef{namebtype}
+	{%no descriptor in nametype field; use bibstring
+%		\iffootnote
+%			{\setunit{\addcomma\addspace\bibstring{byeditor}\addspace}}%
+%			{\setunit{\addcomma\addspace\bibstring{byeditorbib}\addspace}}%
+		\setunit{\addcomma\addspace\bibstring{byeditor}\addspace}%
+		}%
+	{%Get descriptor from nametype
+		\setunit{\addcomma\addspace\thefield{namebtype}\addspace}}%
+\printnames{nameb}%
+}%
+
+% Makeshift implementation of pubstate
+\renewbibmacro*{date}{%
+	\ifthenelse{\iffieldundef{date}
+		\AND\iffieldundef{year}}%
+		{%then 
+			\iffieldundef{pubstate}%
+				{%then nothing available: insert `n.d.'
+					\printtext{\bibstring{nodate}}}%
+				{%else'substitute pubstate for date
+					\printfield{pubstate}}}%
+		{%else use the standard date routine
+			\printdate}%
+	}% end macro date
+\newbibmacro*{year}{%
+	\iffieldundef{year}%
+		{%then 
+			\iffieldundef{pubstate}%
+				{%then nothing available: insert `n.d.'
+					\printtext{\bibstring{nodate}}}%
+				{%else'substitute pubstate for date
+					\printfield{pubstate}}}%
+		{%else print the year
+			\printfield{year}}%
+	}% end macro year
+	
+	
+%%%%%%%%  BIBLIOGRAPHY TWEAKS %%%%%%%%%%%%%%%%%%
+
+%When author names repeat, Turabian calls for eight underlines and a period, instead of biblatex's dashes
+\renewcommand*{\bibnamedash}{%
+%  \ifdim\leftmargin<0.75em
+%    \mbox{\textemdash\space}%
+%  \else
+%    \makebox[\leftmargin][l]{%
+%      \ifdim\leftmargin<1.25em
+%        \textendash
+%      \else
+%        \textemdash
+%      \fi}%
+%  \fi
+%\rule[0pt]{8ex}{.5pt}\unspace
+\bibstring{namedash}
+  }
+
+%%%%%	ANNOTATED BIBLIOGRAPHIES (new in v. 0.2)
+
+\newbibmacro*{entrytail}{%
+  \newunit
+  \printtext{\unspace}%Just to force unit punctuation before indentannote environment
+  \begingroup
+  \ifbool{bbx:annotation}
+    {%
+    \begin{indentannote}
+    		\usebibmacro{annotation}%
+		\finentry
+	\end{indentannote}
+	}%
+    {\finentry}%
+  \endgroup}
+
+\renewbibmacro*{finentry}{%
+  \iffootnote
+    {\relax}%No annotations in the footnotes
+    {\ifcitation
+		{\finentry}%Annotations in cite commands in the main text are handled in the cbx file
+		{\usebibmacro{entrytail}}%Bibliography envrionment: annotate if options are set
+    }%
+  }%
+
+
+
+\endinput

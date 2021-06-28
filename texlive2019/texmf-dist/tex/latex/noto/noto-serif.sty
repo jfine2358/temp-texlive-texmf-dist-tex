@@ -1,0 +1,146 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{noto-serif}
+    [2019/03/15 (Bob Tennent)  Supports NotoSerif fonts for all LaTeX engines.]
+
+\RequirePackage{ifxetex,ifluatex,xkeyval,textcomp}
+
+\newif\ifnotoserif@otf 
+\ifxetex
+  \notoserif@otftrue
+\else\ifluatex
+  \notoserif@otftrue
+\else  % [pdf]LaTeX
+  \notoserif@otffalse
+\fi\fi
+
+\newcommand*{\NotoSerif@scale}{1}
+\DeclareOptionX{scaled}{\renewcommand*{\NotoSerif@scale}{#1}}
+\DeclareOptionX{scale}{\renewcommand*{\NotoSerif@scale}{#1}}
+
+
+\DeclareOptionX{sfdefault}{}
+\DeclareOptionX{type1}{\notoserif@otffalse}
+
+
+\newif\ifnotoserif@oldstyle \notoserif@oldstylefalse
+\newif\ifnotoserif@proportional \notoserif@proportionalfalse
+
+\DeclareOptionX{lining}{\notoserif@oldstylefalse}
+\DeclareOptionX{lf}{\notoserif@oldstylefalse}
+\DeclareOptionX{tabular}{\notoserif@proportionalfalse}
+\DeclareOptionX{tf}{\notoserif@proportionalfalse}
+\DeclareOptionX{proportional}{\notoserif@proportionaltrue}
+\DeclareOptionX{pf}{\notoserif@proportionaltrue}
+\DeclareOptionX{oldstyle}{\notoserif@oldstyletrue}
+\DeclareOptionX{osf}{\notoserif@oldstyletrue}
+
+\newif\ifnotoserif@thin \notoserif@thinfalse
+\newif\ifnotoserif@extralight \notoserif@extralightfalse
+\newif\ifnotoserif@light \notoserif@lightfalse
+\newif\ifnotoserif@medium \notoserif@mediumfalse
+\newif\ifnotoserif@semibold \notoserif@semiboldfalse
+\newif\ifnotoserif@extrabold \notoserif@extraboldfalse
+\newif\ifnotoserif@black \notoserif@blackfalse
+
+\DeclareOptionX{thin}{\notoserif@thintrue}
+\DeclareOptionX{extralight}{\notoserif@extralighttrue}
+\DeclareOptionX{light}{\notoserif@lighttrue}
+\DeclareOptionX{regular}{\notoserif@lightfalse\notoserif@thinfalse\notoserif@extralightfalse\notoserif@mediumfalse}
+\DeclareOptionX{medium}{\notoserif@mediumtrue}
+\DeclareOptionX{semibold}{\notoserif@semiboldtrue}
+\DeclareOptionX{extrabold}{\notoserif@extraboldtrue}
+\DeclareOptionX{black}{\notoserif@blacktrue}
+\DeclareOptionX{bold}{\notoserif@blackfalse\notoserif@semiboldfalse\notoserif@extraboldfalse}
+
+
+\ProcessOptionsX\relax
+
+\ifnotoserif@otf
+  \def\notoserif@boldstyle{Bold}
+  \ifnotoserif@semibold\def\notoserif@boldstyle{SemiBold}\fi
+  \ifnotoserif@extrabold\def\notoserif@boldstyle{ExtraBold}\fi
+  \ifnotoserif@black\def\notoserif@boldstyle{Black}\fi
+  \def\notoserif@regstyle{Regular}
+  \ifnotoserif@thin\def\notoserif@regstyle{Thin}\fi
+  \ifnotoserif@extralight\def\notoserif@regstyle{ExtraLight}\fi
+  \ifnotoserif@light\def\notoserif@regstyle{Light}\fi
+  \ifnotoserif@medium\def\notoserif@regstyle{Medium}\fi
+
+\else % type1
+  \def\bfseries@rm{b}
+  \ifnotoserif@semibold\def\bfseries@rm{sb}\fi
+  \ifnotoserif@extrabold\def\bfseries@rm{eb}\fi
+  \ifnotoserif@black\def\bfseries@rm{k}\fi
+  \def\mdseries@rm{m}
+  \ifnotoserif@thin\def\mdseries@rm{t}\fi
+  \ifnotoserif@extralight\def\mdseries@rm{el}\fi
+  \ifnotoserif@light\def\mdseries@sf{l}\def\mdseries@rm{l}\fi
+  \ifnotoserif@medium\def\mdseries@rm{mb}\fi
+  \def\seriesdefault{\mdseries@rm}
+  
+\fi
+
+\ifnotoserif@otf
+  
+  \def\notoserif@figurestyle{Lining}
+  \ifnotoserif@oldstyle\def\notoserif@figurestyle{OldStyle}\fi
+  \def\notoserif@figurealign{Monospaced}
+  \ifnotoserif@proportional\def\notoserif@figurealign{Proportional}\fi
+
+\else % type1
+
+  \def\notoserif@figurestyle{LF}
+  \ifnotoserif@oldstyle\def\notoserif@figurestyle{OsF}\fi
+  \def\notoserif@figurealign{T}
+  \ifnotoserif@proportional\def\notoserif@figurealign{}\fi
+
+\fi
+
+\ifnotoserif@otf
+  \RequirePackage{fontspec}
+\else
+  \RequirePackage{fontenc,fontaxes,mweights}
+  \fa@naming@exception{figures}{{superior}{proportional}}{Sup}
+  \fa@naming@exception{figures}{{superior}{tabular}}{Sup}
+  \def\sufigures{\@nomath\sufigures
+      \fontfigurestyle{superior}\selectfont}
+  \DeclareTextFontCommand{\textsu}{\sufigures}
+  \let\textsuperior\textsu
+\fi
+
+\ifnotoserif@otf
+  \def\notoserif@regular{Regular}
+  \ifxetex\XeTeXtracingfonts=1\fi
+  \defaultfontfeatures{
+        Ligatures = TeX ,
+        Scale     = \NotoSerif@scale ,
+        Extension = .otf }
+     \setmainfont 
+        [ UprightFont    = *-\notoserif@regstyle ,
+          ItalicFont     = *-\ifx\notoserif@regstyle\notoserif@regular
+                               Italic
+                               \else\notoserif@regstyle Italic\fi ,
+          BoldFont       = *-\notoserif@boldstyle , 
+          BoldItalicFont = *-\notoserif@boldstyle Italic ]
+        {NotoSerif}
+  \newfontfamily\notoserif
+        [ UprightFont    = *-\notoserif@regstyle ,
+          ItalicFont     = *-\ifx\notoserif@regstyle\notoserif@regular
+                               Italic
+                               \else\notoserif@regstyle Italic\fi ,
+          BoldFont       = *-\notoserif@boldstyle , 
+          BoldItalicFont = *-\notoserif@boldstyle Italic ]
+        {NotoSerif}
+\else % type1
+  \def\notoseriffamily{NotoSerif-\notoserif@figurealign\notoserif@figurestyle}
+  \newcommand*\notoserif{\fontfamily{\notoseriffamily}\selectfont}
+  \def\rmdefault{\notoseriffamily} 
+\fi
+
+
+\ifnotoserif@otf
+  % turn off defaults in case other fonts are selected:
+  \defaultfontfeatures{}
+\fi
+
+\endinput

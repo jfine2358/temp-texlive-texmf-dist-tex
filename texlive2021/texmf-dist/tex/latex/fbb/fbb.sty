@@ -1,0 +1,187 @@
+%% fbb.sty
+%%
+\NeedsTeXFormat{LaTeX2e}
+
+\def\fileversion{1.16}
+\def\filedate{2020/07/01}
+\ProvidesPackage{fbb}[\filedate\space v\fileversion\space Style file for fbb fonts.]
+
+\message{`fbb' v\fileversion, \filedate\space Text macros for fbb, a Bembo-like font family (msharpe)}
+
+\RequirePackage[LY1,T1]{fontenc}
+\RequirePackage{textcomp}
+\RequirePackage{ifetex}
+\ifetex\RequirePackage{etoolbox}\fi %etoolbox loads etex.sty
+\RequirePackage{xstring,ifthen} % for \textfrac
+\RequirePackage{mweights}
+\IfFileExists{fontaxes.sty}{
+    \RequirePackage{fontaxes}
+    \DeclareRobustCommand\swshape{\not@math@alphabet\swshape\relax
+        \fontprimaryshape\itdefault\fontsecondaryshape\swdefault\selectfont}
+    \fa@naming@exception{shape}{{n}{sw}}{nw}
+    \fa@naming@exception{shape}{{it}{sw}}{sw}\fa@naming@exception{figures}{{superior}{proportional}}{Sup}
+    \fa@naming@exception{figures}{{superior}{tabular}}{Sup}
+    \fa@naming@exception{figures}{{inferior}{proportional}}{Inf}
+    \fa@naming@exception{figures}{{inferior}{tabular}}{Inf}
+    \def\supfigures{\@nomath\supfigures
+        \fontfigurestyle{superior}\selectfont}
+    \let\sufigures\supfigures
+    \DeclareTextFontCommand{\textsup}{\supfigures}
+    \let\textsu\textsup
+    \let\textsuperior\textsup
+    \def\inffigures{\@nomath\inffigures
+        \fontfigurestyle{inferior}\selectfont}
+    \let\infigures\inffigures
+    \DeclareTextFontCommand{\textinf}{\inffigures}
+    \let\textin\textinf
+    \let\textinferior\textinf
+%    \providecommand*{\textfrac}[3][\fbb@raisefrac]{%
+%    \leavevmode\raise ##1 \hbox{\textsu{##2}\kern \fbb@foresolidus \textfractionsolidus\kern \fbb@aftsolidus \textin{##3}}}
+%    \def\@makefnmark{\hbox{\textsu{\@thefnmark}}}
+}{}
+\def\textde#1{\leavevmode\raise .188em \hbox{\textin{#1}}} % aligned with baseline
+\newcommand{\textfrac}[3][]{% like \textfrac[1]{7}{8}
+  \mbox{%
+    \ifthenelse{\not\equal{#1}{}}%Test for integer portion [optional #1]
+      {\textlf{#1}\kern.05em}{}%         
+    \textsu{#2}% numerator
+    \StrRight{#2}{1}[\@digit@]%
+    % look for  1, 2, 3, 4, 7
+    \ifcase\@digit@% 0
+    \or% 1
+    \or\kern.03em% 2
+    \or\kern-.02em% 3
+    \or\kern-.01em% 4
+    \or\kern.01em% 5
+    \or\kern.02em% 6
+    \or\kern-.09em% 7
+    \fi%
+    \kern\fbb@foresolidus\textfractionsolidus\kern\fbb@aftsolidus%
+    \StrLeft{#3}{1}[\@digit@]%
+    % look for 1, 4, 5, 7
+    \ifcase\@digit@% 0
+    \or\kern -.02em% 1
+    \or\kern .01em% 2
+    \or% 3
+    \or\kern -.08em% 4
+    \or\kern -.01em% 5
+    \or\kern -.03em% 6
+    \or\kern .04em% 7
+    \fi%
+    \textde{#3}%       denominator [#3]
+  }%
+}
+
+\newcommand*{\fbb@scale}{1}
+\RequirePackage{xkeyval}
+\DeclareOptionX{scale}{\renewcommand*{\fbb@scale}{#1}}
+\DeclareOptionX{scaled}{\renewcommand*{\fbb@scale}{#1}}
+
+\let\orig@footnote=\thefootnote
+\let\orig@makefnmark=\@makefnmark
+\def\bfseries@rm{b}
+\def\mdseries@rm{m}
+\def\useosf{\edef\fbb@figurestyle{OsF}}
+\@onlypreamble\useosf
+\def\useproportional{\edef\fbb@figurealign{}}
+\@onlypreamble\useproportional
+%\newif\iffbb@babel
+%\ifdefined\bbl@tempa \fbb@babeltrue\fi
+%\ifetex\else\fbb@babeltrue\fi
+\def\fbb@@swashQ{}
+\newif\if@fbb@sups
+\newif\if@fbb@scosf
+\def\fbb@altP{} % should be empty or P
+\def\fbb@foresolidus{.04em}
+\def\fbb@aftsolidus{0em}
+\def\fbb@raisefrac{.111em}
+\DeclareOptionX{foresolidus}{\gdef\fbb@foresolidus{#1}}
+\DeclareOptionX{aftsolidus}{\gdef\fbb@aftsolidus{#1}}
+\DeclareOptionX{raisefrac}{\gdef\fbb@raisefrac{#1}}
+\DeclareOptionX{altP}{\xdef\fbb@altP{P}}
+\DeclareOptionX{swashQ}{\edef\fbb@@swashQ{-swash}}
+\DeclareOptionX{lining}{\edef\fbb@figurestyle{LF}}
+\DeclareOptionX{oldstyle}{\useosf}
+\DeclareOptionX{osf}{\useosf}
+\DeclareOptionX{tabular}{\edef\fbb@figurealign{T}}
+\DeclareOptionX{p}{\useproportional}
+\DeclareOptionX{proportional}{\useproportional}
+\DeclareOptionX{sups}{\@fbb@supstrue}
+\DeclareOptionX{scosf}{\@fbb@scosftrue}
+\ExecuteOptionsX{lining,tabular}
+\ProcessOptionsX\relax
+
+\DeclareTextCommand{\textcircled}{TS1}[1]{\hmode@bgroup
+   \ooalign{%
+      \hfil \raise .39ex\hbox {\fontencoding{T1}\fontseries{m}\fontshape{sc}\fontsize{7.5}{9}\selectfont \lowercase{#1}}\hfil \crcr
+     \textbigcircle   % bigcircle
+   }%
+ \egroup}
+
+\renewcommand*{\rmdefault}{fbb-TLF}
+%\def\usetosf{\edef\fbb@figurestyle{OsF}\edef\fbb@figurealign{T}%
+%%  \AtEndPreamble{\renewcommand*{\rmdefault}{fbb-TOsF}}
+%}
+%\@onlypreamble\usetosf
+
+\DeclareRobustCommand{\lfstyle}{%
+  \not@math@alphabet\lfstyle\relax
+  \fontfamily{fbb-LF}\selectfont %
+}% to get lf
+\DeclareRobustCommand{\tlfstyle}{%
+  \not@math@alphabet\tlfstyle\relax
+  \fontfamily{fbb-TLF}\selectfont %
+}% to get tlf
+\DeclareRobustCommand{\osfstyle}{%
+  \not@math@alphabet\osfstyle\relax
+  \fontfamily{fbb-OsF}\selectfont %
+}% to get osf
+\DeclareRobustCommand{\tosfstyle}{%
+  \not@math@alphabet\tosfstyle\relax
+  \fontfamily{fbb-TOsF}\selectfont %
+}% to get tosf
+\DeclareRobustCommand{\textlf}[1]{%
+  {\lfstyle #1}%
+}% to get lf
+\DeclareRobustCommand{\texttlf}[1]{%
+  {\tlfstyle #1}%
+}% to get tlf
+\DeclareRobustCommand{\textosf}[1]{%
+  {\osfstyle #1}%
+}% to get osf
+\DeclareRobustCommand{\texttosf}[1]{%
+  {\tosfstyle #1}%
+}% to get tosf
+\if@fbb@scosf %
+\DeclareRobustCommand{\textsc}[1]{%
+{\fontfamily{fbb-\fbb@figurealign OsF}\fontshape{sc}\selectfont #1}%
+}\fi
+
+\newcommand{\Qswash}{{\fontencoding{TS1}\fontfamily{fbb-LF}\selectfont \char59 }}
+\newcommand{\Qnoswash}{{\fontencoding{TS1}\fontfamily{fbb-LF}\selectfont \char58 }}
+
+\renewcommand*{\familydefault}{\rmdefault}
+\if@fbb@sups %
+ \ifdefined\sufigures
+  \def\f@@tn@te{footnote}
+  \def\@makefnmark{%
+    \ifx\@mpfn\f@@tn@te%
+      \ifx\thefootnote\orig@footnote%
+        \hbox{\sufigures\hspace*{.04em}\@thefnmark\hspace*{.04em}}%
+      \else%
+        \orig@makefnmark%
+      \fi
+    \else%
+      \orig@makefnmark%
+    \fi}%
+ \fi%
+\fi
+
+%\iffbb@babel
+%    \renewcommand*{\rmdefault}{fbb-\fbb@figurealign\fbb@figurestyle}
+%	\normalfont
+%\else
+    \AtEndPreamble{\renewcommand*{\rmdefault}{fbb-\fbb@figurealign\fbb@figurestyle}
+\normalfont}
+%\fi
+\endinput

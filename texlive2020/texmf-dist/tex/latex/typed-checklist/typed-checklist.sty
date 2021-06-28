@@ -1,0 +1,498 @@
+%%
+%% This is file `typed-checklist.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% typed-checklist.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2013-2019 by Richard Grewe <r-g+tex@posteo.net>
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.2 of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.2 or later is part of all distributions of LaTeX version
+%% 1999/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{typed-checklist}
+    [2019/01/11 v2.0 A package for layouting checklists]
+\RequirePackage{xkeyval}
+\RequirePackage{etoolbox}
+\RequirePackage{xcolor}
+\define@key[tchklst]{GlobalListOptions}{layout}{%
+  \ifinlist{#1}{\tchklst@ChecklistLayouts}{}{%
+    \PackageError{typed-checklist}{%
+      `#1' not a known checklist layout}
+      {Known layouts are:\forlistloop{ }{\tchklst@@CheckListLayouts}}}%
+  \def\tchklst@@layout{#1}}
+\define@key[tchklst]{GlobalListOptions}{input-dates}{%
+  \ifinlist{#1}{\tchklst@@InputDateFormats}{}{%
+    \PackageError{typed-checklist}{%
+      `#1' not a known input date format}
+      {Known formats are:\forlistloop{ }{\tchklst@@InputDateFormats}}}%
+  \letcs\tchklst@inputdate@order{tchklst@dateorder@#1}%
+  \letcs\tchklst@inputdate@sep{tchklst@dateformat@sep@#1}}
+\define@key[tchklst]{GlobalListOptions}{output-dates}{%
+  \ifinlist{#1}{\tchklst@@OutputDateFormats}{}{%
+    \PackageError{typed-checklist}{%
+      `#1' not a known output date format}
+      {Known formats are:\forlistloop{ }{\tchklst@@OutputDateFormats}}}%
+  \letcs\tchklst@@dateoutput@use{tchklst@dateoutput@use@#1}}
+\define@boolkey[tchklst]{GlobalListOptions}{strict-dates}[true]{%
+  \ifbool{tchklst@GlobalListOptions@strict-dates}
+    {\let\tchklst@@faileddate=\tchklst@DateFailStrict}
+    {\let\tchklst@@faileddate=\tchklst@DateFailLax}}
+\newcommand*\CheckListAddEntryOption[2]{%
+  \define@cmdkey[tchklst]{Entry}{#1}[#2]{}%
+  \presetkeys[tchklst]{Entry}{#1}{}}
+\CheckListAddEntryOption{who}{}
+\CheckListAddEntryOption{deadline}{}
+\CheckListAddEntryOption{label}{}
+\newcommand\CheckListSet[1]{%
+  \setkeys[tchklst]{GlobalListOptions}{#1}}
+\newcommand*\CheckListDefaultLayout[1]{%
+  \CheckListSet{layout={#1}}}
+\newcommand*\tchklst@ChecklistTypes{}
+\newcommand*\CheckListAddType[2]{%
+  \ifinlist{#1}{\tchklst@ChecklistTypes}{%
+    \PackageError{typed-checklist}{%
+      Checklist type `#1' already defined}{}}{}
+  \listadd\tchklst@ChecklistTypes{#1}%
+  \csdef{tchklst@ChecklistTypeSym@#1}{#2}%
+  \csdef{tchklst@ChecklistStates@#1}{}%
+  \csdef{tchklst@ChecklistFilters@#1}{}%
+  \def\do##1{##1{#1}}%
+  \dolistloop\tchklst@@addtype@hooks}
+\newcommand*\tchklst@@addtype@hooks{}
+\newcommand*\tchklst@IntroduceTypeHook[1]{%
+  \forlistloop{#1}{\tchklst@ChecklistTypes}%
+  \listgadd\tchklst@@addtype@hook{#1}}
+\newcommand\tchklst@aux@OargAfter[1]{%
+  \@ifnextchar[{\tchklst@aux@OargAfter@i{#1}}{#1}}
+\long\def\tchklst@aux@OargAfter@i#1[#2]{%
+  \tchklst@aux@OargAfter@ii{#2}#1}
+\newcommand\tchklst@aux@OargAfter@ii[2]{%
+  #2[#1]}
+\newcommand*\tchklst@CheckType[1]{%
+  \ifinlist{#1}{\tchklst@ChecklistTypes}{}{%
+    \PackageError{typed-checklist}%
+      {Unknown checklist type `#1'}
+      {Known types are:\forlistloop{ }{\tchklst@ChecklistTypes}}}}
+\newcommand*\CheckListAddStatus[4]{%
+  \forcsvlist
+    {\tchklst@AddStatus{#2}{#3}{#4}}%
+    {#1}}%
+\newcommand*\tchklst@AddStatus[4]{%
+  \tchklst@CheckType{#4}%
+  \ifinlistcs{#1}{tchklst@ChecklistStates@#4}{%
+    \PackageError{typed-checklist}{%
+      #4-checklist state `#1' already defined}{}}{}
+  \listcsadd{tchklst@ChecklistStates@#4}{#1}%
+  \expandafter\def\csname tchklst@isclosed@#4@#1\endcsname{#2}%
+  \expandafter\def\csname tchklst@sym@#4@#1\endcsname{#3}}
+\newcommand*\tchklst@CheckTypeStatus[2]{%
+  \ifinlistcs{#2}{tchklst@ChecklistStates@#1}{}{%
+    \PackageError{typed-checklist}%
+      {Unknown #1-checklist entry status `#2'}%
+      {Known states are:\forlistcsloop{ }{tchklst@ChecklistStates@#1}}}}
+\newcommand*\CheckListStatusSymbol[1]{%
+  \tchklst@symbolcombine{\csuse{tchklst@sym@\tchklst@cur@type @#1}}%
+    {\csuse{tchklst@ChecklistTypeSym@\tchklst@cur@type}}}
+\newcommand*\tchklst@symbolcombine[2]{{%
+  \setbox0\hbox{#2}%
+  \copy0\llap{\hbox to \wd0{\hss\smash{#1}\hss}}}}
+\newcommand*\CheckListIfClosed[1]{%
+  \csname if\csname tchklst@isclosed@\tchklst@cur@type @#1\endcsname
+            \endcsname
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
+\newcommand*\tchklst@ChecklistLayouts{}
+\newcommand*\CheckListDeclareLayout[4]{%
+  \ifinlist{#1}{\tchklst@ChecklistLayouts}{%
+    \PackageError{typed-checklist}{%
+      Checklist layout `#1' already declared}{}}{}
+  \listadd\tchklst@ChecklistLayouts{#1}%
+  \csdef{tchklst@ChecklistLayoutFields@#1}{}%
+  \forcsvlist{\listcsadd{tchklst@ChecklistLayoutFields@#1}}{#2}%
+  \csdef{tchklst@ChecklistLayoutBegin@#1}{#3}%
+  \csdef{tchklst@ChecklistLayoutEnd@#1}{#4}}
+\newcommand*\CheckListExtendLayout[3]{%
+  \CheckListDeclareLayout{#1}{#3}%
+    {\csuse{tchklst@ChecklistLayoutBegin@#2}}%
+    {\csuse{tchklst@ChecklistLayoutEnd@#2}}%
+  \def\do##1{%
+    \ifcsdef{tchklst@ChecklistFormat@#2@##1}{%
+      \csletcs{tchklst@ChecklistFormat@#1@##1}%
+              {tchklst@ChecklistFormat@#2@##1}}{}}%
+  \dolistcsloop{tchklst@ChecklistLayoutFields@#2}%
+}
+\newcommand\CheckListDefineFieldFormat[3]{%
+  \tchklst@deffieldmacro{tchklst@ChecklistFormat@#1@#2}{#2}{#3}}
+\newcommand\tchklst@deffieldmacro[3]{%
+  \begingroup
+  \@tempcnta=0\relax
+  \def\do##1{\advance\@tempcnta by 1\relax}%
+  \tchklst@dopsvlist{#2}%
+  \edef\do{\endgroup
+    \csundef{#1}%
+    \noexpand\newcommand\expandonce{\csname #1\endcsname}%
+      [\the\@tempcnta]{\unexpanded{#3}}}%
+  \do}
+\newcommand\tchklst@usefieldmacro[3][\@firstofone]{%
+  \begingroup
+  \expandafter\def\expandafter\tchklst@@cmd\expandafter{%
+    \csname #2\endcsname}%
+  \def\do##1{\eappto\tchklst@@cmd{%
+    {\csexpandonce{cmdtchklst@Entry@##1}}}}%
+  \tchklst@dopsvlist{#3}%
+  \expandafter\def\expandafter\tchklst@@cmd\expandafter{%
+    \expandafter{\tchklst@@cmd}}%
+  \preto\tchklst@@cmd{\endgroup#1}%
+  \tchklst@@cmd}
+\newcommand*\tchklst@CheckLayout[1]{%
+  \xifinlist{#1}{\tchklst@ChecklistLayouts}{}{%
+    \PackageError{typed-checklist}%
+      {Unknown checklist layout `#1'}
+      {Known layouts are:\forlistloop{ }{\tchklst@ChecklistLayouts}}}}
+\newcommand*\CheckListSetFilter[3][*]{%
+  \ifstrequal{#1}{*}
+    {\forlistloop{\tchklst@SetFilter{#2}{#3}}{\tchklst@ChecklistTypes}}
+    {\forcsvlist{\tchklst@SetFilter{#2}{#3}}{#1}}}
+\newcommand*\tchklst@SetFilter[3]{%
+  \tchklst@CheckType{#3}%
+  \ifinlistcs{#1}{tchklst@ChecklistFilters@#3}{}
+    {\listcsadd{tchklst@ChecklistFilters@#3}{#1}}%
+  \tchklst@deffieldmacro{tchklst@CheckListFilter@#3@#1}{#1}{#2}}
+\newcommand*\CheckListFilterValue[3][*]{%
+  \CheckListSetFilter[#1]{#2}
+    {\ifstrequal{##1}{#3}{}{\togglefalse{display}}}}
+\newcommand*\CheckListFilterClosed[1][*]{%
+  \CheckListSetFilter[#1]{status}
+    {\CheckListIfClosed{##1}{\togglefalse{display}}{}}}
+\newcommand*\CheckListFilterDeadline[4][*]{%
+  \bgroup
+  \def\do##1##2##3##4{\egroup
+    \CheckListSetFilter[#1]{deadline}
+      {\tchklst@DateCompare{####1}{#2}{##1}{##2}{##3}
+        {}{\togglefalse{display}}
+        {\ifbool{#4}{\togglefalse{display}}{}\@gobble}}}
+  \CheckListParseDate{#3}{\do}
+    {\egroup\tchklst@DateFailStrict}}
+\newcommand*\CheckListFilterReset[1][*]{%
+  \ifstrequal{#1}{*}
+    {\forlistloop{\tchklst@ResetFilter}{\tchklst@ChecklistTypes}}
+    {\forcsvlist{\tchklst@ResetFilter}{#1}}}
+\newcommand*\tchklst@ResetFilter[1]{%
+  \def\do##1{\csundef{tchklst@CheckListFilter@#1@##1}}%
+  \dolistcsloop{tchklst@ChecklistFilters@#1}%
+  \csdef{tchklst@ChecklistFilters@#1}{}}
+\newenvironment{CheckList}[2][]{%
+  \tchklst@CheckType{#2}%
+  \setkeys[tchklst]{GlobalListOptions}{#1}%
+  \tchklst@CheckLayout{\tchklst@@layout}%
+  \edef\tchklst@cur@type{#2}%
+  \let\tchklst@cur@layout=\tchklst@@layout%
+  \letcs\tchklst@cur@fields
+    {tchklst@ChecklistLayoutFields@\tchklst@cur@layout}%
+  \cslet{#2}{\tchklst@entry}%
+  \csname tchklst@ChecklistLayoutBegin@\tchklst@cur@layout\endcsname
+}{%
+  \csname tchklst@ChecklistLayoutEnd@\tchklst@cur@layout\endcsname
+}
+\newcommand\tchklst@entry[3][]{%
+  \begingroup
+  \tchklst@CheckTypeStatus{\tchklst@cur@type}{#2}%
+  \setkeys[tchklst]{Entry}{#1}%
+  \def\cmdtchklst@Entry@status{#2}%
+  \def\cmdtchklst@Entry@description{#3}%
+  \newtoggle{display}\toggletrue{display}%
+  \def\do##1{%
+    \tchklst@usefieldmacro
+      {tchklst@CheckListFilter@\tchklst@cur@type @##1}{##1}%
+    \iftoggle{display}{}{\listbreak}}%
+  \dolistcsloop{tchklst@ChecklistFilters@\tchklst@cur@type}%
+  \def\tchklst@@entry{\endgroup}%
+  \iftoggle{display}{%
+    \def\do##1{%
+      \tchklst@usefieldmacro[\appto\tchklst@@entry]
+        {tchklst@ChecklistFormat@\tchklst@cur@layout @##1}{##1}}%
+    \dolistloop\tchklst@cur@fields}{}%
+  \tchklst@@entry}
+\DeclareListParser{\tchklst@dopsvlist}{+}
+\newcommand\CheckListSigned{\@dblarg\tchklst@signed}
+\newcommand\tchklst@signed[2][]{%
+  \ifstrempty{#1}
+    {\nobreak\hfill\null}
+    {\leavevmode\unskip\nobreak\hfil\penalty50\hskip0.25em
+     \hbox{}\nobreak\dotfill\hbox{#2}}}
+\newcommand\CheckListDisplayDeadline[2]{%
+  \CheckListParseDate{#2}{\tchklst@DisplayDeadline@i}
+    {\tchklst@firstoftwoargs\tchklst@@faileddate}
+    {#1}}
+\newcommand\tchklst@firstoftwoargs[3]{#1{#2}}
+\newcommand\tchklst@DisplayDeadline@i[5]{%
+  \def\tchklst@@args{}%
+  \CheckListIfClosed{#5}%
+    {\appto\tchklst@@args{{true}}}{\appto\tchklst@@args{{false}}}%
+  \tchklst@ifafter{#1}{#2}{#3}
+    {\appto\tchklst@@args{{true}}}{\appto\tchklst@@args{{false}}}%
+  \expandafter\CheckListHighlightDeadline\tchklst@@args
+    {\tchklst@@dateoutput@use{#1}{#2}{#3}{#4}}}
+\newcommand\CheckListHighlightDeadline[3]{%
+  \ifbool{#1}
+    {\textcolor{green!66!black}{#3}}
+    {\ifbool{#2}{\textcolor{red}{#3}}
+                {\textcolor{black}{#3}}}}
+\newcommand*\tchklst@splitapply@i[2]{\tchklst@splitapply{#2}{#1}}
+\newcommand*\tchklst@ifafter[3]{%
+  \ifnum\the\year\two@digits\month\two@digits\day%
+       >\numexpr#1\two@digits{#2}\two@digits{#3}\relax
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
+\newcommand\CheckListDateCompare[6]{%
+  \bgroup
+  \def\do##1##2##3##4{\egroup
+    \tchklst@DateCompare{#1}{#2}{##1}{##2}{##3}{#4}{#5}{#6}}%
+  \CheckListParseDate{#3}{\do}{\egroup#6}}
+\newcommand*\tchklst@DateCompare[8]{%
+  \bgroup
+  \def\do##1##2##3##4{\egroup
+    \ifnum##1\two@digits{##2}\two@digits{##3}%
+      #2%
+      #3\two@digits{#4}\two@digits{#5}\relax
+    \expandafter\@firstoftwo
+    \else\expandafter\@secondoftwo\fi{#6}{#7}}%
+  \CheckListParseDate{#1}{\do}{\egroup#8}}
+\newcommand\CheckListParseDate[3]{%
+  \expandafter\tchklst@splitapply@i\expandafter{\tchklst@inputdate@sep}
+    {#1}
+    {3}{\tchklst@ifPositive}
+    {\expandafter#2\tchklst@inputdate@order}
+    {#3}
+    {#1}}
+\newcommand*\tchklst@@InputDateFormats{}
+\newcommand*\tchklst@@OutputDateFormats{}
+\newcommand*\tchklst@registerdateinputfmt[3]{%
+  \listadd\tchklst@@InputDateFormats{#1}%
+  \csgdef{tchklst@dateorder@#1}##1##2##3{#2}%
+  \csgdef{tchklst@dateformat@sep@#1}{#3}}
+\tchklst@registerdateinputfmt{d.m.y}{{#3}{#2}{#1}}{.}
+\tchklst@registerdateinputfmt{m/d/y}{{#2}{#3}{#1}}{/}
+\tchklst@registerdateinputfmt{y-m-d}{{#1}{#2}{#3}}{-}
+\newcommand*\tchklst@registerdateoutputfmt[2]{%
+  \listadd\tchklst@@OutputDateFormats{#1}%
+  \csgdef{tchklst@dateoutput@use@#1}##1##2##3##4{#2}}
+\tchklst@registerdateoutputfmt{same}{#4}
+\tchklst@registerdateoutputfmt{datetime}
+  {\DTMdisplaydate{#1}{#2}{#3}{-1}}
+\tchklst@registerdateoutputfmt{d.m.y}{#3.#2.#1}
+\tchklst@registerdateoutputfmt{m/d/y}{#2/#3/#1}
+\tchklst@registerdateoutputfmt{y-m-d}{#1-#2-#3}
+\tchklst@registerdateoutputfmt{d.m.}{#3.#2.}
+\tchklst@registerdateoutputfmt{m/d}{#2/#3}
+\tchklst@registerdateoutputfmt{m-d}{#2-#3}
+\tchklst@registerdateoutputfmt{d.m.yy}
+  {#3.#2.\the\numexpr #1-100*((#1-50)/100)\relax}
+\tchklst@registerdateoutputfmt{m/d/yy}
+  {#2/#3/\the\numexpr #1-100*((#1-50)/100)\relax}
+\tchklst@registerdateoutputfmt{yy-m-d}
+  {\the\numexpr #1-100*((#1-50)/100)\relax-#2-#3}
+\newcommand\tchklst@DateFailStrict[1]{%
+  \PackageError{typed-checklist}
+    {date `#1' not understood}
+    {See the options `strict-dates' and `input-dates'
+    in the package documentation\MessageBreak
+    if you intend to keep the value `#1'.}}
+\newcommand\tchklst@DateFailLax[1]{\textit{#1}}
+\newcommand*\tchklst@splitapply[6]{%
+  \def\tchklst@split@@rec##1##2##3#2##4\relax{%
+    #4{##3}
+      {\ifnumgreater{##1}{0}%
+        {\ifstrempty{##4}
+          {#6}
+          {\tchklst@split@@rec{##1-1}{##2{##3}}##4\relax}}%
+        {\ifstrempty{##4}
+          {##2{##3}}
+          {#6}}}
+      {#6}}%
+  \tchklst@split@@rec{#3-1}{#5}#1#2\relax}
+\newcommand*\tchklst@ifPositive[1]{%
+  \ifcat _\ifnum\z@<0#1_\else A\fi
+    \expandafter\@firstoftwo \else \expandafter\@secondoftwo \fi}
+\RequirePackage{bbding}
+\AtBeginDocument{{\setbox0\hbox{\Checkmark}}}
+\CheckListAddType{Goal}{$\bigcirc$}
+\CheckListAddType{Task}{{\small\Square}}
+\CheckListAddType{Artifact}{{\large$\bigtriangleup$}}
+\CheckListAddType{Milestone}{\FiveStarOpen}
+\CheckListAddStatus{Goal,Task,Milestone}{open}{false}{}
+\CheckListAddStatus{Goal}{dropped}{true}{\tiny\XSolid}
+\CheckListAddStatus{Task}{dropped}{true}{\small\XSolid}
+\CheckListAddStatus{Goal}{unclear}{false}{\footnotesize ?}
+\CheckListAddStatus{Task}{unclear}{false}%
+                   {\raisebox{0.4ex}{\hbox{\footnotesize ?}}}
+\CheckListAddStatus{Artifact}{unclear}{false}%
+                   {\raisebox{0.3ex}{\hbox{\tiny\bfseries ?}}}
+
+\CheckListAddStatus{Goal}{achieved}{true}{\kern 4pt\Checkmark}
+\CheckListAddStatus{Milestone}{achieved}{true}{\FiveStar}
+
+\CheckListAddStatus{Task}{started}{false}%
+                   {\kern 1pt\small\ArrowBoldRightStrobe}
+\CheckListAddStatus{Task}{done}{true}{\kern 2pt\Checkmark}
+
+\CheckListAddStatus{Artifact}{missing}{false}{}
+\CheckListAddStatus{Artifact}{incomplete}{false}%
+                   {\kern 1pt{\tiny\ArrowBoldRightStrobe}}
+\CheckListAddStatus{Artifact}{available}{true}{\kern 4pt\Checkmark}
+\CheckListAddStatus{Artifact}{dropped}{true}{{\small$\dagger$}}
+\RequirePackage{marginnote}
+\CheckListDeclareLayout{list}{status,label,description,
+                              who,deadline+status,END}%
+  {\bgroup\topsep=\medskipamount\itemsep=0pt\itemize\@newlistfalse}%
+  {\global\@newlistfalse\enditemize\egroup}
+\CheckListDefineFieldFormat{list}{status}%
+  {\item[{\normalfont\CheckListStatusSymbol{#1}}]}
+\CheckListDefineFieldFormat{list}{label}{%
+  \ifstrempty{#1}{}{%
+    \CheckListDefaultLabel{#1}%
+    \ifbool{inner}%
+      {\mbox{\small(\ref{#1})}%
+        \nobreak\hskip 0pt plus50pt\allowbreak
+        \ \hskip 0pt plus-50pt\relax}%
+      {\leavevmode\reversemarginpar\marginpar{%
+       \textcolor{gray}{\underbar{\hbox to \hsize{%
+       \normalfont\textcolor{black}{\ref{#1}}\hfil}}}}}}}
+\CheckListDefineFieldFormat{list}{description}{%
+    \ignorespaces #1\relax}
+\CheckListDefineFieldFormat{list}{who}{%
+  \CheckListSigned[#1]{\textit{(#1)}}}
+\CheckListDefineFieldFormat{list}{deadline+status}{%
+  \ifstrempty{#1}{}{{\normalmarginpar\marginnote{%
+     \unskip
+     \CheckListDisplayDeadline{#2}{#1}}}}}
+\CheckListDefineFieldFormat{list}{END}{{%
+  \parfillskip=0pt \finalhyphendemerits=0 \endgraf}}
+\CheckListDeclareLayout{hidden}{dummy}{\ignorespaces}{\ignorespaces}
+\CheckListDefineFieldFormat{hidden}{dummy}{\ignorespaces}
+\CheckListDeclareLayout{table}%
+  {newline,status,NC,label,description,NC,who,NC,deadline+status}%
+  {%
+    \tchklst@@begintab\hline
+    \gdef\tchklst@@newline{\\\hline\tchklst@@endhead
+      \gdef\tchklst@@newline{\\\hline}}%
+    \textbf{Status} & \textbf{Description} &
+    \textbf{Who} & \textbf{Deadline}}
+  {\tchklst@@endtab}
+\CheckListDefineFieldFormat{table}{newline}{\tchklst@@newline}
+\CheckListDefineFieldFormat{table}{status}{\CheckListStatusSymbol{#1}}
+\CheckListDefineFieldFormat{table}{label}%
+  {\ifstrempty{#1}{}{%
+     \leavevmode\CheckListDefaultLabel{#1}%
+     \mbox{\small(\ref{#1})}%
+     \nobreak\hskip 0pt plus50pt\allowbreak
+     \ \hskip 0pt plus-50pt\relax}}
+\CheckListDefineFieldFormat{table}{description}{\ignorespaces #1}
+\CheckListDefineFieldFormat{table}{deadline+status}{%
+  \ifstrempty{#1}{}{\CheckListDisplayDeadline{#2}{#1}}}
+\CheckListDefineFieldFormat{table}{who}{#1}
+\CheckListDefineFieldFormat{table}{NC}{&}
+\newcommand\tchklst@inittab@tabu{%
+  \RequirePackage{longtable,tabu}}
+\newcommand\tchklst@begintab@tabu{%
+  \tabulinesep=0.5ex\relax
+  \def\tchklst@@endhead{\endhead}%
+  \longtabu to \linewidth {|c|X|l|r|}}
+\newcommand\tchklst@endtab@tabu{\tchklst@@newline\endlongtabu}
+\newcommand\tchklst@inittab@xltabular{%
+  \RequirePackage{array,xltabular}}
+\newcommand\tchklst@begintab@xltabular{%
+  \setlength{\extrarowheight}{0.5ex}%
+  \def\tchklst@@endhead{\endhead}%
+  \preto\XLT@ii@TX@endtabularx{%
+    \toks@\expandafter{\the\toks@\tchklst@@newline}}%
+  \xltabular{\linewidth}{|c|X|l|r|}}
+\newcommand\tchklst@endtab@xltabular{\endxltabular}
+\newcommand\tchklst@inittab@tabularx{%
+  \RequirePackage{array,tabularx}}
+\newcommand\tchklst@begintab@tabularx{%
+  \let\tchklst@@endhead\relax%
+  \setlength{\extrarowheight}{0.5ex}%
+  \preto\TX@endtabularx{\toks@\expandafter{\the\toks@\tchklst@@newline}}%
+  \tabularx{\linewidth}{|c|X|l|r|}}
+\newcommand\tchklst@endtab@tabularx{\endtabularx}
+\newcommand\tchklst@inittab@ltablex{\RequirePackage{ltablex}
+  \patchcmd{\TX@endtabularx}
+    {\end{tabularx}}
+    {\endtabularx\endgroup}
+    {}
+    {\PackageError{typed-checklist}{Could not apply code patch to
+       ltablex' package.}{}}}
+\let\tchklst@begintab@ltablex=\tchklst@begintab@tabularx
+\let\tchklst@endtab@ltablex=\tchklst@endtab@tabularx
+\define@boolkey[tchklst]{PackageOptions}[tchklst@]
+  {withAsciilist}[true]{}
+\define@choicekey[tchklst]{PackageOptions}{tablepkg}[\val]
+                 {ltablex,tabu,tabularx,xltabular}{%
+  \letcs\tchklst@@inittab{tchklst@inittab@\val}%
+  \letcs\tchklst@@begintab{tchklst@begintab@\val}%
+  \letcs\tchklst@@endtab{tchklst@endtab@\val}%
+}
+\define@boolkey[tchklst]{PackageOptions}[tchklst@]
+  {onecounter}[true]{}
+\ExecuteOptionsX[tchklst]<PackageOptions,GlobalListOptions>{%
+  withAsciilist=false,
+  tablepkg=tabu,
+  onecounter=true,
+  layout=list,
+  input-dates=d.m.y,
+  output-dates=same,
+  strict-dates=false,
+}
+\ProcessOptionsX[tchklst]<PackageOptions,GlobalListOptions>\relax
+\tchklst@@inittab
+\newcommand*\CheckListDefaultLabel[1]{%
+  \ifstrempty{#1}{}
+    {\ifbool{tchklst@onecounter}
+      {\refstepcounter{tchklst@entryID}}
+      {\refstepcounter{tchklst@entryID@\tchklst@cur@type}}%
+    \label{#1}}}
+\newcommand*\tchklst@NewEntryCounter[2][@]{%
+  \newcounter{tchklst@entryID#1#2}%
+  \setcounter{tchklst@entryID#1#2}{0}%
+  \ifstrempty{#2}
+    {\csgdef{thetchklst@entryID#1#2}{%
+       \tchklst@cur@type~\protect\textsc{\roman{tchklst@entryID#1#2}}}}%
+    {\csgdef{thetchklst@entryID#1#2}{%
+       #2~\protect\textsc{\roman{tchklst@entryID#1#2}}}}}
+\iftchklst@onecounter
+  \tchklst@NewEntryCounter[]{}
+\else
+  \tchklst@IntroduceTypeHook{\tchklst@NewEntryCounter[@]}
+\fi
+\iftchklst@withAsciilist
+\RequirePackage{asciilist}
+\newcommand*\tchklst@ChkListEntry[2]{%
+  \tchklst@ChkListEntry@i{#1}#2\@undefined}
+\def\tchklst@ChkListEntry@ii#1#2#3[#4]#5\@undefined{#1[#4]{#3}{#2}}
+\def\tchklst@ChkListEntry@i#1#2:#3\@undefined{%
+  \tchklst@ChkListEntry@ii{#1}{#3}#2[]\@undefined}
+\newcommand*\tchklst@RegisterAsciiTypeEnv[1]{%
+  \AsciiListRegisterEnv{#1List}%
+    {\tchklst@aux@OargAfter{\CheckList{#1}}}%
+    {\endCheckList}%
+    {\AsciiListEndArg{\tchklst@ChkListEntry{\csname #1\endcsname}}}}%
+\tchklst@IntroduceTypeHook{\tchklst@RegisterAsciiTypeEnv}
+\fi
+\endinput
+%%
+%% End of file `typed-checklist.sty'.

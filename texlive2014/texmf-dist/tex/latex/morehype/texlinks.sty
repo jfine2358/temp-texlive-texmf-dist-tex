@@ -1,0 +1,1372 @@
+\NeedsTeXFormat{LaTeX2e}[1994/12/01] %% \newcommand* etc. 
+\ProvidesPackage{texlinks}[2013/01/22 v0.82 TeX-related links (UL)] 
+%% copyright (C) 2011 2012 2013 Uwe Lueck, 
+%% http://www.contact-ednotes.sty.de.vu 
+%% -- author-maintained in the sense of LPPL below.
+%%
+%% This file can be redistributed and/or modified under 
+%% the terms of the LaTeX Project Public License; either 
+%% version 1.3c of the License, or any later version.
+%% The latest version of this license is in
+%%     http://www.latex-project.org/lppl.txt
+%% We did our best to help you, but there is NO WARRANTY. 
+%%
+%% Please report bugs, problems, and suggestions via 
+%% 
+%%   http://www.contact-ednotes.sty.de.vu 
+%%
+%% === \cs{newlet}               ===                %% 2013/01/21
+%% |\newlet<cmd><cnd>| is a guarded `\let':
+\providecommand*{\newlet}[2]{\@ifdefinable#1{\let#1#2}}
+%%
+%% == Links in General            ==                %% 2012/12/15
+%% === Outline                                 ===
+%% % Almost                             %% 2011/07/23
+%% % all the            %% including https 2011/08/27
+%% The link macros of 'texlinks' are based on macros 
+%% |\httpref| and |\httpsref|. For use of 'texlinks' with 'blog.sty', 
+%% the latter provides definitions of `\httpref' and `\httpsref'
+%% suitable for \HTML, where a choice of opening a new 
+%% tab or window---or not---is relevant.
+%%
+%% For use with 'hyperref' (or ...?), 'texlinks' may 
+%% provide definitions of `\httpref' and `\httpsref' 
+%% based on `\href'. The decision to do so or not may happen at 
+%% `\begin{document}'. 'blog.sty' generates \HTML\ without 
+%% using the `{document}' environment, so we might assume 
+%% that when `\begin{document}' is found, we are running
+%% 'hyperref', or just \emph{something} that provides a 
+%% useful `\href'. We might then execute a definition of 
+%% `\httpref' in terms of `\href'. Well, not sure ...
+%% 
+%% Moreover, a \acro{PDF} file with links may be \emph{printed}, 
+%% and klicking the links on the paper may fail. 
+%% \URL s in main text, on the other hand, sometimes are 
+%% troublesome. I consider it a good idea to present 
+%% links with their \URL\ as the displayed text in \emph{footnotes}
+%% (or endnotes). It may even be useful with \HTML\ to present 
+%% the \URL s displayed in some 
+%% %% 2011/01/27:                               %% rm. 2011/10/20
+%% ``appendix."---This idea has been resumed in v0.2 only, |\urlfoot| 
+%% (\secref{urlfoot}).                          %% 2012/12/15
+%% %
+%% % I tend to introduce something for this ... and there might be a 
+%% % package option forcing `\httpref' to use this style. 
+%% % Well, better \emph{not today} ... [2011/01/24, TODO]
+%%
+%% === Package Options                         ===
+%% \label{sec:opt}                                  %% 2013/01/21
+%% Somebody may want to suppress a definition of `\httpref'
+%% at `\begin{document}' ... [2011/01/24, TODO]
+%% %% 2011/02/10:
+%% 
+%% v0.3: Package option |[blog]| suppresses \emph{any} 
+%% `\AtBeginDocument' actions---fine for use with 'blog.sty'. 
+\DeclareOption{blog}{\let\AtBeginDocument\@gobble}
+%% This option may be improved, and another option may be 
+%% useful for different purposes than running 'blog.sty'.
+\ProcessOptions
+%%
+%% === Fonts for \URL s and File/Package Names ===
+%% \label{sec:fonts}                                %% 2012/12/19
+%% %% ** Fonts for \URL s, File Names, and Package Names **
+%% %% new 2011/10/19, TODO: `meansltx'? vgl. `makedoc.cfg'
+%% This section ``provides" markup for displaying \URL s (|\urlfmt|), 
+%% file names (|\filenamefmt|---thinking of single files 
+%% that may be found in the internet or on your computer---, 
+%% and ``packages" (|\pkgnamefmt|). 
+%% For the latter two, in certain files I use shorthands 
+%% |\file| and |\pkg|, resp., ... 
+%% `\providecommand' will be used so that the user may choose   %% 2012/12/28
+%% the style before loading 'texlinks'. 
+%% (Once I may provide a variant of `\providecommand'           %% 2012/12/28
+%%  that postpones the ``provision" to the ``beginning" of the 
+%%  ``document", even with 'blog.sty' TODO)
+%% 
+%% It is usual to use 
+%% the same font as with                                        %% 2012/12/28
+%% `\texttt' for formatting \TeX\ code 
+%% (``verbatim", `\verb' etc.). It may also be common to use 
+%% `\texttt' for file names, perhaps even for \URL s. 
+%% Therefore we provide |\urlfmt{<url>}| as follows: 
+\providecommand*{\urlfmt}{\texttt}
+%% The user may (later) choose a more advanced treatment by 
+%% loading \ctanpkgstyref{url} and 
+%% \[`\renewcommand{\urlfmt}{\url}'\]
+%% 
+%% The file name format |\filenamefmt{<file-name>}|
+%% may differ from the format for \URL s---if somebody 
+%% wants/adjusts it, \emph{here} it is the \emph{same:}
+\providecommand*{\filenamefmt}{\texttt}
+%% ... 
+%% I favour `\code' over `\texttt' as ``logical markup," 
+%% inspired by the \xmltagcode{code} element in \HTML, 
+%% but it is too difficult to provide this right now here ...
+%%
+%% (TODO 2012/12/29: This section seems to be relevant for 
+%%                   \secref{url-text} only and might move there.)
+%% 
+%% %% Instead of |\pkgnamefmt{<pack-name>}|, 
+%% %% 'blog.sty' had `\pkg{<pack-name>}',      %% was `prg' 2011/10/20
+%% %% without a proper implementation. 
+%% |\pkgnamefmt{<package-name>}| displays the name of a ``package". 
+%% Using `\textsf' for `\pkgnamefmt' 
+%% seems to conform to common practice today---implemented here. 
+%% The following code may later be suppressed at some package options, 
+%% as with the choice for `\httpref':   %% TODO 2011/01/24
+% \@ifdefinable\pkgnamefmt {\let\pkgnamefmt\@firstofone}
+% \AtBeginDocument         {\let\pkgnamefmt\textsf}
+%% <- This was here until v0.7, makes a difference for \acro{PDF}
+%% vs.\ 'blog'/\HTML.                       %% / 2012/12/28
+%% [Cf.~\secref{opt}!? TODO]---%% 2013/01/21
+%% Now we choose the same as with `\urlfmt':
+\providecommand*{\pkgnamefmt}{\textsf}
+%% Indeed, the same day we are providing `\textsf' in 'blog.sty'.
+%% However, the rationale of the earlier solution was 
+%% that web pages use sans-serif as the \emph{normal} font ...
+%%
+%% %% moving \httpsref 2011/08/27:
+%% === Providing &\httpref\ and   &\httpsref   ===
+%%                             %% rm. \kern-\baselineskip 2011/10/10
+%% \[|\httpref{<host-path[#frag]>}{<text>}|\]
+%% should display <text> 
+%% as a link to `http://<host-path[#frag]>'; 
+%% \[|\httpsref{<host-path[#frag]>}{<text>}|\]
+%% is the obvious analogue for `https:' \URL s. 
+%% In case `\begin{document}' is found with a definition of 
+%% `\href' present, we provide definitions of `\httpref'
+%% and `\httpsref' in terms of `\href' there:
+\AtBeginDocument{%
+    \@ifundefined{href}{%
+%         \PackageError ... TODO!? 2011/01/24
+      }{\newcommand*{\httpref} [1]{\href {http://#1}}%
+        \newcommand*{\httpsref}[1]{\href{https://#1}}}}
+%%
+%% === Variants of &\httpref\ and &\httpsref   ===
+%% |\NormalHTTPref| may be used as an alias for `\httpref' 
+%% in situations where the latter has been redefined    %% v0.2
+%% (as in \secref{urlfoot}):
+\AtBeginDocument{\newlet\NormalHTTPref\httpref}  %% TODO: sec:opt
+%% |\ithttpref{<url>}{<text>}| displays <text> in italics:
+% \newcommand*{\ithttpref}[2]{\NormalHTTPref{#1}{\textit{#2}}}
+%% However, I seem never to have used it. And I would now 
+%% prefer |\metahttpref| TODO ...
+%%
+%% ==== Protocol Prefix                   ====      %% 2012/12/15
+%% |\httpprefix| is an idea that was missing in 'blog.sty' up to v0.3. 
+%% It may be used to determine generally whether a display of an 
+%% \URL\ should include `http://'. I choose as default what was default 
+%% in 'blog.sty' 
+%% (i.e., ``don't include"):                        %% add. 2011/01/27
+\@ifdefinable\httpprefix{\let\httpprefix\@empty}    %% TODO cf. above
+%% `\let\httpprefix\relax' would be bad for 'blog.sty' 
+%% (would display `\relax'), 
+%% while it would be somewhat more efficient.%%%---%%%
+%%
+%% Now you may customize `\httpprefix' by 
+%% \[`\renewcommand{\httpprefix}{http://}'\]
+%% %% v0.2:
+%% ---or by `\let\httpprefix'|\theHTTPprefix|:
+\newcommand*{\theHTTPprefix}{http://}
+%% With |\urlhttpsref{<url>}|, we \emph{force} displaying \qtd{`https://'}:
+\newcommand*{\urlhttpsref}[1]{\httpsref{#1}{\urlfmt{https://#1}}}
+%%
+%% ==== The \URL\ (or a Part) as the Link Text Phrase ==== %% (...) 2012/12/28
+%% \label{sec:url-text}
+%% With |\urlhttpref{<url>}|, that \URL\ <url> is displayed:
+\newcommand*{\urlhttpref}[1]{%
+    \NormalHTTPref{#1}{\urlfmt{\httpprefix#1}}} 
+%% %% moved up here 2011/10/20
+%% In 'blog.sty' (as of 2010/05/26), there was a command 
+%% `\urlref' instead of `\urlhttpref'. It did not provide `\urlfmt'.
+%% 
+%% |\domainref{<domain>}{<path>}| is similar, but is intended 
+%% to show the domain part <domain> of the \URL\ 
+%% `<domain>/<path>' only. 
+%% This may be useful when the entire \URL\ does not look 
+%% nice, while the domain name is a kind of logo, 
+%% and when comparing what different web portals have 
+%% to say about the same matter, such as the web versions 
+%% of newspapers or magazines. So you may compare how
+%% \domainref{www.ctan.org}{pkg/morehype} and 
+%% \domainref {\tugctanorg}{pkg/morehype} inform about %% \tugc... 2012/12/29
+%% the 'morehype' bundle (v0.8).
+%% The command is also used in \secref{wiki-stack}
+%% for `tex.stackexchange.com'.
+%% %% texblog 2012/06/08; v0.8 here
+\newcommand*{\domainref}[2]{\httpref{#1/#2}{\urlfmt{#1}}}
+%%
+%% ==== Linking \URL s in Footnotes       ====      %% 2011/08/27
+%% \label{sec:urlfoot}
+%% |\foothttpurlref{<url>}| just is like
+%% `\footnote{\urlhttpref{<url>}}':
+\newcommand*{\foothttpurlref}[1]{\footnote{\urlhttpref{#1}}}
+%% |\urlfoot{<short>}{<id>}|
+%% redefines `\httpref' so that you can use all the shorthand 
+%% macros based on `\httpref' to get the according \URL\ 
+%% display (as provided by `\urlhttpref')
+%% in a footnote without the need to include the 
+%% entire \URL\ in your source code. `\urlfoot' is available 
+%% with <short> and <id>
+%% when a shorthand |\<short>{<id>}{<text>}| has been defined
+%% where `\<short>' is the macro name and <id> is the target 
+%% identifier (usually part of the \URL\ generated from <id>)
+%% according to the syntax declaration of `\<short>'. 
+\newcommand*{\urlfoot}[2]{{%
+    \let\httpref\foothttpurlref 
+    \let\httpprefix\theHTTPprefix   %% TODO customizable!?
+    \csname #1\endcsname{#2}{}}}
+%% \begin{example}\leavevmode
+%% \[`\CtanPkgRef{morehype}{MoreHype}'
+%%   \mbox{\quad and\quad } `\ctanpkgref{morehype}'\] 
+%% are provided in \secref{sing-pkgs} for linking to
+%% `http://ctan.org/pkg/morehype'.
+%% \begin{itemize}
+%%   \item 
+%%     % Try `CtanPkgRef' \emph{here}: 
+%%     % \CtanPkgRef{morehype}{MoreHype},\\ 
+%%     % for the \emph{footnote} try
+%%     % `\urlfoot{CtanPkgRef}{morehype}';%%%
+%%     % \urlfoot{CtanPkgRef}{morehype}
+%%     \simpleyields{\CtanPkgRef{morehype}{MoreHype}}   %% etc. 2012/12/30
+%%   \item 
+%%     \simplecodefbox{\urlfoot{CtanPkgRef}{morehype}}
+%%     yields          \urlfoot{CtanPkgRef}{morehype}
+%%   \item 
+%%     % try `ctanpkgref' \emph{here}: \ctanpkgref{morehype},\\ 
+%%     \simpleyields{\ctanpkgref{morehype}}
+%%   \item 
+%%     % for the \emph{footnote} try 
+%%     % `\urlfoot{ctanpkgref}{morehype}'.%%%
+%%     % \urlfoot{ctanpkgref}{morehype}
+%%     \simplecodefbox{\urlfoot{ctanpkgref}{morehype}}
+%%     yields          \urlfoot{ctanpkgref}{morehype}
+%% \end{itemize}
+%% The lonely \qtd{\pkgnamefmt{morehype}} you see there above 
+%% demonstrates that it doesn't work with `ctanpkgref' because 
+%% `\ctanpkgref' doesn't have separate arguments for 
+%% <id> and <text>, it actually doubles <id>. 
+%% A local `\let\ctanpkgref\CtanPkgRef' could help, 
+%% but right now I prefer waiting for a better idea. 
+%% [TODO] %% 2011/01/27
+%% \end{example}
+%%
+%% v0.3: Now that using `\urlfoot' and `ctanpkgref' together 
+%% is so clumsy, while I use it quite often,    %% 2011/02/10
+%% we get |\urlpkgfoot{<package-id>}|, abbreviating 
+%% `\urlfoot{CtanPkgRef}{<package-id>}':
+\newcommand* {\urlpkgfoot} {\urlfoot{CtanPkgRef}}
+%% ==== \URL\ Bases ====                            %% 2012/03/09
+%% \label{sec:bases} 
+%% We typically refer to many web pages under a certain domain, 
+%% or in certain subdirectories there. Before v0.6, 
+%% I made many definitions like 
+%% \[`\newcommand*{\myref}[1]{\httpref{<my-base>/#1}}'\]
+%% for this purpose.
+%% Storing the definition of such a `\myref' uses 8 tokens 
+%% %% including parameter ... %% todo done 2012/12/17
+%% in addition to those from <my-base>.
+%% With 
+%% \[`\newcommand*{\myref}{\httpbaseref{<my-base>}}'\] %% } 2012/12/17
+%% we need 5                                       %% was 3 2012/12/17
+%% tokens instead, using \ |\httpbaseref{<base>}{<rest>}{<text>}| \
+%%                                                 %% <- added text 2013/01/21
+%% defined as follows:
+\newcommand*{\httpbaseref}[2]{\httpref{#1/#2}}
+%% Then `\myref{<rest>}{<text>}' will work like          %% 2013/01/21
+%% \[`\httpref{<my-base>/<rest>}{<text>}'\]
+%% We change many definitions in ensuing sections accordingly---and 
+%% with v0.82 we add a shorthand for definitions like the avove one 
+%% for `\myref'. \[|\MakeBasedHref{<cmd>}{<base>}|\] may be applied 
+%% as \[`\MakeBasedHref{\myref}{<my-base>}'\] above. In the general 
+%% situation, \ `<cmd>{<path>}{<text>}' \ will work like 
+%% \ `\httpref{<base>/<path>}{<text>}'.
+\newcommand*{\MakeBasedHref}[2]{%
+    \ifx#1\@undefined \else \ifx#1\relax \else
+        \PackageWarning{texlinks}{Redefining \string#1.}%
+    \fi \fi
+    \def#1{\httpbaseref{#2}}}
+%% However, it does not act like `\newcommand' when <cmd> has been 
+%% defined earlier, it rather resembles `\DeclareRobustCommand', 
+%% in that it just \emph{warns} in such a case.
+%% I don't actually make <cmd> robust because I guess it is anyway:
+%% The reason for allowing redefinitions has been application
+%% to cases where the user should be able to customize commands 
+%% (\secref{custom-ref})---well, 
+%% I could have `\NewBasedHref' and `\RenewBasedHref' some time 
+%% TODO\footnote{And for sections \ref{sec:wiki-back} and 
+%%               \ref{sec:wikibooks}, an optional argument 
+%%               would have been nice.};
+%% TODO: `\@onlypreamble'?
+%% 
+%% The situation is similar with (many) anchors of a (large) web page. 
+%% With v0.6, we introduce 
+%% \[|\httpancref{<page-url>}{<anchor>}|\]---\emph{perhaps}, 
+%% with `\mirrorctanref' (\secref{texcat}) etc.? TODO
+% \newcommand*{\httpancref}[2]{\httpref{#1\##2}}
+%%
+%%
+%% == Google                      ==                %% 2012/12/17
+%% |\googleref{<keywords>}{<text>}| \ generates a \Wikiref{Google}
+%% search page with keywords from <keywords> in which they 
+%% are separated by \qtdcode{+}, as in
+%% \[`\googleref{tex+friends}{\TeX~\& friends}'\] 
+%% which results in (I'm curious ...)
+%% \googleref{tex+friends}{\TeX~\& friends:}
+\newcommand*{\googlecom}{google.com/}
+\newcommand*{\googleref}[1]{\httpref{\googlecom\#q=#1}}
+%% |\googlemapsref{<keywords>}{<text>}| \ generates a 
+%% \wikiref{Google Maps}{Google map} from the <keywords>. 
+%% <keywords> may compose an address for a \TeX\ users' meeting, 
+%% so Google may show them their way. 
+%% \[<keywords>=\mbox{\qtdcode{munich+offenbachstrasse+21}}\]
+%% results in  \googlemapsref{munich+offenbachstrasse+21}
+%%                           {where this has been written.} 
+\newcommand*{\googlemapsref}[1]{\httpref{maps.\googlecom maps?q=#1}}
+%% 
+%% == Wikipedia                   ==
+%% %% TODO separate wikilink.sty? https:!? 
+%% === Overview    ===
+%% \label{sec:wiki-stack}
+%% The present section on links to Wikipedia articles 
+%% starts with the rather obvious
+%% \[|\wikilangref{<language-code>}{<lemma>}{<text>}|\]
+%% but then gets somewhat technical. \secref{langcode}
+%% may please the user again by 
+%% \[|\Wikiref{<lemma>}|\] 
+%% where the language version of the Wikipedia is chosen 
+%% according to a macro `\langcode' expanding to \qtdcode{en} 
+%% by default. On 
+%% \domainref{tex.stackexchange.com}{/questions/84878}, 
+%% I have posted the following ``minimal working example:"
+%% \begin{verbatim}
+%%      \documentclass{minimal} 
+%%      \usepackage{hyperref,texlinks} 
+%%      \begin{document} 
+%%          Look up \wikiref{Charlie Bucket}{Wikipedia}
+%%              for \Wikiref{Charlie Bucket}. 
+%%      \end{document}
+%% \end{verbatim}
+%% You may find it as `wiki_mwe.tex' with outcome `wiki_mwe.pdf'.
+%% See \secref{langcode} for more examples.     %% 2012/12/30
+%%
+%% Apart from `\langcode', more advanced things are 
+%% \emph{disambiguation} (\secref{wiki-back}),
+%% ``piped links"        (\secref{wiki-pipe}), and
+%% special characters in \URL s (\secref{wiki-urls}).
+%% 
+%% === Backbones   ===
+%% \label{sec:wiki-back}
+%% As of v0.6, we have a \dqtd{backbone} macro 
+%% \[|\wikilangref{<language-code>}{<lemma>}{<text>}|\]
+%% for links to Wikipedia. 
+%% (It was |\wikiref| before, starting with v0.4---sorry!)
+%% <language-code> consists of 
+%% two characters like \lq`de'\rq\ for German Wikipedia articles 
+%% or \lq`en'\rq\ for English ones. <lemma> is the identifier of 
+%% the article, and <text> is displayed as the link:
+% \newcommand*{\wikilangref}[2]{\httpref{#1.wikipedia.org/wiki/#2}}
+%% <- 2012/03/09 etc. with \secref{bases} ->
+\newcommand*{\wikilangref}[1]{\httpbaseref{#1.wikipedia.org/wiki}}
+%% There is |\Wikilangref{<language-code>}{<lemma>}| 
+%% for the case that <lemma> and <text> are the same. 
+%% With v0.7 however, this command becomes more powerful, 
+%% see \secref{wiki-pipe}.
+% \newcommand*{\Wikilangref}[2]{\wikilangref{#1}{#2}{#2}}
+%% `\wikilangref{<lang>}[<lemma>]{<text>}' would be nicer;
+%% %% <- shortened 2012/01/06 ->
+%% however, the present code is to work with 'blog.sty' 
+%% which does not support optional arguments.%%%---
+%%
+%% Quite often, programs share their names with movies,
+%% biological species, etc., then lemma disambiguation is required. 
+%% Usually, we don't want to display the disambiguation.
+%% \[|\Wikilangdisambref{<language-code>}{<term>}{<tag>}|\] 
+%% will link to
+%% \[`http://<language-code>.wikipedia.org/wiki/<term>_(<tag>)'\]
+\newcommand*{\Wikilangdisambref}[3]{\wikilangref{#1}{#2 (#3)}{#2}}
+%% There                    %% was `Their' 2011/07/23
+%% was something like a more general variant |\wikidisambref|, 
+%% now I doubt its usefulness and \textcolor{blue}{omit} it 
+%% in order to see where it occurs (2011/05/13).
+%%
+%% For \strong{anchors}, \qtd{&#} can be used with 'blog.sty'---and 
+%% even with 'hyperref'.
+%% \simpleexample{\wikilangref{en}{TeX#History}{history}}
+%%
+%% === Piped Links ===
+%% \label{sec:wiki-pipe}
+%% v0.7 emulates Wikipedia's 
+%% \wikiref{Help:Links\#Piped_link}{piped links}         %% was "Piped links" 2012/12/01
+%% as with Wikipedia source code \[`[[Pipeline|Pipe]]'\]
+%% to get a link to article \qtd{\Wikiref{Pipeline}}     %% \Wikiref 2012/12/01
+%% with displayed text
+%% \qtd{\wikiref{Pipeline}{Pipe}}. The same syntax 
+%% (double brackets) is actually supported by 
+%% 'blog.sty' with 'markblog.sty',                       %% was `blogexec' 2012/12/06
+%% while otherwise only 
+%% \[\GenCmdBox+\Wikilangref{<language-code>}{<lemma>|<text>}+\]
+%% works---with settings more below something like 
+%% \GenCmdBox+\Wikiref{<lemma>|<text>}+---which 
+%% admittedly is not much better than the equivalent 
+%% \[`\wikiref{<lemma>}{<text>}'\]
+%% 
+%% Even Wikipedia's feature that empty <text> removes 
+%% the disambiguation term as with `[[Pipe (computing)|]]'
+%% resulting in \qtd{\wikiref{Pipe (computing)}{Pipe}}
+%% is supported.
+\newcommand*{\Wikilangref}[2]{% 
+    \@wikilpref{#1}#2\BiteSep|\@nnil\BiteSep\@nil{#2}}
+%% I have introduced `\BiteSep' and this kind of parsing 
+%% in the \ctanpkgdref{bitelist} package. 
+\def\@wikilpref#1#2|#3\BiteSep#4\@nil#5{%
+    \ifx\@nnil#3\@empty 
+        \wikilangref{#1}{#5}{#5}%
+    \else 
+        \wikilangref{#1}{#2}{%
+            \ifx\@three#3\@three
+                \wiki@noparen#2\@nil%
+            \else
+                #3%
+            \fi}%
+    \fi}
+\def\wiki@noparen#1 (#2\@nil{#1}
+%% I have thought about improving 'bitelist.sty', resulting 
+%% in the following code. In the present application, 
+%% I do not consider it superior. It uses
+%% the same number of tokens but new one has additional 
+%% expansion step. The situation is different to the general case 
+%% because doing everything before `\fi' is okay here.
+% \newcommand*{\Wikilangref}[2]{% 
+%     \@wikilPref{#1}#2\BiteSep\@secondoftwo 
+%                     |\BiteSep\@firstoftwo\@nil{#2}} 
+% \def\@wikilPref#1#2|#3\BiteSep#4#5\@nil#6{%
+%     #4{\wikilangref{#1}{#6}{#6}}%
+%       {\wikilangref{#1}{#2}{%
+%             \ifx\@three#3\@three 
+%                 \wiki@noparen#2\@nil%
+%             \else
+%                 #3%
+%             \fi}}}
+%% 
+%% === English and German ===
+%% The next macros just save you from typing braces around 
+%% the language codes for English and German:
+%% |\wikienref{<lemma>}{<text>}| refers to the English Wikipedia, 
+%% |\wikideref{<lemma>}{<text>}| refers to the German one. 
+\newcommand*{\wikideref}{\wikilangref{de}}
+\newcommand*{\wikienref}{\wikilangref{en}}
+%% |\Wikideref{<lemma>}| refers to article <lemma> in the German 
+%% Wikipedia and displays <lemma> as <text>:
+\newcommand*{\Wikideref}{\Wikilangref{de}}
+%% |\Wikienref{<lemma>}| is `\Wikideref''s analogue for English:
+\newcommand*{\Wikienref}{\Wikilangref{en}}
+%% |\Wikidedisambref{<lemma>}{<tag>}| chooses a disambiguation 
+%% according to <tag> for the German Wikipedia, 
+%% |\Wikiendisambref{<lemma>}{<tag>}| for the English one:
+\newcommand*{\Wikidedisambref}{\Wikilangdisambref{de}}
+\newcommand*{\Wikiendisambref}{\Wikilangdisambref{en}}
+%% 
+%% === ``Implicit" Choice of Language ===           %% 2012/01/06
+%% \label{sec:langcode}
+%% With v0.6, |\wikiref{<lemma>}{<text>}| works like 
+%% \[`\wikilangref{<lc>}{<lemma>}{<text>}'\]    %% ref 2012/10/24
+%% when |\langcode| expands to <lc> 
+%% (the two-letter language code according to \Wikiref{ISO 639-1}). 
+%% The default for <lc> is \qtdcode{en} for English. 
+%% It can be overridden even before loading 'texlinks' 
+%% (e.g., by an earlier `\newcommand\langcode{de}'):
+\providecommand*{\langcode}{en}
+%% %% mod. 2012/10/24:
+%% For the German versions, use \ `\renewcommand{\langcode}{de}'. \
+%% The \ctanpkgref{langcode} package provides a command \
+%% |\uselangcode{<lc>}| \ that works like 
+%% \ `\renewcommand*{\langcode}{<lc>}' \
+%% and adjusts a number of other settings. 
+\newcommand*{\wikiref}{\wikilangref\langcode}
+%% %% adding args 2012/12/17:
+%% |\Wikiref{<lemma>}| and |\Wikidisambref{<term>}{<add>}| %% second \ 2012/12/29
+%% are the obvious analogues (cf. \secref{wiki-back}):
+\newcommand*{\Wikiref}{\Wikilangref\langcode}
+\newcommand*{\Wikidisambref}{\Wikilangdisambref\langcode}
+%% \begin{simpleexamples}
+%%   \simpleexample{\Wikiref{LaTeX}}
+%%   \simpleexample{\wikiref{LaTeX}{&\LaTeX}}
+%%   \simpleexample{\Wikidisambref{Latex}{disambiguation}}
+%% \end{simpleexamples}
+%% 
+%% === Blanks and Umlauts in \URL s and Anchors === 
+%% \label{sec:wiki-urls}
+%% %% <- renamed 2011/05/17 reworked:
+%% |\underscorechar| seemed to be useful in macro 
+%% definitions. The name was inspired by \LaTeX's 
+%% `\@backslashchar' and `\@percentchar'. 
+%% However, I am now trying what happens without it. 
+%% It occurred in `blog.tex' for the documentation of 
+%% the 'blog' package, but `\string_' seems to be a good 
+%% replacement.
+% \newcommand \underscorechar {}
+% {\@makeother\_ \gdef\underscorechar{_}}
+%% Anyway, in my notes I have a more elegant macro for 
+%% providing ``other" versions of special characters. 
+%% 
+%% Guessing what `\underscorechar' was good for (2011-05-17):
+%% Wikipedia lemmas and anchors often or even \emph{typically} 
+%% contain \emph{blank spaces}. 
+%% The Wikipedia software usually converts them into 
+%% underscore characters. Blank spaces in \emph{lemmas} 
+%% seem \emph{not} to need treatment here in 'texlinks'. 
+%% However, Wikipedia also creates \emph{anchors} from 
+%% \emph{section headings}, which typically contain blank spaces. 
+%% This has been more difficult ...
+%%
+%% Likewise with umlauts: text encoding suffices for \emph{lemmas}
+%% (my `\urluml' is not needed for this purpose). 
+%% But umlauts in \emph{anchors} 
+%% generated from \emph{section headings} are different. 
+%% While umlauts in \emph{lemmas} are represented by sequences 
+%% starting with a \emph{percent} character, the anchors 
+%% use a \emph{dot} instead of the percent character. 
+%% Therefore now |\ancuml{<char>}| is provided:
+\newcommand*{\ancuml}[1]{\csname ancuml:#1\endcsname}
+\@namedef{ancuml:a}{.C3.A4}
+\@namedef{ancuml:o}{.C3.B6}
+\@namedef{ancuml:u}{.C3.BC}
+\@namedef{ancuml:s}{.C3.9F}
+%% %% comments removed 2012/01/11:
+%% % What you read in the rest of the section is 
+%% % \textcolor{blue}{wrong}, the commands are 
+%% % \textcolor{blue}{dropped} for testing as of 2011/05/13.
+%% % |\itwikideref| is an italic variant of `\wikideref':
+% \newcommand*{\itwikideref}[2]{\wikideref{#1}{\textit{#2}}}
+%% % By analogy to `\Wikideref', 
+%% % The following macros save you from typing the underscore 
+%% % (didn't spaces suffice sometimes?)   %% TODO 2011/01/24
+%% % and the round parantheses. 
+%% % Italic variant |\itwikienref| of `\wikienref'
+%% % ('blog.sty' had `\emwikienref' instead):
+% \newcommand*{\itwikienref}[2]{\wikienref{#1}{\textit{#2}}} 
+%% % |\urluml{<ascii-char>}| as of 2010/05/25 
+%% % (not sure if it ever worked or was actually needed): 
+% \newcommand*{\urluml}[1]{\csname urluml:#1\endcsname}
+% \@namedef{urluml:a}{\#C3\#A4}
+% \@namedef{urluml:o}{\#C3\#B6}
+% \@namedef{urluml:u}{\#C3\#BC}
+% \@namedef{urluml:s}{\#C3\#9F}           %% 2010/08/09
+%% 
+%% \pagebreak                                       %% 2013/01/19
+%% == \TeX-related                ==                %% 2010/08/24
+%% === \code{\html}               ===               %% 2012/12/18
+%% The shorthand macro |\html| saves a few tokens for 
+%% the standard extension \qtdcode{\html} of \HTML\ 
+%% files on \TeX-related sites:
+\newcommand*{\html}{.html}
+%%
+%% === \CTAN                      ===
+%% ==== Overview: Archive vs.\ Descriptions Roots  ==== %% 2013/01/19
+%% \label{sec:ctan-over}
+%% There have been \emph{\TeX\ archive roots} and 
+%% \emph{\TeX\ package description roots} on 
+%% \wikiref{CTAN}{\CTAN} web sites. 
+%% I cannot define those terms exactly.
+%%
+%% \begin{singthm}{Examples}                            %% 2013/01/20
+%%   of \TeX\ \strong{archive} roots currently 
+%%   (2012-01-20) are \urlhttpref{tug.ctan.org}, the random 
+%%   resolutions of \urlhttpref{mirror.ctan.org}, and 
+%%   \urlhttpref{www.ctan.org/tex-archive/}.
+%%   They provide almost all material that may be useful 
+%%   in running \TeX\ and share an essentially fixed directory 
+%%   structure which however may vary over time due to new 
+%%   contributions. Among the top-level subdirectories of 
+%%   an archive root are `fonts', `graphics', and
+%%   `macros/latex/contrib'. 
+%% \end{singthm}
+%%
+%% Macro names for \TeX\ archive roots will look like
+%% |<prefix>ctanref|.
+%% In order to access an archive with root <ctan>, such a macro 
+%% will be defined as 
+%% \[`\httpbaseref{<ctan>}'\]
+%% in \secref{texarc} (apart from using shorthand macros for 
+%% <ctan>)---see \secref{ctan-over} for `\httpbaseref'.
+%%
+%% \begin{singthm}{Examples}
+%%   of \TeX\ package \strong{description} roots
+%%   currently are \urlhttpref{www.ctan.org} (which works like `ctan.org')
+%%   and \urlhttpref{alan.smcvt.edu} (Jim Hef{}feron's site at 
+%%   \wikiref{Saint Michael\string's College}{Saint~Michael's College} 
+%%   in \Wikiref{Vermont}, \acro{USA}.
+%%   They have shared subdirectories `pkg' and `author'. 
+%%   When some package is described with an \emph{identifier} <id>, 
+%%   its description appears under 
+%%   \[`http://ctan.org/pkg/<id>'.\]
+%% \end{singthm}
+%% 
+%% Macro names for such domains will look like |<prefix>ctanorgbaseref|.
+%% In order to access package descriptions from <ctan-org>, 
+%% such a macro will be defined as 
+%% \[`\httpbaseref{<ctan-org>}'\]
+%% in \secref{x.ctan.org}. 
+%% % However, |alan.smcvt.edu| below has been a different domain~...
+%% \pagebreak[3]
+%% \begin{singthm}{Observations:}\leavevmode
+%%   \begin{enumerate}
+%%     \item All the \emph{description} roots have been \emph{domains}.
+%%     \item A \emph{domain} 
+%%           \InlineCmdBox{<prefix>\code{\ctanorg}}---|\ctanorg| 
+%%           saves a few tokens here: %% 2012/12/18, mv. down 2012/12/29 ... 
+\newcommand*{\ctanorg}{.ctan.org}
+%%           ---has been \emph{either} a package \emph{description} root 
+%%           \emph{or} a \TeX\ \emph{archive} root.
+%%     \item When  <ctan-org> has been a \emph{description} root, 
+%%           `<ctan-org>/tex-archive' has been a \TeX\ \emph{archive} root 
+%%           (with a similar design).                   %% 2013/01/21
+%%   \end{enumerate}
+%% \end{singthm}
+%%
+%% ==== History of `tug.ctan.org'                  ==== %% 2012/12/29
+%% \label{sec:tug.ctan.org}
+%% %% Moved down 2013/01/20:
+%% When the present 'texlinks' package started in January 2011, 
+%% I preferred the design and information of Jim's 
+%% package descriptions under `ctan.org' to the very similar 
+%% descriptions by \catalogueref{}{\meta{The \TeX\ Catalogue}}
+%% (\secref{texcat}), and I preferred Jim's design of 
+%% \TeX\ archive directory displays in the above-mentioned 
+%% archive with root `ctan.org/tex-archive'.
+%% The 'texlinks' \emph{documentation} explicitly said that 
+%% certain \URL s referred to Jim Hef{}feron's pages.
+%%
+%% With the advent of ``the new `www.ctan.org'" announced on 
+%% \ctanannpref{12-12-006718}{2012-12-12,} Jim's design was 
+%% no longer available as described before. The links intended to 
+%% get Jim's design received a collection of different designs 
+%% to choose from, while I preferred Jim's to all of them.
+%% So the 'texlinks' documentation suddenly was wrong.
+%% A serious contentual shortcoming in my view was that, 
+%% unlike Jim's and the Catalogue's package descriptions, 
+%% the new ones did not display direct links to package 
+%% documentations---this difference vanished after Christmas. 
+%% Moreover, the links to lists of packages by the same author 
+%% suddenly just failed, were ``dead."
+%% 
+%% %% Much modified 2013/01/19:
+%% % In the ``new `www.ctan.org'" situation described above, %% rm. 2013/01/20
+%% I discovered that I only had to replace 
+%% `ctan.org' by |tug.ctan.org| in order to get the original 
+%% functionality of 'texlinks'---linking to Jim's pages---back.
+%% This was implemented by 'texlinks' v0.8, introducing 
+%% |\tugctanorg| (useful in the present
+%% documentation---\secref{search-pkg}, \secref{x.ctan.org})
+%% and derived macros. In the terms introduced 
+%% above, `tug.ctan.org' then was a \emph{package description root}.
+%%
+%% Apparently on December 21th, within 24 hours after uploading 
+%% v0.8, `tug.ctan.org' ceased to refer to Jim's pages 
+%% and actually no longer provided a \TeX\ archive or 
+%% package descriptions. My 
+%% \[\urlhttpref{www.webdesign-bu.de/uwe\string_lueck/heyctan.htm}\]
+%% became a superb collection of dead links, and
+%% `\tugctanref' and `\usetugctan' from v0.41 as well as 
+%% `\TugCtanPkgRef' and `\useTUGpkgpages' (among others)
+%% became useless.
+%%
+%% Then I discovered that |ctan.tug.org| still was a 
+%% \emph{package description root} with Jim's design.
+%% Although Robin Fairbairns and Jim warned me that 
+%% Jim's pages may be switched off altogether soon, 
+%% I replaced `tug.ctan.org' by `ctan.tug.org' 
+%% (including the definition of |\tugctanorg|) for 'texlinks' v0.81
+%% and released it on 2013-01-04. Quite immediately, 
+%% `ctan.tug.org' showed the same behaviour has `tug.ctan.org', 
+%% killing the links of my `heyctan.htm' again.
+%%
+%% |alan.smcvt.edu| seems to be the last resort to get 
+%% Jim's package descriptions and archive directories. 
+%% |\tugctanorg| now becomes heavily counter-intuitive,
+%% but this way I need not change so much. 
+\newcommand*{\tugctanorg}{alan.smcvt.edu} %%% {ctan.tug.org}
+%% Karl Berry informed me 2013-01-09 that |tug.ctan.org|
+%% has started to be a relatively long-term 
+%% \emph{\TeX\ archive root}---while I first used it as a 
+%% \emph{package description} root and 
+%% `tug.ctan.org/tex-archive' as an archive root).  %% 2013/01/21
+%% One may remember in the sequel that |tugctan| refers to 
+%% \emph{former} `tug.ctan.org' rather than to the \emph{present} one.
+%% % (TODO: cf. \secref{tug})
+%% Anyway, usage of these macros is \strong{not recommended}, 
+%% they are rather a kind of ``compatibility" code for 
+%% old source files. Personally, 
+%% I also restrict their usage to source files that I edit 
+%% regularly, so I am quickly aware of changes of links.
+%% 
+%% ==== Directories and Files in a \TeX~Archive    ====
+%% \label{sec:texarc}                                   %% 2013/01/19
+%% % `\newcommand*{\ctanref}[1]{\httpref{ctan.org/#1}}' 
+%% % once was replaced in 'blog.sty' by what will now be 
+%% \[|\tugctanref{<path>}{<text>}|\]        %% \[...\] 2012/12/19
+%% hopefully                                        %% 2012/12/29
+%% makes <text> a link 
+%% to a \TeX~Archive directory or file <path> 
+%% with Jim Hef{}feron's interface.                 %% 2012/12/29
+\MakeBasedHref{\tugctanref}{\tugctanorg/tex-archive}
+%% \simpleexample{\tugctanref{}{Archive root}}
+%% Alternatively, you can refer to an (automatically chosen) 
+%% \CTAN\ \emph{mirror}
+%% using 
+%% \[|\mirrorctanref{<path>}{<text>}|.\] %% 2011/10/10 :->.2011/10/21: 
+%% % (I prefer the \emph{appearance} of the         %% rm. 2012/12/29
+%% % \tugctanref{}{\TUG\ archive}, designed by Jim Hefferon.)
+\MakeBasedHref{\mirrorctanref}{mirror\ctanorg}
+%% \simpleexample{\mirrorctanref{}{Archive root}}
+%% You may actually want to ``open" a file <file-name> in <path> 
+%% on \CTAN, 
+%% <file-name> displayed as the link text,          %% 2011/10/21
+%% % either by 
+%% % \[|\tugctanfileref{<path>}{<file-name>}|\]       %% 2011/10/10
+%% % or (for a mirror) by
+%% by                                               %% 2013/01/21
+%% \[|\mirrorctanfileref{<path>}{<file-name>}|.\]   %% 2011/10/10
+% \newcommand*{\tugctanfileref}[2]{%
+%     \tugctanref{#1/#2}{\filenamefmt{#2}}}
+\newcommand*{\mirrorctanfileref}[2]{%
+    \mirrorctanref{#1/#2}{\filenamefmt{#2}}}
+%% Typically, \LaTeX\ macro packages in `macros/latex/contrib/'
+%% are discussed, so here is |\ltxcontrib| saving a few characters:
+\newcommand*{\ltxcontrib}{macros/latex/contrib/}
+%% \begin{example}\leavevmode                       %% 2013/01/22
+%%      \[\simplecodefbox{%
+%%       \mirrorctanref{&\ltxcontrib morehype}{&\pkg{morehype}}}\]
+%% yields \ \simplecodeoutfbox{%
+%%        \mirrorctanref{\ltxcontrib morehype}{&\pkg{morehype}}}.
+%% %% <- & doesn't work in first arg. of \href 2012/12/30
+%% %%    -> `replace.sty'? 
+%% \end{example}
+%%
+%% %% 2013/01/21:
+%% v0.82 removes `\tugctanfileref' which seems not to be useful. 
+%% My reason to choose Jim Hef{}feron's pages was 
+%% how \CTAN\ \emph{directories} are displayed. 
+%% For \emph{opening a file} from, any mirror should do.
+%% However ... TODO
+%%
+%% Only for v0.82 I realize that the ``new `www.ctan.org'" 
+%% might provide directory designs (you can choose from predefined 
+%% ones and install your own) that users prefer to 
+%% the directory display of common \CTAN\ mirrors. 
+%% \[|\wwwctanref{<path>}{<text>}|\]
+%% is made for this purpose. It may replace `\tugctanref'
+%% especially when the latter vanishes:
+\MakeBasedHref{\wwwctanref}{www\ctanorg/tex-archive}
+%% \simpleexample{\wwwctanref{}{Archive root}}
+%%
+%% ==== Shorthand \cs{ctanref} for \CTAN\ Mirrors  ==== %% 2013/01/21
+%% \label{sec:custom-ref}
+%% |\ctanref| works like one out of 
+%% \[`\tugctanref', `\mirrorctanref', `\wwwctanref', `\myctanref'\]
+%% depending on which out of 
+%% \[|\usetugctan|, |\usemirrorctan|, |\usewwwctan|, |\usemyctan|\]
+%% appeared most recently. 
+%% By default, it works like `\mirrorctanref'.
+%% So in any case its syntax is \[|\ctanref{<path>}{<text>}|.\]
+%% The idea is that it is a shorthand to access the user's 
+%% favourite \CTAN\ mirror, or just to save the `www' 
+%% in `\wwwctanref', for instance. It may also be modified directly 
+%% using 
+%% \[|\MakeBasedHref{\ctanref}{<ctan-mirror>}|\]
+%% where <ctan-mirror> is a \URL\ of a root of 
+%% a \CTAN\ mirror, or by 
+%% \[|\renewcommand{\ctanref}{\dirctanref}|\]
+%% for instance ... \ another macro for a \CTAN\ mirror 
+%% that you may meet soon. (See \secref{bases} for `\MakeBasedHref'.)
+\newcommand*{\usemirrorctan}{%
+    \let \ctanref     \mirrorctanref
+%     \let \ctanfileref \mirrorctanfileref
+}
+%% |\usemirrorctan| is the \strong{default}, i.e., 
+%% |\ctanref| % and |\ctanfileref| use 
+%% uses
+%% \urlhttpref{mirror.ctan.org}:
+\usemirrorctan
+\newcommand*{\usetugctan}{%
+    \let \ctanref     \tugctanref
+%     \let \ctanfileref \tugctanfileref
+}
+\newcommand*{\usewwwctan}{\let\ctanref\wwwctanref}
+%% |\myctanref| again is \emph{initialized} to work like 
+%% `\mirrorctanref':
+\newlet\myctanref\mirrorctanref
+%% However, it is \emph{intended} to store the 
+%% user's favourite mirror <my-ctan>, hoping that the user issues
+%% \[|\MakeBasedHref{\myctanref}{<my-ctan>}|\]
+%% and \emph{only afterwards} issues |\usemyctanref|:
+\newcommand*{\usemyctanref}{\let\ctanref\myctanref}
+%% ... not entirely sure ... the user could directly issue
+%% \[`\MakeBasedHref{\ctanref}{<my-ctan>}'\]
+%% The advantage of `\usemyctanref' is that you can 
+%% switch to another `\ctanref' later and then return to 
+%% `\myctanref' ... not so stable TODO
+%% \begin{singthm}{Remark} (TODO) \ Another implementation 
+%% of adjusting `\ctanref' I consider is 
+%% using some `\ctanurl'\-`prefix' that you can redefine for 
+%% accessing your favourite mirror.
+%% \end{singthm}
+%%
+%% ==== Flexibiblity with Files and Directories    ==== %% 2013/01/22
+%% With some influence of the ideas of v0.41, `\ctanref' 
+%% now is a shorthand for viewing \CTAN\ directories, 
+%% e.g., working like `\mirrorctanref'. There was a 
+%% flexible variant of `\mirrorctanfileref' too, 
+%% but the implementation was bad from my present view.
+%% I no longer want to offer downloads from Jim's pages.
+%% \[|\ctanfileref{<path>}{<file>}|\] displays <file> as link text 
+%% and opens it. The mirror is chosen according to a shorthand 
+%% \ |\filectanref{<path>/<file>}{<text>}| \ that can be 
+%% adjusted with `\MakeBasedHref' like `\ctanref':
+\newcommand*{\ctanfileref}[2]{%
+    \filectanref{#1/#2}{\filenamefmt{#2}}}
+%% |\filectanref| is initialized to work like `\mirrorctanref':
+\newlet\filectanref\mirrorctanref
+%% The purpose is that the user adjusts it by 
+%% \[|\MakeBasedHref{\filectanref}{<ctan-down>}|\]
+%% when she wants to download (open) files from \CTAN\ mirror <ctan-down>, 
+%% which may be the mirror at the university where she sits.
+%% \begin{example}\leavevmode
+%% \[ \simplecodefbox{\ctanfileref{&\ltxcontrib morehype/doc}{texlinks.pdf}}\]
+%%   yields \
+%%  \simplecodeoutfbox{\ctanfileref{\ltxcontrib morehype/doc}{texlinks.pdf}}
+%% \end{example}
+%%
+%% It may be psychologically useful to have an \emph{opposite} 
+%% to `\filectanref' that can easily be recognized as such, 
+%% while `\ctanref' may be unclear. I offer 
+%% \ |\dirfilectanref{<path>}{<text>}|. \ It may be an alias 
+%% for `\ctanref', even respecting the `\use'\codedots\ commands 
+%% from above. Another proposal above is dangerous with the present idea:
+\newcommand*{\dirctanref}{\ctanref}
+%%
+%% ==== The \TeX\ Catalogue OnLine                 ====
+%% %% **** J\"urgen Fenn's Topical \TeX\ Catalogue  ****
+%% \label{sec:texcat}                               %% 2012/12/18
+%% % We are not providing access to everything in the 
+%% % \catalogueref{}{\TeX~catalogue}. 
+%% Before v0.8, only 
+%% J\"urgen Fenn's Topical Index of the Catalogue 
+%% was supported. v0.8 adds package descriptions displayed 
+%% by the Catalogue. The following shorthand
+%% |\catalogueref{<path[#frag]>}{<text>}| is an auxiliary for 
+%% both of them (and other <path>s the user might want). 
+%% With empty <path>, 
+%% it generates an \URL\ of a \catalogueref{}{root} 
+%% in a \CTAN\ mirror  %% shorthand 2012/12/17
+%% of \meta{The \TeX~Catalogue OnLine}:
+\newcommand*{\catalogueref}[1]{\mirrorctanref{help/Catalogue/#1}}
+%% Some mirrors seem to display the Catalogue's root directory 
+%% only this way, while others display the ``Welcome" page. 
+%% |\cataloguestartref{<text>}| accesses the 
+%% \cataloguestartref{\strong{Welcome} (\strong{start})} page surely:
+\newcommand*{\cataloguestartref}{\catalogueref{index\html}}
+%% |\bytopicref{<anchor>}{<text>}| 
+%% \                                                %% 2011/10/21
+%% makes <text> a link to <anchor> of 
+%% \strong{J\"urgen Fenn's Topical Index}           %% 2012/12/18
+%% of the \TeX\ Catalogue. You find the <anchor> 
+%% by clicking at the respective \acro{TOC} entry on top of the page 
+%% and then read the \URL\ from the browser's navigation display.
+\newcommand*{\bytopicref}[1]{\catalogueref{bytopic\html\##1}}
+%% %% <- \mirrorctanref 2012/03/09
+%% % \begin{example}
+%% %      |\bytopicref{html}{\TeX~to \acro{HTML}}| \ for \ 
+%% % \simpleexample{\bytopicref{html}{&\TeX~to &\acro{HTML}}}
+%% \simpleexample{\bytopicref{html}{&\TeX~to HTML}}
+%% % \end{example}
+%% \[|\catpkgref{<pkg-name>}|\] makes <pkg-name> 
+%% a link to the description of the \strong{package} <pkg-name> 
+%% in \meta{The \TeX~Catalogue Online}.
+%% \[|\CatPkgRef{<name>}{<Name>}|\]
+%% is a variant for the cases where authors have a special idea
+%% <Name> using some capital letters when they describe their packages
+%% (\acro{ASCII} %%% ASCII                   %% 2012/12/14
+%% versions of ``logos" such as `BibTeX')    %% was Logos 2012/10/24
+%% while the identifier <name> doesn't allow capital letters.
+%% %% 2011/01/24:
+%% Also, <Name> may be a package from a \emph{bundle} <name> 
+%% where <name> has a description page while <Name> 
+%% doesn't have its \emph{own} description page~...
+%% \simpleexample{\CatPkgRef{morehype}{texlinks}}
+%% \noindent The auxiliary |\@double@first@arg<cmd>{<arg>}|
+%% doubles `{<arg>}' for <cmd>:
+\newcommand*{\catpkgref}{\@double@first@arg\CatPkgRef}
+\newcommand*{\@double@first@arg}[2]{#1{#2}{#2}}
+\newcommand*{\CatPkgRef}[1]{%
+    \cat@ctan@pkg@ref\catalogueref{entries/#1\html}}
+%% |\cat@ctan@pkg@ref<cmd>{<path[#frag]>}{<text>}|  %% 2012/12/19
+%% \ ensures that <Name> is typeset as the argument of 
+%% `\pkgnamefmt' (\secref{fonts}). 
+%% It is used in \secref{sing-pkgs} again: 
+\newcommand*{\cat@ctan@pkg@ref}[3]{#1{#2}{\pkgnamefmt{#3}}}
+%% \simpleexample{\catpkgref{morehype}}
+%% % \begin{example}
+%%   % \makeatletter \def\ex@mple{\catpkgref{morehype}}%
+%%   % \fbox{\strut\expandafter\code\expandafter{\expandafter&\ex@mple}}%
+%%   % %% <- bad spaces
+%%   % \hskip\labelsep for\hskip\labelsep
+%%   % \fbox{\strut\ex@mple}
+%%   %      |\catpkgref{morehype}| \ for \ 
+%%   % \fbox{\catpkgref{morehype}}
+%% % \end{example}
+%%
+%% ==== Domains for Other Package Descriptions     ====
+%% %% **** Other Interfaces to Package Descriptions ****
+%% \label{sec:x.ctan.org}
+%% v0.6 in the spirit of \secref{bases} introduced an auxiliary 
+%% \[|\ctanorgbaseref{<path>}{<text>}|\] for accessing Jim 
+%% Hef{}feron's package descriptions, as the 'texlinks' 
+%% documentation told then. By the advent of ``the new 
+%% `www.ctan.org'" announced on \ctanannpref{12-12-006718}{2012-12-12,} 
+%% this was falsified. `\ctanorgbaseref' formerly linked to 
+%% `ctan.org', i.e., to `www.ctan.org'. The package description 
+%% pages under that domain have been changed in December 
+%% and no longer call themselves ``Jim Hef{}feron's." 
+%% The latter's pages seem to stay available under 
+%% \urlfmt{\tugctanorg}. Major contentual differences at present 
+%% (2013-01-21) seem to be that %%% (2012-12-18) seem to be:
+%% % \begin{enumerate}
+%% %   \item 
+%%         `www.ctan.org' classifies packages by a new concept 
+%%         of ``\strong{topics},"                               %% \strong 2013/01/21
+%%         while \urlfmt{\tugctanorg} classifies them 
+%%         by ``\strong{keywords}" as well as 
+%%         by ``\strong{char\-ac\-teri\-za\-tions}" out of which one is 
+%%         ``primary" and others are ``secondary."
+%% %   \item \urlfmt{\tugctanorg} like the Catalogue as in \secref{texcat}
+%% %         provides links to single documentation files, 
+%% %         unlike `www.ctan.org'.
+%% % \end{enumerate}
+%% 
+%% In order to keep as much as possible, I introduce new 
+%% `\tugctan'\codedots\ and `\wwwctan'\codedots\ commands. 
+%% The first ones link to \urlfmt{\tugctanorg} 
+%% (see \secref{tug.ctan.org} for why), the others to 
+%% `www.ctan.org'. The user may choose whether the 
+%% `\ctan'\codedots\ commands link to \urlfmt{\tugctanorg} 
+%% or to `www.ctan.org'. 
+%%
+%% |\tugctanorgbaseref{<path>}{<text>}| \ links to \urlfmt{\tugctanorg} 
+%% independently of the choice for `\ctanorgbaseref':
+\newcommand*{\tugctanorgbaseref}{\httpbaseref\tugctanorg}
+%% |\wwwctanorgbaseref{<path>}{<text>}| \ links to `www.ctan.org'
+%% independently of the choice for `\ctanorgbaseref':
+\MakeBasedHref{\wwwctanorgbaseref}{www\ctanorg}
+%% |\useTUGctanbases| \ lets `\ctanorgbaseref' be `\tugctanorgbaseref':
+\newcommand*{\useTUGctanbases}{\let\ctanorgbaseref\tugctanorgbaseref}
+%% `\ctanorgbaseref{<path>}{<text>}' before v0.81 aimed to get Jim Hef{}feron's 
+%% pages via `\tugctanorgbaseref' by default:
+% \useTUGctanbases
+%% ... but that is bad when the future of \urlfmt{\tugctanorg} is unclear.
+%% Therefore, \
+%% |\useWWWctanbases| \ will choose `www.ctan.org' to look for package 
+%% descriptions as the default instead (as of v0.81):
+\newcommand*{\useWWWctanbases}{\let\ctanorgbaseref\wwwctanorgbaseref}
+\useWWWctanbases
+%%
+%% ==== Single Packages without The \TeX~Catalogue ====
+%% \label{sec:sing-pkgs}                            %% 2012/12/19
+%% |\ctanpkgref{<pkg-name>}|
+%% makes 
+%% <pkg-name> %%% <text> %% 2012/12/14
+%% a link to a package info page for the package <pkg-name>. 
+%% |\CtanPkgRef{<name>}{<Name>}|
+%% is a variant of `\ctanpkgref' relating to the latter 
+%% as `\CatPkgRef' relates to `\catpkgref' (\secref{texcat}). 
+\newcommand*{\ctanpkgref}{\@double@first@arg\CtanPkgRef}
+\newcommand*{\CtanPkgRef}{\Ct@nPkgRef\ctanorgbaseref}
+%% Using `\cat@ctan@pkg@ref' from \secref{texcat}:
+\newcommand*{\Ct@nPkgRef}[2]{\cat@ctan@pkg@ref#1{pkg/#2}}
+%% |\ctanpkgstyref{<name>}|                         %% 2012/11/27
+%% adds \qtdcode{.sty} to the package name:
+\newcommand*{\ctanpkgstyref}[1]{\CtanPkgRef{#1}{#1.sty}}
+%% The previous commands for package info pages choose between 
+%% \urlfmt{\tugctanorg} and `www.ctan.org' according to 
+%% `\useTUGctanbases' or `\useWWWctanbases' 
+%% (i.e., `\ctanorgbaseref', \secref{x.ctan.org}).
+%% The next commands allow that choice independently of 
+%% `\ctanorgbaseref', by contrast. 
+%% |\useTUGpkgpages| may be issued to stick to the \TUG\ 
+%% package descriptions (from `\CtanPkgRef').           %% \ 2013/01/21
+%% % even after `\useWWWctanorgbases' (useful? TODO): %% rm. 2012/12/29
+\newcommand*{\TugCtanPkgRef}{\Ct@nPkgRef\tugctanorgbaseref}
+\newcommand*{\tugctanpkgref}{\@double@first@arg\TugCtanPkgRef}
+\newcommand*{\useTUGpkgpages}{\let\CtanPkgRef\TugCtanPkgRef}
+%% After |\useWWWpkgpages|, `\CtanPkgRef' and `\ctanpkgref' 
+%% use the package descriptions
+%% from `www.ctan.org' even after `\useTUGctanorgbases':
+\newcommand*{\WwwCtanPkgRef}{\Ct@nPkgRef\wwwctanorgbaseref}
+\newcommand*{\wwwctanpkgref}{\@double@first@arg\WwwCtanPkgRef}
+\newcommand*{\useWWWpkgpages}{\let\CtanPkgRef\WwwCtanPkgRef}
+%% After |\useCATpkgpages|, `\CtanPkgRef' and `\ctanpkgref'
+%% use the \TeX~Catalogue to display package informations:
+\newcommand*{\useCATpkgpages}{\let\CtanPkgRef\CatPkgRef}
+%% Finally, we provide experimental 
+%% \[|\AllPkgRefs{<name>}{<Name>}| \mbox{\quad and\quad} 
+%%   |\allpkgrefs{<name>}|\]
+%% offering choice between the three interfaces for each package. 
+%% \qtdcode{c} will stand for The \TeX~Catalogue, 
+%% \qtdcode{t} for \urlfmt{\tugctanorg}, and 
+%% \qtdcode{w} for `www.ctan.org'. After |\useALLpkgpages|, 
+%% this is what `\CtanPkgRef' and `\ctanpkgref' offer:
+\newcommand*{\AllPkgRefs}[2]{%
+    \pkgnamefmt{#2}\,[\CatPkgRef{#1}{c}\textbar
+                      \TugCtanPkgRef{#1}{t}\textbar
+                      \WwwCtanPkgRef{#1}{w}]}
+\newcommand*{\allpkgrefs}{\@double@first@arg\AllPkgRefs}
+\newcommand*{\useALLpkgpages}{\let\CtanPkgRef\AllPkgRefs}
+%% \simpleexample{\allpkgrefs{morehype}}
+%% (With 'blog.sty', this requires some `\def\textbar{|}' TODO.)
+%%
+%% ==== Package Author Pages                       ====
+%% Before v0.8, we told that 
+%% \[|\ctanpkgauref{<id>}{<text>}|\]
+%% referred to a package author page---a 
+%% list of all the author's packages---of 
+%% Jim Hef{}feron's interface,
+%% provided <id> had been chosen properly. 
+%% With the advent of ``the new `www.ctan.org'" announced on 
+%% \ctanannpref{12-12-006718}{2012-12-12,} links generated 
+%% by this command stopped working altogether.
+%% For v0.8, we repaired the definition so that the claim 
+%% became true again---for a few days. 
+%% v0.81 changes the default, see \secref{x.ctan.org}.
+%% But ``the new `www.ctan.org'" also 
+%% provides its own author pages, and we offer a choice 
+%% between both interfaces for the author pages. 
+%% A little problem has been that the paths to these pages 
+%% differ between \urlfmt{\tugctanorg} and `www.ctan.org' now.
+\newcommand*{\ctanpkgauref}[1]{\ctanorgbaseref{author/%
+%% Only \urlfmt{\tugctanorg} uses \qtdcode{id/}:
+    \ifx\ctanorgbaseref\tugctanorgbaseref id/\fi
+    #1}}
+%% % \simpleexample{\ctanpkgauref{lueck}{&\emph{My} packages}}
+%% \simpleexample{\ctanpkgauref{lueck}{mine}}
+%% %---On 2012-12-30, however, I see that with `ctan.org/author/id', 
+%% %\qtdcode{/id} is automatically removed. (TODO)
+%% 
+%% |\tugctanpkgauref{<id>}{<text>}| chooses Jim Hef{}feron's 
+%% author pages even if `www.ctan.org' has been chosen to be 
+%% the main interface for package descriptions (\secref{x.ctan.org}):
+\newcommand*{\tugctanpkgauref}[1]{\tugctanorgbaseref{author/id/#1}}
+%% \simpleexample{\tugctanpkgauref{lueck}{mine}}
+%% |\wwwctanpkgauref{<id>}{<text>}| chooses the new `www.ctan.org''s 
+%% author pages even if \urlfmt{\tugctanorg} has been chosen to be 
+%% the main interface for package descriptions (\secref{x.ctan.org}):
+\newcommand*{\wwwctanpkgauref}[1]{\wwwctanorgbaseref{author/#1}}
+%% \simpleexample{\wwwctanpkgauref{lueck}{mine}}
+%% By the default settings as of v0.81, `\wwwctanpkgauref'  %% 2012/12/30
+%% is equivalent to `\ctanpkgauref'. To change this, issue
+%% \[`\renewcommand{\ctanpkgauref}{\tugctanpkgauref}'\]
+%%
+%% ==== Other Ways to Search for Packages          ====
+%% \label{sec:search-pkg}                                       %% 2012/12/29
+%% |\ctanpkgtopicref{<topic-id>}{<text>}| accesses a list of 
+%% packages belonging to the ``topic" with identifier <topic-id>. 
+\newcommand*{\ctanpkgtopicref}[1]{\wwwctanorgbaseref{topic/#1}}
+%% \simpleexample{\ctanpkgtopicref{cvt-html}{make HTML}}
+%%
+%% \urlfmt{\tugctanorg} and `www.ctan.org' offer more pages for which 
+%% I don't create own macros, while I use some of them on a 
+%% \httpref{www.webdesign-bu.de/uwe_lueck/taeglich.htm}
+%%         {page collecting my favourite links.}
+%% They are accessed either by
+%% `\tugctanorgbaseref{<path>}'---resulting in `tug.ctan.org/<path>'---or by
+%% `\wwwctanorgbaseref{<path>}'---resulting in `www.ctan.org/<path>'.
+%% I am listing a few.
+%% \begin{itemize}
+%%   \item On \urlhttpref{www.ctan.org/author}, you can browse 
+%%         package authors. I could not find an equivalent 
+%%         page under \urlfmt{\tugctanorg}. 
+%%   \item \urlhttpref{\tugctanorg/search} and 
+%%         \urlhttpref{www.ctan.org/search} offer different 
+%%         criteria for searches.
+%%   \item On \urlhttpref{www.ctan.org/topic}, you can browse topics. 
+%%         This page in fact is accessed by `\ctanpkgtopicref{}' 
+%%         (<topic-id> empty). Jim Hef{}feron's keywords 
+%%         %%% and characterizations 
+%%         can be browsed on \[\urlhttpref{\tugctanorg/keywords}.\]
+%%         His characterizations can be browsed from 
+%%         \[\urlhttpref{\tugctanorg/characterization/choose\string_dimen}.\]
+%%   \item \urlhttpref{\tugctanorg/pkg} is a single page listing 
+%%         all package identifiers <pkg-id> 
+%%         (for `\ctanpkgref{<pkg-id>}', as links). 
+%%         %%% The corresponding 
+%%         \urlhttpref{www.ctan.org/pkg}
+%%         just offers a link alphabet for pages of packages
+%%         that share their first letter (in the identifier).
+%% \end{itemize}
+%%
+%% === Mailing Lists              ===
+%% \label{sec:mail}
+%% v0.7 relies on package \ctanpkgref{langcode} for 
+%% |\enmonthname{<month-number>}| and |\demonthname{<month-number>}|, 
+%% for tricks with language codes extending those in 
+%% \secref{langcode}:
+\RequirePackage{langcode}
+%% The next definitions are backbones for generating links to 
+%% web pages about \TeX\ mailing lists. 
+%% |\TL@piper@parse<year>-<month-number>-<id>| will be used
+%% for referring to single postings:
+\def\TL@piper@parse#1-#2-#3/{#1-\enmonthname{#2}/#3}
+%% \[|\texlistyearmonthref<list-ref>{<2-digits>-<month-no>}|\]
+%% will generate \ |<list-ref>{<path>}| \ for linking to the list of postings 
+%% of the <month-no>th month in the year 20<2-digits>:
+\newcommand*{\texlistyearmonthref}[2]{\texlist@yearmonthref#1#2\@nil}
+\def\texlist@yearmonthref#1#2-#3\@nil{#1{20#2-\enmonthname{#3}}}
+%% \qtd{<path>} will be \qtdcode{20<2-digits>-<month>}, 
+%% and <month> will be the \emph{English} name of the 
+%% <month-no>th month of the year.
+%% 
+%% \[|\texlanglistmonthref<month-cmd><list-ref>{<2-digits>-<month-no>}|\]
+%% will generate \ |<list-ref>{<path>}{<month>}| \ 
+%% where <month> is determined from <month-no> by <month-cmd>: 
+\newcommand*{\texlanglistmonthref}[3]{\texlanglistm@nthref#1#2#3\@nil}
+\def\texlanglistm@nthref#1#2#3-#4\@nil{%
+    #2{20#3-\enmonthname{#4}}{#1{#4}}}
+%% |\detexlistmonthref<list-ref>{<2-digits>-<month-no>}| \
+%% now could be used for `<list-ref>{<path>}{<month>}' 
+%% \emph{German} <month> ...
+\newcommand*{\detexlistmonthref}{\texlanglistmonthref\demonthname}
+%% ... as could be \ |\entexlistmonthref<list-ref>{<2-digits>-<month-no>}| \
+%% for \emph{English} <month> ...
+\newcommand*{\entexlistmonthref}{\texlanglistmonthref\enmonthname}
+%% With proper use of \ctanpkgref{langcode} however, 
+%% \[|\texlistmonthref<list-ref>{<2-digits>-<month-no>}|\]
+%% \emph{automatically} chooses between English and German <month> 
+%% (according to intention ...):
+\newcommand*{\texlistmonthref}{\texlanglistmonthref\monthname}
+%%
+%% === \CTAN\ Announcements       ===               %% 2011/06/27
+%% |\ctanannref{<id>}{<text>}| makes <text> a link 
+%% to the DANTE web page displaying a \CTAN\ 
+%% announcement. You find <id> by searching 
+%% \[\texttt{https://lists.dante.de/pipermail/ctan-ann/}\]
+%% and then reading the \URL.
+%% <id> is composed as 
+%% \[`<year>-<month>/<6-digits>.html'\]%%%, \[\] 2012/10/24
+%% %% 2012/10/24:
+%% where <year> consists of 4 digits and <month> is an \emph{English} 
+%% month name:
+\newcommand*{\ctanannref}[1]{%
+    \httpsref{lists.dante.de/pipermail/ctan-ann/#1}}
+%% |\ctanannpref{<id-code>}{<text>}| is a variant 
+%% of `\ctanannref' where in place of <id> 
+%% you only type the third and fourth digit of the 
+%% year (<2-digits>), then a \qtdcode{-}, then the (arabic) 
+%% number <month-no> of the month (cf. \secref{mail} so far), 
+%% then another \qtdcode{-}, 
+%% and then the actual internal identifier <running-no>
+%% (a number of six digits preceding \qtdcode{.html} of the \URL). 
+%% I.e., \qtd{<id-code>} is \qtdcode{<2-digits>-<month-no>-<running-no>}.
+\newcommand*{\ctanannpref}[1]{%
+    \ctanannref{20\TL@piper@parse#1/\html}}         %% `20' 2012/12/08
+%% \[|\ctanannyearmonthref{<2-digits>-<month-no>}|\] generates 
+%% `\ctanannref{<path>}' from \qtdcode{<2-digits>-<month-no>}---<path> 
+%% as in \secref{mail} ...
+\newcommand*{\ctanannyearmonthref}{\texlistyearmonthref\ctanannref}
+%% \[|\ctanannmonthref{<2-digits>-<month-no>}|\] generates 
+%% `\ctanannref{<path>}{<month>}' where <month> obeys `\langcode' ...
+%% % from \qtdcode{<2-digits>-<month-no>}
+\newcommand*{\ctanannmonthref}{\texlistmonthref\ctanannref}
+%%
+%% === \code{\dots stack\dots} Forums ===           %% 2012/12/17/18
+%% |\stackexref{<id-no>}{<text>}| \ shows exchange about 
+%% Question No.~<id-no> on \urlhttpref{tex.stackexchange.com}.
+%% <id-no> is the number following \qtdcode{/questions/}
+%% in the \URL\ 
+%% (the part of the \URL\ reflecting the caption are not needed).
+%% See an example from 
+%% $<id-no>=\stackexref{84878}{84878}$ in \secref{wiki-stack}. 
+\newcommand*{\stackexref}{\stackquestionref{tex.stackexchange}}
+\newcommand*{\stackquestionref}[2]{\httpref{#1.com/questions/#2}}
+%% Likewise, \ |\stackoverref{<id-no>}{<text>}| \ links to 
+%% \urlhttpref{stackoverflow.com}
+%% ($<id-no>=\stackoverref{2118972}{2118972}$ is about file dates):
+\newcommand*{\stackoverref}{\stackquestionref{stackoverflow}}
+%% 
+%% === \TUG                       ===               %% \TUG 2012/12/15
+%% \label{sec:tug}                                  %% 2012/12/29
+%% |\tugref{<path>}{<text>}| makes <text> a link
+%% to <path> on domain `tug.org':
+\MakeBasedHref{\tugref}{tug.org}
+%% ==== texhax ====
+%% |\texhaxref{<id>}{<text>}| makes <text> a link 
+%% to the \TUG\ web page displaying 
+%% a texhax posting. You find <id> by searching 
+%% `tug.org/pipermail/texhax/' and then reading the \URL.
+%% <id> is composed as `<year>-<month>/<6-digits>.html'.
+\newcommand*{\texhaxref}[1]{\tugref{pipermail/texhax/#1}}
+%% |\THref{<id>}| saves you from choosing <text> 
+%% and uses `texhax' instead. 
+\newcommand*{\THref}[1]{\texhaxref{#1}{texhax}}
+%% (It was `\prg{texhax}' in 'blog.sty', to have something 
+%%  logo-like, without a good idea how to implement it.)
+%% 
+%% |\texhaxpref{<id-code>}{<text>}| is a variant 
+%% of `\texhaxref' where in place of <id> 
+%% you only type the third and fourth digit of the 
+%% year, then a `-', then the (arabic) number of 
+%% the month, then another `-', and then the actual 
+%% internal identifier 
+%% (a number of six digits preceding `.html' of the \URL). 
+%% I made this macro because I prefer typing to copying 
+%% from the \URL. 
+\newcommand*{\texhaxpref}[1]{%              %% 2010/09/07
+    \texhaxref{20\TL@piper@parse#1/\html}}  %% 2011/05/03
+%% TODO: `\texhaxPref#1' searches list of offsets 
+%%       to determine year/month from id ...
+%%
+%% \[|\texhaxyearmonthref{<2-digits>-<month-no>}|\] generates 
+%% `\texhaxref{<path>}' from \qtdcode{<2-digits>-<month-no>}---<path> 
+%% as in \secref{mail} ...
+\newcommand*{\texhaxyearmonthref}{\texlistyearmonthref\texhaxref}
+%% \[|\texhaxmonthref{<2-digits>-<month-no>}|\] generates 
+%% `\texhaxref{<path>}{<month>}' where <month> obeys `\langcode' ...
+\newcommand*{\texhaxmonthref}{\texlistmonthref\texhaxref}
+%% 
+%% ==== Other  ====
+%% %% 2011/04/27 corr. doc. vol/issue
+%% |\tugbartref{tb<vol>-<issue>/<filename-base>}{<text>}| 
+%% makes <text> a link to the \TUG boat article 
+%% `<filename-base>.pdf' in vol.~<vol> and issue~<issue>:
+% \newcommand*{\tugbartref}[1]{\tugref{TUGboat/Articles/#1.pdf}}
+\newcommand*{\tugbartref}[1]{\tugref{TUGboat/#1.pdf}}
+%% %% <- 2011/04/30
+%% |\tugiref{<anchor>}{<text>}| makes <text>    %% <text> 2012/07/23 tugi 2012/08/05
+%% a link to an <anchor> 
+%% on the \TUG\ web page entitled \qtd{TeX Resources on the Web}
+%% (e.g., $<anchor>=\mbox{\qtdcode{web}}$ shows the section entitled
+%%  \tugiref{web}{\qtd{\TeX~web projects}}):
+\newcommand*{\tugiref}[1]{\tugref{interest\html\##1}}
+%% It was `\TUGIref' until v0.6, we keep this for compatibility
+%% (deprecated):
+\newlet\TUGIref\tugiref
+%%
+%% === \acro{UK FAQ}              ===
+%% |\ukfaqref{<label>}{<text>}| makes <text> a link to 
+%% the UK~\TeX~FAQ page with ``label"~= <label>:
+\newcommand*{\ukfaqref}[1]{\httpref{%
+    www.tex.ac.uk/cgi-bin/texfaq2html?label=#1}}
+%% === Wikibooks                  ===
+%% \label{sec:wikibooks}                        %% 2013/01/21
+%% |\wikilangbooksref{<language-code>}{<book>/<subject>}{<text>}| 
+%% %% <- ref 2012/10/04, <book>/<subject> 
+\newcommand*{\wikilangbooksref}[1]{%         %% `lang' 2012/01/06
+    \httpbaseref{#1.wikibooks.org/wiki}}
+%% |\latexwikibookref{<subject>}{<text>}| \  %% \ 2012/12/16
+%% refers to the %% rm. extra arg. 2012/10/24
+%% (English) \latexwikibookref{}{\emph{\LaTeX} wikibook:} %% lc 2012/12/16
+\newcommand*{\latexwikibookref}[1]{\wikilangbooksref{en}{LaTeX/#1}}
+%% The German 
+%% \wikilangbooksref{de}{LaTeX-Kompendium}{\dqtd{\LaTeX-Kompendium}}
+%% is somewhat difficult, I leave it for now~...
+%%
+%% %% 2012/12/16:
+%% |\texwikibookref{<subject>}{<text>}| \ refers to the 
+%% % \texwikibookref{}{\emph{\TeX} wikibook.} 
+%% \wikilangbooksref{en}{TeX}{\emph{\TeX} wikibook.} 
+%% E.g., <subject> may access a description of the 
+%% \wikilangbooksref{en}{TeX#TeX_Primitives}{\TeX\ \emph{primitive}} 
+%% `\<subject>', such as `\texwikibookref{if}{\cs{if}}'
+%% for \texwikibookref{if}{\cs{if}}. However, some primitives 
+%% have not been described yet, and the whole \TeX\ wikibook 
+%% largely is just a list of what needs to be done.
+\newcommand*{\texwikibookref}[1]{\wikilangbooksref{en}{TeX/#1}}
+%%
+%% == Leaving and Version HISTORY ==                %% 2012/03/09
+\endinput
+%% VERSION HISTORY
+v0.1    2011/01/24  new file, code from blog.sty v0.3
+v0.2    2011/01/27  \urlfoot, \NormalHTTPref, \foothttpurlref,
+                    "outline" adjusted; 
+                    more consistent use of \newcommand and 
+                    \@ifdefinable (TODO: guarded \let)
+v0.3    2011/02/10  [blog]; \urlpkgfoot
+v0.4    2011/04/27  doc. \tugbartref\ corrected
+        2011/04/30  shortened link in \tugbartref 
+        2011/05/03  \TL@piper@parse, tried \ctanannref
+        2011/05/13  reworking Wikipedia, arbitrary languages 
+        2011/06/27  doc.: \acro; \httpsref, \ctanannref 
+        2011/07/23  doc.: typo \acro{TUG}, `Almost all', page breaks; 
+                    \Wikidisambref: different order of arg.s
+        2011/08/18  doc.: \acro with UK; wikibooks
+        2011/08/27  doc. \acro with URL and PDF; 
+                    more doc and code changes for https
+uploaded with MOREHYPE r0.4 (not touched by r0.41)
+v0.41   2011/09/03  doc.: more specific on \urluml/Wikipedia
+        2011/10/06  \mirrorctanref, \tugctanfileref, 
+                    \mirrorctanfileref, \ltxcontrib
+        2011/10/10  doc. formatting of previous
+uploaded with MOREHYPE r0.5(1)
+v0.5    2011/10/19  doc. fix LaTeX Wikibook
+        2011/10/20  \urlfmt, \filenamefmt and \pkgnamefmt
+                    changed and moved, modified doc. on them, 
+                    doc. uses \URL
+        2011/10/21  re-order CTAN, \pagebreak's, \ctanref and 
+                    choice for it, doc. modified; rm. \ithttpref
+uploaded with MOREHYPE r0.52
+v0.6    2012/01/06  \wikilangref etc., \wikiref etc. depend on 
+                    \langcode 
+        2012/01/11  removed old comments for Wikipedia; (C)
+        2012/03/09  "URL bases" (\httpbaseref etc.), applied; 
+                    \bytopicref uses \mirrorctanref
+        2012/03/12  fixed \texhaxref
+        2012/04/09  \ctanorgbaseref, \ctanpkgauref
+        2012/04/10  makedoc link works!
+        2012/05/13  example for \wikilangref corrected
+uploaded with MOREHYPE r0.6
+v0.7    2012/07/23  doc.: <text>
+        2012/08/05  \tugiref
+        2012/10/04  doc. wikibooks: ref
+        2012/10/24  ...monthref... requiring `langcode.sty', moving 
+                    links to mailing list pages from `texblog.fdf' 
+                    here; doc.: \pagebreak s, wikibooks: <book>..., 
+                    corr. args, \wikiref refers to `langcode.sty', 
+                    `ref', using \qtdcode (new in `makedoc.cfg')
+        2012/11/08  doc.: Jim corr.
+        2012/11/27  \ctanpkgstyref from 'texblog.fdf'
+        2012/11/28  [[...|...]]
+uploaded with MOREHYPE r0.7
+v0.7a   2012/12/01  link fix "Piped link"
+        -> r0.7a
+v0.7b   2012/12/06  there again: blogexec -> markblog, above entry ...
+        -> r0.7b
+v0.71   2012/12/08  \ctanannpref like \texhaxpref
+        -> r0.71 
+v0.8    2012/12/15  \domainref from `texblog.fdf'
+                    doc.: \secref, gathering first subsections in 
+                    new section "Links in General"
+        2012/12/16  \texwikibooksref; \domainref 1 code line,
+                    mod. doc. LaTeX wikibook
+        2012/12/17  \google..., \stackexref, \catalogueref;
+                    doc.: todo done + corr. in sec:bases, 
+                    wiki extended, suffix -> tag
+        2012/12/18  \cataloguestartref, \html
+        2012/12/19  \cat@ctan@pkg@ref, \@double@first@arg; 
+                    doc. uses {example}, \fbox, etc.
+        2012/12/20  \ctanpkgtopicref
+        -> r0.8
+v0.81   2012/12/28  doc.: "fonts" \provide, corr. \pkgnamefmt,
+                    reworked \urlfoot
+        2012/12/29  \tugctanorg; doc.: TODO on "fonts", 
+                    more on Jim ... \tugctanorg
+        2012/12/30  ... in sec:search-pkg; mod. doc. \ctanpkgauref, 
+                    more doc. wiki "overview", \simplecodefbox etc.,
+        2012/12/31  doc. "the" Welcome ...
+        -> r0.81
+v0.82   2013/01/18  \tugctanorg -> alan.smcvt.edu
+        2013/01/19  reworking doc. on CTAN; \pagebreak
+        2013/01/20  updated (C), reworking doc. on CTAN
+        2013/01/21  \MakeBasedHref, \wwwctanref, \usewwwctan, 
+                    \newlet; doc.: typo fix, updated sec:x.ctan.org
+        2013/01/21  applying \newlet, \myctanref, \usemyctan, 
+                    \ctanfileref reimplemented, \filectanref, 
+                    \dirctanref; doc.: \ltxcontrib with {example}

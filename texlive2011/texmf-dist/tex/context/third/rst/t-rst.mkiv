@@ -1,0 +1,163 @@
+%D \module [
+%D         file=t-rst,
+%D      version=0.4 ‘Owl-stretching time’
+%D        title=\CONTEXT\ User Module,
+%D     subtitle=reStructuredText,
+%D       author=Philipp Gesang,
+%D         date=\currentdate,
+%D    copyright=Philipp Gesang,
+%D      license=2-clause BSD,
+%D ]
+
+%M \usemodule  [rst]
+%M \usemodule  [int-load]
+%M \loadsetups [t-letterspace.xml]
+
+%C Read the license conditions in the file \type{COPYING}.
+
+%M \definecolor [gutenred] [x=bf221f] % rubrication from digitized Göttingen Gutenberg bible
+%M \setupinteraction [contrastcolor=gutenred,color=gutenred]
+%M
+%M \define\beautifyshowsetups{%
+%M   \unexpanded \def \setupnumfont  {\rm}%
+%M   \unexpanded \def \setuptxtfont  {\rm}%
+%M   \unexpanded \def \setupintfont  {\rm\sc\Word}%
+%M   \unexpanded \def \setupvarfont  {\rm\it}%
+%M   \unexpanded \def \setupoptfont  {\rm\it}%
+%M   \unexpanded \def \setupalwcolor {gutenred}%
+%M   \unexpanded \def \setupoptcolor {gutenred}%
+%M   \defineframedtext [setuptext] [
+%M     frame=off,
+%M     background=color,
+%M     backgroundcolor=gray:2,
+%M     width=\hsize,
+%M     height=fit,
+%M     align=right,
+%M     offset=0.75em,
+%M   ]%
+%M }
+%M 
+%M \let \Oldshowsetup \showsetup
+%M 
+%M \define [1] \showsetup {%
+%M   \bgroup \beautifyshowsetups%
+%M     \Oldshowsetup{#1}%
+%M   \egroup%
+%M }
+
+\writestatus{loading}{ConTeXt User Module / reStructuredText}
+
+\unprotect
+
+\startinterface all
+  \setinterfacevariable {RST} {RST}
+\stopinterface
+
+\definenamespace [\v!RST] [
+  type=module,
+  comment=reStructuredText module,
+  version=0.4,
+  name=\v!RST,
+  style=\v!no,
+  command=\v!yes,
+  setup=\v!list,
+  parent=\v!RST,
+]
+
+%D Loading the reStructuredText parser.
+\ctxloadluafile{rst_parser}
+
+%D Easy way to define a global test setting. Activated
+%D by \type{\usemodule[rst][test=yes]}.
+
+\startmoduletestsection
+  \ctxlua{thirddata.rst_helpers.rst_debug = true}
+\stopmoduletestsection
+
+%D To process inline reST markup we’ll have to reset all catcodes
+%D except for grouping, escaping and cs arguments.
+
+\newcatcodetable   \RST_catcodes
+\startcatcodetable \RST_catcodes
+  \catcode`\^^I = 12
+  \catcode`\^^M = 12
+  \catcode`\^^L = 12
+  \catcode`\    = 12
+  \catcode`\^^Z = 12
+  \catcode`\\   =  0
+  \catcode`\%   = 12
+  \catcode`\#   =  6
+  \catcode`\_   = 12
+  \catcode`\^   = 12
+  \catcode`\&   = 12
+  \catcode`\|   = 12
+  \catcode`\{   =  1
+  \catcode`\}   =  2
+  \catcode`\~   = 12
+  \catcode`\$   = 12
+\stopcatcodetable
+
+%D \section {User-level Commands}
+%D
+%D \subsection{Typesetting reST-Files}
+%D
+%D \macros
+%D    {typesetRSTfile}
+%D
+%D This command loads and processes an \type{*.rst} file.
+%D All necessary setups for the elements to be used (e.g. tables)
+%D have to be specified {\em before} this macro is called.
+%D As \type{\typesetRSTfile} is intended to process a single file
+%D only, it will handle \type{\start|stoptext} automatically.
+%D Thus, the user should never supply any of these manually,
+%D neither before nor after \type{\typesetRSTfile}.
+%D
+%D \showsetup{typesetRSTfile}
+
+\def\typesetRSTfile#1{\ctxlua{thirddata.rst.do_rst_file("#1")}}
+
+%D \subsection{Typesetting Inline Snippets}
+%D
+%D reST markup can be handy in situations where \CONTEXT\ markup
+%D would result in unappropriately verbose source code, e.g. when
+%D typesetting tables with simple layout.
+%D
+%D \macros
+%D    {RST,startRST}
+%D
+%D The environment \type{\[start|stop]RST} and the macro
+%D \type{\RST} allow access to reST-parser from inside a
+%D \CONTEXT\ document when the module is loaded.
+%D
+%D \showsetup{RST}
+%D \showsetup{startRST}
+
+% Wolfgang’s code below.
+
+\unexpanded \def \startRST{%
+  \begingroup
+  \setcatcodetable \RST_catcodes
+  \do_start_RST%
+}
+
+\let \stopRST \relax
+
+\def \do_start_RST#1\stopRST{%
+  \endgroup%
+  \ctxlua{thirddata.rst.do_rst_snippet(\!!bs#1\!!es)}%
+}
+
+\def \RST{%
+  \begingroup
+  \setcatcodetable \RST_catcodes
+  \do_RST%
+}
+
+\def \do_RST#1{%
+  \endgroup%
+  \ctxlua{thirddata.rst.do_rst_snippet(\!!bs#1\!!es)}%
+}
+
+\protect \endinput
+
+% vim:ft=context:sw=2:ts=2

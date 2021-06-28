@@ -1,0 +1,106 @@
+% opmac-xetex.tex
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Petr Olsak, 2013
+
+% OPmac features (such as hyperlinks, outlines, colors, transformations,
+% pictures) are based on pdfTeX primitives. Unfortunately, these pdfTeX
+% primitives are unavailable in XeTeX. XeTeX uses dvipdfm(x) extension
+% instead this, which is based on \special{pdf:SOMETHING} commands (see the
+% documentation of dvipdfmx). This is a reason why we need to redefine some
+% OPmac macros in order to keep the mentioned features in XeTeX.
+
+% This file is read by opmac.tex automatically when XeTeX is detected.
+% Don't use \input opmac-xetex in your document.
+
+% Implementation
+
+% \special{pdf:bann <</Type/Annot/Subtype/Link/A<</S/GoTo/D(LABEL)>>>>}%
+% TEXT\special{pdf:eann} has to be used instead of
+% \pdfstartlink goto name{LABEL}\relax TEXT\pdfendlink:
+
+\def\linkactive[#1:#2]#3#4{\leavevmode
+   \special{pdf:bann <</Type/Annot/Subtype/Link\pdfborder{#1}/A<</S/GoTo/D(#1:#2)>>>>}%
+   {#3#4}\special{pdf:eann}%
+}
+\def\pdfborder#1{\if^#1^\else \isdefined{#1border}\iftrue
+   \if^\csname#1border\endcsname^\else /C[\csname#1border\endcsname]/Border[0 0 1]%
+   \fi\fi\fi
+}
+
+% Unfortunately, \pdflinkmargin is unsupported in XeTeX. We create
+% only a void compensation:
+
+\newdimen\pdflinkmargin
+
+% \special{pdf:bann <</Type/Annot/Subtype/Link/A<</S/URI/URI(URL)>>>>}%
+% TEXT\special{pdf:eann} has to be used instead of
+% \pdfstartlink user{/Subtype/Link/A <</Type/Action/S/URI/URI(URL)>>}TEXT\pdfendlink:
+
+\def\urllink[#1:#2]#3{{\let~=\relax \let\\=\relax \let\{=\relax \let\}=\relax
+   \leavevmode
+   \special{pdf: bann <</Type/Annot/Subtype/Link\pdfborder{#1}/A<</S/URI/URI(#2)>>>>}%   
+   {\def~{\nobreak\space}\urlcolor#3}\special{pdf:eann}}%
+}
+
+% \special{pdf:dest (LABEL) [@thispage /XYZ @xpos @ypos null]}
+% has to be used instead of \pdfdest name{LABEL} xyz :
+
+\def\destbox[#1]{\vbox to0pt{\kern-\destheight
+   \special{pdf:dest (#1) [@thispage /XYZ @xpos @ypos null]}\vss}}
+
+% \special{pdf:literal CODE} has to be used instead of \pdfliteral{CODE}:
+
+\def\pdfliteral#1{\special{pdf:literal #1}}
+
+% The \pdfsetmatrix, \pdfsave, \pdfrestore can be implemented by \pdfliteral:
+
+\def\pdfsetmatrix#1{\pdfliteral{#1 0 0 cm}}
+\def\pdfsave{\pdfliteral{q}}
+\def\pdfrestore{\pdfliteral{Q}}
+
+% \special{pdf:outline LEVEL <</Title(TEXT)/A<</S/GoTo/D(LABEL)>>>>} 
+% has to be used instead of
+% \pdfoutline goto name{LABEL} count CHILDS {TEXT}.
+% Note, we needn't calculate CHILDS, simply LEVEL of outline is used.
+
+\def\insertoutline#1{\global\advance\oulnum by1
+   \special{pdf:dest (oul:\the\oulnum) [@thispage /XYZ @xpos @ypos null]}%
+   \special{pdf:outline 0<</Title(#1)/A<</S/GoTo/D(oul:\the\oulnum)>>>>}%
+}
+\def\pdfoutline goto name#1 count #2#3<#4\relax{%
+   \special{pdf:out [\ifnum#3<\outlinelevel\space\else-\fi] #3
+   <</Title(\tmp)/A<</S/GoTo/D(#1)>>>>}%
+}
+
+% \special{pdf:docview<<CODE>>} has to be used instead of \pdfcatalog{CODE}:
+
+\def\pdfcatalog#1{\special{pdf:docview <<#1>>}}
+
+% \special{pdf:docinfo<<CODE>>} has to be used instead of \pdfinfo{CODE}:
+
+\def\pdfinfo#1{\special{pdf:docinfo <<#1>>}}
+
+% \XeTeXpicfile FILE width DIMEN height DIMEN 
+% has to be used to load bitmap picture and
+% \XeTeXpdffile FILE width DIMEN height DIMEN
+% has to be used to load the picture in PDF format. We need to detect the
+% format by the extension of the file.   
+
+\def\inspic #1 {\hbox{\def\tmp##1.pdf##2\relax{%
+   \ifnum\strcmp{##2}{.pdf}=0 \XeTeXpdffile \else \XeTeXpicfile \fi}%
+   \lowercase{\tmp #1}.pdf\relax \picdir#1
+       \ifdim\picwidth=0pt \else width\picwidth\fi
+       \ifdim\picheight=0pt \else height\picheight\fi}}
+
+\endinput
+
+=== Unsolved problems ===
+
+1) The size of clickable area cannot be controlled by height/depth parameter
+   and by \pdflinkmargin. The result depends on an accident.
+2) The PDF/bitmap loading depends on suffix, not on interal magic code in
+   the loaded file. The \inspic parameter have to be expanded.
+3) The memory sparing method of \pdfximage ... \pdfrefximage
+   is not simply available.
+
+% End of opmac-xetex.tex file

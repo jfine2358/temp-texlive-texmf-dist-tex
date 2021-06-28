@@ -1,0 +1,599 @@
+%%
+%% Copyright 2020 David Orellana Martín
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+% 
+% The Current Maintainer of this work is David Orellana Martín
+%
+% This work consists of the file membranecomputing.sty.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{membranecomputing}[2020/07/23 Membrane Computing v0.1]
+
+% Require Packages
+
+\RequirePackage{ifthen}
+\RequirePackage{xstring}
+
+% Declare options
+
+\newboolean{membranecomputing@blackboard}
+\setboolean{membranecomputing@blackboard}{false}
+\DeclareOption{blackboard}{
+  \setboolean{membranecomputing@blackboard}{true}
+}
+\DeclareOption{traditional}{
+  \setboolean{membranecomputing@blackboard}{false}
+}
+\ProcessOptions\relax
+
+% Declare counters
+\newcounter{membranecomputing@membrane}
+\newcounter{membranecomputing@imembrane}
+\newcounter{membranecomputing@element}
+
+% Declare auxiliary commands
+
+\newcommand{\membranecomputing@iden}[1]{#1}
+\newcommand{\lhsC}{}
+\newcommand{\rhsC}{}
+\newcommand{\lhsL}{}
+\newcommand{\rhsL}{}
+\newcommand{\lhsP}{}
+\newcommand{\rhsP}{}
+\newcommand{\lhsIC}{}
+\newcommand{\rhsIC}{}
+\newcommand{\lhsIL}{}
+\newcommand{\rhsIL}{}
+\newcommand{\lhsIP}{}
+\newcommand{\rhsIP}{}
+\newcommand{\lhsOC}{}
+\newcommand{\rhsOC}{}
+\newcommand{\lhsE}{}
+\newcommand{\lhsS}{}
+\newcommand{\rhsS}{}
+\newcommand{\rhsD}{}
+
+\newcommand{\arrow}{}
+\newcommand{\labelSub}{}
+\newcommand{\labelSubL}{}
+\newcommand{\labelSubR}{}
+\newcommand{\polW}{}
+\newcommand{\polP}{}
+\newcommand{\polWL}{}
+\newcommand{\polPL}{}
+\newcommand{\polWR}{}
+\newcommand{\polPR}{}
+\newcommand{\formattedRule}{}
+
+\exploregroups \expandarg
+
+\newcommand{\formatRule}[4]{
+  \renewcommand{\arrow}{\ensuremath{\IfStrEq{#1}{written}{\rightarrow}{\, --> \,}}}
+  \IfStrEqCase{#2}
+  {% BEGIN CASES
+    {rewriting}
+    {%BEGIN IF REWRITING
+      \renewcommand{\formattedRule}{#3 \arrow #4}
+    }% END IF REWRITING
+    {single}
+    {% BEGIN IF SINGLE
+      \renewcommand{\formattedRule}{#3 \arrow #4}
+    }% END IF SINGLE
+    {multiple}
+    {% BEGIN IF MULTIPLE
+      \renewcommand{\formattedRule}{#3 \arrow #4}
+    }% END IF MULTIPLE
+    {paren}
+    {% BEGIN IF PAREN
+      \renewcommand{\formattedRule}{#3 / #4}
+    }% END IF PAREN
+  }% END CASES
+  \ensuremath{\IfStrEq{#1}{written}{\formattedRule}{\mathtt{\formattedRule}}}
+}
+
+% Commands that depend on the kind of letters
+\ifthenelse{\boolean{membranecomputing@blackboard}}{ %
+  \newcommand{\workingalphabet}{\ensuremath{O}}
+  \newcommand{\inputalphabet}{\ensuremath{E}}
+  \newcommand{\initmultiset}[1]{\ensuremath{w_{#1}}}
+  \newcommand{\ruleset}[1]{\ensuremath{R_{#1}}}
+  \newcommand{\probabilitiesset}[1]{\ensuremath{p_{#1}}}
+}{
+  \newcommand{\workingalphabetspiking}{\ensuremath{O}}
+  \newcommand{\workingalphabet}{\ensuremath{\Gamma}}
+  \newcommand{\inputalphabet}{\ensuremath{\Sigma}}
+  \newcommand{\initmultiset}[1]{\ensuremath{\mathcal{M}_{#1}}}
+  \newcommand{\ruleset}[1]{\ensuremath{\mathcal{R}_{#1}}}
+  \newcommand{\probabilitiesset}[1]{\ensuremath{\rho_{#1}}}
+}
+
+% Commands that do not depend on the kind of letters
+\newcommand{\labelset}{\ensuremath{H}}
+\newcommand{\membranestructure}{\ensuremath{\mu}}
+\newcommand{\neuron}[1]{\ensuremath{\sigma_{#1}}}
+\newcommand{\compartment}[1]{\ensuremath{C_{#1}}}
+\newcommand{\agent}[1]{\ensuremath{B_{#1}}}
+\newcommand{\iin}{\ensuremath{i_{in}}}
+\newcommand{\iout}{\ensuremath{i_{out}}}
+\newcommand{\degree}{\ensuremath{q}}
+\newcommand{\syn}{\ensuremath{syn}}
+\newcommand{\yes}{\ensuremath{\mathtt{yes}}}
+\newcommand{\no}{\ensuremath{\mathtt{no}}}
+\newcommand{\initEnvironment}{\ensuremath{v_{E}}}
+
+% Shortcuts
+\newcommand{\wa}{\workingalphabet}
+\newcommand{\ia}{\inputalphabet}
+\newcommand{\ls}{\labelset}
+\newcommand{\ms}{\membranestructure}
+\newcommand{\im}{\initmultiset}
+\newcommand{\rs}{\ruleset}
+\newcommand{\ps}{\probabilitiesset}
+\newcommand{\vE}{\initEnvironment}
+
+\newcommand{\psystem}[5][nonrecognizer]
+{% BEGIN COMMAND PSYSTEM
+  \IfEqCase{#3}
+  {% BEGIN CASES
+    {transition}
+    {% BEGIN IF TRANSITION
+      \ensuremath{\Pi_{#4} = \left(\wa, \ifthenelse{\equal{#1}{recognizer}}{\Sigma, }{} \ifthenelse{\equal{#2}{cell}}{\ms, }{} \im{1}, \dots, \im{\ifthenelse{\equal{#5}{}}{\degree}{#5}}, (\rs{1}, \ps{1}), \dots, (\rs{\ifthenelse{\equal{#5}{}}{\degree}{#5}}, \ps{\ifthenelse{\equal{#5}{}}{\degree}{#5}}), \ifthenelse{\equal{#1}{recognizer}}{\iin, }{} \iout \right)}
+    }% END IF TRANSITION
+    {activemembranes}
+    {% BEGIN IF ACTIVEMEMBRANES
+      \ensuremath{\Pi_{#4} = \left(\wa, \ifthenelse{\equal{#1}{recognizer}}{\Sigma, }{} \ifthenelse{\equal{#2}{cell}}{\ms, }{} \im{1}, \dots, \im{\ifthenelse{\equal{#5}{}}{\degree}{#5}}, \rs{1}, \dots, \rs{\ifthenelse{\equal{#5}{}}{\degree}{#5}}, \ifthenelse{\equal{#1}{recognizer}}{\iin, }{} \iout \right)}
+    }% END IF ACTIVEMEMBRANES
+    {symportantiport}
+    {% BEGIN IF SYMPORTANTIPORT
+      \ensuremath{\Pi_{#4} = \left(\wa, \ifthenelse{\equal{#1}{recognizer}}{\Sigma, }{} \mathcal{E}, \ifthenelse{\equal{#2}{cell}}{\ms, }{} \im{1}, \dots, \im{\ifthenelse{\equal{#5}{}}{\degree}{#5}}, \ifthenelse{\equal{#2}{cell}}{\rs{1}, \dots, \rs{\ifthenelse{\equal{#5}{}}{\degree}{#5}}}{\rs}, \ifthenelse{\equal{#1}{recognizer}}{\iin, }{} \iout \right)}
+    }% END IF SYMPORTANTIPORT
+    {spiking}
+    {% BEGIN IF SPIKING
+      \ensuremath{\Pi_{#4} = \left(\ifthenelse{\boolean{membranecomputing@blackboard}}{\wa}{\workingalphabetspiking}, \neuron{1}, \dots, \neuron{\ifthenelse{\equal{#5}{}}{\degree}{#5}}, \syn, \ifthenelse{\equal{#1}{recognizer}}{\iin, }{} \iout \right)}
+    }% END IF SPIKING
+    {kernel}
+    {% BEGIN IF KERNEL
+      \ensuremath{k\Pi_{#4} = \left(\wa, \ifthenelse{\equal{#2}{cell}}{\ms, }{} \compartment{1}, \dots, \compartment{\ifthenelse{\equal{#5}{}}{\degree}{#5}}, \ifthenelse{\equal{#1}{recognizer}}{\iin, }{} \iout \right)}
+    }% END IF KERNEL
+    {colony}
+    {% BEGIN IF COLONY
+      \ensuremath{\Pi_{#4} = \left(\wa, \ifthenelse{\equal{#1}{recognizer}}{\Sigma, }{} e, f, \vE, \agent{1}, \dots, \agent{\ifthenelse{\equal{#5}{}}{\degree}{#5}}, \ifthenelse{\equal{#1}{recognizer}}{\iin, }{}\right)}
+    }% END IF COLONY
+  }% END CASES
+  [\PackageError{psystem}{Undefined option to psystem: #3}]
+}% END COMMAND PSYSTEM
+
+\newcommand{\wrule}[5][multiple]{\mcrule[written]{#1}{#2}{#3}{#4}{#5}}
+\newcommand{\prule}[5][multiple]{\mcrule[plingua]{#1}{#2}{#3}{#4}{#5}}
+
+\newcommand{\mcrule}[6][written]
+{% BEGIN COMMAND RULE
+  \IfEqCase{#2}
+  {% BEGIN CASES TYPE
+    {rewriting}
+    {% BEGIN IF REWRITING
+      \renewcommand{\lhsC}{}
+      \renewcommand{\rhsC}{}
+      \formatRule{#1}{#2}{#5}{#6}
+    }% END IF REWRITING
+    {single}
+    {% BEGIN IF SINGLE
+      \renewcommand{\lhsC}{}
+      \renewcommand{\rhsC}{}
+      \renewcommand{\lhsL}{}
+      \renewcommand{\rhsL}{}
+      \renewcommand{\lhsP}{}
+      \renewcommand{\rhsP}{}
+      \StrFindGroup{#5}{1}[\lhsC]
+      \StrFindGroup{#6}{1}[\rhsC]
+      \StrFindGroup{#5}{2}[\lhsL]
+      \StrFindGroup{#5}{3}[\lhsP]
+      \renewcommand{\polW}{\ensuremath{\IfStrEq{#1}{written}{^{\lhsP}}{}}}
+      \renewcommand{\polP}{\ensuremath{\IfStrEq{#1}{plingua}{\lhsP}{}}}
+      \renewcommand{\labelSub}{\ensuremath{\IfStrEq{#1}{written}{_{\lhsL}}{'\lhsL}}}
+      \formatRule{#1}{#2}{\ensuremath{\polP \left[ \, \lhsC}}{\ensuremath{\rhsC \, \right]\polW\labelSub}}
+      % \ensuremath{\left[ \, \lhsC \rightarrow \rhsC \, \right]^{\ifthenelse{\equal{\lhsP}{}} {\rhsP} {\lhsP} }_{\ifthenelse{\equal{\lhsL}{}} {\rhsL} {\lhsL} }}
+    }% END IF SINGLE
+    {multiple}
+    {% BEGIN IF MULTIPLE
+     % BEGIN LHS ANALYSIS
+      \renewcommand{\lhsIC}{}
+      \renewcommand{\lhsIL}{}
+      \renewcommand{\lhsIP}{}
+      \renewcommand{\lhsOC}{}
+      \setcounter{membranecomputing@membrane}{1}
+      \whiledo {\value{membranecomputing@membrane} < \numexpr#3+1\relax}
+      {% BEGIN FOR MEMBRANE
+        \StrFindGroup{#5}{\arabic{membranecomputing@membrane}}[\currentM]
+        \IfStrEq{\currentM}{{}}
+        {% BEGIN IF EMPTY GROUP
+         % EMPTY GROUP
+        }% END IF EMPTY GROUP
+        {% BEGIN ELSE EMPTY GROUP
+          \ifthenelse{\equal{\arabic{membranecomputing@membrane}}{1}}
+          {% BEGIN IF IN-MEMBRANE
+            \StrFindGroup{#5}{\arabic{membranecomputing@membrane},1}[\lhsIC]
+            \StrFindGroup{#5}{\arabic{membranecomputing@membrane},2}[\lhsIL]
+            \StrFindGroup{#5}{\arabic{membranecomputing@membrane},3}[\lhsIP]
+            \StrExpand[2]{\lhsIC}{\plhsIC}
+            \renewcommand{\lhsIC}{\expandafter\plhsIC\expandafter \,}
+          }% END IF IN-MEMBRANE
+          {% BEGIN ELSE IN-MEMBRANE
+            \ifthenelse{\equal{\arabic{membranecomputing@membrane}}{2}}
+            {% BEGIN IF OUT-MEMBRANE
+              \StrFindGroup{#5}{\arabic{membranecomputing@membrane},1}[\lhsOC]
+            }% END IF OUT-MEMBRANE
+            {% BEGIN ELSE OUT-MEMBRANE
+              \StrFindGroup{#5}{\arabic{membranecomputing@membrane}}[\currentMembrane]
+              \IfStrEqCase{\currentMembrane}
+              {% BEGIN CASES CURRENTMEMBRANE
+                {{.}}%
+                {% BEGIN IF ...
+                  \StrExpand[2]{\lhsIC}{\plhsIC}%
+                  \renewcommand{\lhsIC}{\ensuremath{\plhsIC \dots \,}}%
+                }% END IF ...
+                {{-}}%
+                {% BEGIN IF --
+                  \StrExpand[2]{\lhsIC}{\plhsIC}%
+                  \renewcommand{\lhsIC}{\ensuremath{\plhsIC - \,}}%
+                }% END IF --
+                {{;}}
+                {% BEGIN IF ;
+                  \StrExpand[2]{\lhsIC}{\plhsIC}%
+                  \renewcommand{\lhsIC}{\ensuremath{\plhsIC ; \,}}%
+                }% END IF ;
+                {\currentMembrane}
+                {% BEGIN IF OTHER
+                  \StrFindGroup{#5}{\arabic{membranecomputing@membrane},1}[\lhsCC]%
+                  \StrFindGroup{#5}{\arabic{membranecomputing@membrane},2}[\lhsCL]%
+                  \StrFindGroup{#5}{\arabic{membranecomputing@membrane},3}[\lhsCP]%
+                  \StrExpand[2]{\lhsIC}{\plhsIC}%
+                  \StrExpand[2]{\lhsCC}{\plhsCC}%
+                  \StrExpand[2]{\lhsCL}{\plhsCL}%
+                  \StrExpand[2]{\lhsCP}{\plhsCP}%
+                  \setcounter{membranecomputing@imembrane}{1}
+                  \whiledo {\value{membranecomputing@imembrane} < 5}
+                  {% BEGIN FOR IMEMBRANE
+                    \stepcounter{membranecomputing@imembrane}
+                  }% END FOR IMEMBRANE
+                  \IfStrEq{\lhsCL}{{!}}%
+                  {% BEGIN IF !
+                    \renewcommand{\lhsIC}{\ensuremath{\plhsIC \{ \IfStrEq{\plhsCC}{}{\quad}{\, \plhsCC \, } \}}}
+                  }% END IF !
+                  {% BEGIN ELSE !
+                    \renewcommand{\polW}{\ensuremath{\IfStrEq{#1}{written}{^{\plhsCP}}{}}}
+                    \renewcommand{\polP}{\ensuremath{\IfStrEq{#1}{plingua}{\plhsCP}{}}}
+                    \renewcommand{\labelSub}{\ensuremath{\IfStrEq{#1}{written}{_{\plhsCL}}{'\plhsCL}}}
+                    \StrExpand[2]{\polW}{\ppolW}
+                    \StrExpand[2]{\polP}{\ppolP}
+                    \StrExpand[2]{\labelSub}{\plabelSub}
+                    \renewcommand{\lhsIC}{\ensuremath{\plhsIC \ppolP[ \IfStrEq{\plhsCC}{}{\quad}{\, \plhsCC \, } ]\ppolW\plabelSub \,}}%
+                    \StrExpand[2]{\lhsIC}{\plhsIC}%
+                    \renewcommand{\lhsIC}{\plhsIC}%
+                  }% END ELSE !
+                }% END IF OTHER
+              }% END CASES CURRENTMEMBRANE
+            }% END ELSE OUT-MEMBRANE
+          }% END ELSE IN-MEMBRANE
+        }% END ELSE EMPTY GROUP
+        \stepcounter{membranecomputing@membrane}
+      }% END FOR MEMBRANE
+     % END LHS ANALYSIS
+     % BEGIN RHS ANALYSIS
+      \renewcommand{\rhsIC}{}
+      \renewcommand{\rhsIL}{}
+      \renewcommand{\rhsIP}{}
+      \renewcommand{\rhsOC}{}
+      \setcounter{membranecomputing@membrane}{1}
+      \whiledo {\value{membranecomputing@membrane} < \numexpr#4+1\relax}
+      {% BEGIN FOR MEMBRANE
+        \StrFindGroup{#6}{\arabic{membranecomputing@membrane}}[\currentM]
+        \IfStrEq{\currentM}{{}}
+        {% BEGIN IF EMPTY GROUP
+         % EMPTY GROUP
+        }% END IF EMPTY GROUP
+        {% BEGIN ELSE EMPTY GROUP
+          \ifthenelse{\equal{\arabic{membranecomputing@membrane}}{1}}
+          {% BEGIN IF IN-MEMBRANE
+            \StrFindGroup{#6}{\arabic{membranecomputing@membrane},1}[\rhsIC]
+            \StrFindGroup{#6}{\arabic{membranecomputing@membrane},2}[\rhsIL]
+            \StrFindGroup{#6}{\arabic{membranecomputing@membrane},3}[\rhsIP]
+            \StrExpand[2]{\rhsIC}{\prhsIC}
+            \renewcommand{\rhsIC}{\expandafter\prhsIC\expandafter \,}
+          }% END IF IN-MEMBRANE
+          {% BEGIN ELSE IN-MEMBRANE
+            \ifthenelse{\equal{\arabic{membranecomputing@membrane}}{2}}
+            {% BEGIN IF OUT-MEMBRANE
+              \StrFindGroup{#6}{\arabic{membranecomputing@membrane},1}[\rhsOC]
+             % \ensuremath{}
+            }% END IF OUT-MEMBRANE
+            {% BEGIN ELSE OUT-MEMBRANE
+              \StrFindGroup{#6}{\arabic{membranecomputing@membrane}}[\currentMembrane]
+              \IfStrEqCase{\currentMembrane}
+              {% BEGIN CASES CURRENTMEMBRANE
+                {{.}}%
+                {% BEGIN IF ...
+                  \StrExpand[2]{\rhsIC}{\prhsIC}%
+                  \renewcommand{\rhsIC}{\ensuremath{\prhsIC \dots \,}}%
+                }% END IF ...
+                {{-}}%
+                {% BEGIN IF --
+                  \StrExpand[2]{\rhsIC}{\prhsIC}%
+                  \renewcommand{\rhsIC}{\ensuremath{\prhsIC - \,}}%
+                }% END IF --
+                {{;}}
+                {% BEGIN IF ;
+                  \StrExpand[2]{\rhsIC}{\prhsIC}%
+                  \renewcommand{\rhsIC}{\ensuremath{\prhsIC ; \,}}%
+                }% END IF ;
+                {\currentMembrane}
+                {% BEGIN IF OTHER
+                  \StrFindGroup{#6}{\arabic{membranecomputing@membrane},1}[\rhsCC]%
+                  \StrFindGroup{#6}{\arabic{membranecomputing@membrane},2}[\rhsCL]%
+                  \StrFindGroup{#6}{\arabic{membranecomputing@membrane},3}[\rhsCP]%
+                  \StrExpand[2]{\rhsIC}{\prhsIC}%
+                  \StrExpand[2]{\rhsCC}{\prhsCC}%
+                  \StrExpand[2]{\rhsCL}{\prhsCL}%
+                  \StrExpand[2]{\rhsCP}{\prhsCP}%
+                  \setcounter{membranecomputing@imembrane}{1}
+                  \whiledo {\value{membranecomputing@imembrane} < 5}
+                  {% BEGIN FOR IMEMBRANE
+                    \stepcounter{membranecomputing@imembrane}
+                  }% END FOR IMEMBRANE
+                  \IfStrEq{\rhsCL}{{!}}%
+                  {% BEGIN IF !
+                    \renewcommand{\rhsIC}{\ensuremath{\prhsIC \{ \IfStrEq{\prhsCC}{}{\quad}{\, \prhsCC \, } \}}}%
+                  }% END IF !
+                  {% BEGIN ELSE !
+                    \renewcommand{\polW}{\ensuremath{\IfStrEq{#1}{written}{^{\prhsCP}}{}}}
+                    \renewcommand{\polP}{\ensuremath{\IfStrEq{#1}{plingua}{\prhsCP}{}}}
+                    \renewcommand{\labelSub}{\ensuremath{\IfStrEq{#1}{written}{_{\prhsCL}}{'\prhsCL}}}
+                    \StrExpand[2]{\polW}{\ppolW}
+                    \StrExpand[2]{\polP}{\ppolP}
+                    \StrExpand[2]{\labelSub}{\plabelSub}
+                    \renewcommand{\rhsIC}{\ensuremath{\prhsIC \ppolP[ \IfStrEq{\prhsCC}{}{\quad}{\, \prhsCC \, } ]\ppolW\plabelSub \,}}%
+                    \StrExpand[2]{\rhsIC}{\prhsIC}%
+                    \renewcommand{\rhsIC}{\prhsIC}%
+                  }% END ELSE !
+                }% END IF OTHER
+              }% END CASES CURRENTMEMBRANE
+            }% END ELSE OUT-MEMBRANE
+          }% END ELSE IN-MEMBRANE
+        }% END ELSE EMPTY GROUP
+        \stepcounter{membranecomputing@membrane}
+      }% END FOR MEMBRANE
+      % END RHS ANALYSIS
+      \StrFindGroup{#5}{1}[\lhsM]
+      \StrFindGroup{#6}{1}[\rhsM]
+      \renewcommand{\polWL}{\ensuremath{\IfStrEq{#1}{written}{^{\lhsIP}}{}}}
+      \renewcommand{\polPL}{\ensuremath{\IfStrEq{#1}{plingua}{\lhsIP}{}}}
+      \renewcommand{\labelSubL}{\ensuremath{\IfStrEq{#1}{written}{_{\lhsIL}}{'\lhsIL}}}
+      \renewcommand{\polWR}{\ensuremath{\IfStrEq{#1}{written}{^{\rhsIP}}{}}}
+      \renewcommand{\polPR}{\ensuremath{\IfStrEq{#1}{plingua}{\rhsIP}{}}}
+      \renewcommand{\labelSubR}{\ensuremath{\IfStrEq{#1}{written}{_{\rhsIL}}{'\rhsIL}}}
+      \formatRule{#1}{#2}{\ifthenelse{\equal{\lhsOC}{}}{}{\lhsOC \,} \IfStrEq{\lhsM}{{}}{}{\polPL\left[} \ifthenelse{\equal{\protect\lhsIC}{}}{\quad}{ \, \lhsIC } \IfStrEq{\lhsM}{{}}{}{\right]\polWL\labelSubL}}{\ifthenelse{\equal{\rhsOC}{}}{}{\rhsOC \,} 
+        \IfStrEq{\rhsM}{{}}{}{\polPR\left[} \ifthenelse{\equal{\protect\rhsIC}{}}{\quad}{ \, \rhsIC } \IfStrEq{\rhsM}{{}}{}{\right]\polWR\labelSubR}}
+      % \ensuremath{\ifthenelse{\equal{\lhsOC}{}}{}{\lhsOC \,} \IfStrEq{\lhsM}{{}}{}{\left[} \ifthenelse{\equal{\protect\lhsIC}{}}{\quad}{ \, \lhsIC } \IfStrEq{\lhsM}{{}}{}{\right]^{\lhsIP}_{\lhsIL}} \rightarrow \ifthenelse{\equal{\rhsOC}{}}{}{\rhsOC \,} 
+      %   \IfStrEq{\rhsM}{{}}{}{\left[} \ifthenelse{\equal{\protect\rhsIC}{}}{\quad}{ \, \rhsIC } \IfStrEq{\rhsM}{{}}{}{\right]^{\rhsIP}_{\rhsIL}}}
+    }% END IF MULTIPLE
+    {paren}
+    {% BEGIN IF PAREN
+      \ifthenelse{\equal{#6}{}}
+      {% BEGIN IF ONE SIDE
+        \StrFindGroup{#5}{1}[\lhsC]
+        \StrFindGroup{#5}{2}[\lhsL]
+        \ensuremath{\left( \lhsC, \lhsL \right)}
+      }% END IF ONE SIDE
+      {% BEGIN ELSE ONE SIDE
+        \StrFindGroup{#5}{1}[\lhsC]
+        \StrFindGroup{#6}{1}[\rhsC]
+        \StrFindGroup{#5}{2}[\lhsL]
+        \StrFindGroup{#6}{2}[\rhsL]
+        \formatRule{#1}{#2}{\left( \lhsL, \lhsC}{\rhsC, \rhsL \right)}
+        % \ensuremath{\left( \lhsL, \lhsC / \rhsC, \rhsL \right)}
+      }% END ELSE ONE SIDE
+    }% END IF PAREN
+    {spike}
+    {% BEGIN IF SPIKE
+      \renewcommand{\lhsE}{}
+      \renewcommand{\lhsS}{}
+      \renewcommand{\rhsS}{}
+      \renewcommand{\rhsD}{}
+      \StrFindGroup{#5}{1}[\lhsE]
+      \StrFindGroup{#5}{2}[\lhsS]
+      \StrFindGroup{#6}{1}[\rhsS]
+      \StrFindGroup{#6}{2}[\rhsD]
+      \ensuremath{\ifthenelse{\equal{\lhsE}{{}}}{}{\lhsE /} \lhsS \rightarrow \rhsS \ifthenelse{\equal{\rhsD}{}}{}{; \rhsD}}
+    }% END IF SPIKE
+  }% END CASES TYPE
+  [\PackageError{rule}{Undefined option to rule: #2}]
+}% END COMMAND RULE
+
+% Templates for P systems
+
+\newcommand{\psystemAM}[1][nonrecognizer]{\psystem[#1]{cell}{activemembranes}{}{}}
+\newcommand{\rpsystemAM}{\psystemAM[recognizer]}
+\newcommand{\psystemSA}[1][nonrecognizer]{\psystem[#1]{tissue}{symportantiport}{}{}}
+\newcommand{\rpsystemSA}{\psystemSA[recognizer]}
+\newcommand{\SNpsystem}[1][nonrecognizer]{\psystem[#1]{tissue}{spiking}{}{}}
+\newcommand{\rSNpsystem}{\SNpsystem[recognizer]}
+\newcommand{\kpsystem}[1][nonrecognizer]{\psystem[#1]{cell}{kernel}{}{}}
+\newcommand{\rkpsystem}{\kpsystem[recognizer]}
+\newcommand{\pcolony}[1][nonrecognizer]{\psystem[#1]{tissue}{colony}{}{}}
+\newcommand{\rpcolony}{\pcolony[recognizer]}
+
+% Rule examples and templates
+
+\newcommand{\rewriting}[2]{\wrule[rewriting]{}{}{#1}{#2}}
+\newcommand{\rewritingT}{\rewriting{u}{v}}
+
+\newcommand{\evolution}[4]{\wrule[single]{}{}{{#1}{#3}{#4}}{{#2}}}
+\newcommand{\evolutionT}{\evolution{a}{b}{h}{\alpha}}
+
+\newcommand{\evolutionP}[4]{\prule[single]{}{}{{#1}{#3}{#4}}{{#2}}}
+\newcommand{\evolutionPT}{\evolutionP{a}{b}{h}{\alpha}}
+
+\newcommand{\pevolution}[3]{\wrule[single]{}{}{{#1}{#3}}{{#2}}}
+\newcommand{\pevolutionT}{\pevolution{a}{b}{h}}
+
+\newcommand{\pevolutionP}[3]{\evolutionP{#1}{#2}{#3}{}}
+\newcommand{\pevolutionPT}{\pevolutionP{a}{b}{h}}
+
+\newcommand{\antiport}[4]{\wrule[paren]{}{}{{#1}{#2}}{{#3}{#4}}}
+\newcommand{\antiportT}{\antiport{u}{i}{v}{j}}
+\newcommand{\symportT}{\antiport{u}{i}{\lambda}{j}}
+
+\newcommand{\antiportP}[4]{\prule[paren]{}{}{{#1}{#2}}{{#3}{#4}}}
+\newcommand{\antiportPT}{\antiportP{u}{i}{v}{j}}
+\newcommand{\symportPT}{\antiportP{u}{i}{\lambda}{j}}
+
+\newcommand{\sendin}[5]{\wrule{2}{1}{{{}{#3}{#4}}{{#1}}}{{{#2}{#3}{#5}}}}
+\newcommand{\sendinT}{\sendin{a}{b}{h}{\alpha_{1}}{\alpha_{2}}}
+
+\newcommand{\sendinP}[5]{\prule{2}{1}{{{}{#3}{#4}}{{#1}}}{{{#2}{#3}{#5}}}}
+\newcommand{\sendinPT}{\sendinP{a}{b}{h}{\alpha_{1}}{\alpha_{2}}}
+
+\newcommand{\psendin}[3]{\sendin{#1}{#2}{#3}{}{}}
+\newcommand{\psendinT}{\psendin{a}{b}{h}}
+
+\newcommand{\psendinP}[3]{\sendinP{#1}{#2}{#3}{}{}}
+\newcommand{\psendinPT}{\psendinP{a}{b}{h}}
+
+\newcommand{\sendout}[5]{\wrule{1}{2}{{{#1}{#3}{#4}}}{{{}{#3}{#5}}{{#2}}}}
+\newcommand{\sendoutT}{\sendout{a}{b}{h}{\alpha_{1}}{\alpha_{2}}}
+
+\newcommand{\sendoutP}[5]{\prule{1}{2}{{{#1}{#3}{#4}}}{{{}{#3}{#5}}{{#2}}}}
+\newcommand{\sendoutPT}{\sendout{a}{b}{h}{\alpha_{1}}{\alpha_{2}}}
+
+\newcommand{\psendout}[3]{\sendout{#1}{#2}{#3}{}{}}
+\newcommand{\psendoutT}{\psendout{a}{b}{h}}
+
+\newcommand{\psendoutP}[3]{\sendoutP{#1}{#2}{#3}{}{}}
+\newcommand{\psendoutPT}{\psendoutP{a}{b}{h}}
+
+\newcommand{\dissolution}[4]{\wrule{3}{2}{{}{}{{#1}{#3}{#4}}}{{}{{#2}}}}
+\newcommand{\dissolutionT}{\dissolution{a}{b}{h}{\alpha}}
+
+\newcommand{\dissolutionP}[4]{\prule{3}{2}{{}{}{{#1}{#3}{#4}}}{{}{{#2}}}}
+\newcommand{\dissolutionPT}{\dissolutionP{a}{b}{h}{\alpha}}
+
+\newcommand{\pdissolution}[3]{\dissolution{#1}{#2}{#3}{}}
+\newcommand{\pdissolutionT}{\pdissolution{a}{b}{h}}
+
+\newcommand{\pdissolutionP}[3]{\dissolutionP{#1}{#2}{#3}{}}
+\newcommand{\pdissolutionPT}{\pdissolutionP{a}{b}{h}}
+
+\newcommand{\division}[7]{\wrule{1}{4}{{{#1}{#4}{#5}}{}}{{}{}{{#2}{#4}{#6}}{{#3}{#4}{#7}}}}
+\newcommand{\divisionT}{\division{a}{b}{c}{h}{\alpha}{\alpha_{1}}{\alpha_{2}}}
+
+\newcommand{\divisionP}[7]{\prule{1}{4}{{{#1}{#4}{#5}}{}}{{}{}{{#2}{#4}{#6}}{{#3}{#4}{#7}}}}
+\newcommand{\divisionPT}{\divisionP{a}{b}{c}{h}{\alpha}{\alpha_{1}}{\alpha_{2}}}
+
+\newcommand{\pdivision}[4]{\division{#1}{#2}{#3}{#4}{}{}{}}
+\newcommand{\pdivisionT}{\pdivision{a}{b}{c}{h}}
+
+\newcommand{\pdivisionP}[4]{\divisionP{#1}{#2}{}{#3}{}{#4}{}}
+\newcommand{\pdivisionPT}{\pdivisionP{a}{h}{b}{c}}
+
+\newcommand{\separation}[5]{\wrule{1}{4}{{{#1}{#2}{#3}}{}}{{}{}{{\wa_{0}}{#2}{#4}}{{\wa_{1}}{#2}{#5}}}}
+\newcommand{\separationT}{\separation{a}{h}{\alpha}{\alpha_{1}}{\alpha_{2}}}
+
+\newcommand{\separationP}[5]{\prule{1}{4}{{{#1}{#2}{#3}}{}}{{}{}{{\wa_{0}}{#2}{#4}}{{\wa_{1}}{#2}{#5}}}}
+\newcommand{\separationPT}{\separationP{a}{h}{\alpha}{\alpha_{1}}{\alpha_{2}}}
+
+\newcommand{\pseparation}[2]{\separation{#1}{#2}{}{}{}}
+\newcommand{\pseparationT}{\pseparation{a}{h}}
+
+\newcommand{\pseparationP}[2]{\separationP{#1}{#2}{}{}{}}
+\newcommand{\pseparationPT}{\pseparationP{a}{h}}
+
+\newcommand{\creation}[8]{\wrule{1}{3}{{{#1}{#4}{#6}}}{{{#2}{#4}{#7}}{}{{#3}{#5}{#8}}}}
+\newcommand{\creationT}{\creation{a}{b}{c}{h}{h_{1}}{\alpha}{\alpha_{1}}{\alpha_{2}}}
+
+\newcommand{\creationP}[8]{\prule{1}{3}{{{#1}{#4}{#6}}}{{{#2}{#4}{#7}}{}{{#3}{#5}{#8}}}}
+\newcommand{\creationPT}{\creationP{a}{b}{c}{h}{h_{1}}{\alpha}{\alpha_{1}}{\alpha_{2}}}
+
+\newcommand{\pcreation}[5]{\creation{#1}{#2}{#3}{#4}{#5}{}{}{}}
+\newcommand{\pcreationT}{\pcreation{a}{b}{c}{h}{h_{1}}}
+
+\newcommand{\pcreationP}[5]{\creationP{#1}{#2}{#3}{#4}{#5}{}{}{}}
+\newcommand{\pcreationPT}{\pcreationP{a}{b}{c}{h}{h_{1}}}
+
+\newcommand{\spiking}[4]{\wrule[spike]{}{}{{#1}{#2}}{{#3}{#4}}}
+\newcommand{\spikingT}{\spiking{E}{a^{n}}{a}{d}}
+\newcommand{\forgettingT}{\spiking{}{a^{n}}{\lambda}{}}
+
+\newcommand{\spikingP}[4]{\prule[spike]{}{}{{#1}{#2}}{{#3}{#4}}}
+\newcommand{\spikingPT}{\spikingP{E}{a^{n}}{a}{d}}
+\newcommand{\forgettingPT}{\spikingP{}{a^{n}}{\lambda}{}}
+
+\newcommand{\krewriting}[3]{\wrule{2}{3}{{}{{#1}}}{{}{{#2}}{{#3}{!}}}}
+\newcommand{\krewritingT}{\krewriting{x}{y}{g}}
+
+\newcommand{\krewritingP}[3]{\prule{2}{3}{{}{{#1}}}{{}{{#2}}{{#3}{!}}}}
+\newcommand{\krewritingPT}{\krewritingP{x}{y}{g}}
+
+\newcommand{\linkcreation}[5]{\wrule{5}{6}{{}{}{{#1}{#3}}{;}{{}{#4}}}{{}{}{{#2}{#3}}{-}{{}{#4}}{{#5}{!}}}}
+\newcommand{\linkcreationT}{\linkcreation{x}{y}{t_{l_{i}}}{t_{l_{j}}}{g}}
+
+\newcommand{\linkcreationP}[5]{\prule{5}{6}{{}{}{{#1}{#3}}{;}{{}{#4}}}{{}{}{{#2}{#3}}{-}{{}{#4}}{{#5}{!}}}}
+\newcommand{\linkcreationPT}{\linkcreationP{x}{y}{t_{l_{i}}}{t_{l_{j}}}{g}}
+
+\newcommand{\linkdestruction}[5]{\wrule{5}{6}{{}{}{{#1}{#3}}{-}{{}{#4}}}{{}{}{{#2}{#3}}{;}{{}{#4}}{{#5}{!}}}}
+\newcommand{\linkdestructionT}{\linkdestruction{x}{y}{t_{l_{i}}}{t_{l_{j}}}{g}}
+
+\newcommand{\linkdestructionP}[5]{\prule{5}{6}{{}{}{{#1}{#3}}{-}{{}{#4}}}{{}{}{{#2}{#3}}{;}{{}{#4}}{{#5}{!}}}}
+\newcommand{\linkdestructionPT}{\linkdestructionP{x}{y}{t_{l_{i}}}{t_{l_{j}}}{g}}
+
+% Families of P systems
+
+\newcommand{\Pfamily}[4]{\ensuremath{\mathcal{#1}^{#2}_{#3} \IfStrEq{#4}{}{}{( #4 )}}}
+\newcommand{\AM}[2][]{\Pfamily{AM}{#1}{}{#2}}
+\newcommand{\AMO}[1]{\Pfamily{AM}{0}{}{#1}}
+\newcommand{\TC}[2][]{\Pfamily{T#1C}{}{}{#2}}
+\newcommand{\TDC}[1]{\TC[D]{#1}}
+\newcommand{\TSC}[1]{\TC[S]{#1}}
+\newcommand{\CC}[2][]{\Pfamily{C#1C}{}{}{#2}}
+\newcommand{\CDC}[1]{\CC[D]{#1}}
+\newcommand{\CSC}[1]{\CC[S]{#1}}
+\newcommand{\TEC}[2][]{\TC[#1E]{#2}}
+\newcommand{\TDEC}[1]{\TEC[D]{#1}}
+\newcommand{\TSEC}[1]{\TEC[S]{#1}}
+\newcommand{\CEC}[2][]{\CC[#1E]{#2}}
+\newcommand{\CDEC}[1]{\CEC[D]{#1}}
+\newcommand{\CSEC}[1]{\CEC[S]{#1}}
+
+% Terms of computability theory
+
+\newcommand{\compSet}[1]{\ensuremath{#1}}
+\newcommand{\REG}{\compSet{REG}}
+\newcommand{\LIN}{\compSet{LIN}}
+\newcommand{\CF}{\compSet{CF}}
+\newcommand{\CS}{\compSet{CS}}
+\newcommand{\RE}{\compSet{RE}}
+
+% Terms of computational complexity theory
+
+\newcommand{\complClass}[3]{\ensuremath{\mathbf{#1MC}^{#2}_{#3}}}
+\newcommand{\PMC}[2][]{\complClass{P}{#1}{#2}}
+\newcommand{\PSPACEMC}[2][]{\complClass{PSPACE}{#1}{#2}}
+\newcommand{\EXPMC}[2][]{\complClass{EXP}{#1}{#2}}
+\newcommand{\EXPSPACEMC}[2][]{\complClass{EXPPSPACE}{#1}{#2}}
+
+\fullexpandarg
+\noexploregroups
+
+\endinput
+
+v0.1 23/07/2020
+  - Created package
+  - Created some examples and templates

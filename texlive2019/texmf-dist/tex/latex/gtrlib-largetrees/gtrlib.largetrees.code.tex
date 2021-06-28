@@ -1,0 +1,147 @@
+%%
+%% This is file `gtrlib.largetrees.code.tex',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% gtrlib.largetrees.dtx  (with options: `gtrlib')
+%% 
+%% Copyright (C) 2015-2018 by Richard Grewe <r-g+tex@posteo.net>
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.2 of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.2 or later is part of all distributions of LaTeX version
+%% 1999/12/01 or later.
+%% 
+\RequirePackage{etoolbox}
+\gtr@db@new@store{spouse}
+\gtr@db@new@event@store{spousebirth}
+\gtr@db@new@event@store{spousedeath}
+\def\gtrifspousedefined#1#2{\ifdefvoid{\gtrDBspouse}{#2}{#1}}
+\newcommand\gtrPrintSpouse{\gtrDBspouse}
+\newcommand\gtrPrintSpouseDetails{%
+  \gtrPrintSpouse
+  \begin{gtrprintlist}{\unskip\ (}{\unskip,\ }{\unskip)}{\unskip}%
+    \gtrifeventdefined{spousebirth}%
+      {\gtrlistseparator\gtrPrintEventPrefix{birth}\,%
+       \gtrPrintDate{spousebirth}}%
+      {}%
+    \gtrifeventdefined{spousedeath}%
+      {\gtrlistseparator\gtrPrintEventPrefix{death}\,%
+       \gtrPrintDate{spousedeath}}%
+      {}%
+  \end{gtrprintlist}}
+\gtrset{%
+  database/children/.code n args={2}{%
+    \numdef\gtrDBchildren{#1+#2}%
+    \def\gtrDBdaughters{#1}%
+    \def\gtrDBsons{#2}},%
+  database/children-/.store in=\gtrDBchildren,
+  database/children+/.store in=\gtrDBchildren,
+}
+\def\gtrifchildrendefined#1#2{\ifdefvoid{\gtrDBchildren}{#2}{#1}}
+\def\gtrPrintChildren{%
+  \gtrTranslatedChildren:
+    \ifdefvoid{\gtrDBdaughters}%
+      {\gtrDBchildren}%
+      {\gtrDBdaughters\kern0.5pt\gtrsymFemale~%
+       \gtrDBsons\kern0.5pt\gtrsymMale}}
+\gtrset{%
+  sparse display/.style={node processor=\gtrltSparseNodeProcessor},
+  sparse node size from/.code args={#1 to #2}{%
+    \dimdef\gtr@@kv@@gtrlt@sparsenode@minsize{#1}%
+    \dimdef\gtr@@kv@@gtrlt@sparsenode@maxsize{#2}},
+  sparse max fields/.code={%
+    \gdef\gtrlt@sparse@maxfields{#1}},%
+  sparse inner from level/.code={\def\gtrlt@sparseinner@level{#1}},
+  sparse leaf from level/.code={\def\gtrlt@sparseleaf@level{#1}},
+  sparse inner never/.code={\undef\gtrlt@sparseinner@level},
+}
+\gtr@proc@register@level@local{\gtrlt@sparsenode@minsize}
+\gtr@proc@register@level@local{\gtrlt@sparsenode@maxsize}
+\newcommand\gtrltSparseNodeProcessor{%
+  \gtrltIfSparseEnabled{\gtrltIfSparse{%
+    \let\gtrNodeMinWidth=\gtrlt@sparsenode@minsize%
+    \let\gtrNodeMaxWidth=\gtrlt@sparsenode@maxsize%
+    \gtrkeysappto\gtrNodeBoxOptions{%
+      rotate=90,gtrNodeDimensionsLandscape,%
+    }%
+  }{}}{}%
+  \csuse{gtr@boxcontent@fit}}
+\newcommand\gtrltIfSparseEnabled{%
+  \gtrifleaf
+    {\ifdef\gtrlt@sparseleaf@level%
+      {\ifnumgreater{1+\gtrnodelevel}{\gtrlt@sparseleaf@level}}%
+      {\@firstoftwo}}%
+    {\ifdef\gtrlt@sparseinner@level%
+      {\ifnumgreater{1+\gtrnodelevel}{\gtrlt@sparseinner@level}}%
+      {\@secondoftwo}}}
+\newcount\gtrltFieldCount
+\newcommand\gtrltIfSparse{%
+  \gtrltFieldCount=0\relax
+  \gtrltCountDatabaseFields
+  \advance\gtrltFieldCount by-1\relax%
+  \ifnumless{\the\gtrltFieldCount}{\gtrlt@sparse@maxfields}}
+\newcommand\gtrltDeclareFieldCount[2]{%
+  \gtrset{database format/#1/.append code={%
+    \def\gtrltCountDatabaseFields{#2}}}}
+\newcommand\gtrltFieldCountByConditionals[1]{%
+  \def\do##1{%
+    ##1{\advance\gtrltFieldCount by1\relax}{}}%
+  \gtrltFieldCount=0\relax
+  \docsvlist{#1}}
+\gtrDeclareDatabaseFormat{person marriage children profession}{}{%
+  \gtrPrintName%
+  \begin{gtreventlist}%
+    \gtr@list@event@birth%
+    \gtr@list@event@death%
+  \end{gtreventlist}%
+  \gtrifcommentdefined{\gtrPrintComment}{}%
+  \gtr@ifmarriagedefined{\tcbline
+    \begin{gtreventlist}
+       \gtr@list@event@marriage
+       \gtrifspousedefined{
+         \gtrTranslatedWith\ \gtrPrintSpouseDetails}{}%
+       \gtrifchildrendefined{, \gtrPrintChildren}{}%
+    \end{gtreventlist}}{%
+    \gtrifchildrendefined{\tcbline\gtrPrintChildren}{}}%
+  \gtrifprofessiondefined{\tcbline\gtrPrintProfession}{}%
+}
+\gtrltDeclareFieldCount{person marriage children profession}{%
+  \gtrltFieldCountByConditionals{%
+    \gtrifeventdefined{birth},
+    \gtrifeventdefined{death},
+    \gtrifeventdefined{marriage},
+    \gtrifcommentdefined,
+    \gtrifspousedefined,
+    \gtrifchildrendefined,
+    \gtrifprofessiondefined,
+  }}
+\newcommand\gtrlt@texttranslation@add[1]{%
+  \begingroup\edef\x{\endgroup\noexpand\gtrset{%
+    textlang/#1/.store in=\expandonce{%
+      \csname gtrTranslated#1\endcsname}}}\x}
+\gtrlt@texttranslation@add{Children}
+\gtrlt@texttranslation@add{With}
+\AtBeginDocument{
+  \gtrset{language@/english/.append code={%
+    \gtrset{textlang/.cd,
+      Children=children,
+      With=with,
+    }
+  }}
+  \gtrset{language@/german/.append code={%
+    \gtrset{textlang/.cd,
+      Children=Kinder,
+      With=mit,
+    }
+  }}
+  \gtrset{language=\gtrlanguagename}}
+\endinput
+%%
+%% End of file `gtrlib.largetrees.code.tex'.

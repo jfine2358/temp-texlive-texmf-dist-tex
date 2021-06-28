@@ -1,0 +1,1164 @@
+%%% Artikelklasse mit:
+%%% * Grundschriftgröße 11 Punkt,
+%%% * klassischem Satzspiegel,
+%%% * flachem Inhaltsverzeichnis,
+%%% * Tabellenüberschriften.
+\documentclass[11pt,DIV8,tocleft,tablecaptionabove,abstracton]{scrartcl}
+%%% Eingabekodierung ist ISO-8859-15.
+\usepackage[ansinew]{inputenc}
+%%% Schrifteinstellung:
+%%% * Grundschrift Palatino,
+%%% * Akzidenzschrift Bera Sans,
+%%% * Schreibmaschinenschrift Latin Modern Typewriter.
+\usepackage[T1]{fontenc}
+\usepackage[osf]{mathpazo}
+\usepackage[scaled]{berasans}
+\renewcommand*{\ttdefault}{lmtt}
+\usepackage{textcomp}
+\linespread{1.05}
+\usepackage[expansion=true, letterspace=80]{microtype}
+%%% Lade einige Pakete.
+\usepackage{ifthen}
+\usepackage{calc}
+\usepackage{multicol}
+\usepackage{paralist}
+\usepackage{fncylab}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\usepackage{listings}
+\lstloadlanguages{[LaTeX]TeX, sh}
+\lstset{basicstyle=\ttfamily, keywordstyle={}, commentstyle={},
+  columns=flexible, showspaces=false, showstringspaces=false,
+%  aboveskip=12pt, belowskip=12pt, frame=tb,
+%  framesep=8pt, framerule=2pt,
+  xleftmargin=6pt, xrightmargin=6pt,
+% framexleftmargin=6pt, framexrightmargin=6pt
+}
+\lstdefinestyle{LaTeX}{language=[LaTeX]TeX, basicstyle=\ttfamily,
+  keywordstyle={}, commentstyle={\itshape}}
+\lstdefinestyle{shell}{language=sh, basicstyle=\ttfamily,
+  keywordstyle={}, commentstyle={\itshape}}
+\lstdefinestyle{Text}{language=, basicstyle=\ttfamily,
+  keywordstyle={}, commentstyle={}}
+\usepackage{needspace}
+%%% Literaturverweise in runden Klammern mit Semikolon als Trenner.
+% \usepackage[round,semicolon]{natbib}
+% \renewcommand*{\bibnumfmt}[1]{(#1)}
+%%% Literaturverzeichnis mit Sprachunterstützung.
+\usepackage[fixlanguage]{babelbib}
+\bibliographystyle{babalpha}
+%%% Babelbib fordert trotz fixlanguage zuviele Sprachen an.
+\usepackage[english, german, ngerman]{babel}
+%%% Einstellungen für interaktive PDF-Dokumente.
+\usepackage[rgb,x11names]{xcolor}
+\usepackage[hyperref]{zref}
+\usepackage{hyperref}
+\hypersetup{
+  pdftitle={dehyph-exptl},
+  pdfauthor={Die deutschsprachige Trennmustermannschaft},
+  pdfkeywords={TeX, deutsche Rechtschreibung, Trennmuster,
+    computergestützte Worttrennung}
+}
+\hypersetup{
+  ngerman,% For \autoref.
+  pdfstartview={XYZ null null null},% Zoom factor is determined by viewer.
+  colorlinks,
+  linkcolor=RoyalBlue3,
+  urlcolor=Chocolate4,
+  citecolor=DeepPink2
+}
+\newcommand*{\regelref}[1]{%
+  \begingroup%
+  \renewcommand*{\Itemautorefname}{Regel}%
+  \autoref{#1}%
+  \endgroup%
+}
+%%% Schriftfestlegungen.
+\setkomafont{title}{\normalcolor\normalfont}
+\setkomafont{sectioning}{\normalcolor\normalfont}
+\setkomafont{section}{\Large}
+\setkomafont{subsection}{\Large\itshape}
+\setkomafont{descriptionlabel}{\normalfont\itshape}
+%%% Einige Makros für logische Auszeichnungen definieren.
+\newcommand*{\Abk}[1]{\mbox{\textsc{\lsstyle#1}}}
+\newcommand*{\Programm}[1]{\textsc{\lsstyle#1}}
+\newcommand*{\Datei}[1]{\texttt{#1}}
+%%% Randnotiz am linken Rand.
+\newcommand{\lrand}[1]{%
+  \mbox{}%
+  \marginpar{%
+    \hspace*{-2\marginparsep}%
+    \hspace*{-\textwidth}%
+    \hspace*{-\marginparwidth}%
+    \parbox[t]{\marginparwidth}{%
+      \raggedright%
+      \small%
+      \sffamily%
+      \bfseries%
+      #1%
+    }%
+  }%
+  \ignorespaces%
+}
+\colorlet{richtigcol}{green!80!black}
+\colorlet{falschcol}{red!80!black}
+\colorlet{tradcol}{green!50!black}
+\colorlet{reformcol}{green!75!black}
+\colorlet{unerwcol}{red!60!black}
+
+\newcolumntype{T}{>{\color{tradcol}}l}
+\newcolumntype{R}{>{\color{reformcol}}l}
+\newcolumntype{U}{>{\color{unerwcol}}l}
+
+\newcommand*{\trennung}[2]{%
+   \makebox[0pt][l]{%
+     \color{#1}%
+     \smash{\rule[-3.5pt]{\widthof{#2}}{.7pt}}% Schriftabhängig.
+   }%
+   #2%
+}
+\newcommand*{\ftr}[1]{\trennung{falschcol}{#1}}% Falsche Trennung.
+\newcommand*{\rtr}[1]{\trennung{richtigcol}{#1}}% Richtige Trennung.
+
+%%% Satzspiegel erneut berechnen.
+\typearea{last}
+
+\begin{document}
+%%% Trennausnahmen definieren.
+\hyphenation{Back-end hyph-subst Ent-wick-ler-re-po-si-to-ri-um
+  Wort-her-kunft Not-tren-nung Trenn-al-go-rith-mus
+  um-bruch-in-kom-pa-tib-le}
+%%% Protokollierung der Trennungen für findhyph.
+%\tracingparagraphs=1
+
+%%% Dokumenttitel.
+\author{Die deutschsprachige Trennmustermannschaft}
+\title{\texttt{dehyph-exptl}\thanks{This document describes the
+    \texttt{dehyph-exptl} package v0.20.}}
+\subtitle{Experimentelle Trennmuster für die deutsche Sprache}
+\maketitle
+
+
+%%% Zweisprachige Zusammenfassung.
+\selectlanguage{english}
+\begin{abstract}
+  This package provides experimental hyphenation patterns for the German
+  language, covering traditional and reformed orthography for several
+  varieties of Standard German.  The patterns can be used with packages
+  \texttt{Babel} and \texttt{hyphsubst} from the \Programm{Oberdiek
+    bundle}.  Project-\Abk{url} is
+  \url{http://groups.google.de/group/trennmuster-opensource}.
+\end{abstract}
+
+\selectlanguage{ngerman}
+\begin{abstract}
+  Dieses Paket enthält experimentelle Trennmuster für die deutsche
+  Sprache.  Die Trennmuster decken das in Deutschland, Österreich und
+  der Schweiz gebräuchliche Standarddeutsch in der traditionellen und
+  reformierten Rechtschreibung ab und können mit den Paketen
+  \texttt{Babel} und \texttt{hyphsubst} aus dem
+  \Programm{Oberdiek-Bündel} verwendet werden.
+\end{abstract}
+
+
+%%% Zweispaltiges Inhaltsverzeichnis.
+\begin{multicols}{2}
+\small
+\renewcommand*{\ngermanhyphenmins}{44}
+\selectlanguage{ngerman}
+\tableofcontents
+\end{multicols}
+
+
+\section{Einleitung}
+\label{sec:einleitung}
+Der in \TeX\ implementierte Trennalgorithmus arbeitet
+musterbasiert~\cite{liang:1983}.  Prinzipiell können mit einem solchen
+Algorithmus nicht alle möglichen Wörter korrekt getrennt werden.  Die
+Qualität der Worttrennung einer Sprache wird jedoch maßgeblich von der
+Qualität der Wortliste beeinflusst, aus der die verwendeten Trennmuster
+berechnet wurden.
+
+Obwohl die herkömmlichen Trennmuster%
+\footnote{Diese Liste bezieht sich auf die Trennmusterdateien
+  \Datei{dehypht.tex}, Version~3.2a vom 3.\,3.\,1999, und
+  \Datei{dehyphn.tex}, Version~31 vom 7.\,5.\,2001.}
+%
+für die deutsche Sprache bei der Worttrennung in gewöhnlichen Texten
+eine akzeptable Fehlerrate erreichen, enthalten sie doch eine Reihe von
+Schwächen:
+
+\bigskip\smallskip
+\needspace{4\baselineskip}
+\noindent\textit{traditionelle Rechtschreibung}
+
+\begin{itemize}
+\item Die herkömmlichen Trennmuster für die traditionelle deutsche
+  Rechtschreibung können mit \Programm{Patgen} nicht reproduziert
+  werden, da die zugrundeliegende Wortliste verschollen ist.  Die Pflege
+  der Trennmuster ist daher schwierig bis unmöglich.  Für freie Software
+  ist dies kein zufriedenstellender Zustand.
+
+\item Umfang und Qualität der ursprünglichen Wortliste lassen sich nicht
+  mehr einschätzen.  Für die Trennmuster in traditioneller
+  Rechtschreibung existiert jedoch inzwischen eine Ausnahmeliste%
+  \footnote{\url{CTAN:language/hyphenation/dehyph/dehyphtex.tex}}
+%
+  mit über 3500 korrigierten Trennungen einfacher Wörter
+  \cite{lemberg:2003, lemberg:2005}.
+
+\item Wird in der traditionellen Rechtschreibung \emph{ß} durch
+  \emph{ss/SS} oder \emph{sz/SZ}%
+  \footnote{Im Versalsatz sollte auf Trennungen jedoch möglichst ganz
+    verzichtet werden.}
+%
+  ersetzt, so bleibt die Trennung davon unberührt.  Die herkömmlichen
+  Trennmuster berücksichtigen diese Regel nicht und trennen häufig den
+  Ersatz: \textls{">GR\ftr{ÖS-S}E"<}, \textls{">GR\ftr{ÜS-S}E"<},
+  \textls{">M\ftr{AS-S}ES"<}.%
+  \footnote{Das Verhalten entspricht den Regeln der deutschen
+    Standardsprache in der Schweiz, obwohl diese Sprachvarietät vom
+    Paket \texttt{Babel} nicht offiziell unterstützt wird.
+    \texttt{Babel} versucht den Mangel mit Hilfe des Kürzels
+    \lstinline[style=LaTeX]+\"S+ zu kompensieren.}
+
+\item Abweichende Schreibweisen, die in der traditionellen
+  Rechtschreibung in Österreich und der Schweiz verwendet werden, werden
+  mangelhaft getrennt: ">Gro\ftr{s-so}n-kel"<, ">Ku\ftr{s-sh}and"<,
+  ">Ma\ftr{ssn}ah-me"<, ">mi\ftr{s-sa}ch-ten"< (nur Schweiz) und
+  ">Ex-pre\ftr{ssz}ug"<, ">Fit-ne\ftr{s-sc}en-ter"<,
+  ">Fit-ne\ftr{sst}rai-ner"<.
+\end{itemize}
+
+\bigskip
+\needspace{4\baselineskip}
+\noindent\textit{reformierte Rechtschreibung}
+
+\begin{itemize}
+\item Die Trennmuster für die reformierte deutsche Rechtschreibung
+  wurden nicht mit \Programm{Patgen} aus einer Wortliste erstellt.
+  Stattdessen wurden die Trennmuster für die traditionelle
+  Rechtschreibung von Hand an die reformierten Regeln angepasst.  Aus
+  diesem Grund ist die Worttrennung mit den Trennmustern für die
+  reformierte Rechtschreibung etwas schlechter als mit den Trennmustern
+  für die traditionelle Rechtschreibung.
+\end{itemize}
+
+\bigskip
+\needspace{4\baselineskip}
+\noindent\textit{traditionelle und reformierte Rechtschreibung}
+
+\begin{itemize}
+\item In zusammengesetzten Wörtern treten häufig Trennfehler an
+  Wortfugen auf.
+
+\item Fremdwörter mit akzentuierten Buchstaben werden mangelhaft
+  getrennt: ">C\ftr{af}é"<, ">Ci-tr\ftr{oë}n"<, ">F\ftr{aç}on"<,
+  ">vo\ftr{il}à"<.
+
+\item Die Trennmusterdateien enthalten eine Mischung aus \Abk{t1}- sowie
+  unvollständigen \Abk{ot1}-kodierten Mustern.  Mit Erscheinen von
+  16-Bit-fähigen \TeX-Varianten werden sauber \Abk{utf-8}-kodierte
+  Trennmuster nötig \cite{miklavec:2008}.
+\end{itemize}
+
+Das Projekt \emph{Freie Wortlisten und Trennmuster für die deutsche
+  Sprache} hat sich das Ziel gesetzt, neue Trennmuster hoher Qualität
+für die deutsche Sprache zu erstellen, die die genannten Probleme
+ausräumen.
+
+Den experimentellen Trennmustern dieses Pakets liegt eine Wortliste mit
+den etwa fünfhunderttausend häufigsten Wörtern der deutschen Sprache
+zugrunde.  Vermutlich ist diese Liste erheblich umfangreicher als die
+ursprüngliche Wortliste, in der Worthäufigkeiten wahrscheinlich
+überhaupt nicht berücksichtigt wurden.  Die verwendete Wortliste deckt
+das in Deutschland, Österreich und der Schweiz gebräuchliche
+Standarddeutsch ab.
+
+Mit den vorliegenden Trennmustern sollte für nicht-fachsprach\-li\-che
+Wörter eine sehr gute Trennqualität erreicht werden.  Insbesondere
+sollte sich die Trennung häufig auftretender zusammengesetzter Wörter
+verbessern.
+
+
+\section{Verwenden der Trennmuster}
+\label{sec:verwenden}
+Zur Installation der experimentellen Trennmuster siehe
+\autoref{sec:installation} und die Datei \Datei{INSTALL}.  Beachte, in
+den folgenden Abschnitten ist \verb+<datum>+ durch das bei der
+Installation angegebene Datum in \Abk{iso}-Notation (\verb+JJJJ-MM-TT+)
+oder die Zeichenkette \verb+latest+ zu ersetzen!
+
+\subsection{Sprachvarietät und Rechtschreibung}
+\label{sec:varietaeten}
+Dieses Paket stellt Trennmuster für die Worttrennung der deutschen
+Sprache in der traditionellen und der reformierten Rechtschreibung
+bereit.  Die Trennmuster unterstützen zur Zeit die drei in
+\begin{itemize}
+\item Deutschland,
+\item Österreich und der
+\item Schweiz%
+  % 
+  \footnote{Für Texte in Schweizer Standarddeutsch fehlt zur Zeit die
+    \texttt{Babel}-Unterstützung.  Zum Beispiel muss das Kürzel
+    \lstinline[style=LaTeX]+\"s+ stets zu \emph{ss} expandieren.  In der
+    traditionellen Rechtschreibung wird außerdem ein zusätzliches Kürzel
+    \lstinline[style=LaTeX]+\"ss+ benötigt (Dreikonsonantenregel).  Wer
+    kann helfen?}
+\end{itemize}
+gebräuchlichen Hauptvarietäten der deutschen Standardsprache.
+\autoref{tab:varietaeten} zeigt die Trennmuster, die abhängig von
+gewünschter Varietät und Rechtschreibung in einem Dokument aktiviert
+werden können.
+
+\begin{table}
+  \centering
+  \caption{Die unterstützten Varietäten und Rechtschreibungen}
+  \label{tab:varietaeten}
+  \begin{tabular}{>{\ttfamily}l@{\hspace{2\tabcolsep}\hspace{1em}}l}
+      \normalfont Trennmusterbezeichner & Sprachvarietät\\
+      \addlinespace\toprule\addlinespace
+      german-x-<datum> & \hspace*{-1em}\emph{traditionelle Rechtschreibung}\\
+      & Deutschland, Österreich\\
+      gswiss-x-<datum> & \hspace*{-1em}\emph{traditionelle Rechtschreibung}\\
+      & Schweiz\\
+      ngerman-x-<datum> & \hspace*{-1em}\emph{reformierte Rechtschreibung}\\
+      & Deutschland, Österreich, Schweiz\\
+  \end{tabular}
+\end{table}
+
+Varietäten, die sich nur in der Verwendung und Schreibung einzelner
+Wörter voneinander unterscheiden, können durch gemeinsame Trennmuster
+unterstützt werden.  Die Eingabewortliste für \Programm{Patgen} ist dann
+eine Vereinigung der den Varietäten entsprechenden Wortlisten.  Zum
+Beispiel werden Besonderheiten der österreichischen Standardsprache in
+den Trennmustern für die Standardsprache Deutschlands berücksichtigt.
+Österreichische und deutsche Anwender können daher dieselben Trennmuster
+verwenden.%
+\footnote{Wie das auch schon bei den herkömmlichen Trennmustern der Fall
+  war.}
+
+Aufgrund unvereinbarer Trennregeln in der traditionellen Rechtschreibung
+der Standardsprachen Deutschlands/""Österreichs und der Schweiz werden
+für die letztere Varietät eigene Trennmuster bereitgestellt.
+
+Mit der Rechtschreibreform 1996 wurden die Trennregeln aller drei
+Standardsprachen so weit angeglichen, dass für die reformierte
+Rechtschreibung einheitliche Trennmuster für alle drei unterstützten
+Sprachvarietäten bereitgestellt werden können.
+
+\subsection{Aktivieren der Trennmuster}
+\label{sec:aktivieren}
+Das folgende Beispiel zeigt eine \LaTeX-Präambel für die Aktivierung der
+experimentellen Trennmuster für die reformierte Rechtschreibung.
+
+\begin{lstlisting}[style=LaTeX]
+\RequirePackage[ngerman=ngerman-x-<datum>]{hyphsubst}
+% \RequirePackage[ngerman=ngerman-x-latest]{hyphsubst}
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[ngerman]{babel}
+\end{lstlisting}
+
+Die folgende Variante erleichtert das schnelle Umschalten zwischen
+verschiedenen Trennmustern im Editor.  Weitere Hinweise können der
+Dokumentation des Pakets \texttt{hyphsubst} entnommen werden.
+
+\begin{lstlisting}[style=LaTeX]
+\RequirePackage{hyphsubst}
+\documentclass{article}
+\usepackage[T1]{fontenc}
+% \HyphSubstLet{german}{german-x-<datum>}
+% \usepackage[german]{babel}
+\HyphSubstLet{ngerman}{ngerman-x-<datum>}
+\usepackage[ngerman]{babel}
+\end{lstlisting}
+
+Ob die experimentellen Trennmuster korrekt aktiviert werden, kann mit
+dem folgenden Beispiel getestet werden.  Die Ausgabe für die
+traditionelle und reformierte Rechtschreibung mit herkömmlichen und
+experimentellen Trennmustern ist in \autoref{tab:trennvarianten}
+zusammengefasst.
+\begin{lstlisting}[style=LaTeX]
+\begin{document}
+\showhyphens{löste Fassade modernste Abendstern Mordopfer}
+\end{lstlisting}
+
+%\suppressfloats[t]
+\begin{table*}
+  \centering
+  \caption{Trennvarianten}
+  \label{tab:trennvarianten}
+  \begin{tabular}{llll}
+    \multicolumn{2}{c}{\itshape traditionelle Rechtschreibung} &
+    \multicolumn{2}{c}{\itshape reformierte Rechtschreibung}\\
+    herkömmlich & experimentell & herkömmlich & experimentell\\
+    \addlinespace\toprule\addlinespace
+    l\ftr{ös-t}e & lö-ste & lös-te & lös-te\\
+    Fas-sa-de & Fas-sa-de & Fa\ftr{ss}a-de & Fas-sa-de\\
+    mo-\ftr{d-e}rn-ste & mo-dern-ste & mo-\ftr{d-e}rns-te & mo-derns-te\\
+    Abend-stern & Abend-stern & Aben\ftr{ds-t}ern & Abend-stern\\
+    Mo\ftr{r-do}p-fer & Mord-op-fer & Mo\ftr{r-do}p-fer & Mord-op-fer\\
+  \end{tabular}
+\end{table*}
+
+\emph{Diese Trennmuster befinden sich im experimentellen Status.  Sie
+können jederzeit durch umbruchinkompatible Versionen ersetzt und vom
+\Abk{ctan} oder aus \TeX-Vertei\-lun\-gen entfernt werden.  Sie sind
+daher nicht für Anwendungen geeignet, die einen dauerhaft stabilen
+Umbruch erfordern.  Ausgiebige Tests sind erwünscht!}
+
+% Trennung mit Mustern für traditionelle Rechtschreibung.
+\newcommand*{\trtr}[1]{\trennung{tradcol!20}{#1}}
+% Trennung mit Mustern für reformierte Rechtschreibung.
+\newcommand*{\retr}[1]{\trennung{reformcol!20}{#1}}
+% Unerwünschte Trennung.
+\newcommand*{\untr}[1]{\trennung{unerwcol!20}{#1}}
+
+\section{Trennregeln und Konventionen}
+\label{sec:trennregeln}
+Die Trennmuster für die traditionelle Rechtschreibung in Deutschland und
+Österreich orientieren sich an den verbindlichen Regeln des Dudens in
+der Fassung von 1991~\cite{duden:1991}.  Dasselbe gilt für die
+Trennmuster für die traditionelle Rechtschreibung in der Schweiz, jedoch
+mit einer unten beschriebenen Abweichung.  Die Trennmuster für die
+reformierte Rechtschreibung orientieren sich an den amtlichen Regeln für
+die Rechtschreibung der deutschen Sprache in der Fassung von
+2006~\cite{amtlRegeln:2006, amtlRegeln:2006:duden}.
+
+Die Regeln lassen gewisse Freiheiten bei der Schreibung und Trennung von
+Wörtern zu.  Da sich solche Freiheiten nicht ohne weiteres auf die
+maschinelle Worttrennung übertragen lassen, wurden die im folgenden
+beschriebenen Konventionen getroffen.  Hauptsächlich betreffen diese die
+reformierte Rechtschreibung, die zusätzliche Freiheiten eingeführt hat.
+Beziehen sich die Konventionen für die reformierte Rechtschreibung auf
+die traditionelle Rechtschreibung, so werden die entsprechenden Regeln
+etwas ausführlicher dargestellt.  Die folgenden Abschnitte enthalten
+jedoch keine vollständige Aufstellung der Silbentrennregeln.  Diese sind
+den entsprechenden Regelwerken zu entnehmen.  Es folgen zunächst einige
+allgemeine Hinweise:
+
+\begin{itemize}
+
+\item In Liangs Trennalgorithmus werden Groß- und Kleinschreibung nicht
+  unterschieden~\cite{liang:1983}.  Die Schreibweisen \emph{Nachtritt}
+  und \emph{nachtritt} werden aus Sicht des Trennalgorithmus gleich
+  behandelt (siehe auch \regelref{enum:tradDoppeld} und
+  \regelref{enum:reformDoppeld}).
+
+\item Konsonantenänderungen, die bei der Trennung nach traditioneller
+  Rechtschreibung auftreten, können nicht in Trennmustern berücksichtigt
+  werden, sondern erfordern derzeit zusätzliche Auszeichnung im
+  Quelltext mit Hilfe des Pakets \texttt{Babel}.
+  \autoref{tab:konsonantenaenderung} stellt Eingaben und deren möglichen
+  Trennungen gegenüber.  Beachte, im letzten Beispiel sind die
+  Trennstellen im zweiten Wortteil verloren gegangen.  Es handelt sich
+  dabei um einen bekannten Fehler im Paket \texttt{Babel}.%
+  \footnote{\url{http://www.latex-project.org/}, Kennzeichen
+    \texttt{babel/3458}}
+
+  \begin{table}
+    \centering
+    \caption{Konsonantenänderungen in der traditionellen Rechtschreibung}
+    \label{tab:konsonantenaenderung}
+    \begin{tabular}[t]{ll}
+      Eingabe & Trennung \\
+      \addlinespace\toprule\addlinespace
+      \lstinline[style=LaTeX]+drucken+ & drucken \\
+      \lstinline[style=LaTeX]+dru"cken+ & druk-ken \\
+      \lstinline[style=LaTeX]+Metallegierung+ & Me-talle-gie-rung \\
+      \lstinline[style=LaTeX]+Meta"llegierung+ & Me-tall-legierung \\
+    \end{tabular}\par\smallskip
+  \end{table}
+
+\item Die von \TeX\ gewählte Trennung kann in Einzelfällen mit den \TeX-
+  und \texttt{Babel}-Kürzeln \lstinline[style=LaTeX]+\-+ und
+  \lstinline[style=LaTeX]+"-+ geändert werden.  Für dokumentweite
+  Änderungen der Trennung eignet sich das Kommando
+  \lstinline[style=LaTeX]+\hyphenation+.
+
+\item Die Datei \Datei{CHANGES} beschreibt bekannte, systematische
+  Fehler der Trennmuster.
+
+\item In den Beispielen zeigt die linke (grüne) Spalte jeweils die
+  Trennung mit den experimentellen Trennmustern, die rechten (roten)
+  Spalten zeigen alternative oder unerwünschte Trennungen.
+
+\end{itemize}
+
+\subsection{Traditionelle Rechtschreibung in Deutschland und Österreich}
+\label{sec:tradRS}
+
+\begin{enumerate}[\hspace{1em}\itshape{T}1]
+\labelformat{enumi}{\textit{T#1}}
+
+\item\label{enum:tradSinn} Sinnentstellende und irreführende Trennungen
+  werden möglichst vermieden \cite[R~181]{duden:1991}:\par\nobreak
+
+  \begin{tabular}[t]{TU}
+    An-alpha-bet & Anal-phabet\\
+    Kaf-ka-kenner & Kafkaken-ner\\
+    Tal-entwäs-se-rung & Talent-wässerung\\
+  \end{tabular}
+
+\item\label{enum:tradEszett} Wird der Buchstabe~\emph{ß} durch \emph{ss/SS}
+  ersetzt, so bleibt die Trennung davon unberührt
+  \cite[R~179]{duden:1991}:\par\nobreak
+
+  \begin{tabular}[t]{T}
+    \textls{GRÖSS-TE}\\
+    \textls{GRÜ-SSE}\\
+    \textls{M\kern-.4ptA\kern-.4pt-SSES}\\
+  \end{tabular}
+
+  Für diese Regel gilt die folgende Einschränkung:
+  \begin{itemize}
+  \item Wenn durch den Ersatz von~\emph{ß} eine Mehrdeutigkeit auftritt,
+    so wird zugunsten der Bedeutung des Wortes in der normalen
+    Schreibweise getrennt (siehe auch \regelref{enum:tradDoppeld}).
+  \end{itemize}
+  \nobreak
+
+  \begin{tabular}[t]{TTU}
+    \textls{FLÖS-SE} & (wegen flös-se) & \textls{FLÖ-SSE}\\
+    \textls{MAS-SE} & (wegen Mas-se) & \textls{MA-SSE}\\
+  \end{tabular}
+
+  Beachte, wird~\emph{ß} jedoch mit
+  \lstinline[style=LaTeX]+\MakeUppercase+ durch~\emph{SS} ersetzt, so
+  bleibt~\emph{SS} stets ungetrennt.  Die Trennung richtet sich dann
+  nach der Schreibweise mit~\emph{ß} im Quelldokument.
+
+\item\label{enum:tradDoppeld} In mehrdeutigen Wörtern werden Trennungen
+  nur an übereinstimmenden Trennstellen zugelassen.\par\nobreak
+
+  \begin{tabular}[t]{TUUU}
+    Druckerzeug-nis & Druck-erzeugnis & Drucker-zeugnis\\
+    Fuß-balleh-re & Fußball-ehre\\
+    Mu-sikerle-ben & Musi-kerleben & Musik-erleben & Musiker-leben\\
+    nachtritt & nach-tritt & Nacht-ritt\\
+    Wachstu-be & Wach-stube & Wachs-tube\\
+  \end{tabular}
+
+  Beachte, die Trennstellen ">Drucker-zeugnis"< und ">Musiker-leben"<
+  sind in den Interpretationen \emph{Druck-Erzeugnis} und
+  \emph{Musik-Erleben} irreführend.  Sie entfallen nach
+  \regelref{enum:tradSinn} und sind nicht als übereinstimmende
+  Trennstellen anzusehen.
+
+  Für diese Regel gelten die folgenden Einschränkungen:
+  \begin{itemize}
+  \item Bei mehrdeutigen Wörtern endend auf \emph{"~ende, "~enden,
+      "~endes} wird stets die Trennung der Partizipform des Verbs
+    verwendet.
+  \item Mehrdeutigkeiten, die durch die Ersatzschreibweise von Wörtern
+    mit \emph{ß} auftreten, werden nicht berücksichtigt (siehe auch
+    \regelref{enum:tradEszett}).
+  \end{itemize}
+  \nobreak
+
+  \begin{tabular}[t]{TUU}
+    spie-len-de & Spiel-ende & spielende\\
+    Mas-se & \textls{M\kern-.4ptA-SSE} &
+    \textls{M\kern-.4ptA\kern-.6ptSSE}\\
+  \end{tabular}
+
+\item\label{enum:tradOW} In Ableitungen von Namen auf \emph{"~ow} wird
+  die Nottrennung der Ableitungssilben \emph{"~er}, \emph{"~ern},
+  \emph{"~ers} unterdrückt \cite[R~180]{duden:1991}:\par\nobreak
+
+  \begin{tabular}[t]{TU}
+    Tel-tower & Teltow-er\\
+    Trep-towern & Treptow-ern\\
+    Pan-kowers & Pankow-ers\\
+  \end{tabular}
+
+\item\label{enum:tradhyphenmin} Die minimal unterstützte Silbenlänge am
+  Wortanfang und "~ende beträgt zwei Buchstaben.
+
+  Beachte, die Mindestlänge von Silben lässt sich mit
+  \lstinline[style=LaTeX]+\germanhyphenmins+ (\texttt{Babel}) oder
+  \lstinline[style=LaTeX]+\lefthyphenmin+ und
+  \lstinline[style=LaTeX]+\righthyphenmin+ (\TeX) anpassen.  Wird die
+  Mindestlänge auf weniger als zwei Buchstaben verringert, so können
+  fehlerhafte Trennungen auftreten.
+
+\end{enumerate}
+
+\subsection{Traditionelle Rechtschreibung in der Schweiz}
+\label{sec:tradchRS}
+
+\begin{enumerate}[\hspace{1em}\itshape{TS}1]
+\labelformat{enumi}{\textit{TS#1}}
+
+\item\label{enum:tradchEszett} Abweichend von \regelref{enum:tradEszett}
+  wird \emph{ss/SS} stets als Doppelkonsonant behandelt und
+  gegebenenfalls getrennt:\par\nobreak
+
+  \begin{tabular}[t]{T}
+    grös-ste\\
+    Grüs-se\\
+    Mas-ses\\
+  \end{tabular}
+
+\end{enumerate}
+
+\subsection{Reformierte Rechtschreibung}
+\label{sec:reformRS}
+
+\begin{enumerate}[\hspace{1em}\itshape{R}1]
+\labelformat{enumi}{\textit{R#1}}
+
+\item\label{enum:reformSinn} Sinnentstellende und irreführende Trennungen
+  werden möglichst vermieden \cite[\S~107]{amtlRegeln:2006,
+    amtlRegeln:2006:duden}:\par\nobreak
+
+  \begin{tabular}[t]{RU}
+    An-alpha-bet & Anal-phabet\\
+    Kaf-ka-kenner & Kafkaken-ner\\
+    Tal-entwäs-se-rung & Talent-wässerung\\
+  \end{tabular}
+
+\item\label{enum:reformEszett} Wird der Buchstabe~\emph{ß} durch
+  \emph{ss/SS} ersetzt, so wird \emph{s-s} getrennt \cite[\S\S~25~E3,
+  110]{amtlRegeln:2006, amtlRegeln:2006:duden}:\par\nobreak
+
+  \begin{tabular}[t]{R}
+    \textls{GRÖS-STE}\\
+    \textls{GRÜS-SE}\\
+    \textls{M\kern-.4ptA\kern-.6ptS-SES}\\
+  \end{tabular}
+
+  Beachte, wird \emph{ß} mit \lstinline[style=LaTeX]+\MakeUppercase+
+  oder in Kapitälchen in \emph{SS} gewandelt, so bleibt \emph{SS}
+  ungetrennt.  Dies ist kein Fehler in den Trennmustern, sondern im
+  \LaTeX-Kern fest implementiert.
+
+\item\label{enum:reformDoppeld} In mehrdeutigen Wörtern werden
+  Trennungen nur an übereinstimmenden Trennstellen
+  zugelassen.\par\nobreak
+
+  \begin{tabular}[t]{RUUU}
+    Druckerzeug-nis & Dru-ckerzeugnis & Druck-erzeugnis &
+    Drucker-zeugnis\\
+    Mu-sikerle-ben & Musi-kerleben & Musik-erleben & Musiker-leben\\
+    nachtritt & nach-tritt & Nacht-ritt\\
+    Wachstu-be & Wach-stube & Wachs-tube\\
+  \end{tabular}
+
+  Beachte, die Trennstellen ">Drucker-zeugnis"< und ">Musiker-leben"<
+  sind in den Interpretationen \emph{Druck-Erzeugnis} und
+  \emph{Musik-Erleben} irreführend.  Sie entfallen nach
+  \regelref{enum:reformSinn} und sind nicht als übereinstimmende
+  Trennstellen anzusehen.
+
+  Für diese Regel gilt die folgende Einschränkung:
+  \begin{itemize}
+  \item Bei mehrdeutigen Wörtern endend auf \emph{"~ende, "~enden,
+      "~endes} wird stets die Trennung der Partizipform des Verbs
+    verwendet.
+  \end{itemize}
+  \nobreak
+
+  \begin{tabular}[t]{RUU}
+    spie-len-de & Spiel-ende & spielende\\
+  \end{tabular}
+
+% \item\label{enum:reformOW} In Ableitungen von Namen auf \emph{"~ow}
+%   bleibt \emph{"~ow} ungetrennt, wenn es den Laut [o\,:] bezeichnet.
+%   Die Nottrennung der Ableitungssilben \emph{"~er}, \emph{"~ern},
+%   \emph{"~ers} wird unterdrückt \cite[\S~113]{amtlRegeln:2006,
+%     amtlRegeln:2006:duden}
+%   i.\,V.\,m.~\cite[R~180]{duden:1991}:\par\nobreak
+
+%   \begin{tabular}[t]{RUU}
+%     Tel-tower & Telto-wer & Teltow-er\\
+%     Trep-towern & Trepto-wern & Treptow-ern\\
+%     Pan-kowers & Panko-wers & Pankow-ers\\
+%   \end{tabular}
+
+\item\label{enum:reformEtymo} Falls die Trennung nach Sprechsilben und
+  die etymologische Trennung (nach Wortherkunft) kollidieren, wird
+  weitgehend die etymologische Trennung gewählt
+  \cite[\S~113]{amtlRegeln:2006, amtlRegeln:2006:duden}:\par\nobreak
+
+  \begin{tabular}[t]{RUU}
+%    Heli-ko-pter & Helikop-ter\\
+%    in-ter-view-en & intervie-wen\\
+    in-ter-es-sant & inte-ressant\\
+    Lin-ole-um & Li-noleum & Lino-leum\\
+    Päd-ago-ge & Pä-dagoge & Päda-goge\\
+  \end{tabular}
+
+\item\label{enum:reformClusterLR} In Fremdwörtern bleiben die
+  Buchstabengruppen \emph{bl, pl, fl, gl, cl, kl, phl; br, pr, dr, tr,
+    fr, vr, gr, cr, kr, phr, thr; chth; gn, kn} im allgemeinen
+  ungetrennt, nicht jedoch \emph{str} \cite[\S~112]{amtlRegeln:2006,
+    amtlRegeln:2006:duden}
+  i.\,V.\,m.~\cite[R~179]{duden:1991}:\par\nobreak
+
+  \begin{tabular}[t]{RU}
+    Ar-thri-tis & Arth-ritis\\
+%    Co-gnac & Cog-nac\\
+    Di-plom & Dip-lom\\
+%    Fe-bru-ar & Feb-ruar\\
+    igno-rie-re & ig-noriere\\
+    In-te-gral & Integ-ral\\
+  \end{tabular}
+  \par\nobreak
+  \textit{aber:}
+
+  \begin{tabular}[t]{RUU}
+    In-dus-trie & Indu-strie & Indust-rie\\
+%    Ma-gis-tra-le & Magi-strale\\
+    de-struk-tiv\\
+    sub-lim\\
+  \end{tabular}
+
+\item\label{enum:reformhyphenmin} Die minimal unterstützte Silbenlänge
+  am Wortanfang und "~ende beträgt zwei Buchstaben.
+
+  Beachte, die Mindestlänge von Silben lässt sich mit
+  \lstinline[style=LaTeX]+\ngermanhyphenmins+ (\texttt{Babel}) oder
+  \lstinline[style=LaTeX]+\lefthyphenmin+ und
+  \lstinline[style=LaTeX]+\righthyphenmin+ (\TeX) anpassen.  Wird die
+  Mindestlänge auf weniger als zwei Buchstaben verringert, so können
+  fehlerhafte Trennungen auftreten.
+
+\end{enumerate}
+
+
+\section{Fehltrennungen}
+\label{sec:fehltrennungen}
+Mit den vorliegenden Trennmustern können sämtliche Wörter der Wortliste
+fehlerfrei getrennt werden.  Für fehlerhafte (falsche, ausgelassene oder
+unerwünschte) Trennungen gibt es zwei mögliche Ursachen:
+
+\begin{enumerate}
+\item\label{enum:WLfehlerhaft} Die zugrundeliegende Wortliste enthält
+  einen Fehler.
+\item\label{enum:WLfehlt} Das betreffende Wort ist in der
+  zugrundeliegenden Wortliste nicht enthalten.
+\end{enumerate}
+
+Da der Umfang der Wortliste nicht beliebig erweitert werden kann,
+sollten Fehltrennungen nur dann gemeldet werden, wenn eines der
+folgenden Kriterien erfüllt ist:
+\begin{enumerate}[\hspace{1em}A.]
+\item\label{enum:kritHerkTM} Das betreffende Wort wird mit den
+  herkömmlichen Trennmustern für die traditionelle oder reformierte
+  Rechtschreibung korrekt getrennt.  Korrekt bedeutet hier: Nicht alle
+  möglichen Trennstellen müssen erkannt werden; es werden jedoch in
+  keinem Fall falsche Trennstellen ermittelt.
+
+  Zum Testen kann der folgende Aufruf verwendet werden (die Ausgabe
+  erfolgt in der \Abk{log}-Datei):
+\begin{lstlisting}[style=LaTeX]
+\showhyphens{durch Leerzeichen getrennte Wörter}
+\end{lstlisting}
+  
+\item\label{enum:kritSinn} Es handelt sich um eine sinnentstellende oder
+  irreführende Trennung eines Wortes, das nicht aus mehr als zwei prä-
+  und suffigierten Wörtern zusammengesetzt ist, zum Beispiel
+  ">Talent-wässerung"<.  Nicht berücksichtigt wird hingegen die
+  ">Talent-wässerungsanlage"<.
+
+\item\label{enum:kritWLfehlerhaft} Das Wort ist bereits in der Wortliste
+  enthalten (siehe \autoref{sec:wortliste}) und
+  \autoref{enum:WLfehlerhaft} trifft zu.
+\end{enumerate}
+
+Einige bekannte Fehler in den Trennmustern sind in der Datei
+\Datei{CHANGES} verzeichnet.  Noch nicht bekannte falsche, fehlende und
+unerwünschte Worttrennungen können an die folgenden E-Mail-Adressen
+gerichtet werden:
+\begin{itemize}
+\item
+  \href{mailto:trennmuster-opensource@googlegroups.com}{trennmuster-opensource@googlegroups.com}
+  (Anmeldung erforderlich),
+\item \href{mailto:wl@gnu.org}{wl@gnu.org} (Werner Lemberg).
+\end{itemize}
+
+Fehltrennungen, die in den Trennmustern nicht korrigiert werden können,
+können mit Hilfe einer privaten Ausnahmeliste behandelt werden:
+\begin{lstlisting}[style=LaTeX]
+\hyphenation{Tal-entwäs-se-rungs-an-la-ge Kaf-ka-kenner-klub}
+\end{lstlisting}
+
+Aktuelle Trennmuster sind im Dateibereich unter der Projekt-\Abk{url}%
+\footnote{\url{http://groups.google.de/group/trennmuster-opensource?hl=de}}
+%
+oder im \Abk{ctan} erhältlich.
+
+\nobreak
+\noindent\parbox{\linewidth}{%
+  \vspace*{\baselineskip}
+  \raggedright
+  \itshape
+  Happy \TeX ing!\newline
+  Die deutschsprachige Trennmustermannschaft
+}
+
+
+\bibliography{dehyph-exptl}
+
+
+\appendix
+\section{Dateien und Installation}
+\label{sec:installation}
+Die eigentlichen Trennmusterdateien liegen in \Abk{utf-8}-Kodierung vor.
+Sie sind somit für die Verwendung mit den 16-Bit-fähigen \TeX-Varianten
+Xe\TeX\ und Lua\TeX\ geeignet.%
+\footnote{Tatsächlich verwendet Xe\TeX\ bereits Trennmuster, die aus
+  diesem Projekt hervorgegangen sind, jedoch unter anderen Namen.}
+%
+Für die 8-Bit-fähigen \TeX-Varianten \TeX\ und pdf\TeX\ werden
+Manteldateien bereitgestellt, die die \Abk{utf-8}-Dateien laden und in
+\Abk{t1}-Kodierung umwandeln (\autoref{tab:dateien}).
+
+\begin{table}
+  \centering
+  \caption{Trennmuster- und Manteldateien}
+  \label{tab:dateien}
+  \begin{tabular}{>{\ttfamily}l>{\ttfamily}l}
+    \normalfont Trennmusterdatei & \normalfont Manteldatei\\
+    \addlinespace\toprule\addlinespace
+    dehypht-x-<datum>.pat & dehypht-x-<datum>.tex\\
+    dehyphts-x-<datum>.pat & dehyphts-x-<datum>.tex\\
+    dehyphn-x-<datum>.pat & dehyphn-x-<datum>.tex\\
+  \end{tabular}
+\end{table}
+
+Bei der Installation für 8-Bit-\TeX\ werden die Manteldateien an die in
+\autoref{tab:varietaeten} gezeigten Trennmusterbezeichner gebunden.
+Diese Schritte werden für verschiedene \TeX-Verteilungen in der Datei
+\Datei{INSTALL} beschrieben.  Nach der Installation können die
+experimentellen Trennmuster wie in \autoref{sec:aktivieren} gezeigt mit
+den Paketen \texttt{Babel} und \texttt{hyphsubst} aus dem
+\Programm{Oberdiek-Bündel} aktiviert werden.
+
+
+\section{Die Wortliste}
+\label{sec:wortliste}
+\begin{description}
+\item[Bezug] Die Wortliste ist über das öffentliche
+  Entwicklerrepositorium%
+  \footnote{\url{http://repo.or.cz/w/wortliste.git}}
+  % 
+  des Projekts%
+  \footnote{\url{http://groups.google.de/group/trennmuster-opensource?hl=de}}
+  % 
+  erhältlich.  Eine Kopie kann mit
+\begin{lstlisting}[style=shell]
+$git clone git://repo.or.cz/wortliste.git
+\end{lstlisting}
+  bezogen werden.%
+  \footnote{\url{http://repo.or.cz/}}
+  
+  \emph{Hinweis:} Ältere \Programm{Git}-Versionen als v1.5.6.5 enthalten
+  einen Fehler im Netzwerkzugriff, der dazu führt, dass statt eines
+  Satzes von Änderungen häufig die komplette Wortliste übertragen wird.
+
+  Für einen reibungslosen Betrieb sollte nach dem Klonen dieses
+  Repositoriums die Konfigurationsvariable
+  \verb+core.DeltaBaseCacheLimit+ vom Standardwert 16\,MB auf mindestens
+  64\,MB erhöht werden.  Mit älteren \Programm{Git}-Versionen können
+  auch deutlich höhere Werte sinnvoll sein.  Die Konfiguration kann
+  beispielhaft so erfolgen:
+\begin{lstlisting}[style=shell]
+$git config core.DeltaBaseCacheLimit 64m
+$git config --get core.DeltaBaseCacheLimit
+\end{lstlisting}
+  Das letzte Kommando sollte nun den Wert \verb+64m+ zurückliefern.
+  
+\item[Dateiformat] Das Format der Wortliste wird in der Datei
+  \Datei{dateikopf} beschrieben.
+  
+\item[Version] Der \Abk{sha1}-Commit-Hash der Repositoriumversion, die
+  den Musterdateien
+\begin{lstlisting}
+dehypht-x-<datum>.pat
+dehyphts-x-<datum>.pat
+dehyphn-x-<datum>.pat
+\end{lstlisting}
+  zugrundeliegt, sowie eine \Abk{url} zum direkten Herunterladen der
+  Wortliste (ca. 15\,MB) kann dem Kopf der Dateien entnommen werden.
+\end{description}
+
+
+\section{Fragen \& Antworten}
+\label{sec:fragen}
+
+\newcommand*{\fragefont}{\itshape}
+\newcommand*{\themenfont}{\large\normalfont}
+\newcounter{cntfrage}% Zaehler fuer Fragen.
+\newcounter{thema}% Zaehler fuer Themenueberschriften.
+\renewcommand*{\thethema}{\Roman{thema}.}
+\newcounter{frage}% Zaehler fuer Fragen.
+\renewcommand*{\thefrage}{\arabic{frage}.}
+\newboolean{nextfrage}
+
+\makeatletter
+
+%%% Neue zref-Liste frage = (type, text, anchor).
+\zref@newlist{frage}
+\zref@newprop{type}{f}
+\zref@newprop{text}{??}
+\zref@addprop{frage}{type}
+\zref@addprop{frage}{text}
+\zref@addprop{frage}{anchor}
+
+%%% Fuegt eine neue Themenueberschrift ein.
+\newcommand*{\fragenthema}[1]{%
+  \par
+  \vspace{.25\baselineskip plus .1\baselineskip minus .1\baselineskip}
+  \refstepcounter{cntfrage}
+  \stepcounter{thema}
+  \zref@setcurrent{type}{t}
+  \zref@setcurrent{text}{\thethema~#1}
+  \zref@labelbylist{frage:\thecntfrage}{frage}
+  \noindent{\themenfont\thethema~#1\par}
+}
+
+%%% Umgebung fuer eine Frage mit Antwort.
+\newenvironment{frageantwort}[1]{%
+  \par
+  \vspace{.25\baselineskip plus .1\baselineskip minus .1\baselineskip}
+  \refstepcounter{cntfrage}
+  \stepcounter{frage}
+  \zref@setcurrent{type}{f}
+  \zref@setcurrent{text}{\thefrage~#1}
+  \zref@labelbylist{frage:\thecntfrage}{frage}
+  \noindent{\fragefont\thefrage~#1\par}
+  \nobreak\noindent\ignorespaces
+}{%
+  \vspace{.25\baselineskip plus .1\baselineskip minus .1\baselineskip}
+}
+
+%%% Zeige alle Fragen in sortierter Reihenfolge.
+\newcommand{\zeigefragen}{%
+  \par
+  \zref@refused{frage:1}
+  \setcounter{cntfrage}{1}
+  \setboolean{nextfrage}{true}
+  \whiledo{\boolean{nextfrage}}{
+    \vspace{.25\baselineskip plus .1\baselineskip minus .1\baselineskip}
+    \ifthenelse{\equal{\zref@extract{frage:\thecntfrage}{type}}{f}}{% Frage
+      \noindent%
+      \begingroup%
+        \fragefont%
+        \hyperlink{\zref@extract{frage:\thecntfrage}{anchor}}{%
+          \zref@extract{frage:\thecntfrage}{text}%
+        }%
+        \par
+      \endgroup
+    }{% Themenueberschrift
+      \noindent%
+      \begingroup%
+        \themenfont%
+        \zref@extract{frage:\thecntfrage}{text}%
+        \par
+      \endgroup 
+      \nobreak
+    }
+    \stepcounter{cntfrage}
+    \zref@ifrefundefined{frage:\thecntfrage}{\setboolean{nextfrage}{false}}{}
+  }
+  \vspace{.5\baselineskip plus .1\baselineskip minus .1\baselineskip}
+  \setcounter{cntfrage}{0}
+  \setcounter{frage}{0}
+}
+
+
+\zeigefragen
+
+
+\fragenthema{Rechtschreibung}
+
+\begin{frageantwort}{Verlag, Prüfer o.\,ä. bemängeln die Trennung
+    der Trennmuster für die reformierte Rechtschreibung.  Zum Beispiel
+    wird ">In-dus-trie"< getrennt, der Duden trennt jedoch
+    ">In-dust-rie"<.}
+  Die amtlichen Regeln für die Rechtschreibung der deutschen Sprache
+  lassen für viele Wörter mehrere Trennvarianten zu.  Die Trennmuster
+  und ebenso Wörterverzeichnisse legen sich aus praktischen Gründen auf
+  eine Trennvariante fest.  Sie können daher unterschiedliche Trennungen
+  verwenden, ohne dass eine von beiden falsch ist.  Aus diesem Grund
+  sind Wörterverzeichnisse nicht geeignet, eine bestimmte Trennung auf
+  Richtigkeit zu prüfen.  Verbindlich sind einzig die amtlichen Regeln
+  für die Rechtschreibung der deutschen Sprache~\cite{amtlRegeln:2006}.
+  Häufig sind diese im Anhang eines Wörterbuchs abgedruckt.  Die von den
+  Trennmustern befolgten Konventionen können \autoref{sec:trennregeln}
+  entnommen werden.
+
+  Wenn Unsicherheit darüber herrscht, wie die Rechtschreibung geprüft
+  wird, sollte dies frühzeitig geklärt werden.  Nicht jedem Redakteur
+  oder Prüfer ist bewusst, dass der Duden seine normative Stellung mit
+  der Rechtschreibreform~1996 eingebüßt hat.
+\end{frageantwort}
+
+
+\begin{frageantwort}{Gibt es dudenkonforme Trennmuster für die
+    reformierte Rechtschreibung?}
+  Zur Zeit nicht, es ist auch nicht geplant.  Dieses Projekt ist jedoch
+  offen für Vorschläge und Mitarbeit.
+\end{frageantwort}
+
+
+\begin{frageantwort}{Weshalb werden noch Trennmuster für die
+    traditionelle Rechtschreibung bereitgestellt?}
+  Die amtlichen Regeln für die Rechtschreibung der deutschen Sprache in
+  der Fassung von 2006 sind nur für öffentliche Einrichtungen und
+  Behörden verbindlich.  Im privaten Schriftverkehr kann man wahlweise
+  die traditionelle oder die reformierte Rechtschreibung verwenden.%
+  \footnote{Oder auch keine von beiden.}
+%
+  Daher erfreut sich die traditionelle Rechtschreibung weiterhin großer
+  Beliebtheit.
+
+  Für Texte in gebrochener Schrift ist die traditionelle Rechtschreibung
+  sogar vorzuziehen.
+\end{frageantwort}
+
+
+\begin{frageantwort}{Können Trennungen mit einer Silbenlänge von nur
+    einem Buchstaben ermöglicht werden, zum Beispiel für den Satz in
+    schmalen Kolumnen?}
+  Mit diesen Trennmustern ist das nicht möglich, da die zugrundeliegende
+  Wortliste solche Trennungen nicht enthält.  Die Abtrennung einzelner
+  Vokale, zum Beispiel ">A-bend"<, war nur kurzzeitig zulässig; die
+  entsprechende Regelung von 1996 wurde mit der Rechtschreibreform 2006
+  wieder zurückgenommen.  Wird die Silbenmindestlänge für die
+  Worttrennung auf eins verringert, können falsche Trennungen auftreten.
+\end{frageantwort}
+
+
+\fragenthema{Mitarbeit}
+
+\begin{frageantwort}{Wie kann ich mich über dieses Projekt informieren?}
+  Zentrale Anlaufstelle ist die Projekt-\Abk{url}.%
+  \footnote{\url{http://groups.google.de/group/trennmuster-opensource?hl=de}}
+%
+  Nach Anmeldung%
+  \footnote{Falls Sie die Anmeldung bei \Programm{Google} scheuen,
+    können Sie uns vielleicht beim Umzug auf einen anderen Host helfen?
+    Die Anforderungen an einen alternativen Projekthost können auch
+    privat oder in \Datei{de.comp.text.tex} besprochen werden.}
+% 
+  kann die Mailingliste für Fragen und Hinweise genutzt werden,
+  ersatzweise auch die Newsgruppe \Datei{de.comp.text.tex}.  Die
+  folgenden Dateien enthalten weitergehende Informationen:
+
+  \begin{itemize}
+  \item Neben der Dokumentation zu den Trennmustern enthält dieses Paket
+    eine Projektbeschreibung (\Datei{projektbeschreibung.pdf}).
+
+  \item Die Datei \Datei{CHANGES} enthält bekannte, systematische Fehler
+    der Trennmuster.
+
+  \item Das Entwicklerrepositorium enthält in der Datei
+    \Datei{dateikopf} eine Beschreibung des Formats der Wortliste.
+
+  \item Die \Abk{html}-Präsenz des Projekts enthält einen Dateibereich
+    mit weiteren Dateien, etwa einem Archiv der Diskussion im
+    \Abk{mbox}-Format.
+  \end{itemize}
+\end{frageantwort}
+
+
+\begin{frageantwort}{Wie kann ich helfen?}
+  Die deutschsprachige Trennmustermannschaft ist eine offene Gruppe und
+  benötigt dringend weitere Mithilfe.  Interessenten sind daher hoch
+  willkommen!  Zum Mitmachen gibt es mehrere Möglichkeiten:
+  \begin{itemize}
+  \item Die einfachste ist, die experimentellen Trennmuster ausgiebig zu
+    testen und Fehler zu melden (siehe \autoref{sec:fehltrennungen}).
+
+  \item Besonders hilfreich wäre Mitarbeit am Projekt.  Als Einstieg
+    kann die (grobe) Aufgabenliste in der Projektbeschreibung dienen.
+
+    Obwohl schon experimentelle Trennmuster veröffentlicht wurden, steht
+    dieses Projekt noch ziemlich am Anfang.  Ziel ist, die verwendete
+    Wortliste von möglichst vielen Menschen in verteilter Arbeit auf
+    Richtigkeit zu prüfen.  Bis dahin bleibt jedoch noch viel zu tun.
+
+  \item Mittelfristig -- nach Fertigstellung der Prüfmaske~-- kann auch
+    durch systematische Durchsicht eines Teils der Wortliste geholfen
+    werden.
+
+  \item Fragen, Hinweise und Ideen sind auf der Mailingliste immer
+    willkommen!
+  \end{itemize}
+\end{frageantwort}
+
+
+\begin{frageantwort}{Sollten Trennfehler einzeln oder gesammelt
+    eingereicht werden?}
+  Das ist egal.  Es sollten allerdings die folgenden Hinweise beim
+  Einreichen von Fehlern beachtet werden:
+
+  \begin{description}\setkomafont{descriptionlabel}{\normalfont\itshape}
+  \item[Aktualität] Wenn Sie ältere Trennmusterdateien verwenden, prüfen
+    Sie zunächst, ob der Fehler auch mit aktuellen Trennmustern
+    auftritt.  Aktuelle Trennmuster sind im \Abk{ctan} im Paket
+    \texttt{dehyph-exptl} oder im Dateibereich unter der
+    Projekt-\Abk{url} erhältlich.
+
+  \item[Informationen] In einem Fehlerbericht sollte für das betreffende
+    Wort die richtige und bei einzelnen Worteinreichungen auch die
+    falsche Trennung angegeben werden.  Außerdem die genaue Version der
+    verwendeten Trennmuster (traditionelle oder reformierte
+    Rechtschreibung, Datum der Trennmusterdatei).
+
+  \item[Listenformat] Es erleichtert die Korrektur, wenn
+    Berichtigungsvorschläge in Form einer Liste eingereicht werden, die
+    automatisch mit Skripten bearbeitet werden kann.  Die folgenden
+    Konventionen sollten dabei eingehalten werden:
+    \begin{itemize}
+    \item Die Spalten werden mit einem Semikolon \verb+;+ getrennt.
+    \item Die erste Spalte enthält das betreffende Wort in ungetrennter
+      Form.
+    \item Die zweite Spalte enthält das Wort in der Trennvariante nach
+      traditioneller Rechtschreibung.
+    \item Falls die Trennung nach reformierter Rechtschreibung davon
+      abweicht, steht diese in der dritten Spalte.
+    \item Ab der vierten Spalte \emph{können} weitere Trennvarianten
+      folgen, etwa die falsche Trennung.  Eine kurze Erklärung sollte
+      dann darauf eingehen.
+    \item Unerwünschte Trennungen werden mit einem Punkt \verb+.+
+      markiert.
+    \item Anfang und Ende der Liste sollten klar erkennbar sein.
+    \end{itemize}
+    Eine Liste könnte beispielhaft so aussehen:
+\begin{lstlisting}[style=Text]
+sonnendurchfluteten;son-nen-durch-flu-te-ten
+Talentwässerung;Tal-ent.wäs-se-rung
+Fensterplatz;Fen-ster-platz;Fens-ter-platz
+\end{lstlisting}
+    Dieses Format ist auch für einzeln eingereichte Fehltrennungen
+    sinnvoll.
+
+  \item[Betreff] Der Betreff einer Fehlermeldung sollte aussagekräftig
+    sein.  Daher sollten mehrere Fehltrennungen, sofern möglich,
+    thematisch zusammengefasst werden.  Außerdem kann zur einfacheren
+    Zuordnung das entsprechende Kriterium aus
+    \autoref{sec:fehltrennungen} dem Betreff der E-Mail in eckigen
+    Klammern vorangestellt werden, zum Beispiel:
+\begin{lstlisting}[style=Text]
+Betreff: [C] sonnendurchfluteten
+\end{lstlisting}
+    für eine Fehltrennung des Wortes \emph{sonnendurchfluteten}, die
+    durch einen Fehler in der Wortliste hervorgerufen wird.
+  \end{description}
+\end{frageantwort}
+
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-PDF-mode: t
+%%% TeX-master: t
+%%% coding: iso-8859-15
+%%% End: 

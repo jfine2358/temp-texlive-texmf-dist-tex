@@ -1,0 +1,127 @@
+%% This is file `fbox.sty',
+%%
+%% Copyright (C) 2019, 2020
+%% Herbert Voss  <hvoss@tug.org>
+%%
+%% It may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%
+% $Id: fbox.sty 10 2020-06-22 10:15:39Z herbert $
+%
+% -------------------------------------
+\ProvidesPackage{fbox}[2020/06/22 v. 0.05 allow parts of the frame (hv)]
+%
+\RequirePackage{xkeyval}
+
+\newlength\fbox@@rule
+\newlength\fbox@@sep
+\define@key{fbox}{boxrule}[3pt]{\setlength\fbox@@rule{#1}}
+\define@key{fbox}{boxsep}[0.4pt]{\setlength\fbox@@sep{#1}}
+\setkeys*{fbox}{boxrule=\fboxrule,boxsep=\fboxsep}
+
+% latex.ltx
+%\fboxsep = 3pt
+%\fboxrule = .4pt
+
+\let\orig@fbox\fbox
+\def\fb@lowerc@se#1{%     make \lowercase expandable
+  \begingroup\edef\x{%
+    \lowercase{\endgroup\def\noexpand\@tempa{#1}}}\x
+}
+%
+\newif\if@fbox@star
+\newif\if@fbox@space@left
+\newif\if@fbox@space@right
+
+\long\def\fbox{\@ifnextchar*{\@fbox@startrue\FBox@}{\@fbox@starfalse\FBox@*}}
+\def\FBox@*{\@ifnextchar[\FBox@i\orig@fbox}
+%
+\def\FBox@i[#1]{%
+  \def\XKV@rm{}%
+  \setkeys*{fbox}{boxrule=\fboxrule, boxsep=\fboxsep, #1}%
+  \typeout{===>#1:  \XKV@rm}%
+  \if@fbox@star
+    \@fbox@space@leftfalse
+    \@fbox@space@rightfalse
+  \else
+    \@fbox@space@lefttrue
+    \@fbox@space@righttrue
+  \fi
+  \expandafter\ifx\expandafter\relax\XKV@rm\relax
+    \@tempcntb=15
+  \else
+    \@tempcntb=\z@
+    \expandafter\fb@lowerc@se\expandafter{\XKV@rm}%
+    \expandafter\FBox@ii\@tempa\@nil\relax
+  \fi
+  \FBox@iii
+}
+\def\FBox@ii#1#2\@nil{%
+  \ifx#1t\advance\@tempcntb by 8                %  top
+  \else
+    \ifx#1l\advance\@tempcntb by 4              % left
+      \if@fbox@star\@fbox@space@lefttrue\fi
+    \else
+      \ifx#1r\advance\@tempcntb by 2            % right
+        \if@fbox@star\@fbox@space@righttrue\fi
+      \else
+         \ifx#1b\advance\@tempcntb by 1         % bottom
+  \fi\fi\fi\fi
+  \if\relax#2\relax\def\next{}\else\def\next{\FBox@ii#2\@nil}\fi
+  \next
+}
+\def\FBox@iii#1{%
+  \leavevmode
+  \setbox\@tempboxa\hbox{%
+    \color@begingroup
+      \if@fbox@space@left\kern\fbox@@sep\fi{#1}\if@fbox@space@right\kern\fbox@@sep\fi
+    \color@endgroup}%
+  \@FrameB@x\relax}
+%
+\def\@FrameB@x#1{%
+  \@tempdima\fbox@@rule
+  \advance\@tempdima\fbox@@sep
+  \advance\@tempdima\dp\@tempboxa
+  \hbox{%
+    \lower\@tempdima\hbox{%
+      \vbox{%
+        \ifnum\the\@tempcntb>8\relax
+          \advance\@tempcntb by -8 
+            \hrule\@height\fbox@@rule                       % top
+        \fi
+        \hbox{%
+          \ifnum\@tempcntb>3
+            \advance\@tempcntb by -4 
+            \vrule\@width\fbox@@rule
+          \fi                                             % left
+          #1%
+          \vbox{%
+            \vskip\fbox@@sep
+            \box\@tempboxa
+            \vskip\fbox@@sep}%
+          #1%
+          \ifnum\@tempcntb>1\vrule\@width\fbox@@rule\fi}% right
+          \ifodd\@tempcntb\hrule\@height\fbox@@rule\fi}%     bottom
+    }%
+  }%
+}
+
+\newsavebox\fpar@b@x
+
+\long\def\fparbox{\@ifnextchar*{\@fbox@startrue\FParBox@}{\@fbox@starfalse\FParBox@*}}
+\def\FParBox@*{\@ifnextchar[\FParBox@i\FParBox@ii}
+\long\def\FParBox@i[#1]#2{%
+  \savebox\fpar@b@x{\parbox{\dimexpr\linewidth-2\fbox@@sep-2\fbox@@rule}{#2}}%
+  \FBox@i[#1]{\usebox\fpar@b@x}}
+\long\def\FParBox@ii#1{%
+  \savebox\fpar@b@x{\parbox{\dimexpr\linewidth-2\fbox@@sep-2\fbox@@rule}{#1}}%
+  \orig@fbox{\usebox\fpar@b@x}}
+  
+  
+\endinput
+

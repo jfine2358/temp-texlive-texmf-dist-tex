@@ -1,0 +1,239 @@
+% License: 	LATEX Project Public License 1.3c
+% Author: 	Robert Blazek
+% Date:		2019/11/25 
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+\ProvidesPackage{pinoutikz}[1.1.0 Pinout diagram definitions]
+
+\RequirePackage{ifthen}
+\RequirePackage{lmodern}
+\RequirePackage{xstring}
+\RequirePackage{upquote}
+\RequirePackage{amsmath,amssymb}
+\RequirePackage{amsfonts}
+\RequirePackage{forarray}
+\RequirePackage{arrayjob}
+\RequirePackage{pgf}
+\RequirePackage{tikz}
+
+%% 'sans serif' option
+\DeclareOption{sans}{
+  \renewcommand{\familydefault}{\sfdefault}
+}
+
+%% 'roman' option
+\DeclareOption{roman}{
+  \renewcommand{\familydefault}{\rmdefault}
+}
+
+%% Global indentation option
+\newif\if@neverindent\@neverindentfalse
+\DeclareOption{neverindent}{
+  \@neverindenttrue
+}
+
+\ExecuteOptions{sans}
+
+\ProcessOptions\relax
+
+\usetikzlibrary{shapes.misc, shapes.geometric}
+
+\def\pinoutikzname               {pinouTikz}
+\def\pinoutikzversion            {1.1.1}
+\def\pinoutikzdate               {2019/11/25}
+
+%% Formatt a pin name
+\def\FormatPinLabel#1{
+  \pgfmathparse{0}\let\negstate\pgfmathresult
+  \pgfmathparse{0}\let\index\pgfmathresult
+  \ForEach{~}%
+  {%
+    \StrLen{\thislevelitem}[\itemlen]%
+    \ifthenelse{\itemlen>0}{%
+      \ifthenelse{\equal{\negstate}{1}}{$\overline{\thislevelitem}$}{\thislevelitem}%
+      \pgfmathparse{\index+1}\let\index\pgfmathresult
+    }{}%
+    \pgfmathparse{!\negstate}\let\negstate\pgfmathresult%
+  }%
+  {#1}
+}
+
+%% package rectangle
+\def\CASE(#1)#2 {%
+%    \CASE(#3){\width*.5-0.75*.5,\width*.5-0.75*.5}{\width cm + 0.75 cm}{\height cm + 0.75 cm}
+  \def\edgecount{4}
+  \pgfmathparse{#2/\edgecount-1}\let\cntpinsl\pgfmathresult
+  \pgfmathparse{#2/\edgecount}\let\cntstr\pgfmathresult
+  \pgfmathparse{#2-1}\let\cntpinsr\pgfmathresult
+  \pgfmathparse{\cntstr*.4+.4}\let\height\pgfmathresult
+  \pgfmathparse{\height}\let\width\pgfmathresult
+  \ifthenelse{\equal{#1}{TQFP}}{%
+    \pgfmathparse{\width*.5-0.75*.5}\let\posx\pgfmathresult
+    \pgfmathparse{\height*.5-0.75*.5}\let\posy\pgfmathresult
+    \pgfmathparse{\width cm + 0.75 cm}\let\widthB\pgfmathresult
+    \pgfmathparse{\height cm + 0.75 cm}\let\heightB\pgfmathresult
+    \node[draw=black, rectangle,minimum width=\widthB,minimum height=\heightB,line width=1.5pt, chamfered rectangle, chamfered rectangle corners={north west, north east, south east, south west}] at (\posy,\posy) (case) {};
+    \draw (-.44 cm,\height cm + 0.75 cm-1.1cm) circle (1.25mm);
+  }{}%
+  \ifthenelse{\equal{#1}{PLCC}}{%
+    \pgfmathparse{\width*.5-0.75*.5}\let\posx\pgfmathresult
+    \pgfmathparse{\height*.5-0.75*.5}\let\posy\pgfmathresult
+    \pgfmathparse{\width cm + 0.75 cm}\let\widthB\pgfmathresult
+    \pgfmathparse{\height cm + 0.75 cm}\let\heightB\pgfmathresult
+    \node[draw=black, rectangle,minimum width=\widthB,minimum height=\heightB,line width=1.5pt, chamfered rectangle, chamfered rectangle corners={north west}] at (\posx,\posy) (case) {};
+   \draw (\posx,\posy+\height*.5-.2) circle (1.25mm);
+   }{}%
+}
+
+%% PIN diagram with label decoding
+%% @param#1: options
+%% @param#2: offset
+%% @param#3: pin name
+%% @param#4: pin number
+\def\PIN[#1](#2)#3#4{
+  % decode label
+  \begin{scope}[shift={(#2)}]
+    \def\pinlabel{#3}
+    \ifthenelse{\equal{#1}{right}}%
+    {%
+      \draw (0.12,0) node[label=right:{\footnotesize \pinlabel},label=left:{\small \pgfmathprintnumber{#4}} ]{};
+      \draw (0,-.15) rectangle(0.12,0.15);
+    }{}
+    \ifthenelse{\equal{#1}{left}}%
+    {%
+      \draw (-0.12,0) node[label=left:{\footnotesize \pinlabel},label=right:{\small \pgfmathprintnumber{#4}} ]{};
+      \draw[rotate=180] (0,-.15) rectangle(0.12,0.15);
+    }{}
+    \ifthenelse{\equal{#1}{top}}%
+    {%
+      \draw(0,0.12) node[rotate=90,label=right:\rotatebox{90}{\footnotesize \pinlabel},label=left:\rotatebox{90}{\small \pgfmathprintnumber{#4}} ]{};
+      \draw[rotate=90](0,-.15) rectangle(0.12,0.15);
+    }{}
+    \ifthenelse{\equal{#1}{bottom}}%
+    {%
+      \draw(0,-0.12) node[rotate=90,label=left:\rotatebox{90}{\footnotesize \pinlabel},label=right:\rotatebox{90}{\small \pgfmathprintnumber{#4}} ]{};
+      \draw[rotate=-90](0,-.15) rectangle(0.12,0.15);
+    }{}
+  \end{scope}
+}
+
+%% PDIP package diagram
+%% @param#1: offset
+%% @param#2: number of pins (divisible by 2)
+%% @param#3: comma separated definitions list for every pin - every pin definition must be enclosed in quotation marks ("")
+\def\PDIP(#1)#2{%
+  \begin{tikzpicture}
+  \begin{scope}[shift={(0,0)}]
+    \sffamily
+    \textsf{%
+    \def\pins{{#2}}
+    \pgfmathparse{#1/2-1}\let\cntpinsl\pgfmathresult
+    \pgfmathparse{#1/2}\let\cntstr\pgfmathresult
+    \pgfmathparse{#1-1}\let\cntpinsr\pgfmathresult
+    \pgfmathparse{\cntstr*.5}\let\height\pgfmathresult
+    \draw[line width=1.5pt] (0,-0.5) rectangle (1.88,\height);
+    \draw (0.75 cm,\height cm) arc (180:360:2mm);
+    %iterate through pin definitions
+    \foreach \pinnum/\i in {#2}%
+    {%
+      \pgfmathparse{\pinnum-1}\let\pinidx\pgfmathresult
+      \pgfmathparse{(\pinnum>0 && \pinnum<(\cntstr+1)) ? 0 : 1}\let\pinrange\pgfmathresult
+      \ifthenelse{\equal{\pinrange}{0} }
+      {%
+        \pgfmathparse{(\cntpinsl-\pinidx)*0.5}\let\ypin\pgfmathresult
+        \PIN[left](0,\ypin){\i}{\pinnum}
+      }%else
+      {%
+        \pgfmathparse{(\pinidx-\cntstr)*0.5}\let\ypin\pgfmathresult
+        \PIN[right](1.88,\ypin){\i}{\pinnum}
+      }
+    }
+  }
+  \end{scope}
+  \end{tikzpicture}
+}
+
+% Generic 4-edged package diagram
+% @param#1 - pin count
+% @param#2 - pin array
+% @param#3 - case type
+% @param#4 - pin offset
+\def\GENFOUREDGE(#1)#2#3#4{%
+    \sffamily
+    \textsf{%
+    \def\pins{{#2}}
+    \def\edgecount{4}
+    \pgfmathparse{#1/\edgecount-1}\let\cntpinsl\pgfmathresult
+    \pgfmathparse{#1/\edgecount}\let\cntstr\pgfmathresult
+    \pgfmathparse{#1-1}\let\cntpinsr\pgfmathresult
+    \pgfmathparse{\cntstr*.4+.4}\let\height\pgfmathresult
+    \pgfmathparse{\height}\let\width\pgfmathresult
+    \CASE(#3){#1}
+    %iterate through pin definitions
+    \foreach \pinnum/\i in {#2}%
+    {%
+      \pgfmathparse{\pinnum-1}\let\pinidx\pgfmathresult
+      \pgfmathparse{Mod((int(\pinidx+#1)-#4),#1)}\let\pinidx\pgfmathresult
+      \pgfmathparse{int(\pinidx/\cntstr)}\let\pinrange\pgfmathresult
+      \pgfmathparse{Mod(\pinidx,\cntstr)}\let\rngidx\pgfmathresult
+      \ifthenelse{\equal{\pinrange}{0} }%
+      {%
+        \pgfmathparse{(\cntpinsl-\rngidx)*0.40}\let\ypin\pgfmathresult
+        \PIN[left](-0.75,\ypin){\i}{\pinnum}
+      }{}
+      \ifthenelse{\equal{\pinrange}{1} }%
+      {%
+        \pgfmathparse{\rngidx*0.40}\let\ypin\pgfmathresult
+        \PIN[bottom](\ypin,-0.75){\i}{\pinnum}
+      }{}
+      \ifthenelse{\equal{\pinrange}{2} }%
+      {%
+        \pgfmathparse{\rngidx*0.40}\let\ypin\pgfmathresult
+        \PIN[right](\width,\ypin){\i}{\pinnum}
+      }{}
+      \ifthenelse{\equal{\pinrange}{3} }%
+      {%
+        \pgfmathparse{(\cntpinsl-\rngidx)*0.40}\let\ypin\pgfmathresult
+        \PIN[top](\ypin,\height){\i}{\pinnum}
+      }{}%      \fi
+    }
+  }
+}
+
+%% PLCC package diagram
+%% @param#1: offset
+%% @param#2: number of pins (divisible by 2)
+%% @param#3: comma separated definitions list for every pin - every pin definition must be enclosed in quotation marks ("")
+\def\PLCC(#1)#2{%
+  \begin{tikzpicture}
+  \begin{scope}[shift={(0,0)}]
+  \GENFOUREDGE(#1){#2}{PLCC}{round(#1*.125)}
+  \end{scope}
+  \end{tikzpicture}
+}
+
+%% TQFP package diagram
+%% @param#1: offset
+%% @param#2: number of pins (divisible by 2)
+%% @param#3: comma separated definitions list for every pin - every pin definition must be enclosed in quotation marks ("")
+\def\TQFP(#1)#2{%
+  \begin{tikzpicture}
+  \begin{scope}[shift={(0,0)}]
+  \GENFOUREDGE(#1){#2}{TQFP}{0}
+  \end{scope}
+  \end{tikzpicture}
+}
+
+%%
+
+\newlength{\pardefault}
+\setlength{\pardefault}{\parindent}
+\newcommand{\neverindent}{ \setlength{\parindent}{0pt} }
+\newcommand{\autoindent}{ \setlength{\parindent}{\pardefault} }
+
+\if@neverindent
+\neverindent
+\fi
+
+% ...
+
+\endinput

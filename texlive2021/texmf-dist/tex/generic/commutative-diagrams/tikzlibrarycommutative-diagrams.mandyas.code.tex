@@ -1,0 +1,320 @@
+%
+% CoDi: Commutative Diagrams for TeX
+% Copyright (c) 2015-2020 Paolo Brasolin <paolo.brasolin@gmail.com>
+% SPDX-License-Identifier: MIT
+%
+% This file is part of CoDi 1.0.1, released on 2020/06/11 under MIT license.
+%
+
+% μανδύας • (mandýas)
+%   1. cloak
+%   2. mantle
+%   3. dolman
+
+% Mandias defines the aesthetics aspect of the user level functionality,
+% together with some baseline configuration.
+
+\usetikzlibrary[calc]
+
+% \usetikzlibrary[decorations.pathreplacing]
+% \usetikzlibrary{decorations.pathmorphing}
+% \usetikzlibrary[decorations.markings]
+% \usetikzlibrary[arrows.meta]
+\usetikzlibrary[positioning]
+
+\pgfqkeys{/codi}{
+%==[ universal styles ]=========================================================
+  every diagram/.append style={},
+  every layout/.append style={
+    /codi/every object/.append style={shape=codi baseline centered rectangle},
+    square,
+  },
+  every object/.append style={},
+  every arrow/.append style={
+    >=stealth,
+  },
+  every label/.append style={
+    auto,
+    inner sep=0.5ex,
+    font=\everymath\expandafter{\the\everymath\scriptstyle}
+  },
+%==[ arrow styles ]=============================================================
+  /codi/arrows/.cd,
+    crossing over/clearance/.initial=0.5ex,
+    crossing over/color/.initial=white,
+    crossing over/.style={
+      /tikz/preaction={
+        -,
+        draw=\pgfkeysvalueof{/codi/arrows/crossing over/color},
+        line width=\pgfkeysvalueof{/codi/arrows/crossing over/clearance},
+      },
+    },
+    shove/.style={
+      /tikz/transform canvas={
+        /tikz/shift={($(\tikztostart)!#1!-90:(\tikztotarget)-(\tikztostart)$)}
+      }
+    },
+    slide/.style={
+      /tikz/transform canvas={
+        /tikz/shift={($(\tikztostart)!#1!0:(\tikztotarget)-(\tikztostart)$)}
+      }
+    },
+%==[ label styles ]=============================================================
+  /codi/labels/.cd,
+    mid/.style={
+      /tikz/fill=white,
+      /tikz/shape=circle,
+      /tikz/anchor=center,
+      /tikz/inner sep=.25ex
+    },
+%=[ objects styles ]============================================================
+  /codi/objects/.cd,
+    % TODO: reflect on these styles
+    % tetragonal/.style 2 args={
+    %   /tikz/node distance=#2 and #1
+    % },
+    % square/.style={
+    %   /codi/objects/rectangular={#1}{#1}
+    % },
+    % golden/.style={
+    %   /codi/objects/rectangular={#1}{0.618*#1}
+    % },
+    % % comb/.style={
+    % %   /codi/objects/rectangular={#1}{sqrt(3/4)*#1},
+    % % },
+    % % comb/.default=4em,
+    % square/.default=4em,
+    % golden/.default=4em,
+%=[ lattice styles ]============================================================
+  /codi/layouts/.cd,
+    hexagonal/.code args={#1side #2 angle #3}{
+      \pgfkeys{/codi/layouts/#1hexagonal=side {#2} angle {#3}},
+    },
+    horizontal hexagonal/.style args={side #1 angle #2}{
+      /codi/layouts/tetragonal=base {#1} height {tan(#2)*#1*0.5},
+      /tikz/every odd row/.append style={/tikz/xshift=(#1)*0.5},
+    },
+    vertical hexagonal/.style args={side #1 angle #2}{
+      /codi/layouts/tetragonal=base {tan(#2)*#1*0.5} height {#1},
+      /tikz/every odd column/.append style={/tikz/yshift=-1*(#1)*0.5},
+    },
+    hexagonal/.default=horizontal side 4.5em angle 60,
+    %
+    tetragonal/.style args={base #1 height #2}{
+      /tikz/column sep={{#1},between origins},
+      /tikz/row sep={{#2},between origins},
+    },
+    tetragonal/.default=base 4.5em height 2.8em,
+    %
+    square/.style={
+      /codi/layouts/tetragonal=base {#1} height {#1},
+    },
+    golden/.style={
+      /codi/layouts/tetragonal=base {#1} height {0.618*#1},
+    },
+    square/.default=4.5em,
+    golden/.default=4.5em,
+%=[ diagram styles ]============================================================
+  /codi/diagrams/.cd,
+    grid/.style 2 args={
+      /tikz/x={#1},
+      /tikz/y={#2},
+      /tikz/on grid,
+    },
+    metric/.style 2 args={
+      % NOTE: {1 and 1}{1} is infty-norm, unit circle is unit square
+      % NOTE: {2}{0.5} is 1-norm, circle of radius 2 is rhombus circumscribing base hexagon
+      /tikz/node distance={#1},
+      % TODO: implement control to allow for explicit units on single factor specs
+      /tikz/above left/.code={\tikz@lib@place@handle@{##1}{south east}{-1}{1}{north west}{#2}},
+      /tikz/above right/.code={\tikz@lib@place@handle@{##1}{south west}{1}{1}{north east}{#2}},
+      /tikz/below left/.code={\tikz@lib@place@handle@{##1}{north east}{-1}{-1}{south west}{#2}},
+      /tikz/below right/.code={\tikz@lib@place@handle@{##1}{north west}{1}{-1}{south east}{#2}},
+    },
+    %
+    hexagonal/.code args={#1side #2 angle #3}{
+      \pgfkeys{/codi/diagrams/#1hexagonal=side #2 angle #3}
+    },
+    horizontal hexagonal/.style args={side #1 angle #2}{
+      /codi/every layout/.append style={/codi/layouts/hexagonal=horizontal side {#1} angle {#2}},
+      /codi/diagrams/grid={#1*0.5}{#1*tan(#2)*0.5},
+      /codi/diagrams/metric={2}{0.5},
+    },
+    vertical hexagonal/.style args={side #1 angle #2}{
+      /codi/every layout/.append style={/codi/layouts/hexagonal=vertical side {#1} angle {#2}},
+      /codi/diagrams/grid={#1*tan(#2)*0.5}{#1*0.5},
+      /codi/diagrams/metric={2}{0.5},
+    },
+    hexagonal/.default=horizontal side 4.5em angle 60,
+    %
+    tetragonal/.style args={base #1 height #2}{
+      /codi/every layout/.append style={/codi/layouts/tetragonal=base {#1} height {#2}},
+      /codi/diagrams/grid={#1}{#2},
+      /codi/diagrams/metric={1 and 1}{1},
+    },
+    tetragonal/.default=base 4.5em height 2.8em,
+    %
+    square/.style={
+      /codi/every layout/.append style={/codi/layouts/square=#1},
+      /codi/diagrams/tetragonal=base {#1} height {#1},
+    },
+    golden/.style={
+      /codi/every layout/.append style={/codi/layouts/golden=#1},
+      /codi/diagrams/tetragonal=base {#1} height {0.618*#1},
+    },
+    square/.default=4.5em,
+    golden/.default=4.5em,
+}
+
+%==[ baseline centered rectangle shape ]========================================
+
+% The math formula axis height is recovered and stored as a pgf function.
+
+% NOTE: the LuaTeX version is needed just by ConTeXt
+\pgfutil@ifluatex
+  \directlua{tex.enableprimitives('kD', {'Umathaxis'})}
+  \pgfmathdeclarefunction{kD_math_formula_axis_height}{0}{%
+    \begingroup%
+      $\relax$% update fontdimens
+      % See TeX by Topic §23.5 for details.
+      \pgfmathreturn\the\kDUmathaxis\textstyle%
+    \endgroup}
+\else% if using (pdf)tex
+  \pgfmathdeclarefunction{kD_math_formula_axis_height}{0}{%
+    \begingroup%
+      $\relax$% update fontdimens
+      % See TeX by Topic §23.5 for details.
+      \pgfmathreturn\the\fontdimen22\textfont2%
+    \endgroup}
+\fi
+
+\pgfqkeys{/codi/baseline centered rectangle}{
+  center raise/.initial=kD_math_formula_axis_height
+}
+
+% Then the shape is defined by inheritance.
+
+\pgfdeclareshape{codi baseline centered rectangle} {
+  % Inherit the rectangle shape.
+  \inheritsavedanchors[from={rectangle}]
+  \inheritanchor[from={rectangle}]{base}
+  \inheritanchor[from={rectangle}]{north}
+  \inheritanchor[from={rectangle}]{south}
+  \inheritanchor[from={rectangle}]{base west}
+  \inheritanchor[from={rectangle}]{north west}
+  \inheritanchor[from={rectangle}]{south west}
+  \inheritanchor[from={rectangle}]{base east}
+  \inheritanchor[from={rectangle}]{north east}
+  \inheritanchor[from={rectangle}]{south east}
+  \inheritanchor[from={rectangle}]{mid}
+  \inheritanchor[from={rectangle}]{mid west}
+  \inheritanchor[from={rectangle}]{mid east}
+  \inheritbackgroundpath[from={rectangle}]
+  % Redefine west, center and east anchors
+  % setting their y coordinates to center raise.
+  \anchor{center}{\pgf@anchor@rectangle@center\pgfmathsetlength\pgf@y%
+    {\pgfkeysvalueof{/codi/baseline centered rectangle/center raise}}}
+  \anchor{west}{\pgf@anchor@rectangle@west\pgfmathsetlength\pgf@y%
+    {\pgfkeysvalueof{/codi/baseline centered rectangle/center raise}}}
+  \anchor{east}{\pgf@anchor@rectangle@east\pgfmathsetlength\pgf@y%
+    {\pgfkeysvalueof{/codi/baseline centered rectangle/center raise}}}
+  % Save the original anchors as alternate "real" versions.
+  \anchor{real center}{\pgf@anchor@rectangle@center}
+  \anchor{real west}{\pgf@anchor@rectangle@west}
+  \anchor{real east}{\pgf@anchor@rectangle@east}
+  % Redefine the border anchor calculation.
+  \anchorborder{%
+    % (x,y) = target
+    % let tempdima = center raise
+    \pgfmathsetlength\pgfutil@tempdima%
+      {\pgfkeysvalueof{/codi/baseline centered rectangle/center raise}}%
+    % let b = (x,y) = target
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    % let (x,y) = south west
+    \southwest%
+    % let a = (x,y) = south west
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    % let (x,y) = north east
+    \northeast%
+    % let (x,y) = (x,y) - a = north east - south west = (width, height)
+    \advance\pgf@x by-\pgf@xa%
+    \advance\pgf@y by-\pgf@ya%
+    % let c = (x,y)/2 = (width, height)/2 = (width/2, height/2)
+    \pgf@xc=.5\pgf@x%
+    \pgf@yc=.5\pgf@y%
+    % let a = a + c = south west + (width/2, height/2) = center
+    \advance\pgf@xa by\pgf@xc%
+    \advance\pgf@ya by\pgf@yc%
+    % if by = target y > 0
+    \ifdim\pgf@yb>0pt%
+      % let (x,y) = north east
+      \northeast%
+      % let cy = y = north east y
+      \pgf@yc=\pgf@y%
+      % let cy = cy - center raise = north east y - center raise
+      \advance\pgf@yc by-\pgfutil@tempdima%
+    \else%
+      % let (x,y) = south west
+      \southwest%
+      % let cy = y = - south west y
+      \pgf@yc=-\pgf@y%
+      % let cy = cy + center raise = - south west y + center raise
+      \advance\pgf@yc by\pgfutil@tempdima%
+    \fi
+    \edef\pgf@marshal{%
+      % calculate the intersection of the half line from the origin
+      \noexpand\pgfpointborderrectangle
+      % passing through target
+      {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}
+      % and the rectangle centered on the origin
+      % whose upper right corner is
+      % (width/2, +north east y - center raise) if target y > 0
+      % (width/2, -south west y + center raise) if target y < 0
+      {\noexpand\pgfqpoint{\the\pgf@xc}{\the\pgf@yc}}%
+    }%
+    % let (x,y) = the intersection
+    \pgf@process{\pgf@marshal}%
+    % let x = x + ax = width/2 + center x
+    \advance\pgf@x by\pgf@xa%
+    % let y = y + tempdima = ±(ne/sw y - center raise) + center raise
+    \advance\pgf@y by\pgfutil@tempdima%
+    % that is, y = + north east y                    if target y > 0
+    %          y = - south west y + 2 * center raise if target y < 0
+    %
+    % NOTE: in essence, we're just compensating for the redefinition
+    % of ne/sw anchors that shifted them by cr below the real center.
+    %                ┏━━━━━━┯━━━━━━┓  ╮╮              
+    %                ┃      │      ┃  ││ + ney - cr   
+    %            ╭╭  ┠──────┼──────┨ ╮│╯               y > 0
+    % - swy + cr │╰╭ ┣━━━━━━┿━━━━━━┫ ╯╯ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    %            ╰ ╰ ┗━━━━━━┷━━━━━━┛                   y < 0
+  }%
+}%
+
+%==[ prompter ]=================================================================
+
+% This key is meant for visual assistance with the node labeling automation.
+
+\pgfqkeys{/codi}{
+  prompter label/.style={
+    /tikz/.cd,
+    inner sep=0sp,
+    font=\ttfamily\bfseries\tiny,
+    line width=1pt,
+    draw=violet,
+    fill=violet,
+    text=white,
+    overlay,
+    label anchor/.style={tikz@label@post/.append style={anchor=##1}},
+    label anchor=north east,
+    label position=south east
+  },
+  prompter pinner/.style={
+    /tikz/draw=violet,
+    /tikz/line width=1sp,
+    /tikz/label={[/codi/prompter label]:#1},
+  },
+  prompter/.style={/bapto/output/.forward to=/codi/prompter pinner}
+}

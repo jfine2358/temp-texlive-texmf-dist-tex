@@ -1,0 +1,101 @@
+%%
+%% This is file `tagpdf-luatex.def',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% tagpdf-backend.dtx  (with options: `luatex')
+%% 
+%% Copyright (C) 2019 Ulrike Fischer
+%% 
+%% It may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License (LPPL), either version 1.3c of
+%% this license or (at your option) any later version.  The latest
+%% version of this license is in the file:
+%% 
+%%    https://www.latex-project.org/lppl.txt
+%% 
+%% This file is part of the "tagpdf bundle" (The Work in LPPL)
+%% and all files in that bundle must be distributed together.
+%% 
+%% File: tagpdf-backend.dtx
+\ProvidesExplFile {tagpdf-luatex.def} {2021/02/23} {0.80}
+  {tagpdf~driver~for~luatex}
+
+\newattribute \l__tag_mc_type_attr     %the value represent the type
+\newattribute \l__tag_mc_cnt_attr      %will hold the \c@g__tag_MCID_abs_int value
+
+\newattribute \g__tag_interwordspace_attr
+\newattribute \g__tag_interwordfont_attr
+
+{
+  \fontencoding{TU}\fontfamily{lmr}\fontseries{m}\fontshape{n}\fontsize{10pt}{10pt}\selectfont
+}
+\directlua { tagpdf=require('tagpdf.lua') }
+
+%%%% driver (lualatex) commands
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\cs_new:Nn \__tag_luatex_get_table_name:Nn
+  {
+    \tl_set_rescan:Nnn #1  { \char_set_catcode_ignore:N \\ } { #2 }
+  }
+
+\cs_new:Nn \__tag_prop_new:N
+  {
+    \prop_new:N #1
+    \__tag_luatex_get_table_name:Nn \l_tmpa_tl { #1 }
+    \directlua { ltx.__tag.tables.\l_tmpa_tl = {} }
+  }
+
+\cs_new:Nn \__tag_seq_new:N
+  {
+    \seq_new:N #1
+    \__tag_luatex_get_table_name:Nn \l_tmpa_tl { #1 }
+    \directlua { ltx.__tag.tables.\l_tmpa_tl = {} }
+  }
+
+\cs_new:Nn \__tag_prop_gput:Nnn
+  {
+    \prop_gput:Nnn #1 { #2 } { #3 }
+    \__tag_luatex_get_table_name:Nn \l_tmpa_tl { #1 }
+    \directlua { ltx.__tag.tables.\l_tmpa_tl["#2"] = "#3" }
+  }
+
+\cs_new:Nn \__tag_seq_gput_right:Nn
+  {
+    \seq_gput_right:Nn #1 { #2 }
+    \__tag_luatex_get_table_name:Nn \l_tmpa_tl { #1 }
+    \directlua { table.insert(ltx.__tag.tables.\l_tmpa_tl, "#2") }
+  }
+
+
+\cs_new:Npn \__tag_seq_item:cn #1 #2
+  {
+    \directlua { tex.print(ltx.__tag.tables.#1[#2]) }
+  }
+
+\cs_new:Npn \__tag_prop_item:cn #1 #2
+  {
+    \directlua { tex.print(ltx.__tag.tables.#1["#2"]) }
+  }
+
+\cs_new:Nn \__tag_seq_show:N
+  {
+    \seq_show:N #1
+    \__tag_luatex_get_table_name:Nn \l_tmpa_tl { #1 }
+    \directlua { ltx.__tag.trace.log ("lua~sequence~array~\l_tmpa_tl",1) }
+    \directlua { ltx.__tag.trace.show_seq (ltx.__tag.tables.\l_tmpa_tl) }
+  }
+
+\cs_new:Nn \__tag_prop_show:N
+  {
+    \prop_show:N #1
+    \__tag_luatex_get_table_name:Nn \l_tmpa_tl { #1 }
+    \directlua {ltx.__tag.trace.log  ("lua~property~table~\l_tmpa_tl",1) }
+    \directlua {ltx.__tag.trace.show_prop (ltx.__tag.tables.\l_tmpa_tl) }
+ }
+%% 
+%%
+%% End of file `tagpdf-luatex.def'.

@@ -1,0 +1,76 @@
+%
+% ltj-latex.sty
+%
+
+%! これは外から読まれない
+%% Avoid multiple loading.
+\csname luatexjalatexLoaded\endcsname
+\edef\ltj@latex@AtEnd{%
+\endlinechar=\the\endlinechar
+\relax}
+\endlinechar\m@ne%
+\def\luatexjalatexLoaded{\endinput}
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ltj-latex}[2016/05/15 LaTeX support of LuaTeX-ja]
+
+% cleanup at end of the document
+%\let\ltj@@orig@end=\@@end
+%\protected\def\@@end{%
+%  \directlua{luatexja.ext_cleanup()}\ltj@@orig@end}
+
+% Globally add to the head of a macro (cf. LaTeX2e's \g@addto@macro)
+\long\def\ltj@g@addto@macro#1#2{%
+  \begingroup
+    \def\ltj@tmpa{#2}
+    \toks@\expandafter\expandafter\expandafter{\expandafter\ltj@tmpa#1}
+    \xdef#1{\the\toks@}
+  \endgroup}
+
+\def\ltj@AtBeginDocument{\ltj@g@addto@macro\@begindocumenthook}
+
+\def\ltj@pkgpatch#1{\ltj@AtBeginDocument{\@ifpackageloaded{#1}{\usepackage{lltjp-#1}}{}}}
+
+% similar to \ltj@pkgpatch, but this is used .sty which
+% can be reloaded inside the document by \input.
+\def\ltj@pkgpatchA#1{\ltj@AtBeginDocument{\@ifpackageloaded{#1}{\input{lltjp-#1.sty}}{}}}
+
+\endlinechar=13
+
+%%% patch for LaTeX
+\usepackage{lltjfont}
+\usepackage{lltjdefs}
+\usepackage{lltjcore}
+
+%%% default parameters
+\directlua{
+  local s = kpse.find_file('ltj-kinsoku.lua', 'tex')
+  luatexja.stack.charprop_stack_table[0] = s and dofile(s) or {}
+}
+
+\ltjsetparameter{kanjiskip=\z@ plus .4pt minus .4pt,
+  xkanjiskip=.25\zw plus 1pt minus 1pt,
+  autospacing, autoxspacing, jacharrange={-1},
+  yalbaselineshift=\z@, yjabaselineshift=\z@,
+  jcharwidowpenalty=500, differentjfm=paverage
+}
+
+\expandafter\let\csname JY3/mc/m/n/10\endcsname\relax
+
+%%% patch for packages
+\ltj@pkgpatch{listings}
+\ltj@pkgpatch{unicode-math}
+\ltj@pkgpatch{xunicode}
+\ltj@pkgpatch{fontspec}
+\ltj@pkgpatch{stfloats}
+\ltj@pkgpatch{footmisc}
+\ltj@pkgpatch{tascmac}
+\ltj@AtBeginDocument{\@ifpackageloaded{ascmac}{\input{lltjp-tascmac.sty}}{}}% ascmac
+
+\RequirePackage{lltjp-geometry}
+
+
+%%------------------ all done
+\ltj@latex@AtEnd
+\endinput
+%% EOF

@@ -1,0 +1,1052 @@
+% Grosse Ueberschrift mit Name, Klasse, Datum zu Beginn
+%\ifthenelse{\boolean{schule@erwartungshorizontAnzeigen}}{
+	%\AtBeginDocument{
+	%	\begin{center}
+	%		\large
+	%		\textbf{Name:} \luecke{12em}\hspace{1em}
+	%		\textbf{Klasse:}\luecke{4em}\hspace{1em}
+	%		\textbf{Datum:}\luecke{8em}\hspace{1em}
+	%	\end{center}
+	%	\vspace{1em}
+	%}
+%}{}
+%\renewcommand{\schule@kopfAussen}{}
+% Schöne Achtungsbox
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newtcolorbox{achtungbox}[1][]{enhanced,
+  before skip=0.75em,after skip=1.25em,
+  boxrule=0.4pt,left=5mm,right=2mm,top=1mm,bottom=1mm,
+  colback=yellow!50,
+  colframe=yellow!20!black,
+  sharp corners,rounded corners=southeast,arc is angular,arc=3mm,
+  underlay={%
+    \path[fill=tcbcol@back!80!black] ([yshift=3mm]interior.south east)--++(-0.4,-0.1)--++(0.1,-0.2);
+    \path[draw=tcbcol@frame,shorten <=-0.05mm,shorten >=-0.05mm] ([yshift=3mm]interior.south east)--++(-0.4,-0.1)--++(0.1,-0.2);
+    \path[fill=yellow!50!black,draw=none] (interior.south west) rectangle node[white]{\Huge\bfseries !} ([xshift=4mm]interior.north west);
+    },
+  drop fuzzy shadow,#1}
+% Versionssetter für Modulplan
+\newcommand{\version}[3][nope]{%
+	\ifthenelse{\equal{#1}{nope}}{%
+		\ifoot{\normalfont Version: #3\\\footnotesize\today\ \DTMcurrenttime}
+	}{%
+		\ifoot{\normalfont Version: #3\\\footnotesize\today\ \DTMcurrenttime\ (\textit{#1})}
+	}
+	\ofoot{\qrcode[nolink,height=4em]{#2}}
+}
+% Box für ein neues Modulthema
+\newenvironment{thema}[2][]{%
+	\refstepcounter{schule@thema}
+	\begin{tcolorbox}[title={\textbf{Thema \theschule@thema:} #2},%
+		colback=white!98!black,%
+		enhanced jigsaw, breakable,%
+	]
+}{%
+	\end{tcolorbox}
+	\vspace{0.75em}
+}
+
+% Merksatz innerhalb eines Modulthemas
+\newenvironment{merke}[2][]{%
+	\begin{tcolorbox}[title={\bfseries Merkheft \quad \symHeft},
+		enhanced,attach boxed title to top left=
+			{xshift=2mm,yshift=-2mm},
+		boxrule=0.5pt,
+		colback=white!93!black,
+		halign lower=flush right,
+		skin=bicolor,colbacklower=white!85!black,
+	]
+		\textbf{Überschrift:} #2
+}{%
+		\tcblower
+		Erledigt: \chb
+	\end{tcolorbox}
+}
+
+% Aufgaben innerhalb eines Modulthemas
+\newenvironment{rechne}[1][]{%
+	\begin{tcolorbox}[title={\bfseries Aufgaben \quad \symKlemmbrett},
+		boxrule=0.5pt,
+		colback=white!93!black,
+		%underlay={\begin{tcbclipinterior}
+		%	\draw[help lines,step=5mm,white!60!black,shift={(interior.north west)}]
+		%	(interior.south west) grid (interior.north east);
+		%	\end{tcbclipinterior}},
+		enhanced,attach boxed title to top left=
+			{xshift=2mm,yshift=-2mm},
+	]
+}{%
+	\end{tcolorbox}
+}
+
+% Items für Aufgaben mit optionalem Symbol
+\newcommand{\modafg}[1][\symHeft]{%
+	\item[#1] 
+}
+\newcommand{\afg}[1][\symBleistift]{%
+	\item[#1] Aufgabe\
+}
+\newcommand{\hinw}[2][\symZeigefinger]{%
+	\\ {\raggedleft\color{gray} #1\ \prettyref{hinw:#2}}
+}
+% Basis-Aufgaben innerhalb von Rechenaufgaben innerhalb eines Modulthemas
+%  optional: Schwieritgkeit (Basis default)
+\ProvideDocumentEnvironment{buchafg}{O{Basis} m O{Erledigt} O{none}}{%
+	\ifthenelse{\equal{#4}{none}}{\begin{minipage}{0.48\textwidth}}{}
+		\begin{tcolorbox}[title={\textbf{#1:} #2 \quad \symBuch},
+			boxrule=0.5pt,
+			colback=white!91!black,
+			%underlay={\begin{tcbclipinterior}
+			%	\draw[help lines,step=5mm,white!60!black,shift={(interior.north west)}]
+			%	(interior.south west) grid (interior.north east);
+			%	\end{tcbclipinterior}},
+			enhanced,attach boxed title to top center=
+				{yshift=-2mm},
+			halign lower=flush right,
+			skin=bicolor,colbacklower=white!85!black,
+		]
+			\vspace{2mm}
+			\begin{smallitemize}
+}{%
+			\end{smallitemize}
+			\tcblower
+			#3: \chb
+		\end{tcolorbox}
+		\ifthenelse{\equal{#4}{none}}{\end{minipage}}{}
+}
+\newenvironment{nochfit}{%
+	\begin{center}
+	\begin{minipage}{0.8\textwidth}
+		\begin{tcolorbox}[title={\textbf{Noch fit?}},
+			boxrule=0.5pt,
+			colback=white!91!black,
+			%underlay={\begin{tcbclipinterior}
+			%	\draw[help lines,step=5mm,white!60!black,shift={(interior.north west)}]
+			%	(interior.south west) grid (interior.north east);
+			%	\end{tcbclipinterior}},
+			enhanced,attach boxed title to top center=
+				{yshift=-2mm},
+			halign lower=flush right,
+			skin=bicolor,colbacklower=white!85!black,
+		]
+			\vspace{2mm}
+			%\begin{smallitemize}
+}{%
+			%\end{smallitemize}
+			\tcblower
+			Optional: \chb
+		\end{tcolorbox}
+	\end{minipage}
+	\end{center}
+}
+
+% Zusammenfassung innerhalb eines Modulplans
+\newenvironment{allesklar}[1][]{%
+	\begin{tcolorbox}[title={\textbf{Zusammenfassung}},
+		colback=white!98!black
+	]
+}{%
+		\begin{smallitemize}
+			\item[\symDaumenHoch] Nun kannst du den KT schreiben.
+			\item[\symHeft]	Bitte gib dein Merkheft ab.
+		\end{smallitemize}
+	\end{tcolorbox}
+}
+% Alles Klar Aufgaben innerhalb der Zusammenfassung
+\newenvironment{alkr}[2][]{%
+		\begin{tcolorbox}[title={\textbf{Alles klar?} #2 \quad \symBuch},
+			boxrule=0.5pt,
+			colback=white!91!black,
+			%underlay={\begin{tcbclipinterior}
+			%	\draw[help lines,step=5mm,white!60!black,shift={(interior.north west)}]
+			%	(interior.south west) grid (interior.north east);
+			%	\end{tcbclipinterior}},
+			enhanced,attach boxed title to top center=
+				{yshift=-2mm},
+			halign lower=flush right,
+			skin=bicolor,colbacklower=white!85!black,
+		]
+			\vspace{2mm}
+			\begin{smallitemize}
+}{%
+			\end{smallitemize}
+			\tcblower
+			Korrigiert: \chb\\
+		\end{tcolorbox}
+}
+% SuS-Feedback
+\newcommand{\frage}[2][]{%
+		#2 & \chb & \chb & \chb & \chb\tabularnewline
+}
+\newcommand{\wunsch}[2][15em]{%
+	#2 & \multicolumn{4}{l}{\luecke[]{#1}}\tabularnewline
+		 & \multicolumn{4}{l}{\luecke[]{#1}}\tabularnewline
+}
+\newenvironment{feedback}[1][\clearpage]{%
+	#1
+	\begin{tcolorbox}[title={\textbf{Feedback}},
+		colback=white!98!black
+	]
+		Bitte fülle die untenstehenden Fragen aus und gib sie ausgeschnitten ab.
+		
+		\begin{tcolorbox}[%
+			boxrule=0.5pt,
+			colback=white!91!black,
+			%underlay={\begin{tcbclipinterior}
+			%	\draw[help lines,step=5mm,white!60!black,shift={(interior.north west)}]
+			%	(interior.south west) grid (interior.north east);
+			%	\end{tcbclipinterior}},
+			%enhanced,attach boxed title to top center=
+			%	{yshift=-2mm},
+			%halign lower=flush right,
+			%skin=bicolor,
+			%colbacklower=white!85!black,
+		]
+			\renewcommand{\arraystretch}{1.3}
+			\begin{tabular}{P{.5\linewidth}cccc}
+				\rowcolor{black!20}
+				\textbf{Ich stimme\ldots} &
+				\multicolumn{1}{m{3em}}{\centering \textit{gar nicht zu}} &
+				\multicolumn{1}{m{3em}}{\centering \textit{nicht zu}} &
+				\multicolumn{1}{m{3em}}{\centering \textit{zu}} &
+				\multicolumn{1}{m{3em}}{\centering \textit{sehr zu}}\tabularnewline\hline
+}{%
+			\end{tabular}
+			\renewcommand{\arraystretch}{1}
+			\label{feedbackPage}
+		\end{tcolorbox}
+	\end{tcolorbox}
+}
+% Modulaufgaben, zusätzlich
+\newtcolorbox{modAufgabeBox}[2][]{%
+			title={\textbf{\symHeft\hspace{0.75em} #2}},
+			enhanced,attach boxed title to top left={xshift=2mm,yshift=-2mm},%
+			boxrule=0.5pt,%
+			colback=white!93!black,%
+			halign lower=flush right,%
+			skin=bicolor,colbacklower=white!85!black,%
+			#1
+}
+%\DeclareInstance{exsheets-heading}{genord-boxed}{default}{
+%	title-pre-code={%
+%		\ifthenelse{\equal{%
+%			\GetQuestionProperty{symbol}{\CurrentQuestionID}}{??}}{%
+%		}{%
+%		\llap{\GetQuestionProperty{symbol}{\CurrentQuestionID}%
+%		\space}}%
+%	},
+%	title-post-code={},
+%	points-pre-code = {},
+%	points-post-code = {},
+%	join={%
+%		%title[r,B]number[l,B](.333em,0pt);
+%		%title[r,B]points[l,B](.333em,0pt)
+%		title[r,B]subtitle[l,B](1em,0pt)
+%	},
+%	attach={%
+%		main[l,vc]title[l,vc](0pt,0pt)
+%	},
+%	%subtitle-format={block},
+%}
+%\NewQuSolPair % Normale Aufgaben
+%	{modAufgabe}[%
+%		type=exam,
+%		name={},	
+%		headings=genord-boxed,
+%		pre-hook={%
+%			\begin{modAufgabeBox}{%
+%				Modulaufgabe \GetQuestionProperty{counter}{\CurrentQuestionID}%
+%			}%
+%		},
+%		post-hook={\end{modAufgabeBox}\vspace{0.75em}},
+%	]
+%	{modLoesung}[]%
+\DeclareExerciseType{modAufgabe}{
+	exercise-env = modAufgabe,
+	solution-env = modLoesung,
+	exercise-name = \XSIMtranslate{question},
+	solution-name = \XSIMtranslate{solution},
+	exercise-template = schule-default,
+	solution-template = schule-default,
+}
+\ProvideDocumentEnvironment{modulafg}{O{Novize} O{Erledigt} O{}}{%
+	\begin{tcolorbox}[title={\textbf{#1}},
+			boxrule=0.5pt,
+			colback=white!91!black,
+			%underlay={\begin{tcbclipinterior}
+			%	\draw[help lines,step=5mm,white!60!black,shift={(interior.north west)}]
+			%	(interior.south west) grid (interior.north east);
+			%	\end{tcbclipinterior}},
+			enhanced,attach boxed title to top center=
+				{yshift=-2mm},
+			halign lower=flush right,
+			skin=bicolor,colbacklower=white!85!black,
+			#3
+		]
+			\vspace{2mm}
+}{%
+			\tcblower
+			#2: \chb
+		\end{tcolorbox}
+}
+% Kommandos um Modulplan zu strukturieren
+\newcommand{\starteModulplan}{%
+	\cfoot{\thepage\ von \pageref{LetzteModulplanseite}}
+	%\ofoot{}
+	%\frontmatter
+	%\setcounter{page}{1}
+	\pagenumbering{arabic}
+	\section*{\Title\ -- \Subtitle}
+	\vspace{0.75em}
+}
+% Zusatzmaterialien
+\newcommand{\zusatzMaterial}{%
+	%\mainmatter
+	%\setcounter{page}{1}
+	\label{LetzteModulplanseite}
+	\clearpage
+	\appendix
+	\pagenumbering{Roman}
+	\cfoot{\thepage\ von \pageref{LetzteInhaltsseite}}
+}
+\newcommand{\starteModulaufgaben}{%
+	\clearpage
+	\section*{Modulaufgaben}
+	\vspace{0.75em}
+}
+\newcommand{\starteHinweiskarten}{%
+	\clearpage
+	\section*{Hinweiskarten}
+	\vspace{0.75em}
+}
+% Hinweiskarten
+\newtcolorbox{hinwKarteBox}[2][]{%
+			title={\textbf{\symZeigefinger\hspace{0.75em} #2}},
+			enhanced,attach boxed title to top left={xshift=2mm,yshift=-2mm},%
+			boxrule=0.5pt,%
+			colback=white!93!black,%
+			halign lower=flush right,%
+			skin=bicolor,colbacklower=white!85!black,%
+}
+% hinweiskarten setzen
+\ProvideDocumentEnvironment{hinwKarte}{omo}{%
+	\refstepcounter{schule@hinweiskarte}
+	\begin{hinwKarteBox}{Hinweiskarte~\theschule@hinweiskarte}
+		\textbf{#2\IfNoValueF{#3}{:}} \IfNoValueF{#3}{\textit{#3}}
+
+}{%
+		\IfNoValueF{#1}{\label{hinw:#1}}
+	\end{hinwKarteBox}
+	\vspace{1.75em}
+}
+% schöne Links als qrcode setzen
+%  Optional: Breite der minipage
+%  1.: URL für QRcode
+%  2.: URL für Text
+%  3.: Erklärungstext
+\newcommand{\link}[4][0.5\textwidth]{%
+	\begin{minipage}{#1}
+		\begin{center}
+			\begin{singlespace}
+				\qrcode[height=1.5cm]{#2}\\[0.75em]	
+					\textit{#4}\\
+				\footnotesize{\url{#3}}
+			\end{singlespace}
+		\end{center}
+	\end{minipage}
+}
+%\newenvironment{modAufgabe}[2][]{%
+%		\textbf{Überschrift:} #2
+%}{%
+%		\tcblower
+%		Erledigt: \chb
+%	\end{tcolorbox}
+%}
+% Erwartungshorizont (GENORD:Eine Tabelle für alles, keine Punkte, Smilies)
+% --------------------------------------------------------------------
+\newcommand{\schule@erwartungshorizontGENord}{
+	\renewcommand{\arraystretch}{1.1}
+	% Zwischenspeicher für Tabelle
+	\def\schule@EH{}
+		
+	%% Tabellarische Übersicht aus Einzelerwartungen zusammenbauen.
+	\ForEachUsedExerciseByID{%
+		% Tabelle zurücksetzen
+		\def\schule@aktuelleAufgabeEH{}%
+		%
+		% Erwartungen laden und vollständig expandieren
+		\edef\schule@aktuelleErwartungExpandiert{%
+			\GetQuestionProperty{erwartungen}{##1}%
+		}%
+		%
+		% Zeilenfarbe zurücksetzen
+		\setboolean{schuleEHZeileGerade}{false}%
+		%
+		% Einzelne Erwartungen in Tabellenform sammeln
+		\ForEachX{;}{%
+			\ifthenelse{\thislevelcount=1}{%
+				% Erste Erwartung ist leer => weglassen 
+				% Speicherung wäre sonst kompliziert...
+			}{%
+				% Aufteilen in Inhalt und Punkte
+				\schule@splitErwartung{\thislevelitem}%
+				%
+				% Zeilenfarbe festlegen
+				\ifthenelse{\boolean{schuleEHZeileGerade}}{%
+					\edef\schule@aktuelleAufgabeEH{%
+						\schule@aktuelleAufgabeEH %
+						\detokenize{%
+							\rowcolor{black!10}%
+						}%
+					}%
+				}{%
+					\edef\schule@aktuelleAufgabeEH{%
+						\schule@aktuelleAufgabeEH %
+						\detokenize{%
+							\rowcolor{white}%
+						}%
+					}%
+				}%
+				%
+				% Zeilenfarbe umschalten
+				\schule@EHZeilenfarbeUmschalten%
+					%
+				% Anschließend muss die Tabellenzeile aufgebaut und 
+				% wieder serialisiert werden, da Tabellen sich nicht 
+				% dynamisch bauen lassen. \tabularnewline, Rules und
+				\edef\schule@aktuelleAufgabeEH{%
+					\schule@aktuelleAufgabeEH%
+					%
+					\schule@aktuelleErwartungInhalt%
+					\detokenize{&}%
+					\schule@aktuelleErwartungPunkte%
+					\detokenize{& \chb & \chb & \chb & \chb \\}%
+						%\specialrule{.05em}{0em}{0em}}
+					}%
+			}%
+		}{\schule@aktuelleErwartungExpandiert} %
+		%
+		% Gesamtpunkte mit Bonuspunkten kombinieren
+		\def\schule@aktuelleAufgabePunkte{%
+			\IfQuestionPropertyT{points}{##1}{%
+				% Punkte angegeben
+				\GetQuestionProperty{points}{##1}%
+			}%
+			\IfQuestionPropertyT{bonus-points}{##1}{%
+				% Zusatzspunkte angegeben
+				\space(+\,\GetQuestionProperty{bonus-points}{##1})%
+			}%
+		}%
+		%
+		% Titelzeile für die Aufgabe an die Tabelle anfügen.
+		\edef\schule@EH{%
+			\schule@EH%
+			\detokenize{\specialrule{.1em}{0em}{0em}}%
+			%\detokenize{\hrule}
+			\detokenize{\rowcolor{black!20}\bfseries Aufgabe}%
+			\space\GetQuestionProperty{counter}{##1}%
+			\detokenize{& \bfseries}%
+			%\schule@aktuelleAufgabePunkte
+%			\detokenize{& & & \\}%
+			\detokenize{& -- & \usym{1F641} & \usym{1F610} & \usym{1F642}\\}%
+			%\detokenize{\hrule}
+			\detokenize{\specialrule{.1em}{0em}{0em}}	%
+		}%
+		%
+		% Erwartungshorizont der Aufgabe an globale Tabelle anhängen.
+		\edef\schule@EH{\schule@EH\schule@aktuelleAufgabeEH}%	
+	}%
+
+				
+		% Zusammengebaute Zeilen wieder deserialisieren
+		\tokenize{%
+			\schule@EHCode%
+		}{%
+			\schule@EH%
+		}
+		
+		% Tabelle setzen
+		\thispagestyle{empty}
+		\begin{center}
+			\large
+			\textbf{Name:} \luecke{12em}\hspace{1em}
+			\textbf{Klasse:}\luecke{4em}\hspace{1em}
+			\textbf{Datum:}\luecke{8em}\hspace{1em}
+		\end{center}
+	
+		\vspace*{-1ex}
+		% Tabelle setzen
+		\begin{longtable}{P{.5\linewidth}P{.2\linewidth}P{1em}P{1em}P{1em}P{1em}}
+			% Kopfzeile
+			\rowcolor{black!20}
+			\textbf{Du\dots} &
+			\textbf{Übung} &
+			\multicolumn{4}{l}{\textbf{Rückmeldung}}%   %%
+			\tabularnewline%\specialrule{.05em}{0em}{0em}  %
+			% Erwartungen
+			\schule@EHCode
+			% Fusszeile
+			\specialrule{.1em}{0em}{0em}
+			\rowcolor{black!20}\textbf{Gesamt} &	
+			\multicolumn{5}{r}{\textbf{\totalpoints*} Punkte}
+		\end{longtable}	
+		
+
+		\clearpage
+	\section*{Punkteverteilung}
+	\begin{center}
+		\punktuebersicht
+	\end{center}
+		
+	\begin{center}
+		\notenverteilung
+	\end{center}
+	
+	\vspace{1em}	
+		\begin{center}
+			\large
+			\textbf{Note:} \luecke{10em}\hspace{1em}
+			\textbf{Datum:}\luecke{6em}\hspace{1em}
+			\textbf{Unterschrift:}\luecke{6em}\hspace{1em}
+		\end{center}
+
+		\vspace{0.4em}
+
+		\begin{minipage}{0.36\textwidth}
+			\footnotesize
+			\textbf{Erklärungen der Symbole:}
+			\begin{description}
+				\item[\usym{1F642}] Fehlerfrei
+				\item[\usym{1F610}] Ohne grobe Fehler
+				\item[\usym{1F641}] Fehler sind vorhanden, stehen aber einem Grundverständnis nicht im Wege
+				\item[--] Durch die Häufigkeit von Ungenauigkeiten und Fehlern: Kompetenz nicht erreicht
+			\end{description}
+		\end{minipage}
+		\begin{minipage}{0.63\textwidth}
+			\textbf{Bemerkungen:}
+			\vspace{10em}
+		\end{minipage}
+
+		
+	\renewcommand{\arraystretch}{1}
+	\clearpage
+}
+% AUTOMATISCHE BEPUNKTUNG EINLESEN
+\newcommand{\schule@erwartungshorizontGENordPunkte}{
+	\renewcommand{\arraystretch}{1.1}
+	% Zwischenspeicher für Tabelle
+	\def\schule@EH{}
+		
+	%% Tabellarische Übersicht aus Einzelerwartungen zusammenbauen.
+	\ForEachQuestion{%
+		% Tabelle zurücksetzen
+		\def\schule@aktuelleAufgabeEH{}%
+		%
+		% Erwartungen laden und vollständig expandieren
+		\edef\schule@aktuelleErwartungExpandiert{%
+			\GetQuestionProperty{erwartungen}{##1}%
+		}%
+		%
+		% Zeilenfarbe zurücksetzen
+		\setboolean{schuleEHZeileGerade}{false}%
+		%
+		% Einzelne Erwartungen in Tabellenform sammeln
+		\ForEachX{;}{%
+			\ifthenelse{\thislevelcount=1}{%
+				% Erste Erwartung ist leer => weglassen 
+				% Speicherung wäre sonst kompliziert...
+			}{%
+				% Aufteilen in Inhalt und Punkte
+				\schule@splitErwartung{\thislevelitem}%
+				%
+				% Zeilenfarbe festlegen
+				\ifthenelse{\boolean{schuleEHZeileGerade}}{%
+					\edef\schule@aktuelleAufgabeEH{%
+						\schule@aktuelleAufgabeEH %
+						\detokenize{%
+							\rowcolor{black!10}%
+						}%
+					}%
+				}{%
+					\edef\schule@aktuelleAufgabeEH{%
+						\schule@aktuelleAufgabeEH %
+						\detokenize{%
+							\rowcolor{white}%
+						}%
+					}%
+				}%
+				%
+				% Zeilenfarbe umschalten
+				\schule@EHZeilenfarbeUmschalten%
+					%
+				% Anschließend muss die Tabellenzeile aufgebaut und 
+				% wieder serialisiert werden, da Tabellen sich nicht 
+				% dynamisch bauen lassen. \tabularnewline, Rules und
+				\edef\schule@aktuelleAufgabeEH{%
+					\schule@aktuelleAufgabeEH%
+					%
+					\schule@aktuelleErwartungInhalt%
+					\detokenize{&}%
+					\schule@aktuelleErwartungPunkte%
+					\detokenize{& \chb & \chb & \chb & \chb \\}%
+						%\specialrule{.05em}{0em}{0em}}
+					}%
+			}%
+		}{\schule@aktuelleErwartungExpandiert} %
+		%
+		% Gesamtpunkte mit Bonuspunkten kombinieren
+		\def\schule@aktuelleAufgabePunkte{%
+			\IfQuestionPropertyT{points}{##1}{%
+				% Punkte angegeben
+				\GetQuestionProperty{points}{##1}%
+			}%
+			\IfQuestionPropertyT{bonus-points}{##1}{%
+				% Zusatzspunkte angegeben
+				\space(+\,\GetQuestionProperty{bonus-points}{##1})%
+			}%
+		}%
+		%
+		% Titelzeile für die Aufgabe an die Tabelle anfügen.
+		\edef\schule@EH{%
+			\schule@EH%
+			\detokenize{\specialrule{.1em}{0em}{0em}}%
+			%\detokenize{\hrule}
+			\detokenize{\rowcolor{black!20}\bfseries Aufgabe}%
+			\space\GetQuestionProperty{counter}{##1}%
+			\detokenize{& \bfseries}%
+			%\schule@aktuelleAufgabePunkte
+%			\detokenize{& & & \\}%
+			\detokenize{& -- & \usym{1F641} & \usym{1F610} & \usym{1F642}\\}%
+			%\detokenize{\hrule}
+			\detokenize{\specialrule{.1em}{0em}{0em}}	%
+		}%
+		%
+		% Erwartungshorizont der Aufgabe an globale Tabelle anhängen.
+		\edef\schule@EH{\schule@EH\schule@aktuelleAufgabeEH}%	
+	}%
+
+				
+		% Zusammengebaute Zeilen wieder deserialisieren
+		\tokenize{%
+			\schule@EHCode%
+		}{%
+			\schule@EH%
+		}
+	
+		\DTLforeach{namen}{%
+			\vorname=Vorname,\nachname=Nachname,\klasse=Klasse,\krzl=Krzl,\kommentar=Kommentar%
+		}{%
+				% Tabelle setzen
+				\thispagestyle{empty}
+				\begin{center}
+					\large
+					\textbf{Name:} \vorname\ \nachname\hspace{1em}
+					\textbf{Klasse:} \klasse\hspace{1em}
+					\textbf{Datum:} \today\hspace{1em}
+				\end{center}
+			
+				\vspace*{-1ex}
+				% Tabelle setzen
+				\begin{longtable}{P{.5\linewidth}P{.2\linewidth}P{1em}P{1em}P{1em}P{1em}}
+					% Kopfzeile
+					\rowcolor{black!20}
+					\textbf{Du\dots} &
+					\textbf{Übung} &
+					\multicolumn{4}{l}{\textbf{Rückmeldung}}%   %%
+					\tabularnewline%\specialrule{.05em}{0em}{0em}  %
+					% Erwartungen
+					\schule@EHCode
+					% Fusszeile
+					\specialrule{.1em}{0em}{0em}
+					\rowcolor{black!20}\textbf{Gesamt} &	
+					\multicolumn{5}{r}{\textbf{\totalpoints*} Punkte}
+				\end{longtable}	
+				
+
+				\clearpage
+	
+				\tikzmath{%
+					real \summe;
+					\summe = 0;
+				}
+			\section*{Punkteverteilung}
+			\begin{center}
+				\punktuebersicht[punkte]
+			\end{center}
+			
+			%\section*{Notenverteilung}
+			\begin{center}
+				\notenverteilung
+			\end{center}
+			
+			\vspace{1em}	
+				\begin{center}
+					\large
+					\textbf{Note:} \getNote \hspace{1em}
+					\textbf{Datum:} \today\hspace{1em}
+					\textbf{Unterschrift:}\luecke{6em}\hspace{1em}
+				\end{center}
+
+				\vspace{0.4em}
+
+				\begin{minipage}{0.36\textwidth}
+					\footnotesize
+					\textbf{Erklärungen der Symbole:}
+					\begin{description}
+						\item[\usym{1F642}] Fehlerfrei
+						\item[\usym{1F610}] Ohne grobe Fehler
+						\item[\usym{1F641}] Fehler sind vorhanden, stehen aber einem Grundverständnis nicht im Wege
+						\item[--] Durch die Häufigkeit von Ungenauigkeiten und Fehlern: Kompetenz nicht erreicht
+					\end{description}
+				\end{minipage}
+				\begin{minipage}{0.63\textwidth}
+					\textbf{Bemerkungen:}
+					\kommentar
+				\end{minipage}
+
+				
+			\renewcommand{\arraystretch}{1}
+			\clearpage
+		}
+	\getNotenAuswertung
+}
+\renewcommand{\erwartungshorizont}{
+        % Stil
+        \IfEqCase{\schule@erwartungshorizontStil}{
+            % Einzeltabellen
+            {einzeltabellen}{
+                \schule@erwartungshorizontEinzeltabellen
+            }%
+            % Ohne Punkte, mit Smilies
+            {simpel}{
+                \schule@erwartungshorizontSimpel
+            }%
+						{genord}{
+							\schule@erwartungshorizontGENord
+						}%
+        }[%
+            % Standard => Alles in eine Tabelle
+            \schule@erwartungshorizontStandard
+        ]
+}
+% Notenübersicht nur mit ganzen Punkten
+% ********************************************************************
+%\SetupExSheets{%
+%	grades/half=false, % NICHT Auf halbe Punkte runden
+%	grades/round=0, % Eine Dezimalstelle
+%}
+\newcommand{\getNote}{%
+	\ifthenelse{\boolean{schule@kmkPunkte}}{}{%
+		\tikzmath{
+			real \summe;
+			\summe=0;
+			real \gesamt;
+			\gesamt = 0;
+		}
+		\ForEachQuestion{%
+			\IfQuestionPropertyT{points}{##1}{%
+				\tikzmath{\gesamt = \gesamt + \GetQuestionProperty{points}{##1};}%
+			}%
+			%\tikzmath{\gesamt = 32;}
+			\tikzmath{\summe = \summe + \GetQuestionProperty{\krzl}{##1};}%
+		}
+		\tikzmath{
+			real \eins;
+			real \zwei;
+			real \drei;
+			real \vier;
+			real \fuenf;
+		}
+		\notenschemaTikz
+		\ifthenelse{\equal{\GetQuestionProperty{half}{1}}{true}}{%
+			\tikzmath{%
+				\eins = \eins*\gesamt;
+				\zwei = \zwei*\gesamt;
+				\drei = \drei*\gesamt;
+				\vier = \vier*\gesamt;
+				\fuenf = \fuenf*\gesamt;
+			}
+		}{%
+			\tikzmath{%
+				\eins = round(\eins*\gesamt);
+				\zwei = round(\zwei*\gesamt);
+				\drei = round(\drei*\gesamt);
+				\vier = round(\vier*\gesamt);
+				\fuenf = round(\fuenf*\gesamt);
+			}
+		}
+		\tikzmath{
+			if \summe < \fuenf then { let \note=ungenügend; }	else { 
+				if \summe < \vier then { let \note=mangelhaft; } else {
+					if \summe < \drei then { let \note=ausreichend; } else {
+						if \summe < \zwei then { let \note=befriedigend; } else {
+							if \summe < \eins then { let \note=gut;} else {
+								let \note=sehr gut;
+							};
+						};
+					};
+				};
+			};
+		}
+		\note
+	}
+}
+\newcommand{\getNotenAuswertung}{%
+	\ifthenelse{\boolean{schule@kmkPunkte}}{}{%
+		\tikzmath{
+			integer \einsen;
+			integer \zweien;
+			integer \dreien;
+			integer \vieren;
+			integer \fuenfen;
+			integer \sechsen;
+			\einsen = 0;
+			\zweien = 0;
+			\dreien = 0;
+			\vieren = 0;
+			\fuenfen = 0;
+			\sechsen = 0;
+		}
+	}
+	\clearpage
+	\section*{Auswertung}
+	\subsection*{Noten}
+	\DTLforeach{namen}{%
+		\vorname=Vorname,\nachname=Nachname,\klasse=Klasse,\krzl=Krzl,\kommentar=Kommentar%
+	}{%
+		\ifthenelse{\boolean{schule@kmkPunkte}}{}{%
+			\tikzmath{
+				real \summe;
+				\summe=0;
+				real \gesamt;
+				\gesamt = 0;
+			}
+			\ForEachQuestion{%
+				\IfQuestionPropertyT{points}{##1}{%
+					\tikzmath{\gesamt = \gesamt + \GetQuestionProperty{points}{##1};}%
+				}%
+				%\tikzmath{\gesamt = 32;}
+				\tikzmath{\summe = \summe + \GetQuestionProperty{\krzl}{##1};}%
+			}
+			\tikzmath{
+				real \eins;
+				real \zwei;
+				real \drei;
+				real \vier;
+				real \fuenf;
+			}
+			\notenschemaTikz
+			\ifthenelse{\equal{\GetQuestionProperty{half}{1}}{true}}{%
+				\tikzmath{%
+					\eins = \eins*\gesamt;
+					\zwei = \zwei*\gesamt;
+					\drei = \drei*\gesamt;
+					\vier = \vier*\gesamt;
+					\fuenf = \fuenf*\gesamt;
+				}
+			}{%
+				\tikzmath{%
+					\eins = round(\eins*\gesamt);
+					\zwei = round(\zwei*\gesamt);
+					\drei = round(\drei*\gesamt);
+					\vier = round(\vier*\gesamt);
+					\fuenf = round(\fuenf*\gesamt);
+				}
+			}
+			\tikzmath{
+				if \summe < \fuenf then { let \note=ungenügend; }	else { 
+					if \summe < \vier then { let \note=mangelhaft; } else {
+						if \summe < \drei then { let \note=ausreichend; } else {
+							if \summe < \zwei then { let \note=befriedigend; } else {
+								if \summe < \eins then { let \note=gut;} else {
+									let \note=sehr gut;
+								};
+							};
+						};
+					};
+				};
+			}
+			\tikzmath{
+				if \summe < \fuenf then { \sechsen = \sechsen +1; }	else { 
+					if \summe < \vier then { \fuenfen = \fuenfen + 1; } else {
+						if \summe < \drei then { \vieren = \vieren + 1; } else {
+							if \summe < \zwei then { \dreien = \dreien + 1; } else {
+								if \summe < \eins then { \zweien = \zweien + 1;} else {
+									\einsen = \einsen + 1;
+								};
+							};
+						};
+					};
+				};
+			}
+			\begin{tabular}{p{2.5cm}p{2.5cm}p{3cm}}
+				\vorname & \nachname & \note \\
+			\end{tabular}
+
+		}
+	}
+	\DTLsavelastrowcount{\n}
+	\subsection*{Notenverteilung}
+	\ifthenelse{\boolean{schule@kmkPunkte}}{}{%
+		\tikzmath{
+			real \schnitt;
+			\schnitt=(\einsen+\zweien*2+\dreien*3+\vieren*4+\fuenfen*5+\sechsen*6)/\n;
+		}
+	
+		\begin{center}
+			\begin{tabular}{l|c|c|c|c|c|c}
+				\textbf{Note:} & 1 & 2 & 3 & 4 & 5 & 6\\\hline
+				\textbf{Anzahl:} & \einsen & \zweien & \dreien & \vieren & \fuenfen & \sechsen
+			\end{tabular}
+		\end{center}
+		Es haben insgesamt \n\ Schülerinnen und Schüler mit einem \textbf{Schnitt von
+		\pgfmathprintnumber[precision=2,zerofill]{\schnitt}} geschrieben.
+	}
+}
+\renewcommand{\notenverteilung}{%
+  \ifthenelse{\boolean{schule@kmkPunkte}}{
+			kln
+	}{%
+	% Ohne Notenpunkte
+	% ----------------------------------------------------------------
+		\section*{Notenverteilung}
+		\parbox{.45\linewidth}{
+	%		\tiny
+			\begin{tabular}{p{0.6\linewidth}rr}
+				\rowcolor{black!20}
+				\textbf{Note} & \textbf{$\ge$ P.}\\
+				sehr gut  & $\schule@punkteZuNote{1}$\\
+				\rowcolor{black!10}
+				gut & $\schule@punkteZuNote{2}$ \\
+				befriedigend & $\schule@punkteZuNote{3}$
+			\end{tabular}
+		}
+		\parbox{.45\linewidth}{
+		%	\tiny
+			\begin{tabular}{p{0.6\linewidth}rr}
+				\rowcolor{black!20}
+				\textbf{Note} & \textbf{$\ge$ P.}\\
+				ausreichend & $\schule@punkteZuNote{4}$\\
+				\rowcolor{black!10}
+				mangelhaft  & $\schule@punkteZuNote{5}$\\
+				ungenügend & $0$ 
+			\end{tabular}
+		}
+	}
+}
+% Punktübersicht
+% ********************************************************************
+\renewcommand{\punktuebersicht}[1][none]{
+	\renewcommand{\arraystretch}{1.4}
+	\ifthenelse{\equal{#1}{none}}{%
+		\begin{tabular}{l|*{\numberofquestions}{c|}c}
+			%\hline
+			% Auflistung der Aufgaben
+			\rowcolor{black!20}
+			\textbf{Aufgabe} &
+			\ForEachQuestion{
+				\textbf{\QuestionNumber{##1}}
+				\iflastquestion{}{&}
+			} &
+			\textbf{Gesamt} \\ \hline
+			% Punkte auflisten
+			Punkte
+			&
+			\ForEachQuestion{
+				\IfQuestionPropertyTF{points}{##1}{
+					% Punkte angegeben
+					\GetQuestionProperty{points}{##1}
+				}{
+					% Keine Punkte angegeben
+					0
+				}
+				\iflastquestion{}{&}
+			} &
+			\pointssum* \\ \hline
+			% Zusatzpunkte auflisten
+			\rowcolor{black!10}
+			Zusatzpunkte
+			&
+			\ForEachQuestion{
+				\IfQuestionPropertyTF{bonus-points}{##1}{
+					% Zusatzspunkte angegeben
+					\GetQuestionProperty{bonus-points}{##1}
+				}{
+					% Keine Zusatzpunkte angegeben
+					0
+				}
+				\iflastquestion{}{&}
+			} &
+			\bonussum* \\ \hline
+			% Erreichte Punkte
+			Erreicht & 
+			\ForEachQuestion{%
+				\iflastquestion{}{&}%
+			} & %\\ \hline
+		\end{tabular}
+	}{%
+		\ForEachQuestion{%
+			\tikzmath{\summe = \summe + \GetQuestionProperty{\krzl}{##1};}%
+		}
+		\begin{tabular}{l|*{\numberofquestions}{c|}c}
+			%\hline
+			% Auflistung der Aufgaben
+			\rowcolor{black!20}
+			\textbf{Aufgabe} &
+			\ForEachQuestion{
+				\textbf{\QuestionNumber{##1}}
+				\iflastquestion{}{&}
+			} &
+			\textbf{Gesamt} \\ \hline
+			% Punkte auflisten
+			Punkte
+			&
+			\ForEachQuestion{
+				\IfQuestionPropertyTF{points}{##1}{
+					% Punkte angegeben
+					\GetQuestionProperty{points}{##1}
+				}{
+					% Keine Punkte angegeben
+					0
+				}
+				\iflastquestion{}{&}
+			} &
+			\pointssum* \\ \hline
+			% Zusatzpunkte auflisten
+			\rowcolor{black!10}
+			Zusatzpunkte
+			&
+			\ForEachQuestion{
+				\IfQuestionPropertyTF{bonus-points}{##1}{
+					% Zusatzspunkte angegeben
+					\GetQuestionProperty{bonus-points}{##1}
+				}{
+					% Keine Zusatzpunkte angegeben
+					0
+				}
+				\iflastquestion{}{&}
+			} &
+			\bonussum* \\ \hline
+			% Erreichte Punkte
+			Erreicht & 
+			\ifthenelse{\equal{#1}{punkte}}{%
+				\ForEachQuestion{%
+					\GetQuestionProperty{\krzl}{##1}&%
+				} \pgfmathprintnumber{\summe} %\\ \hline
+			}{%
+				\ForEachQuestion{%
+					\iflastquestion{}{&}%
+				} & %\\ \hline
+			}
+		\end{tabular}
+	}
+	\renewcommand{\arraystretch}{1}
+}
+% Zusätze für Mathe
+\usetikzlibrary{shapes.misc}
+\tikzset{cross/.style={cross out, draw, 
+         minimum size=2*(#1-\pgflinewidth), 
+         inner sep=0pt, outer sep=0pt}}
+\newcommand*\strecke[2][]{%
+	\mkern 1.5mu\overline{\mkern-1.5mu#2\mkern-1.5mu}\mkern 1.5mu
+}

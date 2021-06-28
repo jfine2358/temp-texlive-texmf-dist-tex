@@ -1,0 +1,445 @@
+% $Id: fiwi-yearbeginning.bbx, v 1.1e 2012/02/16 Simon Spiegel
+% Stil mit Jahrestahl nach Autor
+
+\ProvidesFile{fiwi-yearbeginning.bbx}[v 1.1e 2012/02/16 film studies bibliography style Author (Year)]
+
+\RequireBibliographyStyle{fiwi}
+
+\ExecuteBibliographyOptions{indexing=cite,maxnames=4,minnames=4,maxitems=9,useprefix=true,sorting=nyt,date=long,urldate=long,hyperref=auto,pagetracker=true,ibidtracker=context,citetracker=true,labelyear=true}
+
+\DeclareFieldFormat{yearparens}{\mkbibparens{#1}\iffieldequalstr{entrytype}{collection}{}{\addcolon\addspace}}
+%\DeclareFieldFormat{pages}{#1}
+
+
+\renewcommand{\ppspace}{}
+
+\renewbibmacro*{labelyear+extrayear}{%
+  \iffieldundef{year}
+    {}
+    {\printtext[yearparens]{%
+       \iffieldundef{endyear}
+       {\printfield{labelyear}}
+       {\printfield{year}\iffieldsequal{year}{endyear}{}{\printfield{endyear}}}%
+       \printfield{extrayear}%
+       \ifboolexpr{ ( not test {\iffieldundef{origyear}} 
+       and test {\iftoggle{origyearwithyear}} 
+       and  test {\iffieldundef{origtitle}} ) }%
+       {\iftoggle{origyearbrackets}
+       {\addthinspace\mkbibbrackets{\printfield{origyear}}}
+       {\addslash\printfield{origyear}}}%
+       {}%
+       }}}
+     
+\renewbibmacro*{incollectioneditor}{%
+  \ifnameundef{editor}
+    {}
+    {{\ifnamesequal{author}{editor}{%
+    \ifthenelse{\value{author}>1}%
+    {\bibstring{idempp}}%
+    {\bibstring{idem\thefield{gender}}}}{%
+    \printnames{editor}}\addspace}%
+     \iffieldequalstr{entrytype}{book}{}{\usebibmacro{editorstrg}}}}  
+       
+\renewbibmacro*{editorstrg}{%
+  \printtext{\mkbibparens{\unspace
+  \ifnum\theeditor>1
+  \bibstring{editors}%
+  \else
+    \bibstring{editor}%
+  \fi}}%
+    \ifthenelse{\(
+  \iffieldequalstr{entrytype}{book}%
+  \and \ifnameundef{author}%
+  \and \not \ifnameundef{editor}%
+  \)%
+  }%
+  {\addspace}%
+  {\addcolon}}
+
+
+\renewbibmacro*{issue+date}{%
+  \iffieldundef{pages}
+  {}
+  {\ifterm{}{\setunit{\addcomma\addspace}}}
+  \iffieldundef{issuetitle}{\setunit*{\addcomma}}{\addthinspace}\printtext{%
+  \iffieldundef{issue}%
+  {\iffieldundef{month}%
+  {}%
+  {\iffieldundef{day}%
+  {\ifpunctmark{*}{\addspace}{}\printfield{month}\iffieldundef{endmonth}{}{\printtext[endyear]{\mkbibmonth{\thefield{endmonth}}}}%
+  \setunit{\addspace}}%
+  {\ifpunctmark{*}{\addspace}{}\printdate}}}%
+  {\printfield{issue}}}}%        
+  
+  \renewbibmacro*{journal+issuetitle}{%
+  \iffieldequalstr{entrytype}{periodical}
+  {\usebibmacro{periodical}}
+  {\usebibmacro{journal}}%
+  \setunit*{\addspace}%
+  \iffieldundef{series}
+    {}
+    {\newunit
+     \printfield{series}%
+     \setunit{\addspace}}%
+\iffieldundef{volume}{}{\newunit\printfield{volume}%
+\iffieldundef{number}%
+	{\iffieldundef{pages}{\addperiod}{\addcomma}}
+	{\addcomma}}%
+\iffieldundef{number}
+	{}{\printtext{\addspace\printfield{number}}\addspace}%
+\iffieldequalstr{entrytype}{periodical}{\usebibmacro{labelyear+extrayear}}{}
+\printfield{eid}%%
+\usebibmacro{issue+date}%
+\iffieldundef{issuetitle}{}{\addcolon\addspace\printtext{\usebibmacro{issue}}}
+\ifnameundef{editor}{}{\addperiod\addspace\usebibmacro{byeditor}\setunit{\addcomma\space}}%%
+}
+
+\renewbibmacro*{org+publ+loc+year}{%
+  \iffieldundef{organization}
+    {}
+    {\printfield{organization}%
+     \newunit}%
+  \iflistundef{publisher}
+    {\iflistundef{location}
+       {}
+       {\printlist{location}%
+        \setunit{\addspace}}}
+    {\iflistundef{location}
+       {}
+       {\printlist{location}}%
+        \iftoggle{printpublisher}
+     {\setunit{\isdot\addcolon\addspace}\printlist{publisher}\setunit{\addcomma\space}}%
+          {}
+     \iftoggle{dontprintorig}{\printfield{labelyear}}{}}}
+     
+\newbibmacro*{publ+loc+origyear}{%
+\printlist{location}%
+        \iftoggle{printpublisher}%
+        {\iflistundef{publisher}%
+        {\setunit*{\space}}%
+        {\setunit{\isdot\addcolon\space}\printlist{publisher}}}%
+        {\setunit*{\space}}%        
+\iftoggle{dontprintorig}{\iftoggle{printpublisher}{\addspace}{}\printfield{labelyear}}{}\usebibmacro{origyear}%
+}%     
+
+\newbibmacro*{inst+loc}{%
+  \iflistundef{institution}
+    {\iflistundef{location}
+       {}
+       {\printlist{location}%
+        \setunit{\addspace}}}
+    {\iflistundef{location}
+       {}
+       {\printlist{location}%
+        \setunit{\isdot\addcolon\space}}%
+     \printlist{institution}}}
+
+\renewbibmacro*{author}{%
+  \ifboolexpr{
+    test \ifuseauthor
+    and
+    not test {\ifnameundef{author}}
+  }
+    {\usebibmacro{bbx:dashcheck}
+       {\bibnamedash}
+       {\iftoggle{isreview}{}{\usebibmacro{bbx:savehash}}%
+        \printnames{author}%
+        \iffieldundef{nameaddon}{}
+  {\printfield{nameaddon}}%
+	\iffieldundef{authortype}
+	  {\setunit{\addspace}}
+	  {\setunit{\addcomma\space}}}%
+     \iffieldundef{authortype}
+       {}
+       {\usebibmacro{authorstrg}%
+	\setunit{\addspace}}}%
+    {\global\undef\bbx@lasthash
+     \usebibmacro{labeltitle}%
+     \setunit*{\addspace}}}
+     
+\renewbibmacro*{translatedversion}[1]{%
+  \toggletrue{intransdecision}%
+  \edef\@tempa{\noexpand\docsvlist{#1}}%
+  \def\do##1{\toggletrue{dontprintextrayear}\printtext[germfassung]{%
+  \fullcite{##1}}}%
+  \@tempa\toggletrue{dontprintorig}%
+  \togglefalse{dontprintextrayear}\togglefalse{intransdecision}}
+  
+\renewbibmacro*{labeltitle}{%
+  \iffieldundef{label}
+    {\iffieldundef{shorttitle}
+       {\printfield{title}%
+        \clearfield{title}}
+       {\printfield[title]{shorttitle}}}
+    {\printfield{label}}}
+
+\DeclareBibliographyDriver{review}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{author/translator}%
+\usebibmacro{labelyear+extrayear}%
+\newblock\toggletrue{isreview}
+\usebibmacro{review}{\thefield{usera}}%
+\togglefalse{isreview}\newunit\newblock
+\usebibmacro{bytranslator}%
+\newunit\newblock
+\usebibmacro{in:}%
+%\newblock%
+\usebibmacro{journal+issuetitle}%
+\iffieldundef{pages}{\setunit{\addperiod}}{\addcomma\addspace\printfield{pages}}%
+\newunit\newblock%
+\bibsentence\printfield{note}%
+\newunit\newblock%
+\usebibmacro{doi+eprint+url}%
+%\setunit{.}\newblock
+\addspace\usebibmacro{origyear+location+title}%
+\newblock
+\usebibmacro{addendum+pubstate}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\finentry}
+
+\DeclareBibliographyDriver{article}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+\usebibmacro{author/translator}%
+\usebibmacro{labelyear+extrayear}%
+\newblock
+\usebibmacro{title}%
+\newunit\newblock
+\usebibmacro{bytranslator}%
+\newunit\newblock
+\usebibmacro{in:}%
+%\newblock%
+\usebibmacro{journal+issuetitle}%
+\iffieldundef{pages}
+	{\setunit{\addperiod}}
+	{\addcomma\addspace\printfield{pages}}%
+\newunit\newblock%
+\bibsentence\printfield{note}%
+\newunit\newblock%
+\usebibmacro{doi+eprint+url}%
+%\setunit{.}\newblock
+%\addspace\usebibmacro{origyear+location+title}%
+%\newblock
+\addspace\usebibmacro{decidetranslatedversion}%
+\newblock
+\usebibmacro{addendum+pubstate}%
+\newunit\newblock
+\usebibmacro{pageref}%
+\finentry}
+
+\DeclareBibliographyDriver{incollection}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{test:partofcited}%
+  \iftoggle{dontprintorig}{}%
+  {\usebibmacro{author/translator}%
+  \usebibmacro{labelyear+extrayear}}%
+%\newunit\newblock
+  \usebibmacro{title}%
+  \newunit\newblock
+  \usebibmacro{bytranslator}%
+  \newunit\newblock
+  \usebibmacro{in:}%
+  %\newunit%
+  \iftoggle{partofcited}
+  {\iffieldundef{xref}
+  {\mancite\textcite{\thefield{crossref}}}
+  {\mancite\textcite{\thefield{xref}}}
+  \usebibmacro{chap+pag}}
+  {\newblock%
+  \ifnameundef{bookauthor}%
+  {\ifnameundef{editor}
+  {}
+  {\usebibmacro{incollectioneditor}}}
+  {\usebibmacro{bybookauthor}}
+  %\newunit
+  \newblock%
+  \usebibmacro{mtitle+vol+btitle+bstitle}%
+  \ifnamesequal{author}{editor}
+  {\ifnameundef{bookauthor}
+  {}
+  {\usebibmacro{byeditor}}}
+  {}
+  \ifnamesequal{author}{bookauthor}
+  {\ifnameundef{editor}
+  {}
+  {\usebibmacro{byeditor}\newunit}%
+  {}
+  }%
+  \newunit\newblock
+  \iffieldundef{maintitle}
+    {\printfield{volume}}
+    {}%
+  \newunit
+  \printfield{volumes}%
+  \newunit\newblock
+  \usebibmacro{ser+num}%
+  \newunit\newblock
+    \printfield{edition}%
+  \printfield{note}%
+  \newunit
+  \usebibmacro{org+publ+loc+year}
+  \newunit\newblock%
+  \usebibmacro{chap+pag}%
+  %\setunit{\par}\newblock
+  \addspace\usebibmacro{decidetranslatedversion}%
+  \newblock
+  \usebibmacro{doi+eprint+url}%
+  \newblock
+  \usebibmacro{addendum+pubstate}%
+  \newblock}
+  \usebibmacro{pageref}%  
+  \finentry}
+  
+  \DeclareBibliographyDriver{book}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \iftoggle{dontprintorig}
+  {}
+  {\ifnameundef{author}%
+  {\ifnameundef{editor}%
+  {}
+  {\usebibmacro{editor}\addspace}}%
+{\usebibmacro{author/translator+others}}%
+\usebibmacro{labelyear+extrayear}}%
+\newblock
+\usebibmacro{mtitle+mstitle+vol+part+title+stitle}%
+  \newunit\newblock
+  \ifnameundef{author}
+  {}
+  {\usebibmacro{byeditor+others}}%
+  \newunit\newblock
+  \printfield{note}%
+  \newunit
+  \printfield{volumes}%
+  \newunit\newblock
+  \usebibmacro{ser+num}%
+  \newunit\newblock
+  \printfield{edition}%
+  \newunit\newblock%
+\usebibmacro{publ+loc+origyear}%
+\usebibmacro{chap+pag}%
+\newblock\newunit
+\usebibmacro{doi+eprint+url}%
+\addspace\usebibmacro{decidetranslatedversion}%
+\newblock
+\usebibmacro{addendum+pubstate}%
+  \newunit\newblock
+\usebibmacro{pageref}%
+\finentry}
+
+  
+\DeclareBibliographyDriver{collection}{%
+\usebibmacro{bibindex}%
+\usebibmacro{begentry}%
+%\usebibmacro{mtitle+vol+title+stitle}%
+\usebibmacro{mtitle+mstitle+vol+part+title+stitle}%
+\newunit\newblock%
+\usebibmacro{collby}%
+  \newunit\newblock
+  \usebibmacro{bytranslator}%
+  \newunit\newblock%
+  \iffieldundef{edition}%
+  {}%
+  {\printfield{edition}}%
+  \iffieldundef{note}%
+  {}%
+  {\printfield{note}}%
+  %\newunit
+  %\iffieldundef{maintitle}
+  %{\printfield{volume}}
+  %{}%
+  %\newunit
+  %\printfield{volumes}%
+  \newunit\newblock
+  \usebibmacro{ser+num}%
+  \newunit\newblock
+ \usebibmacro{publ+loc+year}%
+  \newblock
+\addspace\usebibmacro{decidetranslatedversion}%
+  \newunit\newblock
+  \usebibmacro{chap+pag}%
+  %\setunit{\par}\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newblock
+  \usebibmacro{addendum+pubstate}%
+  \newunit\newblock
+  \usebibmacro{pageref}%  
+  \finentry}
+
+\DeclareBibliographyDriver{online}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/editor/translator}%
+  \usebibmacro{labelyear+extrayear}%
+  \newunit\newblock
+  \usebibmacro{title}%
+    \newunit\newblock
+  \usebibmacro{bytranslator}%
+  \newunit\newblock
+  \printlist{organization}%
+  \newunit\newblock
+  \iffieldundef{month}{}{\usebibmacro{date}}%
+  \newunit\newblock
+  \addspace\usebibmacro{decidetranslatedversion}%
+  \newblock
+\printfield{note}%
+  %\newunit\newblock
+  \addspace\usebibmacro{doi+eprint+url}%
+  \newblock
+  \usebibmacro{addendum+pubstate}%
+  \newunit\newblock
+  \usebibmacro{pageref}%
+  \finentry}
+  
+\DeclareBibliographyDriver{thesis}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/translator}%
+  \usebibmacro{labelyear+extrayear}%
+  \newunit\newblock
+  \usebibmacro{mtitle+mstitle+vol+part+title+stitle}%
+  \newunit\newblock
+  \printfield{type}%
+  \newunit
+  \usebibmacro{inst+loc}%
+  \newunit\newblock
+  \usebibmacro{chap+pag}%
+  \newunit\newblock
+  \printfield{note}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newblock
+  \usebibmacro{addendum+pubstate}%
+  \newunit\newblock
+  \usebibmacro{pageref}%
+  \usebibmacro{finentry}}
+  
+  \DeclareBibliographyDriver{unpublished}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/translator}%
+  \usebibmacro{labelyear+extrayear}%  
+  \newunit\newblock
+  \usebibmacro{mtitle+mstitle+vol+part+title+stitle}%
+  \newunit\newblock
+  \printfield{type}%
+  \iffieldundef{issue}
+  {}{\newunit\printfield{issue}}
+  \newunit\newblock
+  \printfield{howpublished}%
+  \newunit\newblock
+  \usebibmacro{inst+loc}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}
+  \newunit\newblock  
+  \printfield{note}%
+  \newblock
+  \usebibmacro{addendum+pubstate}%
+  \newunit\newblock
+  \usebibmacro{pageref}%
+  \usebibmacro{finentry}}
+  
+\endinput

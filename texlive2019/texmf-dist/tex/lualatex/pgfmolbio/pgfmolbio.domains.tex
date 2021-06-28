@@ -1,0 +1,799 @@
+%%
+%% This is file `pgfmolbio.domains.tex',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% pgfmolbio.dtx  (with options: `pmb-dom-tex')
+%% 
+%% Copyright (C) 2013 by Wolfgang Skala
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% 
+\ProvidesFile{pgfmolbio.domains.tex}[2013/08/01 v0.21 Protein domains]
+
+
+\ProvidesFile{pgfmolbio.domains.tex}[2012/10/01 v0.2 Protein Domains]
+
+\ifluatex
+  \RequireLuaModule{pgfmolbio.domains}
+  \directlua{pmbSpecialKeys = pgfmolbio.domains.SpecialKeys:new()}
+\fi
+
+\def\@pmb@dom@keydef#1#2{%
+  \pgfkeyssetvalue{/pgfmolbio/domains/#1}{#2}%
+}
+
+\def\pmbdomvalueof#1{%
+  \pgfkeysvalueof{/pgfmolbio/domains/#1}%
+}
+
+\@pmb@dom@keydef{name}{Protein}
+\newif\ifpmb@dom@showname
+\pgfmolbioset[domains]{%
+  show name/.is if=pmb@dom@showname,
+  show name
+}
+\@pmb@dom@keydef{description}{}
+
+\@pmb@dom@keydef{x unit}{.5mm}
+\@pmb@dom@keydef{y unit}{6mm}
+\@pmb@dom@keydef{residues per line}{200}
+\@pmb@dom@keydef{baseline skip}{3}
+\@pmb@dom@keydef{residue numbering}{auto}
+\@pmb@dom@keydef{residue range}{auto-auto}
+\@pmb@dom@keydef{enlarge left}{0cm}
+\@pmb@dom@keydef{enlarge right}{0cm}
+\@pmb@dom@keydef{enlarge top}{1cm}
+\@pmb@dom@keydef{enlarge bottom}{0cm}
+
+\pgfmolbioset[domains]{%
+  style/.code=\pgfmolbioset[domains]{current style/.style={#1}}
+}
+
+\@pmb@dom@keydef{domain font}{\footnotesize}
+
+\@pmb@dom@keydef{level}{}
+\@pmb@dom@keydef{disulfide base distance}{1}
+\@pmb@dom@keydef{disulfide level distance}{.2}
+\@pmb@dom@keydef{range font}{\sffamily\scriptsize}
+
+\newif\ifpmb@dom@showruler
+\pgfmolbioset[domains]{%
+  show ruler/.is if=pmb@dom@showruler,
+  show ruler
+}
+\@pmb@dom@keydef{ruler range}{auto-auto}
+\@pmb@dom@keydef{default ruler step size}{50}
+\@pmb@dom@keydef{ruler distance}{-.5}
+
+\@pmb@dom@keydef{sequence}{}
+\@pmb@dom@keydef{magnified sequence font}{\ttfamily\footnotesize}
+
+\newif\ifpmb@dom@showsecstructure
+\pgfmolbioset[domains]{%
+  show secondary structure/.is if=pmb@dom@showsecstructure,
+  show secondary structure=false
+}
+\@pmb@dom@keydef{secondary structure distance}{1}
+\pgfmolbioset[domains]{%
+  helix back border color/.code=\colorlet{helix back border color}{#1},
+  helix back main color/.code=\colorlet{helix back main color}{#1},
+  helix back middle color/.code=\colorlet{helix back middle color}{#1},
+  helix front border color/.code=\colorlet{helix front border color}{#1},
+  helix front main color/.code=\colorlet{helix front main color}{#1},
+  helix front middle color/.code=\colorlet{helix front middle color}{#1},
+  helix back border color=white!50!black,
+  helix back main color=white!90!black,
+  helix back middle color=white,
+  helix front border color=red!50!black,
+  helix front main color=red!90!black,
+  helix front middle color=red!10!white
+}
+
+\@pmb@dom@keydef{sequence length}{}
+
+\@pmb@dom@keydef{@layer}{}
+
+\newcommand\setfeatureshape[2]{%
+  \expandafter\def\csname @pmb@dom@feature@#1@shape\endcsname{#2}%
+}
+
+\newcommand\setfeatureshapealias[2]{%
+  \expandafter\def\csname @pmb@dom@feature@#1@shape\endcsname{%
+    \@nameuse{@pmb@dom@feature@#2@shape}%
+  }%
+}
+
+\ifluatex
+  \newcommand\setfeaturestylealias[2]{%
+    \directlua{
+      if pmbProtein then
+        pmbProtein.specialKeys:aliasFeatureStyle("#1", "#2")
+      else
+        pmbSpecialKeys:aliasFeatureStyle("#1", "#2")
+      end
+    }%
+  }
+  \newcommand\setfeaturealias[2]{%
+    \setfeatureshapealias{#1}{#2}%
+    \setfeaturestylealias{#1}{#2}%
+  }
+\else
+  \let\setfeaturealias\setfeatureshapealias%
+\fi
+
+\newcommand\pmbdomdrawfeature[1]{%
+  \@ifundefined{@pmb@dom@feature@#1@shape}{%
+    \PackageWarning{pgfmolbio}%
+      {Feature shape `#1' unknown, using `default'.}%
+    \@pmb@dom@feature@default@shape%
+  }{%
+    \@nameuse{@pmb@dom@feature@#1@shape}%
+  }%
+}
+
+\setfeatureshape{default}{%
+  \path [/pgfmolbio/domains/current style]
+    (\xLeft, \yMid + .5 * \pmbdomvalueof{y unit}) rectangle
+    (\xRight, \yMid - .5 * \pmbdomvalueof{y unit});
+}
+
+\setfeatureshape{domain}{
+  \draw [/pgfmolbio/domains/current style, rounded corners=2pt]
+    (\xLeft, \yMid + .5 * \pmbdomvalueof{y unit}) rectangle
+    (\xRight, \yMid - .5 * \pmbdomvalueof{y unit});
+  \node at (\xMid, \yMid)
+    {\pmbdomvalueof{domain font}{\pmbdomvalueof{description}}};
+}
+\setfeaturealias{DOMAIN}{domain}
+
+\setfeatureshape{signal peptide}{%
+  \path [/pgfmolbio/domains/current style]
+    (\xLeft, \yMid + \pmbdomvalueof{y unit} / 5) rectangle
+    (\xRight, \yMid - \pmbdomvalueof{y unit} / 5);
+}
+\setfeaturealias{SIGNAL}{signal peptide}
+
+\setfeatureshape{propeptide}{%
+  \path [/pgfmolbio/domains/current style]
+    (\xLeft, \yMid + .5 * \pmbdomvalueof{y unit}) rectangle
+    (\xRight, \yMid - .5 * \pmbdomvalueof{y unit});
+}
+\setfeaturealias{PROPEP}{propeptide}
+
+\setfeatureshape{carbohydrate}{%
+  \draw [/pgfmolbio/domains/current style]
+    (\xMid, \yMid) --
+    (\xMid, \yMid + .7 * \pmbdomvalueof{y unit})
+    node [above] {\tiny\strut\pmbdomvalueof{description}};
+  \fill [/pgfmolbio/domains/current style]
+    (\xMid, \yMid + .7 * \pmbdomvalueof{y unit}) circle [radius=1pt];
+}
+\setfeaturealias{CARBOHYD}{carbohydrate}
+
+\setfeatureshape{other/main chain}{%
+  \ifpmb@dom@showsecstructure%
+    \pgfmathsetmacro\yUpper{%
+      \yMid + \pmbdomvalueof{secondary structure distance}
+        * \pmbdomvalueof{y unit}%
+    }
+    \draw [thin]
+      (\xLeft, \yUpper pt) --
+      (\xRight, \yUpper pt);%
+  \fi%
+  \path [/pgfmolbio/domains/current style]
+    (\xLeft, \yMid) --
+    (\xRight, \yMid);%
+}
+
+\setfeatureshape{other/name}{%
+  \ifpmb@dom@showname%
+    \node [/pgfmolbio/domains/current style]
+      at (\xMid, \pmbdomvalueof{baseline skip} * \pmbdomvalueof{y unit})
+      {\pmbdomvalueof{name} (\pmbdomvalueof{sequence length} residues)};
+  \fi%
+}
+
+\setfeatureshape{disulfide}{%
+  \pgfmathsetmacro\yUpper{%
+    \yMid + (
+      \pmbdomvalueof{disulfide base distance} +
+      (\pmbdomvalueof{level} - 1) *
+      \pmbdomvalueof{disulfide level distance}
+    ) * \pmbdomvalueof{y unit}
+  }
+  \path [/pgfmolbio/domains/current style]
+    (\xLeft, \yMid) --
+    (\xLeft, \yUpper pt) --
+    (\xRight, \yUpper pt) --
+    (\xRight, \yMid);
+}
+\setfeaturealias{DISULFID}{disulfide}
+
+\setfeatureshape{range}{%
+  \pgfmathsetmacro\yUpper{%
+    \yMid + (
+      \pmbdomvalueof{disulfide base distance} +
+      (\pmbdomvalueof{level} - 1) *
+      \pmbdomvalueof{disulfide level distance}
+    ) * \pmbdomvalueof{y unit}
+  }
+  \path [/pgfmolbio/domains/current style]
+    (\xLeft, \yUpper pt) --
+    (\xRight, \yUpper pt)
+    node [pos=.5, above]
+      {\pmbdomvalueof{range font}{\pmbdomvalueof{description}}};
+}
+
+\setfeatureshape{other/ruler}{%
+  \draw [/pgfmolbio/domains/current style]
+    (\xMid,
+      \yMid + \pmbdomvalueof{ruler distance} *
+              \pmbdomvalueof{y unit}) --
+    (\xMid,
+      \yMid + \pmbdomvalueof{ruler distance} *
+              \pmbdomvalueof{y unit} - 1mm)
+    node [below=-1mm] {\tiny\sffamily\strut\residueNumber};
+}
+
+\setfeatureshape{other/sequence}{%
+  \node [/pgfmolbio/domains/current style]
+    at (\xMid, \yMid) {\strut\currentResidue};
+}
+
+\newlength\pmb@magnifiedsequence@width
+
+\setfeatureshape{other/magnified sequence above}{%
+  \settowidth\pmb@magnifiedsequence@width{%
+    \begin{pgfinterruptpicture}%
+      \pmbdomvalueof{magnified sequence font}%
+      \featureSequence%
+      \end{pgfinterruptpicture}%
+    }%
+  \pgfmathsetmacro\xUpperLeft{\xMid - \pmb@magnifiedsequence@width / 2}
+  \pgfmathsetmacro\xUpperRight{\xMid + \pmb@magnifiedsequence@width / 2}
+
+  \draw [/pgfmolbio/domains/current style]
+    (\xLeft, \yMid) --
+    (\xLeft, \yMid + \pmbdomvalueof{y unit} / 6) --
+    (\xUpperLeft pt, \yMid + \pmbdomvalueof{y unit} * 4/6) --
+    (\xUpperLeft pt, \yMid + \pmbdomvalueof{y unit} * 5/6)
+    (\xUpperRight pt, \yMid + \pmbdomvalueof{y unit} * 5/6) --
+    (\xUpperRight pt, \yMid + \pmbdomvalueof{y unit} * 4/6) --
+    (\xRight, \yMid + \pmbdomvalueof{y unit} / 6) --
+    (\xRight, \yMid);
+  \node [anchor=mid]
+    at (\xMid, \yMid + \pmbdomvalueof{y unit})
+    {\pmbdomvalueof{magnified sequence font}\featureSequence};
+}
+
+\setfeatureshape{other/magnified sequence below}{%
+  \settowidth\pmb@magnifiedsequence@width{%
+    \begin{pgfinterruptpicture}%
+      \pmbdomvalueof{magnified sequence font}%
+      \featureSequence%
+      \end{pgfinterruptpicture}%
+    }%
+  \pgfmathsetmacro\xLowerLeft{\xMid - \pmb@magnifiedsequence@width / 2}
+  \pgfmathsetmacro\xLowerRight{\xMid + \pmb@magnifiedsequence@width / 2}
+
+  \draw [/pgfmolbio/domains/current style]
+    (\xLeft, \yMid) --
+    (\xLeft, \yMid - \pmbdomvalueof{y unit} / 6) --
+    (\xLowerLeft pt, \yMid - \pmbdomvalueof{y unit}) --
+    (\xLowerLeft pt, \yMid - \pmbdomvalueof{y unit} * 7/6)
+    (\xLowerRight pt, \yMid - \pmbdomvalueof{y unit} * 7/6) --
+    (\xLowerRight pt, \yMid - \pmbdomvalueof{y unit}) --
+    (\xRight, \yMid - \pmbdomvalueof{y unit} / 6) --
+    (\xRight, \yMid);
+  \node [anchor=mid]
+    at (\xMid, \yMid - \pmbdomvalueof{y unit} * 8/6)
+    {\pmbdomvalueof{magnified sequence font}\featureSequence};
+}
+
+\newcommand\@pmb@dom@helixsegment[1]{%
+  svg [scale=#1] "%
+    c  0.30427  0
+       0.62523  0.59174
+       0.79543  0.96646
+    c  0.97673  2.15039
+       1.34005  4.49858
+       1.84538  6.6178
+    c  0.56155  2.35498
+       0.99602  4.514
+       1.82948  6.72355
+    c  0.11069  0.29346
+       0.23841  0.69219
+       0.56172  0.69219
+    l -5        0
+    c -0.27235  0.0237
+      -0.55793 -0.51373
+      -0.65225 -0.76773
+    c -0.98048 -2.64055
+      -1.40233 -5.46534
+      -2.06809 -8.00784
+    c -0.50047 -1.91127
+      -0.94696 -3.73368
+      -1.68631 -5.43929
+    c -0.14066 -0.3245
+      -0.34516 -0.78514
+      -0.69997 -0.78514
+    z"
+}
+
+\newcommand\@pmb@dom@helixhalfsegment[1]{%
+  svg [scale=#1] "%
+    c  0.50663  2.18926
+       0.96294  4.51494
+       1.78125  6.71875
+    c  0.09432  0.254
+       0.35265  0.80495
+       0.625    0.78125
+    l  5        0
+    c -0.32331  0
+      -0.45181 -0.42529
+      -0.5625  -0.71875
+    c -0.83346 -2.20955
+      -1.2822  -4.36377
+      -1.84375 -6.78125
+    l -5        0
+    z"
+}
+
+\pgfdeclareverticalshading[%
+    helix back border color,%
+    helix back main color,%
+    helix back middle color%
+  ]{helix half upper back}{100bp}{
+  color(0bp)=(helix back middle color);
+  color(5bp)=(helix back middle color);
+  color(45bp)=(helix back main color);
+  color(75bp)=(helix back border color);
+  color(100bp)=(helix back border color)
+}
+
+\pgfdeclareverticalshading[%
+    helix back border color,%
+    helix back main color,%
+    helix back middle color%
+  ]{helix half lower back}{100bp}{
+  color(0bp)=(helix back border color);
+  color(25bp)=(helix back border color);
+  color(35bp)=(helix back main color);
+  color(55bp)=(helix back middle color);
+  color(95bp)=(helix back main color);
+  color(100bp)=(helix back main color)
+}
+
+\pgfdeclareverticalshading[%
+    helix back border color,%
+    helix back main color,%
+    helix back middle color%
+  ]{helix full back}{100bp}{
+  color(0bp)=(helix back border color);
+  color(25bp)=(helix back border color);
+  color(30bp)=(helix back main color);
+  color(40bp)=(helix back middle color);
+  color(60bp)=(helix back main color);
+  color(75bp)=(helix back border color);
+  color(100bp)=(helix back border color)
+}
+
+\pgfdeclareverticalshading[%
+    helix front border color,%
+    helix front main color,%
+    helix front middle color%
+  ]{helix half upper front}{100bp}{
+  color(0bp)=(helix front main color);
+  color(5bp)=(helix front main color);
+  color(45bp)=(helix front middle color);
+  color(65bp)=(helix front main color);
+  color(75bp)=(helix front border color);
+  color(100bp)=(helix front border color)
+}
+
+\pgfdeclareverticalshading[%
+    helix front border color,%
+    helix front main color,%
+    helix front middle color%
+  ]{helix full front}{100bp}{
+  color(0bp)=(helix front border color);
+  color(25bp)=(helix front border color);
+  color(40bp)=(helix front main color);
+  color(60bp)=(helix front middle color);
+  color(70bp)=(helix front main color);
+  color(75bp)=(helix front border color);
+  color(100bp)=(helix front border color)
+}
+
+\setfeatureshape{helix/half upper back}{%
+  \ifpmb@dom@showsecstructure%
+    \pgfmathsetmacro\yShift{%
+      \pmbdomvalueof{secondary structure distance} *
+      \pmbdomvalueof{y unit}%
+    }
+    \draw [shading=helix half upper back]
+      (\xLeft, \yMid + \yShift pt)
+      \@pmb@dom@helixhalfsegment{\pmbdomvalueof{x unit} / 5};
+  \fi%
+}
+
+\setfeatureshape{helix/half lower back}{%
+  \ifpmb@dom@showsecstructure%
+    \pgfmathsetmacro\yShift{%
+      \pmbdomvalueof{secondary structure distance} *
+      \pmbdomvalueof{y unit}%
+    }
+    \draw [shading=helix half lower back]
+      (\xRight, \yMid + \yShift pt) [rotate=180]
+      \@pmb@dom@helixhalfsegment{\pmbdomvalueof{x unit} / 5};
+  \fi%
+}
+
+\setfeatureshape{helix/full back}{%
+  \ifpmb@dom@showsecstructure%
+    \pgfmathsetmacro\yShift{%
+      \pmbdomvalueof{secondary structure distance} *
+      \pmbdomvalueof{y unit}%
+    }
+    \draw [shading=helix full back]
+      (\xMid, \yLower + \yShift pt)
+      \@pmb@dom@helixsegment{\pmbdomvalueof{x unit} / 5};
+  \fi%
+}
+
+\setfeatureshape{helix/half upper front}{%
+  \ifpmb@dom@showsecstructure%
+    \pgfmathsetmacro\yShift{%
+      \pmbdomvalueof{secondary structure distance} *
+      \pmbdomvalueof{y unit}%
+    }
+    \draw [shading=helix half upper front]
+      (\xRight, \yMid + \yShift pt) [xscale=-1]
+      \@pmb@dom@helixhalfsegment{\pmbdomvalueof{x unit} / 5};
+  \fi%
+}
+
+\setfeatureshape{helix/full front}{%
+  \ifpmb@dom@showsecstructure%
+    \pgfmathsetmacro\yShift{%
+      \pmbdomvalueof{secondary structure distance} *
+      \pmbdomvalueof{y unit}%
+    }
+    \draw [shading=helix full front]
+      (\xMid, \yLower + \yShift pt) [xscale=-1]
+      \@pmb@dom@helixsegment{\pmbdomvalueof{x unit} / 5};
+  \fi%
+}
+
+\definecolor{strand left color}{RGB}{42,127,255}
+\definecolor{strand right color}{RGB}{128,179,255}
+
+\setfeatureshape{beta strand}{%
+  \ifpmb@dom@showsecstructure%
+    \pgfmathsetmacro\yShift{%
+      \pmbdomvalueof{secondary structure distance} *
+      \pmbdomvalueof{y unit}%
+    }
+    \draw [/pgfmolbio/domains/current style]
+      (\xLeft, \yMid + \pmbdomvalueof{x unit} + \yShift pt) --
+      (\xRight - 1.5 * \pmbdomvalueof{x unit},
+        \yMid + \pmbdomvalueof{x unit} + \yShift pt) --
+      (\xRight - 1.5 * \pmbdomvalueof{x unit},
+        \yMid + 1.5 * \pmbdomvalueof{x unit} + \yShift pt) --
+      (\xRight, \yMid + \yShift pt) --
+      (\xRight - 1.5 * \pmbdomvalueof{x unit},
+        \yMid - 1.5 * \pmbdomvalueof{x unit} + \yShift pt) --
+      (\xRight - 1.5 * \pmbdomvalueof{x unit},
+        \yMid - \pmbdomvalueof{x unit} + \yShift pt) --
+      (\xLeft, \yMid - \pmbdomvalueof{x unit} + \yShift pt) --
+      cycle;%
+  \fi%
+}
+\setfeaturealias{STRAND}{beta strand}
+
+\setfeatureshape{beta turn}{%
+  \ifpmb@dom@showsecstructure%
+    \pgfmathsetmacro\yShift{%
+      \pmbdomvalueof{secondary structure distance} *
+      \pmbdomvalueof{y unit}%
+    }
+    \pgfmathsetmacro\turnXradius{(\xRight - \xLeft) / 2}%
+    \pgfmathsetmacro\turnYradius{\pmbdomvalueof{x unit} * 1.5}%
+    \fill [white]
+      (\xLeft, \yMid + 1mm + \yShift pt) rectangle
+      (\xRight, \yMid - 1mm + \yShift pt);%
+    \draw [/pgfmolbio/domains/current style]
+      (\xLeft - .5pt, \yMid + \yShift pt) --
+      (\xLeft, \yMid + \yShift pt) arc
+        [start angle=180, end angle=0,
+        x radius=\turnXradius pt, y radius=\turnYradius pt] --
+      (\xRight + .5pt, \yMid + \yShift pt);%
+  \fi%
+}
+\setfeaturealias{TURN}{beta turn}
+
+\setfeatureshape{beta bridge}{%
+  \ifpmb@dom@showsecstructure%
+    \pgfmathsetmacro\yShift{%
+      \pmbdomvalueof{secondary structure distance} *
+      \pmbdomvalueof{y unit}%
+    }
+    \draw [/pgfmolbio/domains/current style]
+      (\xLeft, \yMid + .25 * \pmbdomvalueof{x unit} + \yShift pt) --
+      (\xRight - 1.5 * \pmbdomvalueof{x unit},
+        \yMid + .25 * \pmbdomvalueof{x unit} + \yShift pt) --
+      (\xRight - 1.5 * \pmbdomvalueof{x unit},
+        \yMid + 1.5 * \pmbdomvalueof{x unit} + \yShift pt) --
+      (\xRight, \yMid + \yShift pt) --
+      (\xRight - 1.5 * \pmbdomvalueof{x unit},
+        \yMid - 1.5 * \pmbdomvalueof{x unit} + \yShift pt) --
+      (\xRight - 1.5 * \pmbdomvalueof{x unit},
+        \yMid - .25 * \pmbdomvalueof{x unit} + \yShift pt) --
+      (\xLeft, \yMid - .25 * \pmbdomvalueof{x unit} + \yShift pt) --
+      cycle;%
+  \fi%
+}
+
+\setfeatureshape{bend}{%
+  \ifpmb@dom@showsecstructure%
+    \pgfmathsetmacro\yShift{%
+      \pmbdomvalueof{secondary structure distance} *
+      \pmbdomvalueof{y unit}%
+    }
+    \fill [white]
+      (\xLeft, \yMid + 1mm + \yShift pt) rectangle
+      (\xRight, \yMid - 1mm + \yShift pt);%
+    \draw [/pgfmolbio/domains/current style]
+      (\xLeft - .5pt, \yMid + \yShift pt) --
+      (\xLeft, \yMid + \yShift pt) --
+      (\xMid, \yMid + .5 * \pmbdomvalueof{y unit} + \yShift pt) --
+      (\xRight, \yMid + \yShift pt) --
+      (\xRight + .5pt, \yMid + \yShift pt);%
+  \fi%
+}
+
+\ifluatex\else\expandafter\endinput\fi
+
+\newcommand\pmb@dom@inputuniprot[1]{%
+  \directlua{
+    pmbProtein:readUniprotFile("#1")
+    pmbProtein:getParameters()
+    pmbProtein:setParameters{
+      residueNumbering = "\pmbdomvalueof{residue numbering}"
+    }
+  }%
+}
+
+\newcommand\pmb@dom@inputgff[1]{%
+  \directlua{
+    pmbProtein:readGffFile("#1")
+    pmbProtein:setParameters{
+      residueNumbering = "\pmbdomvalueof{residue numbering}"
+    }
+  }%
+}
+
+\newcommand\pmb@dom@addfeature[4][]{%
+  \begingroup%
+  \pgfmolbioset[domains]{#1}%
+  \@pmb@toksa{#1}%
+  \directlua{
+    pmbProtein:addFeature{
+      key = "#2",
+      start = "#3",
+      stop = "#4",
+      kvList = "\luaescapestring{\the\@pmb@toksa}",
+      level = tonumber("\pmbdomvalueof{level}"),
+      layer = tonumber("\pmbdomvalueof{@layer}")
+    }
+  }%
+  \endgroup%
+}
+
+\newif\ifpmb@dom@tikzpicture
+
+\newenvironment{pmbdomains}[2][]{%
+  \@ifundefined{useasboundingbox}%
+    {\pmb@dom@tikzpicturefalse\begin{tikzpicture}}%
+    {\pmb@dom@tikzpicturetrue}%
+  \pgfmolbioset[domains]{sequence length=#2, #1}%
+  \let\inputuniprot\pmb@dom@inputuniprot%
+  \let\inputgff\pmb@dom@inputgff%
+  \let\addfeature\pmb@dom@addfeature%
+  \directlua{
+    pmbProtein = pgfmolbio.domains.Protein:new()
+    pmbProtein.specialKeys =
+      pgfmolbio.domains.SpecialKeys:new(pmbSpecialKeys)
+    pmbProtein:setParameters{
+      sequenceLength = "\pmbdomvalueof{sequence length}"
+    }
+    pmbProtein:setParameters{
+      residueNumbering = "\pmbdomvalueof{residue numbering}"
+    }
+  }%
+}{%
+  \pmb@dom@addfeature[@layer=1]{other/main chain}%
+    {(1)}{(\pmbdomvalueof{sequence length})}%
+  \@pmb@toksa=%
+    \expandafter\expandafter\expandafter\expandafter%
+    \expandafter\expandafter\expandafter{%
+      \pgfkeysvalueof{/pgfmolbio/domains/name}%
+    }%
+  \directlua{
+    pmbProtein:setParameters{
+      residueRange = "\pmbdomvalueof{residue range}",
+      defaultRulerStepSize = "\pmbdomvalueof{default ruler step size}"
+    }
+    pmbProtein:setParameters{
+      name = "\luaescapestring{\the\@pmb@toksa}",
+      xUnit = "\pmbdomvalueof{x unit}",
+      yUnit = "\pmbdomvalueof{y unit}",
+      residuesPerLine = "\pmbdomvalueof{residues per line}",
+      baselineSkip = "\pmbdomvalueof{baseline skip}",
+      showRuler = "\ifpmb@dom@showruler true\else false\fi",
+      rulerRange = "\pmbdomvalueof{ruler range}",
+      sequence = "\pmbdomvalueof{sequence}"
+    }
+    pmbProtein:calculateDisulfideLevels()
+    pgfmolbio.setCoordinateFormat(
+      "\pgfkeysvalueof{/pgfmolbio/coordinate unit}",
+      "\pgfkeysvalueof{/pgfmolbio/coordinate format string}"
+    )
+    \ifpmb@loadmodule@convert
+      local filename =
+        "\pgfkeysvalueof{/pgfmolbio/convert/output file name}"
+      if filename == "(auto)" then
+        filename = "pmbconverted" .. pgfmolbio.outputFileId
+      end
+      filename = filename ..
+        ".\pgfkeysvalueof{/pgfmolbio/convert/output file extension}"
+      outputFile, ioError = io.open(filename, "w")
+      if ioError then
+        tex.error(ioError)
+      end
+      \ifpmb@con@outputtikzcode
+        tex.sprint = function(a) outputFile:write(a) end
+        pmbProtein:getParameters()
+        tex.sprint("\string\n\string\\begin{tikzpicture}")
+        pmbProtein:printTikzDomains()
+        tex.sprint("\string\n\string\\end{tikzpicture}")
+      \else
+        \ifpmb@con@includedescription
+          pmbProtein.includeDescription = true
+        \fi
+        outputFile:write(tostring(pmbProtein))
+      \fi
+      outputFile:close()
+      pgfmolbio.outputFileId = pgfmolbio.outputFileId + 1
+    \else
+      pmbProtein:printTikzDomains()
+    \fi
+    pmbProtein = nil
+  }%
+  \ifpmb@dom@tikzpicture\else\end{tikzpicture}\fi%
+}
+
+\newcommand\setdisulfidefeatures[1]{%
+  \directlua{
+    if pmbProtein then
+      pmbProtein.specialKeys:clearKeys("disulfideKeys")
+      pmbProtein.specialKeys:setKeys("disulfideKeys", "#1", true)
+    else
+      pmbSpecialKeys:clearKeys("disulfideKeys")
+      pmbSpecialKeys:setKeys("disulfideKeys", "#1", true)
+    end
+  }%
+}
+
+\newcommand\adddisulfidefeatures[1]{%
+  \directlua{
+    if pmbProtein then
+      pmbProtein.specialKeys:setKeys("disulfideKeys", "#1", true)
+    else
+      pmbSpecialKeys:setKeys("disulfideKeys", "#1", true)
+    end
+  }%
+}
+
+\newcommand\removedisulfidefeatures[1]{%
+  \directlua{
+    if pmbProtein then
+      pmbProtein.specialKeys:setKeys("disulfideKeys", "#1", nil)
+    else
+      pmbSpecialKeys:setKeys("disulfideKeys", "#1", nil)
+    end
+  }%
+}
+
+\setdisulfidefeatures{DISULFID, disulfide, range}
+
+\newcommand\setfeatureprintfunction[2]{%
+  \directlua{
+    if pmbProtein then
+      pmbProtein.specialKeys:setKeys("printFunctions", "#1", #2)
+    else
+      pmbSpecialKeys:setKeys("printFunctions", "#1", #2)
+    end
+  }%
+}
+
+\newcommand\removefeatureprintfunction[1]{%
+  \directlua{
+    if pmbProtein then
+      pmbProtein.specialKeys:setKeys("printFunctions", "#1", nil)
+    else
+      pmbSpecialKeys:setKeys("printFunctions", "#1", nil)
+    end
+  }%
+}
+
+\setfeatureprintfunction{other/sequence}%
+  {pgfmolbio.domains.printSequenceFeature}
+\setfeatureprintfunction{alpha helix, pi helix, 310 helix, HELIX}%
+  {pgfmolbio.domains.printHelixFeature}
+
+\newcommand\setfeaturestyle[2]{%
+  \@pmb@toksa{#2}%
+  \directlua{
+    if pmbProtein then
+      pmbProtein.specialKeys:setFeatureStyle(
+        "#1", "\luaescapestring{\the\@pmb@toksa}"
+      )
+    else
+      pmbSpecialKeys:setFeatureStyle(
+        "#1", "\luaescapestring{\the\@pmb@toksa}"
+      )
+    end
+  }%
+}
+
+\setfeaturestyle{default}{draw}
+\setfeaturestyle{domain}%
+  {fill=Chartreuse,fill=LightSkyBlue,fill=LightPink,fill=Gold!50}
+\setfeaturestyle{signal peptide}{fill=black}
+\setfeaturestyle{propeptide}%
+  {*1{fill=Gold, opacity=.5, rounded corners=4pt}}
+\setfeaturestyle{carbohydrate}{red}
+\setfeaturestyle{other/main chain}{*1{draw, line width=2pt, black!25}}
+\setfeaturestyle{other/name}{font=\sffamily}
+\setfeaturestyle{disulfide}{draw=olive}
+\setfeaturestyle{range}{*1{draw,decorate,decoration=brace}}
+\setfeaturestyle{other/ruler}{black, black!50}
+\setfeaturestyle{other/sequence}{*1{font=\ttfamily\tiny}}%
+\setfeaturestyle{other/magnified sequence above}%
+  {*1{draw=black!50, densely dashed}}
+\setfeaturestylealias{other/magnified sequence below}%
+  {other/magnified sequence above}
+\setfeaturestyle{alpha helix}{%
+  *1{helix front border color=red!50!black,%
+  helix front main color=red!90!black,%
+  helix front middle color=red!10!white}%
+}
+\setfeaturestylealias{HELIX}{alpha helix}
+\setfeaturestyle{pi helix}{%
+  *1{helix front border color=yellow!50!black,%
+  helix front main color=yellow!70!red,%
+  helix front middle color=yellow!10!white}%
+}
+\setfeaturestyle{310 helix}{%
+  *1{helix front border color=magenta!50!black,%
+  helix front main color=magenta!90!black,%
+  helix front middle color=magenta!10!white}%
+}
+\setfeaturestyle{beta strand}{%
+  *1{left color=strand left color, right color=strand right color}%
+}
+\setfeaturestyle{beta turn}{*1{draw=violet, thick}}
+\setfeaturestyle{beta bridge}{*1{fill=MediumBlue}}
+\setfeaturestyle{bend}{*1{draw=magenta, thick}}
+\endinput
+%%
+%% End of file `pgfmolbio.domains.tex'.

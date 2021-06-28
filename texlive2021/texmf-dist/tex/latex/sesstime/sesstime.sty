@@ -1,0 +1,448 @@
+%%
+%% This is file `sesstime.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% sesstime.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2016-2019 Niklas Beisert
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1996/12/01]
+\ProvidesPackage{sesstime}[2019/01/17 v1.12 session timing marks]
+\RequirePackage{keyval}
+
+\def\sti@flags{}
+\newif\ifsti@flag
+\newif\ifsti@flaginit
+\define@key{sti@flag}{if}{%
+  \ifsti@flaginit\else\sti@flagfalse\fi\sti@flaginittrue%
+  \def\sti@tmpa{#1}%
+  \@for\sti@tmpb:=\sti@flags\do{\ifx\sti@tmpb\sti@tmpa\sti@flagtrue\fi}}
+\define@key{sti@flag}{not}{%
+  \ifsti@flaginit\else\sti@flagtrue\fi\sti@flaginittrue%
+  \def\sti@tmpa{#1}%
+  \@for\sti@tmpb:=\sti@flags\do{\ifx\sti@tmpb\sti@tmpa\sti@flagfalse\fi}}
+\newcommand{\sti@processflags}[1]{\sti@flagtrue\sti@flaginitfalse%
+  \setkeys{sti@flag}{#1}}
+
+\newcommand{\timingif}[2][]{\sti@processflags{#1}\ifsti@flag#2\fi}
+
+\newif\ifsti@print\sti@printtrue
+\newif\ifsti@printblock\sti@printblocktrue
+\newif\ifsti@printsession\sti@printsessiontrue
+\newif\ifsti@printchapter\sti@printchaptertrue
+\newif\ifsti@printwarning\sti@printwarningtrue
+\newif\ifsti@printcomment\sti@printcommenttrue
+\newdimen\sti@widthl\setlength{\sti@widthl}{1cm}
+\newdimen\sti@widthr\setlength{\sti@widthr}{1cm}
+\newcounter{sti@autosession}
+\def\sti@depthsec{3}
+\def\sti@depthpar{5}
+
+\define@key{sti@}{print}[true]{\csname sti@print#1\endcsname}
+\define@key{sti@}{block}[true]{\csname sti@printblock#1\endcsname}
+\define@key{sti@}{chapter}[true]{\csname sti@printchapter#1\endcsname}
+\define@key{sti@}{session}[true]{\csname sti@printsession#1\endcsname}
+\define@key{sti@}{warning}[true]{\csname sti@printwarning#1\endcsname}
+\define@key{sti@}{comment}[true]{\csname sti@printcomment#1\endcsname}
+\define@key{sti@}{width}{\setlength{\sti@widthl}{#1}%
+  \setlength{\sti@widthr}{#1}}
+\define@key{sti@}{widthl}{\setlength{\sti@widthl}{#1}}
+\define@key{sti@}{widthr}{\setlength{\sti@widthr}{#1}}
+\define@key{sti@}{autosession}{\setcounter{sti@autosession}{#1}}
+\define@key{sti@}{flags}{\def\sti@flags{#1}}
+\define@key{sti@}{depthsec}{\def\sti@depthsec{#1}}
+\define@key{sti@}{depthpar}{\def\sti@depthpar{#1}}
+
+\newcommand{\timingconfigure}[2][]{%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \setkeys{sti@}{#2}%
+  \fi}
+
+\DeclareOption*{\expandafter\timingconfigure\expandafter{\CurrentOption}}
+\ProcessOptions
+
+\newcounter{sti@session}
+\newcounter{sti@insession}
+\newcounter{sti@sessiontime}
+\newcounter{sti@chapter}
+\newcounter{sti@inchapter}
+\newcounter{sti@chaptertime}
+\newcounter{sti@block}[sti@chapter]
+\newcounter{sti@inblock}
+\newcounter{sti@blockgauge}
+\newcounter{sti@blocktime}
+\newcount\c@sti@tmp
+
+\newcommand{\timingprint}[2][l]{%
+  \ifsti@print%
+    \ifhmode\par\fi%
+    \ifvmode%
+      \@bsphack%
+      \dimen@\prevdepth%
+      \nointerlineskip%
+      \if r#1%
+        \hbox{\smash{\rlap{\hspace{\textwidth}\parbox[t]{\sti@widthr}%
+          {\raggedright\renewcommand{\bfdefault}{b}#2}}}}%
+      \else%
+        \hbox{\smash{\llap{\parbox[t]{\sti@widthl}%
+          {\raggedleft\renewcommand{\bfdefault}{b}#2}}}}%
+      \fi%
+      \prevdepth\dimen@%
+      \@esphack%
+    \fi%
+  \else%
+    \ignorespaces%
+  \fi}
+
+\providecommand{\timingprintmark}[1]{%
+  \timingprint{\footnotesize#1}}
+\providecommand{\timingprintremark}[1]{%
+  \timingprint[r]{\tiny\sffamily\hrule#1\hrule}}
+
+\newcommand{\sti@warn}[2][l]{\ifsti@printwarning%
+  \timingprint[#1]{\scriptsize\textbf{warn}\\#2}\fi}
+
+\newcommand{\timingcomment}[2][]{%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \ifsti@printcomment\timingprintremark{#2}\fi%
+  \fi}
+
+\newcommand{\sti@notesessiontotal}[2]{%
+  \expandafter\gdef\csname sti@sessiontotal@#1\endcsname{#2}}
+\AtBeginDocument{\immediate\write\@auxout{%
+  \string\providecommand{\string\sti@notesessiontotal}[2]{}}}
+\newcommand{\sti@writesessiontotal}[1]
+  {\immediate\write\@auxout{\string\sti@notesessiontotal%
+    {\arabic{sti@session}}{#1}}}
+
+\newcommand\timingsessiontotal[2][??]{%
+  \expandafter\let\expandafter\timingreturn%
+    \csname sti@sessiontotal@#2\endcsname%
+  \ifx\timingreturn\relax\def\timingreturn{#1}\fi}
+
+\newcommand{\sti@recordtitle}[4]{\ifnum#2>\sti@depthpar\else%
+  \ifnum#2>\sti@depthsec%
+    \gdef\sti@partitle{#4}%
+  \else%
+    \xdef\sti@secnum{#3}%
+    \gdef\sti@sectitle{#4}%
+    \gdef\sti@partitle{}%
+  \fi\fi}
+
+\let\sti@old@startsection\@startsection%
+\def\@startsection#1#2#3#4#5#6{\@ifstar%
+    {\sti@ssect{#1}{#2}{#3}{#4}{#5}{#6}}%
+    {\@dblarg{\sti@sect{#1}{#2}{#3}{#4}{#5}{#6}}}}
+\def\sti@ssect#1#2#3#4#5#6#7{\sti@recordtitle{#1}{#2}{}{#7}%
+  \sti@old@startsection{#1}{#2}{#3}{#4}{#5}{#6}*{#7}}
+\def\sti@sect#1#2#3#4#5#6[#7]#8{{\advance\csname c@#1\endcsname1%
+  \sti@recordtitle{#1}{#2}{\csname the#1\endcsname}{#7}}%
+  \sti@old@startsection{#1}{#2}{#3}{#4}{#5}{#6}[#7]{#8}}
+
+\ifdefined\chapter
+\let\sti@old@chapter\chapter
+\def\chapter{\@ifstar\sti@schapter{\@dblarg{\sti@chapter}}}
+\def\sti@schapter#1{\sti@recordtitle{chapter}{0}{}{#1}\sti@old@chapter*{#1}}
+\def\sti@chapter[#1]#2{{\advance\c@chapter1%
+  \sti@recordtitle{chapter}{0}{\thechapter}{#1}}\sti@old@chapter[#1]{#2}}
+\fi
+
+\providecommand{\timingprintsession}[2]{\timingprintremark{%
+  session #1%
+  \timingsessiontotal[0]{#1}\ifnum\timingreturn>0%
+  \\(\timingreturn\ min)%
+  \ifnum #2>0\\at #2 min\fi\fi\vphantom{g}}}
+
+\newcommand{\sti@startsession}{%
+  \setcounter{sti@insession}{1}%
+  \stepcounter{sti@session}%
+  \ifsti@printsession%
+    \timingprintsession{\arabic{sti@session}}{\arabic{sti@sessiontime}}%
+  \fi%
+  \sti@addsessionline}
+
+\newcommand{\sti@checksession}{%
+  \ifnum\value{sti@autosession}>0%
+    \ifnum\value{sti@insession}=0%
+      \setcounter{sti@sessiontime}{0}%
+      \timingsession%
+    \else%
+      \ifnum\value{sti@sessiontime}<\value{sti@autosession}\else%
+        \sti@writesessiontotal{\arabic{sti@autosession}}%
+        \addtocounter{sti@sessiontime}{-\value{sti@autosession}}%
+        \sti@startsession%
+        \sti@checksession%
+      \fi%
+    \fi%
+  \fi}
+
+\newcommand{\timingsession}[1][]{%
+  \timingsessionend[#1]%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \setcounter{sti@sessiontime}{0}%
+    \sti@startsession%
+  \fi\ignorespaces}
+
+\newcommand{\timingsessionend}[1][]{%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \ifnum\value{sti@insession}=1%
+      \sti@writesessiontotal{\thesti@sessiontime}%
+      \setcounter{sti@insession}{0}%
+      \setcounter{sti@sessiontime}{0}%
+    \fi%
+  \fi\ignorespaces}
+\AtEndDocument{\timingsessionend}
+
+\newcommand\timinglistofsessions{\@starttoc{los}}
+\providecommand{\timingsessionline}[5]{\ \\%
+  \makebox[3em][r]{#1: }\makebox[2.5em][r]{#3. }%
+  \def\sti@tmp{#5}\ifx\sti@tmp\@empty #4\else\S\ #5\fi%
+  \timingsessiontotal[0]{#1}\ifnum\timingreturn>0%
+  \ [\timingreturn\ min\ifnum #2>0; #2 min into\fi]\fi}
+\newcommand{\sti@addsessionline}{%
+  \addtocontents{los}{\protect\timingsessionline%
+    {\thesti@session}{\thesti@sessiontime}%
+    {\sti@secnum}{\sti@sectitle}{\sti@partitle}}}%
+
+\newcommand{\sti@notechaptertotal}[2]{%
+  \expandafter\gdef\csname sti@chaptertotal@#1\endcsname{#2}}
+\AtBeginDocument{\immediate\write\@auxout{%
+  \string\providecommand{\string\sti@notechaptertotal}[2]{}}}
+\newcommand{\sti@writechaptertotal}
+  {\immediate\write\@auxout{\string\sti@notechaptertotal%
+    {\arabic{sti@chapter}}{\thesti@chaptertime}}}
+
+\newcommand{\sti@notechapterlabel}[2]{%
+  \expandafter\gdef\csname sti@chapterlabel@#1\endcsname{#2}}
+\AtBeginDocument{\immediate\write\@auxout{%
+  \string\providecommand{\string\sti@notechapterlabel}[2]{}}}
+\newcommand{\timingchapterlabel}[1]
+  {\immediate\write\@auxout{\string\sti@notechapterlabel%
+    {#1}{\arabic{sti@chapter}}}}
+
+\newcommand\sti@chaptertotalnumber[2][??]{%
+  \expandafter\let\expandafter\timingreturn%
+    \csname sti@chaptertotal@#2\endcsname%
+  \ifx\timingreturn\relax\def\timingreturn{#1}\fi}
+\newcommand\sti@chaptertotallabel[2][??]{%
+  \expandafter\let\expandafter\timingreturn%
+    \csname sti@chapterlabel@#2\endcsname%
+  \ifx\timingreturn\relax\else%
+    \expandafter\let\expandafter\timingreturn%
+      \csname sti@chaptertotal@\timingreturn\endcsname\fi%
+  \ifx\timingreturn\relax\def\timingreturn{#1}\fi}
+\newcommand\timingchaptertotal{%
+  \@ifstar{\sti@chaptertotalnumber}{\sti@chaptertotallabel}}
+
+\providecommand\timingprintchapter[1]{\timingprintmark{\raisebox{2.8ex}{%
+  \textbf{\timingchaptertotal*{#1}\timingreturn}%
+  \rlap{\kern0.4em$\star$}\kern1.2em}}}
+
+\newcommand{\timingchapter}[1][]{%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \ifnum\value{sti@inblock}=1%
+      \PackageWarning{sesstime}{chapter: still in block; stopped}%
+      \sti@warn{chap}%
+      \sti@blockstopby{0}%
+    \fi%
+    \timingchapterend%
+    \setcounter{sti@inchapter}{1}%
+    \setcounter{sti@chaptertime}{0}%
+    \stepcounter{sti@chapter}%
+    \ifsti@printchapter\timingprintchapter{\arabic{sti@chapter}}\fi%
+  \fi\ignorespaces}
+
+\newcommand{\timingchapterend}[1][]{%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \ifnum\value{sti@inblock}=1%
+      \PackageWarning{sesstime}{chapterend: still in block; stopped}%
+      \sti@warn{chap}%
+      \sti@blockstopby{0}%
+    \fi%
+    \ifnum\value{sti@inchapter}=1%
+      \sti@writechaptertotal%
+      \setcounter{sti@inchapter}{0}%
+      \setcounter{sti@chaptertime}{0}%
+    \fi%
+  \fi\ignorespaces}
+\AtEndDocument{\timingchapterend}
+
+\newcommand{\sti@noteblocktotal}[3]{%
+  \expandafter\gdef\csname sti@blocktotal@#1@#2\endcsname{#3}}
+\AtBeginDocument{\immediate\write\@auxout%
+  {\string\providecommand{\string\sti@noteblocktotal}[3]{}}}
+\newcommand{\sti@writeblocktotal}
+  {\immediate\write\@auxout{\string\sti@noteblocktotal%
+    {\arabic{sti@chapter}}{\arabic{sti@block}}{\thesti@blocktime}}}
+
+\newcommand\sti@blocktotalcurrent[1][??]{%
+  \expandafter\let\expandafter\timingreturn%
+    \csname sti@blocktotal@\arabic{sti@chapter}@\arabic{sti@block}\endcsname%
+  \ifx\timingreturn\relax\def\timingreturn{#1}\fi}
+\newcommand\sti@blocktotalnext[1][??]{%
+  \setcounter{sti@tmp}{\arabic{sti@block}}\stepcounter{sti@tmp}%
+  \expandafter\let\expandafter\timingreturn%
+    \csname sti@blocktotal@\arabic{sti@chapter}@\arabic{sti@tmp}\endcsname%
+  \ifx\timingreturn\relax\def\timingreturn{#1}\fi}
+\newcommand\timingblocktotal{\@ifstar%
+  {\sti@blocktotalnext}{\sti@blocktotalcurrent}}
+
+\newcommand{\timingprintblock}[3]{\timingprintmark{%
+  \def\sti@tmp{#2}\ifx\sti@tmp\@empty%
+    \raisebox{-1ex}{#1\rlap{\kern0.4em$\Updownarrow$}}\kern1.2em%
+  \else%
+    \def\sti@tmp{#1}\ifx\sti@tmp\@empty\else%
+      #1\rlap{\kern0.4em$\Uparrow$%
+      \vphantom{$\Updownarrow$}}\kern1.2em\hrule\fi%
+    \textbf{#2}\rlap{\vphantom{$\Updownarrow$}}\kern1.2em%
+    \def\sti@tmp{#3}\ifx\sti@tmp\@empty\else%
+      \hrule#3\rlap{\kern0.4em$\Downarrow$%
+      \vphantom{$\Updownarrow$}}\kern1.2em\fi%
+  \fi}}
+
+\newcommand{\sti@advanceby}[1]{%
+  \ifnum\value{sti@inblock}=1\addtocounter{sti@blocktime}{#1}\fi%
+  \ifnum\value{sti@inchapter}=1\addtocounter{sti@chaptertime}{#1}\fi%
+  \ifnum\value{sti@insession}=1\addtocounter{sti@sessiontime}{#1}\fi}
+
+\def\sti@hoursminutes#1:#2!{%
+  \multiply\value{sti@tmp}60\addtocounter{sti@tmp}{#1}%
+  \def\sti@tmp{#2}\ifx\sti@tmp\@empty\else\sti@hoursminutes#2!\fi}
+
+\newcommand{\sti@computedelta}[1]{%
+  \setcounter{sti@tmp}{0}%
+  \sti@hoursminutes#1:!%
+  \addtocounter{sti@tmp}{-\value{sti@blockgauge}}%
+  \addtocounter{sti@tmp}{-\value{sti@blocktime}}}
+
+\newcommand{\sti@warnneg}[1]{%
+  \ifnum #1<0%
+    \PackageWarning{sesstime}{block: negative time elapsed}%
+    \sti@warn{neg}%
+  \fi}
+
+\newcommand{\sti@blockstartat}[2][]{%
+  \sti@computedelta{#2}%
+  \sti@blockstartby[#1]{\value{sti@tmp}}}
+\newcommand{\sti@blockstartby}[2][]{%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \ifnum\value{sti@inblock}=1%
+      \PackageWarning{sesstime}{already in block}%
+      \sti@warn{block}%
+    \else%
+      \setcounter{sti@inblock}{1}%
+      \addtocounter{sti@blockgauge}{\arabic{sti@blocktime}}%
+      \addtocounter{sti@blockgauge}{#2}%
+      \setcounter{sti@blocktime}{0}%
+      \stepcounter{sti@block}%
+      \sti@checksession%
+      \ifsti@printblock\timingblocktotal%
+        \timingprintblock{}{\thesti@chaptertime}{\timingreturn}%
+      \fi%
+    \fi%
+  \fi\nopagebreak}
+\newcommand{\timingstart}{\@ifstar{\sti@blockstartby}{\sti@blockstartat}}
+
+\newcommand{\sti@blocksplitat}[2][]{%
+  \sti@computedelta{#2}%
+  \sti@blocksplitby[#1]{\value{sti@tmp}}}
+\newcommand{\sti@blocksplitby}[2][]{%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \ifnum\value{sti@inblock}=0%
+      \PackageWarning{sesstime}{not in block}%
+      \sti@warn{block}%
+    \else%
+      \sti@warnneg{#2}%
+      \sti@advanceby{#2}%
+      \sti@checksession%
+      \ifsti@printblock%
+        \timingprintblock{\thesti@blocktime}{}{}%
+      \fi%
+    \fi%
+  \fi}
+\newcommand{\timingsplit}{\@ifstar{\sti@blocksplitby}{\sti@blocksplitat}}
+
+\newcommand{\sti@blockstopat}[2][]{%
+  \sti@computedelta{#2}%
+  \sti@blockstopby[#1]{\value{sti@tmp}}}
+\newcommand{\sti@blockstopby}[2][]{%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \ifnum\value{sti@inblock}=0%
+      \PackageWarning{sesstime}{not in block}%
+      \sti@warn{block}%
+    \else%
+      \sti@warnneg{#2}%
+      \sti@advanceby{#2}%
+      \sti@writeblocktotal%
+      \ifsti@printblock%
+        \timingprintblock{\thesti@blocktime}{\thesti@chaptertime}{}%
+      \fi%
+      \setcounter{sti@inblock}{0}%
+      \setcounter{sti@blocktime}{0}%
+    \fi%
+  \fi}
+\newcommand{\timingstop}{\@ifstar{\sti@blockstopby}{\sti@blockstopat}}
+
+\newcommand{\sti@blocknextat}[2][]{%
+  \sti@computedelta{#2}%
+  \sti@blocknextby[#1]{\value{sti@tmp}}}
+\newcommand{\sti@blocknextby}[2][]{%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \ifnum\value{sti@inblock}=0%
+      \PackageWarning{sesstime}{not in block}%
+      \sti@warn{block}%
+    \else%
+      \sti@warnneg{#2}%
+      \sti@advanceby{#2}%
+      \sti@writeblocktotal%
+      \stepcounter{sti@block}%
+      \ifsti@printblock\timingblocktotal%
+        \timingprintblock{\thesti@blocktime}%
+          {\thesti@chaptertime}{\timingreturn}%
+      \fi%
+      \addtocounter{sti@blockgauge}{\arabic{sti@blocktime}}%
+      \setcounter{sti@blocktime}{0}%
+      \sti@checksession%
+    \fi%
+  \fi}
+\newcommand{\timingnext}{\@ifstar{\sti@blocknextby}{\sti@blocknextat}}
+
+\newcommand{\timinglapse}[2][]{%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \ifnum\value{sti@inblock}=1%
+      \addtocounter{sti@blockgauge}{-#2}%
+    \fi%
+    \sti@advanceby{#2}%
+  \fi}
+
+\newcommand{\timinggauge}[2][]{%
+  \sti@processflags{#1}%
+  \ifsti@flag%
+    \sti@computedelta{#2}%
+    \addtocounter{sti@blockgauge}{\value{sti@tmp}}%
+  \fi}
+
+\endinput
+%%
+%% End of file `sesstime.sty'.

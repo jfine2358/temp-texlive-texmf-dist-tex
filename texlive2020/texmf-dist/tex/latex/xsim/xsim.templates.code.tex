@@ -1,0 +1,182 @@
+% ----------------------------------------------------------------------------
+% the XSIM package - templates module
+% 
+%   eXercise Sheets IMproved
+% 
+% ----------------------------------------------------------------------------
+% Clemens Niederberger
+% Web:    https://github.com/cgnieder/xsim
+% E-Mail: contact@mychemistry.eu
+% ----------------------------------------------------------------------------
+% Copyright 2017--2020 Clemens Niederberger
+% 
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+% 
+% This work has the LPPL maintenance status `maintained'.
+% 
+% The Current Maintainer of this work is Clemens Niederberger.
+% ----------------------------------------------------------------------------
+% If you have any ideas, questions, suggestions or bugs to report, please
+% feel free to contact me.
+% ----------------------------------------------------------------------------
+\XSIMmodule{templates}{properties of exercises}
+
+\xsim_load_modules:n {base}
+
+\msg_new:nnn {xsim} {unknown-template}
+  {
+    You~ are~ trying~ to~ load~ the~ template~ `#2'~ (template~ type~ `#1')~
+    \msg_line_context: .~ This~ template~ does~ not~ seem~ to~ be~ defined.~
+    I~ am~ using~ the~ template~ `#3'~ (template~ type~ `#1')~ instead.
+  }
+
+\msg_new:nnn {xsim} {template-type-exists}
+  { The~ template~ type~ `#1'~ already~ exists~ \msg_line_context: }
+
+% ----------------------------------------------------------------------------
+\seq_new:N \l__xsim_template_types_seq
+
+% #1: template type
+\cs_new_protected:Npn \xsim_new_template_type:n #1
+  {
+    \seq_if_in:NnTF \l__xsim_template_types_seq {#1}
+      { \msg_error:nnn {xsim} {template-type-exists} {#1} }
+      {
+        \xsim_verbose:n { Declaring~ new~ template~ type~ `#1'. }
+        \seq_put_right:Nn \l__xsim_template_types_seq {#1}
+      }
+  }
+
+% #1: template type
+% #2: template name
+% #3: code
+\cs_new_protected:Npn \__xsim_add_template:nnn #1#2#3
+  {
+    \xsim_verbose:n { Defining~ new~ template~ `#2'~ of~ type~ `#1'. }
+    \tl_new:c {l__xsim_template_#1_#2_setup_tl}
+    \xsim_attribute_set:nnn {template::#1} {#2} {#3}
+  }
+
+\prg_new_conditional:Npnn \xsim_if_template_exist:nn #1#2 {T,F,TF}
+  {
+    \xsim_attribute_if_set:nnTF {template::#1} {#2}
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
+
+% #1: template type
+% #2: template name
+\cs_new_protected:Npn \__xsim_get_template:nn #1#2
+  { \xsim_attribute_get:nn {template::#1} {#2} }
+
+% ----------------------------------------------------------------------------
+
+% environment templates (types `begin' and `end'):
+\xsim_new_template_type:n {begin}
+\xsim_new_template_type:n {end}
+
+% #1: template name
+% #2: begin code
+% #3: end code
+\cs_new_protected:Npn \xsim_declare_environment_template:nnn #1#2#3
+  {
+    \__xsim_add_template:nnn {begin} {#1}
+      {
+        \__xsim_start_template:nn {begin} {#1}
+        \__xsim_start_template:nn {end} {#1}
+        #2
+      }
+    \__xsim_add_template:nnn {end} {#1}
+      {
+        #3
+        \__xsim_stop_template:nn {end} {#1}
+        \__xsim_stop_template:nn {begin} {#1}
+      }
+  }
+
+% ----------------------------------------------------------------------------
+
+% heading templates for the solution list (type `heading'):
+\xsim_new_template_type:n {heading}
+
+% #1: template name
+% #2: code
+\cs_new_protected:Npn \xsim_declare_heading_template:nn #1#2
+  {
+    \__xsim_add_template:nnn {heading} {#1}
+      {
+        \__xsim_start_template:nn {heading} {#1}
+        #2
+        \__xsim_stop_template:nn {heading} {#1}
+      }
+  }
+
+% ----------------------------------------------------------------------------
+
+% grading table templates (type `table'):
+\xsim_new_template_type:n {table}
+
+% #1: template name
+% #2: code
+\cs_new_protected:Npn \xsim_declare_table_template:nn #1#2
+  {
+    \__xsim_add_template:nnn {table} {#1}
+      {
+        \__xsim_start_template:nn {table} {#1}
+        #2
+        \__xsim_stop_template:nn {table} {#1}
+      }
+  }
+
+% ----------------------------------------------------------------------------
+
+% using templates:
+% setup up the next usage of `template name':
+% #1: template type
+% #2: template name
+% #3: setup code
+\cs_new_protected:Npn \xsim_setup_template:nnn #1#2#3
+  { \tl_set:cn {l__xsim_template_#1_#2_setup_tl} {#3} }
+\cs_generate_variant:Nn \xsim_setup_template:nnn {nnV,nVn}
+
+% #1: template type
+% #2: template name
+\cs_new_protected:Npn \__xsim_setup_template:nn #1#2
+  { \tl_use:c {l__xsim_template_#1_#2_setup_tl} }
+
+% #1: template type
+% #2: template name
+\cs_new_protected:Npn \__xsim_clear_template_setup:nn #1#2
+  { \tl_clear:c {l__xsim_template_#1_#2_setup_tl} }
+
+% #1: template type
+% #2: template name
+\cs_new_protected:Npn \__xsim_start_template:nn #1#2
+  { \group_begin: \__xsim_setup_template:nn {#1} {#2} }
+
+% #1: template type
+% #2: template name
+\cs_new_protected:Npn \__xsim_stop_template:nn #1#2
+  { \group_end: \__xsim_clear_template_setup:nn {#1} {#2} }
+  
+% #1: template type
+% #2: template name
+\cs_new_protected:Npn \xsim_use_template:nn #1#2
+  {
+    \xsim_if_template_exist:nnTF {#1} {#2}
+      { \__xsim_get_template:nn {#1} {#2} }
+      {
+        \msg_warning:nnnnn {xsim} {unknown-template} {#1} {#2} {default}
+        \__xsim_get_template:nn {#1} {default}
+      }
+  }
+\cs_generate_variant:Nn \xsim_use_template:nn {nx,nV}
+
+% ----------------------------------------------------------------------------  
+\file_input_stop:
